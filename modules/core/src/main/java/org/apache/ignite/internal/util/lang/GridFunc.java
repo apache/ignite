@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.io.*;
@@ -5779,7 +5779,7 @@ public class GridFunc {
     public static <T extends R, R> Collection<R> upcast(Collection<T> c) {
         A.notNull(c, "c");
 
-        return viewReadOnly(c, IDENTITY);
+        return (Collection<R>)c;
     }
 
     /**

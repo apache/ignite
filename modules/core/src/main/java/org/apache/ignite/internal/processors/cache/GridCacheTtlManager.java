@@ -183,14 +183,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public int compareTo(EntryWrapper o) {
-            if (expireTime == o.expireTime) {
-                if (entry.startVersion() == o.entry.startVersion())
-                    return 0;
+            int res = Long.compare(expireTime, o.expireTime);
 
-                return entry.startVersion() < o.entry.startVersion() ? -1 : 1;
-            }
-            else
-                return expireTime < o.expireTime ? -1 : 1;
+            if (res == 0)
+                res = Long.compare(entry.startVersion(), o.entry.startVersion());
+
+            return res;
         }
 
         /** {@inheritDoc} */

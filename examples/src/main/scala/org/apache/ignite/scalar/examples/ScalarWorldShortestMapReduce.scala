@@ -24,12 +24,15 @@ import org.apache.ignite.scalar.scalar._
  * Shows the world's shortest MapReduce application that calculates non-space
  * length of the input string. This example works equally on one computer or
  * on thousands requiring no special configuration or deployment.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
+ * <p/>
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarWorldShortestMapReduce extends App {
-    scalar("examples/config/example-compute.xml") {
+    scalar("examples/config/example-ignite.xml") {
         val input = "World shortest mapreduce application"
 
         println("Non-space characters count: " +

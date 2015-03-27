@@ -316,7 +316,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         final Integer affKey = 1;
 
         // Store a cache key.
-        g.jcache(CACHE_NAME).put(affKey, affKey.toString());
+        g.cache(CACHE_NAME).put(affKey, affKey.toString());
 
         String name = "serviceAffinity";
 
@@ -633,7 +633,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             key = ctx.name();
 
-            cache = ignite.jcache(CACHE_NAME);
+            cache = ignite.cache(CACHE_NAME);
         }
 
         /** {@inheritDoc} */

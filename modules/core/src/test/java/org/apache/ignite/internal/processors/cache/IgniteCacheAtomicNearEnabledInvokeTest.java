@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import org.apache.ignite.configuration.*;
 
 /**
  *
  */
 public class IgniteCacheAtomicNearEnabledInvokeTest extends IgniteCacheAtomicInvokeTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 }

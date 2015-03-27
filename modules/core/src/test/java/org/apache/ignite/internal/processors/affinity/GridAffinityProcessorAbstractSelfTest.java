@@ -25,11 +25,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -70,6 +68,8 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
 
             cfg.setCacheConfiguration(cacheCfg);
         }
+        else
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -79,7 +79,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @return Affinity function.
      */
-    protected abstract CacheAffinityFunction affinityFunction();
+    protected abstract AffinityFunction affinityFunction();
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
@@ -117,15 +117,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         assertEquals(NODES_CNT * 2, grid1.cluster().nodes().size());
         assertEquals(NODES_CNT * 2, grid2.cluster().nodes().size());
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                grid1.jcache(CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalArgumentException.class, null);
-
-        IgniteCache<Integer, Integer> cache = grid2.jcache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
 
         assertNotNull(cache);
 
@@ -183,7 +175,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         int iterations = 10000000;
 
         for (int i = 0; i < iterations; i++)
-            aff.mapKeyToNode(keys);
+            aff.mapKeyToNode(null, keys);
 
         long diff = System.currentTimeMillis() - start;
 

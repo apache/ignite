@@ -88,7 +88,7 @@ public class DataStreamerRequest implements Message {
      * @param reqId Request ID.
      * @param resTopicBytes Response topic.
      * @param cacheName Cache name.
-     * @param updaterBytes Cache updater.
+     * @param updaterBytes Cache receiver.
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.

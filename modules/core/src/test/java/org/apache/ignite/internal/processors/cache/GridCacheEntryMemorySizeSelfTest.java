@@ -35,7 +35,6 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -116,7 +115,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(mode);
-        cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -139,7 +138,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = LOCAL;
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
+            IgniteCache<Integer, Value> cache = startGrid().cache(null);
 
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));
@@ -163,7 +162,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = REPLICATED;
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
+            IgniteCache<Integer, Value> cache = startGrid().cache(null);
 
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));

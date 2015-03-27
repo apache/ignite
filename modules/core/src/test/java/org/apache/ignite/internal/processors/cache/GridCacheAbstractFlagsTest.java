@@ -49,17 +49,14 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
         if (cacheMode() == CacheMode.PARTITIONED)
             c.setBackups(1);
 
+        c.setCacheStoreFactory(null);
+
         return c;
     }
 
     /** {@inheritDoc} */
     @Override protected boolean swapEnabled() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
     }
 
     /**

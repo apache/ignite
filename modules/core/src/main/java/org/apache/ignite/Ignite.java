@@ -31,23 +31,31 @@ import java.util.concurrent.*;
 
 /**
  * Main entry-point for all Ignite APIs.
- * You can obtain an instance of {@code Grid} through {@link Ignition#ignite()},
+ * You can obtain an instance of {@code Ignite} through {@link Ignition#ignite()},
  * or for named grids you can use {@link Ignition#ignite(String)}. Note that you
- * can have multiple instances of {@code Grid} running in the same VM by giving
+ * can have multiple instances of {@code Ignite} running in the same VM by giving
  * each instance a different name.
  * <p>
- * Note that {@code Grid} extends {@link ClusterGroup} which means that it provides grid projection
- * functionality over the whole grid (instead of a subgroup of nodes).
- * <p>
- * In addition to {@link ClusterGroup} functionality, from here you can get the following:
+ * Ignite provides the following functionality:
  * <ul>
- * <li>{@link IgniteCache} - functionality for in-memory distributed cache.</li>
- * <li>{@link IgniteDataStreamer} - functionality for loading data large amounts of data into cache.</li>
- * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
- * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
+ * <li>{@link IgniteCluster} - clustering functionality.</li>
+ * <li>{@link IgniteCache} - functionality for in-memory distributed cache, including SQL, TEXT, and Predicate-based queries.</li>
+ * <li>{@link IgniteTransactions} - distributed ACID-compliant transactions.</li>
+ * <li>{@link IgniteDataStreamer} - functionality for streaming large amounts of data into cache.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteServices} - distributed service grid functionality (e.g. singletons on the cluster).</li>
  * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link ExecutorService} - distributed thread pools.</li>
+ * <li>{@link IgniteAtomicLong} - distributed atomic long.</li>
+ * <li>{@link IgniteAtomicReference} - distributed atomic reference.</li>
+ * <li>{@link IgniteAtomicSequence} - distributed atomic sequence.</li>
+ * <li>{@link IgniteAtomicStamped} - distributed atomic stamped reference.</li>
+ * <li>{@link IgniteCountDownLatch} - distributed count down latch.</li>
+ * <li>{@link IgniteQueue} - distributed blocking queue.</li>
+ * <li>{@link IgniteSet} - distributed concurrent set.</li>
+ * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
+ * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -95,77 +103,89 @@ public interface Ignite extends AutoCloseable {
     public IgniteCluster cluster();
 
     /**
-     * Gets {@code compute} functionality over this grid projection. All operations
-     * on the returned {@link IgniteCompute} instance will only include nodes from
-     * this projection.
+     * Gets {@code compute} facade over all cluster nodes.
      *
-     * @return Compute instance over this grid projection.
+     * @return Compute instance over all cluster nodes.
      */
     public IgniteCompute compute();
 
     /**
-     * @param grp Cluster group..
+     * Gets {@code compute} facade over the specified cluster group. All operations
+     * on the returned {@link IgniteCompute} instance will only include nodes from
+     * this cluster group.
+     *
+     * @param grp Cluster group.
      * @return Compute instance over given cluster group.
      */
     public IgniteCompute compute(ClusterGroup grp);
 
     /**
-     * Gets {@code messaging} functionality over this grid projection. All operations
-     * on the returned {@link IgniteMessaging} instance will only include nodes from
-     * this projection.
+     * Gets {@code messaging} facade over all cluster nodes.
      *
-     * @return Messaging instance over this grid projection.
+     * @return Messaging instance over all cluster nodes.
      */
     public IgniteMessaging message();
 
     /**
+     * Gets {@code messaging} facade over nodes within the cluster group.  All operations
+     * on the returned {@link IgniteMessaging} instance will only include nodes from
+     * the specified cluster group.
+     *
      * @param grp Cluster group.
      * @return Messaging instance over given cluster group.
      */
     public IgniteMessaging message(ClusterGroup grp);
 
     /**
-     * Gets {@code events} functionality over this grid projection. All operations
-     * on the returned {@link IgniteEvents} instance will only include nodes from
-     * this projection.
+     * Gets {@code events} facade over all cluster nodes.
      *
-     * @return Events instance over this grid projection.
+     * @return Events instance over all cluster nodes.
      */
     public IgniteEvents events();
 
     /**
+     * Gets {@code events} facade over nodes within the cluster group. All operations
+     * on the returned {@link IgniteEvents} instance will only include nodes from
+     * the specified cluster group.
+     *
      * @param grp Cluster group.
      * @return Events instance over given cluster group.
      */
     public IgniteEvents events(ClusterGroup grp);
 
     /**
-     * Gets {@code services} functionality over this grid projection. All operations
-     * on the returned {@link IgniteMessaging} instance will only include nodes from
-     * this projection.
+     * Gets {@code services} facade over all cluster nodes.
      *
-     * @return Services instance over this grid projection.
+     * @return Services facade over all cluster nodes.
      */
     public IgniteServices services();
 
     /**
+     * Gets {@code services} facade over nodes within the cluster group. All operations
+     * on the returned {@link IgniteMessaging} instance will only include nodes from
+     * the specified cluster group.
+     *
      * @param grp Cluster group.
      * @return {@code Services} functionality over given cluster group.
      */
     public IgniteServices services(ClusterGroup grp);
 
     /**
-     * Creates new {@link ExecutorService} which will execute all submitted
-     * {@link java.util.concurrent.Callable} and {@link Runnable} jobs on nodes in this grid projection.
-     * This essentially
-     * creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
-     * replacement for local thread pools.
+     * Creates a new {@link ExecutorService} which will execute all submitted
+     * {@link Callable} and {@link Runnable} jobs on all cluster nodes.
+     * This essentially creates a <b><i>Distributed Thread Pool</i></b> that can
+     * be used as a replacement for local thread pools.
      *
      * @return Grid-enabled {@code ExecutorService}.
      */
     public ExecutorService executorService();
 
     /**
+     * Creates a new {@link ExecutorService} which will execute all submitted
+     * {@link Callable} and {@link Runnable} jobs on nodes in the specified cluster group.
+     * This essentially creates a <b><i>Distributed Thread Pool</i></b> that can be used as a
+     * replacement for local thread pools.
+     *
      * @param grp Cluster group.
      * @return {@link ExecutorService} which will execute jobs on nodes in given cluster group.
      */
@@ -186,13 +206,83 @@ public interface Ignite extends AutoCloseable {
     public IgniteScheduler scheduler();
 
     /**
+     * Dynamically starts new cache with the given cache configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a client cache on local node.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return Instance of started cache.
+     */
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
+
+    /**
+     * Gets existing cache with the given name or creates new one with the given configuration.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return Existing or newly created cache.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg);
+
+    /**
+     * Dynamically starts new cache with the given cache configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a near cache with the given configuration on local node.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @param nearCfg Near cache configuration to use on local node in case it is not an
+     *      affinity node.
+     * @return Instance of started cache.
+     */
+    public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     *
+     * @param cacheCfg Cache configuration.
+     * @param nearCfg Near cache configuration for client.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Starts a near cache on local node if cache was previously started with one of the
+     * {@link #createCache(CacheConfiguration)} or {@link #createCache(CacheConfiguration, NearCacheConfiguration)}
+     * methods.
+     *
+     * @param cacheName Cache name.
+     * @param nearCfg Near cache configuration.
+     * @return Cache instance.
+     */
+    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param nearCfg Near configuration.
+     * @return {@code IgniteCache} instance.
+     */
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Stops dynamically started cache.
+     *
+     * @param cacheName Cache name to stop.
+     */
+    public void destroyCache(String cacheName);
+
+    /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
      * implementation of {@code JCache (JSR 107)} specification.
      *
      * @param name Cache name.
      * @return Instance of the cache for the specified name.
      */
-    public <K, V> IgniteCache<K, V> jcache(@Nullable String name);
+    public <K, V> IgniteCache<K, V> cache(@Nullable String name);
 
     /**
      * Gets grid transactions facade.
@@ -356,5 +446,5 @@ public interface Ignite extends AutoCloseable {
      * @param <K> Cache key type.
      * @return Affinity.
      */
-    public <K> CacheAffinity<K> affinity(String cacheName);
+    public <K> Affinity<K> affinity(String cacheName);
 }

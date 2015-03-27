@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -40,16 +41,21 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         //suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
         //suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
 
+        suite.addTestSuite(GridCacheIncrementTransformTest.class);
+
         // Failure consistency tests.
+        suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderRemoveFailureTest.class);
+
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
-        // TODO: IGNITE-80.
-        // suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
-        // suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO GG-9150
+        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
+        //suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO IGNITE-560
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
         //suite.addTest(new TestSuite(GridCachePartitionedFailoverSelfTest.class));  TODO-gg-4813
         //suite.addTest(new TestSuite(GridCacheColocatedFailoverSelfTest.class)); TODO-gg-4813
+        //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO-gg-4813
 
         return suite;
     }

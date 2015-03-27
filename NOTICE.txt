@@ -5,17 +5,8 @@ This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
 
-This software has a dependency on JetBrains Annotations licensed under
-Apache License, Version 2.0.
+This software includes code from IntelliJ IDEA Community Edition
+Copyright (C) JetBrains s.r.o.
+https://www.jetbrains.com/idea/
+Licensed under Apache License, Version 2.0.
 http://search.maven.org/#artifactdetails%7Corg.jetbrains%7Cannotations%7C13.0%7Cjar
-
-
-This software has a dependency on snaptree library,
-licensed under BSD 3-clause license.
-https://github.com/nbronson/snaptree/
-
-
-This software, specifically package "org.jdk8.backport", has a dependency on
-concurrency libraries written by Doug Lea with assistance from members of JCP JSR-166
-Expert Group and released to the public domain, as explained at
-http://creativecommons.org/publicdomain/zero/1.0/.

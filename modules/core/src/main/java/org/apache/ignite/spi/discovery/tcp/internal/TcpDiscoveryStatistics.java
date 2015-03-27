@@ -295,7 +295,7 @@ public class TcpDiscoveryStatistics {
      */
     public synchronized void onMessageSent(TcpDiscoveryAbstractMessage msg, long time) {
         assert msg != null;
-        assert time >= 0;
+        assert time >= 0 : time;
 
         if (crdSinceTs.get() > 0 &&
             (msg instanceof TcpDiscoveryNodeAddedMessage) ||

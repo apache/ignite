@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
+ * Tests {@link CacheInterceptor}.
  */
 public class GridCacheInterceptorSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
@@ -33,7 +33,7 @@ public class GridCacheInterceptorSelfTest extends GridCacheInterceptorAbstractSe
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }

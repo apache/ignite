@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
@@ -98,9 +97,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setRebalanceMode(mode);
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
         partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        partCacheCfg.setEvictNearSynchronized(false);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        partCacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         if (offheap)
             partCacheCfg.setOffHeapMaxMemory(OFFHEAP);
@@ -185,7 +182,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      */
     private long size(String cacheName, IgniteKernal g) throws IgniteCheckedException {
         if (offheap)
-            return ((IgniteKernal)g).cache(cacheName).offHeapEntriesCount();
+            return ((IgniteKernal)g).getCache(cacheName).offHeapEntriesCount();
 
         return g.context().swap().swapSize(swapSpaceName(cacheName, g));
     }
@@ -205,8 +202,8 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             IgniteKernal grid2 = (IgniteKernal)startGrid(2);
 
-            IgniteCache<Integer, Object> cache1 = ignite1.jcache(cacheName);
-            IgniteCache<Integer, Object> cache2 = grid2.jcache(cacheName);
+            IgniteCache<Integer, Object> cache1 = ignite1.cache(cacheName);
+            IgniteCache<Integer, Object> cache2 = grid2.cache(cacheName);
 
             Object v1 = valCls.newInstance();
 

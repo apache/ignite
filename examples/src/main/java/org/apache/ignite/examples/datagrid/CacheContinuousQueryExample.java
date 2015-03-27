@@ -18,7 +18,10 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import javax.cache.*;
@@ -28,14 +31,14 @@ import javax.cache.event.*;
  * This examples demonstrates continuous query API.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheContinuousQueryExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CacheContinuousQueryExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -44,58 +47,60 @@ public class CacheContinuousQueryExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");
 
-            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
-            // Clean up caches on all nodes before run.
-            cache.clear();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
 
-            int keyCnt = 20;
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+                int keyCnt = 20;
 
-            // These entries will be queried by initial predicate.
-            for (int i = 0; i < keyCnt; i++)
-                cache.put(i, Integer.toString(i));
-
-            // Create new continuous query.
-            ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
-
-            qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
-                @Override public boolean apply(Integer key, String val) {
-                    return key > 10;
-                }
-            }));
-
-            // Callback that is called locally when update notifications are received.
-            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
-                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts) {
-                    for (CacheEntryEvent<? extends Integer, ? extends String> e : evts)
-                        System.out.println("Updated entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-                }
-            });
-
-            // This filter will be evaluated remotely on all nodes.
-            // Entry that pass this filter will be sent to the caller.
-            qry.setRemoteFilter(new CacheEntryEventFilter<Integer, String>() {
-                @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
-                    return e.getKey() > 10;
-                }
-            });
-
-            // Execute query.
-            try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
-                // Iterate through existing data.
-                for (Cache.Entry<Integer, String> e : cur)
-                    System.out.println("Queried existing entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-
-                // Add a few more keys and watch more query notifications.
-                for (int i = keyCnt; i < keyCnt + 10; i++)
+                // These entries will be queried by initial predicate.
+                for (int i = 0; i < keyCnt; i++)
                     cache.put(i, Integer.toString(i));
 
-                // Wait for a while while callback is notified about remaining puts.
-                Thread.sleep(2000);
+                // Create new continuous query.
+                ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+
+                qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
+                    @Override public boolean apply(Integer key, String val) {
+                        return key > 10;
+                    }
+                }));
+
+                // Callback that is called locally when update notifications are received.
+                qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
+                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts) {
+                        for (CacheEntryEvent<? extends Integer, ? extends String> e : evts)
+                            System.out.println("Updated entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+                    }
+                });
+
+                // This filter will be evaluated remotely on all nodes.
+                // Entry that pass this filter will be sent to the caller.
+                qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, String>() {
+                    @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) {
+                        return e.getKey() > 10;
+                    }
+                });
+
+                // Execute query.
+                try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
+                    // Iterate through existing data.
+                    for (Cache.Entry<Integer, String> e : cur)
+                        System.out.println("Queried existing entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
+
+                    // Add a few more keys and watch more query notifications.
+                    for (int i = keyCnt; i < keyCnt + 10; i++)
+                        cache.put(i, Integer.toString(i));
+
+                    // Wait for a while while callback is notified about remaining puts.
+                    Thread.sleep(2000);
+                }
             }
         }
     }

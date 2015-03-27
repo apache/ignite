@@ -19,13 +19,15 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.store.*;
 
+import javax.cache.configuration.*;
+
 /**
  *
  */
 public class IgniteCacheAtomicPrimaryWriteOrderWithStoreInvokeTest extends
     IgniteCacheAtomicPrimaryWriteOrderInvokeTest {
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new IgniteCacheAbstractTest.TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 }

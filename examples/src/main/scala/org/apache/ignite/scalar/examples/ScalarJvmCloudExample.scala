@@ -32,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
  * in the same JVM with Scala. All started nodes use default configuration
  * with only difference of the ignite cluster name which has to be different for
  * every node so they can be differentiated within JVM.
- * <p>
+ * <p/>
  * Starting multiple nodes in the same JVM is especially useful during
  * testing and debugging as it allows you to create a full ignite cluster within
  * a test case, simulate various scenarios, and watch how jobs and data

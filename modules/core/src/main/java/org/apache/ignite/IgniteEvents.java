@@ -26,19 +26,31 @@ import java.util.*;
 
 /**
  * Provides functionality for local and remote event notifications on nodes defined by {@link #clusterGroup()}.
- * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}. Instance
- * of {@code GridMessaging} is obtained from grid projection as follows:
- * <pre name="code" class="java">
- * GridEvents evts = Ignition.ignite().events();
- * </pre> * <p>
+ * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}.
+ * <p>
+ * Instance of {@code IgniteEvents} is obtained from {@link Ignite} as follows:
+ * <pre class="brush:java">
+ * Ignite ignite = Ignition.ignite();
+ *
+ * IgniteEvents evts = ignite.events();
+ * </pre>
+ * You can also obtain an instance of the events facade over a specific cluster group:
+ * <pre class="brush:java">
+ * // Cluster group over remote nodes (excluding the local node).
+ * ClusterGroup remoteNodes = ignite.cluster().forRemotes();
+ *
+ * // Events instance spanning all remote cluster nodes.
+ * IgniteEvents evts = ignite.events(remoteNodes);
+ * </pre>
+ * <p>
  * Local subscription, defined by {@link #localListen(IgnitePredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
- * grid projection or not.
+ * cluster group or not.
  * <p>
  * Remote subscription, defined by {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)}, will add an
- * event listener for specified events on all nodes in the projection (possibly including local node if
- * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
+ * event listener for specified events on all nodes in the cluster group (possibly including local node if
+ * it belongs to the cluster group as well). All cluster group nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
  * <p>
  * Note that by default, all events in Ignite are disabled for performance reasons. You must only enable
@@ -53,17 +65,15 @@ import java.util.*;
  */
 public interface IgniteEvents extends IgniteAsyncSupport {
     /**
-     * Gets grid projection to which this {@code GridMessaging} instance belongs.
+     * Gets cluster group to which this {@code IgniteEvents} instance belongs.
      *
-     * @return Grid projection to which this {@code GridMessaging} instance belongs.
+     * @return Cluster group to which this {@code IgniteEvents} instance belongs.
      */
     public ClusterGroup clusterGroup();
 
     /**
-     * Queries nodes in this projection for events using passed in predicate filter for event
+     * Queries nodes in this cluster group for events using passed in predicate filter for event
      * selection.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param p Predicate filter used to query events on remote nodes.
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
@@ -76,15 +86,13 @@ public interface IgniteEvents extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Adds event listener for specified events to all nodes in the projection (possibly including
-     * local node if it belongs to the projection as well). This means that all events occurring on
-     * any node within this grid projection that pass remove filter will be sent to local node for
-     * local listener notification.
+     * Adds event listener for specified events to all nodes in the cluster group (possibly including
+     * local node if it belongs to the cluster group as well). This means that all events occurring on
+     * any node within this cluster group that pass remote filter will be sent to local node for
+     * local listener notifications.
      * <p>
      * The listener can be unsubscribed automatically if local node stops, if {@code locLsnr} callback
      * returns {@code false} or if {@link #stopRemoteListen(UUID)} is called.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param locLsnr Listener callback that is called on local node. If {@code null}, this events will be handled
      *      on remote nodes by passed in {@code rmtFilter}.
@@ -106,9 +114,9 @@ public interface IgniteEvents extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Adds event listener for specified events to all nodes in the projection (possibly including
-     * local node if it belongs to the projection as well). This means that all events occurring on
-     * any node within this grid projection that pass remove filter will be sent to local node for
+     * Adds event listener for specified events to all nodes in the cluster group (possibly including
+     * local node if it belongs to the cluster group as well). This means that all events occurring on
+     * any node within this cluster group that pass remote filter will be sent to local node for
      * local listener notification.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -125,7 +133,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param locLsnr Callback that is called on local node. If this predicate returns {@code true},
      *      the implementation will continue listening to events. Otherwise, events
      *      listening will be stopped and listeners will be unregistered on all nodes
-     *      in the projection. If {@code null}, this events will be handled on remote nodes by
+     *      in the cluster group. If {@code null}, this events will be handled on remote nodes by
      *      passed in {@code rmtFilter} until local node stops (if {@code 'autoUnsubscribe'} is {@code true})
      *      or until {@link #stopRemoteListen(UUID)} is called.
      * @param rmtFilter Filter callback that is called on remote node. Only events that pass the remote filter
@@ -204,7 +212,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
 
     /**
      * Adds an event listener for local events. Note that listener will be added regardless of whether
-     * local node is in this projection or not.
+     * local node is in this cluster group or not.
      *
      * @param lsnr Predicate that is called on each received event. If predicate returns {@code false},
      *      it will be unregistered and will stop receiving events.
@@ -226,7 +234,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     /**
      * Enables provided events. Allows to start recording events that
      * were disabled before. Note that specified events will be enabled
-     * regardless of whether local node is in this projection or not.
+     * regardless of whether local node is in this cluster group or not.
      *
      * @param types Events to enable.
      */
@@ -235,7 +243,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     /**
      * Disables provided events. Allows to stop recording events that
      * were enabled before. Note that specified events will be disabled
-     * regardless of whether local node is in this projection or not.
+     * regardless of whether local node is in this cluster group or not.
      *
      * @param types Events to disable.
      */

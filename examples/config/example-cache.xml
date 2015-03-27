@@ -18,7 +18,12 @@
 -->
 
 <!--
-    Ignite Spring configuration file to startup ignite cache.
+    Ignite Spring configuration file to startup Ignite cache.
+
+    This file demonstrates how to configure cache using Spring. Provided cache
+    will be created on node startup.
+
+    Use this configuration file when running HTTP REST examples (see 'examples/rest' folder).
 
     When starting a standalone node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-cache.xml
@@ -28,116 +33,16 @@
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util.xsd">
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable distributed class loading for examples, default is false. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
-
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
-        </property>
-
-        <!-- Enable cache events for examples. -->
-        <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
-        </property>
-
-        <!-- Cache configurations (all properties are optional). -->
         <property name="cacheConfiguration">
             <list>
                 <!-- Partitioned cache example configuration (Atomic mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
-
-                    <property name="indexedTypes">
-                        <list>
-                            <!-- Key and value type for SQL table Organization. -->
-                            <value>java.util.UUID</value>
-                            <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Organization</value>
-
-                            <!-- Key and value type for SQL table Person. -->
-                            <value>org.apache.ignite.cache.affinity.CacheAffinityKey</value>
-                            <value>org.apache.ignite.examples.datagrid.CacheQueryExample.Person</value>
-
-                            <!-- Key and value type for SQL table Long. -->
-                            <value>java.lang.Integer</value>
-                            <value>java.lang.Long</value>
-
-                            <!-- Key and value type for SQL table FactPurchase. -->
-                            <value>java.lang.Integer</value>
-                            <value>org.apache.ignite.examples.datagrid.starschema.FactPurchase</value>
-                        </list>
-                    </property>
-                </bean>
-
-                <!-- Partitioned cache example configuration (Atomic mode, PRIMARY write order mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned_primary"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-                    <property name="backups" value="1"/>
-                </bean>
-
-                <!-- Partitioned cache example configuration (Transactional mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="partitioned_tx"/>
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
-                    <property name="backups" value="1"/>
-                </bean>
-
-                <!-- Replicated cache example configuration (Atomic mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="replicated"/>
-                    <property name="cacheMode" value="REPLICATED"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="indexedTypes">
-                        <list>
-                            <!-- Key and value type for SQL table DimStore. -->
-                            <value>java.lang.Integer</value>
-                            <value>org.apache.ignite.examples.datagrid.starschema.DimStore</value>
-
-                            <!-- Key and value type for SQL table DimProduct. -->
-                            <value>java.lang.Integer</value>
-                            <value>org.apache.ignite.examples.datagrid.starschema.DimProduct</value>
-                        </list>
-                    </property>
-                </bean>
-
-                <!-- Replicated cache example configuration (Transactional mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="replicated_tx"/>
-                    <property name="cacheMode" value="REPLICATED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                </bean>
-
-                <!-- Local cache example configuration (Atomic mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="local"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                </bean>
-
-                <!-- Local cache example configuration (Transactional mode). -->
-                <bean parent="cache-template">
-                    <property name="name" value="local_tx"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
                 </bean>
             </list>
         </property>
@@ -149,7 +54,7 @@
                     <!--
                         Ignite provides several options for automatic discovery that can be used
                         instead os static IP based discovery. For information on all options refer
-                        to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
+                        to our documentation: http://apacheignite.readme.io/docs/cluster-config
                     -->
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
                     <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
@@ -164,17 +69,5 @@
                 </property>
             </bean>
         </property>
-    </bean>
-
-    <!-- Template for all example cache configurations. -->
-    <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
-        <!-- Initial cache size. -->
-        <property name="startSize" value="3000000"/>
-
-        <!-- Set synchronous rebalancing (default is asynchronous). -->
-        <property name="rebalanceMode" value="SYNC"/>
-
-        <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
-        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
     </bean>
 </beans>

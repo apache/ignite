@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -37,8 +37,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -311,6 +311,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             GridDhtTopologyFuture topFut = topologyReadLock();
 
             try {
+                if (topFut == null) {
+                    assert isDone();
+
+                    return;
+                }
+
                 if (topFut.isDone()) {
                     try {
                         if (!tx.state(PREPARING)) {
@@ -329,10 +335,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                             return;
                         }
 
-                        GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
-
-                        tx.topologyVersion(snapshot.topologyVersion());
-                        tx.topologySnapshot(snapshot);
+                        tx.topologyVersion(topFut.topologyVersion());
 
                         // Make sure to add future before calling prepare.
                         cctx.mvcc().addFuture(this);
@@ -342,24 +345,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     catch (TransactionTimeoutException | TransactionOptimisticException e) {
                         onError(cctx.localNodeId(), null, e);
                     }
-                    catch (IgniteCheckedException e) {
-                        tx.setRollbackOnly();
-
-                        String msg = "Failed to prepare transaction (will attempt rollback): " + this;
-
-                        U.error(log, msg, e);
-
-                        tx.rollbackAsync();
-
-                        onError(null, null, new IgniteTxRollbackCheckedException(msg, e));
-                    }
                 }
                 else {
-                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> t) {
+                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                                @Override
-                                public void run() {
+                                @Override public void run() {
                                     prepare();
                                 }
                             });
@@ -400,6 +391,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             return cctx.exchange().lastTopologyFuture();
 
         nonLocCtx.topology().readLock();
+
+        if (nonLocCtx.topology().stopping()) {
+            onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
+                nonLocCtx.name()));
+
+            return null;
+        }
 
         return nonLocCtx.topology().topologyVersionFuture();
     }
@@ -455,13 +453,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     ) throws IgniteCheckedException {
         assert tx.optimistic();
 
-        GridDiscoveryTopologySnapshot snapshot = tx.topologySnapshot();
+        AffinityTopologyVersion topVer = tx.topologyVersion();
 
-        assert snapshot != null;
-
-        long topVer = snapshot.topologyVersion();
-
-        assert topVer > 0;
+        assert topVer.topologyVersion() > 0;
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -544,7 +538,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private void preparePessimistic() {
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
-        long topVer = tx.topologyVersion();
+        AffinityTopologyVersion topVer = tx.topologyVersion();
 
         txMapping = new GridDhtTxMapping<>();
 
@@ -748,7 +742,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     private GridDistributedTxMapping map(
         IgniteTxEntry entry,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridDistributedTxMapping cur,
         boolean waitLock
     ) throws IgniteCheckedException {
@@ -939,7 +933,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                     CacheVersionedValue tup = entry.getValue();
 
                                     nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
-                                        tup.version(), m.node().id());
+                                        tup.version(), m.node().id(), tx.topologyVersion());
                                 }
                                 else if (txEntry.cached().detached()) {
                                     GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();

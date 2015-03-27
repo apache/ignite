@@ -37,7 +37,6 @@ import org.apache.ignite.transactions.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -85,7 +84,9 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+
+        if (nearEnabled())
+            cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -97,7 +98,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         startGrids(gridCount());
 
         try {
-            IgniteCache<Object, Object> cache = grid(0).jcache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             // Find test key.
             int key = testKey();

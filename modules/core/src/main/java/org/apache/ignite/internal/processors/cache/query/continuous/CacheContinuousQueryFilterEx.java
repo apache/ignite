@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 
-import javax.cache.event.*;
+import org.apache.ignite.cache.*;
 
 /**
  * Extended continuous query filter.
  */
-public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventFilter<K, V> {
+public interface CacheContinuousQueryFilterEx<K, V> extends CacheEntryEventSerializableFilter<K, V> {
     /**
      * Callback for query unregister event.
      */

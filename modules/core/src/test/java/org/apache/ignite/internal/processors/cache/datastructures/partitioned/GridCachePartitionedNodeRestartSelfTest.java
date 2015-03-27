@@ -58,7 +58,7 @@ public class GridCachePartitionedNodeRestartSelfTest extends GridCommonAbstractT
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(100));
+        cc.setEvictionPolicy(new FifoEvictionPolicy(100));
 
         c.setCacheConfiguration(cc);
 

@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 import sun.nio.ch.*;
 
 import java.io.*;
@@ -1025,97 +1025,93 @@ public class GridNioServer<T> {
             if (writer == null)
                 ses.addMeta(MSG_WRITER.ordinal(), writer = formatter.writer());
 
+            if (req == null) {
+                req = (NioOperationFuture<?>)ses.pollFuture();
+
+                if (req == null && buf.position() == 0) {
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+
+                    return;
+                }
+            }
+
+            Message msg;
+            boolean finished = false;
+
+            if (req != null) {
+                msg = req.directMessage();
+
+                assert msg != null;
+
+                finished = msg.writeTo(buf, writer);
+
+                if (finished)
+                    writer.reset();
+            }
+
+            // Fill up as many messages as possible to write buffer.
             List<NioOperationFuture<?>> doneFuts = null;
 
-            while (true) {
-                if (req == null) {
-                    req = (NioOperationFuture<?>)ses.pollFuture();
+            while (finished) {
+                if (doneFuts == null)
+                    doneFuts = new ArrayList<>();
 
-                    if (req == null && buf.position() == 0) {
-                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                doneFuts.add(req);
 
-                        break;
-                    }
-                }
+                req = (NioOperationFuture<?>)ses.pollFuture();
 
-                Message msg;
-                boolean finished = false;
-
-                if (req != null) {
-                    msg = req.directMessage();
-
-                    assert msg != null;
-
-                    finished = msg.writeTo(buf, writer);
-
-                    if (finished)
-                        writer.reset();
-                }
-
-                // Fill up as many messages as possible to write buffer.
-                while (finished) {
-                    if (doneFuts == null)
-                        doneFuts = new ArrayList<>();
-
-                    doneFuts.add(req);
-
-                    req = (NioOperationFuture<?>)ses.pollFuture();
-
-                    if (req == null)
-                        break;
-
-                    msg = req.directMessage();
-
-                    assert msg != null;
-
-                    finished = msg.writeTo(buf, writer);
-
-                    if (finished)
-                        writer.reset();
-                }
-
-                buf.flip();
-
-                assert buf.hasRemaining();
-
-                if (!skipWrite) {
-                    int cnt = sockCh.write(buf);
-
-                    if (!F.isEmpty(doneFuts)) {
-                        for (int i = 0; i < doneFuts.size(); i++)
-                            doneFuts.get(i).onDone();
-
-                        doneFuts.clear();
-                    }
-
-                    if (log.isTraceEnabled())
-                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                    if (metricsLsnr != null)
-                        metricsLsnr.onBytesSent(cnt);
-
-                    ses.bytesSent(cnt);
-                }
-                else {
-                    // For test purposes only (skipWrite is set to true in tests only).
-                    try {
-                        U.sleep(50);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IOException("Thread has been interrupted.", e);
-                    }
-                }
-
-                if (buf.hasRemaining()) {
-                    buf.compact();
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
-
+                if (req == null)
                     break;
-                }
-                else
-                    buf.clear();
+
+                msg = req.directMessage();
+
+                assert msg != null;
+
+                finished = msg.writeTo(buf, writer);
+
+                if (finished)
+                    writer.reset();
             }
+
+            buf.flip();
+
+            assert buf.hasRemaining();
+
+            if (!skipWrite) {
+                int cnt = sockCh.write(buf);
+
+                if (!F.isEmpty(doneFuts)) {
+                    for (int i = 0; i < doneFuts.size(); i++)
+                        doneFuts.get(i).onDone();
+
+                    doneFuts.clear();
+                }
+
+                if (log.isTraceEnabled())
+                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                if (metricsLsnr != null)
+                    metricsLsnr.onBytesSent(cnt);
+
+                ses.bytesSent(cnt);
+            }
+            else {
+                // For test purposes only (skipWrite is set to true in tests only).
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IOException("Thread has been interrupted.", e);
+                }
+            }
+
+            if (buf.hasRemaining() || !finished) {
+                buf.compact();
+
+                ses.addMeta(NIO_OPERATION.ordinal(), req);
+            }
+            else
+                buf.clear();
         }
     }
 

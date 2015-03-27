@@ -54,10 +54,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            String.class, Organization.class,
-            CacheAffinityKey.class, Person.class
-        );
+        cache.setIndexedTypes(String.class, Organization.class, AffinityKey.class, Person.class);
 
         cfg.setCacheConfiguration(cache);
 
@@ -76,20 +73,20 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<String, Organization> orgCache = grid(0).jcache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<CacheAffinityKey<String>, Person> personCache = grid(0).jcache(null);
+        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        personCache.put(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }

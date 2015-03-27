@@ -27,9 +27,6 @@ import java.util.concurrent.*;
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl extends MarshallerContextAdapter {
-    /** Class names cache update retries count. */
-    private static final int CACHE_UPDATE_RETRIES_CNT = 5;
-
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -38,6 +35,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /** */
     private volatile GridCacheAdapter<Integer, String> cache;
+
+    /** Non-volatile on purpose. */
+    private int failedCnt;
 
     /**
      * @param ctx Kernal context.
@@ -53,37 +53,39 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) {
+    @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+        GridCacheAdapter<Integer, String> cache0 = cache;
+
+        if (cache0 == null)
+            return false;
+
+        String old;
+
         try {
-            GridCacheAdapter<Integer, String> cache0 = cache;
+            old = cache0.tryPutIfAbsent(id, clsName);
 
-            if (cache0 == null)
+            if (old != null && !old.equals(clsName)) {
+                U.quietAndWarn(log, "Type ID collision detected, may affect performance " +
+                    "(set idMapper property on marshaller to fix) [id=" + id + ", clsName1=" + clsName +
+                    "clsName2=" + old + ']');
+
                 return false;
-
-            for (int i = 0; i < CACHE_UPDATE_RETRIES_CNT; i++) {
-                try {
-                    String old = cache0.putIfAbsent(id, clsName);
-
-                    if (old != null && !old.equals(clsName))
-                        throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
-                            "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + clsName +
-                            "clsName2=" + old + ']');
-
-                    break;
-                }
-                catch (IgniteCheckedException e) {
-                    if (i == CACHE_UPDATE_RETRIES_CNT - 1)
-                        throw e;
-                    else
-                        U.error(log, "Failed to update marshaller cache, will retry: " + e);
-                }
             }
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
 
-        return true;
+            failedCnt = 0;
+
+            return true;
+        }
+        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
+            if (++failedCnt > 10) {
+                U.quietAndWarn(log, e, "Failed to register marshalled class for more than 10 times in a row " +
+                    "(may affect performance)");
+
+                failedCnt = 0;
+            }
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -70,12 +71,13 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntry(long topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
+    @Override public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
         throw new AssertionError();
     }
 
     /** {@inheritDoc} */
-    @Override public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(long topVer,
+    @Override public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+        AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
         long ttl,

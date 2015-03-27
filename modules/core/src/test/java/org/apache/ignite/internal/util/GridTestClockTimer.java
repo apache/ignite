@@ -21,6 +21,17 @@ package org.apache.ignite.internal.util;
  * Clock timer for tests.
  */
 public class GridTestClockTimer implements Runnable {
+    /**
+     * Constructor.
+     */
+    public GridTestClockTimer() {
+        synchronized (IgniteUtils.mux) {
+            assert IgniteUtils.gridCnt == 0 : IgniteUtils.gridCnt;
+
+            IgniteUtils.gridCnt++; // To prevent one more timer thread start from IgniteUtils.onGridStart.
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void run() {
         while (true) {

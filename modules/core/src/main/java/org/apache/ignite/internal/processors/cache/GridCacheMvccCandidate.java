@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -70,7 +71,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /** Topology version. */
     @SuppressWarnings( {"TransientFieldNotInitialized"})
     @GridToStringInclude
-    private transient volatile long topVer = -1;
+    private transient volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
     /** Linked reentry. */
     private GridCacheMvccCandidate reentry;
@@ -185,14 +186,14 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Topology for which this lock was acquired.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
     /**
      * @param topVer Topology version.
      */
-    public void topologyVersion(long topVer) {
+    public void topologyVersion(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
 

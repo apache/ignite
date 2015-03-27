@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -35,6 +36,7 @@ import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
@@ -68,7 +70,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheDeploymentManager<K, V> depMgr;
 
     /** Cache contexts map. */
-    private Map<Integer, GridCacheContext<K, V>> ctxMap;
+    private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
@@ -100,7 +102,7 @@ public class GridCacheSharedContext<K, V> {
 
         txMetrics = new TransactionMetricsAdapter();
 
-        ctxMap = new HashMap<>();
+        ctxMap = new ConcurrentHashMap<>();
     }
 
     /**
@@ -113,9 +115,16 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
+     * @return Cache processor.
+     */
+    public GridCacheProcessor cache() {
+        return kernalCtx.cache();
+    }
+
+    /**
      * Adds cache context to shared cache context.
      *
-     * @param cacheCtx Cache context.
+     * @param cacheCtx Cache context to add.
      */
     @SuppressWarnings("unchecked")
     public void addCacheContext(GridCacheContext cacheCtx) throws IgniteCheckedException {
@@ -128,6 +137,28 @@ public class GridCacheSharedContext<K, V> {
         }
 
         ctxMap.put(cacheCtx.cacheId(), cacheCtx);
+    }
+
+    /**
+     * @param cacheCtx Cache context to remove.
+     */
+    public void removeCacheContext(GridCacheContext cacheCtx) {
+        int cacheId = cacheCtx.cacheId();
+
+        ctxMap.remove(cacheId, cacheCtx);
+
+        // Safely clean up the message listeners.
+        ioMgr.removeHandlers(cacheId);
+    }
+
+    /**
+     * Checks if cache context is closed.
+     *
+     * @param ctx Cache context to check.
+     * @return {@code True} if cache context is closed.
+     */
+    public boolean closed(GridCacheContext ctx) {
+        return !ctxMap.containsKey(ctx.cacheId());
     }
 
     /**
@@ -382,7 +413,7 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code true} if waiting was successful.
      */
     @SuppressWarnings({"unchecked"})
-    public IgniteInternalFuture<?> partitionReleaseFuture(long topVer) {
+    public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
         GridCompoundFuture f = new GridCompoundFuture();
 
         f.add(mvcc().finishExplicitLocks(topVer));

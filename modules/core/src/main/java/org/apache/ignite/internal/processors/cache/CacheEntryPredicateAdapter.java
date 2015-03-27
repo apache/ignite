@@ -54,23 +54,31 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        assert false : this;
-
         return 0;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        assert false : this;
+        reader.setBuffer(buf);
 
-        return false;
+        if (!reader.beforeMessageRead())
+            return false;
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert false : this;
+        writer.setBuffer(buf);
 
-        return false;
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        return true;
     }
 
     /**

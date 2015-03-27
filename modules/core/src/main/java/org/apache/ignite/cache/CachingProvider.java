@@ -19,9 +19,11 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.net.*;
 import java.util.*;
@@ -59,18 +61,25 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
     public static final Properties DFLT_PROPS = new Properties();
 
     /** */
-    private final Map<ClassLoader, Map<URI, CacheManager>> cacheManagers = new WeakHashMap<>();
+    private final Map<ClassLoader, Map<URI, GridFutureAdapter<CacheManager>>> cacheManagers = new WeakHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public javax.cache.CacheManager getCacheManager(@Nullable URI uri, ClassLoader clsLdr, Properties props) {
+    @Override public javax.cache.CacheManager getCacheManager(@Nullable URI uri, ClassLoader clsLdr, Properties props)
+        throws CacheException {
         if (uri == null)
             uri = getDefaultURI();
 
         if (clsLdr == null)
             clsLdr = getDefaultClassLoader();
 
+        GridFutureAdapter<CacheManager> fut;
+
+        boolean needStartMgr = false;
+
+        Map<URI, GridFutureAdapter<CacheManager>> uriMap;
+
         synchronized (cacheManagers) {
-            Map<URI, CacheManager> uriMap = cacheManagers.get(clsLdr);
+            uriMap = cacheManagers.get(clsLdr);
 
             if (uriMap == null) {
                 uriMap = new HashMap<>();
@@ -78,15 +87,42 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
                 cacheManagers.put(clsLdr, uriMap);
             }
 
-            CacheManager mgr = uriMap.get(uri);
+            fut = uriMap.get(uri);
 
-            if (mgr == null || mgr.isClosed()) {
-                mgr = new CacheManager(uri, this, clsLdr, props);
+            if (fut == null) {
+                needStartMgr = true;
 
-                uriMap.put(uri, mgr);
+                fut = new GridFutureAdapter<>();
+
+                uriMap.put(uri, fut);
             }
+        }
 
-            return mgr;
+        if (needStartMgr) {
+            try {
+                CacheManager mgr = new CacheManager(uri, this, clsLdr, props);
+
+                fut.onDone(mgr);
+
+                return mgr;
+            }
+            catch (Throwable e) {
+                synchronized (cacheManagers) {
+                    uriMap.remove(uri);
+                }
+
+                fut.onDone(e);
+
+                throw CU.convertToCacheException(U.cast(e));
+            }
+        }
+        else {
+            try {
+                return fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                throw CU.convertToCacheException(e);
+            }
         }
     }
 
@@ -116,16 +152,25 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
     }
 
     /**
-     * @param cache Cache.
+     * @param ignite Ignite.
      */
-    public javax.cache.CacheManager findManager(IgniteCache<?,?> cache) {
-        Ignite ignite = cache.unwrap(Ignite.class);
-
+    public javax.cache.CacheManager findManager(Ignite ignite) {
         synchronized (cacheManagers) {
-            for (Map<URI, CacheManager> map : cacheManagers.values()) {
-                for (CacheManager manager : map.values()) {
-                    if (manager.isManagedIgnite(ignite))
-                        return manager;
+            for (Map<URI, GridFutureAdapter<CacheManager>> map : cacheManagers.values()) {
+                for (GridFutureAdapter<CacheManager> fut : map.values()) {
+                    if (fut.isDone()) {
+                        assert !fut.isFailed();
+
+                        try {
+                            CacheManager mgr = fut.get();
+
+                            if (mgr.unwrap(Ignite.class) == ignite)
+                                return mgr;
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw CU.convertToCacheException(e);
+                        }
+                    }
                 }
             }
         }
@@ -135,51 +180,97 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Collection<CacheManager> mgrs = new ArrayList<>();
+        Collection<GridFutureAdapter<CacheManager>> futs = new ArrayList<>();
 
         synchronized (cacheManagers) {
-            for (Map<URI, CacheManager> uriMap : cacheManagers.values())
-                mgrs.addAll(uriMap.values());
+            for (Map<URI, GridFutureAdapter<CacheManager>> uriMap : cacheManagers.values())
+                futs.addAll(uriMap.values());
 
             cacheManagers.clear();
         }
 
-        for (CacheManager mgr : mgrs)
-            mgr.close();
+        closeManagers(futs);
     }
 
     /** {@inheritDoc} */
     @Override public void close(ClassLoader clsLdr) {
-        Collection<CacheManager> mgrs;
+        Map<URI, GridFutureAdapter<CacheManager>> uriMap;
 
         synchronized (cacheManagers) {
-            Map<URI, CacheManager> uriMap = cacheManagers.remove(clsLdr);
-
-            if (uriMap == null)
-                return;
-
-            mgrs = uriMap.values();
+            uriMap = cacheManagers.remove(clsLdr);
         }
 
-        for (CacheManager mgr : mgrs)
-            mgr.close();
+        if (uriMap == null)
+            return;
+
+        closeManagers(uriMap.values());
+    }
+
+    /**
+     * @param futs Futs.
+     */
+    private void closeManagers(Collection<GridFutureAdapter<CacheManager>> futs) {
+        for (GridFutureAdapter<CacheManager> fut : futs) {
+            try {
+                CacheManager mgr = fut.get();
+
+                mgr.close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+        }
+    }
+
+    /**
+     * @param mgr Manager.
+     */
+    protected void removeClosedManager(CacheManager mgr) {
+        synchronized (cacheManagers) {
+            Map<URI, GridFutureAdapter<CacheManager>> uriMap = cacheManagers.get(mgr.getClassLoader());
+
+            GridFutureAdapter<CacheManager> fut = uriMap.get(mgr.getURI());
+
+            if (fut != null && fut.isDone() && !fut.isFailed()) {
+                try {
+                    CacheManager cachedManager = fut.get();
+
+                    if (cachedManager == mgr)
+                        uriMap.remove(mgr.getURI());
+                }
+                catch (IgniteCheckedException e) {
+                    CU.convertToCacheException(e);
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void close(URI uri, ClassLoader clsLdr) {
-        CacheManager mgr;
+        GridFutureAdapter<CacheManager> fut;
 
         synchronized (cacheManagers) {
-            Map<URI, CacheManager> uriMap = cacheManagers.get(clsLdr);
+            Map<URI, GridFutureAdapter<CacheManager>> uriMap = cacheManagers.get(clsLdr);
 
             if (uriMap == null)
                 return;
 
-            mgr = uriMap.remove(uri);
+            fut = uriMap.remove(uri);
         }
 
-        if (mgr != null)
+        if (fut != null) {
+            CacheManager mgr;
+
+            try {
+                mgr = fut.get();
+            }
+            catch (Exception ignored) {
+                return;
+            }
+
             mgr.close();
+        }
+
     }
 
     /** {@inheritDoc} */

@@ -85,7 +85,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -128,7 +128,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
             int cnt = 10000;
 
-            populate(grid(0).<Integer, byte[]>jcache(null), cnt, KBSIZE);
+            populate(grid(0).<Integer, byte[]>cache(null), cnt, KBSIZE);
 
             int gridCnt = 3;
 
@@ -138,7 +138,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).jcache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 if (backups + 1 <= gridCnt)
                     assert c.localSize() < cnt : "Cache size: " + c.localSize();
@@ -167,7 +167,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) {
                     if (evt == LifecycleEventType.AFTER_NODE_START) {
-                        IgniteCache<Integer, byte[]> c = ignite.jcache(null);
+                        IgniteCache<Integer, byte[]> c = ignite.cache(null);
 
                         if (c.putIfAbsent(-1, new byte[1])) {
                             populate(c, cnt, KBSIZE);
@@ -184,12 +184,12 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
             for (int i = 0; i < gridCnt; i++)
-                info("Grid size [i=" + i + ", size=" + grid(i).jcache(null).size() + ']');
+                info("Grid size [i=" + i + ", size=" + grid(i).cache(null).size() + ']');
 
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).jcache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 if (backups + 1 <= gridCnt)
                     assert c.localSize() < cnt;

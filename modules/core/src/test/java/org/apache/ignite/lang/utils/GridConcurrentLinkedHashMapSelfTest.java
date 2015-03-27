@@ -18,7 +18,7 @@
 package org.apache.ignite.lang.utils;
 
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -173,6 +173,23 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         }
 
         assertFalse("Duplicate key", it.hasNext());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRehash() throws Exception {
+        Map<Integer, Date> map = new ConcurrentLinkedHashMap<>(10);
+
+        for (int i = 0; i < 100; i++)
+            // Will initiate rehash in the middle.
+            map.put(i, new Date(0));
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, new Date(1));
+
+        for (Date date : map.values())
+            assertEquals(1L, date.getTime());
     }
 
     /**

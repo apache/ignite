@@ -84,6 +84,8 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
         @Override public void readLock() throws IllegalStateException {}
 
+        @Override public void readLockAnyway() {}
+
         @Override public void setState(GridKernalState state) {}
 
         @Override public GridKernalState getState() {

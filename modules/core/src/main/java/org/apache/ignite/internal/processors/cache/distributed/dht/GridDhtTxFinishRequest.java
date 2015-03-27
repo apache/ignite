@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -53,7 +54,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private boolean sysInvalidate;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Pending versions with order less than one for this message (needed for commit ordering). */
     @GridToStringInclude
@@ -104,7 +105,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         UUID nearNodeId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         long threadId,
@@ -206,7 +207,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -283,7 +284,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -371,7 +372,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 27:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

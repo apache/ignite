@@ -54,12 +54,12 @@ public class VisorCacheAffinityConfiguration implements Serializable {
      * @return Data transfer object for affinity configuration properties.
      */
     public static VisorCacheAffinityConfiguration from(CacheConfiguration ccfg) {
-        CacheAffinityFunction aff = ccfg.getAffinity();
+        AffinityFunction aff = ccfg.getAffinity();
 
         Boolean excludeNeighbors = null;
 
-        if (aff instanceof CacheRendezvousAffinityFunction) {
-            CacheRendezvousAffinityFunction hashAffFunc = (CacheRendezvousAffinityFunction)aff;
+        if (aff instanceof RendezvousAffinityFunction) {
+            RendezvousAffinityFunction hashAffFunc = (RendezvousAffinityFunction)aff;
 
             excludeNeighbors = hashAffFunc.isExcludeNeighbors();
         }

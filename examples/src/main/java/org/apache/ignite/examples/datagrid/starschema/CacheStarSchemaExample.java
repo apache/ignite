@@ -20,7 +20,8 @@ package org.apache.ignite.examples.datagrid.starschema;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.examples.datagrid.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.examples.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -42,18 +43,15 @@ import java.util.concurrent.*;
  * one <i>fact</i> - {@link FactPurchase}. Queries are executed by joining dimensions and facts
  * in various ways.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
- * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheStarSchemaExample {
     /** Partitioned cache name. */
-    private static final String PARTITIONED_CACHE_NAME = "partitioned";
+    private static final String PARTITIONED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Partitioned";
 
     /** Replicated cache name. */
-    private static final String REPLICATED_CACHE_NAME = "replicated";
+    private static final String REPLICATED_CACHE_NAME = CacheStarSchemaExample.class.getSimpleName() + "Replicated";
 
     /** ID generator. */
     private static int idGen = (int)System.currentTimeMillis();
@@ -68,45 +66,55 @@ public class CacheStarSchemaExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        Ignite ignite = Ignition.start("examples/config/example-cache.xml");
+    public static void main(String[] args) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
 
-        System.out.println();
-        System.out.println(">>> Cache star schema example started.");
+            System.out.println();
+            System.out.println(">>> Cache star schema example started.");
 
-        // Clean up caches on all nodes before run.
-        ignite.jcache(PARTITIONED_CACHE_NAME).clear();
-        ignite.jcache(REPLICATED_CACHE_NAME).clear();
+            CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>();
 
-        try {
-            populateDimensions();
-            populateFacts();
+            factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+            factCacheCfg.setName(PARTITIONED_CACHE_NAME);
+            factCacheCfg.setIndexedTypes(
+                Integer.class, FactPurchase.class
+            );
 
-            queryStorePurchases();
-            queryProductPurchases();
-        }
-        finally {
-            Ignition.stop(false);
+            CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>();
+
+            dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
+            dimCacheCfg.setName(REPLICATED_CACHE_NAME);
+            dimCacheCfg.setIndexedTypes(
+                Integer.class, DimStore.class,
+                Integer.class, DimProduct.class
+            );
+
+            try (IgniteCache<Integer, FactPurchase> factCache = ignite.createCache(factCacheCfg);
+                 IgniteCache<Integer, Object> dimCache = ignite.createCache(dimCacheCfg)) {
+                populateDimensions(dimCache);
+                populateFacts(factCache);
+
+                queryStorePurchases();
+                queryProductPurchases();
+            }
         }
     }
 
     /**
      * Populate cache with {@code 'dimensions'} which in our case are
      * {@link DimStore} and {@link DimProduct} instances.
+     * @param dimCache Cache to populate.
      *
      * @throws IgniteException If failed.
      */
-    private static void populateDimensions() throws IgniteException {
-        IgniteCache<Integer, Object> cache = Ignition.ignite().jcache(REPLICATED_CACHE_NAME);
-
+    private static void populateDimensions(Cache<Integer, Object> dimCache) throws IgniteException {
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
 
         // Populate stores.
-        cache.put(store1.getId(), store1);
-        cache.put(store2.getId(), store2);
+        dimCache.put(store1.getId(), store1);
+        dimCache.put(store2.getId(), store2);
 
         dataStore.put(store1.getId(), store1);
         dataStore.put(store2.getId(), store2);
@@ -117,7 +125,7 @@ public class CacheStarSchemaExample {
 
             DimProduct product = new DimProduct(id, "Product" + i, i + 1, (i + 1) * 10);
 
-            cache.put(id, product);
+            dimCache.put(id, product);
 
             dataProduct.put(id, product);
         }
@@ -125,12 +133,11 @@ public class CacheStarSchemaExample {
 
     /**
      * Populate cache with {@code 'facts'}, which in our case are {@link FactPurchase} objects.
+     * @param factCache Cache to populate.
      *
      * @throws IgniteException If failed.
      */
-    private static void populateFacts() throws IgniteException {
-        IgniteCache<Integer, Object> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
-
+    private static void populateFacts(Cache<Integer, FactPurchase> factCache) throws IgniteException {
         for (int i = 0; i < 100; i++) {
             int id = idGen++;
 
@@ -148,8 +155,8 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void queryStorePurchases() throws IgniteCheckedException {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
+    private static void queryStorePurchases() {
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
@@ -157,7 +164,7 @@ public class CacheStarSchemaExample {
         // Create cross cache query to get all purchases made at store1.
         QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(new SqlQuery(
             FactPurchase.class,
-            "from \"replicated\".DimStore, \"partitioned\".FactPurchase "
+            "from \"" + REPLICATED_CACHE_NAME + "\".DimStore, \"" + PARTITIONED_CACHE_NAME + "\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
 
         printQueryResults("All purchases made at store1:", storePurchases.getAll());
@@ -171,8 +178,8 @@ public class CacheStarSchemaExample {
      *
      * @throws IgniteException If failed.
      */
-    private static void queryProductPurchases() throws IgniteCheckedException {
-        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
+    private static void queryProductPurchases() {
+        IgniteCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for certain product made at store2.
         // =================================================
@@ -187,7 +194,8 @@ public class CacheStarSchemaExample {
         // for specified products.
         QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(new SqlQuery(
             FactPurchase.class,
-            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase "
+            "from \"" + REPLICATED_CACHE_NAME + "\".DimStore, \"" + REPLICATED_CACHE_NAME + "\".DimProduct, " +
+                "\"" + PARTITIONED_CACHE_NAME + "\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "
                 + "and DimStore.name=? and DimProduct.id in(?, ?, ?)")
             .setArgs("Store2", p1.getId(), p2.getId(), p3.getId()));

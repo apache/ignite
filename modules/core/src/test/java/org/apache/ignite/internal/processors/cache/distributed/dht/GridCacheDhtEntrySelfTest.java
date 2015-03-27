@@ -36,7 +36,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -62,12 +61,11 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -122,7 +120,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     private IgniteCache<Integer, String> near(Ignite g) {
-        return g.jcache(null);
+        return g.cache(null);
     }
 
     /**
@@ -291,7 +289,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        CacheAffinity<Integer> aff = grid(0).affinity(null);
+        Affinity<Integer> aff = grid(0).affinity(null);
 
         int part = aff.partition(key);
 

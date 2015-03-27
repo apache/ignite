@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -49,8 +48,8 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     /** Starting grid index. */
     private int idx;
 
-    /** Partition distribution mode. */
-    private CacheDistributionMode partDistMode;
+    /** Client mode flag. */
+    private boolean client;
 
     /** Write sync mode. */
     private CacheAtomicWriteOrderMode writeOrderMode;
@@ -70,13 +69,10 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cCfg.setDistributionMode(partDistMode);
         cCfg.setAtomicWriteOrderMode(writeOrderMode);
 
-        if (idx == 0)
-            cCfg.setDistributionMode(partDistMode);
-        else
-            cCfg.setDistributionMode(PARTITIONED_ONLY);
+        if (idx == 0 && client)
+            cfg.setClientMode(true);
 
         idx++;
 
@@ -91,42 +87,44 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testPartitionedClock() throws Exception {
-        checkMessages(PARTITIONED_ONLY, CLOCK);
+        checkMessages(false, CLOCK);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPartitionedPrimary() throws Exception {
-        checkMessages(PARTITIONED_ONLY, PRIMARY);
+        checkMessages(false, PRIMARY);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClientClock() throws Exception {
-        checkMessages(CLIENT_ONLY, CLOCK);
+        checkMessages(true, CLOCK);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClientPrimary() throws Exception {
-        checkMessages(CLIENT_ONLY, PRIMARY);
+        checkMessages(true, PRIMARY);
     }
 
     /**
-     * @param distMode Distribution mode.
+     * @param clientMode Client mode flag.
      * @param orderMode Write ordering mode.
      * @throws Exception If failed.
      */
-    protected void checkMessages(CacheDistributionMode distMode,
+    protected void checkMessages(boolean clientMode,
         CacheAtomicWriteOrderMode orderMode) throws Exception {
 
-        partDistMode = distMode;
+        client = clientMode;
         writeOrderMode = orderMode;
 
         startGrids(4);
+
+        ignite(0).cache(null);
 
         try {
             awaitPartitionMapExchange();
@@ -144,7 +142,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < putCnt; i++) {
                 ClusterNode locNode = grid(0).localNode();
 
-                CacheAffinity<Object> affinity = ignite(0).affinity(null);
+                Affinity<Object> affinity = ignite(0).affinity(null);
 
                 if (writeOrderMode == CLOCK) {
                     if (affinity.isPrimary(locNode, i) || affinity.isBackup(locNode, i))

@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -35,7 +37,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -72,7 +73,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     /** Preload predicate. */
     private IgnitePredicate<GridCacheEntryInfo> preloadPred;
 
-    /** Future for preload mode {@link org.apache.ignite.cache.CacheRebalanceMode#SYNC}. */
+    /** Future for preload mode {@link CacheRebalanceMode#SYNC}. */
     @GridToStringInclude
     private SyncFuture syncFut;
 
@@ -161,7 +162,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * @return Future for {@link org.apache.ignite.cache.CacheRebalanceMode#SYNC} mode.
+     * @return Future for {@link CacheRebalanceMode#SYNC} mode.
      */
     IgniteInternalFuture<?> syncFuture() {
         return syncFut;
@@ -208,8 +209,8 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Forcing rebalance event for future: " + exchFut);
 
-            exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                @Override public void apply(IgniteInternalFuture<Long> t) {
+            exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
             });
@@ -292,7 +293,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param topVer Topology version.
      * @return Picked owners.
      */
-    private Collection<ClusterNode> pickedOwners(int p, long topVer) {
+    private Collection<ClusterNode> pickedOwners(int p, AffinityTopologyVersion topVer) {
         Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
 
         int affCnt = affNodes.size();
@@ -318,7 +319,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param topVer Topology version.
      * @return Nodes owning this partition.
      */
-    private Collection<ClusterNode> remoteOwners(int p, long topVer) {
+    private Collection<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
         return F.view(cctx.dht().topology().owners(p, topVer), F.remoteNodes(cctx.nodeId()));
     }
 
@@ -357,8 +358,8 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> f) {
+                    exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
                     });
@@ -481,8 +482,12 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @return {@code False} if partition has become invalid during preloading.
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo entry, long topVer)
-            throws IgniteCheckedException {
+        private boolean preloadEntry(
+            ClusterNode pick,
+            int p,
+            GridCacheEntryInfo entry,
+            AffinityTopologyVersion topVer
+        ) throws IgniteCheckedException {
             try {
                 GridCacheEntryEx cached = null;
 
@@ -568,8 +573,12 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws ClusterTopologyCheckedException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
-        private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage d,
-            GridDhtPartitionsExchangeFuture exchFut) throws InterruptedException, IgniteCheckedException {
+        private Set<Integer> demandFromNode(
+            ClusterNode node,
+            final AffinityTopologyVersion topVer,
+            GridDhtPartitionDemandMessage d,
+            GridDhtPartitionsExchangeFuture exchFut
+        ) throws InterruptedException, IgniteCheckedException {
             GridDhtPartitionTopology top = cctx.dht().topology();
 
             cntr++;
@@ -817,7 +826,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     try {
                         cctx.kernalContext().cache().marshallerCache().preloader().syncFuture().get();
                     }
-                    catch (IgniteInterruptedCheckedException e) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to wait for marshaller cache preload future (grid is stopping): " +
                                 "[cacheName=" + cctx.name() + ']');
@@ -996,13 +1005,13 @@ public class GridDhtPartitionDemandPool<K, V> {
         int partCnt = cctx.affinity().partitions();
 
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
-            exchFut.exchangeId().topologyVersion() == top.topologyVersion() :
+            exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
                 ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments<K, V> assigns = new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 
-        long topVer = assigns.topologyVersion();
+        AffinityTopologyVersion topVer = assigns.topologyVersion();
 
         for (int p = 0; p < partCnt; p++) {
             if (cctx.shared().exchange().hasPendingExchange()) {
@@ -1031,6 +1040,14 @@ public class GridDhtPartitionDemandPool<K, V> {
 
                 if (picked.isEmpty()) {
                     top.own(part);
+
+                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                        cctx.events().addPreloadEvent(p,
+                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                            discoEvt.type(), discoEvt.timestamp());
+                    }
 
                     if (log.isDebugEnabled())
                         log.debug("Owning partition as there are no other owners: " + part);
@@ -1072,13 +1089,6 @@ public class GridDhtPartitionDemandPool<K, V> {
             assert workers.size() == poolSize();
 
             remaining = Collections.synchronizedList(new LinkedList<>(workers));
-        }
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         */
-        public SyncFuture() {
-            assert false;
         }
 
         /**

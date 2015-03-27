@@ -68,7 +68,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private static GridCacheAdapter<IgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheIgfsPerBlockLruEvictionPolicy evictPlc;
+    private static IgfsPerBlockLruEvictionPolicy evictPlc;
 
     static {
         SECONDARY_REST_CFG = new IgfsIpcEndpointConfiguration();
@@ -104,11 +104,11 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheIgfsPerBlockLruEvictionPolicy();
+        evictPlc = new IgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
@@ -118,7 +118,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -164,7 +164,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
@@ -174,7 +174,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 

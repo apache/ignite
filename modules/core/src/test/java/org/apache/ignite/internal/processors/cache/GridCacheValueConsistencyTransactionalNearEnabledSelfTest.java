@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Tests cache values consistency for transactional cache with near cache enabled.
@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public class GridCacheValueConsistencyTransactionalNearEnabledSelfTest
     extends GridCacheValueConsistencyTransactionalSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.NEAR_PARTITIONED;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 }

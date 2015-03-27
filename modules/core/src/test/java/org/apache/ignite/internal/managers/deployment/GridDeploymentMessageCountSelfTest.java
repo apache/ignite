@@ -30,7 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -131,12 +131,12 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            IgniteCache<Object, Object> cache = grid(0).jcache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             cache.put("key", valCls.newInstance());
 
             for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).jcache(null).localPeek("key", CachePeekMode.ONHEAP));
+                assertNotNull("For grid: " + i, grid(i).cache(null).localPeek("key", CachePeekMode.ONHEAP));
 
             for (MessageCountingCommunicationSpi spi : commSpis.values()) {
                 assertTrue(spi.deploymentMessageCount() > 0);
@@ -150,7 +150,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 cache.put(key, valCls.newInstance());
 
                 for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).jcache(null).localPeek(key, CachePeekMode.ONHEAP));
+                    assertNotNull(grid(k).cache(null).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())

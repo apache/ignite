@@ -23,11 +23,13 @@ import javafx.collections.*;
 import javafx.concurrent.*;
 import javafx.event.*;
 import javafx.geometry.*;
+import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
@@ -36,7 +38,9 @@ import java.io.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 import static javafx.embed.swing.SwingFXUtils.*;
 import static org.apache.ignite.schema.ui.Controls.*;
@@ -46,6 +50,9 @@ import static org.apache.ignite.schema.ui.Controls.*;
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class SchemaImportApp extends Application {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(SchemaImportApp.class.getName());
+
     /** Presets for database settings. */
     private static class Preset {
         /** Name in preferences. */
@@ -106,6 +113,44 @@ public class SchemaImportApp extends Application {
             "jdbc:postgresql://[host]:[port]/[database]", "sa"),
         new Preset("custom", "Custom server...", "custom-jdbc.jar", "org.custom.Driver", "jdbc:custom", "sa")
     };
+
+    /** */
+    private static final String PREF_WINDOW_X = "window.x";
+    /** */
+    private static final String PREF_WINDOW_Y = "window.y";
+    /** */
+    private static final String PREF_WINDOW_WIDTH = "window.width";
+    /** */
+    private static final String PREF_WINDOW_HEIGHT = "window.height";
+
+    /** */
+    private static final String PREF_JDBC_DB_PRESET = "jdbc.db.preset";
+    /** */
+    private static final String PREF_JDBC_DRIVER_JAR = "jdbc.driver.jar";
+    /** */
+    private static final String PREF_JDBC_DRIVER_CLASS = "jdbc.driver.class";
+    /** */
+    private static final String PREF_JDBC_URL = "jdbc.url";
+    /** */
+    private static final String PREF_JDBC_USER = "jdbc.user";
+
+    /** */
+    private static final String PREF_OUT_FOLDER = "out.folder";
+
+    /** */
+    private static final String PREF_POJO_PACKAGE = "pojo.package";
+    /** */
+    private static final String PREF_POJO_INCLUDE = "pojo.include";
+    /** */
+    private static final String PREF_POJO_CONSTRUCTOR = "pojo.constructor";
+
+    /** */
+    private static final String PREF_XML_SINGLE = "xml.single";
+
+    /** */
+    private static final String PREF_NAMING_PATTERN = "naming.pattern";
+    /** */
+    private static final String PREF_NAMING_REPLACE = "naming.replace";
 
     /** */
     private Stage owner;
@@ -314,29 +359,39 @@ public class SchemaImportApp extends Application {
 
             /** {@inheritDoc} */
             @Override protected void succeeded() {
-                super.succeeded();
+                try {
+                    super.succeeded();
 
-                pojosTbl.setItems(pojos);
+                    pojosTbl.setItems(pojos);
 
-                if (!pojos.isEmpty())
-                    pojosTbl.getSelectionModel().clearAndSelect(0);
+                    if (pojos.isEmpty()) {
+                        MessageBox.warningDialog(owner, "No tables found in database. Recheck JDBC URL.\n" +
+                            "JDBC URL: " +  jdbcUrl);
 
-                curTbl = pojosTbl;
+                        return;
+                    }
+                    else
+                        pojosTbl.getSelectionModel().clearAndSelect(0);
 
-                pojosTbl.requestFocus();
+                    curTbl = pojosTbl;
 
-                unlockUI(connLayerPnl, connPnl, nextBtn);
+                    pojosTbl.requestFocus();
 
-                hdrPane.setLeft(genIcon);
 
-                titleLb.setText("Generate XML And POJOs");
-                subTitleLb.setText(jdbcUrlTf.getText());
+                    hdrPane.setLeft(genIcon);
 
-                rootPane.setCenter(genLayerPnl);
+                    titleLb.setText("Generate XML And POJOs");
+                    subTitleLb.setText(jdbcUrlTf.getText());
 
-                prevBtn.setDisable(false);
-                nextBtn.setText("Generate");
-                tooltip(nextBtn, "Generate XML and POJO files");
+                    rootPane.setCenter(genLayerPnl);
+
+                    prevBtn.setDisable(false);
+                    nextBtn.setText("Generate");
+                    tooltip(nextBtn, "Generate XML and POJO files");
+                }
+                finally {
+                    unlockUI(connLayerPnl, connPnl, nextBtn);
+                }
             }
 
             /** {@inheritDoc} */
@@ -370,6 +425,9 @@ public class SchemaImportApp extends Application {
 
             return;
         }
+
+        if (checkInput(outFolderTf, true, "Output folder should not be empty!"))
+            return;
 
         lockUI(genLayerPnl, genPnl, prevBtn, nextBtn);
 
@@ -429,13 +487,13 @@ public class SchemaImportApp extends Application {
                         XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
                             askOverwrite);
 
-                    PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
+                    CodeGenerator.pojos(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                 }
 
                 if (singleXml)
-                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "ignite-type-metadata.xml"), askOverwrite);
 
-                SnippetGenerator.generate(all, pkg, includeKeys, new File(outFolder, "Ignite.snippet"), askOverwrite);
+                CodeGenerator.snippet(all, pkg, includeKeys, outFolder, askOverwrite);
 
                 perceptualDelay(started);
 
@@ -605,12 +663,12 @@ public class SchemaImportApp extends Application {
 
         if (drv == null) {
             if (jdbcDrvJarPath.isEmpty())
-                throw new IllegalStateException("Driver jar file name is not specified");
+                throw new IllegalStateException("Driver jar file name is not specified.");
 
             File drvJar = new File(jdbcDrvJarPath);
 
             if (!drvJar.exists())
-                throw new IllegalStateException("Driver jar file is not found");
+                throw new IllegalStateException("Driver jar file is not found.");
 
             try {
                 URL u = new URL("jar:" + drvJar.toURI() + "!/");
@@ -827,8 +885,8 @@ public class SchemaImportApp extends Application {
             "Check to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
-            "Check to annotate key filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
-            "Note that a class can have only ONE key field annotated with @CacheAffinityKeyMapped annotation");
+            "Check to annotate key filed with @AffinityKeyMapped annotation in generated POJO class\n" +
+            "Note that a class can have only ONE key field annotated with @AffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -902,7 +960,7 @@ public class SchemaImportApp extends Application {
             "If selected then generate empty and full constructors for POJOs", false), 3);
 
         xmlSingleFileCh = genPnl.add(checkBox("Write all configurations to a single XML file",
-            "If selected then all configurations will be saved into the file 'Ignite.xml'", true), 3);
+            "If selected then all configurations will be saved into the file 'ignite-type-metadata.xml'", true), 3);
 
         GridPaneEx regexPnl = paneEx(5, 5, 5, 5);
         regexPnl.addColumn();
@@ -919,7 +977,7 @@ public class SchemaImportApp extends Application {
 
         regexPnl.add(buttonsPane(Pos.CENTER_LEFT, false,
             button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
-                    " with the given replacement.",
+                    " with the given replacement",
                 new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent evt) {
                         if (checkInput(regexTf, false, "Regular expression should not be empty!"))
@@ -1259,6 +1317,26 @@ public class SchemaImportApp extends Application {
         prefs.put(key, String.valueOf(val));
     }
 
+    /**
+     * Resolve path.
+     *
+     * @param key Preferences key.
+     * @param dflt Default value.
+     * @return String with full file path or default value.
+     */
+    private String resolveFilePath(String key, String dflt) {
+        String path = prefs.getProperty(key);
+
+        if (path != null) {
+            File file = U.resolveIgnitePath(path);
+
+            if (file != null)
+                return file.getAbsolutePath();
+        }
+
+        return dflt;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
@@ -1267,9 +1345,38 @@ public class SchemaImportApp extends Application {
             try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(prefsFile))) {
                 prefs.load(in);
             }
-            catch (IOException ignore) {
-                // No-op.
+            catch (IOException e) {
+                log.log(Level.SEVERE, "Failed to load preferences. Default preferences will be used", e);
             }
+
+        // Load custom preferences.
+        List<String> params = getParameters().getRaw();
+
+        if (!params.isEmpty()) {
+            String customPrefsFileName = params.get(0);
+
+            if (customPrefsFileName.isEmpty())
+                log.log(Level.WARNING, "Path to file with custom preferences is not specified.");
+            else {
+                File customPrefsFile = U.resolveIgnitePath(customPrefsFileName);
+
+                if (customPrefsFile == null)
+                    log.log(Level.WARNING, "Failed to resolve path to file with custom preferences: " +
+                        customPrefsFile);
+                else {
+                    Properties customPrefs = new Properties();
+
+                    try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(customPrefsFile))) {
+                        customPrefs.load(in);
+                    }
+                    catch (IOException e) {
+                        log.log(Level.SEVERE, "Failed to load custom preferences.", e);
+                    }
+
+                    prefs.putAll(customPrefs);
+                }
+            }
+        }
 
         // Restore presets.
         for (Preset preset : presets) {
@@ -1309,19 +1416,16 @@ public class SchemaImportApp extends Application {
         prev();
 
         // Restore window pos and size.
-        if (prefs.getProperty("window.x") != null) {
-            int x = getIntProp("window.x", 100);
-            int y = getIntProp("window.y", 100);
-            int w = getIntProp("window.width", 650);
-            int h = getIntProp("window.height", 650);
+        if (prefs.getProperty(PREF_WINDOW_X) != null) {
+            int x = getIntProp(PREF_WINDOW_X, 100);
+            int y = getIntProp(PREF_WINDOW_Y, 100);
+            int w = getIntProp(PREF_WINDOW_WIDTH, 650);
+            int h = getIntProp(PREF_WINDOW_HEIGHT, 650);
 
             // Ensure that window fit any available screen.
             if (!Screen.getScreensForRectangle(x, y, w, h).isEmpty()) {
-                if (x > 0)
-                    primaryStage.setX(x);
-
-                if (y > 0)
-                    primaryStage.setY(y);
+                primaryStage.setX(x);
+                primaryStage.setY(y);
 
                 primaryStage.setWidth(w);
                 primaryStage.setHeight(h);
@@ -1333,23 +1437,23 @@ public class SchemaImportApp extends Application {
         String userHome = System.getProperty("user.home").replace('\\', '/');
 
         // Restore connection pane settings.
-        rdbmsCb.getSelectionModel().select(getIntProp("jdbc.db.preset", 0));
-        jdbcDrvJarTf.setText(getStringProp("jdbc.driver.jar", "h2.jar"));
-        jdbcDrvClsTf.setText(getStringProp("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlTf.setText(getStringProp("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
-        userTf.setText(getStringProp("jdbc.user", "sa"));
+        rdbmsCb.getSelectionModel().select(getIntProp(PREF_JDBC_DB_PRESET, 0));
+        jdbcDrvJarTf.setText(resolveFilePath(PREF_JDBC_DRIVER_JAR, "h2.jar"));
+        jdbcDrvClsTf.setText(getStringProp(PREF_JDBC_DRIVER_CLASS, "org.h2.Driver"));
+        jdbcUrlTf.setText(getStringProp(PREF_JDBC_URL, "jdbc:h2:" + userHome + "/ignite-schema-import/db"));
+        userTf.setText(getStringProp(PREF_JDBC_USER, "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(getStringProp("out.folder", userHome + "/ignite-schema-import/out"));
+        outFolderTf.setText(resolveFilePath(PREF_OUT_FOLDER, userHome + "/ignite-schema-import/out"));
 
-        pkgTf.setText(getStringProp("pojo.package", "org.apache.ignite"));
-        pojoIncludeKeysCh.setSelected(getBoolProp("pojo.include", true));
-        pojoConstructorCh.setSelected(getBoolProp("pojo.constructor", false));
+        pkgTf.setText(getStringProp(PREF_POJO_PACKAGE, "org.apache.ignite"));
+        pojoIncludeKeysCh.setSelected(getBoolProp(PREF_POJO_INCLUDE, true));
+        pojoConstructorCh.setSelected(getBoolProp(PREF_POJO_CONSTRUCTOR, false));
 
-        xmlSingleFileCh.setSelected(getBoolProp("xml.single", true));
+        xmlSingleFileCh.setSelected(getBoolProp(PREF_XML_SINGLE, true));
 
-        regexTf.setText(getStringProp("naming.pattern", "(\\w+)"));
-        replaceTf.setText(getStringProp("naming.replace", "$1_SomeText"));
+        regexTf.setText(getStringProp(PREF_NAMING_PATTERN, "(\\w+)"));
+        replaceTf.setText(getStringProp(PREF_NAMING_REPLACE, "$1_SomeText"));
 
         primaryStage.show();
     }
@@ -1392,29 +1496,29 @@ public class SchemaImportApp extends Application {
     /** {@inheritDoc} */
     @Override public void stop() throws Exception {
         // Save window pos and size.
-        setIntProp("window.x", (int)owner.getX());
-        setIntProp("window.y", (int)owner.getY());
-        setIntProp("window.width", (int)owner.getWidth());
-        setIntProp("window.height", (int)owner.getHeight());
+        setIntProp(PREF_WINDOW_X, (int)owner.getX());
+        setIntProp(PREF_WINDOW_Y, (int)owner.getY());
+        setIntProp(PREF_WINDOW_WIDTH, (int)owner.getWidth());
+        setIntProp(PREF_WINDOW_HEIGHT, (int)owner.getHeight());
 
         // Save connection pane settings.
-        setIntProp("jdbc.db.preset", rdbmsCb.getSelectionModel().getSelectedIndex());
-        setStringProp("jdbc.driver.jar", jdbcDrvJarTf.getText());
-        setStringProp("jdbc.driver.class", jdbcDrvClsTf.getText());
-        setStringProp("jdbc.url", jdbcUrlTf.getText());
-        setStringProp("jdbc.user", userTf.getText());
+        setIntProp(PREF_JDBC_DB_PRESET, rdbmsCb.getSelectionModel().getSelectedIndex());
+        setStringProp(PREF_JDBC_DRIVER_JAR, jdbcDrvJarTf.getText());
+        setStringProp(PREF_JDBC_DRIVER_CLASS, jdbcDrvClsTf.getText());
+        setStringProp(PREF_JDBC_URL, jdbcUrlTf.getText());
+        setStringProp(PREF_JDBC_USER, userTf.getText());
 
         // Save generation pane settings.
-        setStringProp("out.folder", outFolderTf.getText());
+        setStringProp(PREF_OUT_FOLDER, outFolderTf.getText());
 
-        setStringProp("pojo.package", pkgTf.getText());
-        setBoolProp("pojo.include", pojoIncludeKeysCh.isSelected());
-        setBoolProp("pojo.constructor", pojoConstructorCh.isSelected());
+        setStringProp(PREF_POJO_PACKAGE, pkgTf.getText());
+        setBoolProp(PREF_POJO_INCLUDE, pojoIncludeKeysCh.isSelected());
+        setBoolProp(PREF_POJO_CONSTRUCTOR, pojoConstructorCh.isSelected());
 
-        setBoolProp("xml.single", xmlSingleFileCh.isSelected());
+        setBoolProp(PREF_XML_SINGLE, xmlSingleFileCh.isSelected());
 
-        setStringProp("naming.pattern", regexTf.getText());
-        setStringProp("naming.replace", replaceTf.getText());
+        setStringProp(PREF_NAMING_PATTERN, regexTf.getText());
+        setStringProp(PREF_NAMING_REPLACE, replaceTf.getText());
 
         savePreferences();
     }

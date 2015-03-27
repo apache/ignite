@@ -67,8 +67,6 @@
                     -->
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <!-- Get rid of value byte buffers once not needed. -->
                     <property name="storeValueBytes" value="false"/>
 
@@ -77,7 +75,7 @@
                         sets the number of backups to 0 to ensure maximum capacity..
                     -->
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                             <property name="keyBackups" value="0"/> <!-- No backups. -->
                         </bean>
                     </property>

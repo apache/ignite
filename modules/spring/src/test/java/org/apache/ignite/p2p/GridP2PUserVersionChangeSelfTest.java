@@ -290,13 +290,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            IgniteCache<Long, Object> cache1 = ignite1.jcache(null);
+            IgniteCache<Long, Object> cache1 = ignite1.cache(null);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final IgniteCache<Long, Object> cache2 = ignite2.jcache(null);
+            final IgniteCache<Long, Object> cache2 = ignite2.cache(null);
 
             assertNotNull(cache2);
 
@@ -316,7 +316,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = ignite1.jcache(null);
+            cache1 = ignite1.cache(null);
 
             assertNotNull(cache1);
 

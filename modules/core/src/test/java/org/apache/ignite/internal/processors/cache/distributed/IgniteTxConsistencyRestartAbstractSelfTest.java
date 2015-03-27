@@ -74,7 +74,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setDistributionMode(partitionDistributionMode());
+        ccfg.setNearConfiguration(nearConfiguration());
         ccfg.setRebalanceMode(SYNC);
 
         if (cacheMode() == CacheMode.PARTITIONED)
@@ -91,7 +91,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @return Partition distribution mode for PARTITIONED cache.
      */
-    protected abstract CacheDistributionMode partitionDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @throws Exception If failed.
@@ -145,7 +145,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 IgniteKernal grid = (IgniteKernal)grid(idx);
 
-                IgniteCache<Integer, Integer> cache = grid.jcache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(null);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -183,7 +183,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
 
-                IgniteCache<Integer, Integer> cache = grid.jcache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(null);
 
                 if (grid.affinity(null).isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {

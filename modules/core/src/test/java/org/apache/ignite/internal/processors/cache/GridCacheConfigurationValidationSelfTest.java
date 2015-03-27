@@ -83,7 +83,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setRebalanceMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
+        dfltCacheCfg.setAffinity(new RendezvousAffinityFunction());
         dfltCacheCfg.setIndexedTypes(
             Integer.class, String.class
         );
@@ -95,23 +95,17 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setRebalanceMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
-        namedCacheCfg.setAffinity(new CacheRendezvousAffinityFunction());
+        namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
         if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
             dfltCacheCfg.setRebalanceMode(SYNC);
         else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
-        else if (gridName.contains(WRONG_AFFINITY_GRID_NAME)) {
-            dfltCacheCfg.setAffinity(new CacheRendezvousAffinityFunction() {
-                // No-op. Just to have another class name.
-            });
-        }
-        else if (gridName.contains(WRONG_AFFINITY_MAPPER_GRID_NAME)) {
-            dfltCacheCfg.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper() {
-                // No-op. Just to have another class name.
-            });
-        }
+        else if (gridName.contains(WRONG_AFFINITY_GRID_NAME))
+            dfltCacheCfg.setAffinity(new TestRendezvousAffinityFunction());
+        else if (gridName.contains(WRONG_AFFINITY_MAPPER_GRID_NAME))
+            dfltCacheCfg.setAffinityMapper(new TestCacheDefaultAffinityKeyMapper());
         else if (gridName.contains(WRONG_OFF_HEAP_GRID_NAME))
             dfltCacheCfg.setMemoryMode(OFFHEAP_VALUES);
 
@@ -194,5 +188,26 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         catch (Exception e) {
             info("Caught expected exception: " + e);
         }
+    }
+
+    /**
+     *
+     */
+    private static class TestRendezvousAffinityFunction extends RendezvousAffinityFunction {
+        // No-op. Just to have another class name.
+
+        /**
+         * Empty constructor required by Externalizable.
+         */
+        public TestRendezvousAffinityFunction() {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestCacheDefaultAffinityKeyMapper extends GridCacheDefaultAffinityKeyMapper {
+        // No-op. Just to have another class name.
     }
 }

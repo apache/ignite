@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Tests for local cache.
@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public class GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest
     extends GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.NEAR_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 }

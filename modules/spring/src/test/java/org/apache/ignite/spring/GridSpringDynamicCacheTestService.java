@@ -19,18 +19,25 @@ package org.apache.ignite.spring;
 
 import org.springframework.cache.annotation.*;
 
+import java.util.concurrent.atomic.*;
+
 /**
  * Test service.
  */
 public class GridSpringDynamicCacheTestService {
+    /** */
+    private final AtomicInteger cnt = new AtomicInteger();
+
     /**
      * @param key Key.
      * @return Value.
      */
-    @Cacheable({"testCache1", "testCache2"})
+    @Cacheable("dynamicCache")
     public String cacheable(Integer key) {
         assert key != null;
 
+        cnt.incrementAndGet();
+
         return "value" + key;
     }
 
@@ -38,9 +45,11 @@ public class GridSpringDynamicCacheTestService {
      * @param key Key.
      * @return Value.
      */
-    @CachePut({"testCache1", "testCache2"})
+    @CachePut("dynamicCache")
     public String cachePut(Integer key) {
         assert key != null;
+
+        cnt.incrementAndGet();
 
         return "value" + key;
     }
@@ -48,15 +57,28 @@ public class GridSpringDynamicCacheTestService {
     /**
      * @param key Key.
      */
-    @CacheEvict("testCache1")
+    @CacheEvict("dynamicCache")
     public void cacheEvict(Integer key) {
-        // No-op.
+        cnt.incrementAndGet();
     }
 
     /**
      */
-    @CacheEvict(value = "testCache1", allEntries = true)
+    @CacheEvict(value = "dynamicCache", allEntries = true)
     public void cacheEvictAll() {
-        // No-op.
+        cnt.incrementAndGet();
+    }
+
+    /**
+     * @return Calls count.
+     */
+    public int called() {
+        return cnt.get();
+    }
+
+    /**
+     */
+    public void reset() {
+        cnt.set(0);
     }
 }

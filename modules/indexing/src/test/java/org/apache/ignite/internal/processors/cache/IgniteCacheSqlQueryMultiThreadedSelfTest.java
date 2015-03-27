@@ -37,7 +37,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -60,7 +59,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
         CacheConfiguration<?,?> ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setIndexedTypes(
@@ -92,7 +91,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
 
         cache.clear();
 
@@ -103,7 +102,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
                     QueryCursor<Cache.Entry<Integer, Person>> qry =
-                        cache.query(new SqlQuery("Person", "age >= 0"));
+                        cache.query(new SqlQuery<Integer, Person>("Person", "age >= 0"));
 
                     int cnt = 0;
 
@@ -123,7 +122,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testQueryPut() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
 
         cache.clear();
 
@@ -134,7 +133,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
                 Random rnd = new GridRandom();
 
                 while (!stop.get()) {
-                    List<List<?>> res = cache.queryFields(
+                    List<List<?>> res = cache.query(
                         new SqlFieldsQuery("select avg(age) from Person where age > 0")).getAll();
 
                     assertEquals(1, res.size());

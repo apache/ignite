@@ -23,6 +23,8 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -34,8 +36,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;
@@ -47,7 +49,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -446,7 +447,7 @@ public class GridCacheUtils {
      *      that may have already left).
      */
     public static Collection<ClusterNode> allNodes(GridCacheContext ctx) {
-        return allNodes(ctx, -1);
+        return allNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -457,7 +458,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<ClusterNode> allNodes(GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> allNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().cacheNodes(ctx.namex(), topOrder);
     }
 
@@ -469,7 +470,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started (including nodes
      *      that may have already left).
      */
-    public static Collection<ClusterNode> allNodes(GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> allNodes(GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().cacheNodes(topOrder);
     }
 
@@ -480,7 +481,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -491,7 +492,7 @@ public class GridCacheUtils {
      * @return Remote nodes on which cache with the same name is started.
      */
     public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx) {
-        return remoteNodes(ctx, -1);
+        return remoteNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -501,7 +502,7 @@ public class GridCacheUtils {
      * @return Collection of nodes with at least one cache configured.
      */
     public static Collection<ClusterNode> remoteNodes(GridCacheSharedContext ctx) {
-        return remoteNodes(ctx, -1);
+        return remoteNodes(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -511,7 +512,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Remote nodes on which cache with the same name is started.
      */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().remoteCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -522,7 +523,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveRemoteNodes(final GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveRemoteNodes(final GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveRemoteCacheNodes(ctx.namex(), topOrder);
     }
 
@@ -533,7 +534,7 @@ public class GridCacheUtils {
      * @param topVer Topology version.
      * @return Collection of remote nodes with at least one cache configured.
      */
-    public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, long topVer) {
+    public static Collection<ClusterNode> remoteNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topVer) {
         return ctx.discovery().remoteCacheNodes(topVer);
     }
 
@@ -544,7 +545,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveNodesWithCaches(topOrder);
     }
 
@@ -555,7 +556,7 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, long topOrder) {
+    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().aliveRemoteNodesWithCaches(topOrder);
     }
 
@@ -566,26 +567,7 @@ public class GridCacheUtils {
      * @return All nodes on which cache with the same name is started.
      */
     public static Collection<ClusterNode> affinityNodes(final GridCacheContext ctx) {
-        return ctx.discovery().cacheAffinityNodes(ctx.namex(), -1);
-    }
-
-    /**
-     * Checks if node is affinity node for given cache configuration.
-     *
-     * @param cfg Configuration to check.
-     * @return {@code True} if local node is affinity node (i.e. will store partitions).
-     */
-    public static boolean isAffinityNode(CacheConfiguration cfg) {
-        if (cfg.getCacheMode() == LOCAL)
-            return true;
-
-        CacheDistributionMode partTax = cfg.getDistributionMode();
-
-        if (partTax == null)
-            partTax = distributionMode(cfg);
-
-        return partTax == CacheDistributionMode.PARTITIONED_ONLY ||
-            partTax == CacheDistributionMode.NEAR_PARTITIONED;
+        return ctx.discovery().cacheAffinityNodes(ctx.namex(), AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -595,44 +577,8 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, long topOrder) {
+    public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topOrder) {
         return ctx.discovery().cacheAffinityNodes(ctx.namex(), topOrder);
-    }
-
-    /**
-     * Checks if given node has specified cache started and the local DHT storage is enabled.
-     *
-     * @param ctx Cache context.
-     * @param s Node shadow to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean affinityNode(GridCacheContext ctx, ClusterNode s) {
-        assert ctx != null;
-        assert s != null;
-
-        GridCacheAttributes[] caches = s.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(ctx.namex(), attrs.cacheName()))
-                    return attrs.isAffinityNode();
-
-        return false;
-    }
-
-    /**
-     * Checks if given node contains configured cache with the name
-     * as described by given cache context.
-     *
-     * @param ctx Cache context.
-     * @param node Node to check.
-     * @return {@code true} if node contains required cache.
-     */
-    public static boolean cacheNode(GridCacheContext ctx, ClusterNode node) {
-        assert ctx != null;
-        assert node != null;
-
-        return U.hasCache(node, ctx.namex());
     }
 
     /**
@@ -656,19 +602,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() == LOCAL)
             return false;
 
-        return cfg.getDistributionMode() == NEAR_PARTITIONED ||
-            cfg.getDistributionMode() == CacheDistributionMode.NEAR_ONLY;
-    }
-
-    /**
-     * Gets default partitioned cache mode.
-     *
-     * @param cfg Configuration.
-     * @return Partitioned cache mode.
-     */
-    public static CacheDistributionMode distributionMode(CacheConfiguration cfg) {
-        return cfg.getDistributionMode() != null ?
-            cfg.getDistributionMode() : CacheDistributionMode.PARTITIONED_ONLY;
+        return cfg.getNearConfiguration() != null;
     }
 
     /**
@@ -705,7 +639,7 @@ public class GridCacheUtils {
      * @return Oldest node for the current topology version.
      */
     public static ClusterNode oldest(GridCacheContext cctx) {
-        return oldest(cctx, -1);
+        return oldest(cctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -715,7 +649,7 @@ public class GridCacheUtils {
      * @return Oldest node.
      */
     public static ClusterNode oldest(GridCacheSharedContext ctx) {
-        return oldest(ctx, -1);
+        return oldest(ctx, AffinityTopologyVersion.NONE);
     }
 
     /**
@@ -725,15 +659,15 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
-    public static ClusterNode oldest(GridCacheContext cctx, long topOrder) {
+    public static ClusterNode oldest(GridCacheContext cctx, AffinityTopologyVersion topOrder) {
         ClusterNode oldest = null;
 
         for (ClusterNode n : aliveNodes(cctx, topOrder))
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
-        assert oldest != null;
-        assert oldest.order() <= topOrder || topOrder < 0;
+        assert oldest != null : "Failed to find oldest node for cache context [name=" + cctx.name() + ", topOrder=" + topOrder + ']';
+        assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
 
         return oldest;
     }
@@ -745,15 +679,16 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
-    public static ClusterNode oldest(GridCacheSharedContext cctx, long topOrder) {
+    public static ClusterNode oldest(GridCacheSharedContext cctx, AffinityTopologyVersion topOrder) {
         ClusterNode oldest = null;
 
-        for (ClusterNode n : aliveCacheNodes(cctx, topOrder))
+        for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
+        }
 
-        assert oldest != null;
-        assert oldest.order() <= topOrder || topOrder < 0;
+        assert oldest != null : "Failed to find oldest node with caches: " + topOrder;
+        assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
 
         return oldest;
     }
@@ -1139,7 +1074,7 @@ public class GridCacheUtils {
         if (ctx.config().getCacheMode() == LOCAL)
             return F.asMap(ctx.localNode(), (Collection<K>)keys);
 
-        long topVer = ctx.discovery().topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
 
         if (CU.affinityNodes(ctx, topVer).isEmpty())
             return Collections.emptyMap();
@@ -1427,14 +1362,14 @@ public class GridCacheUtils {
      * @param log Logger used to log warning message (used only if fail flag is not set).
      * @param locCfg Local configuration.
      * @param rmtCfg Remote configuration.
-     * @param rmt Remote node.
+     * @param rmtNodeId Remote node.
      * @param attr Attribute name.
      * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
      * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
     public static void checkAttributeMismatch(IgniteLogger log, CacheConfiguration locCfg,
-        CacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
-        assert rmt != null;
+        CacheConfiguration rmtCfg, UUID rmtNodeId, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
+        assert rmtNodeId != null;
         assert attr != null;
         assert attr.get1() != null;
         assert attr.get2() != null;
@@ -1443,7 +1378,7 @@ public class GridCacheUtils {
 
         Object rmtVal = U.property(rmtCfg, attr.get1());
 
-        checkAttributeMismatch(log, rmtCfg.getName(), rmt, attr.get1(), attr.get2(), locVal, rmtVal, fail);
+        checkAttributeMismatch(log, rmtCfg.getName(), rmtNodeId, attr.get1(), attr.get2(), locVal, rmtVal, fail);
     }
 
     /**
@@ -1451,7 +1386,7 @@ public class GridCacheUtils {
      *
      * @param log Logger used to log warning message (used only if fail flag is not set).
      * @param cfgName Remote cache name.
-     * @param rmt Remote node.
+     * @param rmtNodeId Remote node.
      * @param attrName Short attribute name for error message.
      * @param attrMsg Full attribute name for error message.
      * @param locVal Local value.
@@ -1459,9 +1394,9 @@ public class GridCacheUtils {
      * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
      * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
-    public static void checkAttributeMismatch(IgniteLogger log, String cfgName, ClusterNode rmt, String attrName,
+    public static void checkAttributeMismatch(IgniteLogger log, String cfgName, UUID rmtNodeId, String attrName,
         String attrMsg, @Nullable Object locVal, @Nullable Object rmtVal, boolean fail) throws IgniteCheckedException {
-        assert rmt != null;
+        assert rmtNodeId != null;
         assert attrName != null;
         assert attrMsg != null;
 
@@ -1472,7 +1407,7 @@ public class GridCacheUtils {
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
-                    ", rmtNodeId=" + rmt.id() + ']');
+                    ", rmtNodeId=" + rmtNodeId + ']');
             }
             else {
                 assert log != null;
@@ -1481,7 +1416,7 @@ public class GridCacheUtils {
                     "configuration) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
-                    ", rmtNodeId=" + rmt.id() + ']');
+                    ", rmtNodeId=" + rmtNodeId + ']');
             }
         }
     }
@@ -1550,6 +1485,7 @@ public class GridCacheUtils {
         cache.setEvictionPolicy(null);
         cache.setSwapEnabled(false);
         cache.setCacheStoreFactory(null);
+        cache.setNodeFilter(CacheConfiguration.ALL_NODES);
         cache.setEagerTtl(true);
         cache.setRebalanceMode(SYNC);
 
@@ -1593,9 +1529,23 @@ public class GridCacheUtils {
      * @return Cache ID for utility cache.
      */
     public static int utilityCacheId() {
-        int hc = UTILITY_CACHE_NAME.hashCode();
+        return cacheId(UTILITY_CACHE_NAME);
+    }
 
-        return hc == 0 ? 1 : hc;
+    /**
+     * @return Cache ID.
+     */
+    public static int cacheId(String cacheName) {
+        if (cacheName != null) {
+            int hash = cacheName.hashCode();
+
+            if (hash == 0)
+                hash = 1;
+
+            return hash;
+        }
+        else
+            return 1;
     }
 
     /**
@@ -1817,7 +1767,7 @@ public class GridCacheUtils {
      * @return Predicate that evaulates to {@code true} if entry is primary for node.
      */
     public static CacheEntryPredicate cachePrimary(
-        final CacheAffinity aff,
+        final Affinity aff,
         final ClusterNode n
     ) {
         return new CacheEntryPredicateAdapter() {
@@ -1833,7 +1783,7 @@ public class GridCacheUtils {
      * @return Predicate that evaulates to {@code true} if entry is primary for node.
      */
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
-        final CacheAffinity<K> aff,
+        final Affinity<K> aff,
         final ClusterNode n
     ) {
         return new IgnitePredicate<Cache.Entry<K, V>>() {
@@ -1847,7 +1797,7 @@ public class GridCacheUtils {
      * @param e Ignite checked exception.
      * @return CacheException runtime exception, never null.
      */
-    @NotNull public static CacheException convertToCacheException(IgniteCheckedException e) {
+    @NotNull public static RuntimeException convertToCacheException(IgniteCheckedException e) {
         if (e.hasCause(CacheWriterException.class))
             return new CacheWriterException(U.convertExceptionNoWrap(e));
 
@@ -1855,9 +1805,14 @@ public class GridCacheUtils {
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
         else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
             return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
+        else if (e instanceof ClusterTopologyServerNotFoundException)
+            return new CacheServerNotFoundException(e.getMessage(), e);
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
+
+        if (e.getCause() instanceof NullPointerException)
+            return (NullPointerException)e.getCause();
 
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 

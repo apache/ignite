@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.commons.codec.binary.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -167,7 +166,7 @@ public class GridLuceneIndex implements Closeable {
             }
         }
 
-        String keyStr = Base64.encodeBase64String(marshaller.marshal(key));
+        String keyStr = org.apache.commons.codec.binary.Base64.encodeBase64String(marshaller.marshal(key));
 
         try {
             // Delete first to avoid duplicates.
@@ -204,7 +203,7 @@ public class GridLuceneIndex implements Closeable {
      */
     public void remove(Object key) throws IgniteCheckedException {
         try {
-            writer.deleteDocuments(new Term(KEY_FIELD_NAME, Base64.encodeBase64String(marshaller.marshal(key))));
+            writer.deleteDocuments(new Term(KEY_FIELD_NAME, org.apache.commons.codec.binary.Base64.encodeBase64String(marshaller.marshal(key))));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -353,7 +352,7 @@ public class GridLuceneIndex implements Closeable {
                 if (ctx != null && ctx.deploy().enabled())
                     ldr = ctx.cache().internalCache(spaceName).context().deploy().globalLoader();
 
-                K k = marshaller.unmarshal(Base64.decodeBase64(keyStr), ldr);
+                K k = marshaller.unmarshal(org.apache.commons.codec.binary.Base64.decodeBase64(keyStr), ldr);
 
                 byte[] valBytes = doc.getBinaryValue(VAL_FIELD_NAME);
 

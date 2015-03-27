@@ -26,6 +26,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -39,8 +40,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -53,7 +54,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
-import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
+import static org.jsr166.ConcurrentLinkedDeque8.*;
 
 /**
  * Cache eviction manager.
@@ -63,10 +64,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
 
     /** Eviction policy. */
-    private CacheEvictionPolicy plc;
+    private EvictionPolicy plc;
 
     /** Eviction filter. */
-    private CacheEvictionFilter filter;
+    private EvictionFilter filter;
 
     /** Eviction buffer. */
     private final ConcurrentLinkedDeque8<EvictionInfo> bufEvictQ = new ConcurrentLinkedDeque8<>();
@@ -129,7 +130,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         CacheConfiguration cfg = cctx.config();
 
-        plc = cctx.isNear() ? cfg.getNearEvictionPolicy() : cfg.getEvictionPolicy();
+        plc = cctx.isNear() ? cfg.getNearConfiguration().getNearEvictionPolicy() : cfg.getEvictionPolicy();
 
         memoryMode = cctx.config().getMemoryMode();
 
@@ -146,13 +147,13 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         if (!cctx.isLocal()) {
             evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
 
-            nearSync = cfg.isEvictNearSynchronized() && isNearEnabled(cctx) && !cctx.isNear();
+            nearSync = isNearEnabled(cctx) && !cctx.isNear() && cfg.isEvictSynchronized();
         }
         else {
             if (cfg.isEvictSynchronized())
                 U.warn(log, "Ignored 'evictSynchronized' configuration property for LOCAL cache: " + cctx.namexx());
 
-            if (cfg.isEvictNearSynchronized())
+            if (cfg.getNearConfiguration() != null && cfg.isEvictSynchronized())
                 U.warn(log, "Ignored 'evictNearSynchronized' configuration property for LOCAL cache: " + cctx.namexx());
         }
 
@@ -176,7 +177,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         // Notify backup worker on each topology change.
-                        if (CU.affinityNode(cctx, discoEvt.eventNode()))
+                        if (cctx.discovery().cacheAffinityNode(discoEvt.eventNode(), cctx.name()))
                             backupWorker.addEvent(discoEvt);
                     }
                 },
@@ -346,10 +347,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 return;
             }
 
-            long topVer = lockTopology();
+            AffinityTopologyVersion topVer = lockTopology();
 
             try {
-                if (topVer != req.topologyVersion()) {
+                if (!topVer.equals(req.topologyVersion())) {
                     if (log.isDebugEnabled())
                         log.debug("Topology version is different [locTopVer=" + topVer +
                             ", rmtTopVer=" + req.topologyVersion() + ']');
@@ -495,7 +496,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p,
+                    AffinityTopologyVersion.NONE, false);
 
                 assert part != null;
 
@@ -522,7 +524,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, AffinityTopologyVersion.NONE,
+                    false);
 
                 if (part != null && part.reserve()) {
                     part.lock();
@@ -558,7 +561,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (!cctx.isNear()) {
             try {
-                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, -1, false);
+                GridDhtLocalPartition part = cctx.dht().topology().localPartition(p, AffinityTopologyVersion.NONE,
+                    false);
 
                 if (part != null) {
                     part.unlock();
@@ -579,14 +583,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      *
      * @return Topology version after lock.
      */
-    private long lockTopology() {
+    private AffinityTopologyVersion lockTopology() {
         if (!cctx.isNear()) {
             cctx.dht().topology().readLock();
 
             return cctx.dht().topology().topologyVersion();
         }
 
-        return 0;
+        return AffinityTopologyVersion.ZERO;
     }
 
     /**
@@ -739,7 +743,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param e Entry for eviction policy notification.
      * @param topVer Topology version.
      */
-    public void touch(GridCacheEntryEx e, long topVer) {
+    public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
         if (e.detached() || e.isInternal())
             return;
 
@@ -1092,7 +1096,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                                 }
 
                                 try {
-                                    long topVer = lockTopology();
+                                    AffinityTopologyVersion topVer = lockTopology();
 
                                     try {
                                         onFutureCompleted((EvictionFuture)f, topVer);
@@ -1124,7 +1128,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param fut Completed eviction future.
      * @param topVer Topology version on future complete.
      */
-    private void onFutureCompleted(EvictionFuture fut, long topVer) {
+    private void onFutureCompleted(EvictionFuture fut, AffinityTopologyVersion topVer) {
         if (!busyLock.enterBusy())
             return;
 
@@ -1151,7 +1155,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             }
 
             // Check if topology version is different.
-            if (fut.topologyVersion() != topVer) {
+            if (!fut.topologyVersion().equals(topVer)) {
                 if (log.isDebugEnabled())
                     log.debug("Topology has changed, all entries will be touched: " + fut);
 
@@ -1249,7 +1253,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                     return info.version().equals(ver) && F.isAll(info.filter());
                 }
-                catch (GridCacheEntryRemovedException err) {
+                catch (GridCacheEntryRemovedException ignored) {
                     return false;
                 }
             }
@@ -1269,7 +1273,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      */
     @SuppressWarnings( {"IfMayBeConditional"})
     private IgniteBiTuple<Collection<ClusterNode>, Collection<ClusterNode>> remoteNodes(GridCacheEntryEx entry,
-        long topVer)
+        AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
         assert entry != null;
 
@@ -1427,7 +1431,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         if (!evts.isEmpty())
                             break;
 
-                        if (!cctx.affinity().primary(loc, it.next(), evt.topologyVersion()))
+                        if (!cctx.affinity().primary(loc, it.next(), new AffinityTopologyVersion(evt.topologyVersion())))
                             it.remove();
                     }
 
@@ -1439,7 +1443,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         if (!evts.isEmpty())
                             break;
 
-                        if (part.primary(evt.topologyVersion()) && primaryParts.add(part.id())) {
+                        if (part.primary(new AffinityTopologyVersion(evt.topologyVersion()))
+                            && primaryParts.add(part.id())) {
                             if (log.isDebugEnabled())
                                 log.debug("Touching partition entries: " + part);
 
@@ -1567,7 +1572,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         private GridTimeoutObject timeoutObj;
 
         /** Topology version future is processed on. */
-        private long topVer;
+        private AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
 
         /**
          * @return {@code True} if prepare lock was acquired.
@@ -1784,7 +1789,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         /**
          * @return Topology version.
          */
-        long topologyVersion() {
+        AffinityTopologyVersion topologyVersion() {
             return topVer;
         }
 

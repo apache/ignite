@@ -24,8 +24,8 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;

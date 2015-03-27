@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.lang.*;
@@ -38,7 +39,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     protected final IgniteLogger log;
 
     /** Affinity. */
-    protected final CacheAffinityFunction aff;
+    protected final AffinityFunction aff;
 
     /** Start future (always completed by default). */
     private final IgniteInternalFuture finFut;
@@ -111,7 +112,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, long topVer) {
+    @Override public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         return new GridFinishedFuture<>();
     }
 

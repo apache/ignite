@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -26,6 +25,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -43,8 +43,8 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 import sun.misc.*;
 
 import javax.management.*;
@@ -289,10 +289,10 @@ public abstract class IgniteUtils {
     private static Thread timer;
 
     /** Grid counter. */
-    private static int gridCnt;
+    static int gridCnt;
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    static final Object mux = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
@@ -459,22 +459,25 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        for (Field field : EventType.class.getFields()) {
-            if (field.getType().equals(int.class)) {
-                try {
-                    assert field.getName().startsWith("EVT_") : "Invalid event name (should start with 'EVT_': " +
-                        field.getName();
+        Class<?>[] evtHolderClasses = new Class[]{EventType.class, DiscoveryCustomEvent.class};
 
-                    int type = field.getInt(null);
+        for (Class<?> cls : evtHolderClasses) {
+            for (Field field : cls.getFields()) {
+                if (Modifier.isStatic(field.getModifiers()) && field.getType().equals(int.class)) {
+                    if (field.getName().startsWith("EVT_")) {
+                        try {
+                            int type = field.getInt(null);
 
-                    String prev = GRID_EVT_NAMES.put(type, field.getName().substring(4));
+                            String prev = GRID_EVT_NAMES.put(type, field.getName().substring("EVT_".length()));
 
-                    // Check for duplicate event types.
-                    assert prev == null : "Duplicate event [type=" + type + ", name1=" + prev +
-                        ", name2=" + field.getName() + ']';
-                }
-                catch (IllegalAccessException e) {
-                    throw new IgniteException(e);
+                            // Check for duplicate event types.
+                            assert prev == null : "Duplicate event [type=" + type + ", name1=" + prev +
+                                ", name2=" + field.getName() + ']';
+                        }
+                        catch (IllegalAccessException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
                 }
             }
         }
@@ -2781,6 +2784,8 @@ public abstract class IgniteUtils {
     public static void onGridStart() {
         synchronized (mux) {
             if (gridCnt == 0) {
+                assert timer == null;
+
                 timer = new Thread(new Runnable() {
                     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
                     @Override public void run() {
@@ -2810,8 +2815,9 @@ public abstract class IgniteUtils {
 
     /**
      * Stops clock timer if all nodes into JVM were stopped.
+     * @throws InterruptedException If interrupted.
      */
-    public static void onGridStop(){
+    public static void onGridStop() throws InterruptedException {
         synchronized (mux) {
             // Grid start may fail and onGridStart() does not get called.
             if (gridCnt == 0)
@@ -2819,10 +2825,14 @@ public abstract class IgniteUtils {
 
             --gridCnt;
 
-            if (gridCnt == 0 && timer != null) {
-                timer.interrupt();
+            Thread timer0 = timer;
 
+            if (gridCnt == 0 && timer0 != null) {
                 timer = null;
+
+                timer0.interrupt();
+
+                timer0.join();
             }
         }
     }
@@ -3213,6 +3223,33 @@ public abstract class IgniteUtils {
      */
     @Nullable public static URL resolveIgniteUrl(String path) {
         return resolveIgniteUrl(path, true);
+    }
+
+    /**
+     * Resolve Spring configuration URL.
+     *
+     * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
+     * @return URL.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static URL resolveSpringUrl(String springCfgPath) throws IgniteCheckedException {
+        A.notNull(springCfgPath, "springCfgPath");
+
+        URL url;
+
+        try {
+            url = new URL(springCfgPath);
+        }
+        catch (MalformedURLException e) {
+            url = U.resolveIgniteUrl(springCfgPath);
+
+            if (url == null)
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
+                    ". Note that this path should be either absolute or a relative local file system path, " +
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
+        }
+
+        return url;
     }
 
     /**
@@ -7005,129 +7042,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets cache attributes from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Attributes.
-     */
-    @Nullable public static GridCacheAttributes cacheAttributes(ClusterNode n, @Nullable String cacheName) {
-        for (GridCacheAttributes a : cacheAttributes(n)) {
-            if (F.eq(a.cacheName(), cacheName))
-                return a;
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets view on all cache names started on the node.
-     *
-     * @param n Node to get cache names for.
-     * @return Cache names for the node.
-     */
-    public static Collection<String> cacheNames(ClusterNode n) {
-        return F.viewReadOnly(
-            F.asList(n.<GridCacheAttributes[]>attribute(ATTR_CACHE)),
-            new C1<GridCacheAttributes, String>() {
-                @Override public String apply(GridCacheAttributes attrs) {
-                    return attrs.cacheName();
-                }
-            });
-    }
-
-    /**
-     * Checks if given node has specified cache started.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache name to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCache(ClusterNode n, @Nullable String cacheName) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return true;
-
-        return false;
-    }
-
-    /**
-     * Checks if given node has at least one cache.
-     *
-     * @param n Node to check.
-     * @return {@code True} if given node has specified cache started.
-     */
-    public static boolean hasCaches(ClusterNode n) {
-        assert n != null;
-
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        return !F.isEmpty(caches);
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheMode cacheMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.cacheMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache mode or a cache on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.atomicityMode();
-
-        return null;
-    }
-
-    /**
-     * Gets cache distribution mode on given node or {@code null} if cache is not
-     * present on given node.
-     *
-     * @param n Node to check.
-     * @param cacheName Cache to check.
-     * @return Cache distribution mode or {@code null} if cache is not found.
-     */
-    @Nullable public static CacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
-        GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
-
-        if (caches != null)
-            for (GridCacheAttributes attrs : caches)
-                if (F.eq(cacheName, attrs.cacheName()))
-                    return attrs.partitionedTaxonomy();
-
-        return null;
-    }
-
-    /**
      * Checks if given node has near cache enabled for the specified
      * partitioned cache.
      *
@@ -7489,8 +7403,6 @@ public abstract class IgniteUtils {
 
         try {
             for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
-                Method[] mtds = c.getDeclaredMethods();
-
                 Method mtd = null;
 
                 for (Method declaredMtd : c.getDeclaredMethods()) {

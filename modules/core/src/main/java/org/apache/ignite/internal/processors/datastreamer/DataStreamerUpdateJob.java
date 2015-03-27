@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -49,7 +50,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     private final boolean skipStore;
 
     /** */
-    private final IgniteDataStreamer.Updater updater;
+    private final StreamReceiver rcvr;
 
     /**
      * @param ctx Context.
@@ -58,7 +59,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
      * @param col Entries to put.
      * @param ignoreDepOwnership {@code True} to ignore deployment ownership.
      * @param skipStore Skip store flag.
-     * @param updater Updater.
+     * @param rcvr Updater.
      */
     DataStreamerUpdateJob(
         GridKernalContext ctx,
@@ -67,18 +68,18 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         Collection<DataStreamerEntry> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDataStreamer.Updater<?, ?> updater) {
+        StreamReceiver<?, ?> rcvr) {
         this.ctx = ctx;
         this.log = log;
 
         assert col != null && !col.isEmpty();
-        assert updater != null;
+        assert rcvr != null;
 
         this.cacheName = cacheName;
         this.col = col;
         this.ignoreDepOwnership = ignoreDepOwnership;
         this.skipStore = skipStore;
-        this.updater = updater;
+        this.rcvr = rcvr;
     }
 
     /** {@inheritDoc} */
@@ -88,6 +89,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             log.debug("Running put job [nodeId=" + ctx.localNodeId() + ", size=" + col.size() + ']');
 
 //        TODO IGNITE-77: restore adapter usage.
+//        TODO use cacheContext.awaitStarted() instead of preloader().startFuture().get()
 //        GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 //
 //        IgniteFuture<?> f = cache.context().preloader().startFuture();
@@ -125,10 +127,10 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
                     }
                 });
 
-                updater.update(cache, col0);
+                rcvr.receive(cache, col0);
             }
             else
-                updater.update(cache, col);
+                rcvr.receive(cache, col);
 
             return null;
         }
@@ -145,6 +147,6 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
      * @return {@code True} if need to unwrap internal entries.
      */
     private boolean unwrapEntries() {
-        return !(updater instanceof DataStreamerCacheUpdaters.InternalUpdater);
+        return !(rcvr instanceof DataStreamerCacheUpdaters.InternalUpdater);
     }
 }

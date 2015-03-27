@@ -18,7 +18,6 @@
 package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -160,5 +159,5 @@ public interface ComputeJob extends Serializable {
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link IgniteCheckedException}.
      */
-    @Nullable public Object execute() throws IgniteException;
+    public Object execute() throws IgniteException;
 }

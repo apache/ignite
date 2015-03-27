@@ -19,11 +19,11 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import java.io.*;
 
 /**
  * Cache interceptor. Cache interceptor can be used for getting callbacks before
@@ -31,13 +31,13 @@ import javax.cache.*;
  * operations. The {@code onBefore} callbacks can also be used to change the values
  * stored in cache or preventing entries from being removed from cache.
  * <p>
- * Cache interceptor is configured via {@link org.apache.ignite.configuration.CacheConfiguration#getInterceptor()}
+ * Cache interceptor is configured via {@link CacheConfiguration#getInterceptor()}
  * configuration property.
  * <p>
  * Any grid resource from {@code org.apache.ignite.resources} package can be injected
  * into implementation of this interface.
  */
-public interface CacheInterceptor<K, V> {
+public interface CacheInterceptor<K, V> extends Serializable {
     /**
      * This method is called within {@link IgniteCache#get(Object)}
      * and similar operations to provide control over returned value.
@@ -50,7 +50,7 @@ public interface CacheInterceptor<K, V> {
      * @param key Key.
      * @param val Value mapped to {@code key} at the moment of {@code get()} operation.
      * @return The new value to be returned as result of {@code get()} operation.
-     * @see CacheProjection#get(Object)
+     * @see Cache#get(Object)
      */
     @Nullable public V onGet(K key, @Nullable V val);
 

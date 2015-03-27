@@ -27,6 +27,6 @@ import org.apache.ignite.cache.*;
 public class IgniteSqlQueryPutOffHeapBenchmark extends IgniteSqlQueryPutBenchmark {
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("query-offheap");
+        return ignite().cache("query-offheap");
     }
 }

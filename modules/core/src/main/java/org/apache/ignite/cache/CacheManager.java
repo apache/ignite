@@ -19,7 +19,13 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.mxbean.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
@@ -28,6 +34,8 @@ import javax.management.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Implementation of JSR-107 {@link CacheManager}.
@@ -40,7 +48,7 @@ public class CacheManager implements javax.cache.CacheManager {
     private static final String CACHE_CONFIGURATION = "CacheConfiguration";
 
     /** */
-    private final Map<String, Ignite> igniteMap = new HashMap<>();
+    private static final AtomicInteger igniteCnt = new AtomicInteger();
 
     /** */
     private final URI uri;
@@ -52,13 +60,13 @@ public class CacheManager implements javax.cache.CacheManager {
     private final ClassLoader clsLdr;
 
     /** */
-    private final Properties props;
+    private Properties props = new Properties();
 
     /** */
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final IgniteKernal ignite;
 
     /** */
-    private final AtomicInteger mgrIdx = new AtomicInteger();
+    private final GridKernalGateway kernalGateway;
 
     /**
      * @param uri Uri.
@@ -70,7 +78,35 @@ public class CacheManager implements javax.cache.CacheManager {
         this.uri = uri;
         this.cachingProvider = cachingProvider;
         this.clsLdr = clsLdr;
-        this.props = props;
+        this.props = props == null ? new Properties() : props;
+
+        try {
+            if (uri.equals(cachingProvider.getDefaultURI())) {
+                IgniteConfiguration cfg = new IgniteConfiguration();
+
+                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, true)) {
+                    TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+                    discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+
+                    cfg.setDiscoverySpi(discoSpi);
+                }
+
+                cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
+
+                ignite = (IgniteKernal)IgnitionEx.start(cfg);
+            }
+            else
+                ignite = (IgniteKernal)IgnitionEx.start(uri.toURL());
+
+            kernalGateway = ignite.context().gateway();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        catch (MalformedURLException e) {
+            throw new CacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -96,177 +132,154 @@ public class CacheManager implements javax.cache.CacheManager {
     /** {@inheritDoc} */
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheCfg == null)
-            throw new NullPointerException();
+        try {
+            if (cacheCfg == null)
+                throw new NullPointerException();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+            if (cacheName == null)
+                throw new NullPointerException();
 
-        CacheConfiguration igniteCacheCfg;
+            CacheConfiguration<K, V> igniteCacheCfg;
 
-        if (cacheCfg instanceof CompleteConfiguration)
-            igniteCacheCfg = new CacheConfiguration((CompleteConfiguration)cacheCfg);
-        else {
-            igniteCacheCfg = new CacheConfiguration();
+            if (cacheCfg instanceof CompleteConfiguration)
+                igniteCacheCfg = new CacheConfiguration<>((CompleteConfiguration<K, V>)cacheCfg);
+            else {
+                igniteCacheCfg = new CacheConfiguration<>();
 
-            igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
-        }
-
-        igniteCacheCfg.setName(cacheName);
-
-        IgniteCache<K, V> res;
-
-        synchronized (igniteMap) {
-            if (igniteMap.containsKey(cacheName))
-                throw new CacheException("Cache already exists [cacheName=" + cacheName + ", manager=" + uri + ']');
-
-            Ignite ignite;
-
-            if (uri.equals(cachingProvider.getDefaultURI())) {
-                IgniteConfiguration cfg = new IgniteConfiguration();
-                cfg.setGridName(mgrIdx.incrementAndGet() + "-grid-for-" + cacheName);
-
-                cfg.setCacheConfiguration(igniteCacheCfg);
-
-                try {
-                    ignite = Ignition.start(cfg);
-                }
-                catch (IgniteException e) {
-                    throw new CacheException(e);
-                }
+                igniteCacheCfg.setTypes(cacheCfg.getKeyType(), cacheCfg.getValueType());
             }
-            else
-                throw new UnsupportedOperationException();
 
-            res = ignite.jcache(cacheName);
+            igniteCacheCfg.setName(cacheName);
 
-            igniteMap.put(cacheName, ignite);
+            IgniteCache<K, V> res = ignite.createCache(igniteCacheCfg);
+
+            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
+
+            if (res == null)
+                throw new CacheException();
+
+            if (igniteCacheCfg.isManagementEnabled())
+                enableManagement(cacheName, true);
+
+            if (igniteCacheCfg.isStatisticsEnabled())
+                enableStatistics(cacheName, true);
+
+            return res;
         }
-
-        if (igniteCacheCfg.isManagementEnabled())
-            enableManagement(cacheName, true);
-
-        if (igniteCacheCfg.isStatisticsEnabled())
-            enableStatistics(cacheName, true);
-
-        return res;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     */
-    private <K, V> IgniteCache<K, V> findCache(String cacheName) {
-        Ignite ignite;
-
-        synchronized (igniteMap) {
-            ignite = igniteMap.get(cacheName);
+        finally {
+            kernalGateway.readUnlock();
         }
-
-        if (ignite == null)
-            return null;
-
-        return ignite.jcache(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache<K, V> getCache(String cacheName, Class<K> keyType, Class<V> valType) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        Cache<K, V> cache = findCache(cacheName);
+        try {
+            Cache<K, V> cache = getCache0(cacheName);
 
-        if (cache != null) {
-            if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
-                throw new ClassCastException();
+            if (cache != null) {
+                if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
+                    throw new ClassCastException();
 
-            if(!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
-                throw new ClassCastException();
+                if(!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
+                    throw new ClassCastException();
+            }
+
+            return cache;
         }
-
-        return cache;
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache<K, V> getCache(String cacheName) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        IgniteCache<K, V> cache = findCache(cacheName);
+        try {
+            IgniteCache<K, V> cache = getCache0(cacheName);
 
-        if (cache != null) {
-            if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
-                throw new IllegalArgumentException();
+            if (cache != null) {
+                if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
+                    throw new IllegalArgumentException();
 
-            if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
-                throw new IllegalArgumentException();
-        }
-
-        return cache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<String> getCacheNames() {
-        if (isClosed())
-            return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
-                                           // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
-
-        String[] resArr;
-
-        synchronized (igniteMap) {
-            resArr = igniteMap.keySet().toArray(new String[igniteMap.keySet().size()]);
-        }
-
-        return Collections.unmodifiableCollection(Arrays.asList(resArr));
-    }
-
-    /**
-     * @param ignite Ignite.
-     */
-    public boolean isManagedIgnite(Ignite ignite) {
-        synchronized (igniteMap) {
-            for (Ignite instance : igniteMap.values()) {
-                if (ignite.equals(instance))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroyCache(String cacheName) {
-        ensureNotClosed();
-
-        if (cacheName == null)
-            throw new NullPointerException();
-
-        Ignite ignite;
-
-        synchronized (igniteMap) {
-            ignite = igniteMap.remove(cacheName);
-        }
-
-        if (ignite != null) {
-            try {
-                ignite.close();
-            }
-            catch (Exception ignored) {
-                // No-op.
+                if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
+                    throw new IllegalArgumentException();
             }
 
-            MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
-
-            unregisterCacheObject(mBeanSrv, cacheName, CACHE_STATISTICS);
-
-            unregisterCacheObject(mBeanSrv, cacheName, CACHE_CONFIGURATION);
+            return cache;
+        }
+        finally {
+            kernalGateway.readUnlock();
         }
     }
 
     /**
      * @param cacheName Cache name.
      */
-    private ObjectName getObjectName(String cacheName, String objectName) {
-        String mBeanName = "javax.cache:type=" + objectName + ",CacheManager="
+    @Nullable private <K, V> IgniteCache<K, V> getCache0(String cacheName) {
+        if (cacheName == null)
+            throw new NullPointerException();
+
+        try {
+            return ignite.cache(cacheName);
+        }
+        catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<String> getCacheNames() {
+        kernalGateway.readLockAnyway();
+
+        try {
+            if (kernalGateway.getState() != GridKernalState.STARTED)
+                return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
+                                               // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
+
+            Collection<String> res = new ArrayList<>();
+
+            for (IgniteCache<?, ?> cache : ignite.context().cache().publicCaches())
+                res.add(cache.getName());
+
+            return Collections.unmodifiableCollection(res);
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        kernalGateway.readLock();
+
+        IgniteCache<?, ?> cache;
+
+        try {
+            cache = getCache0(cacheName);
+
+            if (cache != null) {
+                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+            }
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
+
+        if (cache != null)
+            cache.close();
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private ObjectName getObjectName(String cacheName, String objName) {
+        String mBeanName = "javax.cache:type=" + objName + ",CacheManager="
             + uri.toString().replaceAll(",|:|=|\n", ".")
             + ",Cache=" + cacheName.replaceAll(",|:|=|\n", ".");
 
@@ -280,59 +293,47 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+        try {
+            IgniteCache<?, ?> cache = getCache0(cacheName);
 
-        Ignite ignite;
+            if (cache == null)
+                throw new CacheException("Cache not found: " + cacheName);
 
-        synchronized (igniteMap) {
-            ignite = igniteMap.get(cacheName);
+            if (enabled)
+                registerCacheObject(cache.mxBean(), cacheName, CACHE_CONFIGURATION);
+            else
+                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
+
+            cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
         }
-
-        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
-
-        if (enabled) {
-            registerCacheObject(mBeanSrv, ignite.jcache(cacheName).mxBean(), cacheName, CACHE_CONFIGURATION);
-
-            ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(true);
-        }
-        else {
-            unregisterCacheObject(mBeanSrv, cacheName, CACHE_CONFIGURATION);
-
-            ignite.jcache(cacheName).getConfiguration(CacheConfiguration.class).setManagementEnabled(false);
+        finally {
+            kernalGateway.readUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
-        ensureNotClosed();
+        kernalGateway.readLock();
 
-        if (cacheName == null)
-            throw new NullPointerException();
+        try {
+            IgniteCache<?, ?> cache = getCache0(cacheName);
 
-        Ignite ignite;
+            if (cache == null)
+                throw new CacheException("Cache not found: " + cacheName);
 
-        synchronized (igniteMap) {
-            ignite = igniteMap.get(cacheName);
+            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
+
+            if (enabled)
+                registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
+            else
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+
+            cfg.setStatisticsEnabled(enabled);
         }
-
-        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
-
-        CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
-        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
-
-        if (enabled) {
-            registerCacheObject(mBeanSrv, cache.mxBean(), cacheName, CACHE_STATISTICS);
-
-            cfg.setStatisticsEnabled(true);
-        }
-        else {
-            unregisterCacheObject(mBeanSrv, cacheName, CACHE_STATISTICS);
-
-            cfg.setStatisticsEnabled(false);
+        finally {
+            kernalGateway.readUnlock();
         }
     }
 
@@ -340,18 +341,19 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param mxbean MXBean.
      * @param name cache name.
      */
-    public void registerCacheObject(MBeanServer mBeanServer, Object mxbean, String name, String objectName) {
-        ObjectName registeredObjName = getObjectName(name, objectName);
+    private void registerCacheObject(Object mxbean, String name, String beanType) {
+        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
+
+        ObjectName registeredObjName = getObjectName(name, beanType);
 
         try {
-            if (!isRegistered(mBeanServer, registeredObjName))
-                if (objectName.equals(CACHE_CONFIGURATION))
-                    mBeanServer.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
-                        registeredObjName);
-                else
-                    mBeanServer.registerMBean(
-                        new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class),
-                        registeredObjName);
+            if (mBeanSrv.queryNames(registeredObjName, null).isEmpty()) {
+                IgniteStandardMXBean bean = beanType.equals(CACHE_CONFIGURATION)
+                    ? new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class)
+                    : new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class);
+
+                mBeanSrv.registerMBean(bean, registeredObjName);
+            }
         }
         catch (Exception e) {
             throw new CacheException("Failed to register MBean: " + registeredObjName, e);
@@ -359,28 +361,18 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /**
-     * @return {@code True} if MBean registered.
-     */
-    private static boolean isRegistered(MBeanServer mBeanServer, ObjectName objectName) {
-        return !mBeanServer.queryNames(objectName, null).isEmpty();
-    }
-
-    /**
      * UnRegisters the mxbean if registered already.
      *
-     * @param mBeanSrv MBean server
      * @param name Cache name.
-     * @param objectName Mxbean name.
+     * @param beanType Mxbean name.
      */
-    public void unregisterCacheObject(MBeanServer mBeanSrv, String name, String objectName) {
-        Set<ObjectName> registeredObjectNames;
+    private void unregisterCacheObject(String name, String beanType) {
+        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
-        ObjectName objName = getObjectName(name, objectName);
-
-        registeredObjectNames = mBeanSrv.queryNames(objName, null);
+        Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, beanType), null);
 
         //should just be one
-        for (ObjectName registeredObjectName : registeredObjectNames) {
+        for (ObjectName registeredObjectName : registeredObjNames) {
             try {
                 mBeanSrv.unregisterMBean(registeredObjectName);
             }
@@ -391,39 +383,29 @@ public class CacheManager implements javax.cache.CacheManager {
         }
     }
 
-    /**
-     *
-     */
-    private void ensureNotClosed() throws IllegalStateException {
-        if (closed.get())
-            throw new IllegalStateException("Cache manager are closed [uri=" + uri + ", classLoader=" + clsLdr + ']');
-    }
-
     /** {@inheritDoc} */
     @Override public void close() {
-        if (closed.compareAndSet(false, true)) {
-            Ignite[] ignites;
-
-            synchronized (igniteMap) {
-                ignites = igniteMap.values().toArray(new Ignite[igniteMap.values().size()]);
-
-                igniteMap.clear();
-            }
-
-            for (Ignite ignite : ignites) {
-                try {
-                    ignite.close();
-                }
-                catch (Exception ignored) {
-                    // Ignore any exceptions according to javadoc of javax.cache.CacheManager#close()
-                }
-            }
+        try {
+            ignite.close();
+        }
+        catch (Exception ignored) {
+            // Ignore any exceptions according to javadoc of javax.cache.CacheManager#close()
+        }
+        finally {
+            cachingProvider.removeClosedManager(this);
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        return closed.get();
+        kernalGateway.readLockAnyway();
+
+        try {
+            return kernalGateway.getState() != GridKernalState.STARTED;
+        }
+        finally {
+            kernalGateway.readUnlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -431,8 +413,8 @@ public class CacheManager implements javax.cache.CacheManager {
         if(clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
-//        if(clazz.isAssignableFrom(ignite.getClass()))
-//            return clazz.cast(ignite);
+        if(clazz.isAssignableFrom(ignite.getClass()))
+            return clazz.cast(ignite);
 
         throw new IllegalArgumentException();
     }

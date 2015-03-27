@@ -35,7 +35,6 @@ import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
-import javax.cache.configuration.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
@@ -51,7 +50,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
 public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
     extends GridCommonAbstractTest {
     /** Default config with mapping. */
-    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/Ignite.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-type-metadata.xml";
 
     /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
@@ -71,6 +70,11 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         store = store();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        store = null;
     }
 
     /** {@inheritDoc} */
@@ -141,7 +145,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
             springCtx.refresh();
 
-            Collection<CacheTypeMetadata> tp = springCtx.getBeansOfType(CacheTypeMetadata.class).values();
+            Collection<CacheTypeMetadata> tp = new ArrayList<>(springCtx.getBeansOfType(CacheTypeMetadata.class).values());
 
             cc.setTypeMetadata(tp);
         }
@@ -155,7 +159,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -224,8 +228,12 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
                     List<Integer> ids = new ArrayList<>(cnt);
 
-                    for (int j = 0; j < cnt; j++)
-                        ids.add(rnd.nextInt());
+                    for (int j = 0; j < cnt; j++) {
+                        int id = rnd.nextInt(5000);
+
+                        if (!ids.contains(id))
+                            ids.add(id);
+                    }
 
                     Collections.sort(ids);
 

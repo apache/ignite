@@ -46,9 +46,6 @@
         <!-- Specify Ignite as L2 cache provider. -->
         <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.HibernateRegionFactory</property>
 
-        <!-- Specify the name of the ignite, that will be used for second level caching. -->
-        <property name="org.apache.ignite.hibernate.grid_name">hibernate-grid</property>
-
         <!-- Specify connection release mode. -->
         <property name="connection.release_mode">on_close</property>
 

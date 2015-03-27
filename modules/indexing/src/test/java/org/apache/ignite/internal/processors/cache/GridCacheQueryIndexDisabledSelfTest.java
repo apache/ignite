@@ -69,7 +69,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, SqlValue> cache = jcache();
 
         try {
-            cache.query(new SqlQuery(SqlValue.class, "val >= 0")).getAll();
+            cache.query(new SqlQuery<Integer, SqlValue>(SqlValue.class, "val >= 0")).getAll();
 
             assert false;
         }
@@ -100,7 +100,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         }
 
         try {
-            cache.queryFields(new SqlFieldsQuery("select * from Person")).getAll();
+            cache.query(new SqlFieldsQuery("select * from Person")).getAll();
 
             assert false;
         }
@@ -119,7 +119,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, String> cache = jcache();
 
         try {
-            cache.query(new TextQuery(String.class, "text")).getAll();
+            cache.query(new TextQuery<Integer, String>(String.class, "text")).getAll();
 
             assert false;
         }
@@ -138,11 +138,11 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, String> cache = jcache();
 
         try {
-            cache.localQuery(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
+            cache.query(new ScanQuery<>(new IgniteBiPredicate<Integer, String>() {
                 @Override public boolean apply(Integer id, String s) {
                     return s.equals("");
                 }
-            })).getAll();
+            }).setLocal(true)).getAll();
         }
         catch (IgniteException e) {
             assertTrue("Scan query should work with disable query indexing.", false);
@@ -155,7 +155,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, SqlValue> cache = jcache();
 
         try {
-            cache.localQuery(new SqlQuery(SqlValue.class, "val >= 0")).getAll();
+            cache.query(new SqlQuery<Integer, SqlValue>(SqlValue.class, "val >= 0").setLocal(true)).getAll();
 
             assert false;
         }
@@ -174,7 +174,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, SqlValue> cache = jcache();
 
         try {
-            cache.queryFields(new SqlFieldsQuery("select * from Person")).getAll();
+            cache.query(new SqlFieldsQuery("select * from Person")).getAll();
 
             assert false;
         }
@@ -193,7 +193,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
         IgniteCache<Integer, String> cache = jcache();
 
         try {
-            cache.localQuery(new TextQuery(String.class, "text")).getAll();
+            cache.query(new TextQuery<Integer, String>(String.class, "text").setLocal(true)).getAll();
 
             assert false;
         }

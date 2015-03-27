@@ -750,7 +750,7 @@ object VisorCacheCommand {
     private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
         val affinityCfg = cfg.affinityConfiguration()
         val nearCfg = cfg.nearConfiguration()
-        val preloadCfg = cfg.preloadConfiguration()
+        val rebalanceCfg = cfg.rebalanceConfiguration()
         val evictCfg = cfg.evictConfiguration()
         val defaultCfg = cfg.defaultConfiguration()
         val storeCfg = cfg.storeConfiguration()
@@ -782,12 +782,12 @@ object VisorCacheCommand {
         cacheT += ("Affinity Exclude Neighbors", safe(affinityCfg.excludeNeighbors()))
         cacheT += ("Affinity Mapper", safe(affinityCfg.mapper()))
 
-        cacheT += ("Preload Mode", preloadCfg.mode())
-        cacheT += ("Preload Batch Size", preloadCfg.batchSize())
-        cacheT += ("Preload Thread Pool size", preloadCfg.threadPoolSize())
-        cacheT += ("Preload Timeout", preloadCfg.timeout())
-        cacheT += ("Preloading Delay", preloadCfg.partitionedDelay())
-        cacheT += ("Time Between Preload Messages", preloadCfg.throttle())
+        cacheT += ("Rebalance Mode", rebalanceCfg.mode())
+        cacheT += ("Rebalance Batch Size", rebalanceCfg.batchSize())
+        cacheT += ("Rebalance Thread Pool size", rebalanceCfg.threadPoolSize())
+        cacheT += ("Rebalance Timeout", rebalanceCfg.timeout())
+        cacheT += ("Rebalance Delay", rebalanceCfg.partitionedDelay())
+        cacheT += ("Time Between Rebalance Messages", rebalanceCfg.throttle())
 
         cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.policy() != null))
         cacheT += ("Eviction Policy", safe(evictCfg.policy()))
@@ -799,12 +799,9 @@ object VisorCacheCommand {
         cacheT += ("Synchronous Eviction Timeout", evictCfg.synchronizedTimeout())
         cacheT += ("Synchronous Eviction Concurrency Level", evictCfg.synchronizedConcurrencyLevel())
 
-        cacheT += ("Distribution Mode", cfg.distributionMode())
-
         cacheT += ("Near Start Size", nearCfg.nearStartSize())
         cacheT += ("Near Eviction Policy", safe(nearCfg.nearEvictPolicy()))
         cacheT += ("Near Eviction Enabled", bool2Str(nearCfg.nearEnabled()))
-        cacheT += ("Near Eviction Synchronized", bool2Str(evictCfg.nearSynchronized()))
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.nearEvictMaxSize()))
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())

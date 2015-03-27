@@ -32,7 +32,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -50,8 +49,8 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -64,7 +63,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
 
         ccfg.setBackups(2);
 
-        ccfg.setAffinity(new CacheRendezvousAffinityFunction(false, 500));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 500));
 
         return ccfg;
     }
@@ -139,7 +138,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
      * @param node Primary node for keys.
      * @param data Map where keys/values should be put to.
      */
-    private void addKeysForNode(CacheAffinity<String> aff, ClusterNode node, Map<String, Integer> data) {
+    private void addKeysForNode(Affinity<String> aff, ClusterNode node, Map<String, Integer> data) {
         int cntr = 0;
 
         for (int i = 0; i < 100_000; i++) {

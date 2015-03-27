@@ -20,10 +20,8 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.jdk8.backport.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -193,7 +191,7 @@ class OptimizedMarshallerUtils {
             try {
                 registered = ctx.registerClass(typeId, cls);
             }
-            catch (Exception e) {
+            catch (IgniteCheckedException e) {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
