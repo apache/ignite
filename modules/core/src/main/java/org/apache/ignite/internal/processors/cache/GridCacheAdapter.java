@@ -4455,9 +4455,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 /** partition lock */false
             );
 
-            if (ctx.hasFlag(SYNC_COMMIT))
-                tx.syncCommit(true);
-
             assert tx != null;
 
             try {
@@ -4515,7 +4512,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
-        if (tx == null || tx.implicit()) {
+        if (tx == null || tx.implicit())
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
@@ -4528,10 +4525,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 0,
                 null,
                 false);
-
-            if (ctx.hasFlag(SYNC_COMMIT))
-                tx.syncCommit(true);
-        }
 
         return asyncOp(tx, op);
     }

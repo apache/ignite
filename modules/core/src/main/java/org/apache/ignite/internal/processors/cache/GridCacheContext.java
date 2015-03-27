@@ -1531,7 +1531,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if synchronous commit is enabled.
      */
     public boolean syncCommit() {
-        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC || hasFlag(SYNC_COMMIT);
+        return cacheCfg.getWriteSynchronizationMode() == FULL_SYNC;
     }
 
     /**

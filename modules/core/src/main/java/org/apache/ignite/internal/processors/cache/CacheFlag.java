@@ -49,9 +49,6 @@ public enum CacheFlag {
     /** Skip swap space for reads and writes. */
     SKIP_SWAP,
 
-    /** Synchronous commit. */
-    SYNC_COMMIT,
-
     /**
      * Switches a cache projection to work in {@code 'invalidation'} mode.
      * Instead of updating remote entries with new values, small invalidation

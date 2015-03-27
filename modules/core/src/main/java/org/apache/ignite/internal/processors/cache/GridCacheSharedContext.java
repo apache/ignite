@@ -466,9 +466,6 @@ public class GridCacheSharedContext<K, V> {
 
         if (flags.contains(INVALIDATE) && !tx.isInvalidate())
             throw new CacheFlagException(INVALIDATE);
-
-        if (flags.contains(SYNC_COMMIT) && !tx.syncCommit())
-            throw new CacheFlagException(SYNC_COMMIT);
     }
 
     /**
