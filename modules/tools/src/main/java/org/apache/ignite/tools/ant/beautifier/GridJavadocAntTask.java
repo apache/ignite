@@ -30,7 +30,7 @@ import java.util.*;
  */
 public class GridJavadocAntTask extends MatchingTask {
     /** */
-    private static final String SH_URL = "http://gridgain.com/wp-content/plugins/syntaxhighlighter/syntaxhighlighter3";
+    private static final String SH_URL = "http://agorbatchev.typepad.com/pub/sh/3_0_83";
 
     /** Directory. */
     private File dir;

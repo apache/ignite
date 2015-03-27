@@ -71,6 +71,8 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
         ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
+        clientCfg.setJettyPath("modules/clients/src/test/resources/jetty/rest-jetty.xml");
+
         cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

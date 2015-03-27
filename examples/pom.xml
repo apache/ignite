@@ -17,20 +17,19 @@
   limitations under the License.
 -->
 
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>..</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../parent</relativePath>
     </parent>
 
     <artifactId>ignite-examples</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -42,96 +41,37 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-hibernate</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>${spring.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-http</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-io</artifactId>
-            <version>9.0.5.v20130815</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schedule</artifactId>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -147,24 +87,10 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>14.0.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-schedule</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -220,7 +146,7 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-scalar</artifactId>
-                    <version>${ignite.version}</version>
+                    <version>1.0.1-RC1-SNAPSHOT</version>
                 </dependency>
 
                 <dependency>
