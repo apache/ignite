@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -68,6 +69,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setIndexedTypes(String.class, Integer.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -80,7 +82,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testAccumulativeMetrics() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
         CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
             .projection(grid(0).cluster());
@@ -122,7 +124,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testSingleQueryMetrics() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
         CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
             .projection(grid(0).cluster());

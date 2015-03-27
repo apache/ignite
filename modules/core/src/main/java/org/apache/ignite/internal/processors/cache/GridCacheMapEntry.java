@@ -3701,14 +3701,15 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param prevVal Previous value (if needed for index update).
      * @throws IgniteCheckedException If failed.
      */
-    protected void clearIndex(@Nullable CacheObject prevVal) throws IgniteCheckedException {
+    protected void clearIndex(CacheObject prevVal) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         try {
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr != null)
-                qryMgr.remove(key().value(cctx.cacheObjectContext(), false));
+                qryMgr.remove(key().value(cctx.cacheObjectContext(), false),
+                    prevVal == null ? null : prevVal.value(cctx.cacheObjectContext(), false));
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3716,8 +3717,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /**
-     * This method will return current value only if clearIndex(V) will require previous value (this is the case
-     * for Mongo caches). If previous value is not required, this method will return {@code null}.
+     * This method will return current value only if clearIndex(V) will require previous value.
+     * If previous value is not required, this method will return {@code null}.
      *
      * @return Previous value or {@code null}.
      * @throws IgniteCheckedException If failed to retrieve previous value.
@@ -3725,10 +3726,21 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     protected CacheObject saveValueForIndexUnlocked() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        if (!cctx.cache().isMongoDataCache() && !cctx.cache().isMongoMetaCache())
+        if (cctx.queries() == null)
             return null;
 
-        return rawGetOrUnmarshalUnlocked(false);
+        CacheObject val = rawGetOrUnmarshalUnlocked(false);
+
+        if (val == null) {
+            GridCacheSwapEntry swapEntry = cctx.swap().read(key, true, true);
+
+            if (swapEntry == null)
+                return null;
+
+            return swapEntry.value();
+        }
+
+        return val;
     }
 
     /** {@inheritDoc} */

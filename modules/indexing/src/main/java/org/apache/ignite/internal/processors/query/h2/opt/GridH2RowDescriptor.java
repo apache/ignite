@@ -40,7 +40,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
+    public GridH2Row createRow(Object key, @Nullable Object val, long expirationTime)
         throws IgniteCheckedException;
 
     /**

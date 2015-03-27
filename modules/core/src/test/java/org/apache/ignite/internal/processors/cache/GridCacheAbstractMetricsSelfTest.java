@@ -82,6 +82,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             g.cache(null).removeAll();
 
             assert g.cache(null).localSize() == 0;
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
 
             g.cache(null).mxBean().clear();
 

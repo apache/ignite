@@ -289,15 +289,15 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${project.version}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}" filemode="755">
+                                        <zip destfile="${basedir}/target/incubator-ignite-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="incubator-ignite-${project.version}-bin" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="incubator-ignite-${project.version}-bin">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
