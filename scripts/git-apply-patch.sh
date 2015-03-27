@@ -17,7 +17,7 @@
 #
 
 #
-# Git patch-file applyer.
+# Git patch-file applier.
 #
 
 #

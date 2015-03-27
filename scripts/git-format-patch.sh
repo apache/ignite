@@ -17,7 +17,7 @@
 #
 
 #
-# Git patch-file maker.
+# Git patch-file formatter.
 #
 
 #
