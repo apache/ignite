@@ -125,7 +125,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             ClusterNode locNode = grid(0).localNode();
 
-            for (Cache.Entry<Integer, String> e : this.<Integer, String>cache(0).entrySet()) {
+            for (Cache.Entry<Integer, String> e : this.<Integer, String>jcache(0).localEntries()) {
                 assert aff.isPrimary(locNode, e.getKey()) ||
                     aff.isBackup(locNode, e.getKey());
 

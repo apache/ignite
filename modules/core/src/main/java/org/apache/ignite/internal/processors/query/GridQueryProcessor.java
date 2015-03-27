@@ -383,6 +383,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert key != null;
         assert val != null;
 
+        if (log.isDebugEnabled())
+            log.debug("Store [space=" + space + ", key=" + key + ", val=" + val + "]");
+
         ctx.indexing().store(space, key, val, expirationTime);
 
         if (idx == null)
@@ -392,9 +395,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            if (log.isDebugEnabled())
-                log.debug("Storing key to cache query index [key=" + key + ", value=" + val + "]");
-
             final Class<?> valCls = val.getClass();
 
             TypeId id;
@@ -665,8 +665,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key) throws IgniteCheckedException {
+    public void remove(String space, Object key, Object val) throws IgniteCheckedException {
         assert key != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
 
         ctx.indexing().remove(space, key);
 
@@ -677,7 +680,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            idx.remove(space, key);
+            idx.remove(space, key, val);
         }
         finally {
             busyLock.leaveBusy();
@@ -781,6 +784,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onSwap(String spaceName, Object key) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
+
         ctx.indexing().onSwap(spaceName, key);
 
         if (idx == null)
@@ -808,6 +814,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void onUnswap(String spaceName, Object key, Object val, byte[] valBytes)
         throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
+
         ctx.indexing().onUnswap(spaceName, key, val);
 
         if (idx == null)
@@ -832,6 +841,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If undeploy failed.
      */
     public void onUndeploy(@Nullable String space, ClassLoader ldr) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Undeploy [space=" + space + "]");
+
         if (idx == null)
             return;
 

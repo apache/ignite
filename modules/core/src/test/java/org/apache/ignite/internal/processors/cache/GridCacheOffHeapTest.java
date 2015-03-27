@@ -179,7 +179,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         Ignite g = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = ((IgniteKernal)g).internalCache(null);
+            GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)g).internalCache(null);
 
 //            int max = 17 * 1024 * 1024;
             int max = Integer.MAX_VALUE;
@@ -209,7 +209,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         Ignite g = startGrid();
 
         try {
-            final GridCache<Integer, Integer> c = ((IgniteKernal)g).internalCache(null);
+            final GridCacheAdapter<Integer, Integer> c = ((IgniteKernal)g).internalCache(null);
 
             final long start = System.currentTimeMillis();
 
