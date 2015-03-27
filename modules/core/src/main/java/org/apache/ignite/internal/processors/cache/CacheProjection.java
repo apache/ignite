@@ -1260,7 +1260,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param keys Keys to clearLocally.
      */
-    public void clearLocallyAll(Set<K> keys);
+    public void clearLocallyAll(Set<? extends K> keys);
 
     /**
      * Clears key on all nodes that store it's data. That is, caches are cleared on remote
@@ -1286,7 +1286,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to clear.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
      */
-    public void clearAll(Set<K> keys) throws IgniteCheckedException;
+    public void clearAll(Set<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
@@ -1318,7 +1318,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to clear.
      * @return Clear future.
      */
-    public IgniteInternalFuture<?> clearAsync(Set<K> keys);
+    public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys);
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote

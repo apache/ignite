@@ -84,16 +84,6 @@ public class GridCacheDhtTestUtils {
     }
 
     /**
-     * @param cache Dht cache.
-     */
-    static void printAffinityInfo(GridCache<?, ?> cache) {
-        System.out.println("Affinity info.");
-        System.out.println("----------------------------------");
-        System.out.println("Number of key backups: " + cache.configuration().getBackups());
-        System.out.println("Number of cache partitions: " + cache.affinity().partitions());
-    }
-
-    /**
      * @param dht Dht cache.
      * @param idx Cache index
      */

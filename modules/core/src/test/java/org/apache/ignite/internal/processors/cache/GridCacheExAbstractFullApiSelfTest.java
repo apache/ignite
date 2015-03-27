@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -62,13 +62,13 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
         try {
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            GridCache<String, Integer> cache = cache();
+            GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
             try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;
 
                 for (int i = 0; i < 1000; i++) {
-                    if (cache.affinity().mapKeyToNode("key" + i).id().equals(grid(0).localNode().id())) {
+                    if (grid(0).affinity(null).mapKeyToNode("key" + i).id().equals(grid(0).localNode().id())) {
                         key = i;
 
                         break;
@@ -78,14 +78,14 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
                 cache.get("key" + key);
 
                 for (int i = key + 1; i < 1000; i++) {
-                    if (cache.affinity().mapKeyToNode("key" + i).id().equals(grid(0).localNode().id())) {
+                    if (grid(0).affinity(null).mapKeyToNode("key" + i).id().equals(grid(0).localNode().id())) {
                         key = i;
 
                         break;
                     }
                 }
 
-                ((GridCacheProjectionEx<String, Integer>)cache).getAllOutTx(F.asList("key" + key));
+                cache.getAllOutTx(F.asList("key" + key));
             }
 
             assertTrue(GridTestUtils.waitForCondition(new PA() {

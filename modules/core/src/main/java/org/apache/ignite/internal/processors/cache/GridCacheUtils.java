@@ -1682,10 +1682,9 @@ public class GridCacheUtils {
      *
      * @param cache Cache.
      * @param key Key.
-     * @return {@code True} if entry was invalidated.
      */
-    public static <K, V> boolean invalidate(CacheProjection<K, V> cache, K key) {
-        return cache.clearLocally(key);
+    public static <K, V> void invalidate(IgniteCache<K, V> cache, K key) {
+        cache.localClear(key);
     }
 
     /**

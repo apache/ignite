@@ -124,14 +124,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param i Grid index.
      * @return Cache.
      */
-    @Override protected <K, V> GridCache<K, V> cache(int i) {
-        return ((IgniteKernal)IGNITEs.get(i)).getCache(null);
-    }
-
-    /**
-     * @param i Grid index.
-     * @return Cache.
-     */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
         return IGNITEs.get(i).cache(null);
     }

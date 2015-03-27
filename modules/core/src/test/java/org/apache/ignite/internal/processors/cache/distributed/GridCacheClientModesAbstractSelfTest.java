@@ -173,14 +173,12 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 boolean foundAffinityNode = false;
 
                 for (int k = 0; k < 10000; k++) {
-                    GridCache<Object, Object> cache = ((IgniteKernal)g).getCache(null);
-
                     String key = "key" + k;
 
-                    if (cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
+                    if (g.affinity(null).isPrimaryOrBackup(g.cluster().localNode(), key))
                         foundEntry = true;
 
-                    if (cache.affinity().mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
+                    if (g.affinity(null).mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
                         foundAffinityNode = true;
                 }
 
