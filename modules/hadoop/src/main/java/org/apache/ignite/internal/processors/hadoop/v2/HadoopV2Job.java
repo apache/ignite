@@ -55,7 +55,7 @@ public class HadoopV2Job implements HadoopJob {
     private final HadoopJobId jobId;
 
     /** Job info. */
-    protected HadoopJobInfo jobInfo;
+    protected final HadoopJobInfo jobInfo;
 
     /** */
     private final JobID hadoopJobID;
@@ -70,8 +70,11 @@ public class HadoopV2Job implements HadoopJob {
     /** Pooling task context class and thus class loading environment. */
     private final Queue<Class<?>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
 
+    /** All created contexts. */
+    private final Queue<Class<?>> fullCtxClsQueue = new ConcurrentLinkedDeque<>();
+
     /** Local node ID */
-    private UUID locNodeId;
+    private volatile UUID locNodeId;
 
     /** Serialized JobConf. */
     private volatile byte[] jobConfData;
@@ -196,9 +199,14 @@ public class HadoopV2Job implements HadoopJob {
         try {
             if (cls == null) {
                 // If there is no pooled class, then load new one.
-                HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath());
+                // Note that the classloader identified by the task it was initially created for,
+                // but later it may be reused for other tasks.
+                HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
+                    "hadoop-" + info.jobId() + "-" + info.type() + "-" + info.taskNumber());
 
                 cls = ldr.loadClass(HadoopV2TaskContext.class.getName());
+
+                fullCtxClsQueue.add(cls);
             }
 
             Constructor<?> ctr = cls.getConstructor(HadoopTaskInfo.class, HadoopJob.class,
@@ -246,12 +254,46 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ThrowFromFinallyBlock")
     @Override public void dispose(boolean external) throws IgniteCheckedException {
-        if (rsrcMgr != null && !external) {
-            File jobLocDir = jobLocalDir(locNodeId, jobId);
+        try {
+            if (rsrcMgr != null && !external) {
+                File jobLocDir = jobLocalDir(locNodeId, jobId);
 
-            if (jobLocDir.exists())
-                U.delete(jobLocDir);
+                if (jobLocDir.exists())
+                    U.delete(jobLocDir);
+            }
+        }
+        finally {
+            taskCtxClsPool.clear();
+
+            Throwable err = null;
+
+            // Stop the daemon threads that have been created
+            // with the task class loaders:
+            while (true) {
+                Class<?> cls = fullCtxClsQueue.poll();
+
+                if (cls == null)
+                    break;
+
+                try {
+                    Class<?> daemonCls = cls.getClassLoader().loadClass(HadoopClassLoader.HADOOP_DAEMON_CLASS_NAME);
+
+                    Method m = daemonCls.getMethod("dequeueAndStopAll");
+
+                    m.invoke(null);
+                }
+                catch (Throwable e) {
+                    if (err == null)
+                        err = e;
+                }
+            }
+
+            assert fullCtxClsQueue.isEmpty();
+
+            if (err != null)
+                throw U.cast(err);
         }
     }
 
@@ -264,7 +306,7 @@ public class HadoopV2Job implements HadoopJob {
     @Override public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
         HadoopTaskContext ctx = ctxs.remove(new T2<>(info.type(), info.taskNumber())).get();
 
-        taskCtxClsPool.offer(ctx.getClass());
+        taskCtxClsPool.add(ctx.getClass());
 
         File locDir = taskLocalDir(locNodeId, info);
 

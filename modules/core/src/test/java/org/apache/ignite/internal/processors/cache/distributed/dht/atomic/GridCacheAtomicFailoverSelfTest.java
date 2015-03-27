@@ -15,19 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Failover tests for replicated cache.
+ *
  */
-public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
+public class GridCacheAtomicFailoverSelfTest extends GridCacheAbstractFailoverSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+
+        ccfg.setAtomicWriteOrderMode(CLOCK);
+
+        assertEquals(CacheWriteSynchronizationMode.FULL_SYNC, ccfg.getWriteSynchronizationMode());
+
+        return ccfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }
