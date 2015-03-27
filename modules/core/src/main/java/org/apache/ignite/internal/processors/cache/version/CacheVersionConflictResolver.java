@@ -33,11 +33,20 @@ public class CacheVersionConflictResolver {
      * @return Conflict resolution context.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCacheVersionConflictContext<K, V> resolve(GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
-        GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(oldEntry, newEntry);
+    public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        boolean atomicVerComparator
+    ) throws IgniteCheckedException {
+        GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(
+            oldEntry,
+            newEntry);
 
-        resolve0(ctx, oldEntry, newEntry, atomicVerComparator);
+        resolve0(
+            ctx,
+            oldEntry,
+            newEntry,
+            atomicVerComparator);
 
         return ctx;
     }
@@ -51,9 +60,12 @@ public class CacheVersionConflictResolver {
      * @param atomicVerComparator Whether to use atomic version comparator.
      * @throws IgniteCheckedException If failed.
      */
-    protected <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
-        GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
-        boolean atomicVerComparator) throws IgniteCheckedException {
+    protected <K, V> void resolve0(
+        GridCacheVersionConflictContext<K, V> ctx,
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        boolean atomicVerComparator
+    ) throws IgniteCheckedException {
         if (newEntry.dataCenterId() != oldEntry.dataCenterId())
             ctx.useNew();
         else {
@@ -62,7 +74,11 @@ public class CacheVersionConflictResolver {
             else {
                 if (atomicVerComparator) {
                     // Handle special case when version check using ATOMIC cache comparator is required.
-                    if (GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(oldEntry.version(), newEntry.version(), false) >= 0)
+                    if (GridCacheMapEntry.ATOMIC_VER_COMPARATOR
+                        .compare(
+                            oldEntry.version(),
+                            newEntry.version(),
+                            false) >= 0)
                         ctx.useOld();
                     else
                         ctx.useNew();
