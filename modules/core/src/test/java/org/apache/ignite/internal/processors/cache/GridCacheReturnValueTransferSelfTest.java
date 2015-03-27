@@ -142,9 +142,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
             // Get client grid.
             IgniteCache<Integer, TestObject> cache = grid(2).cache(null);
 
-            if (backups > 0 && atomicityMode == ATOMIC)
-                cache = ((IgniteCacheProxy<Integer, TestObject>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
-
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());
 

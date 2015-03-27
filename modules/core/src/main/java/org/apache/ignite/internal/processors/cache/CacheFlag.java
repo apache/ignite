@@ -70,19 +70,7 @@ public enum CacheFlag {
      * @see Transaction#isInvalidate()
      * @see org.apache.ignite.configuration.CacheConfiguration#isInvalidate()
      */
-    INVALIDATE,
-
-    /**
-     * Skips version check during {@link IgniteCache#invoke(Object, EntryProcessor, Object[])} writes in
-     * {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
-     * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
-     * node to backup nodes to ensure proper update ordering.
-     * <p>
-     * By setting this flag, version check is skipped, and the {@code transform} closure is applied on both, primary
-     * and backup nodes. Use this flag for better performance if you are sure that there are no
-     * concurrent updates happening for the same key when {@code transform(...)} method is called.
-     */
-    FORCE_TRANSFORM_BACKUP;
+    INVALIDATE;
 
     /** */
     private static final CacheFlag[] VALS = values();

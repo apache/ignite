@@ -74,8 +74,6 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
 
                             IgniteCache<Integer, Integer> cache = grid(idx).cache(null);
 
-                            cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
-
                             cache.invoke(i, new Transformer(i));
                         }
                     }
