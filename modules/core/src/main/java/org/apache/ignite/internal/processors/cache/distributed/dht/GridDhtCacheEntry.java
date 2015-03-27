@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -66,7 +67,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @param hdrId Header id.
      */
     public GridDhtCacheEntry(GridCacheContext ctx,
-        long topVer,
+        AffinityTopologyVersion topVer,
         KeyCacheObject key,
         int hash,
         CacheObject val,
@@ -160,7 +161,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     @Nullable public GridCacheMvccCandidate addDhtLocal(
         UUID nearNodeId,
         GridCacheVersion nearVer,
-        long topVer,
+        AffinityTopologyVersion topVer,
         long threadId,
         GridCacheVersion ver,
         long timeout,
@@ -306,9 +307,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
-    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(long topVer)
+    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
-        if (isNew() || !valid(-1) || deletedUnlocked())
+        if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
             return null;
         else {
             CacheObject val0 = valueBytesUnlocked();
@@ -349,7 +350,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public IgniteInternalFuture<Boolean> addReader(UUID nodeId, long msgId, long topVer)
+    @Nullable public IgniteInternalFuture<Boolean> addReader(UUID nodeId, long msgId, AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
         // Don't add local node as reader.
         if (cctx.nodeId().equals(nodeId))
@@ -365,7 +366,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         }
 
         // If remote node has no near cache, don't add it.
-        if (!U.hasNearCache(node, cacheName())) {
+        if (!cctx.discovery().cacheNearNode(node, cacheName())) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring near reader because near cache is disabled: " + nodeId);
 
@@ -589,7 +590,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "ManualArrayToCollectionCopy"})
     protected Collection<ReaderId> checkReadersLocked() throws GridCacheEntryRemovedException {
         assert Thread.holdsLock(this);
 
@@ -610,7 +611,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                     newRdrs = new ArrayList<>(rdrs.length);
 
                     for (int k = 0; k < i; k++)
-                        newRdrs.add(rdrs[i]);
+                        newRdrs.add(rdrs[k]);
                 }
             }
             // If node is still alive and no failed nodes

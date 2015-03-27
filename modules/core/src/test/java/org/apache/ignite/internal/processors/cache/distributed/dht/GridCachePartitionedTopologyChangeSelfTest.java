@@ -38,7 +38,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -75,10 +74,10 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 18));
+        cc.setAffinity(new RendezvousAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 
@@ -150,7 +149,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
                             try {
-                                Lock lock = node.jcache(null).lock(key);
+                                Lock lock = node.cache(null).lock(key);
 
                                 lock.lock();
 
@@ -162,7 +161,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
-                                    Lock lock10 = node.jcache(null).lock(key * 10);
+                                    Lock lock10 = node.cache(null).lock(key * 10);
 
                                     lock10.lock();
 
@@ -258,7 +257,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.jcache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -327,7 +326,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.jcache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -412,7 +411,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.jcache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -463,7 +462,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.jcache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -498,7 +497,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                CacheAffinity affinity = grid(i).affinity(null);
+                Affinity affinity = grid(i).affinity(null);
 
                 ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
 
@@ -564,7 +563,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private List<Integer> partitions(Ignite node, int partType) {
         List<Integer> res = new LinkedList<>();
 
-        CacheAffinity<Object> aff = node.affinity(null);
+        Affinity<Object> aff = node.affinity(null);
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
             ClusterNode locNode = node.cluster().localNode();

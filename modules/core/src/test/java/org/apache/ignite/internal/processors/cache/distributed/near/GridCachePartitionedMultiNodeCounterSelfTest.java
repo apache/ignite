@@ -40,7 +40,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -101,7 +100,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setBackups(backups);
@@ -120,7 +119,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param cache Cache.
      * @return Affinity.
      */
-    private static CacheAffinity<String> affinity(GridCache<String, Integer> cache) {
+    private static Affinity<String> affinity(GridCache<String, Integer> cache) {
         return cache.affinity();
     }
 
@@ -241,7 +240,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         X.println("*** Retries: " + RETRIES);
         X.println("*** Log frequency: " + LOG_FREQ);
 
-        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>jcache(null));
+        Affinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
@@ -261,7 +260,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         final UUID priId = pri.cluster().localNode().id();
 
         // Initialize.
-        pri.jcache(null).put(CNTR_KEY, 0);
+        pri.cache(null).put(CNTR_KEY, 0);
 //        nears.get(0).cache(null).put(CNTR_KEY, 0);
 
         assertNull(near(pri).peekEx(CNTR_KEY));
@@ -306,7 +305,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                 if (DEBUG)
                                     info("***");
 
-                                IgniteCache<String, Integer> c = pri.jcache(null);
+                                IgniteCache<String, Integer> c = pri.cache(null);
 
                                 Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
@@ -403,7 +402,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                     if (DEBUG)
                                         info("***");
 
-                                    IgniteCache<String, Integer> c = near.jcache(null);
+                                    IgniteCache<String, Integer> c = near.cache(null);
 
                                     Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
@@ -488,7 +487,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
             dht(g).context().tm().printMemoryStats();
             near(g).context().tm().printMemoryStats();
 
-            IgniteCache<String, Integer> cache = grid(i).jcache(null);
+            IgniteCache<String, Integer> cache = grid(i).cache(null);
 
             int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
@@ -543,7 +542,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void checkNearAndPrimaryMultiNode(int gridCnt) throws Exception {
-        CacheAffinity<String> aff = affinity(grid(0).<String, Integer>jcache(null));
+        Affinity<String> aff = affinity(grid(0).<String, Integer>cache(null));
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
@@ -552,7 +551,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         Ignite pri = G.ignite(F.first(affNodes).id());
 
         // Initialize.
-        pri.jcache(null).put(CNTR_KEY, 0);
+        pri.cache(null).put(CNTR_KEY, 0);
 
         assertNull(near(pri).peekEx(CNTR_KEY));
 
@@ -576,7 +575,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         for (int i = 0; i < gridCnt; i++) {
             Ignite g = grid(i);
 
-            IgniteCache<String, Integer> cache = grid(i).jcache(null);
+            IgniteCache<String, Integer> cache = grid(i).cache(null);
 
             int cntr = cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
@@ -640,7 +639,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                     if (DEBUG)
                         log.info("***");
 
-                    IgniteCache<String, Integer> c = near.jcache(null);
+                    IgniteCache<String, Integer> c = near.cache(null);
 
                     Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
@@ -709,7 +708,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                     if (DEBUG)
                         log.info("***");
 
-                    IgniteCache<String, Integer> c = pri.jcache(null);
+                    IgniteCache<String, Integer> c = pri.cache(null);
 
                     Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 

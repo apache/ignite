@@ -25,7 +25,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -45,8 +44,8 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -72,7 +71,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAtomicityMode(atomicityMode);
 
@@ -128,7 +127,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).jcache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.get(new IncorrectCacheKey(0));
 
@@ -148,7 +147,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).jcache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.put(new IncorrectCacheKey(0), "test_value");
 
@@ -168,7 +167,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).jcache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.remove(new IncorrectCacheKey(0));
 

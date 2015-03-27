@@ -156,8 +156,12 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap>
         else if (nodeId == null && o.nodeId == null)
             return 0;
 
-        return nodeOrder < o.nodeOrder ? -1 : nodeOrder > o.nodeOrder ? 1 :
-            updateSeq < o.updateSeq ? -1 : updateSeq == o.updateSeq ? 0 : 1;
+        int res = Long.compare(nodeOrder, o.nodeOrder);
+
+        if (res == 0)
+            res = Long.compare(updateSeq, o.updateSeq);
+
+        return res;
     }
 
     /** {@inheritDoc} */

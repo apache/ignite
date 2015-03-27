@@ -42,6 +42,6 @@ public class IgnitePutGetBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("atomic");
+        return ignite().cache("atomic");
     }
 }

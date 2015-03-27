@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests cache value consistency for ATOMIC mode with near cache enabled.
@@ -28,8 +28,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 public class GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest
     extends GridCacheValueConsistencyAtomicSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */

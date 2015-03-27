@@ -58,7 +58,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     private Map<Integer, Object> newNodeDiscoData;
 
     /** Discovery data from old nodes. */
-    private Collection<Map<Integer, Object>> oldNodesDiscoData;
+    private Map<UUID, Map<Integer, Object>> oldNodesDiscoData;
 
     /** Start time of the first grid node. */
     private long gridStartTime;
@@ -91,7 +91,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         this.newNodeDiscoData = newNodeDiscoData;
         this.gridStartTime = gridStartTime;
 
-        oldNodesDiscoData = new LinkedList<>();
+        oldNodesDiscoData = new LinkedHashMap<>();
     }
 
     /**
@@ -178,18 +178,18 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /**
      * @return Discovery data from old nodes.
      */
-    public Collection<Map<Integer, Object>> oldNodesDiscoveryData() {
+    public Map<UUID, Map<Integer, Object>> oldNodesDiscoveryData() {
         return oldNodesDiscoData;
     }
 
     /**
      * @param discoData Discovery data to add.
      */
-    public void addDiscoveryData(Map<Integer, Object> discoData) {
+    public void addDiscoveryData(UUID nodeId, Map<Integer, Object> discoData) {
         // Old nodes disco data may be null if message
         // makes more than 1 pass due to stopping of the nodes in topology.
         if (oldNodesDiscoData != null)
-            oldNodesDiscoData.add(discoData);
+            oldNodesDiscoData.put(nodeId, discoData);
     }
 
     /**
@@ -222,8 +222,11 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         out.writeInt(oldNodesDiscoData != null ? oldNodesDiscoData.size() : -1);
 
         if (oldNodesDiscoData != null) {
-            for (Map<Integer, Object> map : oldNodesDiscoData)
-                U.writeMap(out, map);
+            for (Map.Entry<UUID, Map<Integer, Object>> entry : oldNodesDiscoData.entrySet()) {
+                U.writeUuid(out, entry.getKey());
+
+                U.writeMap(out, entry.getValue());
+            }
         }
     }
 
@@ -242,10 +245,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         int oldNodesDiscoDataSize = in.readInt();
 
         if (oldNodesDiscoDataSize >= 0) {
-            oldNodesDiscoData = new ArrayList<>(oldNodesDiscoDataSize);
+            oldNodesDiscoData = new LinkedHashMap<>(oldNodesDiscoDataSize);
 
-            for (int i = 0; i < oldNodesDiscoDataSize; i++)
-                oldNodesDiscoData.add(U.<Integer, Object>readMap(in));
+            for (int i = 0; i < oldNodesDiscoDataSize; i++) {
+                UUID nodeId = U.readUuid(in);
+
+                oldNodesDiscoData.put(nodeId, U.<Integer, Object>readMap(in));
+            }
         }
     }
 

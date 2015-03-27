@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -71,7 +71,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Workers count. */
-    private final LongAdder workersCnt = new LongAdder();
+    private final LongAdder8 workersCnt = new LongAdder8();
 
     /** SecurityContext map. */
     private ConcurrentMap<UUID, SecurityContext> sesMap = new ConcurrentHashMap<>();

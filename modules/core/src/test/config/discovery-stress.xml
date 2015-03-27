@@ -28,13 +28,12 @@
         <property name="cacheConfiguration">
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
-                <property name="distributionMode" value="PARTITIONED_ONLY"/>
                 <property name="rebalanceMode" value="SYNC"/>
                 <property name="swapEnabled" value="false"/>
                 <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
                 <property name="evictionPolicy">
-                    <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
+                    <bean class="org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy">
                         <property name="maxSize" value="20000000"/>
                     </bean>
                 </property>

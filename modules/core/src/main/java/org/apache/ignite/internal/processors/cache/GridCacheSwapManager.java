@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.swapspace.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -29,8 +30,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.ref.*;
@@ -173,7 +174,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Number of swap entries.
      * @throws IgniteCheckedException If failed.
      */
-    public int swapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+    public int swapEntriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert primary || backup;
 
         if (!swapEnabled)
@@ -196,7 +197,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Number of offheap entries.
      * @throws IgniteCheckedException If failed.
      */
-    public int offheapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+    public int offheapEntriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert primary || backup;
 
         if (!offheapEnabled)
@@ -1313,7 +1314,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, long topVer) {
+    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (!offheapEnabled)
@@ -1337,7 +1338,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer)
+    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         assert primary || backup;
 
@@ -1651,7 +1652,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Swap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, long topVer)
+    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert primary || backup;
@@ -1681,7 +1682,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Offheap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, long topVer)
+    public <K, V> Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert primary || backup;

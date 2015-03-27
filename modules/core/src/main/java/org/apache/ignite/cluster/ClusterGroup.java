@@ -18,44 +18,39 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Defines grid projection which represents a common functionality over a group of nodes.
- * The {@link org.apache.ignite.Ignite} interface itself also extends {@code GridProjection} which makes
- * an instance of {@link org.apache.ignite.Ignite} a projection over all grid nodes.
+ * Defines a cluster group which contains all or a subset of cluster nodes.
+ * The {@link IgniteCluster} interface itself also extends {@code ClusterGroup} which makes
+ * an instance of {@link IgniteCluster} into a cluster group containing all cluster nodes.
  * <h1 class="header">Clustering</h1>
- * Grid projection allows to group grid nodes into various subgroups to perform distributed
- * operations on them. All {@code 'forXXX(...)'} methods will create a child grid projection
- * from existing projection. If you create a new projection from current one, then the resulting
- * projection will include a subset of nodes from current projection. The following code snippet
- * shows how to create and nest grid projections:
+ * Cluster group allows to group cluster nodes into various subgroups to perform distributed
+ * operations on them. All {@code 'forXXX(...)'} methods will create a child cluster group
+ * from the existing cluster group. If you create a new cluster group from the current one, then
+ * the resulting cluster group will include a subset of nodes from the current one. The following
+ * code shows how to create and nest cluster groups:
  * <pre name="code" class="java">
- * Grid g = Ignition.ignite();
+ * Ignite ignite = Ignition.ignite();
  *
- * // Projection over remote nodes.
- * GridProjection remoteNodes = g.forRemotes();
+ * IgniteCluster cluster = ignite.cluster();
  *
- * // Projection over random remote node.
- * GridProjection randomNode = remoteNodes.forRandom();
+ * // Cluster group over remote nodes.
+ * ClusterGroup remoteNodes = cluster.forRemotes();
  *
- * // Projection over all nodes with cache named "myCache" enabled.
- * GridProjection cacheNodes = g.forCacheNodes("myCache");
+ * // Cluster group over random remote node.
+ * ClusterGroup randomNode = remoteNodes.forRandom();
  *
- * // Projection over all nodes that have user attribute "group" set to value "worker".
- * GridProjection workerNodes = g.forAttribute("group", "worker");
+ * // Cluster group over all nodes with cache named "myCache" enabled.
+ * ClusterGroup cacheNodes = cluster.forCacheNodes("myCache");
+ *
+ * // Cluster group over all nodes that have the user attribute "group" set to the value "worker".
+ * ClusterGroup workerNodes = cluster.forAttribute("group", "worker");
  * </pre>
- * <h1 class="header">Features</h1>
- * Grid projection provides the following functionality over the underlying group of nodes:
- * <ul>
- * <li>{@link org.apache.ignite.IgniteCompute} - functionality for executing tasks and closures over nodes in this projection.</li>
- * <li>{@link org.apache.ignite.IgniteMessaging} - functionality for topic-based message exchange over nodes in this projection.</li>
- * <li>{@link org.apache.ignite.IgniteEvents} - functionality for querying and listening to events on nodes in this projection.</li>
- * </ul>
  */
 public interface ClusterGroup {
     /**
@@ -66,202 +61,217 @@ public interface ClusterGroup {
     public Ignite ignite();
 
     /**
-     * Creates a grid projection over a given set of nodes.
+     * Creates a cluster group over a given set of nodes.
      *
-     * @param nodes Collection of nodes to create a projection from.
-     * @return Projection over provided grid nodes.
+     * @param nodes Collection of nodes to create the cluster group from.
+     * @return Cluster group for the provided grid nodes.
      */
     public ClusterGroup forNodes(Collection<? extends ClusterNode> nodes);
 
     /**
-     * Creates a grid projection for the given node.
+     * Creates a cluster group for the given node.
      *
-     * @param node Node to get projection for.
-     * @param nodes Optional additional nodes to include into projection.
-     * @return Grid projection for the given node.
+     * @param node Node to create cluster group for.
+     * @param nodes Optional additional nodes to include into the cluster group.
+     * @return Cluster group for the given nodes.
      */
     public ClusterGroup forNode(ClusterNode node, ClusterNode... nodes);
 
     /**
-     * Creates a grid projection for nodes other than given nodes.
+     * Creates a cluster group for nodes other than the given nodes.
      *
-     * @param node Node to exclude from new grid projection.
-     * @param nodes Optional additional nodes to exclude from projection.
-     * @return Projection that will contain all nodes that original projection contained excluding
-     *      given nodes.
+     * @param node Node to exclude from the new cluster group.
+     * @param nodes Optional additional nodes to exclude from the cluster group.
+     * @return Cluster group that will contain all nodes from the original cluster group excluding
+     *      the given nodes.
      */
     public ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes);
 
     /**
-     * Creates a grid projection for nodes not included into given projection.
+     * Creates a cluster group for nodes not included into the given cluster group.
      *
-     * @param prj Projection to exclude from new grid projection.
-     * @return Projection for nodes not included into given projection.
+     * @param prj Cluster group to exclude from the new cluster group.
+     * @return Cluster group for nodes not included into the given cluster group.
      */
     public ClusterGroup forOthers(ClusterGroup prj);
 
     /**
-     * Creates a grid projection over nodes with specified node IDs.
+     * Creates a cluster group over nodes with specified node IDs.
      *
      * @param ids Collection of node IDs.
-     * @return Projection over nodes with specified node IDs.
+     * @return Cluster group over nodes with the specified node IDs.
      */
     public ClusterGroup forNodeIds(Collection<UUID> ids);
 
     /**
-     * Creates a grid projection for a node with specified ID.
+     * Creates a cluster group for a node with the specified ID.
      *
-     * @param id Node ID to get projection for.
-     * @param ids Optional additional node IDs to include into projection.
-     * @return Projection over node with specified node ID.
+     * @param id Node ID to get the cluster group for.
+     * @param ids Optional additional node IDs to include into the cluster group.
+     * @return Cluster group over the node with the specified node IDs.
      */
     public ClusterGroup forNodeId(UUID id, UUID... ids);
 
     /**
-     * Creates a grid projection which includes all nodes that pass the given predicate filter.
+     * Creates a new cluster group which includes all nodes that pass the given predicate filter.
      *
-     * @param p Predicate filter for nodes to include into this projection.
-     * @return Grid projection for nodes that passed the predicate filter.
+     * @param p Predicate filter for nodes to include into the cluster group.
+     * @return Cluster group for nodes that passed the predicate filter.
      */
     public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p);
 
     /**
-     * Creates projection for nodes containing given name and value
+     * Creates a new cluster group for nodes containing given name and value
      * specified in user attributes.
      * <p>
      * User attributes for every node are optional and can be specified in
-     * grid node configuration. See {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()}
+     * grid node configuration. See {@link IgniteConfiguration#getUserAttributes()}
      * for more information.
      *
      * @param name Name of the attribute.
      * @param val Optional attribute value to match.
-     * @return Grid projection for nodes containing specified attribute.
+     * @return Cluster group for nodes containing specified attribute.
      */
     public ClusterGroup forAttribute(String name, @Nullable String val);
 
     /**
-     * Creates projection for all nodes that have cache with specified name running.
+     * Creates a cluster group of nodes started in server mode.
+     *
+     * @see Ignition#setClientMode(boolean)
+     * @see IgniteConfiguration#setClientMode(boolean)
+     * @return Cluster group of nodes started in server mode.
+     */
+    public ClusterGroup forServers();
+
+    /**
+     * Creates a cluster group of nodes started in client mode.
+
+     * @see Ignition#setClientMode(boolean)
+     * @see IgniteConfiguration#setClientMode(boolean)
+     * @return Cluster group of nodes started in client mode.
+     */
+    public ClusterGroup forClients();
+
+    /**
+     * Creates a cluster group for all nodes that have cache with specified name, either in client or server modes.
      *
      * @param cacheName Cache name.
-     * @return Projection over nodes that have specified cache running.
+     * @return Cluster group over nodes that have specified cache running.
      */
     public ClusterGroup forCacheNodes(String cacheName);
 
     /**
-     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
-     * {@link CacheDistributionMode#PARTITIONED_ONLY} or {@link CacheDistributionMode#NEAR_PARTITIONED}.
+     * Creates a cluster group for all data nodes that have the cache with the specified name running.
      *
      * @param cacheName Cache name.
-     * @return Projection over nodes that have specified cache running.
-     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
+     * @return Cluster group over nodes that have the cache with the specified name running.
      */
     public ClusterGroup forDataNodes(String cacheName);
 
     /**
-     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
-     * {@link CacheDistributionMode#CLIENT_ONLY} or {@link CacheDistributionMode#NEAR_ONLY}.
+     * Creates a cluster group for all client nodes that access cache with the specified name.
      *
      * @param cacheName Cache name.
-     * @return Projection over nodes that have specified cache running.
-     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
+     * @return Cluster group over nodes that have the specified cache running.
      */
     public ClusterGroup forClientNodes(String cacheName);
 
     /**
-     * Gets grid projection consisting from the nodes in this projection excluding the local node.
+     * Gets cluster group consisting from the nodes in this cluster group excluding the local node.
      *
-     * @return Grid projection consisting from the nodes in this projection excluding the local node, if any.
+     * @return Cluster group consisting from the nodes in this cluster group excluding the local node.
      */
     public ClusterGroup forRemotes();
 
     /**
-     * Gets grid projection consisting from the nodes in this projection residing on the
-     * same host as given node.
+     * Gets cluster group consisting from the nodes in this cluster group residing on the
+     * same host as the given node.
      *
-     * @param node Node residing on the host for which projection is created.
-     * @return Projection for nodes residing on the same host as passed in node.
+     * @param node Node to select the host for.
+     * @return Cluster group for nodes residing on the same host as the specified node.
      */
     public ClusterGroup forHost(ClusterNode node);
 
     /**
-     * Gets projection consisting from the daemon nodes in this projection.
+     * Gets a cluster group consisting from the daemon nodes.
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any projections. The only
+     * visible on the main APIs, i.e. they are not part of any cluster group. The only
      * way to see daemon nodes is to use this method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology but also needs to be
-     * excluded from "normal" topology so that it won't participate in task execution
+     * is build on Ignite and needs to participate in the topology, but also needs to be
+     * excluded from the "normal" topology, so that it won't participate in the task execution
      * or in-memory data grid storage.
      *
-     * @return Grid projection consisting from the daemon nodes in this projection.
+     * @return Cluster group consisting from the daemon nodes.
      */
     public ClusterGroup forDaemons();
 
     /**
-     * Creates grid projection with one random node from current projection.
+     * Creates a cluster group with one random node from the current cluster group.
      *
-     * @return Grid projection with one random node from current projection.
+     * @return Cluster group containing one random node from the current cluster group.
      */
     public ClusterGroup forRandom();
 
     /**
-     * Creates grid projection with one oldest node in the current projection.
-     * The resulting projection is dynamic and will always pick the next oldest
-     * node if the previous one leaves topology even after the projection has
+     * Creates a cluster group with one oldest node from the current cluster group.
+     * The resulting cluster group is dynamic and will always pick the next oldest
+     * node if the previous one leaves topology even after the cluster group has
      * been created.
+     * <p>
+     * Use {@link #node()} method to get the oldest node.
      *
-     * @return Grid projection with one oldest node from the current projection.
+     * @return Cluster group containing one oldest node from the current cluster group.
      */
     public ClusterGroup forOldest();
 
     /**
-     * Creates grid projection with one youngest node in the current projection.
-     * The resulting projection is dynamic and will always pick the newest
-     * node in the topology, even if more nodes entered after the projection
+     * Creates a cluster group with one youngest node in the current cluster group.
+     * The resulting cluster group is dynamic and will always pick the newest
+     * node in the topology, even if more nodes entered after the cluster group
      * has been created.
      *
-     * @return Grid projection with one youngest node from the current projection.
+     * @return Cluster group containing one youngest node from the current cluster group.
      */
     public ClusterGroup forYoungest();
 
     /**
-     * Gets read-only collections of nodes in this projection.
+     * Gets the read-only collection of nodes in this cluster group.
      *
-     * @return All nodes in this projection.
+     * @return All nodes in this cluster group.
      */
     public Collection<ClusterNode> nodes();
 
     /**
-     * Gets a node for given ID from this grid projection.
+     * Gets a node for given ID from this cluster group.
      *
      * @param nid Node ID.
-     * @return Node with given ID from this projection or {@code null} if such node does not exist in this
-     *      projection.
+     * @return Node with given ID from this cluster group or {@code null}, if such node does not exist.
      */
-    @Nullable public ClusterNode node(UUID nid);
+    public ClusterNode node(UUID nid);
 
     /**
-     * Gets first node from the list of nodes in this projection. This method is specifically
-     * useful for projection over one node only.
+     * Gets first node from the list of nodes in this cluster group. This method is specifically
+     * useful for cluster groups with one node only.
      *
-     * @return First node from the list of nodes in this projection or {@code null} if projection is empty.
+     * @return First node from the list of nodes in this cluster group or {@code null} if the cluster group is empty.
      */
-    @Nullable public ClusterNode node();
+    public ClusterNode node();
 
     /**
-     * Gets predicate that defines a subset of nodes for this projection.
+     * Gets predicate that defines a subset of nodes for this cluster group.
      *
-     * @return Predicate that defines a subset of nodes for this projection.
+     * @return Predicate that defines a subset of nodes for this cluster group.
      */
     public IgnitePredicate<ClusterNode> predicate();
 
     /**
-     * Gets a metrics snapshot for this projection.
+     * Gets a metrics snapshot for this cluster group.
      *
-     * @return Grid projection metrics snapshot.
-     * @throws IgniteException If projection is empty.
+     * @return Metrics snapshot.
+     * @throws IgniteException If this cluster group is empty.
      */
     public ClusterMetrics metrics() throws IgniteException;
 }

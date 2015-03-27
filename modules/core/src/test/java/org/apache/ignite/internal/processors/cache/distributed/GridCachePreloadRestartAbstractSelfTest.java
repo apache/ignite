@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -115,11 +114,12 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         cc.setStartSize(20);
         cc.setRebalanceMode(preloadMode);
         cc.setRebalanceBatchSize(preloadBatchSize);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        if (!nearEnabled())
+            cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 
@@ -211,7 +211,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @return Affinity.
      */
     @SuppressWarnings({"unchecked"})
-    private CacheAffinityFunction affinity(GridCache<Integer, ?> cache) {
+    private AffinityFunction affinity(GridCache<Integer, ?> cache) {
         return cache.configuration().getAffinity();
     }
 
@@ -250,7 +250,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         startGrids();
 
         try {
-            IgniteCache<Integer, String> c = grid(idx).jcache(CACHE_NAME);
+            IgniteCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
@@ -270,7 +270,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
                 Ignite ignite = startGrid(idx);
 
-                c = ignite.jcache(CACHE_NAME);
+                c = ignite.cache(CACHE_NAME);
 
                 affinityAfterStart(c);
 

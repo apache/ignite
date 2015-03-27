@@ -62,7 +62,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cc1.setWriteSynchronizationMode(FULL_SYNC);
         cc1.setSwapEnabled(true);
         cc1.setEvictSynchronized(false);
-        cc1.setEvictNearSynchronized(false);
 
         CacheConfiguration cc2 = new CacheConfiguration();
 
@@ -84,8 +83,8 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid(1);
 
-        cache = ignite.jcache(CACHE_REGULAR);
-        cacheOffheap = ignite.jcache(CACHE_OFFHEAP);
+        cache = ignite.cache(CACHE_REGULAR);
+        cacheOffheap = ignite.cache(CACHE_OFFHEAP);
     }
 
     /** {@inheritDoc} */

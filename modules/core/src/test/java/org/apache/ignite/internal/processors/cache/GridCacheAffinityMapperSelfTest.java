@@ -41,18 +41,18 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testMethodAffinityMapper() {
-        CacheAffinityKeyMapper mapper =
+        AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
         GridTestUtils.setFieldValue(mapper, "ignite", grid());
 
-        List<CacheAffinityKey<Integer>> keys = new ArrayList<>();
+        List<AffinityKey<Integer>> keys = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++)
-            keys.add(new CacheAffinityKey<>(i, Integer.toString(i)));
+            keys.add(new AffinityKey<>(i, Integer.toString(i)));
 
         for (int i = 1; i <= 10; i++) {
-            CacheAffinityKey<Integer> key = keys.get(i - 1);
+            AffinityKey<Integer> key = keys.get(i - 1);
 
             Object mapped = mapper.affinityKey(key);
 
@@ -67,7 +67,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testFieldAffinityMapper() {
-        CacheAffinityKeyMapper mapper =
+        AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
         GridTestUtils.setFieldValue(mapper, "ignite", grid());
@@ -93,7 +93,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testFieldAffinityMapperWithWrongClass() {
-        CacheAffinityKeyMapper mapper =
+        AffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
         GridTestUtils.setFieldValue(mapper, "ignite", grid());
@@ -118,7 +118,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
         private K key;
 
         /** Affinity key. */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         private Object affKey;
 
         /**

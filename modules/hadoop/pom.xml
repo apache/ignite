@@ -20,32 +20,30 @@
 <!--
     POM file.
 -->
-<project
-        xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>../../</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-hadoop</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -111,14 +109,14 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -176,7 +174,8 @@
                         <classpathDependencyExcludes>net.java.dev.jets3t:jets3t</classpathDependencyExcludes>
                         <classpathDependencyExcludes>com.jamesmurty.utils:java-xmlbuilder</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.codehaus.jackson:jackson-core-asl</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>org.codehaus.jackson:jackson-mapper-asl</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.codehaus.jackson:jackson-mapper-asl
+                        </classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.avro:avro</classpathDependencyExcludes>
                         <classpathDependencyExcludes>com.thoughtworks.paranamer:paranamer</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.xerial.snappy:snappy-java</classpathDependencyExcludes>
@@ -188,7 +187,8 @@
                         <classpathDependencyExcludes>org.tukaani:xz</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.hadoop:hadoop-hdfs</classpathDependencyExcludes>
                         <classpathDependencyExcludes>commons-daemon:commons-daemon</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-common</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-common
+                        </classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-common</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-api</classpathDependencyExcludes>
                         <classpathDependencyExcludes>javax.xml.bind:jaxb-api</classpathDependencyExcludes>
@@ -199,17 +199,21 @@
                         <classpathDependencyExcludes>com.sun.jersey.contribs:jersey-guice</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-client</classpathDependencyExcludes>
                         <classpathDependencyExcludes>com.sun.jersey:jersey-client</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-server-common</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>com.google.inject.extensions:guice-servlet</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-yarn-server-common
+                        </classpathDependencyExcludes>
+                        <classpathDependencyExcludes>com.google.inject.extensions:guice-servlet
+                        </classpathDependencyExcludes>
                         <classpathDependencyExcludes>io.netty:netty</classpathDependencyExcludes>
-                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-core</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>org.apache.hadoop:hadoop-mapreduce-client-core
+                        </classpathDependencyExcludes>
                         <!--<classpathDependencyExcludes>commons-beanutils:commons-beanutils</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>org.hamcrest:hamcrest-core</classpathDependencyExcludes>
                         <!--<classpathDependencyExcludes>commons-collections:commons-collections</classpathDependencyExcludes>-->
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-http</classpathDependencyExcludes>
                         <classpathDependencyExcludes>commons-io:commons-io</classpathDependencyExcludes>
                         <!--<classpathDependencyExcludes>commons-lang:commons-lang</classpathDependencyExcludes>-->
-                        <classpathDependencyExcludes>commons-configuration:commons-configuration</classpathDependencyExcludes>
+                        <classpathDependencyExcludes>commons-configuration:commons-configuration
+                        </classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-server</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-util</classpathDependencyExcludes>
                         <classpathDependencyExcludes>org.eclipse.jetty:jetty-io</classpathDependencyExcludes>

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -26,18 +25,19 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
@@ -98,7 +98,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
-        
+
         IgniteConfiguration gridCfg = ctx.config();
 
         // Node doesn't have IGFS if it:
@@ -127,7 +127,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (cacheCfg == null)
                 continue; // No cache for the given IGFS configuration.
 
-            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
+            AffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
             if (!(affMapper instanceof IgfsGroupDataBlocksKeyMapper))
                 // Do not create IGFS attributes for such a node nor throw error about invalid configuration.
@@ -262,27 +262,34 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 throw new IgniteCheckedException("Duplicate IGFS name found (check configuration and " +
                     "assign unique name to each): " + name);
 
-            GridCacheAdapter<Object, Object> dataCache = ctx.cache().internalCache(cfg.getDataCacheName());
+            CacheConfiguration dataCacheCfg = config(cfg.getDataCacheName());
+            CacheConfiguration metaCacheCfg = config(cfg.getMetaCacheName());
 
-            if (dataCache == null)
+            if (dataCacheCfg == null)
                 throw new IgniteCheckedException("Data cache is not configured locally for IGFS: " + cfg);
 
-            if (dataCache.configuration().getIndexedTypes() != null)
+            if (GridQueryProcessor.isEnabled(dataCacheCfg))
                 throw new IgniteCheckedException("IGFS data cache cannot start with enabled query indexing.");
 
-            GridCache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
+            if (dataCacheCfg.getAtomicityMode() != TRANSACTIONAL)
+                throw new IgniteCheckedException("Data cache should be transactional: " + cfg.getDataCacheName());
 
-            if (metaCache == null)
+            if (metaCacheCfg == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for IGFS: " + cfg);
 
-            if (metaCache.configuration().getIndexedTypes() != null)
+            if (GridQueryProcessor.isEnabled(metaCacheCfg))
                 throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
 
+            if (GridQueryProcessor.isEnabled(metaCacheCfg))
+                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
+
+            if (metaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
+                throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 
             if (F.eq(cfg.getDataCacheName(), cfg.getMetaCacheName()))
                 throw new IgniteCheckedException("Cannot use same cache as both data and meta cache: " + cfg.getName());
 
-            if (!(dataCache.configuration().getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
+            if (!(dataCacheCfg.getAffinityMapper() instanceof IgfsGroupDataBlocksKeyMapper))
                 throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
                     IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
@@ -291,7 +298,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (maxSpaceSize > 0) {
                 // Max space validation.
                 long maxHeapSize = Runtime.getRuntime().maxMemory();
-                long offHeapSize = dataCache.configuration().getOffHeapMaxMemory();
+                long offHeapSize = dataCacheCfg.getOffHeapMaxMemory();
 
                 if (offHeapSize < 0 && maxSpaceSize > maxHeapSize)
                     // Offheap is disabled.
@@ -304,15 +311,15 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                         ", maxIgfsSpaceSize=" + maxSpaceSize + ']');
             }
 
-            if (dataCache.configuration().getCacheMode() == PARTITIONED) {
-                int backups = dataCache.configuration().getBackups();
+            if (dataCacheCfg.getCacheMode() == PARTITIONED) {
+                int backups = dataCacheCfg.getBackups();
 
                 if (backups != 0)
                     throw new IgniteCheckedException("IGFS data cache cannot be used with backups (set backup count " +
                         "to 0 and restart the grid): " + cfg.getDataCacheName());
             }
 
-            if (cfg.getMaxSpaceSize() == 0 && dataCache.configuration().getMemoryMode() == OFFHEAP_VALUES)
+            if (cfg.getMaxSpaceSize() == 0 && dataCacheCfg.getMemoryMode() == OFFHEAP_VALUES)
                 U.warn(log, "IGFS max space size is not specified but data cache values are stored off-heap (max " +
                     "space will be limited to 80% of max JVM heap size): " + cfg.getName());
 
@@ -333,6 +340,19 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             cfgNames.add(name);
         }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Configuration.
+     */
+    private CacheConfiguration config(String cacheName) {
+        for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
+            if (F.eq(cacheName, ccfg.getName()))
+                return ccfg;
+        }
+
+        return null;
     }
 
     /**

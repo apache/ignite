@@ -28,7 +28,7 @@ import java.util.*;
  * Mock affinity implementation that ensures constant key-to-node mapping based on {@code GridCacheModuloAffinity} The
  * partition selection is as follows: 0 maps to partition 1 and any other value maps to partition 1.
  */
-public class GridExternalAffinityFunction implements CacheAffinityFunction {
+public class GridExternalAffinityFunction implements AffinityFunction {
     /** Node attribute for index. */
     public static final String IDX_ATTR = "nodeIndex";
 
@@ -57,7 +57,7 @@ public class GridExternalAffinityFunction implements CacheAffinityFunction {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext ctx) {
+    @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
         List<List<ClusterNode>> res = new ArrayList<>(partitions());
 
         List<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
@@ -151,7 +151,7 @@ public class GridExternalAffinityFunction implements CacheAffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        return key instanceof Integer ? 0 == key ? 0 : 1 : 1;
+        return key instanceof Integer ? 0 == (Integer)key ? 0 : 1 : 1;
     }
 
     /** {@inheritDoc}

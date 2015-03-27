@@ -111,7 +111,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(0);
         cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(IGFS_GROUP_SIZE));
-        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setAtomicityMode(TRANSACTIONAL);
 

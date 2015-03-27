@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -477,7 +478,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param topVer Topology version.
      * @return Cache entry.
      */
-    protected GridCacheEntryEx entryEx(GridCacheContext cacheCtx, IgniteTxKey key, long topVer) {
+    protected GridCacheEntryEx entryEx(GridCacheContext cacheCtx, IgniteTxKey key, AffinityTopologyVersion topVer) {
         return cacheCtx.cache().entryEx(key.key(), topVer);
     }
 
@@ -680,7 +681,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             try {
                 cctx.tm().txContext(this);
 
-                long topVer = topologyVersion();
+                AffinityTopologyVersion topVer = topologyVersion();
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -1142,7 +1143,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         Collection<KeyCacheObject> lockKeys = null;
 
-        long topVer = topologyVersion();
+        AffinityTopologyVersion topVer = topologyVersion();
 
         // In this loop we cover only read-committed or optimistic transactions.
         // Transactions that are pessimistic and not read-committed are covered
@@ -2694,6 +2695,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         }
                     });
             }
+        }
+        catch (RuntimeException e) {
+            for (IgniteTxEntry txEntry : txMap.values()) {
+                GridCacheEntryEx cached0 = txEntry.cached();
+
+                if (cached0 != null)
+                    txEntry.context().evicts().touch(cached0, topologyVersion());
+            }
+
+            throw e;
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();

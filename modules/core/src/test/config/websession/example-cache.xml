@@ -58,7 +58,6 @@
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
 
                     <property name="indexedTypes">
@@ -76,7 +75,6 @@
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
                 </bean>
 
@@ -85,7 +83,9 @@
                     <property name="name" value="partitioned_tx"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
                     <property name="backups" value="1"/>
                 </bean>
 
@@ -133,7 +133,7 @@
                     <!--
                         Ignite provides several options for automatic discovery that can be used
                         instead os static IP based discovery. For information on all options refer
-                        to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
+                        to our documentation: http://apacheignite.readme.io/docs/cluster-config
                     -->
                     <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
                     <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->

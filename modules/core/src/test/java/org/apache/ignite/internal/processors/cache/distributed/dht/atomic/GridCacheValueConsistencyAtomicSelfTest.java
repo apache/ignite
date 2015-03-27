@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -42,7 +42,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
 
     /** {@inheritDoc} */
     @Override protected int iterationCount() {
-        return 400_000;
+        return 100_000;
     }
 
     /**
@@ -72,7 +72,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
                         for (int i = rangeStart; i < rangeStart + range; i++) {
                             int idx = ThreadLocalRandom8.current().nextInt(gridCount());
 
-                            IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
+                            IgniteCache<Integer, Integer> cache = grid(idx).cache(null);
 
                             cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
 
@@ -92,7 +92,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
             int total = 0;
 
             for (int idx = 0; idx < gridCount(); idx++) {
-                IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
+                IgniteCache<Integer, Integer> cache = grid(idx).cache(null);
 
                 for (int i = 0; i < keyCnt; i++) {
                     Integer val = cache.localPeek(i, CachePeekMode.ONHEAP);

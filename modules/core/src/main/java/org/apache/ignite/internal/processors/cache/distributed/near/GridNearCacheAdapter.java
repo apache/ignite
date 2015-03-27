@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -39,7 +40,6 @@ import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Common logic for near caches.
@@ -62,21 +62,23 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param ctx Context.
      */
     protected GridNearCacheAdapter(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getNearStartSize());
+        super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
     }
 
     /** {@inheritDoc} */
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx,
-                long topVer, KeyCacheObject key,
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
+                AffinityTopologyVersion topVer, 
+                KeyCacheObject key,
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
                 long ttl,
-                int hdrId)
-            {
+                int hdrId
+            ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
                 return new GridNearCacheEntry(ctx, key, hash, val, next, ttl, hdrId);
@@ -119,7 +121,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, long topVer) {
+    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
         GridNearCacheEntry entry = null;
 
         while (true) {
@@ -142,7 +144,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param topVer Topology version.
      * @return Entry.
      */
-    public GridNearCacheEntry entryExx(KeyCacheObject key, long topVer) {
+    public GridNearCacheEntry entryExx(KeyCacheObject key, AffinityTopologyVersion topVer) {
         return (GridNearCacheEntry)entryEx(key, topVer);
     }
 
@@ -301,7 +303,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return super.size() + dht().size();
+        return nearEntries().size() + dht().size();
     }
 
     /** {@inheritDoc} */
@@ -311,14 +313,22 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int nearSize() {
-        return super.size();
+        return nearEntries().size();
     }
 
     /**
      * @return Near entries.
      */
     public Set<Cache.Entry<K, V>> nearEntries() {
-        return super.entrySet(CU.empty0());
+        final AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+        return super.entrySet(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx entry) {
+                GridNearCacheEntry nearEntry = (GridNearCacheEntry)entry;
+
+                return nearEntry.valid(topVer);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -335,7 +345,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable final CacheEntryPredicate... filter) {
-        final long topVer = ctx.affinity().affinityTopologyVersion();
+        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<Cache.Entry<K, V>> entries =
             F.flatCollections(
@@ -531,16 +541,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.
-        if (isAffinityNode(ctx.config()))
+        if (ctx.affinityNode())
             dht().promoteAll(keys);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
-        if (configuration().getDistributionMode() == CacheDistributionMode.NEAR_PARTITIONED)
-            return dht().randomEntry();
-        else
-            return super.randomEntry();
+        return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
     }
 
     /** {@inheritDoc} */
@@ -607,27 +614,22 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
-        switch (configuration().getDistributionMode()) {
-            case NEAR_PARTITIONED:
-                GridCacheVersion obsoleteVer = ctx.versions().next();
+        assert configuration().getNearConfiguration() != null;
 
-                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
+        if (ctx.affinityNode()) {
+            GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
+            List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
 
-                for (GridCacheClearAllRunnable<K, V> dhtJob : dhtJobs)
-                    res.add(new GridNearCacheClearAllRunnable<>(this, obsoleteVer, dhtJob));
+            List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
 
-                return res;
+            for (GridCacheClearAllRunnable<K, V> dhtJob : dhtJobs)
+                res.add(new GridNearCacheClearAllRunnable<>(this, obsoleteVer, dhtJob));
 
-            case NEAR_ONLY:
-                return super.splitClearLocally();
-
-            default:
-                assert false : "Invalid partition distribution mode.";
-
-                return null;
+            return res;
         }
+        else
+            return super.splitClearLocally();
     }
 
     /**

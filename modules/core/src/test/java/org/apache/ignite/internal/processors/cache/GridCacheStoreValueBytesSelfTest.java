@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -77,7 +76,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        IgniteCache<Integer, String> c = g0.jcache(null);
+        IgniteCache<Integer, String> c = g0.cache(null);
 
         c.put(1, "Cached value");
 

@@ -176,18 +176,22 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull IgniteProductVersion o) {
         // NOTE: Unknown version is less than any other version.
-        if (major == o.major) {
-            if (minor == o.minor) {
-                if (maintenance == o.maintenance)
-                    return revTs != o.revTs ? revTs < o.revTs ? -1 : 1 : 0;
-                else
-                    return maintenance < o.maintenance ? -1 : 1;
-            }
-            else
-                return minor < o.minor ? -1 : 1;
-        }
-        else
-            return major < o.major ? -1 : 1;
+        int res = Integer.compare(major, o.major);
+
+        if (res != 0)
+            return res;
+
+        res = Integer.compare(minor, o.minor);
+
+        if (res != 0)
+            return res;
+
+        res = Integer.compare(maintenance, o.maintenance);
+
+        if (res != 0)
+            return res;
+
+        return Long.compare(revTs, o.revTs);
     }
 
     /** {@inheritDoc} */
@@ -253,7 +257,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
     public static IgniteProductVersion fromString(String verStr) {
         assert verStr != null;
 
-        if (verStr.endsWith("-DEV")) // Development version, just cut it out.
+        if (verStr.endsWith("-DEV") || verStr.endsWith("-n/a")) // Development or built from source ZIP.
             verStr = verStr.substring(0, verStr.length() - 4);
 
         Matcher match = VER_PATTERN.matcher(verStr);

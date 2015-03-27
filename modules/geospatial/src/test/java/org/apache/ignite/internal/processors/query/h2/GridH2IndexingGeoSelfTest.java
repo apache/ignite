@@ -64,7 +64,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeo() throws Exception {
-        GridCache<Integer, EnemyCamp> cache = ((IgniteKernal)grid(0)).cache(null);
+        GridCache<Integer, EnemyCamp> cache = ((IgniteKernal)grid(0)).getCache(null);
 
         WKTReader r = new WKTReader();
 
@@ -120,9 +120,9 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeoMultithreaded() throws Exception {
-        final GridCache<Integer, EnemyCamp> cache1 = ((IgniteKernal)grid(0)).cache(null);
-        final GridCache<Integer, EnemyCamp> cache2 = ((IgniteKernal)grid(1)).cache(null);
-        final GridCache<Integer, EnemyCamp> cache3 = ((IgniteKernal)grid(2)).cache(null);
+        final GridCache<Integer, EnemyCamp> cache1 = ((IgniteKernal)grid(0)).getCache(null);
+        final GridCache<Integer, EnemyCamp> cache2 = ((IgniteKernal)grid(1)).getCache(null);
+        final GridCache<Integer, EnemyCamp> cache3 = ((IgniteKernal)grid(2)).getCache(null);
 
         final String[] points = new String[CNT];
 

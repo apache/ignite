@@ -21,17 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-
 /**
  * Near only self test.
  */
 public class GridCacheNearOnlySelfTest extends GridCacheClientModesAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
-    }
-
     /** {@inheritDoc} */
     @Override protected boolean clientOnly() {
         return false;

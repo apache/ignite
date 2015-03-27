@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -88,8 +89,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         txSerEnabled = cctx.gridConfig().getTransactionConfiguration().isTxSerializableEnabled();
 
-        dataCenterId = cctx.dataCenterId();
-
         last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
@@ -104,6 +103,17 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         cctx.gridEvents().removeLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
+    }
+
+    /**
+     * Sets data center ID.
+     *
+     * @param dataCenterId Data center ID.
+     */
+    public void dataCenterId(byte dataCenterId) {
+        this.dataCenterId = dataCenterId;
+
+        last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
     }
 
     /**
@@ -166,8 +176,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version for which new version should be obtained.
      * @return Next version based on given topology version.
      */
-    public GridCacheVersion next(long topVer) {
-        return next(topVer, true, false);
+    public GridCacheVersion next(AffinityTopologyVersion topVer) {
+        return next(topVer.topologyVersion(), true, false);
     }
 
     /**
@@ -184,8 +194,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      *
      * @return Next version for cache store operations.
      */
-    public GridCacheVersion nextForLoad(long topVer) {
-        return next(topVer, true, true);
+    public GridCacheVersion nextForLoad(AffinityTopologyVersion topVer) {
+        return next(topVer.topologyVersion(), true, true);
     }
 
     /**

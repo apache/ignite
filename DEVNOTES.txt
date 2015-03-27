@@ -14,10 +14,17 @@ To execute this build you need to be in GIT root folder.
 Look for ignite-fabric-<version>.zip in ./target directory.
 
 
+JCache TCK compliance
+======================
+To test compliance with JCache TCK use:
+
+mvn test -P !release,jcache-tck -pl :ignite-core -am
+
+
 Apache RAT Instructions
 =======================
 To check license headers use:
 
 mvn clean validate -Pcheck-licenses
 
-For more information (exclude list and etc.) see "check-licenses" profile in pom.xml.
+For more information (e.g. exclude list) see "check-licenses" profile in pom.xml.

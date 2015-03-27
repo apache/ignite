@@ -342,7 +342,7 @@ public abstract class HibernateAccessStrategyAdapter {
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
+            GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
             assert cache != null;
 

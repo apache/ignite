@@ -34,12 +34,12 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -72,6 +72,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        factory = null;
+
         storeMap.clear();
     }
 
@@ -80,8 +82,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        if (nearCache && gridName.equals(getTestGridName(0)))
-            cfg.setDistributionMode(NEAR_PARTITIONED);
+        if (nearCache)
+            cfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setExpiryPolicyFactory(factory);
 
@@ -757,9 +759,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void testNearCreateUpdate() throws Exception {
+    public void _testNearCreateUpdate() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -782,7 +785,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        assertEquals(NEAR_PARTITIONED, jcache(0).getConfiguration(CacheConfiguration.class).getDistributionMode());
+        assertNotNull(jcache(0).getConfiguration(CacheConfiguration.class).getNearConfiguration());
 
         cache0.put(key, 1);
 
@@ -880,9 +883,10 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
+     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void testNearAccess() throws Exception {
+    public void _testNearAccess() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -1040,6 +1044,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             if (e == null && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
 
+            if (e != null && e.deleted()) {
+                assertEquals(0, e.ttl());
+
+                assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+
+                continue;
+            }
+
             if (e == null)
                 assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
             else {
@@ -1091,7 +1103,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    private static class TestPolicy implements ExpiryPolicy {
+    private static class TestPolicy implements ExpiryPolicy, Serializable {
         /** */
         private Long create;
 

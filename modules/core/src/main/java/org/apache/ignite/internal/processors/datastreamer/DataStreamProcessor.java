@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.stream.*;
 import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
@@ -224,7 +225,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 clsLdr = dep.classLoader();
             }
 
-            IgniteDataStreamer.Updater<K, V> updater;
+            StreamReceiver<K, V> updater;
 
             try {
                 updater = marsh.unmarshal(req.updaterBytes(), clsLdr);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -59,7 +61,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     private Collection<Integer> invalidParts = new GridLeanSet<>();
 
     /** Topology version if invalid partitions is not empty. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Error. */
     @GridDirectTransient
@@ -141,7 +143,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
      * @param invalidParts Partitions to retry due to ownership shift.
      * @param topVer Topology version.
      */
-    public void invalidPartitions(Collection<Integer> invalidParts, long topVer) {
+    public void invalidPartitions(Collection<Integer> invalidParts, @NotNull AffinityTopologyVersion topVer) {
         this.invalidParts = invalidParts;
         this.topVer = topVer;
     }
@@ -149,7 +151,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     /**
      * @return Topology version if this response has invalid partitions.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -244,7 +246,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -312,7 +314,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 reader.incrementState();
 
             case 8:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

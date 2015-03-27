@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.atomic.*;
 

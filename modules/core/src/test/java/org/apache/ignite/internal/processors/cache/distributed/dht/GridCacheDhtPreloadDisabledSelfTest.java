@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,7 +37,6 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
@@ -83,10 +83,9 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
         cacheCfg.setRebalanceMode(NONE);
-        cacheCfg.setAffinity(new CacheRendezvousAffinityFunction(false, partitions));
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         //cacheCfg.setRebalanceThreadPoolSize(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -116,7 +115,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @return Topology.
      */
     private GridDhtPartitionTopology topology(int i) {
-        return near(grid(i).jcache(null)).dht().topology();
+        return near(grid(i).cache(null)).dht().topology();
     }
 
     /** @throws Exception If failed. */
@@ -133,7 +132,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 List<Collection<ClusterNode>> mappings = new ArrayList<>(nodeCnt);
 
                 for (int i = 0; i < nodeCnt; i++) {
-                    Collection<ClusterNode> nodes = topology(i).nodes(p, -1);
+                    Collection<ClusterNode> nodes = topology(i).nodes(p, AffinityTopologyVersion.NONE);
                     List<ClusterNode> owners = topology(i).owners(p);
 
                     int size = backups + 1;
@@ -173,7 +172,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
 
             int keyCnt = 10;
 
@@ -194,7 +193,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.jcache(null);
+                IgniteCache<Integer, String> c = g.cache(null);
 
                 for (int i = 0; i < keyCnt; i++)
                     assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
@@ -218,7 +217,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                 // Check all nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.jcache(null);
+                    IgniteCache<Integer, String> c = gg.cache(null);
 
                     for (int i = 0; i < keyCnt; i++)
                         assertNull(c.localPeek(i, CachePeekMode.ONHEAP));

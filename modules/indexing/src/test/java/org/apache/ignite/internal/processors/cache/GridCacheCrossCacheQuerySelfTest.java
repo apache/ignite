@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
@@ -95,9 +94,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(true);
-        cc.setEvictNearSynchronized(false);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         if (mode == CacheMode.PARTITIONED)
             cc.setIndexedTypes(
@@ -122,7 +119,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         GridCacheQueriesEx<Integer, FactPurchase> qx =
             (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
-                .<Integer, FactPurchase>cache(cache).queries();
+                .<Integer, FactPurchase>getCache(cache).queries();
 
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
@@ -142,7 +139,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testTwoStepGroupAndAggregates() throws Exception {
         GridCacheQueriesEx<Integer, FactPurchase> qx =
             (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
-                .<Integer, FactPurchase>cache("partitioned").queries();
+                .<Integer, FactPurchase>getCache("partitioned").queries();
 
         Set<Integer> set1 = new HashSet<>();
 
@@ -233,11 +230,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApiQueries() throws Exception {
-        IgniteCache<Object,Object> c = ignite.jcache("partitioned");
+        IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
-        c.queryFields(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
+        c.query(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 
-        List<List<?>> res = c.queryFields(new SqlFieldsQuery("select cast(? as varchar), id " +
+        List<List<?>> res = c.query(new SqlFieldsQuery("select cast(? as varchar), id " +
             "from FactPurchase order by id limit ? offset ?").setArgs("aaa", 1, 1)).getAll();
 
         assertEquals(1, res.size());
@@ -249,7 +246,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //    }
 
     public void _testLoop() throws Exception {
-        final IgniteCache<Object,Object> c = ignite.jcache("partitioned");
+        final IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
         X.println("___ GET READY");
 
@@ -270,7 +267,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
                         start = t;
                     }
 
-                    c.queryFields(new SqlFieldsQuery("select * from FactPurchase")).getAll();
+                    c.query(new SqlFieldsQuery("select * from FactPurchase")).getAll();
                 }
 
                 return null;
@@ -297,7 +294,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private void fillCaches() throws IgniteCheckedException {
         int idGen = 0;
 
-        GridCache<Integer, Object> dimCache = ((IgniteKernal)ignite).cache("replicated");
+        GridCache<Integer, Object> dimCache = ((IgniteKernal)ignite).getCache("replicated");
 
         for (int i = 0; i < 2; i++) {
             int id = idGen++;
@@ -314,7 +311,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
         CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
-        GridCache<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).cache("partitioned");
+        GridCache<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).getCache("partitioned");
 
         List<DimStore> dimStores = new ArrayList<>(stores.values());
         Collections.sort(dimStores, new Comparator<DimStore>() {
@@ -352,7 +349,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         throws Exception {
         CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
             ((IgniteKernal)ignite)
-                .<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
+                .<Integer, FactPurchase>getCache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
         List<Map.Entry<Integer, FactPurchase>> res = new ArrayList<>(qry.execute().get());

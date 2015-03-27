@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.mxbean.*;
@@ -30,7 +31,7 @@ import javax.cache.*;
 import java.util.*;
 
 /**
- * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link org.apache.ignite.Ignite#jcache(String)}
+ * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link org.apache.ignite.Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
  * This API extends {@link CacheProjection} API which contains vast majority of cache functionality
@@ -42,7 +43,7 @@ import java.util.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
+ *     Method {@link #affinity()} provides {@link AffinityFunction} service for information on
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
  * </li>
  * <li>
@@ -96,7 +97,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *
      * @return Cache data affinity service.
      */
-    public CacheAffinity<K> affinity();
+    public Affinity<K> affinity();
 
     /**
      * Gets metrics (statistics) for this cache.
@@ -209,7 +210,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
-     * {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)} to make sure that
+     * {@link RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
      * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceDelay()} for more information on how to configure
@@ -218,4 +219,9 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteInternalFuture<?> forceRepartition();
+
+    /**
+     * @return {@code True} if local node is affinity node.
+     */
+    public boolean affinityNode();
 }

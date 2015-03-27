@@ -25,6 +25,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
@@ -76,7 +77,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).jcache(null);
+        return grid(idx).cache(null);
     }
 
     /**
@@ -100,7 +101,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache(int idx) {
-        return ((IgniteKernal)grid(idx)).cache(null);
+        return ((IgniteKernal)grid(idx)).getCache(null);
     }
 
     /**
@@ -109,14 +110,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
-        return ((IgniteKernal)grid(idx)).cache(cacheName);
+        return ((IgniteKernal)grid(idx)).getCache(cacheName);
     }
 
     /**
      * @return Cache.
      */
     protected <K, V> GridCache<K, V> internalCache() {
-        return ((IgniteKernal)grid()).cache(null);
+        return ((IgniteKernal)grid()).getCache(null);
     }
 
     /**
@@ -130,7 +131,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
-        return grid().jcache(null);
+        return grid().cache(null);
     }
 
     /**
@@ -366,7 +367,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 CacheConfiguration cfg = c.configuration();
 
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceMode() != NONE && g.cluster().nodes().size() > 1) {
-                    CacheAffinityFunction aff = cfg.getAffinity();
+                    AffinityFunction aff = cfg.getAffinity();
 
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
 
@@ -381,7 +382,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             int exp = affNodes.size();
 
-                            Collection<ClusterNode> owners = top.nodes(p, -1);
+                            Collection<ClusterNode> owners = top.nodes(p, AffinityTopologyVersion.NONE);
 
                             int actual = owners.size();
 
@@ -415,7 +416,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Affinity.
      */
-    public static <K> CacheAffinity<K> affinity(IgniteCache<K, ?> cache) {
+    public static <K> Affinity<K> affinity(IgniteCache<K, ?> cache) {
         return cache.unwrap(Ignite.class).affinity(cache.getName());
     }
 
@@ -440,7 +441,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode locNode = localNode(cache);
 
-        CacheAffinity<Integer> aff = (CacheAffinity<Integer>)affinity(cache);
+        Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
@@ -491,7 +492,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode locNode = localNode(cache);
 
-        CacheAffinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
+        Affinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
@@ -522,7 +523,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode locNode = localNode(cache);
 
-        CacheAffinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
+        Affinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
@@ -548,7 +549,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertNotNull(node);
 
-        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).jcache(cacheName);
+        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).cache(cacheName);
     }
 
     /**
@@ -730,5 +731,75 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         fail("Failed to find cache configuration for cache: " + cacheName);
 
         return null;
+    }
+
+    /**
+     * @param key Key.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> nearCache(Integer key) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Affinity<Integer> aff = allGrids.get(0).affinity(null);
+
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        for (Ignite ignite : allGrids) {
+            if (!nodes.contains(ignite.cluster().localNode()))
+                return ignite.cache(null);
+        }
+
+        fail();
+
+        return null;
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
+        return primaryNode(key, null).cache(null);
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Ignite instance which has primary cache for given key.
+     */
+    protected Ignite primaryNode(Object key, String cacheName) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Ignite ignite = allGrids.get(0);
+
+        Affinity<Object> aff = ignite.affinity(cacheName);
+
+        ClusterNode node = aff.mapKeyToNode(key);
+
+        assertNotNull("There are no cache affinity nodes", node);
+
+        return grid(node);
+    }
+
+    /**
+     * In ATOMIC cache with CLOCK mode if key is updated from different nodes at same time
+     * only one update wins others are ignored (can happen in test event when updates are executed from
+     * different nodes sequentially), this delay is used to avoid lost updates.
+     *
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    protected void atomicClockModeDelay(IgniteCache cache) throws Exception {
+        CacheConfiguration ccfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        if (ccfg.getCacheMode() != LOCAL &&
+            ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
+            ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
+            U.sleep(100);
     }
 }

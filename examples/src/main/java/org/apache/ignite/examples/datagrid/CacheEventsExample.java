@@ -18,7 +18,10 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -27,17 +30,17 @@ import static org.apache.ignite.events.EventType.*;
 
 /**
  * This examples demonstrates events API. Note that ignite events are disabled by default and
- * must be specifically enabled, just like in {@code examples/config/example-cache.xml} file.
+ * must be specifically enabled, just like in {@code examples/config/example-ignite.xml} file.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-cache.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
+ * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheEventsExample {
     /** Cache name. */
-    private static final String CACHE_NAME = "partitioned";
+    private static final String CACHE_NAME = CacheEventsExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -46,49 +49,51 @@ public class CacheEventsExample {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException, InterruptedException {
-        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
 
-            // Clean up caches on all nodes before run.
-            cache.clear();
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
 
-            // This optional local callback is called for each event notification
-            // that passed remote predicate listener.
-            IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
-                @Override public boolean apply(UUID uuid, CacheEvent evt) {
-                    System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
-                        ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
+            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+                // This optional local callback is called for each event notification
+                // that passed remote predicate listener.
+                IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
+                    @Override public boolean apply(UUID uuid, CacheEvent evt) {
+                        System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
+                            ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
 
-                    return true; // Continue listening.
-                }
-            };
+                        return true; // Continue listening.
+                    }
+                };
 
-            // Remote listener which only accepts events for keys that are
-            // greater or equal than 10 and if event node is primary for this key.
-            IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
-                @Override public boolean apply(CacheEvent evt) {
-                    System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
+                // Remote listener which only accepts events for keys that are
+                // greater or equal than 10 and if event node is primary for this key.
+                IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
+                    @Override public boolean apply(CacheEvent evt) {
+                        System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
 
-                    int key = evt.key();
+                        int key = evt.key();
 
-                    return key >= 10 && ignite.affinity(CACHE_NAME).isPrimary(ignite.cluster().localNode(), key);
-                }
-            };
+                        return key >= 10 && ignite.affinity(CACHE_NAME).isPrimary(ignite.cluster().localNode(), key);
+                    }
+                };
 
-            // Subscribe to specified cache events on all nodes that have cache running.
-            // Cache events are explicitly enabled in examples/config/example-cache.xml file.
-            ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
-                EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
+                // Subscribe to specified cache events on all nodes that have cache running.
+                // Cache events are explicitly enabled in examples/config/example-ignite.xml file.
+                ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
+                    EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
-            // Generate cache events.
-            for (int i = 0; i < 20; i++)
-                cache.put(i, Integer.toString(i));
+                // Generate cache events.
+                for (int i = 0; i < 20; i++)
+                    cache.put(i, Integer.toString(i));
 
-            // Wait for a while while callback is notified about remaining puts.
-            Thread.sleep(2000);
+                // Wait for a while while callback is notified about remaining puts.
+                Thread.sleep(2000);
+            }
         }
     }
 }

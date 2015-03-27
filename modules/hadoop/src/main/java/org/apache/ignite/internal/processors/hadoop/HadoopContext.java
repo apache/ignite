@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
@@ -118,7 +119,8 @@ public class HadoopContext {
      * @return Hadoop-enabled nodes.
      */
     public Collection<ClusterNode> nodes() {
-        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR, ctx.discovery().topologyVersion());
+        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR,
+            new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
     }
 
     /**

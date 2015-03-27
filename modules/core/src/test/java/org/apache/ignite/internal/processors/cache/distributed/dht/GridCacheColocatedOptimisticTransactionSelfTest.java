@@ -28,7 +28,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -74,12 +73,11 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         cc.setName(CACHE);
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(true);
         cc.setEvictSynchronized(false);
-        cc.setEvictNearSynchronized(false);
 
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
@@ -97,7 +95,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
         for (int i = 0; i < GRID_CNT; i++) {
             ignites[i] = startGrid(i);
 
-            caches[i] = ignites[i].jcache(CACHE);
+            caches[i] = ignites[i].cache(CACHE);
         }
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.servicegrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -30,8 +29,8 @@ import java.util.*;
  * Distributed services are especially useful when deploying singletons on the ignite,
  * be that cluster-singleton, or per-node-singleton, etc...
  * <p>
- * To start remote nodes, you must run {@link ComputeNodeStartup} in another JVM
- * which will start node with {@code examples/config/example-compute.xml} configuration.
+ * To start remote nodes, you must run {@link ExampleNodeStartup} in another JVM
+ * which will start node with {@code examples/config/example-ignite.xml} configuration.
  * <p>
  * NOTE:<br/>
  * Starting {@code ignite.sh} directly will not work, as distributed services
@@ -45,19 +44,15 @@ public class ServicesExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
-            ClusterGroup rmts = ignite.cluster().forRemotes();
+        // Mark this node as client node.
+        Ignition.setClientMode(true);
 
-            if (rmts.nodes().isEmpty()) {
-                System.err.println(">>>");
-                System.err.println(">>> Must start at least one remote node using " +
-                    ComputeNodeStartup.class.getSimpleName() + '.');
-                System.err.println(">>>");
-
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+            if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
-            }
 
-            IgniteServices svcs = ignite.services(rmts);
+            // Deploy services only on server nodes.
+            IgniteServices svcs = ignite.services(ignite.cluster().forServers());
 
             try {
                 // Deploy cluster singleton.

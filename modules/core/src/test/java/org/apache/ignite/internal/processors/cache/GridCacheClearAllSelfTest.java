@@ -19,14 +19,16 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -49,6 +51,9 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Cache name which differs from the default one. */
     private static final String CACHE_NAME_OTHER = "cache_name_other";
 
+    /** Test attribute name. */
+    private static final String TEST_ATTRIBUTE = "TestAttribute";
+
     /** VM IP finder for TCP discovery SPI. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -67,12 +72,14 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         ccfg.setName(cacheName);
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setDistributionMode(NEAR_PARTITIONED);
+        ccfg.setNodeFilter(new AttributeFilter(cacheName));
 
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, cacheName));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -103,6 +110,8 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         cacheName = CACHE_NAME_OTHER;
 
         startGrid(GRID_CNT - 1);
+
+        awaitPartitionMapExchange();
     }
 
     /**
@@ -140,29 +149,47 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     public void performTest() throws Exception {
         // Put values into normal replicated cache.
         for (int i = 0; i < KEY_CNT; i++)
-            grid(0).jcache(CACHE_NAME).put(i, "val" + i);
+            grid(0).cache(CACHE_NAME).put(i, "val" + i);
 
         // Put values into a cache with another name.
         for (int i = 0; i < KEY_CNT_OTHER; i++)
-            grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).put(i, "val" + i);
+            grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).put(i, "val" + i);
 
         // Check cache sizes.
         for (int i = 0; i < GRID_CNT - 1; i++) {
-            IgniteCache<Object, Object> cache = grid(i).jcache(CACHE_NAME);
+            IgniteCache<Object, Object> cache = grid(i).cache(CACHE_NAME);
 
             assertEquals("Key set [i=" + i + ']', KEY_CNT, cache.localSize());
         }
 
-        assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
+        assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
 
         // Perform clear.
-        grid(0).jcache(CACHE_NAME).clear();
+        grid(0).cache(CACHE_NAME).clear();
 
         // Expect caches with the given name to be clear on all nodes.
         for (int i = 0; i < GRID_CNT - 1; i++)
-            assert grid(i).jcache(CACHE_NAME).localSize() == 0;
+            assert grid(i).cache(CACHE_NAME).localSize() == 0;
 
         // ... but cache with another name should remain untouched.
-        assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
+        assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
+    }
+
+    /** {@inheritDoc} */
+    private static class AttributeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private String attrValue;
+
+        /**
+         * @param attrValue Attribute value.
+         */
+        private AttributeFilter(String attrValue) {
+            this.attrValue = attrValue;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return F.eq(attrValue, clusterNode.attribute(TEST_ATTRIBUTE));
+        }
     }
 }

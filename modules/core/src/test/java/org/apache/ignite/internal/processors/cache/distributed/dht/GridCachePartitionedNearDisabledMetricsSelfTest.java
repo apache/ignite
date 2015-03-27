@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -51,7 +50,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         cfg.setBackups(gridCount() - 1);
         cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setDistributionMode(PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
 
         return cfg;
     }
@@ -77,7 +76,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void _testGettingRemovedKey() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(0, 0);
 
@@ -85,14 +84,14 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
             Ignite g = grid(i);
 
             // TODO: getting of removed key will produce 3 inner read operations.
-            g.jcache(null).removeAll();
+            g.cache(null).removeAll();
 
             // TODO: getting of removed key will produce inner write and 4 inner read operations.
             //((IgniteKernal)g).cache(null).remove(0);
 
-            assert g.jcache(null).localSize() == 0;
+            assert g.cache(null).localSize() == 0;
 
-            g.jcache(null).mxBean().clear();
+            g.cache(null).mxBean().clear();
         }
 
         assertNull("Value is not null for key: " + 0, cache.get(0));
@@ -104,7 +103,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         long misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetrics m = grid(i).jcache(null).metrics();
+            CacheMetrics m = grid(i).cache(null).metrics();
 
             removes += m.getCacheRemovals();
             reads += m.getCacheGets();

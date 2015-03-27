@@ -234,7 +234,7 @@ public class GridDsiClient implements Callable {
 
                 // No 2 client should use the same simulator.
                 HashMap<UUID, Collection<String>> terminals = (HashMap<UUID, Collection<String>>)
-                    g.jcache("CLIENT_PARTITIONED_CACHE").get("terminals");
+                    g.cache("CLIENT_PARTITIONED_CACHE").get("terminals");
 
                 if (terminals == null) {
                     X.println(">>> Terminals map has not been initialized.");
@@ -279,7 +279,7 @@ public class GridDsiClient implements Callable {
                         terminals.put(srvrId, list);
                     }
 
-                    g.jcache("CLIENT_PARTITIONED_CACHE").put("terminals", terminals);
+                    g.cache("CLIENT_PARTITIONED_CACHE").put("terminals", terminals);
                 }
                 else {
                     X.println(">>> Terminals map has been initialized.");

@@ -54,9 +54,6 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     /** Synchronous evicts flag. */
     private boolean evictSynchronized;
 
-    /** Synchronous near evicts flag. */
-    private boolean nearSynchronized;
-
     /** Eviction max overflow ratio. */
     private float maxOverflowRatio;
 
@@ -67,7 +64,7 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     public static VisorCacheEvictionConfiguration from(CacheConfiguration ccfg) {
         VisorCacheEvictionConfiguration cfg = new VisorCacheEvictionConfiguration();
 
-        final CacheEvictionPolicy plc = ccfg.getEvictionPolicy();
+        final EvictionPolicy plc = ccfg.getEvictionPolicy();
 
         cfg.plc = compactClass(plc);
         cfg.plcMaxSize = evictionPolicyMaxSize(plc);
@@ -76,7 +73,6 @@ public class VisorCacheEvictionConfiguration implements Serializable {
         cfg.syncTimeout = ccfg.getEvictSynchronizedTimeout();
         cfg.syncKeyBufSize = ccfg.getEvictSynchronizedKeyBufferSize();
         cfg.evictSynchronized = ccfg.isEvictSynchronized();
-        cfg.nearSynchronized = ccfg.isEvictNearSynchronized();
         cfg.maxOverflowRatio = ccfg.getEvictMaxOverflowRatio();
 
         return cfg;
@@ -129,13 +125,6 @@ public class VisorCacheEvictionConfiguration implements Serializable {
      */
     public boolean evictSynchronized() {
         return evictSynchronized;
-    }
-
-    /**
-     * @return Synchronous near evicts flag.
-     */
-    public boolean nearSynchronized() {
-        return nearSynchronized;
     }
 
     /**

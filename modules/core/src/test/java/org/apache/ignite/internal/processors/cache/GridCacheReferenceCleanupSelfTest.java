@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
@@ -66,7 +65,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(mode);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -312,7 +311,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -353,7 +352,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
                     IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
@@ -389,7 +388,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
                     IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
@@ -432,7 +431,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -469,7 +468,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    IgniteCache<Integer, TestValue> cache = g.jcache(null);
+                    IgniteCache<Integer, TestValue> cache = g.cache(null);
                     IgniteCache<Integer, TestValue> cacheAsync = cache.withAsync();
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));

@@ -46,8 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.hibernate.HibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
 
-import org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.Entity;
-
 /**
  *
  * Tests Hibernate L2 cache.
@@ -425,7 +423,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1);
 
-        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
         return cfg;
     }
@@ -447,7 +445,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1);
 
-        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 10));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
         return cfg;
     }
@@ -1919,7 +1917,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         sesFactory2 = null;
 
-        for (GridCache<?, ?> cache : ((IgniteKernal)grid(0)).caches())
-            cache.clear();
+        for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
+            cache.legacyProxy().clear();
     }
 }

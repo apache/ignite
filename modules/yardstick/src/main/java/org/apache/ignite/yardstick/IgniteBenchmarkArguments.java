@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.transactions.*;
 

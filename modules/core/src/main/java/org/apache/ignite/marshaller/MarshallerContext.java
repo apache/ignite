@@ -17,6 +17,8 @@
 
 package org.apache.ignite.marshaller;
 
+import org.apache.ignite.*;
+
 /**
  * Marshaller context.
  */
@@ -27,8 +29,9 @@ public interface MarshallerContext {
      * @param id Type ID.
      * @param cls Class.
      * @return Whether class was registered.
+     * @throws IgniteCheckedException In case of error.
      */
-    public boolean registerClass(int id, Class cls);
+    public boolean registerClass(int id, Class cls) throws IgniteCheckedException;
 
     /**
      * Gets class for provided type ID.

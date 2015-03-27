@@ -19,7 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.*;
 import org.apache.ignite.examples.datagrid.starschema.*;
-import org.apache.ignite.examples.datagrid.store.*;
+import org.apache.ignite.examples.datagrid.store.dummy.*;
 import org.apache.ignite.examples.datastructures.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -86,8 +86,8 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCacheStoreExample() throws Exception {
-        CacheStoreExample.main(EMPTY_ARGS);
+    public void testCacheDummyStoreExample() throws Exception {
+        CacheDummyStoreExample.main(EMPTY_ARGS);
     }
 
     /**
@@ -116,20 +116,6 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheDataStreamerExample() throws Exception {
         CacheDataStreamerExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPopularNumbersRealTimeExample() throws Exception {
-        CachePopularNumbersExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheStoreLoaderExample() throws Exception {
-        CacheStoreLoadDataExample.main(EMPTY_ARGS);
     }
 
     /**

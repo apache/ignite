@@ -106,11 +106,11 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
 
         qry.setArgs(minSalary, maxSalary);
 
-        return cache.queryFields(qry).getAll();
+        return cache.query(qry).getAll();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("query");
+        return ignite().cache("query");
     }
 }

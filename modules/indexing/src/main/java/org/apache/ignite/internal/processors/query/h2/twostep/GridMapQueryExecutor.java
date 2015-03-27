@@ -32,7 +32,7 @@ import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.store.*;
 import org.h2.value.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;

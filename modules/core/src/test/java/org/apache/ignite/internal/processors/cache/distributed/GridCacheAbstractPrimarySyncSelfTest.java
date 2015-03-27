@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -54,7 +53,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setBackups(1);
         ccfg.setRebalanceMode(SYNC);
-        ccfg.setDistributionMode(distributionMode());
+        ccfg.setNearConfiguration(nearConfiguration());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -82,7 +81,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode distributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @throws Exception If failed.
@@ -90,7 +89,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                IgniteCache<Integer, Integer> cache = grid(j).jcache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).cache(null);
 
                 if (grid(j).affinity(null).isPrimary(grid(j).localNode(), i)) {
                     try (Transaction tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

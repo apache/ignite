@@ -228,17 +228,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName) {
-        CacheConfiguration ccfg = null;
-
-        for (CacheConfiguration ccfg0 : ctx.config().getCacheConfiguration()) {
-            if (F.eq(cacheName, ccfg0.getName())) {
-                ccfg = ccfg0;
-
-                break;
-            }
-        }
-
+    @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName,
+        @Nullable CacheConfiguration ccfg) {
         if (ccfg != null) {
             CacheMemoryMode memMode = ccfg.getMemoryMode();
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -61,7 +62,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private GridCacheVersion updateVer;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode syncMode;
@@ -160,7 +161,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         GridCacheVersion futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
@@ -248,7 +249,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -670,7 +671,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -848,7 +849,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 20:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

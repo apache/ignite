@@ -29,40 +29,40 @@ import java.lang.annotation.*;
 import java.lang.reflect.*;
 
 /**
- * Default key affinity mapper. If key class has annotation {@link CacheAffinityKeyMapped},
+ * Default key affinity mapper. If key class has annotation {@link AffinityKeyMapped},
  * then the value of annotated method or field will be used to get affinity value instead
  * of the key itself. If there is no annotation, then the key is used as is.
  * <p>
- * Convenience affinity key adapter, {@link CacheAffinityKey} can be used in
+ * Convenience affinity key adapter, {@link AffinityKey} can be used in
  * conjunction with this mapper to automatically provide custom affinity keys for cache keys.
  * <p>
  * If non-default affinity mapper is used, is should be provided via
  * {@link CacheConfiguration#getAffinityMapper()} configuration property.
  */
-public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper {
+public class GridCacheDefaultAffinityKeyMapper implements AffinityKeyMapper {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Injected ignite instance. */
     @IgniteInstanceResource
-    protected Ignite ignite;
+    protected transient Ignite ignite;
 
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
         new P1<Field>() {
             @Override public boolean apply(Field f) {
                 // Account for anonymous inner classes.
-                return f.getAnnotation(CacheAffinityKeyMapped.class) != null;
+                return f.getAnnotation(AffinityKeyMapped.class) != null;
             }
         },
         new P1<Method>() {
             @Override public boolean apply(Method m) {
                 // Account for anonymous inner classes.
-                Annotation ann = m.getAnnotation(CacheAffinityKeyMapped.class);
+                Annotation ann = m.getAnnotation(AffinityKeyMapped.class);
 
                 if (ann != null) {
                     if (!F.isEmpty(m.getParameterTypes()))
-                        throw new IllegalStateException("Method annotated with @CacheAffinityKey annotation " +
+                        throw new IllegalStateException("Method annotated with @AffinityKeyMapped annotation " +
                             "cannot have parameters: " + m);
 
                     return true;
@@ -78,7 +78,7 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
     protected transient IgniteLogger log;
 
     /**
-     * If key class has annotation {@link CacheAffinityKeyMapped},
+     * If key class has annotation {@link AffinityKeyMapped},
      * then the value of annotated method or field will be used to get affinity value instead
      * of the key itself. If there is no annotation, then the key is returned as is.
      *

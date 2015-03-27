@@ -37,7 +37,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -47,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
 /**
  * Base class for eviction tests.
  */
-public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolicy<?, ?>>
+public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
     /** IP finder. */
     protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -77,7 +76,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     protected int gridCnt = 2;
 
     /** */
-    protected CacheEvictionFilter<?, ?> filter;
+    protected EvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -86,15 +85,22 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
         cc.setEvictionPolicy(createPolicy(plcMax));
-        cc.setNearEvictionPolicy(createNearPolicy(nearMax));
         cc.setEvictSynchronized(evictSync);
-        cc.setEvictNearSynchronized(evictNearSync);
         cc.setSwapEnabled(false);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
         cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
+
+        if (nearEnabled) {
+            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+            nearCfg.setNearEvictionPolicy(createNearPolicy(nearMax));
+
+            cc.setNearConfiguration(nearCfg);
+        }
+        else
+            cc.setNearConfiguration(null);
 
         if (mode == PARTITIONED)
             cc.setBackups(1);
@@ -142,12 +148,12 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param prefix Prefix.
      * @param p Policy.
      */
-    protected void info(String prefix, CacheEvictionPolicy<?, ?> p) {
+    protected void info(String prefix, EvictionPolicy<?, ?> p) {
         info(prefix + ": " + p.toString());
     }
 
     /** @param p Policy. */
-    protected void info(CacheEvictionPolicy<?, ?> p) {
+    protected void info(EvictionPolicy<?, ?> p) {
         info(p.toString());
     }
 
@@ -180,7 +186,11 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        return (T)internalCache(i).configuration().getNearEvictionPolicy();
+        CacheConfiguration cfg = internalCache(i).configuration();
+
+        NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
+
+        return (T)(nearCfg == null ? null : nearCfg.getNearEvictionPolicy());
     }
 
     /**
@@ -305,7 +315,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).jcache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -358,7 +368,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
                         IgniteEx grid = grid(rand.nextInt(2));
 
-                        IgniteCache<Integer, String> cache = grid.jcache(null);
+                        IgniteCache<Integer, String> cache = grid.cache(null);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);

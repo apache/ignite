@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -297,7 +297,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valid(long topVer) {
+    @Override public boolean valid(AffinityTopologyVersion topVer) {
         return true;
     }
 
@@ -452,7 +452,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         long ttl,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter, GridDrType drType,
         long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
@@ -493,6 +493,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         boolean metrics,
         boolean primary,
         boolean checkVer,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long conflictTtl,
@@ -509,20 +510,21 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult innerRemove(@Nullable IgniteInternalTx tx,
+    @Override public GridCacheUpdateTxResult innerRemove(
+        @Nullable IgniteInternalTx tx,
         UUID evtNodeId,
         UUID affNodeId,
         boolean writeThrough,
         boolean retval,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion drVer,
         UUID subjId,
-        String taskName)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        String taskName
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
 
         CacheObject old = val;
@@ -634,15 +636,15 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean initialValue(CacheObject val,
+    @Override public boolean initialValue(
+        CacheObject val,
         GridCacheVersion ver,
         long ttl,
         long expireTime,
         boolean preload,
-        long topVer,
-        GridDrType drType)
-        throws IgniteCheckedException, GridCacheEntryRemovedException
-    {
+        AffinityTopologyVersion topVer,
+        GridDrType drType
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert false;
 
         return false;
@@ -852,7 +854,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
     {
         return null;

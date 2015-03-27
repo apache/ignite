@@ -21,8 +21,8 @@ package org.apache.ignite.schema.model;
  * Index item descriptor.
  */
 public class IndexItem {
-    /** Column name. */
-    private final String name;
+    /** Column type. */
+    private final String type;
 
     /** Sort direction. */
     private final Boolean desc;
@@ -30,19 +30,19 @@ public class IndexItem {
     /**
      * Constructor.
      *
-     * @param name Column name.
+     * @param type Column type.
      * @param desc Sort direction.
      */
-    public IndexItem(String name, Boolean desc) {
-        this.name = name;
+    public IndexItem(String type, Boolean desc) {
+        this.type = type;
         this.desc = desc;
     }
 
     /**
-     * @return Column name.
+     * @return Column type.
      */
-    public String name() {
-        return name;
+    public String type() {
+        return type;
     }
 
     /**

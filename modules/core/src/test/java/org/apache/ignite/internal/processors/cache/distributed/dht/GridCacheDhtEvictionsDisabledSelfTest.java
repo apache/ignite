@@ -26,7 +26,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Test cache closure execution.
@@ -59,7 +58,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
         cc.setDefaultTimeToLive(0);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
 
         c.setCacheConfiguration(cc);
 
@@ -100,7 +99,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNodes(Ignite g) throws Exception {
-        IgniteCache<String, String> cache = g.jcache("test");
+        IgniteCache<String, String> cache = g.cache("test");
 
         for (char c = 'a'; c <= 'z'; c++) {
             String key = Character.toString(c);

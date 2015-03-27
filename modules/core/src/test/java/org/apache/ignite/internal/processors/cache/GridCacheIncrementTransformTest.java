@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -63,7 +62,6 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(ATOMIC);
-        cache.setDistributionMode(PARTITIONED_ONLY);
         cache.setAtomicWriteOrderMode(PRIMARY);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
@@ -170,7 +168,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                 ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            IgniteCache<String, TestObject> cache = ignite.jcache(null);
+            IgniteCache<String, TestObject> cache = ignite.cache(null);
 
             assertNotNull(cache);
 

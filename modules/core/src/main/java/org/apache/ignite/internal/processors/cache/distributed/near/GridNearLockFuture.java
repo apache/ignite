@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -34,8 +34,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -100,7 +100,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private GridNearTxLocal tx;
 
     /** Topology snapshot to operate on. */
-    private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot =
+    private AtomicReference<AffinityTopologyVersion> topVer =
         new AtomicReference<>();
 
     /** Map of current values. */
@@ -286,8 +286,11 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @return Lock candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable private GridCacheMvccCandidate addEntry(long topVer, GridNearCacheEntry entry, UUID dhtNodeId)
-        throws GridCacheEntryRemovedException {
+    @Nullable private GridCacheMvccCandidate addEntry(
+        AffinityTopologyVersion topVer, 
+        GridNearCacheEntry entry, 
+        UUID dhtNodeId
+    ) throws GridCacheEntryRemovedException {
         // Check if lock acquisition is timed out.
         if (timedOut)
             return null;
@@ -646,12 +649,12 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      */
     void map() {
         // Obtain the topology version to use.
-        GridDiscoveryTopologySnapshot snapshot = tx != null ? tx.topologySnapshot() :
-            cctx.mvcc().lastExplicitLockTopologySnapshot(Thread.currentThread().getId());
+        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersionSnapshot() :
+            cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
 
-        if (snapshot != null) {
+        if (topVer != null) {
             // Continue mapping on the same topology version as it was before.
-            topSnapshot.compareAndSet(null, snapshot);
+            this.topVer.compareAndSet(null, topVer);
 
             map(keys);
 
@@ -670,40 +673,40 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      */
     void mapOnTopology() {
         // We must acquire topology snapshot from the topology version future.
+        cctx.topology().readLock();
+
         try {
-            cctx.topology().readLock();
+            if (cctx.topology().stopping()) {
+                onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
+                    cctx.name()));
 
-            try {
-                GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
-
-                if (fut.isDone()) {
-                    GridDiscoveryTopologySnapshot snapshot = fut.topologySnapshot();
-
-                    if (tx != null) {
-                        tx.topologyVersion(snapshot.topologyVersion());
-                        tx.topologySnapshot(snapshot);
-                    }
-
-                    topSnapshot.compareAndSet(null, snapshot);
-
-                    map(keys);
-
-                    markInitialized();
-                }
-                else {
-                    fut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> t) {
-                            mapOnTopology();
-                        }
-                    });
-                }
+                return;
             }
-            finally {
-                cctx.topology().readUnlock();
+
+            GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
+
+            if (fut.isDone()) {
+                AffinityTopologyVersion topVer = fut.topologyVersion();
+
+                if (tx != null)
+                    tx.topologyVersion(topVer);
+
+                this.topVer.compareAndSet(null, topVer);
+
+                map(keys);
+
+                markInitialized();
+            }
+            else {
+                fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                        mapOnTopology();
+                    }
+                });
             }
         }
-        catch (IgniteCheckedException e) {
-            onDone(e);
+        finally {
+            cctx.topology().readUnlock();
         }
     }
 
@@ -716,16 +719,14 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      */
     private void map(Iterable<KeyCacheObject> keys) {
         try {
-            GridDiscoveryTopologySnapshot snapshot = topSnapshot.get();
+            AffinityTopologyVersion topVer = this.topVer.get();
 
-            assert snapshot != null;
+            assert topVer != null;
 
-            long topVer = snapshot.topologyVersion();
-
-            assert topVer > 0;
+            assert topVer.topologyVersion() > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all " +
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for near-only cache (all " +
                     "partition nodes left the grid)."));
 
                 return;
@@ -807,7 +808,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             if (cand != null) {
                                 if (tx == null && !cand.reentry())
-                                    cctx.mvcc().addExplicitLock(threadId, cand, snapshot);
+                                    cctx.mvcc().addExplicitLock(threadId, cand, topVer);
 
                                 IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
 
@@ -849,6 +850,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             implicitTx(),
                                             implicitSingleTx(),
                                             read,
+                                            retval,
                                             isolation(),
                                             isInvalidate(),
                                             timeout,
@@ -1015,7 +1017,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                         // Lock is held at this point, so we can set the
                                         // returned value if any.
-                                        entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id());
+                                        entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id(), topVer.get());
 
                                         entry.readyNearLock(lockVer, mappedVer, res.committedVersions(),
                                             res.rolledbackVersions(), res.pending());
@@ -1135,8 +1137,11 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @return Near lock mapping.
      * @throws IgniteCheckedException If mapping for key failed.
      */
-    private GridNearLockMapping map(KeyCacheObject key, @Nullable GridNearLockMapping mapping,
-        long topVer) throws IgniteCheckedException {
+    private GridNearLockMapping map(
+        KeyCacheObject key, 
+        @Nullable GridNearLockMapping mapping,
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
@@ -1321,7 +1326,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                 int i = 0;
 
-                long topVer = topSnapshot.get().topologyVersion();
+                AffinityTopologyVersion topVer = GridNearLockFuture.this.topVer.get();
 
                 for (KeyCacheObject k : keys) {
                     while (true) {
@@ -1364,7 +1369,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             // Lock is held at this point, so we can set the
                             // returned value if any.
-                            entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id());
+                            entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id(), topVer);
 
                             if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                 boolean pass = res.filterResult(i);

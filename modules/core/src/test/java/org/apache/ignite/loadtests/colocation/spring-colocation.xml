@@ -105,15 +105,13 @@
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                             <property name="keyBackups" value="0"/> <!-- Disable backups. -->
                         </bean>
                     </property>
 
                     <!-- Set synchronous rebalancing (default is asynchronous). -->
                     <property name="rebalanceMode" value="SYNC"/>
-
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
 
                     <property name="store">
                         <bean class="org.apache.ignite.loadtests.colocation.GridTestCacheStore"/>

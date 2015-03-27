@@ -22,6 +22,7 @@ import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
 import org.h2.expression.*;
+import org.h2.expression.Parameter;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
@@ -495,8 +496,8 @@ public class GridSqlQueryParser {
             return res;
         }
 
-        if (expression instanceof Parameter)
-            return new GridSqlParameter(((Parameter)expression).getIndex());
+        if (expression instanceof org.h2.expression.Parameter)
+            return new GridSqlParameter(((org.h2.expression.Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
             GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression),

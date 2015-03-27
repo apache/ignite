@@ -33,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -55,13 +54,15 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
-        cc.setNearEvictionPolicy(null);
         cc.setAtomicityMode(atomicityMode());
         cc.setAtomicWriteOrderMode(PRIMARY);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        c.setNearCacheConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 
@@ -90,7 +91,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCnt);
 
         try {
-            IgniteCache<Integer, String> c = grid(0).jcache(null);
+            IgniteCache<Integer, String> c = grid(0).cache(null);
 
             int cnt = 100;
 
@@ -120,7 +121,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    IgniteCache<Integer, String> c = ignite.jcache(null);
+                    IgniteCache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.put(i, Integer.toString(i));
@@ -153,7 +154,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    IgniteCache<Integer, String> c = ignite.jcache(null);
+                    IgniteCache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.put(i, Integer.toString(i));

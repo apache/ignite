@@ -67,7 +67,7 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
 
         // meta(name).
         assertEquals("val1", ma.meta(attr1));
-        assertEquals(1, ma.meta(attr2));
+        assertEquals(new Integer(1), ma.meta(attr2));
 
         // allMeta().
         Map<UUID, Object> allMeta = ma.allMeta();
@@ -96,8 +96,8 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
         }) == 5;
 
         // removeMeta(name).
-        assertEquals(3, ma.removeMeta(attr3));
-        assertEquals(5, ma.removeMeta(attr4));
+        assertEquals(new Integer(3), ma.removeMeta(attr3));
+        assertEquals(new Integer(5), ma.removeMeta(attr4));
 
         assert ma.removeMeta(attr156) == null;
 
@@ -109,7 +109,7 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
         ma.copyMeta(new GridMetadataAwareAdapter(F.<UUID, Object>asMap(k1, "v1", k2, 2)));
 
         assertEquals("v1", ma.meta(k1));
-        assertEquals(2, ma.meta(k2));
+        assertEquals(new Integer(2), ma.meta(k2));
         assertEquals("val1", allMeta.get(attr1));
         assertEquals(4, allMeta.get(attr2));
 
@@ -118,10 +118,10 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
         // copyMeta(from).
         ma.copyMeta(F.asMap(a1, 1, a2, 2));
 
-        assertEquals(1, ma.meta(a1));
-        assertEquals(2, ma.meta(a2));
+        assertEquals(new Integer(1), ma.meta(a1));
+        assertEquals(new Integer(2), ma.meta(a2));
         assertEquals("v1", ma.meta(k1));
-        assertEquals(2, ma.meta(k2));
+        assertEquals(new Integer(2), ma.meta(k2));
         assertEquals("val1", allMeta.get(attr1));
         assertEquals(4, allMeta.get(attr2));
 

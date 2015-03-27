@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -29,8 +30,8 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -187,7 +188,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return updateReq.topologyVersion();
     }
 
@@ -210,7 +211,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer) {
-        long topVer = updateReq.topologyVersion();
+        AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
 
@@ -271,7 +272,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         keys.add(entry.key());
 
-        long topVer = updateReq.topologyVersion();
+        AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         for (UUID nodeId : readers) {
             GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);

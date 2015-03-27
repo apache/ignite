@@ -65,13 +65,6 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     protected AtomicReference<Class> bannedMessage = new AtomicReference<>();
 
     /**
-     * @return Cache distribution mode.
-     */
-    protected CacheDistributionMode cacheDistributionMode() {
-        return CacheDistributionMode.PARTITIONED_ONLY;
-    }
-
-    /**
      * @return Cache mode.
      */
     protected CacheMode cacheMode(){
@@ -98,7 +91,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         commSpi.setTcpNoDelay(true);
 
         if (gridName.endsWith(String.valueOf(CLN_GRD)))
-            cacheCfg.setDistributionMode(CacheDistributionMode.CLIENT_ONLY);
+            cfg.setClientMode(true);
 
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
@@ -321,7 +314,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @return Client cache.
      */
     private IgniteCache<Object, Object> clientCache() {
-        return grid(CLN_GRD).jcache(CACHE_NAME);
+        return grid(CLN_GRD).cache(CACHE_NAME);
     }
 
     /**
@@ -336,7 +329,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         cfg.setAtomicityMode(atomicityMode());
 
-        cfg.setDistributionMode(cacheDistributionMode());
+        cfg.setNearConfiguration(null);
 
         cfg.setName(cacheName);
 

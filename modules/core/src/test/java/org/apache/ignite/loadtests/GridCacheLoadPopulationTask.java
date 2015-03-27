@@ -97,7 +97,7 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
             g.log().info("Putting values to partitioned cache [nodeId=" + g.cluster().localNode().id() + ", mapSize=" +
                 map.size() + ']');
 
-            g.jcache(GridCacheMultiNodeLoadTest.CACHE_NAME).putAll(map);
+            g.cache(GridCacheMultiNodeLoadTest.CACHE_NAME).putAll(map);
 
             return null;
         }

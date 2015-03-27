@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -49,7 +49,7 @@ public class GridCacheDhtTestUtils {
      */
     @SuppressWarnings({"UnusedAssignment", "unchecked"})
     static void prepareKeys(GridDhtCache<Integer, String> dht, int keyCnt) throws IgniteCheckedException {
-        CacheAffinityFunction aff = dht.context().config().getAffinity();
+        AffinityFunction aff = dht.context().config().getAffinity();
 
         GridCacheConcurrentMap cacheMap;
 
@@ -71,9 +71,9 @@ public class GridCacheDhtTestUtils {
         for (int i = 0; i < keyCnt; i++) {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(i);
 
-            cacheMap.putEntry(-1, cacheKey, ctx.toCacheObject("value" + i), 0);
+            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i), 0);
 
-            dht.preloader().request(Collections.singleton(cacheKey), -1);
+            dht.preloader().request(Collections.singleton(cacheKey), AffinityTopologyVersion.NONE);
 
             GridDhtLocalPartition part = top.localPartition(aff.partition(i), false);
 
@@ -98,7 +98,7 @@ public class GridCacheDhtTestUtils {
      * @param idx Cache index
      */
     static void printDhtTopology(GridDhtCache<Integer, String> dht, int idx) {
-        final CacheAffinity<Integer> aff = dht.affinity();
+        final Affinity<Integer> aff = dht.affinity();
 
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();
@@ -169,7 +169,7 @@ public class GridCacheDhtTestUtils {
 
         log.info("Checking balanced state of cache #" + idx);
 
-        CacheAffinity<Object> aff = (CacheAffinity)dht.affinity();
+        Affinity<Object> aff = (Affinity)dht.affinity();
 
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();

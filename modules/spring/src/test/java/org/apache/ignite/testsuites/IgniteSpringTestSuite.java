@@ -42,7 +42,8 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));
 
         suite.addTest(new TestSuite(GridSpringCacheManagerSelfTest.class));
-        suite.addTest(new TestSuite(GridSpringDynamicCacheManagerSelfTest.class));
+
+        suite.addTest(new TestSuite(IgniteDynamicCacheConfigTest.class));
 
         return suite;
     }

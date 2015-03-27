@@ -104,9 +104,9 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == GRID_CNT;
 
         for (int i = 0; i < KEY_CNT; i++) {
-            grid(0).jcache(null).put(i, i);
+            grid(0).cache(null).put(i, i);
 
-            grid(0).jcache(NON_DFLT_CACHE_NAME).put(i, i);
+            grid(0).cache(NON_DFLT_CACHE_NAME).put(i, i);
         }
     }
 
@@ -173,7 +173,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     private static class AffinityTestKey {
         /** Affinity key. */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         private final int affKey;
 
         /**

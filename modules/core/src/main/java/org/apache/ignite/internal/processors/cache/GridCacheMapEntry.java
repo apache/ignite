@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.extras.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -42,7 +43,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -63,7 +63,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     private static final byte IS_UNSWAPPED_MASK = 0x02;
 
     /** */
-    public static final Comparator<GridCacheVersion> ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
+    public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
      * NOTE
@@ -368,7 +368,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean valid(long topVer) {
+    @Override public boolean valid(AffinityTopologyVersion topVer) {
         return true;
     }
 
@@ -934,7 +934,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     /**
      * @param nodeId Node ID.
      */
-    protected void recordNodeId(UUID nodeId) {
+    protected void recordNodeId(UUID nodeId, AffinityTopologyVersion topVer) {
         // No-op.
     }
 
@@ -949,7 +949,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long ttl,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
@@ -1050,7 +1050,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             drReplicate(drType, val, newVer);
 
-            recordNodeId(affNodeId);
+            recordNodeId(affNodeId, topVer);
 
             if (metrics && cctx.cache().configuration().isStatisticsEnabled())
                 cctx.cache().metrics0().onWrite();
@@ -1109,7 +1109,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         boolean retval,
         boolean evt,
         boolean metrics,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
@@ -1254,7 +1254,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                             log.debug("Entry could not be marked obsolete (it is still used): " + this);
                     }
                     else {
-                        recordNodeId(affNodeId);
+                        recordNodeId(affNodeId, topVer);
 
                         // If entry was not marked obsolete, then removed lock
                         // will be registered whenever removeLock is called.
@@ -1602,6 +1602,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         boolean metrics,
         boolean primary,
         boolean verCheck,
+        AffinityTopologyVersion topVer,
         @Nullable CacheEntryPredicate[] filter,
         GridDrType drType,
         long explicitTtl,
@@ -1710,17 +1711,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                     assert conflictCtx != null;
 
+                    boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+
                     // Use old value?
                     if (conflictCtx.isUseOld()) {
                         GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
 
                         // Handle special case with atomic comparator.
-                        if (!isNew() &&                                                           // Not initial value,
-                            verCheck &&                                                           // and atomic version check,
-                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&     // and data centers are equal,
-                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer) == 0 && // and both versions are equal,
-                            cctx.writeThrough() &&                                                // and store is enabled,
-                            primary)                                                              // and we are primary.
+                        if (!isNew() &&                                                                       // Not initial value,
+                            verCheck &&                                                                       // and atomic version check,
+                            oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&                 // and data centers are equal,
+                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer, ignoreTime) == 0 && // and both versions are equal,
+                            cctx.writeThrough() &&                                                            // and store is enabled,
+                            primary)                                                                          // and we are primary.
                         {
                             CacheObject val = rawGetOrUnmarshalUnlocked(false);
 
@@ -1763,11 +1766,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     conflictVer = null;
             }
 
+            boolean ignoreTime = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
+
             // Perform version check only in case there was no explicit conflict resolution.
             if (conflictCtx == null) {
                 if (verCheck) {
-                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer) >= 0) {
-                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer) == 0 && cctx.writeThrough() && primary) {
+                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) >= 0) {
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) == 0 && cctx.writeThrough() && primary) {
                             if (log.isDebugEnabled())
                                 log.debug("Received entry update with same version as current (will update store) " +
                                     "[entry=" + this + ", newVer=" + newVer + ']');
@@ -1800,7 +1805,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     }
                 }
                 else
-                    assert isNew() || ATOMIC_VER_COMPARATOR.compare(ver, newVer) <= 0 :
+                    assert isNew() || ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) <= 0 :
                         "Invalid version for inner update [entry=" + this + ", newVer=" + newVer + ']';
             }
 
@@ -2058,7 +2063,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 drReplicate(drType, updated, newVer);
 
-                recordNodeId(affNodeId);
+                recordNodeId(affNodeId, topVer);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -2142,7 +2147,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 clearReaders();
 
-                recordNodeId(affNodeId);
+                recordNodeId(affNodeId, topVer);
 
                 drReplicate(drType, null, newVer);
 
@@ -2779,7 +2784,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         boolean swap,
-        long topVer,
+        AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, IgniteCheckedException
     {
@@ -2850,7 +2855,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         assert tx == null || tx.local();
 
-        long topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
+        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
         switch (mode) {
             case TX:
@@ -2902,7 +2907,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         synchronized (this) {
             checkObsolete();
 
-            if (isNew() || !valid(-1))
+            if (isNew() || !valid(AffinityTopologyVersion.NONE))
                 unswap(true, true);
 
             if (deletedUnlocked())
@@ -2968,7 +2973,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (peek != null)
             return peek;
 
-        long topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
+        AffinityTopologyVersion topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
         return peekGlobal(failFast, topVer, filter, null);
     }
@@ -2998,10 +3003,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable private GridTuple<CacheObject> peekGlobal(boolean failFast,
-        long topVer,
+        AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc
-        )
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         if (!valid(topVer))
             return null;
@@ -3188,7 +3192,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         long ttl,
         long expireTime,
         boolean preload,
-        long topVer,
+        AffinityTopologyVersion topVer,
         GridDrType drType)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         synchronized (this) {
@@ -3756,11 +3760,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> Cache.Entry<K, V> wrapLazyValue() {
-        return new LazyValueEntry(key);
+        return new LazyValueEntry<>(key);
     }
 
     /** {@inheritDoc} */
-    @Nullable public CacheObject peekVisibleValue() {
+    @Override @Nullable public CacheObject peekVisibleValue() {
         try {
             IgniteInternalTx tx = cctx.tm().userTx();
 
@@ -3795,7 +3799,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> EvictableEntry<K, V> wrapEviction() {
-        return new EvictableEntryImpl<>(this);
+        return new CacheEvictableEntryImpl<>(this);
     }
 
     /** {@inheritDoc} */
@@ -4341,7 +4345,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         @SuppressWarnings("unchecked")
         @Override public <T> T unwrap(Class<T> cls) {
             if (cls.isAssignableFrom(IgniteCache.class))
-                return (T)cctx.grid().jcache(cctx.name());
+                return (T)cctx.grid().cache(cctx.name());
 
             if (cls.isAssignableFrom(getClass()))
                 return (T)this;

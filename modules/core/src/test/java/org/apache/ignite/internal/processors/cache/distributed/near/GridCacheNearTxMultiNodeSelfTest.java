@@ -34,7 +34,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -63,7 +62,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setBackups(backups);
         cacheCfg.setRebalanceMode(SYNC);
@@ -115,7 +114,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
             // Update main key from all nodes.
             for (Ignite g : ignites)
-                g.jcache(null).put(mainKey, ++cntr);
+                g.cache(null).put(mainKey, ++cntr);
 
             info("Updated mainKey from all nodes.");
 
@@ -129,10 +128,10 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 Ignite g = F.rand(ignites);
 
-                g.jcache(null).put(new CacheAffinityKey<>(i, mainKey), Integer.toString(cntr++));
+                g.cache(null).put(new AffinityKey<>(i, mainKey), Integer.toString(cntr++));
             }
 
-            IgniteCache cache = priIgnite.jcache(null);
+            IgniteCache cache = priIgnite.cache(null);
 
             Transaction tx = priIgnite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -196,7 +195,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     private void testReadersUpdate(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         Ignite ignite = grid(0);
-        IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+        IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
         try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
@@ -207,7 +206,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
         // Create readers.
         for (int g = 0; g < GRID_CNT; g++) {
-            IgniteCache<Integer, Integer> c = grid(g).jcache(null);
+            IgniteCache<Integer, Integer> c = grid(g).cache(null);
 
             for (int i = 0; i < 100; i++)
                 assertEquals((Integer)1, c.get(i));
@@ -221,7 +220,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         for (int g = 0; g < GRID_CNT; g++) {
-            IgniteCache<Integer, Integer> c = grid(g).jcache(null);
+            IgniteCache<Integer, Integer> c = grid(g).cache(null);
 
             for (int i = 0; i < 100; i++)
                 assertEquals((Integer)2, c.get(i));

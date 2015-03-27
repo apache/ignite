@@ -55,6 +55,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new GridCacheIoManager()
             ),
             defaultCacheConfiguration(),
+            true,
             new GridCacheEventManager(),
             new GridCacheSwapManager(false),
             new GridCacheStoreManager(null,

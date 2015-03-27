@@ -20,15 +20,21 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.expiry.*;
 import java.util.*;
 
 /**
@@ -66,13 +72,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final int DFLT_BACKUPS = 0;
 
     /** Default caching mode. */
-    public static final CacheMode DFLT_CACHE_MODE = CacheMode.REPLICATED;
+    public static final CacheMode DFLT_CACHE_MODE = CacheMode.PARTITIONED;
 
     /** Default atomicity mode. */
     public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
-
-    /** Default value for cache distribution mode. */
-    public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = CacheDistributionMode.PARTITIONED_ONLY;
 
     /** Default lock timeout. */
     public static final long DFLT_LOCK_TIMEOUT = 0;
@@ -100,9 +103,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default eviction synchronized flag. */
     public static final boolean DFLT_EVICT_SYNCHRONIZED = false;
-
-    /** Default near nodes eviction synchronized flag. */
-    public static final boolean DFLT_EVICT_NEAR_SYNCHRONIZED = true;
 
     /** Default eviction key buffer size for batching synchronized evicts. */
     public static final int DFLT_EVICT_KEY_BUFFER_SIZE = 1024;
@@ -152,6 +152,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
 
+    /** Filter that accepts only server nodes. */
+    public static final IgnitePredicate<ClusterNode> SERVER_NODES = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
+            Boolean attr = n.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            return attr != null && !attr;
+        }
+    };
+
+    /** Filter that accepts all nodes. */
+    public static final IgnitePredicate<ClusterNode> ALL_NODES = F.alwaysTrue();
+
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
@@ -171,16 +183,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long ttl = DFLT_TIME_TO_LIVE;
 
     /** Cache expiration policy. */
-    private CacheEvictionPolicy evictPlc;
-
-    /** Near cache eviction policy. */
-    private CacheEvictionPolicy nearEvictPlc;
+    private EvictionPolicy evictPlc;
 
     /** Flag indicating whether eviction is synchronized. */
     private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
-
-    /** Flag indicating whether eviction is synchronized with near nodes. */
-    private boolean evictNearSync = DFLT_EVICT_NEAR_SYNCHRONIZED;
 
     /** Eviction key buffer size. */
     private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
@@ -192,7 +198,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private long evictSyncTimeout = DFLT_EVICT_SYNCHRONIZED_TIMEOUT;
 
     /** Eviction filter. */
-    private CacheEvictionFilter<?, ?> evictFilter;
+    private EvictionFilter<?, ?> evictFilter;
 
     /** Maximum eviction overflow ratio. */
     private float evictMaxOverflowRatio = DFLT_MAX_EVICTION_OVERFLOW_RATIO;
@@ -206,11 +212,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default cache start size. */
     private int startSize = DFLT_START_SIZE;
 
-    /** Default near cache start size. */
-    private int nearStartSize = DFLT_NEAR_START_SIZE;
-
-    /** Cache distribution mode. */
-    private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
+    /** Near cache configuration. */
+    private NearCacheConfiguration<K, V> nearCfg;
 
     /** Default value for 'copyOnRead' flag. */
     public static final boolean DFLT_COPY_ON_READ = true;
@@ -225,7 +228,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
 
     /** Node group resolver. */
-    private CacheAffinityFunction aff;
+    private AffinityFunction aff;
 
     /** Cache mode. */
     private CacheMode cacheMode = DFLT_CACHE_MODE;
@@ -282,7 +285,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
-    private CacheAffinityKeyMapper affMapper;
+    private AffinityKeyMapper affMapper;
 
     /** */
     private long rebalanceDelay;
@@ -308,6 +311,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Collection of type metadata. */
     private Collection<CacheTypeMetadata> typeMeta;
 
+    /** Node filter specifying nodes on which this cache should be deployed. */
+    private IgnitePredicate<ClusterNode> nodeFilter;
+
     /** */
     private boolean sqlEscapeAll;
 
@@ -325,18 +331,23 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /* No-op. */
     }
 
+    /** Cache name. */
+    public CacheConfiguration(String name) {
+        this.name = name;
+    }
+
     /**
      * Copy constructor.
      *
      * @param cfg Configuration to copy.
      */
-    public CacheConfiguration(CompleteConfiguration cfg) {
+    public CacheConfiguration(CompleteConfiguration<K, V> cfg) {
         super(cfg);
 
         if (!(cfg instanceof CacheConfiguration))
             return;
 
-        CacheConfiguration<K,V> cc = (CacheConfiguration<K,V>)cfg;
+        CacheConfiguration<K, V> cc = (CacheConfiguration<K, V>)cfg;
 
         /*
          * NOTE: MAKE SURE TO PRESERVE ALPHABETIC ORDER!
@@ -352,12 +363,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         cacheWriterFactory = cc.getCacheWriterFactory();
         cpOnRead = cc.isCopyOnRead();
         dfltLockTimeout = cc.getDefaultLockTimeout();
-        distro = cc.getDistributionMode();
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
         evictKeyBufSize = cc.getEvictSynchronizedKeyBufferSize();
         evictMaxOverflowRatio = cc.getEvictMaxOverflowRatio();
-        evictNearSync = cc.isEvictNearSynchronized();
         evictPlc = cc.getEvictionPolicy();
         evictSync = cc.isEvictSynchronized();
         evictSyncConcurrencyLvl = cc.getEvictSynchronizedConcurrencyLevel();
@@ -375,8 +384,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         memMode = cc.getMemoryMode();
         name = cc.getName();
-        nearStartSize = cc.getNearStartSize();
-        nearEvictPlc = cc.getNearEvictionPolicy();
+        nearCfg = cc.getNearConfiguration();
+        nodeFilter = cc.getNodeFilter();
         rebalanceMode = cc.getRebalanceMode();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceDelay = cc.getRebalanceDelay();
@@ -393,19 +402,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         ttl = cc.getDefaultTimeToLive();
+        typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
-        typeMeta = cc.getTypeMetadata();
     }
 
     /**
      * Cache name. If not provided or {@code null}, then this will be considered a default
-     * cache which can be accessed via {@link Ignite#jcache(String)} method. Otherwise, if name
-     * is provided, the cache will be accessed via {@link Ignite#jcache(String)} method.
+     * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
+     * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
      *
      * @return Cache name.
      */
@@ -450,7 +459,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public CacheEvictionPolicy<K, V> getEvictionPolicy() {
+    @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
@@ -459,29 +468,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param evictPlc Cache expiration policy.
      */
-    public void setEvictionPolicy(@Nullable CacheEvictionPolicy evictPlc) {
+    public void setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
     }
 
     /**
-     * Gets cache distribution mode. This parameter is taken into account only if
-     * {@link #getCacheMode()} is set to {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} mode.
-     * <p>
-     * If not set, default value is {@link #DFLT_DISTRIBUTION_MODE}.
-     *
-     * @return Cache distribution mode.
+     * @return Near enabled flag.
      */
-    public CacheDistributionMode getDistributionMode() {
-        return distro;
+    public NearCacheConfiguration<K, V> getNearConfiguration() {
+        return nearCfg;
     }
 
     /**
-     * Sets cache distribution mode.
-     *
-     * @param distro Distribution mode.
+     * @param nearCfg Near cache configuration.
      */
-    public void setDistributionMode(CacheDistributionMode distro) {
-        this.distro = distro;
+    public void setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
+        this.nearCfg = nearCfg;
     }
 
     /**
@@ -504,35 +506,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets eviction policy for {@code near} cache which is different from the one used for
-     * {@code partitioned} cache. By default, returns {@code null}
-     * which means that evictions are disabled for near cache.
+     * Gets filter which determines on what nodes the cache should be started.
      *
-     * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     * @return Predicate specifying on which nodes the cache should be started.
      */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
-        return nearEvictPlc;
+    public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
     }
 
     /**
-     * Sets eviction policy for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching
-     * mode.
+     * Sets filter which determines on what nodes the cache should be started.
      *
-     * @param nearEvictPlc Eviction policy for near cache.
+     * @param nodeFilter Predicate specifying on which nodes the cache should be started.
      */
-    public void setNearEvictionPolicy(@Nullable CacheEvictionPolicy nearEvictPlc) {
-        this.nearEvictPlc = nearEvictPlc;
+    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
     }
 
     /**
-     * Gets flag indicating whether eviction is synchronized between primary and
-     * backup nodes on partitioned cache. If this parameter is {@code true} and
-     * swap is disabled then {@link CacheProjection#evict(Object)}
-     * and all its variations will involve all nodes where an entry is kept -
-     * this is a group of nodes responsible for partition to which
-     * corresponding key belongs. If this property is set to {@code false} then
-     * eviction is done independently on cache nodes.
+     * Gets flag indicating whether eviction is synchronized between primary, backup and near nodes.
+     * If this parameter is {@code true} and swap is disabled then {@link IgniteCache#localEvict(Collection)}
+     * will involve all nodes where an entry is kept.  If this property is set to {@code false} then
+     * eviction is done independently on different cache nodes.
      * <p>
      * Default value is defined by {@link #DFLT_EVICT_SYNCHRONIZED}.
      * <p>
@@ -548,39 +543,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets flag indicating whether eviction is synchronized with backup nodes (or the rest of the nodes for replicated
-     * cache).
+     * Sets flag indicating whether eviction is synchronized with backup nodes or near caches
+     * (or the rest of the nodes for replicated cache).
      *
      * @param evictSync {@code true} if synchronized, {@code false} if not.
      */
     public void setEvictSynchronized(boolean evictSync) {
         this.evictSync = evictSync;
-    }
-
-    /**
-     * Sets flag indicating whether eviction is synchronized with near nodes.
-     *
-     * @param evictNearSync {@code true} if synchronized, {@code false} if not.
-     */
-    public void setEvictNearSynchronized(boolean evictNearSync) {
-        this.evictNearSync = evictNearSync;
-    }
-
-    /**
-     * Gets flag indicating whether eviction on primary node is synchronized with
-     * near nodes where entry is kept. Default value is {@code true} and
-     * is defined by {@link #DFLT_EVICT_NEAR_SYNCHRONIZED}.
-     * <p>
-     * Note that in most cases this property should be set to {@code true} to keep
-     * cache consistency. But there may be the cases when user may use some
-     * special near eviction policy to have desired control over near cache
-     * entry set.
-     *
-     * @return {@code true} If eviction is synchronized with near nodes in
-     *      partitioned cache, {@code false} if not.
-     */
-    public boolean isEvictNearSynchronized() {
-        return evictNearSync;
     }
 
     /**
@@ -605,7 +574,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Gets concurrency level for synchronized evictions. This flag only makes sense
-     * with {@link #isEvictNearSynchronized()} or {@link #isEvictSynchronized()} set
+     * with {@link #isEvictSynchronized()} set
      * to {@code true}. When synchronized evictions are enabled, it is possible that
      * local eviction policy will try to evict entries faster than evictions can be
      * synchronized with backup or near nodes. This value specifies how many concurrent
@@ -689,7 +658,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets eviction filter to specify which entries should not be evicted
      * (except explicit evict by calling {@link IgniteCache#localEvict(Collection)}).
-     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(javax.cache.Cache.Entry)} method
+     * If {@link EvictionFilter#evictAllowed(Cache.Entry)} method
      * returns {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
@@ -699,8 +668,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Eviction filter or {@code null}.
      */
     @SuppressWarnings("unchecked")
-    public CacheEvictionFilter<K, V> getEvictionFilter() {
-        return (CacheEvictionFilter<K, V>)evictFilter;
+    public EvictionFilter<K, V> getEvictionFilter() {
+        return (EvictionFilter<K, V>)evictFilter;
     }
 
     /**
@@ -708,7 +677,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param evictFilter Eviction filter.
      */
-    public void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
+    public void setEvictionFilter(EvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
     }
 
@@ -719,8 +688,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link javax.cache.expiry.ExpiryPolicy} and should not be confused with entry
-     * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
+     * {@link ExpiryPolicy} and should not be confused with entry
+     * evictions based on configured {@link EvictionPolicy}.
      *
      * @return Flag indicating whether Ignite will eagerly remove expired entries.
      */
@@ -755,25 +724,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setStartSize(int startSize) {
         this.startSize = startSize;
-    }
-
-    /**
-     * Gets initial cache size for near cache which will be used to pre-create internal
-     * hash table after start. Default value is defined by {@link #DFLT_NEAR_START_SIZE}.
-     *
-     * @return Initial near cache size.
-     */
-    public int getNearStartSize() {
-        return nearStartSize;
-    }
-
-    /**
-     * Start size for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching mode.
-     *
-     * @param nearStartSize Start size for near cache.
-     */
-    public void setNearStartSize(int nearStartSize) {
-        this.nearStartSize = nearStartSize;
     }
 
     /**
@@ -842,7 +792,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @return Key topology resolver to provide mapping from keys to nodes.
      */
-    public CacheAffinityFunction getAffinity() {
+    public AffinityFunction getAffinity() {
         return aff;
     }
 
@@ -851,7 +801,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param aff Cache key affinity.
      */
-    public void setAffinity(CacheAffinityFunction aff) {
+    public void setAffinity(AffinityFunction aff) {
         this.aff = aff;
     }
 
@@ -1066,9 +1016,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Flag indicating whether Ignite should use swap storage by default. By default
      * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
-     * <p>
-     * Note that this flag may be overridden for cache projection created with flag
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}.
      *
      * @return {@code True} if swap storage is enabled.
      */
@@ -1281,7 +1228,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction#setHashIdResolver(CacheAffinityNodeHashResolver)}
+     * use {@link RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
@@ -1346,21 +1293,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * on the same node (they will also be backed up on the same nodes as well).
      * <p>
      * If not provided, then default implementation will be used. The default behavior
-     * is described in {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} documentation.
+     * is described in {@link AffinityKeyMapper} documentation.
      *
      * @return Mapper to use for affinity key mapping.
      */
-    public CacheAffinityKeyMapper getAffinityMapper() {
+    public AffinityKeyMapper getAffinityMapper() {
         return affMapper;
     }
 
     /**
      * Sets custom affinity mapper. If not provided, then default implementation will be used. The default behavior is
-     * described in {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} documentation.
+     * described in {@link AffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
      */
-    public void setAffinityMapper(CacheAffinityKeyMapper affMapper) {
+    public void setAffinityMapper(AffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
     }
 

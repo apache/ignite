@@ -224,8 +224,10 @@ object VisorConsole extends App {
      * Setting up mac os specific menu.
      */
     private def customizeUI() {
-        def urlIcon(iconPath: String) = {
-            val dockIconUrl = getClass.getResource(iconPath)
+        def urlIcon(iconName: String) = {
+            val iconPath = "org/apache/ignite/startup/cmdline/" + iconName
+
+            val dockIconUrl = U.detectClassLoader(getClass).getResource(iconPath)
 
             assert(dockIconUrl != null, "Unknown icon path: " + iconPath)
 
@@ -321,7 +323,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
                     else if (left.count(_ == '\'') % 2 == 1) "\'"
                     else ""
 
-                val splitterSz = quote.size + " ".size
+                val splitterSz = quote.length + " ".length
 
                 // path begin marker index.
                 ixBegin = left.lastIndexOf(" " + quote)
@@ -345,7 +347,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
         if (dir != null && dir.listFiles != null) {
             val files = for (file <- dir.listFiles if file.getName.startsWith(partOfName)) yield file
 
-            if (files.size == 1) {
+            if (files.length == 1) {
                 val candidate = files(0)
 
                 candidates.add(candidate.getName + (if (candidate.isDirectory) separator else " "))

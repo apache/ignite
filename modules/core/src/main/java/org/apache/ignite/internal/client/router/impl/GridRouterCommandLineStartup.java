@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client.router.impl;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.router.*;
-import org.apache.ignite.internal.processors.spring.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -108,7 +108,7 @@ public class GridRouterCommandLineStartup {
             " "
         );
 
-        IgniteSpringProcessor spring = SPRING.create(false);
+        IgniteSpringHelper spring = SPRING.create(false);
 
         if (args.length < 1) {
             X.error("Missing XML configuration path.");
