@@ -59,7 +59,7 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
     }
 
     @Override protected int gridCount() {
-        return 2;
+        return 1;
     }
 
     /** */
@@ -71,10 +71,13 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
     public void testStoreSession() throws Exception {
         grid(0).cache(CACHE_NAME1).put("key1", new UserObject("key1"));
         stopGrid(0);
-        startGrid(0);
-        grid(1).cache(CACHE_NAME1).get("key1");
+        startGrid(1);
+        //Checking that marshaller works correct after all nodes was stopped.
+        UserObject obj = grid(1).<Object, UserObject>cache(CACHE_NAME1).get("key1");
+        assert obj.field.equals("key1");
     }
 
+    /** */
     private static class UserObject implements Serializable{
         private String field;
 

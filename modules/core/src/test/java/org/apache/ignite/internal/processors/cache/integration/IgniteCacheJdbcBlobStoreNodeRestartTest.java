@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.hibernate;
+package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.integration.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 
-public class IgniteCacheHibernateBlobStoreNodeRestartAbstractTest extends IgniteCacheStoreNodeRestartAbstractTest {
-
+public class IgniteCacheJdbcBlobStoreNodeRestartTest extends IgniteCacheStoreNodeRestartAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheStore getStore() {
-        return new CacheHibernateBlobStore();
+        return new CacheJdbcBlobStore();
     }
 
     /** {@inheritDoc} */
