@@ -17,34 +17,15 @@
 
 package org.apache.ignite.yardstick;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheDistributionMode;
-import org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.io.UrlResource;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkServer;
-import org.yardstickframework.BenchmarkUtils;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.eviction.lru.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.yardstickframework.*;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.ignite.cache.CacheDistributionMode.CLIENT_ONLY;
-import static org.apache.ignite.cache.CacheDistributionMode.PARTITIONED_ONLY;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
  * Standalone Ignite node.
@@ -113,7 +94,7 @@ public class IgniteDriverNode extends IgniteNode {
                 if (args.isOffheapValues())
                     cc.setMemoryMode(OFFHEAP_VALUES);
                 else
-                    cc.setEvictionPolicy(new CacheLruEvictionPolicy(50000));
+                    cc.setEvictionPolicy(new LruEvictionPolicy(50000));
             }
 
             cc.setReadThrough(args.isStoreEnabled());
