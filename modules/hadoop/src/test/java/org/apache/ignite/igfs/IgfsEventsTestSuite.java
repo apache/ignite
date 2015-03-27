@@ -38,7 +38,7 @@ public class IgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        HadoopClassLoader ldr = new HadoopClassLoader(null);
+        HadoopClassLoader ldr = new HadoopClassLoader(null, "test");
 
         TestSuite suite = new TestSuite("Ignite FS Events Test Suite");
 
@@ -58,7 +58,7 @@ public class IgfsEventsTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suiteNoarchOnly() throws Exception {
-        HadoopClassLoader ldr = new HadoopClassLoader(null);
+        HadoopClassLoader ldr = new HadoopClassLoader(null, "test");
 
         TestSuite suite = new TestSuite("Ignite IGFS Events Test Suite Noarch Only");
 
