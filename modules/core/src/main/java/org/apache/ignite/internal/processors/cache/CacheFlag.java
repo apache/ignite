@@ -34,7 +34,6 @@ import javax.cache.processor.*;
  * creating new projections and passing entries to predicate filters.
  */
 public enum CacheFlag {
-    LOCAL,
     /**
      * Only operations that don't change cached data are allowed.
      * This flag is automatically set on underlying projection for
