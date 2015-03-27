@@ -77,7 +77,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             return true;
         }
         catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
-            if (failedCnt++ >= 10)
+            if (++failedCnt > 10)
                 U.warn(log, e, "Marshaller failed to register class for more than 10 times " +
                     "(this can cause performance degradation).");
 
