@@ -23,6 +23,9 @@ import org.apache.ignite.internal.processors.cache.*;
 
 import java.io.*;
 
+/**
+ *
+ */
 public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCacheAbstractTest {
 
     /** */
@@ -58,11 +61,14 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
 
-    /** */
+    /**
+     * returns Store.
+     */
     protected abstract CacheStore getStore();
 
     /**
@@ -77,17 +83,29 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
         assert obj.field.equals("key1");
     }
 
-    /** */
+    /**
+     * Custom object.
+     */
     private static class UserObject implements Serializable{
+        /** */
         private String field;
 
+        /**
+         *
+         */
         public UserObject(String field) {
             this.field = field;
         }
 
+        /**
+         *
+         */
         public UserObject() {
         }
 
+        /**
+         *
+         */
         public String getField() {
             return field;
         }
