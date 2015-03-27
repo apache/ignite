@@ -65,8 +65,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             old = cache0.tryPutIfAbsent(id, clsName);
 
             if (old != null && !old.equals(clsName)) {
-                U.warn(log, "Type ID collision occurred in marshaller (this can cause performance degradation). " +
-                    "Use marshaller configuration to resolve it [id=" + id + ", clsName1=" + clsName +
+                U.quietAndWarn(log, "Type ID collision detected, may affect performance " +
+                    "(set idMapper property on marshaller to fix) [id=" + id + ", clsName1=" + clsName +
                     "clsName2=" + old + ']');
 
                 return false;
@@ -77,9 +77,12 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             return true;
         }
         catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
-            if (++failedCnt > 10)
-                U.warn(log, e, "Marshaller failed to register class for more than 10 times " +
-                    "(this can cause performance degradation).");
+            if (++failedCnt > 10) {
+                U.quietAndWarn(log, e, "Failed to register marshalled class for more than 10 times in a row " +
+                    "(may affect performance)");
+
+                failedCnt = 0;
+            }
 
             return false;
         }
