@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -33,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
@@ -386,14 +388,14 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException {
+    @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
         boolean changed = waitForRent();
 
         ClusterNode loc = cctx.localNode();
 
         int num = cctx.affinity().partitions();
 
-        AffinityTopologyVersion topVer = exchId.topologyVersion();
+        AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         lock.writeLock().lock();
 
@@ -401,11 +403,11 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
             if (stopping)
                 return false;
 
-            assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
-                topVer + ", exchId=" + exchId + ']';
+            assert topVer.equals(exchFut.topologyVersion()) : "Invalid topology version [topVer=" +
+                topVer + ", exchId=" + exchFut.exchangeId() + ']';
 
             if (log.isDebugEnabled())
-                log.debug("Partition map before afterExchange [exchId=" + exchId + ", fullMap=" +
+                log.debug("Partition map before afterExchange [exchId=" + exchFut.exchangeId() + ", fullMap=" +
                     fullMapString() + ']');
 
             long updateSeq = this.updateSeq.incrementAndGet();
@@ -439,6 +441,14 @@ class GridDhtPartitionTopologyImpl<K, V> implements GridDhtPartitionTopology {
                                 updateLocal(p, loc.id(), locPart.state(), updateSeq);
 
                                 changed = true;
+
+                                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                                    DiscoveryEvent discoEvt = exchFut.discoveryEvent();
+
+                                    cctx.events().addPreloadEvent(p,
+                                        EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                                        discoEvt.type(), discoEvt.timestamp());
+                                }
 
                                 if (log.isDebugEnabled())
                                     log.debug("Owned partition: " + locPart);

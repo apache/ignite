@@ -88,6 +88,11 @@
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
                     <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/visor-common</outputDirectory>
+                    </fileSet>
+
+                    <fileSet>
                         <directory>target</directory>
                         <outputDirectory>/visor-common</outputDirectory>
                         <includes>
