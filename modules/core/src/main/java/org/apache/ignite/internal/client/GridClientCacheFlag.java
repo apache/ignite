@@ -29,16 +29,6 @@ public enum GridClientCacheFlag {
     /** Skip swap space for reads and writes. */
     SKIP_SWAP,
 
-    /** Synchronous commit. */
-    SYNC_COMMIT,
-
-    /**
-     * Switches a cache projection to work in {@code 'invalidation'} mode.
-     * Instead of updating remote entries with new values, small invalidation
-     * messages will be sent to set the values to {@code null}.
-     */
-    INVALIDATE,
-
     /**
      * Disable deserialization of portable objects on get operations.
      * If set and portable marshaller is used, {@link GridClientData#get(Object)}

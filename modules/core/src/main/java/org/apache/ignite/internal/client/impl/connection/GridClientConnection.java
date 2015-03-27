@@ -109,12 +109,6 @@ public abstract class GridClientConnection {
         if (flagSet.contains(GridClientCacheFlag.SKIP_SWAP))
             bits |= 1 << 1;
 
-        if (flagSet.contains(GridClientCacheFlag.SYNC_COMMIT))
-            bits |= 1 << 2;
-
-        if (flagSet.contains(GridClientCacheFlag.INVALIDATE))
-            bits |= 1 << 4;
-
         return bits;
     }
 

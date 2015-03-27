@@ -59,8 +59,6 @@ public class ClientCacheFlagsCodecTest extends TestCase {
         doTestGroup(GridClientCacheFlag.values());
         // none
         doTestGroup();
-        // some
-        doTestGroup(GridClientCacheFlag.INVALIDATE);
     }
 
     /**
