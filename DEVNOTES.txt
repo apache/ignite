@@ -12,7 +12,7 @@ Build Binary Release
 For official apache binary release, you need to exclude the
 LGPL dependencies.
 
-  mvn clean package -DskipTests -P-lgpl
+  mvn clean package -DskipTests -P-lgpl,-examples
 
 To execute this build you need to be in GIT root folder.
 Look for ignite-fabric-<version>.zip in ./target directory.

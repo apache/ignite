@@ -40,8 +40,8 @@ Ignite includes the following optional LGPL dependencies:
  - JTS Topology Suite for Geospatial indexing, http://tsusiatsoftware.net/jts/main.html
  - cron4j for cron-based task scheduling, http://www.sauronsoftware.it/projects/cron4j
 
-Apache binary releases cannot include LGPL dependencies. If you would like to include
+Apache binary releases cannot include LGPL dependencies. If you would like include
 optional LGPL dependencies into your release, you should download the source release
 from Ignite website and do the build with the following maven command:
 
-mvn clean package -DskipTests -P release,lgpl
+mvn clean package -DskipTests
