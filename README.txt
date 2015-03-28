@@ -23,18 +23,3 @@ For information on how to get started with Apache Ignite please visit:
 You can find Apache Ignite documentation here:
 
     http://apacheignite.readme.io/v1.0/docs/getting-started
-
-
-LGPL dependencies
-=================
-
-Ignite includes the following optional LGPL dependencies:
- - Hibernate L2 Cache Integration, http://hibernate.org/orm/
- - JTS Topology Suite for Geospatial indexing, http://tsusiatsoftware.net/jts/main.html
- - cron4j for cron-based task scheduling, http://www.sauronsoftware.it/projects/cron4j
-
-Apache binary releases cannot include LGPL dependencies. If you would like to include
-optional LGPL dependencies into your release, you should download the source release
-from Ignite website and do the build with the following maven command:
-
-mvn clean package -DskipTests -P release,lgpl
