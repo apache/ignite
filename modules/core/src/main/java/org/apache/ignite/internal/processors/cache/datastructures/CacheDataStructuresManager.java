@@ -85,7 +85,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         try {
-            queueHdrView = cctx.grid().cachex(cctx.name());
+            queueHdrView = cctx.cache();
 
             initFlag = true;
         }
