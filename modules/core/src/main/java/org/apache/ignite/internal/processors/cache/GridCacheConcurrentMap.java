@@ -1802,9 +1802,6 @@ public class GridCacheConcurrentMap {
         private GridCacheProjectionImpl prjPerCall;
 
         /** */
-        private CacheFlag[] forcedFlags;
-
-        /** */
         private boolean clone;
 
         /**
@@ -1827,7 +1824,6 @@ public class GridCacheConcurrentMap {
             ctx = map.ctx;
 
             prjPerCall = ctx.projectionPerCall();
-            forcedFlags = ctx.forcedFlags();
         }
 
         /** {@inheritDoc} */
@@ -1839,7 +1835,7 @@ public class GridCacheConcurrentMap {
          * @return Entry iterator.
          */
         Iterator<Cache.Entry<K, V>> entryIterator() {
-            return new EntryIterator<>(map, filter, ctx, prjPerCall, forcedFlags);
+            return new EntryIterator<>(map, filter, ctx, prjPerCall);
         }
 
         /**
@@ -1980,9 +1976,6 @@ public class GridCacheConcurrentMap {
         /** */
         private GridCacheProjectionImpl<K, V> prjPerCall;
 
-        /** */
-        private CacheFlag[] forcedFlags;
-
         /**
          * Empty constructor required for {@link Externalizable}.
          */
@@ -1995,19 +1988,16 @@ public class GridCacheConcurrentMap {
          * @param filter Entry filter.
          * @param ctx Cache context.
          * @param prjPerCall Projection per call.
-         * @param forcedFlags Forced flags.
          */
         EntryIterator(
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
             GridCacheContext<K, V> ctx,
-            GridCacheProjectionImpl<K, V> prjPerCall,
-            CacheFlag[] forcedFlags) {
+            GridCacheProjectionImpl<K, V> prjPerCall) {
             it = new Iterator0<>(map, false, filter, -1, -1);
 
             this.ctx = ctx;
             this.prjPerCall = prjPerCall;
-            this.forcedFlags = forcedFlags;
         }
 
         /** {@inheritDoc} */
@@ -2021,14 +2011,11 @@ public class GridCacheConcurrentMap {
 
             ctx.projectionPerCall(prjPerCall);
 
-            CacheFlag[] oldFlags = ctx.forceFlags(forcedFlags);
-
             try {
                 return it.next().wrapLazyValue();
             }
             finally {
                 ctx.projectionPerCall(oldPrj);
-                ctx.forceFlags(oldFlags);
             }
         }
 
@@ -2042,7 +2029,6 @@ public class GridCacheConcurrentMap {
             out.writeObject(it);
             out.writeObject(ctx);
             out.writeObject(prjPerCall);
-            out.writeObject(forcedFlags);
         }
 
         /** {@inheritDoc} */
@@ -2051,7 +2037,6 @@ public class GridCacheConcurrentMap {
             it = (Iterator0<K, V>)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
             prjPerCall = (GridCacheProjectionImpl<K, V>)in.readObject();
-            forcedFlags = (CacheFlag[])in.readObject();
         }
     }
 

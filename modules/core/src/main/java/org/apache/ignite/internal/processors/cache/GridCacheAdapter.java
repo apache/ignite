@@ -381,7 +381,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<CacheFlag> flags() {
-        return F.asSet(ctx.forcedFlags());
+        return new HashSet<>();
     }
 
     /** {@inheritDoc} */

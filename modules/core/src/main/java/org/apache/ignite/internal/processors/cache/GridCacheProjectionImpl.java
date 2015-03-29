@@ -783,18 +783,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public Set<CacheFlag> flags() {
-        CacheFlag[] forced = cctx.forcedFlags();
-
-        if (F.isEmpty(forced))
-            return flags;
-
-        // We don't expect too many flags, so default size is fine.
-        Set<CacheFlag> ret = new HashSet<>();
-
-        ret.addAll(flags);
-        ret.addAll(F.asList(forced));
-
-        return Collections.unmodifiableSet(ret);
+        return flags;
     }
 
     /** {@inheritDoc} */

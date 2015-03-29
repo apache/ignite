@@ -541,7 +541,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
             CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), val.value());
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), (Integer)val.value());
 
             assertEquals(entry.version(), versions.get(i));
         }

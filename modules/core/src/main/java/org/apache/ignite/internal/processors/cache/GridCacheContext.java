@@ -153,9 +153,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     private ThreadLocal<GridCacheProjectionImpl<K, V>> prjPerCall = new ThreadLocal<>();
 
-    /** Thread local forced flags that affect any projection in the same thread. */
-    private ThreadLocal<CacheFlag[]> forcedFlags = new ThreadLocal<>();
-
     /** Cache name. */
     private String cacheName;
 
@@ -1178,30 +1175,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Force projection flags for the current thread. These flags will affect all
-     * projections (even without flags) used within the current thread.
-     *
-     * @param flags Flags to force.
-     * @return Forced flags that were set prior to method call.
-     */
-    @Nullable public CacheFlag[] forceFlags(@Nullable CacheFlag[] flags) {
-        CacheFlag[] oldFlags = forcedFlags.get();
-
-        forcedFlags.set(F.isEmpty(flags) ? null : flags);
-
-        return oldFlags;
-    }
-
-    /**
-     * Gets forced flags for current thread.
-     *
-     * @return Forced flags.
-     */
-    public CacheFlag[] forcedFlags() {
-        return forcedFlags.get();
-    }
-
-    /**
      * Clone cached object.
      *
      * @param obj Object to clone
@@ -1277,58 +1250,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
 
-        CacheFlag[] forced = forcedFlags.get();
-
-        return (prj != null && prj.flags().contains(flag)) || (forced != null && U.containsObjectArray(forced, flag));
+        return (prj != null && prj.flags().contains(flag));
     }
 
-    /**
-     * Checks whether any of the given flags is set.
-     *
-     * @param flags Flags to check.
-     * @return {@code true} if any of the given flags is set.
-     */
-    public boolean hasAnyFlags(CacheFlag[] flags) {
-        assert !F.isEmpty(flags);
-
-        if (nearContext())
-            return dht().near().context().hasAnyFlags(flags);
-
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
-
-        if (prj == null && F.isEmpty(forcedFlags.get()))
-            return false;
-
-        for (CacheFlag f : flags)
-            if (hasFlag(f))
-                return true;
-
-        return false;
-    }
-
-    /**
-     * Checks whether any of the given flags is set.
-     *
-     * @param flags Flags to check.
-     * @return {@code true} if any of the given flags is set.
-     */
-    public boolean hasAnyFlags(Collection<CacheFlag> flags) {
-        assert !F.isEmpty(flags);
-
-        if (nearContext())
-            return dht().near().context().hasAnyFlags(flags);
-
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
-
-        if (prj == null && F.isEmpty(forcedFlags.get()))
-            return false;
-
-        for (CacheFlag f : flags)
-            if (hasFlag(f))
-                return true;
-
-        return false;
-    }
 
     /**
      * @return {@code True} if need check near cache context.
@@ -1353,10 +1277,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         // Have to get projection per call used by calling thread to use it in a new thread.
         final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
 
-        // Get flags in the same thread.
-        final CacheFlag[] flags = forcedFlags();
-
-        if (prj == null && F.isEmpty(flags))
+        if (prj == null)
             return r;
 
         return new GPR() {
@@ -1365,15 +1286,11 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                 projectionPerCall(prj);
 
-                CacheFlag[] oldFlags = forceFlags(flags);
-
                 try {
                     r.run();
                 }
                 finally {
                     projectionPerCall(oldPrj);
-
-                    forceFlags(oldFlags);
                 }
             }
         };
@@ -1395,10 +1312,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         // Have to get projection per call used by calling thread to use it in a new thread.
         final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
 
-        // Get flags in the same thread.
-        final CacheFlag[] flags = forcedFlags();
-
-        if (prj == null && F.isEmpty(flags))
+        if (prj == null)
             return r;
 
         return new GPC<T>() {
@@ -1407,15 +1321,11 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                 projectionPerCall(prj);
 
-                CacheFlag[] oldFlags = forceFlags(flags);
-
                 try {
                     return r.call();
                 }
                 finally {
                     projectionPerCall(oldPrj);
-
-                    forceFlags(oldFlags);
                 }
             }
         };
