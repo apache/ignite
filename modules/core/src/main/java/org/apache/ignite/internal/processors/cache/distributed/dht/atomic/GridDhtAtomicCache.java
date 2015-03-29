@@ -1109,8 +1109,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             return;
                         }
 
-                        checkClearForceTransformBackups(req, locked);
-
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         GridCacheVersion ver = req.updateVersion();
@@ -1757,9 +1755,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             newConflictVer = null; // Conflict version is discarded in case of merge.
 
                         EntryProcessor<Object, Object, Object> entryProcessor = null;
-
-                        if (req.forceTransformBackups() && op == TRANSFORM)
-                            entryProcessor = (EntryProcessor<Object, Object, Object>)writeVal;
 
                         if (!readersOnly) {
                             dhtFut.addWriteEntry(entry,
@@ -2563,27 +2558,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +
                 ", req=" + req + ']', e);
-        }
-    }
-
-    /**
-     * Checks if entries being transformed are empty. Clears forceTransformBackup flag enforcing
-     * sending transformed value to backups if at least one empty entry is found.
-     *
-     * @param req Near atomic update request.
-     * @param locked Already locked entries (from the request).
-     */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void checkClearForceTransformBackups(GridNearAtomicUpdateRequest req,
-        List<GridDhtCacheEntry> locked) {
-        if (ctx.writeThrough() && req.operation() == TRANSFORM) {
-            for (int i = 0; i < locked.size(); i++) {
-                if (!locked.get(i).hasValue()) {
-                    req.forceTransformBackups(false);
-
-                    return;
-                }
-            }
         }
     }
 
