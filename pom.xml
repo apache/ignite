@@ -1382,9 +1382,6 @@
 
         <profile>
             <id>lgpl</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <modules>
                 <module>modules/hibernate</module>
                 <module>modules/geospatial</module>
@@ -1394,9 +1391,6 @@
 
         <profile>
             <id>examples</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <modules>
                 <module>examples</module>
             </modules>

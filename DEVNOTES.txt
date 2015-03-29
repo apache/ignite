@@ -9,9 +9,11 @@ Build Project
 
 Build Binary Release
 --------------------
-For Ignite binary release, you need to exclude the LGPL dependencies.
+Without LGPL dependencies (default):
+  mvn clean package -DskipTests
 
-  mvn clean package -DskipTests -P-lgpl,-examples
+With LGPL dependencies:
+  mvn clean package -DskipTests -Prelease,lgpl
 
 Look for ignite-fabric-<version>.zip in ./target directory.
 
