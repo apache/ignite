@@ -67,7 +67,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Cache context.
@@ -1238,20 +1237,17 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     *
-     * @param flag Flag to check.
-     * @return {@code true} if the given flag is set.
+     * @return {@code true} if the skip store is set.
      */
-    public boolean hasFlag(CacheFlag flag) {
-        assert flag != null;
-
+    public boolean skipStore() {
         if (nearContext())
-            return dht().near().context().hasFlag(flag);
+            return dht().near().context().skipStore();
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
 
-        return (prj != null && prj.flags().contains(flag));
+        return (prj != null && prj.skipStore());
     }
+
 
 
     /**
@@ -1356,7 +1352,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
-        return cacheCfg.isReadThrough() && !hasFlag(SKIP_STORE);
+        return cacheCfg.isReadThrough() && !skipStore();
     }
 
     /**
@@ -1370,7 +1366,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store write-through is enabled.
      */
     public boolean writeThrough() {
-        return cacheCfg.isWriteThrough() && !hasFlag(SKIP_STORE);
+        return cacheCfg.isWriteThrough() && !skipStore();
     }
 
     /**

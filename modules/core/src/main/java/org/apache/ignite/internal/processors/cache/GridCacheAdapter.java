@@ -63,7 +63,6 @@ import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
@@ -380,11 +379,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public Set<CacheFlag> flags() {
-        return new HashSet<>();
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheEntryPredicate predicate() {
         return null;
     }
@@ -394,7 +388,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
             ctx,
             null,
-            null,
+            false,
             subjId,
             false,
             null);
@@ -403,24 +397,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> flagsOn(@Nullable CacheFlag[] flags) {
-        if (F.isEmpty(flags))
-            return this;
-
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-            ctx,
-            null,
-            EnumSet.copyOf(F.asList(flags)),
-            null,
-            false,
-            null);
-
-        return new GridCacheProxyImpl<>(ctx, prj, prj);
+    @Override public boolean skipStore() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> flagsOff(@Nullable CacheFlag[] flags) {
-        return this;
+    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
+        if (!skipStore)
+            return this;
+
+        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+                ctx,
+                null,
+                skipStore,
+                null,
+                false,
+                null);
+
+        return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
 
     /** {@inheritDoc} */
@@ -440,7 +434,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             (CacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)ctx,
             null,
-            null,
+            false,
             null,
             true,
             null
@@ -458,7 +452,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             this,
             ctx,
             null,
-            null,
+            false,
             null,
             false,
             plc);
@@ -482,7 +476,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>((CacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)ctx,
             CU.typeFilter0(keyType, valType),
-            /*flags*/null,
+            false,
             /*clientId*/null,
             false,
             null);
@@ -508,7 +502,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             this,
             ctx,
             filter,
-            null,
+            false,
             null,
             false,
             null);
@@ -4442,7 +4436,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
-                !ctx.hasFlag(SKIP_STORE),
+                !skipStore(),
                 0,
                 /** group lock keys */null,
                 /** partition lock */false
@@ -4513,7 +4507,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
-                !ctx.hasFlag(SKIP_STORE),
+                !ctx.skipStore(),
                 0,
                 null,
                 false);

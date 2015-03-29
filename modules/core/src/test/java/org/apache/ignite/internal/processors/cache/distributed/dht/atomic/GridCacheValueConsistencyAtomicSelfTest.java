@@ -29,7 +29,6 @@ import java.io.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Tests cache value consistency for ATOMIC mode.

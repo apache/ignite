@@ -205,11 +205,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public <K1, V1> GridCache<K1, V1> cache();
 
     /**
-     * Gets cache flags enabled on this projection.
-     *
-     * @return Flags for this projection (empty set if no flags have been set).
+     * @return Skip store.
      */
-    public Set<CacheFlag> flags();
+    public boolean skipStore();
 
     /**
      * Returns queries facade responsible for creating various SQL, TEXT, or SCAN queries.
@@ -243,25 +241,10 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public CacheProjection<K, V> projection(@Nullable CacheEntryPredicate filter);
 
     /**
-     * Gets cache projection base on this one, but with the specified flags turned on.
-     * <h1 class="header">Cache Flags</h1>
-     * The resulting projection will inherit all the flags from this projection.
-     *
-     * @param flags Flags to turn on (if empty, then no-op).
-     * @return New projection based on this one, but with the specified flags turned on.
+     * @param skipStore Skip store.
+     * @retur New projection based on this one, but with skip store.
      */
-    public CacheProjection<K, V> flagsOn(@Nullable CacheFlag... flags);
-
-    /**
-     * Gets cache projection base on this but with the specified flags turned off.
-     * <h1 class="header">Cache Flags</h1>
-     * The resulting projection will inherit all the flags from this projection except for
-     * the ones that were turned off.
-     *
-     * @param flags Flags to turn off (if empty, then all flags will be turned off).
-     * @return New projection based on this one, but with the specified flags turned off.
-     */
-    public CacheProjection<K, V> flagsOff(@Nullable CacheFlag... flags);
+    public CacheProjection<K, V> setSkipStore(boolean skipStore);
 
     /**
      * Creates projection that will operate with portable objects.
@@ -447,7 +430,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param key Key to retrieve the value for.
      * @return Value for the given key.
      * @throws IgniteCheckedException If get operation failed.
-     * @throws CacheFlagException If failed projection flags validation.
      * @throws NullPointerException if the key is {@code null}.
      */
     @Nullable public V get(K key) throws IgniteCheckedException;
@@ -470,7 +452,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param key Key for the value to get.
      * @return Future for the get operation.
      * @throws NullPointerException if the key is {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<V> getAsync(K key);
 
@@ -492,7 +473,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to get.
      * @return Map of key-value pairs.
      * @throws IgniteCheckedException If get operation failed.
-     * @throws CacheFlagException If failed projection flags validation.
      */
     public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
@@ -513,7 +493,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param keys Key for the value to get.
      * @return Future for the get operation.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
 
@@ -546,7 +525,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *  or in persistent storage.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     @Nullable public V put(K key, V val, @Nullable CacheEntryPredicate... filter)
         throws IgniteCheckedException;
@@ -579,7 +557,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      that filter check is atomic with put operation.
      * @return Future for the put operation.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable CacheEntryPredicate... filter);
 
@@ -608,7 +585,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      specified.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public boolean putx(K key, V val, @Nullable CacheEntryPredicate... filter)
         throws IgniteCheckedException;
@@ -637,7 +613,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      passed and value was stored in cache, {@code false} otherwise. Note that future will
      *      return {@code true} if filter is not specified.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable CacheEntryPredicate... filter);
 
@@ -665,7 +640,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Previously contained value regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     @Nullable public V putIfAbsent(K key, V val) throws IgniteCheckedException;
 
@@ -693,7 +667,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future of put operation which will provide previously contained value
      *   regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val);
 
@@ -716,7 +689,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return {@code true} if value is stored in cache and {@code false} otherwise.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException;
 
@@ -738,7 +710,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param val Value to be associated with the given key.
      * @return Future for this put operation.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val);
 
@@ -765,7 +736,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Previously contained value regardless of whether replace happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     @Nullable public V replace(K key, V val) throws IgniteCheckedException;
 
@@ -791,7 +761,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param val Value to be associated with the given key.
      * @return Future for replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<V> replaceAsync(K key, V val);
 
@@ -814,7 +783,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return {@code True} if replace happened, {@code false} otherwise.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public boolean replacex(K key, V val) throws IgniteCheckedException;
 
@@ -836,7 +804,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param val Value to be associated with the given key.
      * @return Future for the replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> replacexAsync(K key, V val);
 
@@ -858,7 +825,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return {@code True} if replace happened, {@code false} otherwise.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
@@ -879,7 +845,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param newVal Value to be associated with the given key.
      * @return Future for the replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal);
 
@@ -898,7 +863,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param filter Optional entry filter. If provided, then entry will
      *      be stored only if the filter returned {@code true}.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public void putAll(@Nullable Map<? extends K, ? extends V> m,
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
@@ -918,7 +882,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param filter Optional entry filter. If provided, then entry will
      *      be stored only if the filter returned {@code true}.
      * @return Future for putAll operation.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
         @Nullable CacheEntryPredicate... filter);
@@ -1287,7 +1250,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      if there was no value for this key.
      * @throws NullPointerException If key is {@code null}.
      * @throws IgniteCheckedException If remove operation failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     @Nullable public V remove(K key, @Nullable CacheEntryPredicate... filter)
         throws IgniteCheckedException;
@@ -1315,7 +1277,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      that filter is checked atomically together with remove operation.
      * @return Future for the remove operation.
      * @throws NullPointerException if the key is {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<V> removeAsync(K key, CacheEntryPredicate... filter);
 
@@ -1338,7 +1299,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      Note that if filter is not specified, this method will return {@code true}.
      * @throws NullPointerException if the key is {@code null}.
      * @throws IgniteCheckedException If remove failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public boolean removex(K key, @Nullable CacheEntryPredicate... filter)
         throws IgniteCheckedException;
@@ -1362,7 +1322,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      if optional filters passed validation and remove did occur, {@code false} otherwise.
      *      Note that if filter is not specified, this method will return {@code true}.
      * @throws NullPointerException if the key is {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> removexAsync(K key,
         @Nullable CacheEntryPredicate... filter);
@@ -1382,7 +1341,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      {@code false} otherwise.
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws IgniteCheckedException If remove failed.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public boolean remove(K key, V val) throws IgniteCheckedException;
 
@@ -1403,7 +1361,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the remove operation. The future will return {@code true}
      *      if currently cached value will match the passed in one.
      * @throws NullPointerException if the key or value is {@code null}.
-     * @throws CacheFlagException If projection flags validation failed.
      */
     public IgniteInternalFuture<Boolean> removeAsync(K key, V val);
 
@@ -1421,7 +1378,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param filter Optional filter to check prior to removing value form cache. Note
      *      that filter is checked atomically together with remove operation.
      * @throws IgniteCheckedException If remove failed.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void removeAll(@Nullable Collection<? extends K> keys,
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
@@ -1441,7 +1397,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      that filter is checked atomically together with remove operation.
      * @return Future for the remove operation. The future will complete whenever
      *      remove operation completes.
-     * @throws CacheFlagException If flags validation failed.
      */
     public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable CacheEntryPredicate... filter);
@@ -1463,7 +1418,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @throws IgniteCheckedException If remove failed.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void removeAll() throws IgniteCheckedException;
 
@@ -1495,7 +1449,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return {@code True} if all filters passed and lock was acquired,
      *      {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
-     * @throws CacheFlagException If flags validation failed.
      */
     public boolean lock(K key, long timeout, @Nullable CacheEntryPredicate... filter)
         throws IgniteCheckedException;
@@ -1518,7 +1471,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the lock operation. The future will return {@code true}
      *      whenever all filters pass and locks are acquired before timeout is expired,
      *      {@code false} otherwise.
-     * @throws CacheFlagException If flags validation failed.
      */
     public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
         @Nullable CacheEntryPredicate... filter);
@@ -1541,7 +1493,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return {@code True} if all filters passed and locks were acquired before
      *      timeout has expired, {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
-     * @throws CacheFlagException If flags validation failed.
      */
     public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
@@ -1564,7 +1515,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the collection of locks. The future will return
      *      {@code true} if all filters passed and locks were acquired before
      *      timeout has expired, {@code false} otherwise.
-     * @throws CacheFlagException If flags validation failed.
      */
     public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
         @Nullable CacheEntryPredicate... filter);
@@ -1582,7 +1532,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param key Key to unlock.
      * @param filter Optional filter that needs to pass prior to unlock taking effect.
      * @throws IgniteCheckedException If unlock execution resulted in error.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void unlock(K key, CacheEntryPredicate... filter) throws IgniteCheckedException;
 
@@ -1601,7 +1550,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param filter Optional filter which needs to pass for individual entries
      *      to be unlocked.
      * @throws IgniteCheckedException If unlock execution resulted in error.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void unlockAll(@Nullable Collection<? extends K> keys,
         @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
@@ -1710,7 +1658,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param key Key to promote entry for.
      * @return Unswapped entry value or {@code null} for non-existing key.
      * @throws IgniteCheckedException If promote failed.
-     * @throws CacheFlagException If flags validation failed.
      */
     @Nullable public V promote(K key) throws IgniteCheckedException;
 
@@ -1722,7 +1669,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param keys Keys to promote entries for.
      * @throws IgniteCheckedException If promote failed.
-     * @throws CacheFlagException If flags validation failed.
      */
     public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 }

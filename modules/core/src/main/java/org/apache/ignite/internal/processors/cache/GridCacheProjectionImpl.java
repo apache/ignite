@@ -65,9 +65,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** Queries impl. */
     private CacheQueries<K, V> qry;
 
-    /** Flags. */
+    /** Skip store. */
     @GridToStringInclude
-    private Set<CacheFlag> flags;
+    private boolean skipStore;
 
     /** Client ID which operates over this projection, if any, */
     private UUID subjId;
@@ -89,30 +89,23 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param parent Parent projection.
      * @param cctx Cache context.
      * @param entryFilter Entry filter.
-     * @param flags Flags for new projection
+     * @param skipStore Skip store.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     public GridCacheProjectionImpl(
         CacheProjection<K, V> parent,
         GridCacheContext<K, V> cctx,
         @Nullable CacheEntryPredicate entryFilter,
-        @Nullable Set<CacheFlag> flags,
+        boolean skipStore,
         @Nullable UUID subjId,
         boolean keepPortable,
         @Nullable ExpiryPolicy expiryPlc) {
         assert parent != null;
         assert cctx != null;
 
-        // Check if projection flags are conflicting with an ongoing transaction, if any.
-        cctx.shared().checkTxFlags(flags);
-
         this.cctx = cctx;
 
-        this.flags = !F.isEmpty(flags) ? EnumSet.copyOf(flags) : EnumSet.noneOf(CacheFlag.class);
-
-        Set<CacheFlag> f = this.flags;
-
-        this.flags = Collections.unmodifiableSet(f);
+        this.skipStore = skipStore;
 
         this.filter = entryFilter;
 
@@ -261,7 +254,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
             cctx,
             filter,
-            flags,
+            skipStore,
             subjId,
             keepPortable,
             expiryPlc);
@@ -299,7 +292,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             (CacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)cctx,
             CU.typeFilter0(keyType, valType),
-            flags,
+            skipStore,
             subjId,
             keepPortable,
             expiryPlc);
@@ -328,7 +321,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
             cctx,
             filter,
-            flags,
+            skipStore,
             subjId,
             keepPortable,
             expiryPlc);
@@ -338,47 +331,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> flagsOn(@Nullable CacheFlag[] flags) {
-        if (F.isEmpty(flags))
+    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
+        if (this.skipStore == skipStore)
             return new GridCacheProxyImpl<>(cctx, this, this);
 
-        Set<CacheFlag> res = EnumSet.noneOf(CacheFlag.class);
-
-        if (!F.isEmpty(this.flags))
-            res.addAll(this.flags);
-
-        res.addAll(EnumSet.copyOf(F.asList(flags)));
-
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-            cctx,
-            filter,
-            res,
-            subjId,
-            keepPortable,
-            expiryPlc);
-
-        return new GridCacheProxyImpl<>(cctx, prj, prj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> flagsOff(@Nullable CacheFlag[] flags) {
-        if (F.isEmpty(flags))
-            return new GridCacheProxyImpl<>(cctx, this, this);
-
-        Set<CacheFlag> res = EnumSet.noneOf(CacheFlag.class);
-
-        if (!F.isEmpty(this.flags))
-            res.addAll(this.flags);
-
-        res.removeAll(EnumSet.copyOf(F.asList(flags)));
-
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-            cctx,
-            filter,
-            res,
-            subjId,
-            keepPortable,
-            expiryPlc);
+                cctx,
+                filter,
+                skipStore,
+                subjId,
+                keepPortable,
+                expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -389,7 +352,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             (CacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)cctx,
             filter,
-            flags,
+            skipStore,
             subjId,
             true,
             expiryPlc);
@@ -782,8 +745,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Set<CacheFlag> flags() {
-        return flags;
+    @Override public boolean skipStore() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -1147,7 +1110,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             this,
             cctx,
             filter,
-            flags,
+            skipStore,
             subjId,
             true,
             plc);
@@ -1159,7 +1122,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         out.writeObject(filter);
 
-        U.writeCollection(out, flags);
+        out.writeBoolean(skipStore);
 
         out.writeBoolean(keepPortable);
     }
@@ -1171,7 +1134,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         filter = (CacheEntryPredicate)in.readObject();
 
-        flags = U.readSet(in);
+        skipStore = in.readBoolean();
 
         cache = cctx.cache();
 

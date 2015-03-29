@@ -189,7 +189,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return flagOn(CacheFlag.SKIP_STORE);
+        return skipStore();
     }
 
     /** {@inheritDoc} */
@@ -1385,7 +1385,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 (CacheProjection<K1, V1>)(prj != null ? prj : delegate),
                 (GridCacheContext<K1, V1>)ctx,
                 null,
-                prj != null ? prj.flags() : null,
+                prj != null ? prj.skipStore() : false,
                 prj != null ? prj.subjectId() : null,
                 true,
                 prj != null ? prj.expiry() : null);
@@ -1401,33 +1401,23 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @param flag Flag to turn on.
-     * @return Cache with given flags enabled.
+     * @return Cache with skip store enabled.
      */
-    public IgniteCache<K, V> flagOn(CacheFlag flag) {
+    public IgniteCache<K, V> skipStore() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            Set<CacheFlag> res;
 
-            Set<CacheFlag> flags0 = prj != null ? prj.flags() : null;
+            boolean skip = prj != null ? prj.skipStore() : false;
 
-            if (flags0 != null) {
-                if (flags0.contains(flag))
-                    return this;
-
-                res = EnumSet.copyOf(flags0);
-            }
-            else
-                res = EnumSet.noneOf(CacheFlag.class);
-
-            res.add(flag);
+            if (skip)
+                return this;
 
             GridCacheProjectionImpl<K, V> prj0 = new GridCacheProjectionImpl<>(
                 (prj != null ? prj : delegate),
                 ctx,
                 null,
-                res,
+                skip,
                 prj != null ? prj.subjectId() : null,
                 true,
                 prj != null ? prj.expiry() : null);
