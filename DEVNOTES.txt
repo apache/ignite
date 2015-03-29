@@ -1,14 +1,5 @@
 Maven Build Instructions
 ========================
-
-Build Project
--------------
-
-  mvn clean package -DskipTests
-
-
-Build Binary Release
---------------------
 Without LGPL dependencies (default):
   mvn clean package -DskipTests
 
