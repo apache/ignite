@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -68,7 +70,11 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /** Callable for {@link #get} operation */
     private final Callable<T> getCall = new Callable<T>() {
         @Override public T call() throws Exception {
-            GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
+            boolean clone = ctx.cache().configuration().getCacheMode() == CacheMode.LOCAL &&
+                ctx.cache().configuration().getAtomicityMode() == CacheAtomicityMode.ATOMIC;
+
+            GridCacheAtomicReferenceValue<T> ref = clone ? X.cloneObject(atomicView.get(key), false, true) :
+                atomicView.get(key);
 
             if (ref == null)
                 throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);
