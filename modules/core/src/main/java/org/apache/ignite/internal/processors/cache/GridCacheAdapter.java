@@ -407,12 +407,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             return this;
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-                ctx,
-                null,
-                skipStore,
-                null,
-                false,
-                null);
+            ctx,
+            null,
+            skipStore,
+            null,
+            false,
+            null);
 
         return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
@@ -1602,8 +1602,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
             taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override
-            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
@@ -2458,13 +2457,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.dr().onReceiveCacheEntriesReceived(drMap.size());
 
         return asyncOp(new AsyncInOp(drMap.keySet()) {
-            @Override
-            public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
+            @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
                 return tx.putAllDrAsync(ctx, drMap);
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "putAllConflictAsync [drMap=" + drMap + ']';
             }
         });
@@ -2513,9 +2510,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             validateCacheKeys(keys);
 
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(keys.size() == 1) {
-            @Nullable
-            @Override
-            public Map<K, EntryProcessorResult<T>> op(IgniteTxLocalAdapter tx)
+            @Nullable @Override public Map<K, EntryProcessorResult<T>> op(IgniteTxLocalAdapter tx)
                     throws IgniteCheckedException {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys,
                         new C1<K, EntryProcessor<K, V, Object>>() {
@@ -2703,8 +2698,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "putxAsync [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
             }
         });

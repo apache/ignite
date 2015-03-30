@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;

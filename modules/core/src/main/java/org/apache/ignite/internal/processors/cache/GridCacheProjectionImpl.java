@@ -336,12 +336,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             return new GridCacheProxyImpl<>(cctx, this, this);
 
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-                cctx,
-                filter,
-                skipStore,
-                subjId,
-                keepPortable,
-                expiryPlc);
+            cctx,
+            filter,
+            skipStore,
+            subjId,
+            keepPortable,
+            expiryPlc);
 
         return new GridCacheProxyImpl<>(cctx, prj, prj);
     }
@@ -746,7 +746,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public boolean skipStore() {
-        return false;
+        return skipStore;
     }
 
     /** {@inheritDoc} */

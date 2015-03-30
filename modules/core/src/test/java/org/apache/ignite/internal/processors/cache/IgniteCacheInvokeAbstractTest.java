@@ -55,9 +55,8 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             invoke(cache, OPTIMISTIC);
         }
-        else if (gridCount() > 1) {
+        else if (gridCount() > 1)
             invoke(cache, null);
-        }
     }
 
     /**
@@ -182,9 +181,8 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             invokeAll(cache, OPTIMISTIC);
         }
-        else if (gridCount() > 1) {
+        else if (gridCount() > 1)
             invokeAll(cache, null);
-        }
     }
 
     /**

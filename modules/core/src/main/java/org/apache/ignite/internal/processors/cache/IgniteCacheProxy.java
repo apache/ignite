@@ -1407,8 +1407,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-
-            boolean skip = prj != null ? prj.skipStore() : false;
+            boolean skip = prj != null && prj.skipStore();
 
             if (skip)
                 return this;
@@ -1417,9 +1416,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 (prj != null ? prj : delegate),
                 ctx,
                 null,
-                skip,
-                prj != null ? prj.subjectId() : null,
                 true,
+                prj != null ? prj.subjectId() : null,
+                prj != null && prj.isKeepPortable(),
                 prj != null ? prj.expiry() : null);
 
             return new IgniteCacheProxy<>(ctx,

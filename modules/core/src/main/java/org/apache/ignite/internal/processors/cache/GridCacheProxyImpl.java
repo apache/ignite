@@ -290,7 +290,8 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return cache.toMap();
-        } finally {
+        }
+        finally {
             gate.leave(prev);
         }
     }
