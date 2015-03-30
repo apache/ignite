@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -37,8 +36,6 @@ import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Common logic for near caches.
@@ -443,7 +440,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @Override public Cache.Entry<K, V> entry(K key) {
         // We don't try wrap entry from near or dht cache.
         // Created object will be wrapped once some method is called.
-        return new CacheEntryImpl<>(key, peek(key));
+        try {
+            return new CacheEntryImpl<>(key, localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
+        } catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -454,55 +455,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      */
     @Nullable public V peekNearOnly(K key) {
         try {
-            GridTuple<V> peek = peek0(true, key, SMART, CU.empty0());
-
-            return peek != null ? peek.get() : null;
+            return localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
         }
-        catch (GridCacheFilterFailedException ignored) {
+        catch (IgniteCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Filter validation failed for key: " + key);
 
             return null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable CacheEntryPredicate filter) {
-        try {
-            GridTuple<V> res = peek0(false, key, SMART, filter);
-
-            if (res != null)
-                return res.get();
-        }
-        catch (GridCacheFilterFailedException e) {
-            e.printStackTrace();
-
-            assert false : "Filter should not fail since fail-fast is false";
-        }
-
-        return dht().peek(key, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
-        GridTuple<V> val = null;
-
-        if (!modes.contains(PARTITIONED_ONLY)) {
-            try {
-                val = peek0(true, key, modes, ctx.tm().txx());
-            }
-            catch (GridCacheFilterFailedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter validation failed for key: " + key);
-
-                return null;
-            }
-        }
-
-        if (val != null)
-            return val.get();
-
-        return !modes.contains(NEAR_ONLY) ? dht().peek(key, modes) : null;
     }
 
     /** {@inheritDoc} */

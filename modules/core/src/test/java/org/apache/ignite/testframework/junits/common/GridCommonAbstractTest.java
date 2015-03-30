@@ -52,6 +52,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
  * Super class for all common tests.
  */
 public abstract class GridCommonAbstractTest extends GridAbstractTest {
+    /**Cache peek modes array that consist of only ONHEAP mode. */
+    protected static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ONHEAP};
+
     /**
      * @param startGrid If {@code true}, then grid node will be auto-started.
      */
@@ -549,6 +552,45 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected Integer nearKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
         return nearKeys(cache, 1, 1).get(0);
+    }
+
+    /**
+     * @param key Key.
+     */
+    protected <K, V> V dhtPeek(K key) throws IgniteCheckedException {
+        return localPeek(this.<K, V>dht(), key);
+    }
+
+    /**
+     * @param idx Index.
+     * @param key Key.
+     */
+    protected <K, V> V dhtPeek(int idx, K key) throws IgniteCheckedException {
+        return localPeek(this.<K, V>dht(idx), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    protected <K, V> V nearPeek(IgniteCache<K, V> cache, K key) throws IgniteCheckedException {
+        return localPeek(near(cache), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    protected static <K, V> V dhtPeek(IgniteCache<K, V> cache, K key) throws IgniteCheckedException {
+        return localPeek(dht(cache), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
+        return cache.localPeek(key, ONHEAP_PEEK_MODES, null);
     }
 
     /**
