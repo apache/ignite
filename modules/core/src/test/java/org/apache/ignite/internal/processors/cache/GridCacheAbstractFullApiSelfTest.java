@@ -4263,6 +4263,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testWithSkipStore() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+        IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
+
+        List<String> keys = primaryKeysForCache(cache, 10);
+
+        for (int i = 0; i < keys.size(); ++i)
+            putToStore(keys.get(i), i);
+
+        assertFalse(cacheSkipStore.iterator().hasNext());
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+
+            assertNotNull(cache.get(key));
+        }
+
+        for (String key : keys) {
+            cacheSkipStore.remove(key);
+
+            assertNotNull(cache.get(key));
+        }
+    }
+
+    /**
      *
      */
     protected CacheStartMode cacheStartType() {
