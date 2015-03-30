@@ -59,6 +59,8 @@ import scala.util.control.Breaks._
  * +-----------------------------------------------------------------------------------------+
  * | cache -scan    | List all entries in cache with specified name.                         |
  * +-----------------------------------------------------------------------------------------+
+ * | cache -stop    | Stop cache with specified name.                                        |
+ * +-----------------------------------------------------------------------------------------+
  * }}}
  *
  * ====Specification====
@@ -69,6 +71,7 @@ import scala.util.control.Breaks._
  *     cache -clear {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
  *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
+ *     cache -stop -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -106,6 +109,8 @@ import scala.util.control.Breaks._
  *          Prints list of all entries from cache.
  *     -swap
  *          Swaps backup entries in cache.
+ *     -stop
+ *          Stop cache with specified name.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -142,6 +147,8 @@ import scala.util.control.Breaks._
  *         Swaps entries in cache with name 'cache'.
  *     cache -swap -c=@c0
  *         Swaps entries in cache with name taken from 'c0' memory variable.
+ *     cache -stop -c=cache
+ *         Stops cache with name 'cache'.
  * }}}
  */
 class VisorCacheCommand {
@@ -196,6 +203,9 @@ class VisorCacheCommand {
      * <br>
      * <ex>cache -swap -c=@c0</ex>
      *     Swaps entries in cache with name taken from 'c0' memory variable.
+     * <br>
+     * <ex>cache -stop -c=@c0</ex>
+     *     Stop cache with name taken from 'c0' memory variable.
      *
      * @param args Command arguments.
      */
@@ -237,7 +247,7 @@ class VisorCacheCommand {
                     case cn => cn
                 }
 
-                if (Seq("clear", "swap", "scan").exists(hasArgFlag(_, argLst))) {
+                if (Seq("clear", "swap", "scan", "stop").exists(hasArgFlag(_, argLst))) {
                     if (cacheName.isEmpty)
                         askForCache("Select cache from:", node) match {
                             case Some(name) => argLst = argLst ++ Seq("c" -> name)
@@ -250,6 +260,8 @@ class VisorCacheCommand {
                         VisorCacheSwapCommand().swap(argLst, node)
                     else if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
+                    else if (hasArgFlag("stop", argLst))
+                        VisorCacheStopCommand().scan(argLst, node)
 
                     break()
                 }
@@ -633,7 +645,8 @@ object VisorCacheCommand {
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
-            "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}"
+            "cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
+            "cache -stop -c=<cache-name>"
     ),
         args = Seq(
             "-id=<node-id>" -> Seq(
@@ -659,6 +672,9 @@ object VisorCacheCommand {
             ),
             "-swap" -> Seq(
                 "Swaps backup entries in cache."
+            ),
+            "-stop" -> Seq(
+                "Stop cache with specified name"
             ),
             "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
@@ -715,7 +731,8 @@ object VisorCacheCommand {
             "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
             "cache -swap" -> "Swaps entries in interactively selected cache.",
             "cache -swap -c=cache" -> "Swaps entries in cache with name 'cache'.",
-            "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable."
+            "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable.",
+            "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable."
         ),
         ref = VisorConsoleCommand(cmd.cache, cmd.cache)
     )
