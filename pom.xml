@@ -49,11 +49,6 @@
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
-<<<<<<< HEAD
-        <module>examples</module>
-=======
-        <module>modules/tools</module>
->>>>>>> 5fc2cd053467e65872f796e11e3edd2e6017d80d
         <module>modules/spring</module>
         <module>modules/web</module>
         <module>modules/aop</module>
@@ -70,7 +65,7 @@
         <module>modules/codegen</module>
     </modules>
 
-   <profiles>
+    <profiles>
         <profile>
             <id>test</id>
             <build>
