@@ -825,8 +825,6 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 jobs.remove(jobId);
 
-                job.dispose(false);
-
                 if (ctx.jobUpdateLeader()) {
                     ClassLoader ldr = job.getClass().getClassLoader();
 
@@ -847,6 +845,8 @@ public class HadoopJobTracker extends HadoopComponent {
                         log.error("Can't write statistic due to: ", e);
                     }
                 }
+
+                job.dispose(false);
 
                 break;
             }

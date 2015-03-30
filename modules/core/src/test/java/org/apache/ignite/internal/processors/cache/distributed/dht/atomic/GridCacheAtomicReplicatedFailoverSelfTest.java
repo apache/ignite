@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Failover tests for replicated cache.
+ *
  */
-public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
+public class GridCacheAtomicReplicatedFailoverSelfTest extends GridCacheAtomicFailoverSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
