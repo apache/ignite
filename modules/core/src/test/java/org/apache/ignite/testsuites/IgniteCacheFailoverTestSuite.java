@@ -36,11 +36,6 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
-        // Group lock failover.
-        // TODO: IGNITE-80.
-        //suite.addTestSuite(GridCacheGroupLockFailoverSelfTest.class);
-        //suite.addTestSuite(GridCacheGroupLockFailoverOptimisticTxSelfTest.class);
-
         suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         // Failure consistency tests.
@@ -53,8 +48,12 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         //suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO IGNITE-560
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
-        //suite.addTest(new TestSuite(GridCachePartitionedFailoverSelfTest.class));  TODO-gg-4813
-        //suite.addTest(new TestSuite(GridCacheColocatedFailoverSelfTest.class)); TODO-gg-4813
+        suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
+
+        //suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);  TODO-gg-4813
+        //suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class); TODO-gg-4813
         //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO-gg-4813
 
         return suite;

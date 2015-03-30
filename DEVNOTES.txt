@@ -1,16 +1,11 @@
 Maven Build Instructions
 ========================
+Without LGPL dependencies (default):
+  mvn clean package -DskipTests
 
-Build Project
--------------
-mvn clean package -DskipTests -P-release
+With LGPL dependencies:
+  mvn clean package -DskipTests -Prelease,lgpl
 
-
-Build Binary Release
---------------------
-mvn clean package -DskipTests
-
-To execute this build you need to be in GIT root folder.
 Look for ignite-fabric-<version>.zip in ./target directory.
 
 
@@ -18,7 +13,7 @@ JCache TCK compliance
 ======================
 To test compliance with JCache TCK use:
 
-mvn test -P !release,jcache-tck -pl :ignite-core -am
+mvn test -P-release,jcache-tck -pl :ignite-core -am
 
 
 Apache RAT Instructions
