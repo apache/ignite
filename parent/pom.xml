@@ -655,7 +655,7 @@
                                 <phase>package</phase>
                                 <configuration>
                                     <stylesheetfile>
-                                        ${project.basedir}/${parent.relativePath}/../assembly/docfiles/javadoc.css
+                                        ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/javadoc.css
                                     </stylesheetfile>
                                 </configuration>
                             </execution>
