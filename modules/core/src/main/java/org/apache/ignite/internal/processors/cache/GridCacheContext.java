@@ -1174,18 +1174,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Clone cached object.
-     *
-     * @param obj Object to clone
-     * @return Clone of the given object.
-     * @throws IgniteCheckedException If failed to clone object.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable public <T> T cloneValue(@Nullable T obj) throws IgniteCheckedException {
-        return obj == null ? null : X.cloneObject(obj, false, true);
-    }
-
-    /**
      * Sets thread local projection.
      *
      * @param prj Flags to set.
