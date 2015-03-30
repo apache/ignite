@@ -269,12 +269,14 @@
                                 <phase>process-resources</phase>
                                 <configuration>
                                     <target>
-                                        <exec executable="${git.exec}" outputproperty="ignite.build" failonerror="yes">
-                                            <arg line="log -1 --format=%ct" />
+                                        <exec executable="${git.exec}" outputproperty="ignite.build"
+                                              failonerror="no" >
+                                            <arg line="log -1 --format=%ct"/>
                                         </exec>
 
-                                        <exec executable="${git.exec}" outputproperty="ignite.revision" failonerror="yes">
-                                            <arg line="log -1 --format=%H" />
+                                        <exec executable="${git.exec}" outputproperty="ignite.revision"
+                                              failonerror="no" >
+                                            <arg line="log -1 --format=%H"/>
                                         </exec>
 
                                         <tstamp>
