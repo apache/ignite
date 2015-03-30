@@ -70,11 +70,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /** Callable for {@link #get} operation */
     private final Callable<T> getCall = new Callable<T>() {
         @Override public T call() throws Exception {
-            boolean clone = ctx.cache().configuration().getCacheMode() == CacheMode.LOCAL &&
-                ctx.cache().configuration().getAtomicityMode() == CacheAtomicityMode.ATOMIC;
-
-            GridCacheAtomicReferenceValue<T> ref = clone ? X.cloneObject(atomicView.get(key), false, true) :
-                atomicView.get(key);
+            GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
             if (ref == null)
                 throw new IgniteCheckedException("Failed to find atomic reference with given name: " + name);

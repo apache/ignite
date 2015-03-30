@@ -72,11 +72,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     /** Callable for {@link #get()} operation */
     private final Callable<IgniteBiTuple<T, S>> getCall = new Callable<IgniteBiTuple<T, S>>() {
         @Override public IgniteBiTuple<T, S> call() throws Exception {
-            boolean clone = ctx.cache().configuration().getCacheMode() == CacheMode.LOCAL &&
-                ctx.cache().configuration().getAtomicityMode() == CacheAtomicityMode.ATOMIC;
-
-            GridCacheAtomicStampedValue<T, S> stmp = clone ? X.cloneObject(atomicView.get(key), false, true) :
-                atomicView.get(key);
+            GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
             if (stmp == null)
                 throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
