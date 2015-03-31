@@ -70,7 +70,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
             new CacheNoopJtaManager(),
-            new CacheOsConflictResolverManager<K, V>()
+            new CacheOsConflictResolutionManager<K, V>()
         );
     }
 }

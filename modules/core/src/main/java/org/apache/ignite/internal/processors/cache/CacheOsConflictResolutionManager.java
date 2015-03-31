@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 /**
  * OS conflict resolver manager.
  */
-public class CacheOsConflictResolverManager<K ,V> implements CacheConflictResolverManager<K, V> {
+public class CacheOsConflictResolutionManager<K ,V> implements CacheConflictResolutionManager<K, V> {
     /**
      * @return Cache conflict resolver.
      */

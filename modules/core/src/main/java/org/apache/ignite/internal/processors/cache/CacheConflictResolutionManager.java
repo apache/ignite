@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 /**
  * Conflict resolver manager.
  */
-public interface CacheConflictResolverManager<K, V> extends GridCacheManager<K, V> {
+public interface CacheConflictResolutionManager<K, V> extends GridCacheManager<K, V> {
     /**
      * @return Cache conflict resolver.
      */
