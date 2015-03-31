@@ -106,7 +106,11 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Ignite ignite = startGrid(idx.getAndIncrement());
+                    int idx0 = idx.getAndIncrement();
+
+                    Thread.currentThread().setName("createQueue-" + idx0);
+
+                    Ignite ignite = startGrid(idx0);
 
                     UUID locNodeId = ignite.cluster().localNode().id();
 
