@@ -136,7 +136,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheJtaManagerAdapter jtaMgr;
 
     /** Conflict resolver manager. */
-    private CacheConflictManager rslvrMgr;
+    private CacheConflictResolverManager rslvrMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -247,7 +247,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr,
-        CacheConflictManager<K, V> rslvrMgr) {
+        CacheConflictResolverManager<K, V> rslvrMgr) {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;

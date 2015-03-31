@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
 
 /**
  * Cache version conflict resolver.
  */
-public class CacheVersionConflictResolver {
+public interface CacheVersionConflictResolver {
     /**
      * Resolve the conflict.
      *
@@ -33,53 +32,8 @@ public class CacheVersionConflictResolver {
      * @return Conflict resolution context.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCacheVersionConflictContext<K, V> resolve(GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
-        GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(oldEntry, newEntry);
-
-        resolve0(ctx, oldEntry, newEntry, atomicVerComparator);
-
-        return ctx;
-    }
-
-    /**
-     * Internal conflict resolution routine.
-     *
-     * @param ctx Context.
-     * @param oldEntry Old entry.
-     * @param newEntry New entry.
-     * @param atomicVerComparator Whether to use atomic version comparator.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
-        GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
-        boolean atomicVerComparator) throws IgniteCheckedException {
-        if (newEntry.dataCenterId() != oldEntry.dataCenterId())
-            ctx.useNew();
-        else {
-            if (oldEntry.isStartVersion())
-                ctx.useNew();
-            else {
-                if (atomicVerComparator) {
-                    // Handle special case when version check using ATOMIC cache comparator is required.
-                    if (GridCacheMapEntry.ATOMIC_VER_COMPARATOR.compare(oldEntry.version(), newEntry.version(), false) >= 0)
-                        ctx.useOld();
-                    else
-                        ctx.useNew();
-                }
-                else {
-                    long topVerDiff = newEntry.topologyVersion() - oldEntry.topologyVersion();
-
-                    if (topVerDiff > 0)
-                        ctx.useNew();
-                    else if (topVerDiff < 0)
-                        ctx.useOld();
-                    else if (newEntry.order() > oldEntry.order())
-                        ctx.useNew();
-                    else
-                        ctx.useOld();
-                }
-            }
-        }
-    }
+    public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        boolean atomicVerComparator) throws IgniteCheckedException;
 }

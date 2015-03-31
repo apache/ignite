@@ -21,7 +21,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.internal.processors.cache.dr.os.*;
+import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
@@ -70,6 +70,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
             new CacheNoopJtaManager(),
-            new CacheOsConflictManager<K, V>());
+            new CacheOsConflictResolverManager<K, V>());
     }
 }

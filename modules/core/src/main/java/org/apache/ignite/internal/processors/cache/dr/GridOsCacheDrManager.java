@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.dr.os;
+package org.apache.ignite.internal.processors.cache.dr;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.affinity.*;

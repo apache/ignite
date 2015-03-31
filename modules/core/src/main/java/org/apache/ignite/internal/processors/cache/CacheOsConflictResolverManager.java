@@ -17,14 +17,42 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.version.*;
 
 /**
- * Conflict resolver manager.
+ * OS conflict resolver manager.
  */
-public interface CacheConflictManager<K, V> extends GridCacheManager<K, V> {
+public class CacheOsConflictResolverManager<K ,V> implements CacheConflictResolverManager<K, V> {
     /**
      * @return Cache conflict resolver.
      */
-    public CacheVersionConflictResolver conflictResolver();
+    @Override public CacheVersionConflictResolver conflictResolver() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printMemoryStats() {
+        // No-op.
+    }
 }

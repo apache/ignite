@@ -20,14 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.cache.version.*;
 
 /**
- * OS conflict resolver manager.
+ * Conflict resolver manager.
  */
-public class CacheOsConflictManager<K ,V> extends GridCacheManagerAdapter<K ,V>
-    implements CacheConflictManager<K, V> {
+public interface CacheConflictResolverManager<K, V> extends GridCacheManager<K, V> {
     /**
      * @return Cache conflict resolver.
      */
-    @Override public CacheVersionConflictResolver conflictResolver() {
-        return null;
-    }
+    public CacheVersionConflictResolver conflictResolver();
 }
