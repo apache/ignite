@@ -511,7 +511,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         boolean intercept = e.context().config().getInterceptor() != null;
 
                         if (intercept || !F.isEmpty(e.entryProcessors()))
-                            e.cached().unswap(true, false);
+                            e.cached().unswap(false);
 
                         IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false);
 
@@ -722,7 +722,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     boolean evt = !isNearLocallyMapped(txEntry, false);
 
                                     if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(true, false);
+                                        txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
                                         true);
@@ -2065,7 +2065,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         else {
                             entry = entryEx(cacheCtx, txKey, topologyVersion());
 
-                            entry.unswap(true, false);
+                            entry.unswap(false);
                         }
 
                         try {
@@ -3067,17 +3067,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (!cctx.txCompatible(this, activeCacheIds, cacheCtx)) {
                 StringBuilder cacheNames = new StringBuilder();
 
+                int idx = 0;
+
                 for (Integer activeCacheId : activeCacheIds) {
                     cacheNames.append(cctx.cacheContext(activeCacheId).name());
 
-                    cacheNames.append(", ");
+                    if (idx++ < activeCacheIds.size() - 1)
+                        cacheNames.append(", ");
                 }
 
-                cacheNames.setLength(cacheNames.length() - 2);
-
                 throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
-                    "(cache configurations are not compatible) [activeCaches=[" + cacheNames +
-                    "], cacheName=" + cacheCtx.name() + ", txSystem=" + system() +
+                    "(cache configurations are not compatible) [" +
+                    "activeCaches=[" + cacheNames + "]" +
+                    ", cacheName=" + cacheCtx.name() +
+                    ", txSystem=" + system() +
                     ", cacheSystem=" + cacheCtx.system() + ']');
             }
             else

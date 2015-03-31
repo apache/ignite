@@ -502,7 +502,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
                                     if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(true, false);
+                                        txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
                                         applyTransformClosures(txEntry, false);

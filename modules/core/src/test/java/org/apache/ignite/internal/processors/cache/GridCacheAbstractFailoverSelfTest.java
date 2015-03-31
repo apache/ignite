@@ -46,7 +46,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     private static final int ENTRY_CNT = 100;
 
     /** */
-    private static final int TOP_CHANGE_CNT = 5;
+    private static final int TOP_CHANGE_CNT = 10;
 
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 3;
