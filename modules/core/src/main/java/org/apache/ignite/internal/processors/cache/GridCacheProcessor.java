@@ -1014,6 +1014,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
         GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
+        CacheConflictResolutionManager rslvrMgr = ctx.createComponent(CacheConflictResolutionManager.class);
 
         GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -1037,7 +1038,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            jta);
+            jta,
+            rslvrMgr
+        );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1161,7 +1164,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                jta);
+                jta,
+                rslvrMgr
+            );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 

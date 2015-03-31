@@ -135,6 +135,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** JTA manager. */
     private CacheJtaManagerAdapter jtaMgr;
 
+    /** Conflict resolver manager. */
+    private CacheConflictResolutionManager rslvrMgr;
+
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
 
@@ -184,7 +187,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean affNode;
 
     /** Conflict resolver. */
-    private GridCacheVersionAbstractConflictResolver conflictRslvr;
+    private CacheVersionConflictResolver conflictRslvr;
 
     /** */
     private CacheObjectContext cacheObjCtx;
@@ -243,7 +246,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
-        CacheJtaManagerAdapter jtaMgr) {
+        CacheJtaManagerAdapter jtaMgr,
+        CacheConflictResolutionManager<K, V> rslvrMgr
+    ) {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
@@ -257,6 +262,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert affMgr != null;
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
+        assert rslvrMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
@@ -278,6 +284,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
         this.jtaMgr = add(jtaMgr);
+        this.rslvrMgr = add(rslvrMgr);
 
         log = ctx.log(getClass());
 
@@ -323,13 +330,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Initialize conflict resolver after all managers are started.
      */
     void initConflictResolver() {
-        // Conflict resolver is determined in two stages:
-        // 1. If DR receiver hub is enabled, then pick it from DR manager.
-        // 2. Otherwise instantiate default resolver in case local store is configured.
-        conflictRslvr = drMgr.conflictResolver();
-
-        if (conflictRslvr == null && storeMgr.isLocalStore())
-            conflictRslvr = new GridCacheVersionConflictResolver();
+        conflictRslvr = rslvrMgr.conflictResolver();
     }
 
     /**
