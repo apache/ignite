@@ -207,7 +207,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         GridSqlQueryParser ses = new GridSqlQueryParser();
 
-        GridSqlSelect gridSelect = ses.parse(select);
+        GridSqlQuery gridSelect = ses.parse(select);
 
         //System.out.println(select.getPlanSQL());
         System.out.println(gridSelect.getSQL());

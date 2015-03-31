@@ -22,7 +22,6 @@ import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
 import org.h2.expression.*;
-import org.h2.expression.Parameter;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
@@ -164,7 +163,7 @@ public class GridSqlQueryParser {
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
-    public static GridSqlSelect parse(JdbcPreparedStatement stmt) {
+    public static GridSqlQuery parse(JdbcPreparedStatement stmt) {
         Command cmd = COMMAND.get(stmt);
 
         Getter<Command,Prepared> p = prepared;
@@ -226,13 +225,13 @@ public class GridSqlQueryParser {
     /**
      * @param select Select.
      */
-    public GridSqlSelect parse(Select select) {
-        GridSqlSelect res = (GridSqlSelect)h2ObjToGridObj.get(select);
+    public GridSqlQuery parse(Select select) {
+        GridSqlQuery res = (GridSqlQuery)h2ObjToGridObj.get(select);
 
         if (res != null)
             return res;
 
-        res = new GridSqlSelect();
+        res = new GridSqlQuery();
 
         h2ObjToGridObj.put(select, res);
 

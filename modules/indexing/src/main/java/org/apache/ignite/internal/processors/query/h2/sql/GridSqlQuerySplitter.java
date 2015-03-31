@@ -64,12 +64,12 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        GridSqlSelect srcQry = GridSqlQueryParser.parse(stmt);
+        GridSqlQuery srcQry = GridSqlQueryParser.parse(stmt);
 
         final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
-        GridSqlSelect mapQry = srcQry.clone();
-        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
+        GridSqlQuery mapQry = srcQry.clone();
+        GridSqlQuery rdcQry = new GridSqlQuery().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
         List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
@@ -147,7 +147,7 @@ public class GridSqlQuerySplitter {
      * @param target Extracted parameters.
      * @return Extracted parameters list.
      */
-    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
+    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target) {
         if (params.length == 0)
             return target;
 

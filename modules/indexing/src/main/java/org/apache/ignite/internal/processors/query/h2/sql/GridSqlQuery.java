@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Select query.
  */
-public class GridSqlSelect implements Cloneable {
+public class GridSqlQuery implements Cloneable {
     /** */
     private boolean distinct;
 
@@ -270,7 +270,7 @@ public class GridSqlSelect implements Cloneable {
      * @param from From element.
      * @return {@code this}.
      */
-    public GridSqlSelect from(GridSqlElement from) {
+    public GridSqlQuery from(GridSqlElement from) {
         this.from = from;
 
         return this;
@@ -294,7 +294,7 @@ public class GridSqlSelect implements Cloneable {
      * @param condition Adds new WHERE condition using AND operator.
      * @return {@code this}.
      */
-    public GridSqlSelect whereAnd(GridSqlElement condition) {
+    public GridSqlQuery whereAnd(GridSqlElement condition) {
         if (condition == null)
             throw new NullPointerException();
 
@@ -357,9 +357,9 @@ public class GridSqlSelect implements Cloneable {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override public GridSqlSelect clone() {
+    @Override public GridSqlQuery clone() {
         try {
-            GridSqlSelect res = (GridSqlSelect)super.clone();
+            GridSqlQuery res = (GridSqlQuery)super.clone();
 
             res.select = new ArrayList<>(select);
             res.groups = new ArrayList<>(groups);
