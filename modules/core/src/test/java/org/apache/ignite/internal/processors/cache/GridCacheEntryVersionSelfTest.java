@@ -113,7 +113,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                     if (entry != null) {
                         GridCacheVersion ver = entry.version();
 
-                        long order = cache.affinity().mapKeyToNode(key).order();
+                        long order = grid.affinity(null).mapKeyToNode(key).order();
 
                         // Check topology version.
                         assertEquals(3, ver.topologyVersion() -
@@ -140,7 +140,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                     if (entry != null) {
                         GridCacheVersion ver = entry.version();
 
-                        long order = cache.affinity().mapKeyToNode(key).order();
+                        long order = grid.affinity(null).mapKeyToNode(key).order();
 
                         // Check topology version.
                         assertEquals(4, ver.topologyVersion() -

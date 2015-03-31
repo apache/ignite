@@ -202,8 +202,8 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
 
         // Nothing to remove.
-        spi.remove("A", 1);
-        spi.remove("B", 1);
+        spi.remove("A", 1, aa(1, "", 10));
+        spi.remove("B", 1, ba(1, "", 10, true));
 
         spi.store(typeAA.space(), typeAA, 1, aa(1, "Vasya", 10), "v1".getBytes(), 0);
 
@@ -307,13 +307,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(fieldsRes.iterator().hasNext());
 
         // Remove
-        spi.remove(typeAA.space(), 2);
+        spi.remove(typeAA.space(), 2, aa(2, "Valera", 19));
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.remove(typeBA.space(), 1);
+        spi.remove(typeBA.space(), 1, ba(2, "Kolya", 25, true));
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));

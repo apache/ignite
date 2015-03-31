@@ -378,7 +378,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws CacheException        if there is a problem during the clear
      */
     @IgniteAsyncSupported
-    public void clearAll(Set<K> keys);
+    public void clearAll(Set<? extends K> keys);
 
     /**
      * Clear entry from the cache and swap storage, without notifying listeners or
@@ -404,7 +404,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param keys Keys to clear.
      */
-    public void localClearAll(Set<K> keys);
+    public void localClearAll(Set<? extends K> keys);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported

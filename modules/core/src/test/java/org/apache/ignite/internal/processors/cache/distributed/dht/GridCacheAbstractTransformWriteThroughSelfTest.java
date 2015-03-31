@@ -255,7 +255,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         nearStore.reset();
 
         for (String key : keys)
-            cache(0).clearLocally(key);
+            jcache(0).localClear(key);
 
         info(">>> Starting transform transaction");
 

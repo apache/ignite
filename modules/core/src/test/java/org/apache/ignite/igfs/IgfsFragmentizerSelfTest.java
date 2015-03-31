@@ -18,7 +18,6 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.igfs.*;
@@ -246,7 +245,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
                 for (int i = 0; i < NODE_CNT; i++) {
                     IgniteEx g = grid(i);
 
-                    GridCache<Object, Object> cache = g.cachex(DATA_CACHE_NAME);
+                    GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(DATA_CACHE_NAME);
 
                     assertTrue("Data cache is not empty [keys=" + cache.keySet() +
                         ", node=" + g.localNode().id() + ']', cache.isEmpty());

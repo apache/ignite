@@ -175,7 +175,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
 
                     found = true;
                 }

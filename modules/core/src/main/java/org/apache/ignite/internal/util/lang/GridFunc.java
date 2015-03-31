@@ -1924,6 +1924,20 @@ public class GridFunc {
     /**
      * Concatenates multiple iterators as single one.
      *
+     * @param iters Iterators.
+     * @return Single iterator.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+        if (iters.length == 1)
+            return iters[0];
+
+        return concat(asList(iters).iterator());
+    }
+
+    /**
+     * Concatenates multiple iterators as single one.
+     *
      * @param iters Iterator over iterators.
      * @return Single iterator.
      */

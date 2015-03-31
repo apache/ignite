@@ -49,19 +49,15 @@
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
-        <module>examples</module>
         <module>modules/spring</module>
-        <module>modules/hibernate</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
-        <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
         <module>modules/aws</module>
-        <module>modules/schedule</module>
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
@@ -69,7 +65,7 @@
         <module>modules/codegen</module>
     </modules>
 
-   <profiles>
+    <profiles>
         <profile>
             <id>test</id>
             <build>
@@ -289,15 +285,15 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${project.version}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}" filemode="755">
+                                        <zip destfile="${basedir}/target/incubator-ignite-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="incubator-ignite-${project.version}-bin" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="incubator-ignite-${project.version}-bin">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -439,6 +435,22 @@
                 <module>modules/scalar</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>lgpl</id>
+            <modules>
+                <module>modules/hibernate</module>
+                <module>modules/geospatial</module>
+                <module>modules/schedule</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>examples</id>
+            <modules>
+                <module>examples</module>
             </modules>
         </profile>
     </profiles>

@@ -739,13 +739,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         }
     }
 
-    /**
-     * @return Near entries iterator.
-     */
-    public Iterator<Cache.Entry<K, V>> nearEntriesIterator() {
-        return iterator(map.entries0().iterator(), !ctx.keepPortable());
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearCacheAdapter.class, this);

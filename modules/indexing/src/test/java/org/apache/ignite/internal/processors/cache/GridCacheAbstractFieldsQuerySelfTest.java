@@ -96,6 +96,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setRebalanceMode(SYNC);
+        cache.setIndexedTypes(String.class, Organization.class,
+            Integer.class, Integer.class);
 
         if (cacheMode() == PARTITIONED)
             cache.setBackups(1);
@@ -122,38 +124,38 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
-        assert orgCache.putx("o1", new Organization(1, "A"));
-        assert orgCache.putx("o2", new Organization(2, "B"));
+        orgCache.put("o1", new Organization(1, "A"));
+        orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<AffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        GridCache<String, String> strCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<String, String> strCache = grid(0).cache(null);
 
         assert strCache != null;
 
-        assert strCache.putx("key", "val");
+        strCache.put("key", "val");
 
-        GridCache<Integer, Integer> intCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<Integer, Integer> intCache = grid(0).cache(null);
 
         assert intCache != null;
 
         for (int i = 0; i < 200; i++)
-            assert intCache.putx(i, i);
+            intCache.put(i, i);
 
-        GridCache<Integer, Integer> namedCache = ((IgniteKernal)grid(0)).getCache(CACHE);
+        IgniteCache<Integer, Integer> namedCache = grid(0).cache(null);
 
         for (int i = 0; i < 200; i++)
-            assert namedCache.putx(i, i);
+            namedCache.put(i, i);
     }
 
     /** {@inheritDoc} */
@@ -762,10 +764,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testNamedCache() throws Exception {
-        GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(CACHE);
+        GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)grid(0)).internalCache(CACHE);
 
         for (int i = 0; i < 200; i++)
-            assert cache.putx(i, i);
+            cache.put(i, i);
 
         CacheQuery<List<?>> qry =
             cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0).cluster());
@@ -778,9 +780,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void _testNoPrimitives() throws Exception { // TODO
-        GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(CACHE_NO_PRIMITIVES);
+        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)grid(0)).internalCache(CACHE_NO_PRIMITIVES);
 
-        assert cache.putx("key", "val");
+        cache.put("key", "val");
 
         Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
 
@@ -797,14 +799,14 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void _testComplexKeys() throws Exception { // TODO
-        GridCache<PersonKey, Person> cache = ((IgniteKernal)grid(0)).getCache(CACHE_COMPLEX_KEYS);
+        GridCacheAdapter<PersonKey, Person> cache = ((IgniteKernal)grid(0)).internalCache(CACHE_COMPLEX_KEYS);
 
         UUID id = UUID.randomUUID();
 
         PersonKey key = new PersonKey(id);
         Person val = new Person("John", 20, 1);
 
-        assert cache.putx(key, val);
+        cache.put(key, val);
 
         Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
 
