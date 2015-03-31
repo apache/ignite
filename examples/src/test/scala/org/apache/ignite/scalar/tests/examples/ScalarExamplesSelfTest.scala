@@ -30,18 +30,8 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     private def EMPTY_ARGS = Array.empty[String]
 
     /** */
-    def testScalarCacheAffinityExample1() {
-        ScalarCacheAffinityExample1.main(EMPTY_ARGS)
-    }
-
-    /** */
-    def testScalarCacheAffinityExample2() {
-        ScalarCacheAffinityExample2.main(EMPTY_ARGS)
-    }
-
-    /** */
     def testScalarCacheAffinitySimpleExample() {
-        ScalarCacheAffinitySimpleExample.main(EMPTY_ARGS)
+        ScalarCacheAffinityExample.main(EMPTY_ARGS)
     }
 
     /** */
@@ -67,11 +57,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     /** */
     def testScalarCreditRiskExample() {
         ScalarCreditRiskExample.main(EMPTY_ARGS)
-    }
-
-    /** */
-    def testScalarPiCalculationExample() {
-        ScalarPiCalculationExample.main(EMPTY_ARGS)
     }
 
     /** */

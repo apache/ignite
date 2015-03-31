@@ -43,7 +43,7 @@ public class GridTestMain {
 
         // Initialize Spring factory.
         try (Ignite g = G.start((IgniteConfiguration)ctx.getBean("grid.cfg"))) {
-            final IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
+            final IgniteCache<GridTestKey, Long> cache = g.cache("partitioned");
 
             assert cache != null;
 
@@ -71,7 +71,7 @@ public class GridTestMain {
 
         Ignite g = G.ignite();
 
-        final IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
+        final IgniteCache<GridTestKey, Long> cache = g.cache("partitioned");
 
         final BlockingQueue<IgniteFuture> q = new ArrayBlockingQueue<>(400);
 
@@ -133,7 +133,7 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        final IgniteCache<GridTestKey, Long> cache = G.ignite().jcache("partitioned");
+        final IgniteCache<GridTestKey, Long> cache = G.ignite().cache("partitioned");
 
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {

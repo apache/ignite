@@ -162,7 +162,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
+    @Override public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -174,7 +174,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
+    @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

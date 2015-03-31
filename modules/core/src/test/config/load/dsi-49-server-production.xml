@@ -46,25 +46,23 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="evictionPolicy">
                         <bean
-                                class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
+                                class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
                             <property name="maxSize" value="500000"/>
                         </bean>
                     </property>
                     <!-- 1 backup -->
                     <property name="backups" value="1"/>
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                             <property name="excludeNeighbors" value="true"/>
                         </bean>
                     </property>
                     <property name="indexFixedTyping" value="true"/>
                     <property name="atomicSequenceReserveSize" value="100000"/>
                     <property name="evictSynchronized" value="false"/>
-                    <property name="evictNearSynchronized" value="false"/>
                     <property name="swapEnabled" value="false"/>
                     <property name="defaultTxConcurrency" value="PESSIMISTIC"/>
                     <property name="defaultTxIsolation" value="REPEATABLE_READ"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="dgcSuspectLockTimeout" value="60000"/>
                     <property name="indexAnalyzeSampleSize" value="100"/>
                 </bean>

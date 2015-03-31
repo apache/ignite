@@ -104,6 +104,26 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param type Event type (start or stop).
+     */
+    public void addEvent(int type) {
+        addEvent(
+            0,
+            null,
+            locNodeId,
+            (IgniteUuid)null,
+            null,
+            type,
+            null,
+            false,
+            null,
+            false,
+            null,
+            null,
+            null);
+    }
+
+    /**
      * @param part Partition.
      * @param key Key for the event.
      * @param nodeId Node ID.
@@ -220,13 +240,13 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         @Nullable String cloClsName,
         @Nullable String taskName
     ) {
-        assert key != null;
+        assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
         if (!cctx.events().isRecordable(type))
             LT.warn(log, null, "Added event without checking if event is recordable: " + U.gridEventName(type));
 
         // Events are not fired for internal entry.
-        if (!key.internal()) {
+        if (key == null || !key.internal()) {
             ClusterNode evtNode = cctx.discovery().node(evtNodeId);
 
             if (evtNode == null)
@@ -244,7 +264,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 type,
                 part,
                 cctx.isNear(),
-                key.value(cctx.cacheObjectContext(), false),
+                key == null ? null : key.value(cctx.cacheObjectContext(), false),
                 xid,
                 lockId,
                 CU.value(newVal, cctx, false),

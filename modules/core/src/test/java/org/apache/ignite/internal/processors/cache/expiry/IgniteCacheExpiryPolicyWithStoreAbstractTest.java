@@ -33,43 +33,25 @@ import javax.cache.processor.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-
 /**
  *
  */
 public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore();
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new TestStoreFactory();
     }
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setExpiryPolicyFactory(new Factory<ExpiryPolicy>() {
-            @Override public ExpiryPolicy create() {
-                return new ExpiryPolicy() {
-                    @Override public Duration getExpiryForCreation() {
-                        return new Duration(TimeUnit.MILLISECONDS, 500);
-                    }
-
-                    @Override public Duration getExpiryForAccess() {
-                        return new Duration(TimeUnit.MILLISECONDS, 600);
-                    }
-
-                    @Override public Duration getExpiryForUpdate() {
-                        return new Duration(TimeUnit.MILLISECONDS, 700);
-                    }
-                };
-            }
-        });
+        ccfg.setExpiryPolicyFactory(new TestExpiryPolicyFactory());
 
         return ccfg;
     }
@@ -232,5 +214,27 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
         }
 
         assertTrue(found);
+    }
+
+    /**
+     *
+     */
+    private static class TestExpiryPolicyFactory implements Factory<ExpiryPolicy> {
+        /** {@inheritDoc} */
+        @Override public ExpiryPolicy create() {
+            return new ExpiryPolicy() {
+                @Override public Duration getExpiryForCreation() {
+                    return new Duration(TimeUnit.MILLISECONDS, 500);
+                }
+
+                @Override public Duration getExpiryForAccess() {
+                    return new Duration(TimeUnit.MILLISECONDS, 600);
+                }
+
+                @Override public Duration getExpiryForUpdate() {
+                    return new Duration(TimeUnit.MILLISECONDS, 700);
+                }
+            };
+        }
     }
 }

@@ -250,9 +250,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 "value greater than zero is expected: " + addrReqAttempts);
 
         if (F.isEmpty(getRegisteredAddresses()))
-            U.warn(log, "GridTcpDiscoveryMulticastIpFinder has no pre-configured addresses " +
+            U.warn(log, "TcpDiscoveryMulticastIpFinder has no pre-configured addresses " +
                 "(it is recommended in production to specify at least one address in " +
-                "GridTcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
+                "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
 
         InetAddress mcastAddr;
 

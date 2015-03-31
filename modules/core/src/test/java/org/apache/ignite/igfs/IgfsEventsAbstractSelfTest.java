@@ -33,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -61,12 +60,11 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         cacheCfg.setName("dataCache");
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setEvictionPolicy(null);
         cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         cacheCfg.setBackups(0);
-        cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
@@ -75,7 +73,6 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         metaCacheCfg.setEvictionPolicy(null);
-        metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return new CacheConfiguration[] {cacheCfg, metaCacheCfg};
@@ -170,7 +167,8 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         // Clean up file system.
-        igfs.format();
+        if (igfs != null)
+            igfs.format();
     }
 
     /** {@inheritDoc} */

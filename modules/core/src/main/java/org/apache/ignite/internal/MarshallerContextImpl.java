@@ -31,7 +31,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     /** */
+    private IgniteLogger log;
+
+    /** */
     private volatile GridCacheAdapter<Integer, String> cache;
+
+    /** Non-volatile on purpose. */
+    private int failedCnt;
 
     /**
      * @param ctx Kernal context.
@@ -39,31 +45,47 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     public void onMarshallerCacheReady(GridKernalContext ctx) {
         assert ctx != null;
 
+        log = ctx.log(MarshallerContextImpl.class);
+
         cache = ctx.cache().marshallerCache();
 
         latch.countDown();
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) {
+    @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+        GridCacheAdapter<Integer, String> cache0 = cache;
+
+        if (cache0 == null)
+            return false;
+
+        String old;
+
         try {
-            GridCacheAdapter<Integer, String> cache0 = cache;
+            old = cache0.tryPutIfAbsent(id, clsName);
 
-            if (cache0 == null)
-                return false;
-
-            String old = cache0.putIfAbsent(id, clsName);
-
-            if (old != null && !old.equals(clsName))
-                throw new IgniteException("Type ID collision occurred in OptimizedMarshaller. Use " +
-                    "OptimizedMarshallerIdMapper to resolve it [id=" + id + ", clsName1=" + clsName +
+            if (old != null && !old.equals(clsName)) {
+                U.quietAndWarn(log, "Type ID collision detected, may affect performance " +
+                    "(set idMapper property on marshaller to fix) [id=" + id + ", clsName1=" + clsName +
                     "clsName2=" + old + ']');
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
 
-        return true;
+                return false;
+            }
+
+            failedCnt = 0;
+
+            return true;
+        }
+        catch (CachePartialUpdateCheckedException | GridCacheTryPutFailedException e) {
+            if (++failedCnt > 10) {
+                U.quietAndWarn(log, e, "Failed to register marshalled class for more than 10 times in a row " +
+                    "(may affect performance)");
+
+                failedCnt = 0;
+            }
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

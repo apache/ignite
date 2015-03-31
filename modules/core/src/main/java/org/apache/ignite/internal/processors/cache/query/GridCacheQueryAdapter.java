@@ -23,6 +23,7 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -31,7 +32,6 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
@@ -63,7 +63,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
-    private volatile int pageSize = DFLT_PAGE_SIZE;
+    private volatile int pageSize = Query.DFLT_PAGE_SIZE;
 
     /** */
     private volatile long timeout;
@@ -123,7 +123,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /**
      * @param cctx Context.
-     * @param prjPred Cache projection filter.
      * @param type Query type.
      * @param log Logger.
      * @param pageSize Page size.
@@ -338,7 +337,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET) && !cctx.config().isQueryIndexEnabled())
+        if ((type != SCAN && type != SET) && !GridQueryProcessor.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
@@ -451,9 +450,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null)
                     return nodes(cctx, prj);
 
-                CacheDistributionMode mode = cctx.config().getDistributionMode();
-
-                return mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED ?
+                return cctx.affinityNode() ?
                     Collections.singletonList(cctx.localNode()) :
                     Collections.singletonList(F.rand(nodes(cctx, null)));
 
@@ -475,9 +472,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                CacheDistributionMode mode = U.distributionMode(n, cctx.name());
-
-                return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) &&
+                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null);
             }
         });

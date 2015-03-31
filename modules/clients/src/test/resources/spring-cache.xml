@@ -66,7 +66,9 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
+                    </property>
 
                     <!-- Initial cache size. -->
                     <property name="startSize" value="1500000"/>
@@ -77,21 +79,6 @@
                         conditions that usually assume full completion of transactions on all nodes.
                     -->
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <!--
-                        For better performance set this property to false in case
-                        cache queries are not used.
-                        Default value is true.
-                    -->
-                    <property name="queryIndexEnabled" value="true"/>
-
-                    <!-- Allow to index primitive values. -->
-                    <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.configuration.CacheQueryConfiguration">
-                            <!-- Index primitives. -->
-                            <property name="indexPrimitiveKey" value="true"/>
-                        </bean>
-                    </property>
 
                     <!--
                         This shows how to configure number of backups. The below configuration

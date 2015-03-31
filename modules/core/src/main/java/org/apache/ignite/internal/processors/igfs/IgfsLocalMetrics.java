@@ -19,29 +19,29 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 /**
  * Value object holding all local IGFS metrics which cannot be determined using file system traversal.
  */
 public class IgfsLocalMetrics {
     /** Block reads. First value - total reads, second value - reads delegated to the secondary file system. */
-    private volatile IgniteBiTuple<LongAdder, LongAdder> blocksRead;
+    private volatile IgniteBiTuple<LongAdder8, LongAdder8> blocksRead;
 
     /** Block writes. First value - total writes, second value - writes delegated to the secondary file system. */
-    private volatile IgniteBiTuple<LongAdder, LongAdder> blocksWritten;
+    private volatile IgniteBiTuple<LongAdder8, LongAdder8> blocksWritten;
 
     /** Byte reads. First value - total bytes read, second value - consumed time. */
-    private volatile IgniteBiTuple<LongAdder, LongAdder> bytesRead;
+    private volatile IgniteBiTuple<LongAdder8, LongAdder8> bytesRead;
 
     /** Byte writes. First value - total bytes written, second value - consumed time. */
-    private volatile IgniteBiTuple<LongAdder, LongAdder> bytesWritten;
+    private volatile IgniteBiTuple<LongAdder8, LongAdder8> bytesWritten;
 
     /** Number of files opened for read. */
-    private final LongAdder filesOpenedForRead = new LongAdder();
+    private final LongAdder8 filesOpenedForRead = new LongAdder8();
 
     /** Number of files opened for write. */
-    private final LongAdder filesOpenedForWrite = new LongAdder();
+    private final LongAdder8 filesOpenedForWrite = new LongAdder8();
 
     /**
      * Constructor.
@@ -71,7 +71,7 @@ public class IgfsLocalMetrics {
      * @param readTime Read time.
      */
     void addReadBytesTime(long readBytes, long readTime) {
-        IgniteBiTuple<LongAdder, LongAdder> bytesRead0 = bytesRead;
+        IgniteBiTuple<LongAdder8, LongAdder8> bytesRead0 = bytesRead;
 
         bytesRead0.get1().add(readBytes);
         bytesRead0.get2().add(readTime);
@@ -98,7 +98,7 @@ public class IgfsLocalMetrics {
      * @param writeTime Write time.
      */
     void addWrittenBytesTime(long writtenBytes, long writeTime) {
-        IgniteBiTuple<LongAdder, LongAdder> bytesWritten0 = bytesWritten;
+        IgniteBiTuple<LongAdder8, LongAdder8> bytesWritten0 = bytesWritten;
 
         bytesWritten0.get1().add(writtenBytes);
         bytesWritten0.get2().add(writeTime);
@@ -125,7 +125,7 @@ public class IgfsLocalMetrics {
      * @param secondary Number of blocks read form secondary FS.
      */
     void addReadBlocks(int total, int secondary) {
-        IgniteBiTuple<LongAdder, LongAdder> blocksRead0 = blocksRead;
+        IgniteBiTuple<LongAdder8, LongAdder8> blocksRead0 = blocksRead;
 
         blocksRead0.get1().add(total);
         blocksRead0.get2().add(secondary);
@@ -152,7 +152,7 @@ public class IgfsLocalMetrics {
      * @param secondary Number of blocks written to secondary FS.
      */
     void addWriteBlocks(int total, int secondary) {
-        IgniteBiTuple<LongAdder, LongAdder> blocksWritten0 = blocksWritten;
+        IgniteBiTuple<LongAdder8, LongAdder8> blocksWritten0 = blocksWritten;
 
         blocksWritten0.get1().add(total);
         blocksWritten0.get2().add(secondary);
@@ -204,9 +204,9 @@ public class IgfsLocalMetrics {
      * Reset summary  counters.
      */
     void reset() {
-        blocksRead = F.t(new LongAdder(), new LongAdder());
-        blocksWritten = F.t(new LongAdder(), new LongAdder());
-        bytesRead = F.t(new LongAdder(), new LongAdder());
-        bytesWritten = F.t(new LongAdder(), new LongAdder());
+        blocksRead = F.t(new LongAdder8(), new LongAdder8());
+        blocksWritten = F.t(new LongAdder8(), new LongAdder8());
+        bytesRead = F.t(new LongAdder8(), new LongAdder8());
+        bytesWritten = F.t(new LongAdder8(), new LongAdder8());
     }
 }

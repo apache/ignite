@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -75,6 +75,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
     };
 
+    /** Event listener. */
+    private GridLocalEventListener lsnr;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
@@ -87,14 +90,23 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
         });
 
-        cctx.events().addListener(new GridLocalEventListener() {
+        lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());
             }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        };
+
+        cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        super.onKernalStop0(cancel);
+
+        cctx.events().removeListener(lsnr);
     }
 
     /** {@inheritDoc} */
@@ -735,10 +747,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         /** {@inheritDoc} */
         @Override public int compareTo(CancelMessageId m) {
-            if (m.reqId == reqId)
-                return m.nodeId.compareTo(nodeId);
+            int res = Long.compare(reqId, m.reqId);
 
-            return reqId < m.reqId ? -1 : 1;
+            if (res == 0)
+                res = m.nodeId.compareTo(nodeId);
+
+            return res;
         }
 
         /** {@inheritDoc} */

@@ -18,6 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.computegrid.*;
+import org.apache.ignite.examples.datastructures.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
@@ -49,7 +50,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testExecutorExample() throws Exception {
-        ComputeExecutorServiceExample.main(EMPTY_ARGS);
+        IgniteExecutorServiceExample.main(EMPTY_ARGS);
     }
 
     /**

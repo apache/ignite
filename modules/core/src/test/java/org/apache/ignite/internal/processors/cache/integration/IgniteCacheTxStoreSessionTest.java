@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -50,8 +50,8 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /**
@@ -60,7 +60,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     public void testStoreSessionTx() throws Exception {
         testTxPut(jcache(0), null, null);
 
-        testTxPut(ignite(0).jcache(CACHE_NAME1), null, null);
+        testTxPut(ignite(0).cache(CACHE_NAME1), null, null);
 
         testTxRemove(null, null);
 
@@ -108,7 +108,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             expData.add(new ExpectedData(true, "writeAll", new HashMap<>(), null));
             expData.add(new ExpectedData(true, "delete", F.<Object, Object>asMap(0, "writeAll"), null));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "writeAll", 1, "delete"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "writeAll", 1, "delete"), null));
 
             log.info("Do tx commit.");
 
@@ -143,7 +143,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
             cache.put(key1, key1);
 
             expData.add(new ExpectedData(true, "write", new HashMap<>(), cache.getName()));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "write"), cache.getName()));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write"), cache.getName()));
 
             log.info("Do tx commit.");
 
@@ -165,7 +165,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
             cache.put(key3, key3);
 
             expData.add(new ExpectedData(true, "writeAll", new HashMap<>(), cache.getName()));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "writeAll"), cache.getName()));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "writeAll"), cache.getName()));
 
             log.info("Do tx commit.");
 
@@ -199,7 +199,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
             cache.remove(key1, key1);
 
             expData.add(new ExpectedData(true, "delete", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "delete"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "delete"), null));
 
             log.info("Do tx commit.");
 
@@ -221,7 +221,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
             cache.remove(key3, key3);
 
             expData.add(new ExpectedData(true, "deleteAll", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "deleteAll"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "deleteAll"), null));
 
             log.info("Do tx commit.");
 
@@ -249,9 +249,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
      * @throws Exception If failed.
      */
     public void testSessionCrossCacheTx() throws Exception {
-        IgniteCache<Object, Object> cache0 = ignite(0).jcache(null);
+        IgniteCache<Object, Object> cache0 = ignite(0).cache(null);
 
-        IgniteCache<Object, Object> cache1 = ignite(0).jcache(CACHE_NAME1);
+        IgniteCache<Object, Object> cache1 = ignite(0).cache(CACHE_NAME1);
 
         Integer key1 = primaryKey(cache0);
         Integer key2 = primaryKeys(cache1, 1, key1 + 1).get(0);
@@ -263,7 +263,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             expData.add(new ExpectedData(true, "write", new HashMap<>(), null));
             expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), CACHE_NAME1));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
 
             tx.commit();
         }
@@ -277,7 +277,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             expData.add(new ExpectedData(true, "write", new HashMap<>(), CACHE_NAME1));
             expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), null));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
 
             tx.commit();
         }

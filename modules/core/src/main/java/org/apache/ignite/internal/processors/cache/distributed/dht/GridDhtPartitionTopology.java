@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
@@ -46,14 +47,19 @@ public interface GridDhtPartitionTopology {
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
      */
-    public void updateTopologyVersion(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut);
+    public void updateTopologyVersion(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
+        long updateSeq,
+        boolean stopping
+    );
 
     /**
      * Topology version.
      *
      * @return Topology version.
      */
-    public long topologyVersion();
+    public AffinityTopologyVersion topologyVersion();
 
     /**
      * Gets a future that will be completed when partition exchange map for this
@@ -64,21 +70,26 @@ public interface GridDhtPartitionTopology {
     public GridDhtTopologyFuture topologyVersionFuture();
 
     /**
+     * @return {@code True} if cache is being stopped.
+     */
+    public boolean stopping();
+
+    /**
      * Pre-initializes this topology.
      *
-     * @param exchId Exchange ID for this pre-initialization.
+     * @param exchFut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
 
     /**
      * Post-initializes this topology.
      *
-     * @param exchId Exchange ID for this post-initialization.
+     * @param exchFut Exchange future.
      * @return {@code True} if mapping was changed.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException;
+    public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
 
     /**
      * @param topVer Topology version at the time of creation.
@@ -88,7 +99,7 @@ public interface GridDhtPartitionTopology {
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(int p, long topVer, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -127,7 +138,7 @@ public interface GridDhtPartitionTopology {
      * @param topVer Topology version.
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
-    public Collection<ClusterNode> nodes(int p, long topVer);
+    public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.
@@ -140,7 +151,7 @@ public interface GridDhtPartitionTopology {
      * @param topVer Topology version.
      * @return Collection of all nodes who {@code own} this partition.
      */
-    public List<ClusterNode> owners(int p, long topVer);
+    public List<ClusterNode> owners(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.
@@ -159,7 +170,7 @@ public interface GridDhtPartitionTopology {
      * @param e Entry added to cache.
      * @return Local partition.
      */
-    public GridDhtLocalPartition onAdded(long topVer, GridDhtCacheEntry e);
+    public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e);
 
     /**
      * @param e Entry removed from cache.

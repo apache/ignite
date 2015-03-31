@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -51,27 +49,33 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         gridCnt = new AtomicInteger();
 
         super.beforeTestsStarted();
+
+        if (!clientOnly())
+            grid(nearOnlyGridName).createNearCache(null, new NearCacheConfiguration());
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (gridCnt.getAndIncrement() == 0) {
-            cfg.setDistributionMode(clientOnly() ? CLIENT_ONLY : NEAR_ONLY);
+            cfg.setClientMode(true);
 
             nearOnlyGridName = gridName;
         }
 
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
         cfg.setWriteThrough(false);
-        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 32));
+        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         cfg.setBackups(1);
 
         return cfg;
@@ -108,7 +112,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int key = 0; key < 10; key++) {
             for (int i = 1; i < gridCount(); i++) {
                 if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
-                    assertEquals(key, grid(i).jcache(null).localPeek(key, CachePeekMode.ONHEAP));
+                    assertEquals(key, grid(i).cache(null).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             if (nearEnabled())
@@ -154,7 +158,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
             if (F.eq(g.name(), nearOnlyGridName)) {
                 for (int k = 0; k < 10000; k++) {
-                    IgniteCache<Object, Object> cache = g.jcache(null);
+                    IgniteCache<Object, Object> cache = g.cache(null);
 
                     String key = "key" + k;
 
@@ -169,7 +173,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 boolean foundAffinityNode = false;
 
                 for (int k = 0; k < 10000; k++) {
-                    GridCache<Object, Object> cache = ((IgniteKernal)g).cache(null);
+                    GridCache<Object, Object> cache = ((IgniteKernal)g).getCache(null);
 
                     String key = "key" + k;
 
@@ -192,7 +196,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected IgniteCache<Object, Object> nearOnlyCache() {
         assert nearOnlyGridName != null;
 
-        return G.ignite(nearOnlyGridName).jcache(null);
+        return G.ignite(nearOnlyGridName).cache(null);
     }
 
     /**
@@ -201,7 +205,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected IgniteCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
             if (!nearOnlyGridName.equals(grid(i).name()))
-                return grid(i).jcache(null);
+                return grid(i).cache(null);
         }
 
         assert false : "Cannot find DHT cache for this test.";

@@ -47,7 +47,6 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setEvictNearSynchronized(false);
         cfg.setEvictSynchronized(false);
 
         cfg.setAtomicityMode(atomicityMode());
@@ -68,7 +67,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
             cache.put(key, i);
         }
 
-        CacheAffinity aff = grid(0).affinity(cache.name());
+        Affinity aff = grid(0).affinity(cache.name());
 
         for (int i = 0 ; i < aff.partitions(); i++)
             String.valueOf(cache.entrySet(i));

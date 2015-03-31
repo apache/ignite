@@ -20,12 +20,13 @@ package org.apache.ignite.visor.commands.cache
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheAtomicityMode._
 import org.apache.ignite.cache.CacheMode._
-import org.apache.ignite.cache.query.Query._
+import org.apache.ignite.cache.query.SqlQuery
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration._
 import org.apache.ignite.spi.discovery.tcp._
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm._
 
+import java.lang.{Integer => JavaInt}
 import org.jetbrains.annotations._
 
 import org.apache.ignite.visor._
@@ -50,14 +51,10 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg.setCacheMode(REPLICATED)
         cfg.setAtomicityMode(TRANSACTIONAL)
         cfg.setName(name)
-        cfg.setQueryIndexEnabled(true)
 
-        val qc = new CacheQueryConfiguration()
+        val arr = Seq(classOf[JavaInt], classOf[Foo]).toArray
 
-        qc.setIndexPrimitiveKey(true)
-        qc.setIndexFixedTyping(true)
-
-        cfg.setQueryConfiguration(qc)
+        cfg.setIndexedTypes(arr:_*)
 
         cfg
     }
@@ -85,7 +82,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     }
 
     it should "put/get some values to/from cache and display information about caches" in {
-        val c = Ignition.ignite("node-1").jcache[String, String]("replicated")
+        val c = Ignition.ignite("node-1").cache[String, String]("replicated")
 
         for (i <- 0 to 3) {
             val kv = "" + i
@@ -101,7 +98,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     it should "run query and display information about caches" in {
         val g = Ignition.ignite("node-1")
 
-        val c = g.jcache[Int, Foo]("replicated")
+        val c = g.cache[JavaInt, Foo]("replicated")
 
         c.put(0, Foo(20))
         c.put(1, Foo(100))
@@ -109,12 +106,12 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
         c.put(3, Foo(150))
 
         // Create and execute query that mast return 2 rows.
-        val q1 = c.query(sql(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(1))).getAll()
+        val q1 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(1))).getAll()
 
         assert(q1.size() == 2)
 
         // Create and execute query that mast return 0 rows.
-        val q2 = c.query(sql(classOf[Foo], "_key > ?").setArgs(java.lang.Integer.valueOf(100))).getAll()
+        val q2 = c.query(new SqlQuery(classOf[Foo], "_key > ?").setArgs(JavaInt.valueOf(100))).getAll()
 
         assert(q2.size() == 0)
 

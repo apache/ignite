@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -33,7 +34,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -82,9 +82,8 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
-        cCfg.setDistributionMode(NEAR_PARTITIONED);
+        cCfg.setNearConfiguration(new NearCacheConfiguration());
         cCfg.setRebalanceMode(SYNC);
-        cCfg.setQueryIndexEnabled(false);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
@@ -108,7 +107,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         }
 
         for (int i = 0; i < PERM_NODES_CNT + TMP_NODES_CNT; i++)
-            F.rand(alive).jcache(null).put(i, String.valueOf(i));
+            F.rand(alive).cache(null).put(i, String.valueOf(i));
     }
 
     /** {@inheritDoc} */
@@ -173,14 +172,14 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
             long currVer = discoMgr.topologyVersion();
 
             for (long v = currVer; v > currVer - GridDiscoveryManager.DISCOVERY_HISTORY_SIZE && v > 0; v--) {
-                F.forAll(discoMgr.aliveCacheNodes(null, v),
+                F.forAll(discoMgr.aliveCacheNodes(null, new AffinityTopologyVersion(v)),
                     new IgnitePredicate<ClusterNode>() {
                         @Override public boolean apply(ClusterNode e) {
                             return currTop.contains(e);
                         }
                     });
 
-                F.forAll(discoMgr.aliveRemoteCacheNodes(null, v),
+                F.forAll(discoMgr.aliveRemoteCacheNodes(null, new AffinityTopologyVersion(v)),
                     new IgnitePredicate<ClusterNode>() {
                         @Override public boolean apply(ClusterNode e) {
                             return currTop.contains(e) || g.cluster().localNode().equals(e);
@@ -188,7 +187,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
                     });
 
                 assertTrue(
-                    currTop.contains(GridCacheUtils.oldest(k.internalCache().context(), currVer)));
+                    currTop.contains(GridCacheUtils.oldest(k.internalCache().context(), new AffinityTopologyVersion(currVer))));
             }
         }
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -49,7 +50,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private boolean near;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** {@code True} if this last prepare request for node. */
     private boolean last;
@@ -95,7 +96,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
-        long topVer,
+        AffinityTopologyVersion topVer,
         IgniteInternalTx tx,
         Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
@@ -199,7 +200,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -312,7 +313,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 34:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -406,7 +407,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 34:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

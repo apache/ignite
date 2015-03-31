@@ -31,7 +31,7 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
- * This adepter designed to support stores with bulk loading from stream-like source.
+ * This adapter designed to support stores with bulk loading from stream-like source.
  * <p>
  * This class processes input data in the following way:
  * <ul>
@@ -100,7 +100,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
      * Note that returned iterator doesn't have to be thread-safe. Thus it could
      * operate on raw streams, DB connections, etc. without additional synchronization.
      *
-     * @param args Arguments passes into {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
+     * @param args Arguments passes into {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
      * @return Iterator over input records.
      * @throws CacheLoaderException If iterator can't be created with the given arguments.
      */
@@ -113,7 +113,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
      * If {@code null} is returned then this record will be just skipped.
      *
      * @param rec A raw data record.
-     * @param args Arguments passed into {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
+     * @param args Arguments passed into {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
      * @return Cache entry to be saved in cache or {@code null} if no entry could be produced from this record.
      */
     @Nullable protected abstract IgniteBiTuple<K, V> parse(I rec, @Nullable Object... args);
@@ -255,7 +255,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 
@@ -275,7 +275,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
         /**
          * @param c Closure for loaded entries.
          * @param buf Set of input records to process.
-         * @param args Arguments passed into {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
+         * @param args Arguments passed into {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method.
          */
         Worker(IgniteBiInClosure<K, V> c, Collection<I> buf, Object[] args) {
             this.c = c;

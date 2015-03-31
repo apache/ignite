@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -815,7 +815,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
                     int p1 = getJobPriority(o1.getJobContext());
                     int p2 = getJobPriority(o2.getJobContext());
 
-                    return p1 < p2 ? 1 : p1 == p2 ? 0 : -1;
+                    return Integer.compare(p2, p1);
                 }
             };
         }

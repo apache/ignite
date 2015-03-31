@@ -23,6 +23,7 @@ import java.util.*;
 /**
  * Wrapped for custom message.
  */
+@TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;

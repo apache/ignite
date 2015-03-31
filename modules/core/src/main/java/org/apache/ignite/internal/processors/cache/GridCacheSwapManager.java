@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.swapspace.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.offheap.*;
@@ -29,8 +30,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.ref.*;
@@ -173,7 +174,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Number of swap entries.
      * @throws IgniteCheckedException If failed.
      */
-    public int swapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+    public int swapEntriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert primary || backup;
 
         if (!swapEnabled)
@@ -196,7 +197,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Number of offheap entries.
      * @throws IgniteCheckedException If failed.
      */
-    public int offheapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+    public int offheapEntriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert primary || backup;
 
         if (!offheapEnabled)
@@ -226,8 +227,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
-    private void onUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) {
+    private void onUnswapped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException {
         onEntryUnswapped(swapLsnrs, part, key, e);
     }
 
@@ -235,8 +237,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
-    private void onOffHeaped(int part, KeyCacheObject key, GridCacheSwapEntry e) {
+    private void onOffHeaped(int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException {
         onEntryUnswapped(offheapLsnrs, part, key, e);
     }
 
@@ -245,9 +248,10 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Cache key.
      * @param e Entry.
+     * @throws IgniteCheckedException If failed.
      */
     private void onEntryUnswapped(ConcurrentMap<Integer, Collection<GridCacheSwapListener>> map,
-        int part, KeyCacheObject key, GridCacheSwapEntry e) {
+        int part, KeyCacheObject key, GridCacheSwapEntry e) throws IgniteCheckedException {
         Collection<GridCacheSwapListener> lsnrs = map.get(part);
 
         if (lsnrs == null) {
@@ -391,7 +395,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Reconstituted swap entry or {@code null} if entry is obsolete.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridCacheSwapEntry swapEntry(GridCacheSwapEntry e) throws IgniteCheckedException
+    @Nullable private <X extends GridCacheSwapEntry> X swapEntry(X e) throws IgniteCheckedException
     {
         assert e != null;
 
@@ -1310,7 +1314,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, long topVer) {
+    public Iterator<KeyCacheObject> offHeapKeyIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer) {
         assert primary || backup;
 
         if (!offheapEnabled)
@@ -1334,7 +1338,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      * @return Iterator over off-heap keys.
      */
-    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, long topVer)
+    public Iterator<KeyCacheObject> swapKeyIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         assert primary || backup;
 
@@ -1648,7 +1652,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Swap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, long topVer)
+    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert primary || backup;
@@ -1678,7 +1682,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Offheap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, long topVer)
+    public <K, V> Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
         assert primary || backup;
@@ -1849,7 +1853,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /**
      *
      */
-    private static class KeySwapListener implements GridCacheSwapListener {
+    private class KeySwapListener implements GridCacheSwapListener {
         /** */
         private final KeyCacheObject key;
 
@@ -1866,16 +1870,26 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public void onEntryUnswapped(int part,
             KeyCacheObject key,
-            GridCacheSwapEntry e)
-        {
+            GridCacheSwapEntry e) throws IgniteCheckedException {
             if (this.key.equals(key)) {
-                entry = new GridCacheSwapEntryImpl(ByteBuffer.wrap(e.valueBytes()),
+                GridCacheSwapEntryImpl e0 = new GridCacheSwapEntryImpl(ByteBuffer.wrap(e.valueBytes()),
                     e.type(),
                     e.version(),
                     e.ttl(),
                     e.expireTime(),
                     e.keyClassLoaderId(),
                     e.valueClassLoaderId());
+
+                CacheObject v = e.value();
+
+                if (v != null)
+                    e0.value(v);
+                else
+                    e0 = swapEntry(e0);
+
+                assert e0 != null && e0.value() != null : e0;
+
+                entry = e0;
             }
         }
     }

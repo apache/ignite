@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * Random eviction policy test.
  */
 public class GridCacheRandomEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<CacheRandomEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<RandomEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -46,10 +46,10 @@ public class GridCacheRandomEvictionPolicySelfTest extends
             for (int i = 0; i < keys; i++) {
                 String s = Integer.toString(i);
 
-                g.jcache(null).put(s, s);
+                g.cache(null).put(s, s);
             }
 
-            assert g.jcache(null).size() <= max;
+            assert g.cache(null).size() <= max;
         }
         finally {
             stopAllGrids();
@@ -84,15 +84,15 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                 int j = rand.nextInt(t.length);
 
                 if (rmv)
-                    g.jcache(null).remove(t[j]);
+                    g.cache(null).remove(t[j]);
                 else
-                    g.jcache(null).put(t[j], t[j]);
+                    g.cache(null).put(t[j], t[j]);
 
                 if (i % 1000 == 0)
                     info("Stats [cntr=" + i + ", total=" + runs + ']');
             }
 
-            assert g.jcache(null).size() <= max;
+            assert g.cache(null).size() <= max;
 
             info(policy(0));
         }
@@ -120,7 +120,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
 
             MockEntry e5 = new MockEntry("5", c);
 
-            CacheRandomEvictionPolicy<String, String> p = policy();
+            RandomEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -185,9 +185,9 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                         int j = rand.nextInt(t.length);
 
                         if (rmv)
-                            g.jcache(null).remove(t[j]);
+                            g.cache(null).remove(t[j]);
                         else
-                            g.jcache(null).put(t[j], t[j]);
+                            g.cache(null).put(t[j], t[j]);
 
                         if (i != 0 && i % 1000 == 0)
                             info("Stats [cntr=" + i + ", total=" + runs + ']');
@@ -197,7 +197,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                 }
             }, 10);
 
-            assert g.jcache(null).size() <= max;
+            assert g.cache(null).size() <= max;
 
             info(policy(0));
         }
@@ -237,13 +237,13 @@ public class GridCacheRandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheRandomEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new CacheRandomEvictionPolicy<>(plcMax);
+    @Override protected RandomEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new RandomEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheRandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new CacheRandomEvictionPolicy<>(plcMax);
+    @Override protected RandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new RandomEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */

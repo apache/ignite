@@ -33,17 +33,20 @@ import java.util
  * (a.k.a. nested) tasks or closures with continuations. This example also shows
  * usage of `continuations`, which allows us to wait for results from remote nodes
  * without blocking threads.
- * <p>
+ * <p/>
  * Note that because this example utilizes local node storage via `NodeLocal`,
  * it gets faster if you execute it multiple times, as the more you execute it,
  * the more values it will be cached on remote nodes.
- * <p>
+ * <p/>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-ignite.xml'`.
+ * <p/>
+ * Alternatively you can run `ExampleNodeStartup` in another JVM which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarContinuationExample {
     def main(args: Array[String]) {
-        scalar("examples/config/example-compute.xml") {
+        scalar("examples/config/example-ignite.xml") {
             // Calculate fibonacci for N.
             val N: Long = 100
 

@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -103,7 +102,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setRebalanceMode(SYNC);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setDistributionMode(NEAR_PARTITIONED);
+        cfg.setNearConfiguration(new NearCacheConfiguration());
         cfg.setBackups(1);
 
         return cfg;
@@ -199,14 +198,14 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             for (int i = 0; i < 10; i++) {
-                if (g1.jcache(null).localSize() == 0 && g2.jcache(null).localSize() == 0)
+                if (g1.cache(null).localSize() == 0 && g2.cache(null).localSize() == 0)
                     break;
 
                 U.sleep(500);
             }
 
-            assertEquals(0, g1.jcache(null).localSize());
-            assertEquals(0, g2.jcache(null).localSize());
+            assertEquals(0, g1.cache(null).localSize());
+            assertEquals(0, g2.cache(null).localSize());
 
             startGrid(3);
         }
@@ -248,11 +247,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             stopGrid(GRID_NAME);
 
-            assert g1.jcache(null).localSize() == 1;
-            assert g1.jcache(null).localSize() == 1;
+            assert g1.cache(null).localSize() == 1;
+            assert g1.cache(null).localSize() == 1;
 
-            assert g2.jcache(null).localSize() == 1;
-            assert g2.jcache(null).localSize() == 1;
+            assert g2.cache(null).localSize() == 1;
+            assert g2.cache(null).localSize() == 1;
 
             startGrid(3);
         }
@@ -287,7 +286,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info("Key: " + key);
 
-            IgniteCache<Object, Object> cache = g0.jcache(null);
+            IgniteCache<Object, Object> cache = g0.cache(null);
 
             assert cache != null;
 
@@ -395,7 +394,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g = startGrid(0);
 
-            g.jcache(null).put(0, valCls.newInstance());
+            g.cache(null).put(0, valCls.newInstance());
 
             info("Added value to cache 0.");
 

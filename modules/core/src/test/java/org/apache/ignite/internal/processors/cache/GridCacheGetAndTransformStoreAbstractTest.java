@@ -33,7 +33,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -86,10 +85,9 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
-        cc.setDistributionMode(distributionMode());
         cc.setRebalanceMode(SYNC);
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -97,13 +95,6 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         c.setCacheConfiguration(cc);
 
         return c;
-    }
-
-    /**
-     * @return Distribution mode.
-     */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
     }
 
     /**

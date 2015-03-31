@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -119,16 +118,16 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setName(cacheName);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
-        cacheCfg.setDistributionMode(getDistributionMode());
+        cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);
 
         if (gridName.endsWith("1"))
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_1));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_1));
         else if (gridName.endsWith("2"))
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_2));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_2));
         else
-            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<CacheStore>(LOCAL_STORE_3));
+            cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_3));
 
         cacheCfg.setWriteThrough(true);
         cacheCfg.setReadThrough(true);
@@ -145,7 +144,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @return Distribution mode.
      */
-    protected abstract CacheDistributionMode getDistributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Cache atomicity mode.
@@ -175,14 +174,14 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testEvict() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(null).withExpiryPolicy(new CreatedExpiryPolicy(
+        IgniteCache<Object, Object> cache = ignite1.cache(null).withExpiryPolicy(new CreatedExpiryPolicy(
             new Duration(TimeUnit.MILLISECONDS, 100L)));
 
         // Putting entry.
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        // Wait when entry 
+        // Wait when entry
         U.sleep(200);
 
         // Check that entry is evicted from cache, but local store does contain it.
@@ -203,7 +202,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testPrimaryNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+        IgniteCache<Object, Object> cache = ignite1.cache(null);
 
         // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
@@ -250,7 +249,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testBackupNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(BACKUP_CACHE);
+        IgniteCache<Object, Object> cache = ignite1.cache(BACKUP_CACHE);
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
@@ -290,7 +289,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testSwap() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.jcache(null);
+        IgniteCache<Object, Object> cache = ignite1.cache(null);
 
         // Populate cache and check that local store has all value.
         for (int i = 0; i < KEYS; i++)
@@ -383,7 +382,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) throws CacheWriterException {
+        @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             // No-op.
         }
 

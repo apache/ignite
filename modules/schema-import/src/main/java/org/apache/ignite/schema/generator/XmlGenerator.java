@@ -67,12 +67,12 @@ public class XmlGenerator {
      *
      * @param doc XML document.
      * @param parent Parent XML node.
-     * @param clazz Bean class.
+     * @param cls Bean class.
      */
-    private static Element addBean(Document doc, Node parent, Class<?> clazz) {
+    private static Element addBean(Document doc, Node parent, Class<?> cls) {
         Element elem = doc.createElement("bean");
 
-        elem.setAttribute("class", clazz.getName());
+        elem.setAttribute("class", cls.getName());
 
         parent.appendChild(elem);
 
@@ -194,28 +194,28 @@ public class XmlGenerator {
      * @param groups Map with indexes.
      */
     private static void addQueryGroups(Document doc, Node parent,
-        Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups) {
+        Map<String, Map<String, IndexItem>> groups) {
         if (!groups.isEmpty()) {
             Element prop = addProperty(doc, parent, "groups", null);
 
             Element map = addElement(doc, prop, "map");
 
-            for (Map.Entry<String, Map<String, IgniteBiTuple<String, Boolean>>> group : groups.entrySet()) {
+            for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
                 Element entry1 = addElement(doc, map, "entry", "key", group.getKey());
 
                 Element val1 = addElement(doc, entry1, "map");
 
-                Map<String, IgniteBiTuple<String, Boolean>> fields = group.getValue();
+                Map<String, IndexItem> grpItems = group.getValue();
 
-                for (Map.Entry<String, IgniteBiTuple<String, Boolean>> field : fields.entrySet()) {
-                    Element entry2 = addElement(doc, val1, "entry", "key", field.getKey());
+                for (Map.Entry<String, IndexItem> grpItem : grpItems.entrySet()) {
+                    Element entry2 = addElement(doc, val1, "entry", "key", grpItem.getKey());
 
                     Element val2 = addBean(doc, entry2, IgniteBiTuple.class);
 
-                    IgniteBiTuple<String, Boolean> idx = field.getValue();
+                    IndexItem idxCol = grpItem.getValue();
 
-                    addElement(doc, val2, "constructor-arg", null, null, "value", idx.get1());
-                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idx.get2()));
+                    addElement(doc, val2, "constructor-arg", null, null, "value", idxCol.type());
+                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idxCol.descending()));
                 }
             }
         }

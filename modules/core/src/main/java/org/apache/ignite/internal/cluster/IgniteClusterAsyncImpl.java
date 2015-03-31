@@ -198,6 +198,16 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forServers() {
+        return cluster.forServers();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forClients() {
+        return cluster.forClients();
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterGroup forCacheNodes(String cacheName) {
         return cluster.forCacheNodes(cacheName);
     }
@@ -210,11 +220,6 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Override public ClusterGroup forClientNodes(String cacheName) {
         return cluster.forClientNodes(cacheName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClusterGroup forStreamer(String streamerName, @Nullable String... streamerNames) {
-        return cluster.forStreamer(streamerName, streamerNames);
     }
 
     /** {@inheritDoc} */

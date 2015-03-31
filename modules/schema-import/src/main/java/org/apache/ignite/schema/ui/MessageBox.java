@@ -17,6 +17,7 @@
 
 package org.apache.ignite.schema.ui;
 
+import javafx.beans.value.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.control.*;
@@ -71,9 +72,9 @@ public class MessageBox extends ModalDialog {
      * @param owner Owner window.
      * @param type Message box type.
      * @param msg Message to show.
-     * @param rememberChoice If {@code true} then add &quot;Remember choice&quot; check box.
+     * @param applyToAll {@code true} if &quot;Apply to all&quot; check box should be displayed.
      */
-    private MessageBox(Stage owner, MessageType type, String msg, final boolean rememberChoice) {
+    private MessageBox(Stage owner, MessageType type, String msg, final boolean applyToAll) {
         super(owner, 480, 180);
 
         String title;
@@ -115,18 +116,31 @@ public class MessageBox extends ModalDialog {
 
         contentPnl.add(hBox(0, true, imageView(iconFile, 48)));
 
-        TextArea ta = new TextArea(msg);
+        final TextArea ta = new TextArea(msg);
         ta.setEditable(false);
         ta.setWrapText(true);
         ta.setFocusTraversable(false);
 
         contentPnl.add(ta);
 
-        final CheckBox rememberChoiceCh = checkBox("Remember choice", "", false);
+        // Workaround for vertical scrollbar.
+        if (msg.length() < 100 && msg.split("\r\n|\r|\n").length < 4)
+            showingProperty().addListener(new ChangeListener<Boolean>() {
+                @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                    if (newVal) {
+                        ScrollBar scrollBar = (ScrollBar)ta.lookup(".scroll-bar:vertical");
 
-        if (rememberChoice) {
+                        if (scrollBar != null)
+                            scrollBar.setDisable(true);
+                    }
+                }
+            });
+
+        final CheckBox applyToAllCh = checkBox("Apply to all", "", false);
+
+        if (applyToAll) {
             contentPnl.skip(1);
-            contentPnl.add(rememberChoiceCh);
+            contentPnl.add(applyToAllCh);
         }
 
         HBox btns = hBox(10, true);
@@ -138,14 +152,14 @@ public class MessageBox extends ModalDialog {
             btns.getChildren().addAll(
                 button("Yes", "Approve the request", new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent e) {
-                        res = rememberChoice && rememberChoiceCh.isSelected() ? Result.YES_TO_ALL : Result.YES;
+                        res = applyToAll && applyToAllCh.isSelected() ? Result.YES_TO_ALL : Result.YES;
 
                         close();
                     }
                 }),
                 button("No", "Reject the request", new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent e) {
-                        res = rememberChoice && rememberChoiceCh.isSelected() ? Result.NO_TO_ALL : Result.NO;
+                        res = applyToAll && applyToAllCh.isSelected() ? Result.NO_TO_ALL : Result.NO;
 
                         close();
                     }
@@ -177,10 +191,11 @@ public class MessageBox extends ModalDialog {
      * @param owner Owner window.
      * @param type Message box type.
      * @param msg Message to show.
+     * @param applyToAll {@code true} if &quot;Apply to all&quot; check box should be displayed.
      * @return Option selected by the user.
      */
-    private static Result showDialog(Stage owner, MessageType type, String msg, boolean rememberChoice) {
-        MessageBox dlg = new MessageBox(owner, type, msg, rememberChoice);
+    private static Result showDialog(Stage owner, MessageType type, String msg, boolean applyToAll) {
+        MessageBox dlg = new MessageBox(owner, type, msg, applyToAll);
 
         dlg.showModal();
 
@@ -205,7 +220,7 @@ public class MessageBox extends ModalDialog {
      * @param msg Message to show.
      * @return User confirmation result.
      */
-    public static Result confirmRememberChoiceDialog(Stage owner, String msg) {
+    public static Result applyToAllChoiceDialog(Stage owner, String msg) {
         return showDialog(owner, MessageType.CANCELLABLE_CONFIRM, msg, true);
     }
 

@@ -403,6 +403,6 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @return Cache.
      */
     private IgniteCache<String,Integer> cache(Ignite g) {
-        return g.jcache(null);
+        return g.cache(null);
     }
 }

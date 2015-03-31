@@ -88,10 +88,7 @@
         <profile>
             <id>jfxrt.jar</id>
             <activation>
-                <property>
-                    <name>java.vendor</name>
-                    <value>Oracle Corporation</value>
-                </property>
+                <jdk>[1.7,1.8)</jdk>
             </activation>
             <dependencies>
                 <dependency>

@@ -37,8 +37,10 @@ public interface ClusterGroupEx extends ClusterGroup {
 
     /**
      * @param cacheName Cache name.
-     * @param distributionModes Cache distribution modes.
+     * @param affNodes Flag to include affinity nodes.
+     * @param nearNodes Flag to include near nodes.
+     * @param clientNodes Flag to include client nodes.
      * @return Cluster group.
      */
-    public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes);
+    public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes, boolean clientNodes);
 }

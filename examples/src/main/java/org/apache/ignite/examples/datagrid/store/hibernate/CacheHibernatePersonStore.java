@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.datagrid.store.hibernate;
 
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.examples.datagrid.store.model.*;
+import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.Transaction;
@@ -35,7 +35,8 @@ import java.util.*;
  */
 public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     /** Default hibernate configuration resource path. */
-    private static final String DFLT_HIBERNATE_CFG = "/org/apache/ignite/examples/datagrid/store/hibernate/hibernate.cfg.xml";
+    private static final String DFLT_HIBERNATE_CFG = "/org/apache/ignite/examples/datagrid/store/hibernate" +
+        "/hibernate.cfg.xml";
 
     /** Session attribute name. */
     private static final String ATTR_SES = "HIBERNATE_STORE_SESSION";
@@ -173,7 +174,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      */
     private void rollback(Session ses, Transaction tx) {
         // Rollback only if there is no cache transaction,
-        // otherwise txEnd() will do all required work.
+        // otherwise sessionEnd() will do all required work.
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
@@ -190,7 +191,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      */
     private void end(Session ses, @Nullable Transaction tx) {
         // Commit only if there is no cache transaction,
-        // otherwise txEnd() will do all required work.
+        // otherwise sessionEnd() will do all required work.
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
@@ -202,12 +203,10 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
-        CacheStoreSession storeSes = session();
+    @Override public void sessionEnd(boolean commit) {
+        Transaction tx = ses.transaction();
 
-        Transaction tx = storeSes.transaction();
-
-        Map<String, Session> props = storeSes.properties();
+        Map<String, Session> props = ses.properties();
 
         Session ses = props.remove(ATTR_SES);
 
@@ -244,47 +243,38 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
      * @return Session.
      */
     private Session session(@Nullable Transaction tx) {
-        Session ses;
+        Session hbSes;
 
         if (tx != null) {
-            Map<String, Session> props = session().properties();
+            Map<String, Session> props = ses.properties();
 
-            ses = props.get(ATTR_SES);
+            hbSes = props.get(ATTR_SES);
 
-            if (ses == null) {
-                ses = sesFactory.openSession();
+            if (hbSes == null) {
+                hbSes = sesFactory.openSession();
 
-                ses.beginTransaction();
+                hbSes.beginTransaction();
 
                 // Store session in session properties, so it can be accessed
                 // for other operations on the same transaction.
-                props.put(ATTR_SES, ses);
+                props.put(ATTR_SES, hbSes);
 
-                System.out.println("Hibernate session open [ses=" + ses + ", tx=" + tx.xid() + "]");
+                System.out.println("Hibernate session open [ses=" + hbSes + ", tx=" + tx.xid() + "]");
             }
         }
         else {
-            ses = sesFactory.openSession();
+            hbSes = sesFactory.openSession();
 
-            ses.beginTransaction();
+            hbSes.beginTransaction();
         }
 
-        return ses;
+        return hbSes;
     }
 
     /**
      * @return Current transaction.
      */
     @Nullable private Transaction transaction() {
-        CacheStoreSession ses = session();
-
         return ses != null ? ses.transaction() : null;
-    }
-
-    /**
-     * @return Store session.
-     */
-    private CacheStoreSession session() {
-        return ses;
     }
 }

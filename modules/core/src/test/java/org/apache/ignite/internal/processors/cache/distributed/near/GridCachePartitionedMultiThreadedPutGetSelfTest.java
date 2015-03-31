@@ -32,7 +32,6 @@ import org.apache.ignite.transactions.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -67,13 +66,15 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(1000));
-        cc.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+        cc.setEvictionPolicy(new FifoEvictionPolicy<>(1000));
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setEvictSynchronized(false);
-        cc.setEvictNearSynchronized(false);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        nearCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 
@@ -102,7 +103,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         super.afterTest();
 
         if (GRID_CNT > 0)
-            grid(0).jcache(null).removeAll();
+            grid(0).cache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
             internalCache(i).clearLocally();
@@ -178,7 +179,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() {
-                IgniteCache<Integer, Integer> c = grid(0).jcache(null);
+                IgniteCache<Integer, Integer> c = grid(0).cache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();

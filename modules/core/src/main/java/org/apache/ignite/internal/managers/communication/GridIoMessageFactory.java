@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -36,14 +37,14 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.igfs.*;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -444,21 +445,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 79:
-                msg = new GridStreamerCancelRequest();
-
-                break;
-
-            case 80:
-                msg = new GridStreamerExecutionRequest();
-
-                break;
-
-            case 81:
-                msg = new GridStreamerResponse();
-
-                break;
-
             case 82:
                 msg = new JobStealingRequest();
 
@@ -576,6 +562,36 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 105:
                 msg = new CacheObjectByteArrayImpl();
+
+                break;
+
+            case 106:
+                msg = new GridQueryCancelRequest();
+
+                break;
+
+            case 107:
+                msg = new GridQueryFailResponse();
+
+                break;
+
+            case 108:
+                msg = new GridQueryNextPageRequest();
+
+                break;
+
+            case 109:
+                msg = new GridQueryNextPageResponse();
+
+                break;
+
+            case 110:
+                msg = new GridQueryRequest();
+
+                break;
+
+            case 111:
+                msg = new AffinityTopologyVersion();
 
                 break;
 

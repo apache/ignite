@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
@@ -75,10 +74,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(preloadMode);
         cc.setRebalanceDelay(delay);
-        cc.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
+        cc.setAffinity(new RendezvousAffinityFunction(false, 128));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -104,7 +102,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.jcache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -112,8 +110,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        IgniteCache<String, Integer> c1 = g1.jcache(null);
-        IgniteCache<String, Integer> c2 = g2.jcache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(null);
+        IgniteCache<String, Integer> c2 = g2.cache(null);
 
         for (int i = 0; i < cnt; i++)
             assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
@@ -181,7 +179,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.jcache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -189,8 +187,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        IgniteCache<String, Integer> c1 = g1.jcache(null);
-        IgniteCache<String, Integer> c2 = g2.jcache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(null);
+        IgniteCache<String, Integer> c2 = g2.cache(null);
 
         for (int i = 0; i < cnt; i++)
             assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
@@ -251,7 +249,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.jcache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -259,8 +257,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        IgniteCache<String, Integer> c1 = g1.jcache(null);
-        IgniteCache<String, Integer> c2 = g2.jcache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(null);
+        IgniteCache<String, Integer> c2 = g2.cache(null);
 
         GridDhtCacheAdapter<String, Integer> d0 = dht(0);
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
@@ -352,7 +350,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
             long start = System.currentTimeMillis();
 
-            g.jcache(null).rebalance().get();
+            g.cache(null).rebalance().get();
 
             info(">>> Finished preloading of empty cache in " + (System.currentTimeMillis() - start) + "ms.");
         }
@@ -373,7 +371,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Affinity.
      */
-    private CacheAffinity<Object> affinity(Ignite g) {
+    private Affinity<Object> affinity(Ignite g) {
         return g.affinity(null);
     }
 

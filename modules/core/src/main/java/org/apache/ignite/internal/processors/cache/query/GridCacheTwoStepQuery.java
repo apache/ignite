@@ -34,6 +34,9 @@ public class GridCacheTwoStepQuery implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
+    public static final int DFLT_PAGE_SIZE = 1000;
+
+    /** */
     @GridToStringInclude
     private Map<String, GridCacheSqlQuery> mapQrys;
 
@@ -41,12 +44,29 @@ public class GridCacheTwoStepQuery implements Serializable {
     @GridToStringInclude
     private GridCacheSqlQuery reduce;
 
+    /** */
+    private int pageSize = DFLT_PAGE_SIZE;
+
     /**
      * @param qry Reduce query.
      * @param params Reduce query parameters.
      */
     public GridCacheTwoStepQuery(String qry, Object ... params) {
         reduce = new GridCacheSqlQuery(null, qry, params);
+    }
+
+    /**
+     * @param pageSize Page size.
+     */
+    public void pageSize(int pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
     }
 
     /**
@@ -75,7 +95,7 @@ public class GridCacheTwoStepQuery implements Serializable {
      * @return Map queries.
      */
     public Collection<GridCacheSqlQuery> mapQueries() {
-        return mapQrys.values();
+        return new ArrayList<>(mapQrys.values()); // Copy to make it Serializable.
     }
 
     /** {@inheritDoc} */

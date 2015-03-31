@@ -109,7 +109,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
 
-        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

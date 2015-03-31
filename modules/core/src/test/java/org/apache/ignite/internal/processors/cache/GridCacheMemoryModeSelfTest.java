@@ -82,11 +82,9 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setSwapEnabled(swapEnabled);
         cacheCfg.setCacheMode(mode);
         cacheCfg.setMemoryMode(memoryMode);
-        cacheCfg.setEvictionPolicy(maxOnheapSize == Integer.MAX_VALUE ? null :
-            new CacheLruEvictionPolicy(maxOnheapSize));
+        cacheCfg.setEvictionPolicy(maxOnheapSize == Integer.MAX_VALUE ? null : new LruEvictionPolicy(maxOnheapSize));
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
-        cacheCfg.setQueryIndexEnabled(memoryMode != CacheMemoryMode.OFFHEAP_VALUES);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setMarshaller(new OptimizedMarshaller(false));
@@ -177,7 +175,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        CacheConfiguration cfg = g.jcache(null).getConfiguration(CacheConfiguration.class);
+        CacheConfiguration cfg = g.cache(null).getConfiguration(CacheConfiguration.class);
 
         assertEquals(memoryMode, cfg.getMemoryMode());
         assertEquals(0, cfg.getOffHeapMaxMemory());

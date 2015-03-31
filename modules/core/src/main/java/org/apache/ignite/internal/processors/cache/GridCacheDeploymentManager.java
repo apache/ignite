@@ -31,8 +31,8 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -46,9 +46,6 @@ import static org.apache.ignite.events.EventType.*;
  * Deployment manager for cache.
  */
 public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
-    /** Node filter. */
-    private IgnitePredicate<ClusterNode> nodeFilter;
-
     /** Cache class loader */
     private volatile ClassLoader globalLdr;
 
@@ -83,12 +80,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         globalLdr = new CacheClassLoader(cctx.gridConfig().getClassLoader());
-
-        nodeFilter = new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return U.hasCaches(node);
-            }
-        };
 
         depEnabled = cctx.gridDeploy().enabled();
 
@@ -141,7 +132,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * Gets distributed class loader. Note that
-     * {@link #p2pContext(UUID, org.apache.ignite.lang.IgniteUuid, String, org.apache.ignite.configuration.DeploymentMode, Map, boolean)} must be
+     * {@link #p2pContext(UUID, IgniteUuid, String, DeploymentMode, Map, boolean)} must be
      * called from the same thread prior to using this class loader, or the
      * loading may happen for the wrong node or context.
      *
@@ -180,8 +171,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * @param ctx Cache context.
      */
     public void unwind(GridCacheContext ctx) {
-        int cnt = 0;
-
         List<CA> q;
 
         synchronized (undeploys) {
@@ -190,6 +179,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         if (q == null)
             return;
+
+        int cnt = 0;
 
         for (CA c : q) {
             c.apply();
@@ -827,7 +818,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     sndId,
                     ldrId,
                     participants,
-                    nodeFilter);
+                    F.<ClusterNode>alwaysTrue());
 
                 if (d != null) {
                     Class cls = d.deployedClass(name);

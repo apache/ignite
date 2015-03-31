@@ -419,8 +419,8 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
             assert res == 1 : "Method gridifyDefault returned wrong value [result=" + res + ", expected=1]";
 
-            assert locDepCnt.get() == 8 : "Invalid local deployment count [expected=8, got=" + locDepCnt.get() + ']';
-            assert rmtDepCnt.get() == 7 : "Invalid remote deployment count [expected=7, got=" + rmtDepCnt.get() + ']';
+            assert locDepCnt.get() == 1 : "Invalid local deployment count [expected=1, got=" + locDepCnt.get() + ']';
+            assert rmtDepCnt.get() == 1 : "Invalid remote deployment count [expected=1, got=" + rmtDepCnt.get() + ']';
         }
         finally {
             stopAllGrids();
@@ -725,7 +725,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
             if ((evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) &&
-                evt.message() != null && !evt.message().contains("GridTopic"))
+                evt.message() != null && evt.message().contains("TestAopTarget"))
                 cnt.addAndGet(1);
 
             return true;

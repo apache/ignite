@@ -25,8 +25,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -46,7 +46,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static Ignite g;
 
     /** Transaction count. */
-    private static LongAdder txCnt = new LongAdder();
+    private static LongAdder8 txCnt = new LongAdder8();
 
     /** Finish flag. */
     private static volatile boolean finish;

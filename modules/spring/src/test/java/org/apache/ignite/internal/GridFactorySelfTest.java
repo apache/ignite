@@ -82,6 +82,46 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testIgnitionStartDefault() throws Exception {
+        try (Ignite ignite = Ignition.start()) {
+            log.info("Started1: " + ignite.name());
+
+            try {
+                Ignition.start();
+
+                fail();
+            }
+            catch (IgniteException expected) {
+                // No-op.
+            }
+        }
+
+        try (Ignite ignite = Ignition.start()) {
+            log.info("Started2: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartFabricDefault() throws Exception {
+        try (Ignite ignite = Ignition.start("config/fabric/default-config.xml")) {
+            log.info("Started: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartDefault() throws Exception {
+        try (Ignite ignite = Ignition.start("config/default-config.xml")) {
+            log.info("Started: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testStartGridWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
         String gridName = "grid_with_url_config";
@@ -530,6 +570,30 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         assert G.state(cfg1.getGridName()) == STOPPED;
         assert G.state(getTestGridName() + '1') == STOPPED;
         assert G.state(getTestGridName() + '2') == STOPPED;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadBean() throws Exception {
+        final String path = "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Ignition.loadSpringBean(path, "wrongName");
+
+                    return null;
+                }
+            },
+            IgniteException.class,
+            null
+        );
+
+        CacheConfiguration cfg = Ignition.loadSpringBean(path, "cache-configuration");
+
+        assertEquals("TestDynamicCache", cfg.getName());
     }
 
     /**

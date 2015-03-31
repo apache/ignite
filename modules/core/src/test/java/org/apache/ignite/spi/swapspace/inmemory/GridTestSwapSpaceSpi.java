@@ -21,8 +21,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -187,7 +187,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
         SwapSpaceSpiListener lsnr0 = lsnr;
 
         if (lsnr0 != null)
-            lsnr0.onSwapEvent(evtType, spaceName, key);
+            lsnr0.onSwapEvent(evtType, spaceName, key, null);
     }
 
     /**

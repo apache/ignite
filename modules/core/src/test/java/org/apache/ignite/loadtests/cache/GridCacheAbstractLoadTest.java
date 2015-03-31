@@ -130,7 +130,7 @@ abstract class GridCacheAbstractLoadTest {
 
         final Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
         assert cache != null;
 

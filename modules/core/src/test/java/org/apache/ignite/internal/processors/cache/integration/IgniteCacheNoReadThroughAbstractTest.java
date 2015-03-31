@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -40,32 +41,11 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     private Integer lastKey = 0;
 
     /** */
-    private boolean allowLoad;
+    private static boolean allowLoad;
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore() {
-            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
-                if (!allowLoad)
-                    fail();
-
-                super.loadCache(clo, args);
-            }
-
-            @Override public Object load(Object key) {
-                if (!allowLoad)
-                    fail();
-
-                return super.load(key);
-            }
-
-            @Override public Map<Object, Object> loadAll(Iterable<?> keys) {
-                if (!allowLoad)
-                    fail();
-
-                return super.loadAll(keys);
-            }
-        };
+    @Override protected Factory<CacheStore> cacheStoreFactory() {
+        return new NoReadThroughStoreFactory();
     }
 
     /** {@inheritDoc} */
@@ -88,6 +68,11 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
         ccfg.setLoadPreviousValue(true);
 
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        allowLoad = false;
     }
 
     /**
@@ -316,5 +301,35 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
         lastKey = Collections.max(keys) + 1;
 
         return keys;
+    }
+
+    /**
+     *
+     */
+    private static class NoReadThroughStoreFactory implements Factory<CacheStore> {
+        @Override public CacheStore create() {
+            return new TestStore() {
+                @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+                    if (!allowLoad)
+                        fail();
+
+                    super.loadCache(clo, args);
+                }
+
+                @Override public Object load(Object key) {
+                    if (!allowLoad)
+                        fail();
+
+                    return super.load(key);
+                }
+
+                @Override public Map<Object, Object> loadAll(Iterable<?> keys) {
+                    if (!allowLoad)
+                        fail();
+
+                    return super.loadAll(keys);
+                }
+            };
+        }
     }
 }

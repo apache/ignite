@@ -19,15 +19,27 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.eviction.*;
 
+import java.io.*;
+
 /**
  * Cache eviction policy that expires every entry essentially keeping the cache empty.
  * This eviction policy can be used whenever one cache is used to front another
  * and its size should be kept at {@code 0}.
  */
-public class GridCacheAlwaysEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V> {
+public class GridCacheAlwaysEvictionPolicy<K, V> implements EvictionPolicy<K, V>, Externalizable {
     /** {@inheritDoc} */
     @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!rmv && entry.isCached())
             entry.evict();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op.
     }
 }

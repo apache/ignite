@@ -17,7 +17,9 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -33,19 +35,19 @@ import java.util.*;
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
- *          {@link org.apache.ignite.IgniteEvents#remoteQuery(org.apache.ignite.lang.IgnitePredicate, long, int...)} -
+ *          {@link IgniteEvents#remoteQuery(IgnitePredicate, long, int...)} -
  *          asynchronously querying events occurred on the nodes specified, including remote nodes.
  *      </li>
  *      <li>
- *          {@link org.apache.ignite.IgniteEvents#localQuery(org.apache.ignite.lang.IgnitePredicate, int...)} -
+ *          {@link IgniteEvents#localQuery(IgnitePredicate, int...)} -
  *          querying only local events stored on this local node.
  *      </li>
  *      <li>
- *          {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} -
+ *          {@link IgniteEvents#localListen(IgnitePredicate, int...)} -
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method {@link IgniteEvents#waitForLocal(IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in Ignite are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
@@ -53,20 +55,27 @@ import java.util.*;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
+ * by using {@link IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
+ *
+ * @see EventType#EVT_CACHE_STARTED
+ * @see EventType#EVT_CACHE_STOPPED
+ * @see EventType#EVT_CACHE_NODES_LEFT
+ * @see EventType#EVTS_CACHE_LIFECYCLE
  * @see EventType#EVT_CACHE_ENTRY_CREATED
  * @see EventType#EVT_CACHE_ENTRY_DESTROYED
  * @see EventType#EVT_CACHE_ENTRY_EVICTED
+ * @see EventType#EVT_CACHE_OBJECT_EXPIRED
+ * @see EventType#EVT_CACHE_OBJECT_FROM_OFFHEAP
+ * @see EventType#EVT_CACHE_OBJECT_LOCKED
  * @see EventType#EVT_CACHE_OBJECT_PUT
  * @see EventType#EVT_CACHE_OBJECT_READ
  * @see EventType#EVT_CACHE_OBJECT_REMOVED
- * @see EventType#EVT_CACHE_OBJECT_LOCKED
- * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
  * @see EventType#EVT_CACHE_OBJECT_SWAPPED
+ * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
  * @see EventType#EVT_CACHE_OBJECT_UNSWAPPED
- * @see EventType#EVT_CACHE_OBJECT_EXPIRED
+ * @see EventType#EVTS_CACHE
  */
 public class CacheEvent extends EventAdapter {
     /** */

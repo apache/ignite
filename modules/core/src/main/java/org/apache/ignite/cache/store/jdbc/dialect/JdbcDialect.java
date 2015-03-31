@@ -113,5 +113,5 @@ public interface JdbcDialect {
      *
      * @return Max query parameters count.
      */
-    public int getMaxParamsCnt();
+    public int getMaxParameterCount();
 }

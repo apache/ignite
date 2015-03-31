@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
@@ -120,7 +120,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         }
 
         cfg.setWriteSynchronizationMode(writeSynchronization());
-        cfg.setDistributionMode(distributionMode());
+        cfg.setNearConfiguration(nearConfiguration());
 
         cfg.setCacheLoaderFactory(loaderFactory());
 
@@ -132,10 +132,10 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         if (cfg.getCacheWriterFactory() != null)
             cfg.setWriteThrough(true);
 
-        CacheStore<?, ?> store = cacheStore();
+        Factory<CacheStore> storeFactory = cacheStoreFactory();
 
-        if (store != null) {
-            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        if (storeFactory != null) {
+            cfg.setCacheStoreFactory(storeFactory);
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
@@ -150,7 +150,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache store.
      */
-    protected CacheStore<?, ?> cacheStore() {
+    protected Factory<CacheStore> cacheStoreFactory() {
         return null;
     }
 
@@ -188,7 +188,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Partitioned mode.
      */
-    protected abstract CacheDistributionMode distributionMode();
+    protected abstract NearCacheConfiguration nearConfiguration();
 
     /**
      * @return Write synchronization.
@@ -216,13 +216,23 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache(int idx) {
-        return grid(idx).jcache(null);
+        return grid(idx).cache(null);
     }
 
     /**
      *
      */
-    public class TestStore extends CacheStoreAdapter<Object, Object> {
+    public static class TestStoreFactory implements Factory<CacheStore> {
+        /** {@inheritDoc} */
+        @Override public CacheStore create() {
+            return new TestStore();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry<Object, Object> e : storeMap.entrySet())

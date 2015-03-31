@@ -96,17 +96,17 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         try {
             final String key = "key";
 
-            g.jcache(null).withExpiryPolicy(
+            g.cache(null).withExpiryPolicy(
                     new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
 
-            assertEquals(1, g.jcache(null).get(key));
+            assertEquals(1, g.cache(null).get(key));
 
             U.sleep(1100);
 
             GridTestUtils.retryAssert(log, 10, 100, new CAX() {
                 @Override public void applyx() {
                     // Check that no more entries left in the map.
-                    assertNull(g.jcache(null).get(key));
+                    assertNull(g.cache(null).get(key));
 
                     if (!g.internalCache().context().deferredDelete())
                         assertNull(g.internalCache().map().getEntry(key));

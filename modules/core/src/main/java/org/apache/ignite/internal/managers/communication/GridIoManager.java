@@ -35,8 +35,8 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -49,7 +49,7 @@ import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Grid communication manager.
@@ -1168,11 +1168,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(locNodeId));
 
-            if (locNode != null)
-                send(locNode, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
-
             if (!rmtNodes.isEmpty())
                 send(rmtNodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
+
+            // Will call local listeners in current thread synchronously, so must go the last
+            // to allow remote nodes execute the requested operation in parallel.
+            if (locNode != null)
+                send(locNode, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
         }
     }
 
@@ -1269,6 +1271,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      */
     public void addDisconnectListener(GridDisconnectListener lsnr) {
         disconnectLsnrs.add(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener to remove.
+     */
+    public void removeDisconnectListener(GridDisconnectListener lsnr) {
+        disconnectLsnrs.remove(lsnr);
     }
 
     /**

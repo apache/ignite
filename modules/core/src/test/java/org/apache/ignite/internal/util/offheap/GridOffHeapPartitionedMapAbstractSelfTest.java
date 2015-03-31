@@ -24,7 +24,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -245,7 +245,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     public void testPutRandomKeys() throws Exception {
         map = newMap();
 
-        CacheAffinityFunction aff = new CacheRendezvousAffinityFunction(parts, null);
+        AffinityFunction aff = new RendezvousAffinityFunction(parts, null);
 
         getTestResources().inject(aff);
 

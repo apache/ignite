@@ -224,8 +224,10 @@ object VisorConsole extends App {
      * Setting up mac os specific menu.
      */
     private def customizeUI() {
-        def urlIcon(iconPath: String) = {
-            val dockIconUrl = getClass.getResource(iconPath)
+        def urlIcon(iconName: String) = {
+            val iconPath = "org/apache/ignite/startup/cmdline/" + iconName
+
+            val dockIconUrl = U.detectClassLoader(getClass).getResource(iconPath)
 
             assert(dockIconUrl != null, "Unknown icon path: " + iconPath)
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -62,7 +63,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     private byte[] ownedBytes;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** Subject ID. */
     private UUID subjId;
@@ -114,7 +115,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion lockVer,
-        long topVer,
+        @NotNull AffinityTopologyVersion topVer,
         boolean isInTx,
         boolean isRead,
         TransactionIsolation isolation,
@@ -187,7 +188,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -376,7 +377,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -462,7 +463,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 30:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

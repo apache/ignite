@@ -34,6 +34,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  *
  * @param <A> Task argument type.
  * @param <R> Task result type.
+ * @param <J> Job result type
  */
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
     /** Auto-injected grid instance. */

@@ -23,13 +23,12 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -38,11 +37,11 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException}.
+ * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
-    private static TestStore store = new TestStore();
+    private static TestStore store;
 
     /** */
     private static final int PRIMARY = 0;
@@ -75,7 +74,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setCacheStoreFactory(singletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
         ccfg.setLoadPreviousValue(true);
@@ -85,9 +84,18 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        store = new TestStore();
+
         super.beforeTestsStarted();
 
         lastKey = 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        store = null;
     }
 
     /** {@inheritDoc} */
@@ -284,7 +292,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (putBefore) {
             store.forceFail(false);
@@ -307,7 +315,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
-                grid(i).jcache(null).get(key);
+                grid(i).cache(null).get(key);
         }
 
         store.forceFail(true);
@@ -379,7 +387,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Unexpected value for grid " + i, putBefore ? 1 : null, grid(i).jcache(null).get(key));
+            assertEquals("Unexpected value for grid " + i, putBefore ? 1 : null, grid(i).cache(null).get(key));
     }
 
     /**
@@ -393,12 +401,12 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             info("Put key: " + key);
 
-            grid(0).jcache(null).put(key, 1);
+            grid(0).cache(null).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).jcache(null).get(key);
+            grid(i).cache(null).get(key);
 
         store.forceFail(true);
 
@@ -406,7 +414,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).jcache(null).put(key, 2);
+                grid(0).cache(null).put(key, 2);
 
                 return null;
             }
@@ -426,12 +434,12 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             info("Put key: " + key);
 
-            grid(0).jcache(null).put(key, 1);
+            grid(0).cache(null).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).jcache(null).get(key);
+            grid(i).cache(null).get(key);
 
         store.forceFail(true);
 
@@ -439,7 +447,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         Throwable e = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).<Integer, Integer>jcache(null).invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+                grid(0).<Integer, Integer>cache(null).invoke(key, new EntryProcessor<Integer, Integer, Void>() {
                     @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
                         e.setValue(2);
 
@@ -474,13 +482,13 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             info("Put data: " + m);
 
-            grid(0).jcache(null).putAll(m);
+            grid(0).cache(null).putAll(m);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
-                grid(i).jcache(null).get(key);
+                grid(i).cache(null).get(key);
         }
 
         store.forceFail(true);
@@ -494,7 +502,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).jcache(null).putAll(m);
+                grid(0).cache(null).putAll(m);
 
                 return null;
             }
@@ -515,12 +523,12 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             info("Put key: " + key);
 
-            grid(0).jcache(null).put(key, 1);
+            grid(0).cache(null).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).jcache(null).get(key);
+            grid(i).cache(null).get(key);
 
         store.forceFail(true);
 
@@ -528,7 +536,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).jcache(null).remove(key);
+                grid(0).cache(null).remove(key);
 
                 return null;
             }
@@ -545,7 +553,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @return Key.
      */
     private Integer keyForNode(ClusterNode node, int type) {
-        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL)
             return ++lastKey;
@@ -648,7 +656,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         }
 
         /** {@inheritDoc} */
-        @Override public void txEnd(boolean commit) {
+        @Override public void sessionEnd(boolean commit) {
             if (fail && commit)
                 throw new CacheWriterException("Store exception");
         }

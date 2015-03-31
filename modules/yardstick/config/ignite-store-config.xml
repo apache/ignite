@@ -84,8 +84,6 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
-
                     <property name="typeMetadata">
                         <list>
                             <ref bean="sampleTypeMetadata"/>
@@ -107,8 +105,6 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <property name="swapEnabled" value="false"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
 
                     <property name="typeMetadata">
                         <list>
@@ -134,12 +130,6 @@
         <property name="loadBalancingSpi">
             <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
                 <property name="perTask" value="false"/>
-            </bean>
-        </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="sharedMemoryPort" value="-1"/>
             </bean>
         </property>
 

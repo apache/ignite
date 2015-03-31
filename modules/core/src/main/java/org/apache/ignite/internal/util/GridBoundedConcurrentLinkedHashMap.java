@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Concurrent map with an upper bound. Once map reaches its maximum capacity,

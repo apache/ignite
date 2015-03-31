@@ -221,7 +221,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * @return Exception registry.
      */
     public IgniteExceptionRegistry getExceptionRegistry() {
-        return spiCtx.exceptionRegistry();
+        return IgniteExceptionRegistry.get();
     }
 
     /** {@inheritDoc} */
@@ -687,11 +687,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Override public MessageFactory messageFactory() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteExceptionRegistry exceptionRegistry() {
-            return IgniteExceptionRegistry.DUMMY_REGISTRY;
         }
     }
 }

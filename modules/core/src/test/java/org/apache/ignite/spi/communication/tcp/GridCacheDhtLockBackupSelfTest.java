@@ -114,8 +114,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         // Now, grid1 is always primary node for key 1.
-        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        final IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
+        final IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+        final IgniteCache<Integer, String> cache2 = ignite2.cache(null);
 
         info(">>> Primary: " + ignite1.cluster().localNode().id());
         info(">>>  Backup: " + ignite2.cluster().localNode().id());

@@ -78,9 +78,9 @@
 
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
-
-                    <property name="queryIndexEnabled" value="false"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
+                    </property>
 
                     <!--
                         This shows how to configure number of backups. The below configuration

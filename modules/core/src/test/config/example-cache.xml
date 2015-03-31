@@ -63,7 +63,6 @@
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="1"/>
                 </bean>
 
@@ -72,8 +71,11 @@
                     <property name="name" value="partitioned_tx"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
                     <property name="backups" value="1"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration">
+                        </bean>
+                    </property>
                 </bean>
 
                 <!-- Replicated cache example configuration (Atomic mode). -->
@@ -135,9 +137,6 @@
 
         <!-- Set to FULL_SYNC for examples, default is PRIMARY_SYNC. -->
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-        <!-- Set to true to enable indexing for query examples, default value is false. -->
-        <property name="queryIndexEnabled" value="true"/>
     </bean>
 </beans>
 

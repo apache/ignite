@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.integration.*;
 import java.util.*;
@@ -121,6 +121,31 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
     /** Log. */
     private IgniteLogger log;
+
+    /** Store manager. */
+    private GridCacheStoreManager storeMgr;
+
+    /**
+     * Creates a write-behind cache store for the given store.
+     *
+     * @param storeMgr Store manager.
+     * @param gridName Grid name.
+     * @param cacheName Cache name.
+     * @param log Grid logger.
+     * @param store {@code GridCacheStore} that need to be wrapped.
+     */
+    public GridCacheWriteBehindStore(
+        GridCacheStoreManager storeMgr,
+        String gridName,
+        String cacheName,
+        IgniteLogger log,
+        CacheStore<K, V> store) {
+        this.storeMgr = storeMgr;
+        this.gridName = gridName;
+        this.cacheName = cacheName;
+        this.log = log;
+        this.store = store;
+    }
 
     /**
      * Sets initial capacity for the write cache.
@@ -231,21 +256,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     public int getWriteBehindBufferSize() {
         return writeCache.sizex();
-    }
-
-    /**
-     * Creates a write-behind cache store for the given store and cache name.
-     *
-     * @param gridName Grid name.
-     * @param cacheName Cache name.
-     * @param log Grid logger.
-     * @param store {@code GridCacheStore} that need to be wrapped.
-     */
-    public GridCacheWriteBehindStore(String gridName, String cacheName, IgniteLogger log, CacheStore<K, V> store) {
-        this.gridName = gridName;
-        this.cacheName = cacheName;
-        this.log = log;
-        this.store = store;
     }
 
     /**
@@ -458,7 +468,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 
@@ -556,7 +566,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 if (!batch.isEmpty()) {
-                    applyBatch(batch);
+                    applyBatch(batch, false);
 
                     cacheTotalOverflowCntr.incrementAndGet();
 
@@ -573,8 +583,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * Performs batch operation on underlying store.
      *
      * @param valMap Batch map.
+     * @param initSes {@code True} if need to initialize session.
      */
-    private void applyBatch(Map<K, StatefulValue<K, V>> valMap) {
+    private void applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes) {
         assert valMap.size() <= batchSize;
 
         StoreOperation operation = null;
@@ -593,7 +604,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             batch.put(e.getKey(), e.getValue().entry());
         }
 
-        if (updateStore(operation, batch)) {
+        if (updateStore(operation, batch, initSes)) {
             for (Map.Entry<K, StatefulValue<K, V>> e : valMap.entrySet()) {
                 StatefulValue<K, V> val = e.getValue();
 
@@ -643,27 +654,44 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @param operation Status indicating operation that should be performed.
      * @param vals Key-Value map.
+     * @param initSes {@code True} if need to initialize session.
      * @return {@code true} if value may be deleted from the write cache,
      *         {@code false} otherwise
      */
-    private boolean updateStore(StoreOperation operation, Map<K, Entry<? extends K, ? extends  V>> vals) {
+    private boolean updateStore(StoreOperation operation,
+        Map<K, Entry<? extends K, ? extends  V>> vals,
+        boolean initSes) {
+
+        if (initSes && storeMgr != null)
+            storeMgr.initSession(null);
+
         try {
-            switch (operation) {
-                case PUT:
-                    store.writeAll(vals.values());
+            boolean threwEx = true;
 
-                    break;
+            try {
+                switch (operation) {
+                    case PUT:
+                        store.writeAll(vals.values());
 
-                case RMV:
-                    store.deleteAll(vals.keySet());
+                        break;
 
-                    break;
+                    case RMV:
+                        store.deleteAll(vals.keySet());
 
-                default:
-                    assert false : "Unexpected operation: " + operation;
+                        break;
+
+                    default:
+                        assert false : "Unexpected operation: " + operation;
+                }
+
+                threwEx = false;
+
+                return true;
             }
-
-            return true;
+            finally {
+                if (initSes && storeMgr != null)
+                    storeMgr.endSession(null, threwEx);
+            }
         }
         catch (Exception e) {
             LT.warn(log, e, "Unable to update underlying store: " + store);
@@ -801,14 +829,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 if (batch != null && !batch.isEmpty()) {
-                    applyBatch(batch);
+                    applyBatch(batch, true);
                     batch = null;
                 }
             }
 
             // Process the remainder.
             if (!pending.isEmpty())
-                applyBatch(pending);
+                applyBatch(pending, true);
         }
     }
 

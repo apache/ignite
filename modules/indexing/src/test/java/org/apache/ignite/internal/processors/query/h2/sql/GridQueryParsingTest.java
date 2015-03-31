@@ -36,9 +36,8 @@ import org.h2.engine.*;
 import org.h2.jdbc.*;
 
 import java.io.*;
-import java.util.*;
+import java.sql.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -63,10 +62,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        QueryConfiguration idxCfg = new QueryConfiguration();
-
-        c.setQueryConfiguration(idxCfg);
-
         c.setMarshaller(new OptimizedMarshaller(true));
 
         // Cache.
@@ -74,17 +69,15 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setNearConfiguration(null);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setSwapEnabled(false);
-
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexFixedTyping(true);
-
-        cc.setQueryConfiguration(qcfg);
+        cc.setSqlFunctionClasses(GridQueryParsingTest.class);
+        cc.setIndexedTypes(
+            String.class, Address.class,
+            String.class, Person.class
+        );
 
         c.setCacheConfiguration(cc);
 
@@ -96,17 +89,38 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         ignite = startGrid();
-
-        GridCache cache = ((IgniteKernal)ignite).cache(null);
-
-        cache.putx("testAddr", new Address());
-        cache.putx("testPerson", new Person());
     }
 
     /**
      *
      */
-    public void testAllExampless() throws Exception {
+    public void testAllExamples() throws Exception {
+        checkQuery("select ? limit ? offset ?");
+
+        checkQuery("select cool1()");
+        checkQuery("select cool1() z");
+
+        checkQuery("select b,a from table0('aaa', 100)");
+        checkQuery("select * from table0('aaa', 100)");
+        checkQuery("select * from table0('aaa', 100) t0");
+        checkQuery("select x.a, y.b from table0('aaa', 100) x natural join table0('bbb', 100) y");
+        checkQuery("select * from table0('aaa', 100) x join table0('bbb', 100) y on x.a=y.a and x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a and x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a where x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y where x.b = 'bbb'");
+
+        checkQuery("select avg(old) from Person left join Address on Person.addrId = Address.id " +
+            "where lower(Address.street) = lower(?)");
+
+        checkQuery("select avg(old) from Person join Address on Person.addrId = Address.id " +
+            "where lower(Address.street) = lower(?)");
+
+        checkQuery("select avg(old) from Person left join Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
+
+        checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
+
         checkQuery("select name, date from Person");
         checkQuery("select distinct name, date from Person");
         checkQuery("select * from Person p");
@@ -121,6 +135,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select p.*, street from Person p, Address a");
         checkQuery("select p.name, a.street from Person p, Address a");
         checkQuery("select distinct p.name, a.street from Person p, Address a");
+        checkQuery("select distinct name, street from Person, Address group by old");
         checkQuery("select distinct name, street from Person, Address");
         checkQuery("select p1.name, a2.street from Person p1, Address a1, Person p2, Address a2");
 
@@ -181,7 +196,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select street from Person p, (select a.street from Address a where a.street is not null) ");
         checkQuery("select addr.street from Person p, (select a.street from Address a where a.street is not null) addr");
 
-        checkQuery("select p.name n from PUBLIC.Person p order by p.old + 10");
+        checkQuery("select p.name n from \"\".Person p order by p.old + 10");
     }
 
     /**
@@ -261,12 +276,22 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         System.out.println(normalizeSql(res));
     }
 
+    @QuerySqlFunction
+    public static int cool1() {
+        return 1;
+    }
+
+    @QuerySqlFunction
+    public static ResultSet table0(Connection c, String a, int b) throws SQLException {
+        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+    }
+
     /**
      *
      */
     public static class Person implements Serializable {
         @QuerySqlField(index = true)
-        public Date date = new Date();
+        public Date date = new Date(System.currentTimeMillis());
 
         @QuerySqlField(index = true)
         public String name = "Ivan";

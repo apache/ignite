@@ -113,7 +113,7 @@ public class HadoopSetup {
         if (!hadoopDir.canRead())
             exit("Hadoop installation folder can not be read. Please check permissions.", null);
 
-        File hadoopCommonDir;
+        final File hadoopCommonDir;
 
         String hadoopCommonHome = System.getenv("HADOOP_COMMON_HOME");
 
@@ -129,9 +129,9 @@ public class HadoopSetup {
         }
 
         if (!hadoopCommonDir.canRead())
-            exit("Failed to read Hadoop common dir in '" + hadoopCommonHome + "'.", null);
+            exit("Failed to read Hadoop common dir '" + hadoopCommonDir + "'.", null);
 
-        File hadoopCommonLibDir = new File(hadoopCommonDir, "lib");
+        final File hadoopCommonLibDir = new File(hadoopCommonDir, "lib");
 
         if (!hadoopCommonLibDir.canRead())
             exit("Failed to read Hadoop 'lib' folder in '" + hadoopCommonLibDir.getPath() + "'.", null);
@@ -139,7 +139,7 @@ public class HadoopSetup {
         if (U.isWindows()) {
             checkJavaPathSpaces();
 
-            File hadoopBinDir = new File(hadoopDir, "bin");
+            final File hadoopBinDir = new File(hadoopDir, "bin");
 
             if (!hadoopBinDir.canRead())
                 exit("Failed to read subdirectory 'bin' in HADOOP_HOME.", null);

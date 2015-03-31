@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -343,7 +342,7 @@ public abstract class HibernateAccessStrategyAdapter {
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
+            GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
             assert cache != null;
 
