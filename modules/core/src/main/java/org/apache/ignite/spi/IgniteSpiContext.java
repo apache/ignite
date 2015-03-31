@@ -346,4 +346,9 @@ public interface IgniteSpiContext {
      * @return Message factory.
      */
     public MessageFactory messageFactory();
+
+    /**
+     * @return {@code True} if node started shutdown sequence.
+     */
+    public boolean isStopping();
 }

@@ -64,6 +64,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param allowOverwrite Allow overwrite flag for streamer.
      * @throws Exception If failed.
      */
     public void checkStopStartCacheWithDataLoader(final boolean allowOverwrite) throws Exception {
@@ -77,8 +78,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             /** {@inheritDoc} */
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 try (IgniteDataStreamer<Integer, Integer> str = ignite(0).dataStreamer(null)) {
                     str.allowOverwrite(allowOverwrite);
 
@@ -106,15 +106,18 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        Thread.sleep(500);
+        try {
+            Thread.sleep(500);
 
-        ignite(0).destroyCache(null);
+            ignite(0).destroyCache(null);
 
-        Thread.sleep(500);
+            Thread.sleep(500);
 
-        ignite(0).createCache(ccfg);
-
-        stop.set(true);
+            ignite(0).createCache(ccfg);
+        }
+        finally {
+            stop.set(true);
+        }
 
         fut.get();
 

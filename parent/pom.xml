@@ -30,6 +30,7 @@
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
         <version>16</version>
+        <relativePath></relativePath>
     </parent>
 
     <properties>
@@ -508,6 +509,25 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -625,25 +645,6 @@
             <build>
                 <plugins>
                     <plugin>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-libs</id>
-                                <phase>test-compile</phase>
-                                <goals>
-                                    <goal>copy-dependencies</goal>
-                                </goals>
-                                <configuration>
-                                    <excludeGroupIds>org.apache.ignite</excludeGroupIds>
-                                    <outputDirectory>target/libs</outputDirectory>
-                                    <includeScope>runtime</includeScope>
-                                    <excludeTransitive>true</excludeTransitive>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <executions>
@@ -655,7 +656,7 @@
                                 <phase>package</phase>
                                 <configuration>
                                     <stylesheetfile>
-                                        ${project.basedir}/${parent.relativePath}/../assembly/docfiles/javadoc.css
+                                        ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/javadoc.css
                                     </stylesheetfile>
                                 </configuration>
                             </execution>

@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -582,7 +581,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 syncMode,
                 op,
                 retval,
-                op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 expiryPlc,
                 invokeArgs,
                 filter,
@@ -705,7 +703,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             syncMode,
                             op,
                             retval,
-                            op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             expiryPlc,
                             invokeArgs,
                             filter,

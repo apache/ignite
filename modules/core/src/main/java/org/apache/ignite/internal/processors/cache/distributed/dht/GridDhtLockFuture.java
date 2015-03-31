@@ -830,7 +830,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             GridDhtCacheEntry e = it.next();
 
                             // Must unswap entry so that isNewLocked returns correct value.
-                            e.unswap(true, false);
+                            e.unswap(false);
 
                             boolean needVal = false;
 

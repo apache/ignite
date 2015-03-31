@@ -138,6 +138,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public boolean skipStore() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.skipStore();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheQueries<K, V> queries() {
         return qry;
     }
@@ -285,49 +297,20 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<CacheFlag> flags() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.flags();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntryPredicate predicate() {
-        return delegate.predicate();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         return delegate.forSubjectId(subjId);
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> projection(
-        Class<? super K1> keyType,
-        Class<? super V1> valType
-    ) {
-        return delegate.projection(keyType, valType);
-    }
+    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
-    /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> projection(
-        @Nullable CacheEntryPredicate filter) {
-        return delegate.projection(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> flagsOn(@Nullable CacheFlag[] flags) {
-        return delegate.flagsOn(flags);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> flagsOff(@Nullable CacheFlag[] flags) {
-        return delegate.flagsOff(flags);
+        try {
+            return delegate.setSkipStore(skipStore);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */

@@ -946,8 +946,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
-            Class<V> valCls) {
+        @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache() {
             return null;
         }
 
