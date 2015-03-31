@@ -66,6 +66,9 @@ public class GridCacheEntryInfo implements Message {
     @GridDirectTransient
     private boolean deleted;
 
+    /** For compatibility test. */
+    private boolean testBool = true;
+
     /**
      * @return Cache ID.
      */
@@ -229,18 +232,24 @@ public class GridCacheEntryInfo implements Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLong("ttl", ttl))
+                if (!writer.writeBoolean("testBool", testBool))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeLong("ttl", ttl))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -292,7 +301,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 4:
-                ttl = reader.readLong("ttl");
+                testBool = reader.readBoolean("testBool");
 
                 if (!reader.isLastRead())
                     return false;
@@ -300,7 +309,7 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 5:
-                val = reader.readMessage("val");
+                ttl = reader.readLong("ttl");
 
                 if (!reader.isLastRead())
                     return false;
@@ -308,6 +317,14 @@ public class GridCacheEntryInfo implements Message {
                 reader.incrementState();
 
             case 6:
+                val = reader.readMessage("val");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
@@ -327,7 +344,7 @@ public class GridCacheEntryInfo implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /**
