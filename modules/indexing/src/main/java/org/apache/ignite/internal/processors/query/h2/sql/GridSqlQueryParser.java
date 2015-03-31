@@ -22,6 +22,7 @@ import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
 import org.h2.expression.*;
+import org.h2.expression.Parameter;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.table.*;
@@ -154,6 +155,9 @@ public class GridSqlQueryParser {
     private static final Getter<JdbcPreparedStatement,Command> COMMAND = getter(JdbcPreparedStatement.class, "command");
 
     /** */
+    private static final Getter<SelectUnion, SortOrder> UNION_SORT = getter(SelectUnion.class, "sort");
+
+    /** */
     private static volatile Getter<Command,Prepared> prepared;
 
     /** */
@@ -171,14 +175,14 @@ public class GridSqlQueryParser {
         if (p == null) {
             Class<? extends Command> cls = cmd.getClass();
 
-            assert cls.getSimpleName().equals("CommandContainer");
+            assert "CommandContainer".equals(cls.getSimpleName());
 
             prepared = p = getter(cls, "prepared");
         }
 
-        Prepared select = p.get(cmd);
+        Prepared statement = p.get(cmd);
 
-        return new GridSqlQueryParser().parse((Select)select);
+        return new GridSqlQueryParser().parse((Query)statement);
     }
 
     /**
@@ -199,9 +203,8 @@ public class GridSqlQueryParser {
 
                 res = new GridSqlSubquery(parse((Select)qry));
             }
-            else if (tbl instanceof FunctionTable) {
+            else if (tbl instanceof FunctionTable)
                 res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl));
-            }
             else if (tbl instanceof RangeTable) {
                 res = new GridSqlFunction(GridSqlFunctionType.SYSTEM_RANGE);
 
@@ -225,13 +228,13 @@ public class GridSqlQueryParser {
     /**
      * @param select Select.
      */
-    public GridSqlQuery parse(Select select) {
-        GridSqlQuery res = (GridSqlQuery)h2ObjToGridObj.get(select);
+    public GridSqlSelect parse(Select select) {
+        GridSqlSelect res = (GridSqlSelect)h2ObjToGridObj.get(select);
 
         if (res != null)
             return res;
 
-        res = new GridSqlQuery();
+        res = new GridSqlSelect();
 
         h2ObjToGridObj.put(select, res);
 
@@ -309,6 +312,45 @@ public class GridSqlQueryParser {
 
         res.limit(parseExpression(select.getLimit()));
         res.offset(parseExpression(select.getOffset()));
+
+        return res;
+    }
+
+    /**
+     * @param qry Select.
+     */
+    public GridSqlQuery parse(Query qry) {
+        if (qry instanceof Select)
+            return parse((Select)qry);
+
+        if (qry instanceof SelectUnion)
+            return parse((SelectUnion)qry);
+
+        throw new UnsupportedOperationException("Unknown query type: " + qry);
+    }
+
+    /**
+     * @param union Select.
+     */
+    public GridSqlUnion parse(SelectUnion union) {
+        GridSqlUnion res = (GridSqlUnion)h2ObjToGridObj.get(union);
+
+        if (res != null)
+            return res;
+
+        res = new GridSqlUnion();
+
+        res.right(parse(union.getRight()));
+        res.left(parse(union.getLeft()));
+
+        res.unionType(union.getUnionType());
+
+        res.limit(parseExpression(union.getLimit()));
+        res.offset(parseExpression(union.getOffset()));
+
+        assert UNION_SORT.get(union) == null; // todo IGNITE-624
+
+        h2ObjToGridObj.put(union, res);
 
         return res;
     }
@@ -495,8 +537,8 @@ public class GridSqlQueryParser {
             return res;
         }
 
-        if (expression instanceof org.h2.expression.Parameter)
-            return new GridSqlParameter(((org.h2.expression.Parameter)expression).getIndex());
+        if (expression instanceof Parameter)
+            return new GridSqlParameter(((Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
             GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression),

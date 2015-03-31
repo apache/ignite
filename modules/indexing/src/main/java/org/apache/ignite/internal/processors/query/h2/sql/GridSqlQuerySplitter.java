@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.h2.jdbc.*;
 import org.h2.value.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -66,14 +67,19 @@ public class GridSqlQuerySplitter {
 
         GridSqlQuery srcQry = GridSqlQueryParser.parse(stmt);
 
+        if (!(srcQry instanceof GridSqlSelect))
+            throw new UnsupportedOperationException(); // todo IGNITE-624 Support UNION,
+
+        GridSqlSelect srcSelect = (GridSqlSelect)srcQry;
+
         final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
-        GridSqlQuery mapQry = srcQry.clone();
-        GridSqlQuery rdcQry = new GridSqlQuery().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
+        GridSqlSelect mapQry = srcSelect.clone();
+        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
-        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.select().size()];
+        List<GridSqlElement> mapExps = new ArrayList<>(srcSelect.allExpressions());
+        GridSqlElement[] rdcExps = new GridSqlElement[srcSelect.select().size()];
 
         Set<String> colNames = new HashSet<>();
 
@@ -90,43 +96,43 @@ public class GridSqlQuerySplitter {
             rdcQry.addSelectExpression(rdcExp);
 
         // -- GROUP BY
-        if (!srcQry.groups().isEmpty()) {
+        if (!srcSelect.groups().isEmpty()) {
             mapQry.clearGroups();
 
-            for (int col : srcQry.groupColumns())
+            for (int col : srcSelect.groupColumns())
                 mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
 
-            for (int col : srcQry.groupColumns())
+            for (int col : srcSelect.groupColumns())
                 rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
         }
 
         // -- HAVING
-        if (srcQry.having() != null) {
+        if (srcSelect.having() != null) {
             // TODO Find aggregate functions in HAVING clause.
-            rdcQry.whereAnd(column(columnName(srcQry.havingColumn())));
+            rdcQry.whereAnd(column(columnName(srcSelect.havingColumn())));
 
             mapQry.having(null);
         }
 
         // -- ORDER BY
-        if (!srcQry.sort().isEmpty()) {
-            for (GridSqlSortColumn sortCol : srcQry.sort().values())
+        if (!srcSelect.sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : srcSelect.sort().values())
                 rdcQry.addSort(column(((GridSqlAlias)mapExps.get(sortCol.column())).alias()), sortCol);
         }
 
         // -- LIMIT
-        if (srcQry.limit() != null)
-            rdcQry.limit(srcQry.limit());
+        if (srcSelect.limit() != null)
+            rdcQry.limit(srcSelect.limit());
 
         // -- OFFSET
-        if (srcQry.offset() != null) {
+        if (srcSelect.offset() != null) {
             mapQry.offset(null);
 
-            rdcQry.offset(srcQry.offset());
+            rdcQry.offset(srcSelect.offset());
         }
 
         // -- DISTINCT
-        if (srcQry.distinct()) {
+        if (srcSelect.distinct()) {
             mapQry.distinct(false);
             rdcQry.distinct(true);
         }
@@ -148,6 +154,19 @@ public class GridSqlQuerySplitter {
      * @return Extracted parameters list.
      */
     private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target) {
+        if (qry instanceof GridSqlSelect)
+            return findParams((GridSqlSelect)qry, params, target);
+
+        throw new UnsupportedOperationException(); // todo IGNITE-624
+    }
+
+    /**
+     * @param qry Select.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @return Extracted parameters list.
+     */
+    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
         if (params.length == 0)
             return target;
 
@@ -176,7 +195,7 @@ public class GridSqlQuerySplitter {
      * @param params Parameters.
      * @param target Extracted parameters.
      */
-    private static void findParams(GridSqlElement el, Object[] params, ArrayList<Object> target) {
+    private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target) {
         if (el == null)
             return;
 
