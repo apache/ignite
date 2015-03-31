@@ -4091,7 +4091,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Distributed ignite cache iterator.
      */
     public Iterator<Cache.Entry<K, V>> igniteIterator() {
-        if (!ctx.isSwapOrOffheapEnabled() && ctx.kernalContext().discovery().size() == 1)
+        GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
+
+        if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy();
 
         final GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
@@ -4371,7 +4373,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
-                !skipStore(),
+                !ctx.skipStore(),
                 0,
                 /** group lock keys */null,
                 /** partition lock */false

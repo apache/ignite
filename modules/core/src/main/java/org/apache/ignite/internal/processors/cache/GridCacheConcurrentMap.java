@@ -1744,12 +1744,7 @@ public class GridCacheConcurrentMap {
             curVal = null;
 
             try {
-                CacheProjection prj = ctx.projectionPerCall();
-
-                if (prj != null)
-                    prj.removex(e.key());
-                else
-                    ((IgniteKernal)ctx.grid()).getCache(ctx.name()).removex(e.key());
+                ((IgniteKernal)ctx.grid()).getCache(ctx.name()).remove(e.key());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -1805,9 +1800,6 @@ public class GridCacheConcurrentMap {
 
         /** */
         private GridCacheProjectionImpl prjPerCall;
-
-        /** */
-        private boolean clone;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -2026,16 +2018,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public void remove() {
-            GridCacheProjectionImpl<K, V> oldPrj = ctx.projectionPerCall();
-
-            ctx.projectionPerCall(prjPerCall);
-
-            try {
-                it.remove();
-            }
-            finally {
-                ctx.projectionPerCall(oldPrj);
-            }
+            it.remove();
         }
 
         /** {@inheritDoc} */
