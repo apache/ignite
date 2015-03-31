@@ -4155,6 +4155,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (!ctx.isSwapOrOffheapEnabled() && ctx.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy();
 
+        final GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
         CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
             .keepAll(false)
             .execute();
@@ -4165,7 +4167,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
-                ctx.gate().enter();
+                GridCacheProjectionImpl<K, V>  prev = ctx.gate().enter(prj);
 
                 try {
                     removex(item.getKey());
@@ -4174,7 +4176,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     throw CU.convertToCacheException(e);
                 }
                 finally {
-                    ctx.gate().leave();
+                    ctx.gate().leave(prev);
                 }
             }
         });

@@ -4310,19 +4310,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Cache.Entry<String, Integer> entry = it.next();
 
-        String removedKey =  entry.getKey();
+        String rmvKey =  entry.getKey();
 
-        assertTrue(map.containsKey(removedKey));
+        assertTrue(map.containsKey(rmvKey));
 
         it.remove();
 
-        assertNull(cacheSkipStore.get(removedKey));
+        assertNull(cacheSkipStore.get(rmvKey));
 
-        assertTrue(map.containsKey(removedKey));
+        assertTrue(map.containsKey(rmvKey));
     }
 
     /**
-     *
+     * @return Cache start mode.
      */
     protected CacheStartMode cacheStartType() {
         String mode = System.getProperty("cache.start.mode");

@@ -71,21 +71,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
     /**
      * @throws Exception If failed.
-     */
-    public void testTransformAtomicPrimaryNoBackups() throws Exception {
-        checkTransform(ATOMIC, PRIMARY, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAtomicClockNoBackups() throws Exception {
-        checkTransform(ATOMIC, CLOCK, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     * TODO gg-8273 enable when fixed
+     * TODO IGNITE-581 enable when fixed
      */
     public void _testTransformTransactionalNoBackups() throws Exception {
         checkTransform(TRANSACTIONAL, PRIMARY, 0);
@@ -93,7 +79,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
     /**
      * @throws Exception If failed.
-     * TODO gg-8273 enable when fixed
+     * TODO IGNITE-581 enable when fixed
      */
     public void _testTransformTransactionalOneBackup() throws Exception {
         checkTransform(TRANSACTIONAL, PRIMARY, 1);
