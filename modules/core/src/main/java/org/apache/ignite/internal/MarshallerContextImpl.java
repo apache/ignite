@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.event.*;
 import java.io.*;
+import java.nio.channels.*;
 import java.util.concurrent.*;
 
 /**
@@ -124,8 +125,18 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         if (clsName == null) {
             File file = new File(workDir, id + ".classname");
 
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                clsName = reader.readLine();
+            try (
+                FileInputStream in = new FileInputStream(file);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in))
+            ) {
+                FileLock lock = in.getChannel().lock(0, Long.MAX_VALUE, true);
+
+                try {
+                    clsName = reader.readLine();
+                }
+                finally {
+                    lock.release();
+                }
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
@@ -162,10 +173,20 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
                 File file = new File(workDir, evt.getKey() + ".classname");
 
-                try (Writer writer = new FileWriter(file)) {
-                    writer.write(evt.getValue());
+                try (
+                    FileOutputStream out = new FileOutputStream(file);
+                    Writer writer = new OutputStreamWriter(out)
+                ) {
+                    FileLock lock  = out.getChannel().lock();
 
-                    writer.flush();
+                    try {
+                        writer.write(evt.getValue());
+
+                        writer.flush();
+                    }
+                    finally {
+                        lock.release();
+                    }
                 }
                 catch (IOException e) {
                     U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
