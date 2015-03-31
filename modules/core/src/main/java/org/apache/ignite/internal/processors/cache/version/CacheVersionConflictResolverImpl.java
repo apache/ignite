@@ -28,7 +28,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
-        boolean atomicVerComparator) throws IgniteCheckedException {
+        boolean atomicVerComparator
+    ) throws IgniteCheckedException {
         GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(oldEntry, newEntry);
 
         resolve0(ctx, oldEntry, newEntry, atomicVerComparator);
@@ -49,7 +50,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionConflictContext<K, V> ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
-        boolean atomicVerComparator) throws IgniteCheckedException {
+        boolean atomicVerComparator
+    ) throws IgniteCheckedException {
         if (newEntry.dataCenterId() != oldEntry.dataCenterId())
             ctx.useNew();
         else {

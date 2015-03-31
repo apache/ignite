@@ -35,5 +35,6 @@ public interface CacheVersionConflictResolver {
     public <K, V> GridCacheVersionConflictContext<K, V> resolve(
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
-        boolean atomicVerComparator) throws IgniteCheckedException;
+        boolean atomicVerComparator
+    ) throws IgniteCheckedException;
 }
