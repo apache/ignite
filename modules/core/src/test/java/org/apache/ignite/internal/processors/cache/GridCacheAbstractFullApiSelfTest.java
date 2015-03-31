@@ -4291,6 +4291,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertNotNull(cache.get(key));
         }
+
+        String newKey = "New key";
+
+        assertFalse(map.containsKey(newKey));
+
+        cacheSkipStore.put(newKey, 1);
+
+        assertFalse(map.containsKey(newKey));
+
+        cache.put(newKey, 1);
+
+        assertTrue(map.containsKey(newKey));
+
+        Iterator<Cache.Entry<String, Integer>> it = cacheSkipStore.iterator();
+
+        assertTrue(it.hasNext());
+
+        Cache.Entry<String, Integer> entry = it.next();
+
+        String removedKey =  entry.getKey();
+
+        assertTrue(map.containsKey(removedKey));
+
+        it.remove();
+
+        assertNull(cacheSkipStore.get(removedKey));
+
+        assertTrue(map.containsKey(removedKey));
     }
 
     /**
