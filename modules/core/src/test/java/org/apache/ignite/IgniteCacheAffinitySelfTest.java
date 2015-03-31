@@ -96,7 +96,6 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
         startGrid(gridCount() - 1);
         startGrid(gridCount());
-        awaitPartitionMapExchange();
 
         GRID_CNT += 1;
 

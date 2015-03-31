@@ -44,6 +44,7 @@ public class ClientCacheFlagsCodecTest extends TestCase {
             assertTrue(bits != 0);
 
             boolean out = GridCacheCommandHandler.parseCacheFlags(bits);
+
             assertEquals(out, true);
         }
     }

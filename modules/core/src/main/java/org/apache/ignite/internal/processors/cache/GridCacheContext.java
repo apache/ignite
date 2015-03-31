@@ -1225,7 +1225,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code true} if the skip store is set.
+     * @return {@code true} if the skip store flag is set.
      */
     public boolean skipStore() {
         if (nearContext())

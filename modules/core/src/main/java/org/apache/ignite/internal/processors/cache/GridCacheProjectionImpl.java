@@ -89,7 +89,10 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param parent Parent projection.
      * @param cctx Cache context.
      * @param entryFilter Entry filter.
-     * @param skipStore Skip store.
+     * @param skipStore Skip store flag.
+     * @param subjId Subject ID.
+     * @param keepPortable Keep portable flag.
+     * @param expiryPlc Expiry policy.
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     public GridCacheProjectionImpl(

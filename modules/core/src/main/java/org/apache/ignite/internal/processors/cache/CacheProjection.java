@@ -241,8 +241,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public CacheProjection<K, V> projection(@Nullable CacheEntryPredicate filter);
 
     /**
-     * @param skipStore Skip store.
-     * @return New projection based on this one, but with skip store.
+     * @param skipStore Skip store flag.
+     * @return New projection based on this one, but with skip store flag enabled.
      */
     public CacheProjection<K, V> setSkipStore(boolean skipStore);
 
