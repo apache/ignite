@@ -1751,7 +1751,7 @@ public class IgnitionEx {
             }
 
             // Always add marshaller and utility caches.
-            copies[0] = marshallerSystemCache();
+            copies[0] = marshallerSystemCache(clientDisco);
             copies[1] = utilitySystemCache(clientDisco);
 
             cfg.setCacheConfiguration(copies);
@@ -1899,20 +1899,24 @@ public class IgnitionEx {
          *
          * @return Marshaller system cache configuration.
          */
-        private static CacheConfiguration marshallerSystemCache() {
-            CacheConfiguration cache = new CacheConfiguration();
+        private static CacheConfiguration marshallerSystemCache(boolean client) {
+            if (!client) {
+                CacheConfiguration cache = new CacheConfiguration();
 
-            cache.setName(CU.MARSH_CACHE_NAME);
-            cache.setCacheMode(REPLICATED);
-            cache.setAtomicityMode(ATOMIC);
-            cache.setSwapEnabled(false);
-            cache.setRebalanceMode(SYNC);
-            cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-            cache.setStartSize(300);
+                cache.setName(CU.MARSH_CACHE_NAME);
+                cache.setCacheMode(REPLICATED);
+                cache.setAtomicityMode(ATOMIC);
+                cache.setSwapEnabled(false);
+                cache.setRebalanceMode(SYNC);
+                cache.setWriteSynchronizationMode(FULL_SYNC);
+                cache.setAffinity(new RendezvousAffinityFunction(false, 20));
+                cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+                cache.setStartSize(300);
 
-            return cache;
+                return cache;
+            }
+
+            return null;
         }
 
         /**
