@@ -37,7 +37,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
@@ -104,7 +103,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
