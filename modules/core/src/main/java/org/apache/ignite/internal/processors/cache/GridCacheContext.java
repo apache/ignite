@@ -247,7 +247,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr,
-        CacheConflictManager<K, V> rslvrMgr
+        CacheConflictResolverManager<K, V> rslvrMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;

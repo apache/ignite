@@ -1039,7 +1039,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ttlMgr,
             drMgr,
             jta,
-            rslvrMgr);
+            rslvrMgr
+        );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1164,7 +1165,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ttlMgr,
                 drMgr,
                 jta,
-                rslvrMgr);
+                rslvrMgr
+            );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
