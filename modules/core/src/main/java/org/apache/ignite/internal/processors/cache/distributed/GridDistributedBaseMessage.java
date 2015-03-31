@@ -79,6 +79,9 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     @GridDirectTransient
     private int cnt;
 
+    @GridDirectCollection(Integer.class)
+    public Collection<Integer> testCollection = new HashSet<>(Arrays.asList(1, 2, 3));
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -281,6 +284,12 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
                 writer.incrementState();
 
             case 7:
+                if (!writer.writeCollection("testCollection", testCollection, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeMessage("ver", ver))
                     return false;
 
@@ -335,6 +344,14 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
                 reader.incrementState();
 
             case 7:
+                testCollection = reader.readCollection("testCollection", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 ver = reader.readMessage("ver");
 
                 if (!reader.isLastRead())

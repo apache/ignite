@@ -69,9 +69,6 @@ public abstract class GridCacheMessage implements Message {
     /** Cache ID. */
     protected int cacheId;
 
-    @GridDirectCollection(Integer.class)
-    public Collection<Integer> testCollection = new HashSet<>(Arrays.asList(1, 2, 3));
-
     /**
      * Gets next ID for indexed message ID.
      *
@@ -643,12 +640,6 @@ public abstract class GridCacheMessage implements Message {
 
                 writer.incrementState();
 
-            case 3:
-                if (!writer.writeCollection("testCollection", testCollection, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -680,14 +671,6 @@ public abstract class GridCacheMessage implements Message {
 
             case 2:
                 msgId = reader.readLong("msgId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                testCollection = reader.readCollection("testCollection", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
