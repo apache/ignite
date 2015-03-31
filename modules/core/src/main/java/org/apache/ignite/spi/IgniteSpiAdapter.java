@@ -62,7 +62,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private String name;
 
     /** Grid SPI context. */
-    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null);
+    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null, false);
 
     /** Discovery listener. */
     private GridLocalEventListener paramsLsnr;
@@ -185,7 +185,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         ClusterNode locNode = spiCtx == null ? null : spiCtx.localNode();
 
         // Set dummy no-op context.
-        spiCtx = new GridDummySpiContext(locNode);
+        spiCtx = new GridDummySpiContext(locNode, true);
     }
 
     /**
@@ -523,13 +523,18 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** */
         private final ClusterNode locNode;
 
+        /** */
+        private final boolean stopping;
+
         /**
          * Create temp SPI context.
          *
          * @param locNode Local node.
+         * @param stopping Node stopping flag.
          */
-        GridDummySpiContext(ClusterNode locNode) {
+        GridDummySpiContext(ClusterNode locNode, boolean stopping) {
             this.locNode = locNode;
+            this.stopping = stopping;
         }
 
         /** {@inheritDoc} */
@@ -687,6 +692,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Override public MessageFactory messageFactory() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStopping() {
+            return stopping;
         }
     }
 }

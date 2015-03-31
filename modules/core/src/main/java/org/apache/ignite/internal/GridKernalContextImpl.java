@@ -318,6 +318,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param utilityCachePool Utility cache pool.
+     * @param marshCachePool Marshaller cache pool.
      * @param execSvc Public executor service.
      * @param sysExecSvc System executor service.
      * @param p2pExecSvc P2P executor service.
@@ -386,6 +387,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /**
      * @param comp Manager to add.
+     * @param addToList If {@code true} component is added to components list.
      */
     public void add(GridComponent comp, boolean addToList) {
         assert comp != null;
@@ -494,9 +496,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isStopping() {
-        GridKernalState state = gw.getState();
-
-        return state == GridKernalState.STOPPING || state == GridKernalState.STOPPED;
+        return ((IgniteKernal)grid).isStopping();
     }
 
     /** {@inheritDoc} */

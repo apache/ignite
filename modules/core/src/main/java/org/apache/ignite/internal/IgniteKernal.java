@@ -1671,6 +1671,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * @return {@code True} if node started shutdown sequence.
+     */
+    public boolean isStopping() {
+        return stopGuard.get();
+    }
+
+    /**
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
