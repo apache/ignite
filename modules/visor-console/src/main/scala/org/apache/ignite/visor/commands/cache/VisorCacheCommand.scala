@@ -19,20 +19,22 @@ package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.processors.cache.{GridCacheUtils => CU}
 import org.apache.ignite.internal.util.typedef._
-import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
+import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
+
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.visor.visor._
+import org.apache.ignite.internal.visor.cache._
+import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -238,7 +240,7 @@ class VisorCacheCommand {
                     case Right(n) => n
                 }
 
-                val cacheName = argValue("c", argLst) match {
+                var cacheName = argValue("c", argLst) match {
                     case Some(dfltName) if dfltName == DFLT_CACHE_KEY || dfltName == DFLT_CACHE_NAME =>
                         argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
 
@@ -250,7 +252,10 @@ class VisorCacheCommand {
                 if (Seq("clear", "swap", "scan", "stop").exists(hasArgFlag(_, argLst))) {
                     if (cacheName.isEmpty)
                         askForCache("Select cache from:", node) match {
-                            case Some(name) => argLst = argLst ++ Seq("c" -> name)
+                            case Some(name) =>
+                                argLst = argLst ++ Seq("c" -> name)
+
+                                cacheName = Some(name)
                             case None => break()
                         }
 
@@ -260,8 +265,14 @@ class VisorCacheCommand {
                         VisorCacheSwapCommand().swap(argLst, node)
                     else if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
-                    else if (hasArgFlag("stop", argLst))
-                        VisorCacheStopCommand().scan(argLst, node)
+                    else if (hasArgFlag("stop", argLst)) {
+                        cacheName.foreach(name => {
+                            if (!CU.isSystemCache(name))
+                                VisorCacheStopCommand().scan(argLst, node)
+                            else
+                                warn("Stopping of system cache is not allowed: " + name)
+                        })
+                    }
 
                     break()
                 }
@@ -739,7 +750,7 @@ object VisorCacheCommand {
 
     /** Default cache name to show on screen. */
     private final val DFLT_CACHE_NAME = escapeName(null)
-    
+
     /** Default cache key. */
     protected val DFLT_CACHE_KEY = DFLT_CACHE_NAME + "-" + UUID.randomUUID().toString
 
