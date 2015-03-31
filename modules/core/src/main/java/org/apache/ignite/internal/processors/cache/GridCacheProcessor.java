@@ -2200,17 +2200,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Gets utility cache.
      *
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @return Projection over utility cache.
-     */
-    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
-        return (GridCacheProjectionEx<K, V>)cache(CU.UTILITY_CACHE_NAME).projection(keyCls, valCls);
-    }
-
-    /**
-     * Gets utility cache.
-     *
      * @return Utility cache.
      */
     public <K, V> GridCacheAdapter<K, V> utilityCache() {
