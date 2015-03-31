@@ -154,7 +154,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             concurrency,
             isolation,
             timeout,
-            false,
             true,
             txSize,
             /** group lock keys */null,
