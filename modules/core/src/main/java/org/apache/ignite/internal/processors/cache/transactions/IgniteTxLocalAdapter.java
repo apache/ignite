@@ -3067,17 +3067,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (!cctx.txCompatible(this, activeCacheIds, cacheCtx)) {
                 StringBuilder cacheNames = new StringBuilder();
 
+                int idx = 0;
+
                 for (Integer activeCacheId : activeCacheIds) {
                     cacheNames.append(cctx.cacheContext(activeCacheId).name());
 
-                    cacheNames.append(", ");
+                    if (idx++ < activeCacheIds.size() - 1)
+                        cacheNames.append(", ");
                 }
 
-                cacheNames.setLength(cacheNames.length() - 2);
-
                 throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
-                    "(cache configurations are not compatible) [activeCaches=[" + cacheNames +
-                    "], cacheName=" + cacheCtx.name() + ", txSystem=" + system() +
+                    "(cache configurations are not compatible) [" +
+                    "activeCaches=[" + cacheNames + "]" +
+                    ", cacheName=" + cacheCtx.name() +
+                    ", txSystem=" + system() +
                     ", cacheSystem=" + cacheCtx.system() + ']');
             }
             else

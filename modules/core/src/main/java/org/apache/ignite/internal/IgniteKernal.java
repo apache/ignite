@@ -2417,12 +2417,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
-        Class<V> valCls) {
+    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache() {
         guard();
 
         try {
-            return ctx.cache().utilityCache(keyCls, valCls);
+            return ctx.cache().utilityCache();
         }
         finally {
             unguard();

@@ -56,7 +56,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
 
     /** Queue header view.  */
-    private CacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
+    private GridCache<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
 
     /** Query notifying about queue update. */
     private UUID queueQryId;
@@ -85,7 +85,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         try {
-            queueHdrView = cctx.cache().projection(GridCacheQueueHeaderKey.class, GridCacheQueueHeader.class);
+            queueHdrView = cctx.cache();
 
             initFlag = true;
         }
