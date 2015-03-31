@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.dr.os;
+package org.apache.ignite.internal.processors.cache.dr;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -62,11 +62,6 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
     /** {@inheritDoc} */
     @Override public byte dataCenterId() {
         return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersionAbstractConflictResolver conflictResolver() {
-        return null;
     }
 
     /** {@inheritDoc} */

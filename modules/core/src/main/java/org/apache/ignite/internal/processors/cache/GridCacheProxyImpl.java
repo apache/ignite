@@ -297,27 +297,8 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryPredicate predicate() {
-        return delegate.predicate();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         return delegate.forSubjectId(subjId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> projection(
-        Class<? super K1> keyType,
-        Class<? super V1> valType
-    ) {
-        return delegate.projection(keyType, valType);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> projection(
-        @Nullable CacheEntryPredicate filter) {
-        return delegate.projection(filter);
     }
 
     /** {@inheritDoc} */
