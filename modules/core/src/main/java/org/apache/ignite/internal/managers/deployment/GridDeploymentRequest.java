@@ -55,8 +55,6 @@ public class GridDeploymentRequest implements Message {
     @GridDirectCollection(UUID.class)
     private Collection<UUID> nodeIds;
 
-    private GridDeploymentTestMessage testMessage;
-
     /**
      * No-op constructor to support {@link Externalizable} interface.
      * This constructor is not meant to be used for other purposes.
@@ -199,12 +197,6 @@ public class GridDeploymentRequest implements Message {
 
                 writer.incrementState();
 
-            case 5:
-                if (!writer.writeMessage("testMessage", testMessage))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -258,14 +250,6 @@ public class GridDeploymentRequest implements Message {
 
                 reader.incrementState();
 
-            case 5:
-                testMessage = reader.readMessage("testMessage");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return true;
@@ -278,7 +262,7 @@ public class GridDeploymentRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 5;
     }
 
     /** {@inheritDoc} */

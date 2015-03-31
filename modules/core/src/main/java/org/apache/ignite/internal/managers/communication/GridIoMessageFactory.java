@@ -595,11 +595,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 112:
-                msg = new GridDeploymentTestMessage();
-
-                break;
-
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {
