@@ -397,22 +397,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             final Class<?> valCls = val.getClass();
 
-            TypeId id;
+            int typeId = ctx.cacheObjects().typeId(val);
 
             if (ctx.cacheObjects().isPortableObject(val)) {
-                int typeId = ctx.cacheObjects().typeId(val);
-
                 String typeName = portableName(typeId);
 
                 if (typeName == null)
                     return;
-
-                id = new TypeId(space, typeId);
             }
-            else
-                id = new TypeId(space, valCls);
 
-            TypeDescriptor desc = types.get(id);
+            TypeDescriptor desc = types.get(new TypeId(space, typeId));
 
             if (desc == null || !desc.registered())
                 return;
