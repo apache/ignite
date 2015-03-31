@@ -26,7 +26,6 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -42,14 +41,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Internal projection.
      */
     GridCacheProjectionEx<K, V> forSubjectId(UUID subjId);
-
-    /**
-     * Gets predicate on which this projection is based on or {@code null}
-     * if predicate is not defined.
-     *
-     * @return Filter on which this projection is based on.
-     */
-    @Nullable public CacheEntryPredicate predicate();
 
     /**
      * Internal method that is called from {@link CacheEntryImpl}.

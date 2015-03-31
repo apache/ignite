@@ -379,15 +379,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryPredicate predicate() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
             ctx,
-            null,
             false,
             subjId,
             false,
@@ -409,7 +403,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
             ctx,
             null,
-            skipStore,
+            false,
             null,
             false,
             null);
@@ -456,58 +450,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             null,
             false,
             plc);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> CacheProjection<K1, V1> projection(
-        Class<? super K1> keyType,
-        Class<? super V1> valType
-    ) {
-        if (ctx.deploymentEnabled()) {
-            try {
-                ctx.deploy().registerClasses(keyType, valType);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>((CacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)ctx,
-            CU.typeFilter0(keyType, valType),
-            false,
-            /*clientId*/null,
-            false,
-            null);
-
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> projection(CacheEntryPredicate filter) {
-        if (filter == null)
-            return this;
-
-        if (ctx.deploymentEnabled()) {
-            try {
-                ctx.deploy().registerClasses(filter);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(
-            this,
-            ctx,
-            filter,
-            false,
-            null,
-            false,
-            null);
-
-        return new GridCacheProxyImpl<>(ctx, prj, prj);
     }
 
     /** {@inheritDoc} */
