@@ -75,6 +75,13 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
+        cfg.setCacheConfiguration(cacheConfiguration());
+        cfg.setMarshaller(new OptimizedMarshaller(false));
+
+        return cfg;
+    }
+
+    protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -86,10 +93,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
 
-        cfg.setCacheConfiguration(cacheCfg);
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
+        return cacheCfg;
     }
 
     /**

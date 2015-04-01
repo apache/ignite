@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -65,10 +66,10 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
@@ -1015,8 +1016,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-        GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
-        CacheConflictResolutionManager rslvrMgr = ctx.createComponent(CacheConflictResolutionManager.class);
+        CachePluginManager pluginMgr = new CachePluginManager(ctx, cfg);
+        
+        pluginMgr.validate();
+
+        CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
+        GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
 
         GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -1041,7 +1046,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ttlMgr,
             drMgr,
             jta,
-            rslvrMgr
+            rslvrMgr,
+            pluginMgr
         );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -1144,7 +1150,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             swapMgr = new GridCacheSwapManager(true);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
-            drMgr = ctx.createComponent(GridCacheDrManager.class);
+            drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
+            pluginMgr = new CachePluginManager(ctx, cfg);
 
             cacheCtx = new GridCacheContext(
                 ctx,
@@ -1167,7 +1174,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ttlMgr,
                 drMgr,
                 jta,
-                rslvrMgr
+                rslvrMgr,
+                pluginMgr
             );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -2018,6 +2026,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     true);
             }
         }
+        
+        // TODO 10006: implement remote configs validation.
+        // Check plugin configurations.
+//        for (CachePluginConfiguration locPluginCcfg : locCfg.getPluginConfigurations()) {
+//            CachePluginProvider provider = ...;
+//
+//            provider.validateRemote(locCfg, locPluginCcfg, rmtCfg, rmtNode);
+//        }
     }
 
     /**
@@ -2037,22 +2053,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
         }
-    }
-
-    /**
-     * Checks if store check should be skipped for given nodes.
-     *
-     * @param cfg Cache configuration.
-     * @param rmtNode Remote node.
-     * @param locNode Local node.
-     * @return {@code True} if store check should be skipped.
-     */
-    private boolean checkStoreConsistency(CacheConfiguration cfg, ClusterNode rmtNode, ClusterNode locNode) {
-        return
-            // In atomic mode skip check if either local or remote node is client.
-            cfg.getAtomicityMode() == ATOMIC &&
-                (!ctx.discovery().cacheAffinityNode(rmtNode, cfg.getName()) ||
-                 !ctx.discovery().cacheAffinityNode(locNode, cfg.getName()));
     }
 
     /**
