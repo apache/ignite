@@ -158,7 +158,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
             throws CacheEntryListenerException {
             for (CacheEntryEvent<? extends Integer, ? extends String> evt : events) {
-                assert evt.getOldValue() == null;
+                assert evt.getOldValue() == null : "Received non-null old value for system marshaller cache: " + evt;
 
                 File file = new File(workDir, evt.getKey() + ".classname");
 
