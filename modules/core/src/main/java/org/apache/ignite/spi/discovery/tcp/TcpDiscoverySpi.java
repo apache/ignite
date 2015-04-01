@@ -4695,7 +4695,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     // Ping.
                     if (msg instanceof TcpDiscoveryPingRequest) {
-                        if (!getSpiContext().isStopping()) {
+                        if (ctxInitLatch.getCount() > 0 || !getSpiContext().isStopping()) {
                             TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
                             TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
