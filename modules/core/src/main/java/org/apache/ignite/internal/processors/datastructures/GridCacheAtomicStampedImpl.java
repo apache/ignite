@@ -264,7 +264,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
                     stmp.set(val, stamp);
 
-                    atomicView.put(key, stmp);
+                    atomicView.putx(key, stmp);
 
                     tx.commit();
 

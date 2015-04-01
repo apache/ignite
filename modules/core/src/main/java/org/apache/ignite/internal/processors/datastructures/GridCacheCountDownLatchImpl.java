@@ -382,7 +382,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
                 latchVal.set(retVal);
 
-                latchView.put(key, latchVal);
+                latchView.putx(key, latchVal);
 
                 tx.commit();
 

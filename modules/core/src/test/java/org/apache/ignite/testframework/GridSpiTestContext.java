@@ -24,7 +24,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -108,8 +107,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override
-    public ClusterNode node(UUID nodeId) {
+    @Nullable @Override public ClusterNode node(UUID nodeId) {
         if (locNode != null && locNode.id().equals(nodeId))
             return locNode;
 
@@ -240,9 +238,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
     public void updateAllMetrics() {
         notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
 
-        for (ClusterNode node : rmtNodes) {
+        for (ClusterNode node : rmtNodes)
             notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
-        }
     }
 
     /**
@@ -290,9 +287,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
      */
     @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
-        for (GridMessageListener lsnr : msgLsnrs) {
+        for (GridMessageListener lsnr : msgLsnrs)
             lsnr.onMessage(node.id(), msg);
-        }
     }
 
     /** {@inheritDoc} */
@@ -333,9 +329,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
         assert typeSet != null;
 
         if (types != null) {
-            for (int type : types) {
+            for (int type : types)
                 typeSet.add(type);
-            }
         }
     }
 
@@ -517,6 +512,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
             factory = new GridIoMessageFactory(null);
 
         return factory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStopping() {
+        return false;
     }
 
     /**

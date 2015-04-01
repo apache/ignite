@@ -38,7 +38,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -117,17 +116,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             assert atomicsCache != null;
 
-            dsView = atomicsCache.flagsOn(CLONE);
+            dsView = atomicsCache;
 
-            cntDownLatchView = atomicsCache.flagsOn(CLONE);
+            cntDownLatchView = atomicsCache;
 
-            atomicLongView = atomicsCache.flagsOn(CLONE);
+            atomicLongView = atomicsCache;
 
-            atomicRefView = atomicsCache.flagsOn(CLONE);
+            atomicRefView = atomicsCache;
 
-            atomicStampedView = atomicsCache.flagsOn(CLONE);
+            atomicStampedView = atomicsCache;
 
-            seqView = atomicsCache.flagsOn(CLONE);
+            seqView = atomicsCache;
 
             dsCacheCtx = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).context();
         }

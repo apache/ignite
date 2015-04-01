@@ -15,24 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 
 /**
- * Tests cache value consistency for ATOMIC mode.
+ * Conflict resolver manager.
  */
-public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsistencyAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int iterationCount() {
-        return 100_000;
-    }
+public interface CacheConflictResolutionManager<K, V> extends GridCacheManager<K, V> {
+    /**
+     * @return Cache conflict resolver.
+     */
+    public CacheVersionConflictResolver conflictResolver();
 }

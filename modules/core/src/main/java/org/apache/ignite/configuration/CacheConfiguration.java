@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -326,6 +327,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
+    /** Cache plugin configurations. */
+    private CachePluginConfiguration[] pluginCfgs;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -409,6 +413,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        pluginCfgs = cc.getPluginConfigurations();
     }
 
     /**
@@ -1573,6 +1578,24 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setSqlOnheapRowCacheSize(int size) {
         this.sqlOnheapRowCacheSize = size;
+    }
+
+    /**
+     * Gets array of cache plugin configurations.
+     *
+     * @return Cache plugin configurations.
+     */
+    public CachePluginConfiguration[] getPluginConfigurations() {
+        return pluginCfgs != null ? pluginCfgs : new CachePluginConfiguration[0];
+    }
+
+    /**
+     * Sets cache plugin configurations.
+     *
+     * @param pluginCfgs Cache plugin configurations.
+     */
+    public void setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
+        this.pluginCfgs = pluginCfgs;
     }
 
     /** {@inheritDoc} */

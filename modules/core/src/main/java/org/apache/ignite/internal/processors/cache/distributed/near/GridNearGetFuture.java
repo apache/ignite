@@ -725,7 +725,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
-            final AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
+            final AffinityTopologyVersion updTopVer =
+                new AffinityTopologyVersion(Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
             final GridFutureRemapTimeoutObject timeout = new GridFutureRemapTimeoutObject(this,
                 cctx.kernalContext().config().getNetworkTimeout(),

@@ -97,7 +97,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate Invalidate flag.
      * @param storeEnabled Store enabled flag.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is a group lock transaction.
@@ -114,7 +113,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
-        boolean invalidate,
         boolean storeEnabled,
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
@@ -132,7 +130,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             concurrency,
             isolation,
             timeout,
-            invalidate,
+            false,
             storeEnabled,
             txSize,
             grpLockKey,
