@@ -74,7 +74,7 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
     /**
      * @throws Exception If failed.
      */
-    public void testStoreSession() throws Exception {
+    public void testMarshaller() throws Exception {
         grid(0).cache(CACHE_NAME1).put("key1", new UserObject("key1"));
         stopGrid(0);
         startGrid(1);
