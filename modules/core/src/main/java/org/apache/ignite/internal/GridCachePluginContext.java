@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 
 /**
- * TODO: Add class description.
+ * Cache plugin context.
  */
 public class GridCachePluginContext<C extends CachePluginConfiguration> implements CachePluginContext<C> {
     /** */
