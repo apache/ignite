@@ -441,8 +441,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         // We don't try wrap entry from near or dht cache.
         // Created object will be wrapped once some method is called.
         try {
-            return new CacheEntryImpl<>(key, localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
-        } catch (IgniteCheckedException e) {
+            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -455,13 +456,10 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      */
     @Nullable public V peekNearOnly(K key) {
         try {
-            return localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+            return localPeek(key, CachePeekModes.ONHEAP_ONLY, null);
         }
-        catch (IgniteCheckedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Filter validation failed for key: " + key);
-
-            return null;
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 

@@ -2857,19 +2857,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /**
      * @param failFast Fail fast flag.
-     * @param filter Filter.
-     * @param tx Transaction to peek value at (if mode is TX value).
-     * @return Peeked value.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @Nullable private GridTuple<CacheObject> peekTx(boolean failFast,
-        CacheEntryPredicate[] filter,
-        @Nullable IgniteInternalTx tx) throws GridCacheFilterFailedException {
-        return tx == null ? null : tx.peek(cctx, failFast, key, filter);
-    }
-
-    /**
-     * @param failFast Fail fast flag.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param expiryPlc Optional expiry policy.

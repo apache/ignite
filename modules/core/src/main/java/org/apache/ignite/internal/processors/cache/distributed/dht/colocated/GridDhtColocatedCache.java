@@ -80,13 +80,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(GridCacheContext ctx,
-                                                      AffinityTopologyVersion topVer,
-                                                      KeyCacheObject key,
-                                                      int hash,
-                                                      CacheObject val,
-                                                      GridCacheMapEntry next,
-                                                      long ttl,
-                                                      int hdrId) {
+                AffinityTopologyVersion topVer,
+                KeyCacheObject key,
+                int hash,
+                CacheObject val,
+                GridCacheMapEntry next,
+                long ttl,
+                int hdrId)
+            {
                 return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val, next, ttl, hdrId);
             }
         });
@@ -389,7 +390,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
         try {
-            return new CacheEntryImpl<>(key, localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
+            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

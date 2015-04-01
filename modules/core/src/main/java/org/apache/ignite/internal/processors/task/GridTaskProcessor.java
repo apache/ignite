@@ -346,7 +346,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         try {
             return tasksMetaCache.localPeek(
-                new GridTaskNameHashKey(taskNameHash), new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+                new GridTaskNameHashKey(taskNameHash), CachePeekModes.ONHEAP_ONLY, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -254,8 +253,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
         try {
-            return new CacheEntryImpl<>(key, localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
-        } catch (IgniteCheckedException e) {
+            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }

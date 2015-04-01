@@ -580,10 +580,10 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param heap Heap.
-     * @param offheap Offheap.
-     * @param swap Swap.
-     * @param plc Policy.
+     * @param heap Read from heap flag.
+     * @param offheap Read from offheap flag.
+     * @param swap Read from swap flag.
+     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.

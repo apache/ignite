@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -877,8 +876,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             try {
                 return partId == ctx.affinity().partition(entry.getKey()) &&
-                    F.eq(entry.getValue(), localPeek(entry.getKey(), new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
-            } catch (IgniteCheckedException e) {
+                    F.eq(entry.getValue(), localPeek(entry.getKey(), CachePeekModes.ONHEAP_ONLY, null));
+            }
+            catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
         }
