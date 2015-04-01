@@ -15,27 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.plugin;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 
-import java.text.*;
-import java.util.*;
+/**
+ * TODO: Add interface description.
+ */
+public interface CachePluginContext<C extends CachePluginConfiguration> {
+    /**
+     * @return Ignite configuration.
+     */
+    public IgniteConfiguration igniteConfiguration();
+    
+    /**
+     * @return Plugin cache configuration.
+     */
+    public C cacheConfiguration();
 
-public class GridCachePartitionedFlagsTest extends GridCacheAbstractFlagsTest {
+    /**
+     * @return Ignite cache configuration.
+     */
+    public CacheConfiguration igniteCacheConfiguration();
 
-    @Override
-    protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
+    /**
+     * @return Grid.
+     */
+    public Ignite grid();
 
-    @Override
-    public void testTestSyncCommitFlag() throws Exception {
-        // Temporary disable test run.
-        if (new Date().compareTo(new SimpleDateFormat("dd.MM.yyyy").parse("01.06.2012")) < 0)
-            return;
-
-        super.testTestSyncCommitFlag();
-    }
+    /**
+     * Gets logger for given class.
+     *
+     * @param cls Class to get logger for.
+     * @return Logger.
+     */
+    public IgniteLogger log(Class<?> cls);
 }

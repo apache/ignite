@@ -776,7 +776,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (swap) {
                         entry = cache.entryEx(keys.get(i));
 
-                        entry.unswap(true, false);
+                        entry.unswap(false);
                     }
                     else
                         entry = cache.peekEx(keys.get(i));

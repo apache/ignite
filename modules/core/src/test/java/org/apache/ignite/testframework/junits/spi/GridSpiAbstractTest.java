@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.spi;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -86,7 +87,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @return Test data.
      */
     @SuppressWarnings({"unchecked"})
-    protected TestData<T> getTestData() {
+    protected TestData<T> getTestData() throws IgniteCheckedException {
         TestData<T> data = (TestData<T>)tests.get(getClass());
 
         if (data == null)
@@ -157,7 +158,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected final IgniteTestResources getTestResources() {
+    @Override protected final IgniteTestResources getTestResources() throws IgniteCheckedException {
         return getTestData().getTestResources();
     }
 
@@ -429,7 +430,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return  Fully initialized and started SPI implementation.
      */
-    protected final T getSpi() {
+    protected final T getSpi() throws IgniteCheckedException {
         return getTestData().getSpi();
     }
 
@@ -584,13 +585,13 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         private Map<String, Object> allAttrs = new HashMap<>();
 
         /** */
-        private IgniteTestResources rsrcs = new IgniteTestResources();
+        private IgniteTestResources rsrcs;
 
         /**
          *
          */
-        TestData() {
-            // No-op.
+        TestData() throws IgniteCheckedException {
+            rsrcs = new IgniteTestResources();
         }
 
         /**

@@ -246,7 +246,14 @@ class OptimizedMarshallerUtils {
         ClassLoader ldr,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
-        Class cls = ctx.getClass(id, ldr);
+        Class cls;
+
+        try {
+            cls = ctx.getClass(id, ldr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IOException("Failed to resolve class for ID: " + id, e);
+        }
 
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
