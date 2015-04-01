@@ -211,7 +211,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 U.warn(log, "Automatically set write order mode to PRIMARY for better performance " +
                     "[writeSynchronizationMode=" + cfg.getWriteSynchronizationMode() + ", " +
-                    "cacheName=" + cfg.getName() + ']');
+                    "cacheName=" + U.maskName(cfg.getName()) + ']');
             }
         }
 
@@ -225,11 +225,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else {
             if (cfg.getCacheLoaderFactory() != null)
                 throw new IgniteCheckedException("Cannot set both cache loaded factory and cache store factory " +
-                    "for cache: " + cfg.getName());
+                    "for cache: " + U.maskName(cfg.getName()));
 
             if (cfg.getCacheWriterFactory() != null)
                 throw new IgniteCheckedException("Cannot set both cache writer factory and cache store factory " +
-                    "for cache: " + cfg.getName());
+                    "for cache: " + U.maskName(cfg.getName()));
         }
     }
 
@@ -285,20 +285,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getCacheMode() == REPLICATED) {
             if (cc.getAffinity() instanceof FairAffinityFunction)
                 throw new IgniteCheckedException("REPLICATED cache can not be started with FairAffinityFunction" +
-                    " [cacheName=" + cc.getName() + ']');
+                    " [cacheName=" + U.maskName(cc.getName()) + ']');
 
             if (cc.getAffinity() instanceof RendezvousAffinityFunction) {
                 RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cc.getAffinity();
 
                 if (aff.isExcludeNeighbors())
                     throw new IgniteCheckedException("For REPLICATED cache flag 'excludeNeighbors' in " +
-                        "RendezvousAffinityFunction cannot be set [cacheName=" + cc.getName() + ']');
+                        "RendezvousAffinityFunction cannot be set [cacheName=" + U.maskName(cc.getName()) + ']');
             }
 
             if (cc.getNearConfiguration() != null &&
                 ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName())) {
                 U.warn(log, "Near cache cannot be used with REPLICATED cache, " +
-                    "will be ignored [cacheName=" + cc.getName() + ']');
+                    "will be ignored [cacheName=" + U.maskName(cc.getName()) + ']');
 
                 cc.setNearConfiguration(null);
             }
@@ -306,7 +306,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
-                cc.getName() + ']');
+                U.maskName(cc.getName()) + ']');
 
         if (cc.getRebalanceMode() != CacheRebalanceMode.NONE) {
             assertParameter(cc.getRebalanceThreadPoolSize() > 0, "rebalanceThreadPoolSize > 0");
@@ -317,7 +317,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)
                 U.warn(log, "Cache write synchronization mode is set to FULL_ASYNC. All single-key 'put' and " +
                     "'remove' operations will return 'null', all 'putx' and 'removex' operations will return" +
-                    " 'true' [cacheName=" + cc.getName() + ']');
+                    " 'true' [cacheName=" + U.maskName(cc.getName()) + ']');
         }
 
         DeploymentMode depMode = c.getDeploymentMode();
@@ -332,14 +332,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             U.warn(log,
                 "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
                     "(most likely misconfiguration - either update 'isTxSerializableEnabled' or " +
-                    "'defaultTxIsolationLevel' properties) for cache: " + cc.getName(),
-                "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
-                    "for cache: " + cc.getName());
+                    "'defaultTxIsolationLevel' properties) for cache: " + U.maskName(cc.getName()),
+                    "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
+                        "for cache: " + U.maskName(cc.getName()));
 
         if (cc.isWriteBehindEnabled()) {
             if (cfgStore == null)
                 throw new IgniteCheckedException("Cannot enable write-behind (writer or store is not provided) " +
-                    "for cache: " + cc.getName());
+                    "for cache: " + U.maskName(cc.getName()));
 
             assertParameter(cc.getWriteBehindBatchSize() > 0, "writeBehindBatchSize > 0");
             assertParameter(cc.getWriteBehindFlushSize() >= 0, "writeBehindFlushSize >= 0");
@@ -348,34 +348,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (cc.getWriteBehindFlushSize() == 0 && cc.getWriteBehindFlushFrequency() == 0)
                 throw new IgniteCheckedException("Cannot set both 'writeBehindFlushFrequency' and " +
-                    "'writeBehindFlushSize' parameters to 0 for cache: " + cc.getName());
+                    "'writeBehindFlushSize' parameters to 0 for cache: " + U.maskName(cc.getName()));
         }
 
         if (cc.isReadThrough() && cfgStore == null)
             throw new IgniteCheckedException("Cannot enable read-through (loader or store is not provided) " +
-                "for cache: " + cc.getName());
+                "for cache: " + U.maskName(cc.getName()));
 
         if (cc.isWriteThrough() && cfgStore == null)
             throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
-                "for cache: " + cc.getName());
+                "for cache: " + U.maskName(cc.getName()));
 
         long delay = cc.getRebalanceDelay();
 
         if (delay != 0) {
             if (cc.getCacheMode() != PARTITIONED)
-                U.warn(log, "Rebalance delay is supported only for partitioned caches (will ignore): " + cc.getName(),
-                    "Will ignore rebalance delay for cache: " + cc.getName());
+                U.warn(log, "Rebalance delay is supported only for partitioned caches (will ignore): " + (cc.getName()),
+                    "Will ignore rebalance delay for cache: " + U.maskName(cc.getName()));
             else if (cc.getRebalanceMode() == SYNC) {
                 if (delay < 0) {
                     U.warn(log, "Ignoring SYNC rebalance mode with manual rebalance start (node will not wait for " +
-                        "rebalancing to be finished): " + cc.getName(),
-                        "Node will not wait for rebalance in SYNC mode: " + cc.getName());
+                        "rebalancing to be finished): " + U.maskName(cc.getName()),
+                        "Node will not wait for rebalance in SYNC mode: " + U.maskName(cc.getName()));
                 }
                 else {
                     U.warn(log,
                         "Using SYNC rebalance mode with rebalance delay (node will wait until rebalancing is " +
-                            "initiated for " + delay + "ms) for cache: " + cc.getName(),
-                        "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + cc.getName());
+                            "initiated for " + delay + "ms) for cache: " + U.maskName(cc.getName()),
+                            "Node will wait until rebalancing is initiated for " + delay + "ms for cache: " + U.maskName(cc.getName()));
                 }
             }
         }
@@ -400,7 +400,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             case ONHEAP_TIERED:
                 if (!systemCache(cc.getName()) && cc.getEvictionPolicy() == null && cc.getOffHeapMaxMemory() >= 0)
                     U.quietAndWarn(log, "Eviction policy not enabled with ONHEAP_TIERED mode for cache " +
-                        "(entries will not be moved to off-heap store): " + cc.getName());
+                        "(entries will not be moved to off-heap store): " + U.maskName(cc.getName()));
 
                 break;
 
@@ -412,7 +412,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (GridQueryProcessor.isEnabled(cc))
                 throw new IgniteCheckedException("Cannot have query indexing enabled while values are stored off-heap. " +
                     "You must either disable query indexing or disable off-heap values only flag for cache: " +
-                    cc.getName());
+                    U.maskName(cc.getName()));
         }
 
         if (cc.getAtomicityMode() == ATOMIC)
@@ -583,7 +583,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 if (cacheName != null)
                     throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
-                        "assign unique name to each cache): " + cacheName);
+                        "assign unique name to each cache): " + U.maskName(cacheName));
                 else
                     throw new IgniteCheckedException("Default cache has already been configured (check configuration and " +
                         "assign unique name to each cache).");
@@ -839,7 +839,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cacheCtx.onStarted();
 
         if (log.isInfoEnabled())
-            log.info("Started cache [name=" + cfg.getName() + ", mode=" + cfg.getCacheMode() + ']');
+            log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", mode=" + cfg.getCacheMode() + ']');
     }
 
     /**
@@ -1776,7 +1776,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         // If local node initiated start, fail the start future.
                         if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
                             startFut.onDone(new CacheExistsException("Failed to start cache " +
-                                "(a cache with the same name is already started): " + ccfg.getName()));
+                                "(a cache with the same name is already started): " + U.maskName(ccfg.getName())));
                         }
 
                         return;
@@ -1788,7 +1788,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (req.clientStartOnly()) {
                         if (startFut != null && startFut.deploymentId().equals(req.deploymentId())) {
                             startFut.onDone(new IgniteCheckedException("Failed to start client cache " +
-                                "(a cache with the given name is not started): " + ccfg.getName()));
+                                "(a cache with the given name is not started): " + U.maskName(ccfg.getName())));
                         }
 
                         return;
@@ -1848,18 +1848,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (rebalanceOrder > 0) {
                 if (cfg.getCacheMode() == LOCAL)
                     throw new IgniteCheckedException("Rebalance order set for local cache (fix configuration and restart the " +
-                        "node): " + cfg.getName());
+                        "node): " + U.maskName(cfg.getName()));
 
                 if (cfg.getRebalanceMode() == CacheRebalanceMode.NONE)
                     throw new IgniteCheckedException("Only caches with SYNC or ASYNC rebalance mode can be set as rebalance " +
-                        "dependency for other caches [cacheName=" + cfg.getName() +
+                        "dependency for other caches [cacheName=" + U.maskName(cfg.getName()) +
                         ", rebalanceMode=" + cfg.getRebalanceMode() + ", rebalanceOrder=" + cfg.getRebalanceOrder() + ']');
 
                 maxOrder = Math.max(maxOrder, rebalanceOrder);
             }
             else if (rebalanceOrder < 0)
                 throw new IgniteCheckedException("Rebalance order cannot be negative for cache (fix configuration and restart " +
-                    "the node) [cacheName=" + cfg.getName() + ", rebalanceOrder=" + rebalanceOrder + ']');
+                    "the node) [cacheName=" + U.maskName(cfg.getName()) + ", rebalanceOrder=" + rebalanceOrder + ']');
         }
 
         return maxOrder;
@@ -1892,12 +1892,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
                         String errMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + cfg.getName() +
+                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
                             ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
                             ", existingNodeId=" + topNode.id() + ']';
 
                         String sndMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + cfg.getName() +
+                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
                             ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
                             topNode.id() + ']';
 
@@ -2512,7 +2512,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to validate cache configuration " +
-                "(make sure all objects in cache configuration are serializable): " + val.getName(), e);
+                "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
         }
     }
 

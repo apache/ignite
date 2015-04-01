@@ -23,6 +23,8 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.Transaction;
 import org.hibernate.*;
@@ -164,6 +166,9 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /** Name of Hibarname mapping resource. */
     private static final String MAPPING_RESOURCE =
             "org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml";
+
+    /** Marshaller. */
+    private static final Marshaller marsh = new JdkMarshaller();
 
     /** Init guard. */
     @GridToStringExclude
@@ -569,7 +574,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return ignite.configuration().getMarshaller().marshal(obj);
+        return marsh.marshal(obj);
     }
 
     /**
@@ -584,7 +589,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return ignite.configuration().getMarshaller().unmarshal(bytes, getClass().getClassLoader());
+        return marsh.unmarshal(bytes, getClass().getClassLoader());
     }
 
     /**
