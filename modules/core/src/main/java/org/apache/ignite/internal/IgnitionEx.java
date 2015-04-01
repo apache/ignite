@@ -1897,7 +1897,6 @@ public class IgnitionEx {
         /**
          * Creates marshaller system cache configuration.
          *
-         * @param client If {@code true} creates client-only cache configuration.
          * @return Marshaller system cache configuration.
          */
         private static CacheConfiguration marshallerSystemCache(boolean client) {
@@ -1910,8 +1909,9 @@ public class IgnitionEx {
                 cache.setSwapEnabled(false);
                 cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
-                cache.setAffinity(new RendezvousAffinityFunction(false, 100));
+                cache.setAffinity(new RendezvousAffinityFunction(false, 20));
                 cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+                cache.setStartSize(300);
 
                 return cache;
             }
