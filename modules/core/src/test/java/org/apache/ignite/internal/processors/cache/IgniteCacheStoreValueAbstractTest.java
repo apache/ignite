@@ -62,7 +62,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
         ccfg.setCacheStoreFactory(singletonFactory(new CacheStoreAdapter() {
             @Override public void loadCache(IgniteBiInClosure clo, Object... args) {
-                clo.apply(new TestKey(1), new TestValue());
+                clo.apply(new TestKey(100_000), new TestValue(30_000));
             }
 
             @Override public Object load(Object key) throws CacheLoaderException {
@@ -88,6 +88,11 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 2 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -98,9 +103,9 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
         final List<WeakReference<Object>> refs = new ArrayList<>();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             TestKey key = new TestKey(i);
-            TestValue val = new TestValue();
+            TestValue val = new TestValue(i);
 
             refs.add(new WeakReference<Object>(val));
 
@@ -117,9 +122,9 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... args) {
                     assertNotNull(entry.getValue());
 
-                    entry.setValue(new TestValue());
+                    entry.setValue(new TestValue(10_000));
 
-                    return new TestValue();
+                    return new TestValue(20_000);
                 }
             });
 
@@ -135,7 +140,19 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             for (int g = 0; g < gridCount(); g++)
                 assertNull(grid(g).cache(null).get(key));
 
-            try (IgniteDataStreamer streamer  = grid(0).dataStreamer(null)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
+                streamer.addData(key, val);
+            }
+
+            checkNoValue(aff, key);
+
+            cache.remove(key);
+
+            atomicClockModeDelay(cache);
+
+            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(null)) {
+                streamer.allowOverwrite(true);
+
                 streamer.addData(key, val);
             }
 
@@ -154,9 +171,9 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             }
         }
 
-        cache.loadCache(null); // Should load TestKey(1).
+        cache.loadCache(null); // Should load TestKey(100_000).
 
-        TestKey key = new TestKey(1);
+        TestKey key = new TestKey(100_000);
 
         checkNoValue(aff, key);
 
@@ -165,26 +182,29 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
         checkNoValue(aff, key);
 
-//        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-//            @Override public boolean apply() {
-//                System.gc();
-//
-//                boolean pass = true;
-//
-//                for (Iterator<WeakReference<Object>> it = refs.iterator(); it.hasNext();) {
-//                    WeakReference<Object> ref = it.next();
-//
-//                    if (ref.get() == null)
-//                        it.remove();
-//                    else
-//                        pass = false;
-//                }
-//
-//                return pass;
-//            }
-//        }, 10_000);
-//
-//        assertTrue("Failed to wait for when values are collected", wait);
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                System.gc();
+
+                boolean pass = true;
+
+                for (Iterator<WeakReference<Object>> it = refs.iterator(); it.hasNext();) {
+                    WeakReference<Object> ref = it.next();
+
+                    if (ref.get() == null)
+                        it.remove();
+                    else {
+                        pass = false;
+
+                        log.info("Not collected value: " + ref.get());
+                    }
+                }
+
+                return pass;
+            }
+        }, 60_000);
+
+        assertTrue("Failed to wait for when values are collected", wait);
     }
 
     /**
@@ -265,7 +285,21 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
      *
      */
     static class TestValue implements Serializable {
-        // No-op.
+        /** */
+        private int val;
+
+        /**
+         *
+         * @param val Value.
+         */
+        public TestValue(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return "TestValue [val=" + val + ']';
+        }
     }
 
     /**
