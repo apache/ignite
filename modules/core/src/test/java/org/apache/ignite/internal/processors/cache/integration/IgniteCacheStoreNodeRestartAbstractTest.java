@@ -27,7 +27,6 @@ import java.io.*;
  *
  */
 public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCacheAbstractTest {
-
     /** */
     protected static final String CACHE_NAME1 = "cache1";
 
@@ -67,7 +66,7 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
     }
 
     /**
-     * returns Store.
+     * @returns Store.
      */
     protected abstract CacheStore getStore();
 
@@ -76,10 +75,14 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
      */
     public void testMarshaller() throws Exception {
         grid(0).cache(CACHE_NAME1).put("key1", new UserObject("key1"));
+
         stopGrid(0);
+
         startGrid(1);
+
         //Checking that marshaller works correct after all nodes was stopped.
         UserObject obj = grid(1).<Object, UserObject>cache(CACHE_NAME1).get("key1");
+
         assert obj.field.equals("key1");
     }
 
