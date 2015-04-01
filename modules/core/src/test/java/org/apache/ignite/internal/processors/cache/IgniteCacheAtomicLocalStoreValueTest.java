@@ -15,22 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
-import java.io.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Cache plugin configuration. It is a point to extend existing {@link CacheConfiguration} 
- * and extend existing functionality of cache.
+ *
  */
-public interface CachePluginConfiguration<K, V> extends Serializable {
-    /**
-     * Creates cache plugin provider.
-     *
-     * @return Cache plugin provider class.
-     * @param ctx
-     */
-    public CachePluginProvider createProvider(CachePluginContext ctx);
+public class IgniteCacheAtomicLocalStoreValueTest extends IgniteCacheStoreValueAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return LOCAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
+    }
 }

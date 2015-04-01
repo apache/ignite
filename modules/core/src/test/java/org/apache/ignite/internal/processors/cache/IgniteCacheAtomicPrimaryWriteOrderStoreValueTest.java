@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cache.*;
 
-import java.io.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 
 /**
- * Cache plugin configuration. It is a point to extend existing {@link CacheConfiguration} 
- * and extend existing functionality of cache.
+ *
  */
-public interface CachePluginConfiguration<K, V> extends Serializable {
-    /**
-     * Creates cache plugin provider.
-     *
-     * @return Cache plugin provider class.
-     * @param ctx
-     */
-    public CachePluginProvider createProvider(CachePluginContext ctx);
+public class IgniteCacheAtomicPrimaryWriteOrderStoreValueTest extends IgniteCacheAtomicStoreValueTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
 }

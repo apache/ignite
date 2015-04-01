@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.*;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Cache plugin manager.
  */
 public class CachePluginManager extends GridCacheManagerAdapter {
     /** */

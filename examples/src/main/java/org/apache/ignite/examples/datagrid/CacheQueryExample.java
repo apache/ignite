@@ -167,9 +167,9 @@ public class CacheQueryExample {
             "and lower(org.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'GridGain' employees: ",
+        print("Following people are 'ApacheIgnite' employees: ",
             cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, joinSql).
-                setArgs("GridGain")).getAll());
+                setArgs("ApacheIgnite")).getAll());
 
         print("Following people are 'Other' employees: ",
             cache.query(new SqlQuery<AffinityKey<UUID>, Person>(Person.class, joinSql).
@@ -200,7 +200,7 @@ public class CacheQueryExample {
     private static void sqlQueryWithAggregation() {
         IgniteCache<AffinityKey<UUID>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
 
-        // Calculate average of salary of all persons in GridGain.
+        // Calculate average of salary of all persons in ApacheIgnite.
         // Note that we also join on Organization cache as well.
         String sql =
             "select avg(salary) " +
@@ -208,10 +208,10 @@ public class CacheQueryExample {
             "where Person.orgId = org.id " +
             "and lower(org.name) = lower(?)";
 
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql).setArgs("GridGain"));
+        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql).setArgs("ApacheIgnite"));
 
         // Calculate average salary for a specific organization.
-        print("Average salary for 'GridGain' employees: ", cursor.getAll());
+        print("Average salary for 'ApacheIgnite' employees: ", cursor.getAll());
     }
 
     /**
@@ -261,7 +261,7 @@ public class CacheQueryExample {
         IgniteCache<UUID, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
 
         // Organizations.
-        Organization org1 = new Organization("GridGain");
+        Organization org1 = new Organization("ApacheIgnite");
         Organization org2 = new Organization("Other");
 
         orgCache.put(org1.id, org1);

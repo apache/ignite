@@ -23,7 +23,8 @@ import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
 /**
- * TODO: Add class description.
+ * Cache plugin provider is a point for processing of properties 
+ * which provide specific {@link CachePluginConfiguration}.
  */
 public interface CachePluginProvider<C extends CachePluginConfiguration> {    
     /**

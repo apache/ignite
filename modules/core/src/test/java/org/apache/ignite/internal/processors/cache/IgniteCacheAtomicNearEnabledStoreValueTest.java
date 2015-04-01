@@ -15,22 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-
-import java.io.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Cache plugin configuration. It is a point to extend existing {@link CacheConfiguration} 
- * and extend existing functionality of cache.
+ *
  */
-public interface CachePluginConfiguration<K, V> extends Serializable {
-    /**
-     * Creates cache plugin provider.
-     *
-     * @return Cache plugin provider class.
-     * @param ctx
-     */
-    public CachePluginProvider createProvider(CachePluginContext ctx);
+public class IgniteCacheAtomicNearEnabledStoreValueTest extends IgniteCacheAtomicStoreValueTest {
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return new NearCacheConfiguration();
+    }
 }

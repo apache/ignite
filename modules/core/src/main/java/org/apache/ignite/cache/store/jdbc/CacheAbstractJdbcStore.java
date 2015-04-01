@@ -605,7 +605,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
         if (em == null)
             throw new CacheException("Failed to find mapping description [key=" + key +
-                ", cache=" + (cacheName != null ? cacheName : "<default>") + "]");
+                ", cache=" + U.maskName(cacheName) + "]");
 
         return em;
     }
