@@ -17,10 +17,13 @@
 
 package org.apache.ignite.plugin;
 
+import org.apache.ignite.configuration.CacheConfiguration;
+
 import java.io.*;
 
 /**
- * TODO: Add class description.
+ * Cache plugin configuration. It is a point to extend existing {@link CacheConfiguration} 
+ * and extend existing functionality of cache.
  */
 public interface CachePluginConfiguration<K, V> extends Serializable {
     /**
