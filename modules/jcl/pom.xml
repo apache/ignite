@@ -31,13 +31,13 @@
     </parent>
 
     <artifactId>ignite-jcl</artifactId>
-    <version>1.0.1-RC-SNAPSHOT</version>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>1.0.1-RC-SNAPSHOT</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -49,7 +49,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>1.0.1-RC-SNAPSHOT</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

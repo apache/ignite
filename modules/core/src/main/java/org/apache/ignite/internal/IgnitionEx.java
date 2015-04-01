@@ -19,11 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
-import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -34,7 +34,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.noop.*;
@@ -1897,7 +1897,6 @@ public class IgnitionEx {
         /**
          * Creates marshaller system cache configuration.
          *
-         * @param client If {@code true} creates client-only cache configuration.
          * @return Marshaller system cache configuration.
          */
         private static CacheConfiguration marshallerSystemCache(boolean client) {
@@ -1910,8 +1909,9 @@ public class IgnitionEx {
                 cache.setSwapEnabled(false);
                 cache.setRebalanceMode(SYNC);
                 cache.setWriteSynchronizationMode(FULL_SYNC);
-                cache.setAffinity(new RendezvousAffinityFunction(false, 100));
+                cache.setAffinity(new RendezvousAffinityFunction(false, 20));
                 cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+                cache.setStartSize(300);
 
                 return cache;
             }

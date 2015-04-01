@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -65,10 +66,10 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
@@ -677,9 +678,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+
+        marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+            @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
+                ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
             }
         });
 
@@ -1013,7 +1016,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-        GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
+        CachePluginManager pluginMgr = new CachePluginManager(ctx, cfg);
+        
+        pluginMgr.validate();
+
+        CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
+        GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
 
         GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -1037,7 +1045,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            jta);
+            jta,
+            rslvrMgr,
+            pluginMgr
+        );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1139,7 +1150,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             swapMgr = new GridCacheSwapManager(true);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
-            drMgr = ctx.createComponent(GridCacheDrManager.class);
+            drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
+            pluginMgr = new CachePluginManager(ctx, cfg);
 
             cacheCtx = new GridCacheContext(
                 ctx,
@@ -1161,7 +1173,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                jta);
+                jta,
+                rslvrMgr,
+                pluginMgr
+            );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -2011,6 +2026,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     true);
             }
         }
+        
+        // TODO 10006: implement remote configs validation.
+        // Check plugin configurations.
+//        for (CachePluginConfiguration locPluginCcfg : locCfg.getPluginConfigurations()) {
+//            CachePluginProvider provider = ...;
+//
+//            provider.validateRemote(locCfg, locPluginCcfg, rmtCfg, rmtNode);
+//        }
     }
 
     /**
@@ -2033,22 +2056,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Checks if store check should be skipped for given nodes.
-     *
-     * @param cfg Cache configuration.
-     * @param rmtNode Remote node.
-     * @param locNode Local node.
-     * @return {@code True} if store check should be skipped.
-     */
-    private boolean checkStoreConsistency(CacheConfiguration cfg, ClusterNode rmtNode, ClusterNode locNode) {
-        return
-            // In atomic mode skip check if either local or remote node is client.
-            cfg.getAtomicityMode() == ATOMIC &&
-                (!ctx.discovery().cacheAffinityNode(rmtNode, cfg.getName()) ||
-                 !ctx.discovery().cacheAffinityNode(locNode, cfg.getName()));
-    }
-
-    /**
      * Gets preload finish future for preload-ordered cache with given order. I.e. will get compound preload future
      * with maximum order less than {@code order}.
      *
@@ -2064,11 +2071,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param spaceName Space name.
      * @param keyBytes Key bytes.
+     * @param valBytes Value bytes.
      */
     @SuppressWarnings( {"unchecked"})
-    public void onEvictFromSwap(String spaceName, byte[] keyBytes) {
+    public void onEvictFromSwap(String spaceName, byte[] keyBytes, byte[] valBytes) {
         assert spaceName != null;
         assert keyBytes != null;
+        assert valBytes != null;
 
         /*
          * NOTE: this method should not have any synchronization because
@@ -2089,7 +2098,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false));
+                    GridCacheSwapEntry swapEntry = GridCacheSwapEntryImpl.unmarshal(valBytes);
+
+                    CacheObject val = swapEntry.value();
+
+                    if (val == null)
+                        val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), swapEntry.type(),
+                            swapEntry.valueBytes());
+
+                    assert val != null;
+
+                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false),
+                        val.value(cctx.cacheObjectContext(), false));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);
@@ -2166,12 +2186,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param <K> type of keys.
-     * @param <V> type of values.
-     * @return Default cache.
+     * @return All configured cache instances.
      */
-    public <K, V> GridCache<K, V> publicCache() {
-        return publicCache(null);
+    public Collection<IgniteCacheProxy<?, ?>> jcaches() {
+        return jCacheProxies.values();
     }
 
     /**
@@ -2179,17 +2197,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public GridCacheAdapter<Integer, String> marshallerCache() {
         return internalCache(CU.MARSH_CACHE_NAME);
-    }
-
-    /**
-     * Gets utility cache.
-     *
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @return Projection over utility cache.
-     */
-    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
-        return (GridCacheProjectionEx<K, V>)cache(CU.UTILITY_CACHE_NAME).projection(keyCls, valCls);
     }
 
     /**

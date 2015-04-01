@@ -294,36 +294,42 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     private void fillCaches() throws IgniteCheckedException {
         int idGen = 0;
 
-        GridCache<Integer, Object> dimCache = ((IgniteKernal)ignite).getCache("replicated");
+        GridCacheAdapter<Integer, Object> dimCache = ((IgniteKernal)ignite).internalCache("replicated");
+
+        List<DimStore> dimStores = new ArrayList<>();
+
+        List<DimProduct> dimProds = new ArrayList<>();
 
         for (int i = 0; i < 2; i++) {
             int id = idGen++;
 
-            dimCache.put(id, new DimStore(id, "Store" + id));
+            DimStore v = new DimStore(id, "Store" + id);
+
+            dimCache.put(id, v);
+
+            dimStores.add(v);
         }
 
         for (int i = 0; i < 5; i++) {
             int id = idGen++;
 
-            dimCache.put(id, new DimProduct(id, "Product" + id));
+            DimProduct v = new DimProduct(id, "Product" + id);
+
+            dimCache.put(id, v);
+
+            dimProds.add(v);
         }
 
-        CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
-        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
+        GridCacheAdapter<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).internalCache("partitioned");
 
-        GridCache<Integer, FactPurchase> factCache = ((IgniteKernal)ignite).getCache("partitioned");
-
-        List<DimStore> dimStores = new ArrayList<>(stores.values());
         Collections.sort(dimStores, new Comparator<DimStore>() {
             @Override public int compare(DimStore o1, DimStore o2) {
                 return o1.getId() > o2.getId() ? 1 : o1.getId() < o2.getId() ? -1 : 0;
             }
         });
 
-        List<DimProduct> dimProds = new ArrayList<>(prods.values());
         Collections.sort(dimProds, new Comparator<DimProduct>() {
-            @Override
-            public int compare(DimProduct o1, DimProduct o2) {
+            @Override public int compare(DimProduct o1, DimProduct o2) {
                 return o1.getId() > o2.getId() ? 1 : o1.getId() < o2.getId() ? -1 : 0;
             }
         });
@@ -336,30 +342,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
         }
-    }
-
-    /**
-     * Fills the caches with data and executes the query.
-     *
-     * @param prj Cache projection.
-     * @throws Exception If failed.
-     * @return Result.
-     */
-    private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
-        throws Exception {
-        CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
-            ((IgniteKernal)ignite)
-                .<Integer, FactPurchase>getCache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
-            "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
-
-        List<Map.Entry<Integer, FactPurchase>> res = new ArrayList<>(qry.execute().get());
-        Collections.sort(res, new Comparator<Map.Entry<Integer, FactPurchase>>() {
-            @Override public int compare(Map.Entry<Integer, FactPurchase> o1, Map.Entry<Integer, FactPurchase> o2) {
-                return o1.getKey() > o2.getKey() ? 1 : o1.getKey() < o2.getKey() ? -1 : 0;
-            }
-        });
-
-        return res;
     }
 
     /**

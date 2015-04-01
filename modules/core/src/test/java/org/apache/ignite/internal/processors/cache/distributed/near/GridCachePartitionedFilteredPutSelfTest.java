@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -100,8 +101,8 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testPutAndRollbackCheckDht() throws Exception {
         doPutAndRollback();
 
-        GridCache<Integer, Integer> c =
-            ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
+        GridCacheAdapter<Integer, Integer> c =
+            ((GridNearCacheAdapter<Integer, Integer>)((IgniteKernal)grid()).internalCache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }

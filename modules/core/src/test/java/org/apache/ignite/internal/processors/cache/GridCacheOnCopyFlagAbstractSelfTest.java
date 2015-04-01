@@ -80,7 +80,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
         interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>());
 
         for (int i = 0; i < gridCount(); i++)
-            cache(i, null).clearLocally();
+            jcache(i, null).localClearAll(keySet(jcache(i, null)));
     }
 
     /** {@inheritDoc} */
@@ -144,7 +144,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             cache.put(key, val);
 
-            Cache.Entry<Object, Object> entry = internalCache(0).entrySet().iterator().next();
+            Cache.Entry<Object, Object> entry = grid(0).cache(null).localEntries().iterator().next();
 
             // Check thar internal entry wasn't changed.
             assertEquals(i, ((TestKey)entry.getKey()).field());
@@ -180,7 +180,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             cache.put(key, newTestVal);
 
-            entry = internalCache(0).entrySet().iterator().next();
+            entry = grid(0).cache(null).localEntries().iterator().next();
 
             // Check thar internal entry wasn't changed.
             assertEquals(i, ((TestKey)entry.getKey()).field());
@@ -252,7 +252,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             });
 
         // Check that entries weren't changed.
-        for (Cache.Entry<Object, Object> e : internalCache(0).entrySet()) {
+        for (Cache.Entry<Object, Object> e : grid(0).cache(null).localEntries()) {
             assertNotEquals(WRONG_VALUE, ((TestKey)e.getKey()).field());
             assertNotEquals(WRONG_VALUE, ((TestValue)e.getValue()).val());
         }

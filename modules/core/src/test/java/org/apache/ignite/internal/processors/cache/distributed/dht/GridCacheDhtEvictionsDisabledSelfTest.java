@@ -75,7 +75,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
         checkNodes(startGridsMultiThreaded(1));
 
         assertEquals(26, colocated(0, "test").size());
-        assertEquals(26, cache(0, "test").size());
+        assertEquals(26, jcache(0, "test").localSize());
     }
 
     /** @throws Exception If failed. */
@@ -83,7 +83,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
         checkNodes(startGridsMultiThreaded(2));
 
         assertTrue(colocated(0, "test").size() > 0);
-        assertTrue(cache(0, "test").size() > 0);
+        assertTrue(jcache(0, "test").localSize() > 0);
     }
 
     /** @throws Exception If failed. */
@@ -91,7 +91,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
         checkNodes(startGridsMultiThreaded(3));
 
         assertTrue(colocated(0, "test").size() > 0);
-        assertTrue(cache(0, "test").size() > 0);
+        assertTrue(jcache(0, "test").localSize() > 0);
     }
 
     /**

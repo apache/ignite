@@ -115,9 +115,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        checkQuery(((IgniteKernal)grid(0)).getCache(ATOMIC_CACHE_NAME));
+        checkQuery(((IgniteKernal)grid(0)).internalCache(ATOMIC_CACHE_NAME));
 
-        checkQuery(((IgniteKernal)grid(0)).getCache(TRANSACTIONAL_CACHE_NAME));
+        checkQuery(((IgniteKernal)grid(0)).internalCache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -125,11 +125,11 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkQuery(GridCache cache) throws Exception {
+    private void checkQuery(GridCacheAdapter cache) throws Exception {
         final int ENTRY_CNT = 500;
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            assertTrue(cache.putx(new Key(i), new Person("p-" + i, i)));
+            cache.put(new Key(i), new Person("p-" + i, i));
 
         try {
             CacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(
@@ -173,7 +173,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @param expCnt Expected entries in query result.
      * @throws Exception If failed.
      */
-    private void testMultithreaded(final GridCache cache, final int expCnt) throws Exception {
+    private void testMultithreaded(final GridCacheAdapter cache, final int expCnt) throws Exception {
         log.info("Starting multithreaded queries.");
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
@@ -207,9 +207,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryPrimitives() throws Exception {
-        checkQueryPrimitives(((IgniteKernal)grid(0)).getCache(ATOMIC_CACHE_NAME));
+        checkQueryPrimitives(((IgniteKernal)grid(0)).internalCache(ATOMIC_CACHE_NAME));
 
-        checkQueryPrimitives(((IgniteKernal)grid(0)).getCache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryPrimitives(((IgniteKernal)grid(0)).internalCache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -217,11 +217,11 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkQueryPrimitives(GridCache cache) throws Exception {
+    private void checkQueryPrimitives(GridCacheAdapter cache) throws Exception {
         final int ENTRY_CNT = 500;
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            assertTrue(cache.putx(String.valueOf(i), (long) i));
+            cache.put(String.valueOf(i), (long) i);
 
         try {
             CacheQuery<Map.Entry<String, Long>> qry = cache.queries().createScanQuery(
@@ -263,9 +263,9 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testQueryValueByteArray() throws Exception {
-        checkQueryValueByteArray(((IgniteKernal)grid(0)).getCache(ATOMIC_CACHE_NAME));
+        checkQueryValueByteArray(((IgniteKernal)grid(0)).internalCache(ATOMIC_CACHE_NAME));
 
-        checkQueryValueByteArray(((IgniteKernal)grid(0)).getCache(TRANSACTIONAL_CACHE_NAME));
+        checkQueryValueByteArray(((IgniteKernal)grid(0)).internalCache(TRANSACTIONAL_CACHE_NAME));
     }
 
     /**
@@ -273,11 +273,11 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkQueryValueByteArray(GridCache cache) throws Exception {
+    private void checkQueryValueByteArray(GridCacheAdapter cache) throws Exception {
         final int ENTRY_CNT = 100;
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            assertTrue(cache.putx(i, new byte[i]));
+            cache.put(i, new byte[i]);
 
         try {
             CacheQuery<Map.Entry<Integer, byte[]>> qry = cache.queries().createScanQuery(

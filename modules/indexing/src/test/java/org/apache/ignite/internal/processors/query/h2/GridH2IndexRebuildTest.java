@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -152,48 +153,55 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
      * @throws Exception if failed.
      */
     public void testRebuildIndexes() throws Exception {
-        cache().queries().rebuildIndexes(ArrayList.class).get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(ArrayList.class).get();
 
-        cache().queries().rebuildAllIndexes().get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildAllIndexes().get();
 
-        GridCache<Integer, TestValue1> cache1 = ((IgniteKernal)grid(0)).getCache(null);
-        GridCache<Integer, TestValue2> cache2 = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        IgniteCache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             cache1.put(i, new TestValue1(i, "val2-" + i, i, i));
             cache2.put(ENTRY_CNT * 2 + i, new TestValue2(i, "val2-" + i));
         }
 
-        CacheQuery<Map.Entry<Integer, TestValue1>> qry1 =
-            cache1.queries().createSqlQuery(TestValue1.class, "val1 = 9000");
+        SqlQuery<Integer, TestValue1> qry1 = new SqlQuery(TestValue1.class, "val1 = 9000");
 
-        CacheQuery<Map.Entry<Integer, TestValue1>> qry2 =
-            cache1.queries().createSqlQuery(TestValue1.class, "val2 = 'val2-9000'");
+        SqlQuery<Integer, TestValue1> qry2 = new SqlQuery(TestValue1.class, "val2 = 'val2-9000'");
 
-        CacheQuery<Map.Entry<Integer, TestValue1>> qry3 =
-            cache1.queries().createSqlQuery(TestValue1.class, "val3 = 9000 and val4 = 9000");
+        SqlQuery<Integer, TestValue1> qry3 = new SqlQuery(TestValue1.class, "val3 = 9000 and val4 = 9000");
 
-        CacheQuery<Map.Entry<Integer, TestValue2>> qry4 =
-            cache2.queries().createSqlQuery(TestValue2.class, "val1 = 9000");
+        SqlQuery<Integer, TestValue2> qry4 = new SqlQuery(TestValue2.class, "val1 = 9000");
 
-        CacheQuery<Map.Entry<Integer, TestValue2>> qry5 =
-            cache2.queries().createFullTextQuery(TestValue2.class, "val2 = 'val2-9000'");
+        SqlQuery<Integer, TestValue2> qry5 = new SqlQuery(TestValue2.class, "val2 = 'val2-9000'");
 
-        checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
+        assertEquals(1, cache1.query(qry1).getAll().size());
+        assertEquals(1, cache1.query(qry2).getAll().size());
+        assertEquals(1, cache1.query(qry3).getAll().size());
+        assertEquals(1, cache2.query(qry4).getAll().size());
+        assertEquals(1, cache2.query(qry5).getAll().size());
 
         for (int i = 0; i < ENTRY_CNT / 2; i++) {
             cache1.remove(i);
             cache2.remove(ENTRY_CNT * 2 + i);
         }
 
-        cache().queries().rebuildIndexes(TestValue1.class).get();
-        cache().queries().rebuildIndexes(TestValue2.class).get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(TestValue1.class).get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(TestValue2.class).get();
 
-        checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
+        assertEquals(1, cache1.query(qry1).getAll().size());
+        assertEquals(1, cache1.query(qry2).getAll().size());
+        assertEquals(1, cache1.query(qry3).getAll().size());
+        assertEquals(1, cache2.query(qry4).getAll().size());
+        assertEquals(1, cache2.query(qry5).getAll().size());
 
-        cache().queries().rebuildAllIndexes().get();
+        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildAllIndexes().get();
 
-        checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
+        assertEquals(1, cache1.query(qry1).getAll().size());
+        assertEquals(1, cache1.query(qry2).getAll().size());
+        assertEquals(1, cache1.query(qry3).getAll().size());
+        assertEquals(1, cache2.query(qry4).getAll().size());
+        assertEquals(1, cache2.query(qry5).getAll().size());
     }
 
     /**
@@ -202,8 +210,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     public void testRebuildInterrupted() throws Exception {
         spi.sleepInRebuild = true;
 
-        GridCache<Integer, TestValue1> cache1 = ((IgniteKernal)grid(0)).getCache(null);
-        GridCache<Integer, TestValue2> cache2 = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        IgniteCache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));
@@ -228,6 +236,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     }
 
     /**
+     * @param fut Future.
      * @throws Exception if failed.
      */
     private void checkCancel(final IgniteInternalFuture<?> fut) throws Exception {
@@ -236,21 +245,12 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         assertTrue(fut.cancel());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
+            @Override public Void call() throws Exception {
                 fut.get();
                 return null;
             }
         }, IgniteFutureCancelledCheckedException.class, null);
 
         assertTrue(spi.interrupted.await(5, TimeUnit.SECONDS));
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    private void checkQueryReturnsOneEntry(CacheQuery<?>... qrys) throws Exception {
-        for (CacheQuery<?> qry : qrys)
-            assertEquals(1, qry.execute().get().size());
     }
 }

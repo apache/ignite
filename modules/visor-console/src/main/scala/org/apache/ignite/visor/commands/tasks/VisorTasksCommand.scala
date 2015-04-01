@@ -242,14 +242,14 @@ private case class VisorTask(
  * +---------------------------------------------------------------------------------------+
  * | tasks | Prints statistics about tasks and executions.                                 |
  * |       |                                                                               |
- * |       | Note that this command depends on Ignite events.                            |
+ * |       | Note that this command depends on Ignite events.                              |
  * |       |                                                                               |
- * |       | Ignite events can be individually enabled and disabled and disabled events  |
+ * |       | Ignite events can be individually enabled and disabled and disabled events    |
  * |       | can affect the results produced by this command. Note also that configuration |
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are enabled and Ignite stores last 10,000 local     |
+ * |       | By default - all events are enabled and Ignite stores last 10,000 local       |
  * |       | events on each node. Both of these defaults can be changed in configuration.  |
  * +---------------------------------------------------------------------------------------+
  * }}}
@@ -536,13 +536,7 @@ class VisorTasksCommand {
             })
         }
 
-        /**
-         * If task name is task class name, show simple class name.
-         *
-         * @param taskName Task name.
-         * @param taskClsName Task class name.
-         * @return Simple class name.
-         */
+        // If task name is task class name, show simple class name.
         def taskSimpleName(taskName: String, taskClsName: String) =  {
             if (taskName == taskClsName || taskName == null) {
                 val idx = taskClsName.lastIndexOf('.')

@@ -75,6 +75,13 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
+        cfg.setCacheConfiguration(cacheConfiguration());
+        cfg.setMarshaller(new OptimizedMarshaller(false));
+
+        return cfg;
+    }
+
+    protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -86,10 +93,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
 
-        cfg.setCacheConfiguration(cacheCfg);
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
+        return cacheCfg;
     }
 
     /**
@@ -199,16 +203,16 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         final int all = cache + offheapSwap;
 
         // put
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
+        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<IgniteCache<String, Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> c) throws IgniteCheckedException {
                 for (int i = 0; i < all; i++)
                     c.put(valueOf(i), i);
             }
         });
 
         //putAll
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
+        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<IgniteCache<String, Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> c) throws IgniteCheckedException {
                 Map<String, Integer> m = new HashMap<>();
 
                 for (int i = 0; i < all; i++)
@@ -227,31 +231,31 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @param x Cache modifier.
      * @throws IgniteCheckedException If failed.
      */
-    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<GridCache<String, Integer>> x) throws Exception {
+    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<IgniteCache<String, Integer>> x) throws Exception {
         ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         startGrid();
 
-        final GridCache<String, Integer> c = cache();
+        final IgniteCache<String, Integer> c = jcache();
 
         x.applyx(c);
 
-        assertEquals(cache, c.size());
-        assertEquals(offheapSwap, c.offHeapEntriesCount() + c.swapKeys());
+        assertEquals(cache, c.size(CachePeekMode.ONHEAP));
+        assertEquals(offheapSwap, c.localSize(CachePeekMode.OFFHEAP) + c.localSize(CachePeekMode.SWAP));
 
         info("size: " + c.size());
-        info("offheap: " + c.offHeapEntriesCount());
-        info("swap: " + c.swapKeys());
+        info("offheap: " + c.localSize(CachePeekMode.OFFHEAP));
+        info("swap: " + c.localSize(CachePeekMode.SWAP));
 
         if (offheapEmpty)
-            Assert.assertEquals(0, c.offHeapEntriesCount());
+            Assert.assertEquals(0, c.localSize(CachePeekMode.OFFHEAP));
         else
-            Assert.assertNotEquals(0, c.offHeapEntriesCount());
+            Assert.assertNotEquals(0, c.localSize(CachePeekMode.OFFHEAP));
 
         if (swapEmpty)
-            Assert.assertEquals(0, c.swapKeys());
+            Assert.assertEquals(0, c.localSize(CachePeekMode.SWAP));
         else
-            Assert.assertNotEquals(0, c.swapKeys());
+            Assert.assertNotEquals(0, c.localSize(CachePeekMode.SWAP));
 
         stopAllGrids();
     }

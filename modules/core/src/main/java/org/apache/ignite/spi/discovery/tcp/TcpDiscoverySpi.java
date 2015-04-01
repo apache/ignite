@@ -4695,14 +4695,18 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     // Ping.
                     if (msg instanceof TcpDiscoveryPingRequest) {
-                        TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
+                        if (!getSpiContext().isStopping()) {
+                            TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
-                        TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
+                            TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
 
-                        if (req.clientNodeId() != null)
-                            res.clientExists(clientMsgWorkers.containsKey(req.clientNodeId()));
+                            if (req.clientNodeId() != null)
+                                res.clientExists(clientMsgWorkers.containsKey(req.clientNodeId()));
 
-                        writeToSocket(sock, res);
+                            writeToSocket(sock, res);
+                        }
+                        else if (log.isDebugEnabled())
+                            log.debug("Ignore ping request, node is stopping.");
 
                         return;
                     }

@@ -158,9 +158,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * <p>
      * Returned iterator supports {@code remove} operation which delegates to
      * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> method.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}.
      *
      * @return Iterator over keys.
      * @throws IgniteCheckedException If failed.

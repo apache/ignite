@@ -122,7 +122,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
-        GridCache<Integer, String> dht = dht();
+        GridCacheAdapter<Integer, String> dht = dht();
 
         String s = near.get(1);
 

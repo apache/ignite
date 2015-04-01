@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -28,7 +27,7 @@ import java.io.*;
  * Atomic reference value.
  */
 public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal, GridPeerDeployAware,
-    Externalizable, Cloneable {
+    Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,18 +62,6 @@ public final class GridCacheAtomicReferenceValue<T> implements GridCacheInternal
      */
     public T get() {
         return val;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
-    @Override public GridCacheAtomicReferenceValue<T> clone() throws CloneNotSupportedException {
-        GridCacheAtomicReferenceValue<T> obj = (GridCacheAtomicReferenceValue<T>)super.clone();
-
-        T locVal = X.cloneObject(val, false, true);
-
-        obj.set(locVal);
-
-        return obj;
     }
 
     /** {@inheritDoc} */

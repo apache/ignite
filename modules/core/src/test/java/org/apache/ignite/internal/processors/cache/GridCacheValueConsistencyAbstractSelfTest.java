@@ -51,7 +51,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60000;
+        return 5 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -227,8 +227,69 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    public void testPutConsistencyMultithreaded() throws Exception {
+        for (int i = 0; i < 20; i++) {
+            log.info("Iteration: " + i);
+
+            final int range = 100;
+
+            final int iterCnt = 100;
+
+            final AtomicInteger threadId = new AtomicInteger();
+
+            final AtomicInteger iters = new AtomicInteger();
+
+            multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Random rnd = new Random();
+
+                    int g = threadId.getAndIncrement();
+
+                    Ignite ignite = grid(g);
+
+                    IgniteCache<Object, Object> cache = ignite.cache(null);
+
+                    log.info("Update thread: " + ignite.name());
+
+                    Thread.currentThread().setName("UpdateThread-" + ignite.name());
+
+                    Long val = (long)g;
+
+                    while (true) {
+                        int i = iters.getAndIncrement();
+
+                        if (i >= iterCnt)
+                            break;
+
+                        int k = rnd.nextInt(range);
+
+                        cache.put(k, val);
+                    }
+
+                    return null;
+                }
+            }, gridCount()).get();
+
+            checkConsistency(range);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        final int range = 10000;
+       for (int i = 0; i < 10; i++) {
+           log.info("Iteration: " + i);
+
+           putRemoveConsistencyMultithreaded();
+       }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void putRemoveConsistencyMultithreaded() throws Exception {
+        final int range = 10_000;
 
         final int iterCnt = iterationCount();
 
@@ -267,6 +328,13 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             }
         }, THREAD_CNT).get();
 
+        checkConsistency(range);
+    }
+
+    /**
+     * @param range Key range.
+     */
+    private void checkConsistency(int range) {
         int present = 0;
         int absent = 0;
 
@@ -292,11 +360,18 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                         boolean primary = aff.isPrimary(ignite.cluster().localNode(), i);
                         boolean backup = aff.isBackup(ignite.cluster().localNode(), i);
 
-                        log.error("Invalid value detected [val=" + val +
+                        log.error("Invalid value detected [key=" + i +
+                            ", val=" + val +
                             ", firstVal=" + firstVal +
                             ", node=" + g +
                             ", primary=" + primary +
                             ", backup=" + backup + ']');
+
+                        log.error("All values: ");
+
+                        printValues(aff, i);
+
+                        break;
                     }
                 }
             }
@@ -318,10 +393,31 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     }
 
     /**
+     * @param aff Affinity.
+     * @param key Key.
+     */
+    private void printValues(Affinity<Integer> aff, int key) {
+        for (int g = 0; g < gridCount(); g++) {
+            Ignite ignite = grid(g);
+
+            boolean primary = aff.isPrimary(ignite.cluster().localNode(), key);
+            boolean backup = aff.isBackup(ignite.cluster().localNode(), key);
+
+            Object val = ignite.cache(null).localPeek(key, CachePeekMode.ONHEAP);
+
+            log.error("Node value [key=" + key +
+                ", val=" + val +
+                ", node=" + g +
+                ", primary=" + primary +
+                ", backup=" + backup + ']');
+        }
+    }
+
+    /**
      * @param g Grid to check.
      */
     private void checkKeySet(Ignite g) {
-        GridCache<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
+        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
 
         Set<Object> keys = cache.keySet();
 

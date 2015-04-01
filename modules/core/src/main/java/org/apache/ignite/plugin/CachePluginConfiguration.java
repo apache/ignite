@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.plugin;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import java.io.*;
 
-import java.text.*;
-import java.util.*;
-
-public class GridCachePartitionedFlagsTest extends GridCacheAbstractFlagsTest {
-
-    @Override
-    protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    @Override
-    public void testTestSyncCommitFlag() throws Exception {
-        // Temporary disable test run.
-        if (new Date().compareTo(new SimpleDateFormat("dd.MM.yyyy").parse("01.06.2012")) < 0)
-            return;
-
-        super.testTestSyncCommitFlag();
-    }
+/**
+ * TODO: Add class description.
+ */
+public interface CachePluginConfiguration<K, V> extends Serializable {
+    /**
+     * Creates cache plugin provider.
+     *
+     * @return Cache plugin provider class.
+     * @param ctx
+     */
+    public CachePluginProvider createProvider(CachePluginContext ctx);
 }

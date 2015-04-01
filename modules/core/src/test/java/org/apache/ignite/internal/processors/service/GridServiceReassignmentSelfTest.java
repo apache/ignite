@@ -145,13 +145,14 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
      * @param total Total number of services.
      * @param maxPerNode Maximum number of services per node.
      * @param gridIdx Grid index to check.
+     * @param lastTry Last try flag.
      * @throws Exception If failed.
+     * @return {@code True} if check passed.
      */
     private boolean checkServices(int total, int maxPerNode, int gridIdx, boolean lastTry) throws Exception {
         IgniteEx grid = grid(gridIdx);
 
-        GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> cache = grid.
-            utilityCache(GridServiceAssignmentsKey.class, GridServiceAssignments.class);
+        GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> cache = grid.utilityCache();
 
         GridServiceAssignments assignments = cache.get(new GridServiceAssignmentsKey("testService"));
 

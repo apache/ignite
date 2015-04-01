@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
@@ -152,7 +152,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         try {
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             int keyCnt = 200;
 
@@ -167,7 +167,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
             info(">>> Starting test tx.");
 
-            try (Transaction tx = cache.txStart(concurrency, TransactionIsolation.REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(concurrency, TransactionIsolation.REPEATABLE_READ)) {
                 Map<Integer, Integer> map = new LinkedHashMap<>();
 
                 for (int i = 0; i < keyCnt; i++)
@@ -211,13 +211,13 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             }
 
             for (int g = 0; g < GRID_CNT; g++) {
-                GridCache<Object, Object> checkCache = ((IgniteKernal)grid(g)).getCache(null);
+                IgniteCache<Object, Object> checkCache =grid(g).cache(null);
 
                 ClusterNode checkNode = grid(g).localNode();
 
                 for (int i = 0; i < keyCnt; i++) {
-                    if (checkCache.affinity().isPrimaryOrBackup(checkNode, i))
-                        assertEquals(i * i, checkCache.peek(i, F.asList(GridCachePeekMode.PARTITIONED_ONLY)));
+                    if (grid(g).affinity(null).isPrimaryOrBackup(checkNode, i))
+                        assertEquals(i * i, checkCache.localPeek(i, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
                 }
             }
         }
@@ -277,13 +277,13 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         try {
             Map<Integer, Integer> checkMap = new HashMap<>();
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 0; i < 10; i++) {
                     info("Put: " + i + ", " + r);
 
-                    Integer cachePrev = cache.put(i, r);
+                    Integer cachePrev = cache.getAndPut(i, r);
 
                     Integer mapPrev = checkMap.put(i, r);
 

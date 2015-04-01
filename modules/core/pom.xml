@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.0.1-RC-SNAPSHOT</version>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -268,13 +268,14 @@
                                 </goals>
                                 <phase>process-resources</phase>
                                 <configuration>
+                                    <failOnError>false</failOnError>
                                     <target>
-                                        <exec executable="${git.exec}" outputproperty="ignite.build" failonerror="yes">
-                                            <arg line="log -1 --format=%ct" />
+                                        <exec executable="${git.exec}" outputproperty="ignite.build" >
+                                            <arg line="log -1 --format=%ct"/>
                                         </exec>
 
-                                        <exec executable="${git.exec}" outputproperty="ignite.revision" failonerror="yes">
-                                            <arg line="log -1 --format=%H" />
+                                        <exec executable="${git.exec}" outputproperty="ignite.revision" >
+                                            <arg line="log -1 --format=%H"/>
                                         </exec>
 
                                         <tstamp>

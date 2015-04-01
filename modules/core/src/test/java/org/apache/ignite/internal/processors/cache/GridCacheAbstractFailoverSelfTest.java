@@ -31,8 +31,6 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Failover tests for cache.
@@ -48,7 +46,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     private static final int ENTRY_CNT = 100;
 
     /** */
-    private static final int TOP_CHANGE_CNT = 5;
+    private static final int TOP_CHANGE_CNT = 10;
 
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 3;
@@ -113,92 +111,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticReadCommittedTxTopologyChange() throws Exception {
-        testTopologyChange(OPTIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticRepeatableReadTxTopologyChange() throws Exception {
-        testTopologyChange(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticSerializableTxTopologyChange() throws Exception {
-        testTopologyChange(OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticReadCommittedTxTopologyChange() throws Exception {
-        testTopologyChange(PESSIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticRepeatableReadTxTopologyChange() throws Exception {
-        testTopologyChange(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticSerializableTxTopologyChange() throws Exception {
-        testTopologyChange(PESSIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testConstantTopologyChange() throws Exception {
         testConstantTopologyChange(null, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticReadCommittedTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(OPTIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticRepeatableReadTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimisticSerializableTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticReadCommittedTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(PESSIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticRepeatableReadTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticSerializableTxConstantTopologyChange() throws Exception {
-        testConstantTopologyChange(PESSIMISTIC, SERIALIZABLE);
     }
 
     /**
@@ -206,7 +120,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    private void testTopologyChange(@Nullable TransactionConcurrency concurrency,
+    protected void testTopologyChange(@Nullable TransactionConcurrency concurrency,
         @Nullable TransactionIsolation isolation) throws Exception {
         boolean tx = concurrency != null && isolation != null;
 
@@ -240,7 +154,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    private void testConstantTopologyChange(@Nullable final TransactionConcurrency concurrency,
+    protected void testConstantTopologyChange(@Nullable final TransactionConcurrency concurrency,
         @Nullable final TransactionIsolation isolation) throws Exception {
         final boolean tx = concurrency != null && isolation != null;
 
@@ -275,20 +189,29 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                     }
                 }
                 catch (Exception e) {
+                    log.error("Unexpected exception in topology-change-thread: " + e, e);
+
                     throw F.wrap(e);
                 }
             }
         }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
 
-        while (!fut.isDone()) {
-            if (tx) {
-                remove(grid(0), jcache(), half, concurrency, isolation);
-                put(grid(0), jcache(), half, concurrency, isolation);
+        try {
+            while (!fut.isDone()) {
+                if (tx) {
+                    remove(grid(0), jcache(), half, concurrency, isolation);
+                    put(grid(0), jcache(), half, concurrency, isolation);
+                }
+                else {
+                    remove(jcache(), half);
+                    put(jcache(), half);
+                }
             }
-            else {
-                remove(jcache(), half);
-                put(jcache(), half);
-            }
+        }
+        catch (Exception e) {
+            log.error("Unexpected exception: " + e, e);
+
+            throw e;
         }
 
         fut.get();
@@ -312,14 +235,20 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /**
+     * @param ignite Ignite.
      * @param cache Cache.
      * @param cnt Entry count.
      * @param concurrency Concurrency control.
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
-        TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+    private void put(Ignite ignite,
+        IgniteCache<String, Integer> cache,
+        final int cnt,
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation)
+        throws Exception
+    {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
@@ -330,7 +259,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 }
             });
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                 throw e;
@@ -357,25 +286,26 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /**
+     * @param ignite Ignite.
      * @param cache Cache.
      * @param cnt Entry count.
      * @param concurrency Concurrency control.
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void remove(Ignite g, IgniteCache<String, Integer> cache, final int cnt,
+    private void remove(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
         TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 
-            CU.inTx(g, cache, concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
+            CU.inTx(ignite, cache, concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
                 @Override public void applyx(IgniteCache<String, Integer> cache) {
                     for (int i = 0; i < cnt; i++)
                         cache.remove("key" + i);
                 }
             });
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                 throw e;
