@@ -41,16 +41,16 @@ import scala.language.implicitConversions
  * ==Help==
  * {{{
  * +----------------------------------------------------------------------------------------+
- * | events | Prints events from a node.                                                     |
+ * | events | Prints events from a node.                                                    |
  * |        |                                                                               |
- * |        | Note that this command depends on Ignite events.                            |
+ * |        | Note that this command depends on Ignite events.                              |
  * |        |                                                                               |
- * |        | Ignite events can be individually enabled and disabled and disabled events  |
+ * |        | Ignite events can be individually enabled and disabled and disabled events    |
  * |        | can affect the results produced by this command. Note also that configuration |
  * |        | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |        | events on each node can also affect the functionality of this command.        |
  * |        |                                                                               |
- * |        | By default - all events are DISABLED and Ignite stores last 10,000 local     |
+ * |        | By default - all events are DISABLED and Ignite stores last 10,000 local      |
  * |        | events on each node. Both of these defaults can be changed in configuration.  |
  * +----------------------------------------------------------------------------------------+
  * }}}
@@ -58,7 +58,7 @@ import scala.language.implicitConversions
  * ====Specification====
  * {{{
  *     events
- *     events "{-id=<node-id>|-id8=<node-id8>} {-e=<ch,cp,de,di,jo,ta,cl,ca,sw>}
+ *     events "{-id=<node-id>|-id8=<node-id8>} {-e=<ch,cr,de,di,jo,ta,cl,ca,sw>}
  *         {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
  * }}}
  *
@@ -72,7 +72,7 @@ import scala.language.implicitConversions
  *         Node ID8.
  *         Either '-id' or '-id8' can be specified.
  *         If called without the arguments - starts in interactive mode.
- *     -e=<ch,de,di,jo,ta,ca,cp,sw>
+ *     -e=<ch,de,di,jo,ta,ca,cr,sw>
  *         Comma separated list of event types that should be queried:
  *            ch Checkpoint events.
  *            de Deployment events.
@@ -81,7 +81,7 @@ import scala.language.implicitConversions
  *            ta Task execution events.
  *            cl Cloud events.
  *            ca Cache events.
- *            cp Cache pre-loader events.
+ *            cr Cache rebalance events.
  *            sw Swapspace events.
  *     -t=<num>s|m|h|d
  *         Defines time frame for querying events:
@@ -159,7 +159,7 @@ class VisorEventsCommand {
                 case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
                 case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
                 case "ca" => arr ++= EVTS_CACHE.toList
-                case "cp" => arr ++= EVTS_CACHE_REBALANCE.toList
+                case "cr" => arr ++= EVTS_CACHE_REBALANCE.toList
                 case "sw" => arr ++= EVTS_SWAPSPACE.toList
                 case "di" => arr ++= EVTS_DISCOVERY.toList
                 case t => throw new IllegalArgumentException("Unknown event type: " + t)
@@ -185,7 +185,7 @@ class VisorEventsCommand {
             case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
             case t if EVTS_CACHE.contains(t) => "ca"
             case t if EVTS_SWAPSPACE.contains(t) => "sw"
-            case t if EVTS_CACHE_REBALANCE.contains(t) => "cp"
+            case t if EVTS_CACHE_REBALANCE.contains(t) => "cr"
         }
     }
 
@@ -437,7 +437,7 @@ object VisorEventsCommand {
         ),
         spec = List(
             "events",
-            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cp,sw>}",
+            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cr,sw>}",
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
@@ -452,7 +452,7 @@ object VisorEventsCommand {
                     "you can also use '@n0' ... '@nn' variables as shortcut to <node-id8>.",
                 "If called without the arguments - starts in interactive mode."
             ),
-            "-e=<ch,de,di,jo,ta,ca,cp,sw>" -> List(
+            "-e=<ch,de,di,jo,ta,ca,cr,sw>" -> List(
                 "Comma separated list of event types that should be queried:",
                 "   ch Checkpoint events.",
                 "   de Deployment events.",
@@ -460,7 +460,7 @@ object VisorEventsCommand {
                 "   jo Job execution events.",
                 "   ta Task execution events.",
                 "   ca Cache events.",
-                "   cp Cache pre-loader events.",
+                "   cr Cache rebalance events.",
                 "   sw Swapspace events."
             ),
             "-t=<num>s|m|h|d" -> List(

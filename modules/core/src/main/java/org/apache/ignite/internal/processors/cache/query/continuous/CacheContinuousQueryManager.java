@@ -129,7 +129,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         assert e != null;
         assert key != null;
 
-        boolean internal = e.isInternal();
+        boolean internal = e.isInternal() || e.context().system();
 
         if (preload && !internal)
             return;

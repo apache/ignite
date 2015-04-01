@@ -63,12 +63,14 @@ public class IgniteTestResources {
     private GridResourceProcessor rsrcProc;
 
     /** */
-    public IgniteTestResources() {
+    public IgniteTestResources() throws IgniteCheckedException {
         log = rootLog.getLogger(getClass());
         nodeId = UUID.randomUUID();
         jmx = ManagementFactory.getPlatformMBeanServer();
         home = U.getIgniteHome();
         locHost = localHost();
+
+        U.setWorkDirectory(null, null);
 
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
@@ -78,7 +80,7 @@ public class IgniteTestResources {
     /**
      * @param jmx JMX server.
      */
-    public IgniteTestResources(MBeanServer jmx) {
+    public IgniteTestResources(MBeanServer jmx) throws IgniteCheckedException {
         assert jmx != null;
 
         this.jmx = jmx;
@@ -97,7 +99,7 @@ public class IgniteTestResources {
     /**
      * @param log Logger.
      */
-    public IgniteTestResources(IgniteLogger log) {
+    public IgniteTestResources(IgniteLogger log) throws IgniteCheckedException {
         assert log != null;
 
         this.log = log.getLogger(getClass());

@@ -325,6 +325,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -339,7 +340,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService restExecSvc) {
+        ExecutorService restExecSvc) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;

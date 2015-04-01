@@ -293,7 +293,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         /**
          * @param ignite Grid.
          */
-        private SelfReferencedJob(Ignite ignite) {
+        private SelfReferencedJob(Ignite ignite) throws IgniteCheckedException {
             node = ignite.cluster().localNode();
 
             ref = this;
