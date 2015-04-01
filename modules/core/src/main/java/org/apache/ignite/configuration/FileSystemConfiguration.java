@@ -609,7 +609,10 @@ public class FileSystemConfiguration {
      * Default value is {@link #DFLT_FRAGMENTIZER_LOCAL_WRITES_RATIO}.
      *
      * @return Ratio for local writes space.
+     *
+     * @deprecated Parameter is no longer used.
      */
+    @Deprecated
     public float getFragmentizerLocalWritesRatio() {
         return fragmentizerLocWritesRatio;
     }
@@ -619,7 +622,10 @@ public class FileSystemConfiguration {
      *
      * @param fragmentizerLocWritesRatio Ratio for local file writes.
      * @see #getFragmentizerLocalWritesRatio()
+     *
+     * @deprecated Parameter is no longer used.
      */
+    @Deprecated
     public void setFragmentizerLocalWritesRatio(float fragmentizerLocWritesRatio) {
         this.fragmentizerLocWritesRatio = fragmentizerLocWritesRatio;
     }
