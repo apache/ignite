@@ -32,7 +32,6 @@ import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -319,12 +318,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param cfg Grid configuration.
      * @param gw Kernal gateway.
      * @param utilityCachePool Utility cache pool.
+     * @param marshCachePool Marshaller cache pool.
      * @param execSvc Public executor service.
      * @param sysExecSvc System executor service.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -339,7 +340,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService restExecSvc) {
+        ExecutorService restExecSvc) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -387,6 +388,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /**
      * @param comp Manager to add.
+     * @param addToList If {@code true} component is added to components list.
      */
     public void add(GridComponent comp, boolean addToList) {
         assert comp != null;
@@ -495,9 +497,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isStopping() {
-        GridKernalState state = gw.getState();
-
-        return state == GridKernalState.STOPPING || state == GridKernalState.STOPPED;
+        return ((IgniteKernal)grid).isStopping();
     }
 
     /** {@inheritDoc} */
@@ -791,6 +791,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             return (T)new GridOsCacheDrManager();
         else if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(this);
+        else if (cls.equals(CacheConflictResolutionManager.class))
+            return (T)new CacheOsConflictResolutionManager<>();
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

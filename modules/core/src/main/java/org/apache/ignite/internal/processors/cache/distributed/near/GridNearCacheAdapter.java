@@ -38,7 +38,6 @@ import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
@@ -521,24 +520,18 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public V promote(K key, boolean deserializePortable) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
-
         // Unswap only from dht(). Near cache does not have swap storage.
         return dht().promote(key, deserializePortable);
     }
 
     /** {@inheritDoc} */
     @Override public V promote(K key) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
-
         // Unswap only from dht(). Near cache does not have swap storage.
         return dht().promote(key);
     }
 
     /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(READ, SKIP_SWAP));
-
         // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.
         if (ctx.affinityNode())
@@ -552,8 +545,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        ctx.denyOnFlags(F.asList(SKIP_SWAP));
-
         return dht().swapIterator();
     }
 

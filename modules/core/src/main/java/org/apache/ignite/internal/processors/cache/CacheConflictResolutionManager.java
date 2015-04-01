@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 
-public class GridCacheReplicatedFlagsTest extends GridCacheAbstractFlagsTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
-    }
+/**
+ * Conflict resolver manager.
+ */
+public interface CacheConflictResolutionManager<K, V> extends GridCacheManager<K, V> {
+    /**
+     * @return Cache conflict resolver.
+     */
+    public CacheVersionConflictResolver conflictResolver();
 }

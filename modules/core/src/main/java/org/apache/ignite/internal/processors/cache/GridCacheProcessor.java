@@ -677,9 +677,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        marshallerCache().context().preloader().syncFuture().listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> f) {
-                ctx.marshallerContext().onMarshallerCacheReady(ctx);
+        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+
+        marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+            @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
+                ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
             }
         });
 
@@ -1014,6 +1016,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
         GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
+        CacheConflictResolutionManager rslvrMgr = ctx.createComponent(CacheConflictResolutionManager.class);
 
         GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -1037,7 +1040,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            jta);
+            jta,
+            rslvrMgr
+        );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -1161,7 +1166,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                jta);
+                jta,
+                rslvrMgr
+            );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
 
@@ -2190,17 +2197,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public GridCacheAdapter<Integer, String> marshallerCache() {
         return internalCache(CU.MARSH_CACHE_NAME);
-    }
-
-    /**
-     * Gets utility cache.
-     *
-     * @param keyCls Key class.
-     * @param valCls Value class.
-     * @return Projection over utility cache.
-     */
-    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls, Class<V> valCls) {
-        return (GridCacheProjectionEx<K, V>)cache(CU.UTILITY_CACHE_NAME).projection(keyCls, valCls);
     }
 
     /**

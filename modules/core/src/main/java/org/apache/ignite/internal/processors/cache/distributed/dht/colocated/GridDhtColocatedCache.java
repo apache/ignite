@@ -39,7 +39,6 @@ import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
@@ -178,7 +177,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))

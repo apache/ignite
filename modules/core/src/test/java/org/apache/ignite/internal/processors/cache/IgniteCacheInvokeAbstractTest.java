@@ -32,7 +32,6 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -55,11 +54,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             invoke(cache, PESSIMISTIC);
 
             invoke(cache, OPTIMISTIC);
-        }
-        else if (gridCount() > 1) {
-            cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
-
-            invoke(cache, null);
         }
     }
 
@@ -184,11 +178,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             invokeAll(cache, PESSIMISTIC);
 
             invokeAll(cache, OPTIMISTIC);
-        }
-        else if (gridCount() > 1) {
-            cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
-
-            invokeAll(cache, null);
         }
     }
 

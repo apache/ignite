@@ -30,7 +30,7 @@ import java.io.*;
  */
 
 public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInternal, GridPeerDeployAware,
-    Externalizable, Cloneable {
+    Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -86,19 +86,6 @@ public final class GridCacheAtomicStampedValue<T, S> implements GridCacheInterna
      */
     public S stamp() {
         return stamp;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
-    @Override public GridCacheAtomicStampedValue<T, S> clone() throws CloneNotSupportedException {
-        GridCacheAtomicStampedValue<T, S> obj = (GridCacheAtomicStampedValue<T, S>)super.clone();
-
-        T locVal = X.cloneObject(val, false, true);
-        S locStamp = X.cloneObject(stamp, false, true);
-
-        obj.set(locVal, locStamp);
-
-        return obj;
     }
 
     /** {@inheritDoc} */

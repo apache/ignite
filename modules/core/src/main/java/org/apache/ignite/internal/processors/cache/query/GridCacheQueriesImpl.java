@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * {@link CacheQueries} implementation.
  */
-public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
+public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -213,26 +213,5 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             null,
             incMeta,
             prj != null && prj.isKeepPortable());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(prj);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
-    }
-
-    /**
-     * Reconstructs object on unmarshalling.
-     *
-     * @return Reconstructed object.
-     * @throws ObjectStreamException Thrown in case of unmarshalling error.
-     */
-    private Object readResolve() throws ObjectStreamException {
-        return prj.queries();
     }
 }
