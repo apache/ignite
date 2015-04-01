@@ -69,6 +69,14 @@ public interface IgniteEx extends Ignite {
     public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p);
 
     /**
+     * Gets system state of cache with specified name.
+     *
+     * @param name Cache name.
+     * @return {@code true} if cache with specified name is system.
+     */
+    public boolean systemCache(@Nullable String name);
+
+    /**
      * Checks if the event type is user-recordable.
      *
      * @param type Event type to check.

@@ -961,6 +961,11 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
+        @Override public boolean systemCache(@Nullable String name) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p) {
             return null;

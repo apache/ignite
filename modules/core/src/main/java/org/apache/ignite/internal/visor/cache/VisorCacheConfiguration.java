@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -116,12 +116,15 @@ public class VisorCacheConfiguration implements Serializable {
     /** Query configuration. */
     private VisorCacheQueryConfiguration qryCfg;
 
+    /** System cache state. */
+    private boolean system;
+
     /**
      * @param ignite Grid.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
+    public static VisorCacheConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
         VisorCacheConfiguration cfg = new VisorCacheConfiguration();
 
         cfg.name = ccfg.getName();
@@ -144,6 +147,7 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
         cfg.writerFactory = compactClass(ccfg.getCacheWriterFactory());
         cfg.expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
+        cfg.system = ignite.systemCache(ccfg.getName());
 
         cfg.affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
         cfg.rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
@@ -161,7 +165,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @param caches Cache configurations.
      * @return Data transfer object for cache configurations properties.
      */
-    public static Iterable<VisorCacheConfiguration> list(Ignite ignite, CacheConfiguration[] caches) {
+    public static Iterable<VisorCacheConfiguration> list(IgniteEx ignite, CacheConfiguration[] caches) {
         if (caches == null)
             return Collections.emptyList();
 
@@ -367,6 +371,13 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public VisorCacheQueryConfiguration queryConfiguration() {
         return qryCfg;
+    }
+
+    /**
+     * @return System cache state.
+     */
+    public boolean system() {
+        return system;
     }
 
     /** {@inheritDoc} */

@@ -21,7 +21,6 @@ import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.processors.cache.{GridCacheUtils => CU}
 import org.apache.ignite.internal.util.typedef._
-import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -32,13 +31,13 @@ import org.jetbrains.annotations._
 import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask.VisorCacheMetricsCollectorArg
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -67,11 +66,11 @@ import scala.util.control.Breaks._
  *
  * ====Specification====
  * {{{
- *     cache
- *     cache -i
- *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r}
+ *     cache {-system}
+ *     cache -i {-system}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r} {-system}
  *     cache -clear {-c=<cache-name>}
- *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
+ *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
  *     cache -swap {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}
  *     cache -stop -c=<cache-name>
  * }}}
@@ -105,6 +104,8 @@ import scala.util.control.Breaks._
  *     -a
  *         Prints details statistics about each cache.
  *         By default only aggregated summary is printed.
+ *     -system
+ *         Enable showing of information about system caches.
  *     -clear
  *          Clears cache.
  *     -scan
@@ -122,6 +123,8 @@ import scala.util.control.Breaks._
  * ====Examples====
  * {{{
  *     cache
+ *         Prints summary statistics about all no system caches.
+ *     cache -system
  *         Prints summary statistics about all caches.
  *     cache -id8=12345678 -s=hi -r
  *         Prints summary statistics about caches from node with specified id8
@@ -212,213 +215,227 @@ class VisorCacheCommand {
      * @param args Command arguments.
      */
     def cache(args: String) {
-        breakable {
-            if (!isConnected)
-                adviseToConnect()
-            else {
-                var argLst = parseArgs(args)
+        if (!isConnected)
+            adviseToConnect()
+        else {
+            var argLst = parseArgs(args)
 
-                if (hasArgFlag("i", argLst)) {
-                    askForNode("Select node from:") match {
-                        case Some(nid) => ask("Detailed statistics (y/n) [n]: ", "n") match {
-                            case "n" | "N" => nl(); cache("-id=" + nid).^^
-                            case "y" | "Y" => nl(); cache("-a -id=" + nid).^^
-                            case x => nl(); warn("Invalid answer: " + x).^^
-                        }
-                        case None => break()
+            if (hasArgFlag("i", argLst)) {
+                askForNode("Select node from:") match {
+                    case Some(nid) => ask("Detailed statistics (y/n) [n]: ", "n") match {
+                        case "n" | "N" => nl(); cache("-id=" + nid).^^
+                        case "y" | "Y" => nl(); cache("-a -id=" + nid).^^
+                        case x => nl(); warn("Invalid answer: " + x).^^
                     }
-
-                    break()
+                    case None => return
                 }
 
-                val node = parseNode(argLst) match {
-                    case Left(msg) =>
-                        scold(msg)
-
-                        break()
-
-                    case Right(n) => n
-                }
-
-                var cacheName = argValue("c", argLst) match {
-                    case Some(dfltName) if dfltName == DFLT_CACHE_KEY || dfltName == DFLT_CACHE_NAME =>
-                        argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
-
-                        Some(null)
-
-                    case cn => cn
-                }
-
-                if (Seq("clear", "swap", "scan", "stop").exists(hasArgFlag(_, argLst))) {
-                    if (cacheName.isEmpty)
-                        askForCache("Select cache from:", node) match {
-                            case Some(name) =>
-                                argLst = argLst ++ Seq("c" -> name)
-
-                                cacheName = Some(name)
-                            case None => break()
-                        }
-
-                    if (hasArgFlag("clear", argLst))
-                        VisorCacheClearCommand().clear(argLst, node)
-                    else if (hasArgFlag("swap", argLst))
-                        VisorCacheSwapCommand().swap(argLst, node)
-                    else if (hasArgFlag("scan", argLst))
-                        VisorCacheScanCommand().scan(argLst, node)
-                    else if (hasArgFlag("stop", argLst)) {
-                        cacheName.foreach(name => {
-                            if (!CU.isSystemCache(name))
-                                VisorCacheStopCommand().scan(argLst, node)
-                            else
-                                warn("Stopping of system cache is not allowed: " + name)
-                        })
-                    }
-
-                    break()
-                }
-
-                val all = hasArgFlag("a", argLst)
-
-                val sortType = argValue("s", argLst)
-                val reversed = hasArgName("r", argLst)
-
-                if (sortType.isDefined && !isValidSortType(sortType.get))
-                    scold("Invalid '-s' argument in: " + args).^^
-
-                // Get cache stats data from all nodes.
-                val aggrData = cacheData(node, cacheName)
-
-                if (aggrData.isEmpty)
-                    scold("No caches found.").^^
-
-                println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
-
-                val sumT = VisorTextTable()
-
-                sumT #= ("Name(@)", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
-
-                sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
-                    ad => {
-                        // Add cache host as visor variable.
-                        registerCacheName(ad.cacheName)
-
-                        sumT += (
-                            mkCacheName(ad.cacheName),
-                            ad.nodes,
-                            (
-                                "min: " + ad.minimumSize,
-                                "avg: " + formatDouble(ad.averageSize),
-                                "max: " + ad.maximumSize
-                                ),
-                            (
-                                "min: " + ad.minimumHits,
-                                "avg: " + formatDouble(ad.averageHits),
-                                "max: " + ad.maximumHits
-                                ),
-                            (
-                                "min: " + ad.minimumMisses,
-                                "avg: " + formatDouble(ad.averageMisses),
-                                "max: " + ad.maximumMisses
-                                ),
-                            (
-                                "min: " + ad.minimumReads,
-                                "avg: " + formatDouble(ad.averageReads),
-                                "max: " + ad.maximumReads
-                                ),
-                            (
-                                "min: " + ad.minimumWrites,
-                                "avg: " + formatDouble(ad.averageWrites),
-                                "max: " + ad.maximumWrites
-                                )
-                            )
-                    }
-                )
-
-                sumT.render()
-
-                if (all) {
-                    val sorted = aggrData.sortWith((k1, k2) => {
-                        if (k1.cacheName == null)
-                            true
-                        else if (k2.cacheName == null)
-                            false
-                        else k1.cacheName.compareTo(k2.cacheName) < 0
-                    })
-
-                    val gCfg = node.map(config).collect {
-                        case cfg if cfg != null => cfg
-                    }
-
-                    sorted.foreach(ad => {
-                        val cacheNameVar = mkCacheName(ad.cacheName)
-
-                        println("\nCache '" + cacheNameVar + "':")
-
-                        val m = ad.metrics()
-
-                        val csT = VisorTextTable()
-
-                        csT += ("Name(@)", cacheNameVar)
-                        csT += ("Nodes", m.size())
-                        csT += ("Size Min/Avg/Max", ad.minimumSize + " / " + formatDouble(ad.averageSize) + " / " + ad.maximumSize)
-
-                        val ciT = VisorTextTable()
-
-                        ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
-
-                        sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
-                            val nm = ignite.cluster.node(nid).metrics()
-
-                            ciT += (
-                                nodeId8Addr(nid),
-                                nm.getTotalCpus,
-                                formatDouble(100d * nm.getHeapMemoryUsed / nm.getHeapMemoryMaximum) + " %",
-
-                                formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
-                                X.timeSpan2HMSM(nm.getUpTime),
-                                cm.keySize(),
-                                (
-                                    "Hi: " + cm.hits(),
-                                    "Mi: " + cm.misses(),
-                                    "Rd: " + cm.reads(),
-                                    "Wr: " + cm.writes()
-                                )
-                            )
-                        }
-
-                        csT.render()
-
-                        nl()
-                        println("Nodes for: " + cacheNameVar)
-
-                        ciT.render()
-
-                        // Print footnote.
-                        println("'Hi' - Number of cache hits.")
-                        println("'Mi' - Number of cache misses.")
-                        println("'Rd' - number of cache reads.")
-                        println("'Wr' - Number of cache writes.")
-
-                        // Print metrics.
-                        nl()
-                        println("Aggregated queries metrics:")
-                        println("  Minimum execution time: " + X.timeSpan2HMSM(ad.minimumQueryTime()))
-                        println("  Maximum execution time: " + X.timeSpan2HMSM(ad.maximumQueryTime))
-                        println("  Average execution time: " + X.timeSpan2HMSM(ad.averageQueryTime.toLong))
-                        println("  Total number of executions: " + ad.execsQuery)
-                        println("  Total number of failures:   " + ad.failsQuery)
-
-                        gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
-                            nl()
-
-                            showCacheConfiguration("Cache configuration:", cfg)
-                        }))
-                    })
-
-                }
-                else
-                    println("\nUse \"-a\" flag to see detailed statistics.")
+                return
             }
+
+            val node = parseNode(argLst) match {
+                case Left(msg) =>
+                    scold(msg)
+
+                    return
+
+                case Right(n) => n
+            }
+
+            val showSystem = hasArgFlag("system", argLst)
+
+            var cacheName = argValue("c", argLst) match {
+                case Some(dfltName) if dfltName == DFLT_CACHE_KEY || dfltName == DFLT_CACHE_NAME =>
+                    argLst = argLst.filter(_._1 != "c") ++ Seq("c" -> null)
+
+                    Some(null)
+
+                case cn => cn
+            }
+
+            /** Check that argument list has flag from list. */
+            def hasArgFlagIn(flags: String *) = {
+                flags.exists(hasArgFlag(_, argLst))
+            }
+
+            if (hasArgFlagIn("clear", "swap", "scan", "stop")) {
+                if (cacheName.isEmpty)
+                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop")) match {
+                        case Some(name) =>
+                            argLst = argLst ++ Seq("c" -> name)
+
+                            cacheName = Some(name)
+
+                        case None => return
+                    }
+
+                cacheName.foreach(name => {
+                    if (hasArgFlag("scan", argLst))
+                        VisorCacheScanCommand().scan(argLst, node)
+                    else {
+                        if (!CU.isSystemCache(name)) {
+                            if (hasArgFlag("clear", argLst))
+                                VisorCacheClearCommand().clear(argLst, node)
+                            else if (hasArgFlag("swap", argLst))
+                                VisorCacheSwapCommand().swap(argLst, node)
+                            else if (hasArgFlag("stop", argLst))
+                                VisorCacheStopCommand().scan(argLst, node)
+                        }
+                        else {
+                            if (hasArgFlag("clear", argLst))
+                                warn("Clearing of system cache is not allowed: " + name)
+                            else if (hasArgFlag("swap", argLst))
+                                warn("Backup swapping of system cache is not allowed: " + name)
+                            else if (hasArgFlag("stop", argLst))
+                                warn("Stopping of system cache is not allowed: " + name)
+                        }
+                    }
+                })
+
+                return
+            }
+
+            val all = hasArgFlag("a", argLst)
+
+            val sortType = argValue("s", argLst)
+            val reversed = hasArgName("r", argLst)
+
+            if (sortType.isDefined && !isValidSortType(sortType.get))
+                scold("Invalid '-s' argument in: " + args).^^
+
+            // Get cache stats data from all nodes.
+            val aggrData = cacheData(node, cacheName, showSystem)
+
+            if (aggrData.isEmpty)
+                scold("No caches found.").^^
+
+            println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
+
+            val sumT = VisorTextTable()
+
+            sumT #= ("Name(@)", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
+
+            sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
+                ad => {
+                    // Add cache host as visor variable.
+                    registerCacheName(ad.cacheName)
+
+                    sumT += (
+                        mkCacheName(ad.cacheName),
+                        ad.nodes,
+                        (
+                            "min: " + ad.minimumSize,
+                            "avg: " + formatDouble(ad.averageSize),
+                            "max: " + ad.maximumSize
+                            ),
+                        (
+                            "min: " + ad.minimumHits,
+                            "avg: " + formatDouble(ad.averageHits),
+                            "max: " + ad.maximumHits
+                            ),
+                        (
+                            "min: " + ad.minimumMisses,
+                            "avg: " + formatDouble(ad.averageMisses),
+                            "max: " + ad.maximumMisses
+                            ),
+                        (
+                            "min: " + ad.minimumReads,
+                            "avg: " + formatDouble(ad.averageReads),
+                            "max: " + ad.maximumReads
+                            ),
+                        (
+                            "min: " + ad.minimumWrites,
+                            "avg: " + formatDouble(ad.averageWrites),
+                            "max: " + ad.maximumWrites
+                            )
+                        )
+                }
+            )
+
+            sumT.render()
+
+            if (all) {
+                val sorted = aggrData.sortWith((k1, k2) => {
+                    if (k1.cacheName == null)
+                        true
+                    else if (k2.cacheName == null)
+                        false
+                    else k1.cacheName.compareTo(k2.cacheName) < 0
+                })
+
+                val gCfg = node.map(config).collect {
+                    case cfg if cfg != null => cfg
+                }
+
+                sorted.foreach(ad => {
+                    val cacheNameVar = mkCacheName(ad.cacheName)
+
+                    println("\nCache '" + cacheNameVar + "':")
+
+                    val m = ad.metrics()
+
+                    val csT = VisorTextTable()
+
+                    csT += ("Name(@)", cacheNameVar)
+                    csT += ("Nodes", m.size())
+                    csT += ("Size Min/Avg/Max", ad.minimumSize + " / " + formatDouble(ad.averageSize) + " / " + ad.maximumSize)
+
+                    val ciT = VisorTextTable()
+
+                    ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
+
+                    sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) =>
+                        val nm = ignite.cluster.node(nid).metrics()
+
+                        ciT += (
+                            nodeId8Addr(nid),
+                            nm.getTotalCpus,
+                            formatDouble(100d * nm.getHeapMemoryUsed / nm.getHeapMemoryMaximum) + " %",
+
+                            formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
+                            X.timeSpan2HMSM(nm.getUpTime),
+                            cm.keySize(),
+                            (
+                                "Hi: " + cm.hits(),
+                                "Mi: " + cm.misses(),
+                                "Rd: " + cm.reads(),
+                                "Wr: " + cm.writes()
+                            )
+                        )
+                    }
+
+                    csT.render()
+
+                    nl()
+                    println("Nodes for: " + cacheNameVar)
+
+                    ciT.render()
+
+                    // Print footnote.
+                    println("'Hi' - Number of cache hits.")
+                    println("'Mi' - Number of cache misses.")
+                    println("'Rd' - number of cache reads.")
+                    println("'Wr' - Number of cache writes.")
+
+                    // Print metrics.
+                    nl()
+                    println("Aggregated queries metrics:")
+                    println("  Minimum execution time: " + X.timeSpan2HMSM(ad.minimumQueryTime()))
+                    println("  Maximum execution time: " + X.timeSpan2HMSM(ad.maximumQueryTime))
+                    println("  Average execution time: " + X.timeSpan2HMSM(ad.averageQueryTime.toLong))
+                    println("  Total number of executions: " + ad.execsQuery)
+                    println("  Total number of failures:   " + ad.failsQuery)
+
+                    gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
+                        nl()
+
+                        showCacheConfiguration("Cache configuration:", cfg)
+                    }))
+                })
+
+            }
+            else
+                println("\nUse \"-a\" flag to see detailed statistics.")
         }
     }
 
@@ -463,9 +480,12 @@ class VisorCacheCommand {
     /**
      * Get metrics data for all caches from all node or from specified node.
      *
+     * @param node Option of node for cache names extracting. All nodes if `None`.
+     * @param systemCaches Allow selection of system caches.
      * @return Caches metrics data.
      */
-    private def cacheData(node: Option[ClusterNode], name: Option[String]): List[VisorCacheAggregatedMetrics] = {
+    private def cacheData(node: Option[ClusterNode], name: Option[String], systemCaches: Boolean = false):
+        List[VisorCacheAggregatedMetrics] = {
         assert(node != null)
 
         try {
@@ -474,7 +494,7 @@ class VisorCacheCommand {
             val nids = prj.nodes().map(_.id())
 
             ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new IgniteBiTuple(JavaBoolean.valueOf(name.isEmpty), name.orNull))).toList
+                new VisorCacheMetricsCollectorArg(JavaBoolean.valueOf(name.isEmpty), systemCaches, name.orNull))).toList
         }
         catch {
             case e: IgniteException => Nil
@@ -570,14 +590,16 @@ class VisorCacheCommand {
      * Asks user to select a cache from the list.
      *
      * @param title Title displayed before the list of caches.
+     * @param node Option of node for cache names extracting. All nodes if `None`.
+     * @param showSystem Allow selection of system caches.
      * @return `Option` for ID of selected cache.
      */
-    def askForCache(title: String, node: Option[ClusterNode]): Option[String] = {
+    def askForCache(title: String, node: Option[ClusterNode], showSystem: Boolean = false): Option[String] = {
         assert(title != null)
         assert(visor.visor.isConnected)
 
         // Get cache stats data from all nodes.
-        val aggrData = cacheData(node, None)
+        val aggrData = cacheData(node, None, showSystem)
 
         if (aggrData.isEmpty)
             scold("No caches found.").^^

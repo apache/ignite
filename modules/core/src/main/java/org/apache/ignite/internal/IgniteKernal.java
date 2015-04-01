@@ -2448,6 +2448,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean systemCache(@Nullable String name) {
+        return ctx.cache().systemCache(name);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> GridCache<K, V> cachex() {
         guard();
 
