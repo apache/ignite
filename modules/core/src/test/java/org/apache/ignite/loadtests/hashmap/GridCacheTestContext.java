@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.testframework.junits.*;
 
 import java.util.*;
@@ -70,7 +71,8 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheTtlManager(),
             new GridOsCacheDrManager(),
             new CacheNoopJtaManager(),
-            new CacheOsConflictResolutionManager<K, V>()
+            new CacheOsConflictResolutionManager<K, V>(),
+            new CachePluginManager(ctx, new CacheConfiguration())
         );
     }
 }
