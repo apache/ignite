@@ -15,38 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.plugin;
+
+import java.io.*;
 
 /**
- * Continuous query listener.
+ * TODO: Add class description.
  */
-interface CacheContinuousQueryListener<K, V> {
+public interface CachePluginConfiguration<K, V> extends Serializable {
     /**
-     * Query execution callback.
-     */
-    public void onExecution();
-
-    /**
-     * Entry update callback.
+     * Creates cache plugin provider.
      *
-     * @param evt Event
-     * @param primary Primary flag.
-     * @param recordIgniteEvt Whether to record event.
+     * @return Cache plugin provider class.
+     * @param ctx
      */
-    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
-
-    /**
-     * Listener unregistered callback.
-     */
-    public void onUnregister();
-
-    /**
-     * @return Whether old value is required.
-     */
-    public boolean oldValueRequired();
-
-    /**
-     * @return Whether to notify on existing entries.
-     */
-    public boolean notifyExisting();
+    public CachePluginProvider createProvider(CachePluginContext ctx);
 }

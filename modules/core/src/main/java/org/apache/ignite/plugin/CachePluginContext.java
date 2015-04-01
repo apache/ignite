@@ -15,38 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.plugin;
+
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Continuous query listener.
+ * TODO: Add interface description.
  */
-interface CacheContinuousQueryListener<K, V> {
+public interface CachePluginContext<C extends CachePluginConfiguration> {
     /**
-     * Query execution callback.
+     * @return Ignite configuration.
      */
-    public void onExecution();
+    public IgniteConfiguration igniteConfiguration();
+    
+    /**
+     * @return Plugin cache configuration.
+     */
+    public C cacheConfiguration();
 
     /**
-     * Entry update callback.
+     * @return Ignite cache configuration.
+     */
+    public CacheConfiguration igniteCacheConfiguration();
+
+    /**
+     * @return Grid.
+     */
+    public Ignite grid();
+
+    /**
+     * Gets logger for given class.
      *
-     * @param evt Event
-     * @param primary Primary flag.
-     * @param recordIgniteEvt Whether to record event.
+     * @param cls Class to get logger for.
+     * @return Logger.
      */
-    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
-
-    /**
-     * Listener unregistered callback.
-     */
-    public void onUnregister();
-
-    /**
-     * @return Whether old value is required.
-     */
-    public boolean oldValueRequired();
-
-    /**
-     * @return Whether to notify on existing entries.
-     */
-    public boolean notifyExisting();
+    public IgniteLogger log(Class<?> cls);
 }

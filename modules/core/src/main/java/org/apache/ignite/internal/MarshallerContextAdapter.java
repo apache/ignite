@@ -95,7 +95,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException {
+    @Override public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
         String clsName = map.get(id);
 
         if (clsName == null) {
@@ -118,6 +118,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @param id Type ID.
      * @param clsName Class name.
      * @return Whether class name was registered.
+     * @throws IgniteCheckedException In case of error.
      */
     protected abstract boolean registerClassName(int id, String clsName) throws IgniteCheckedException;
 
@@ -126,6 +127,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      *
      * @param id Type ID.
      * @return Class name.
+     * @throws IgniteCheckedException In case of error.
      */
-    protected abstract String className(int id);
+    protected abstract String className(int id) throws IgniteCheckedException;
 }

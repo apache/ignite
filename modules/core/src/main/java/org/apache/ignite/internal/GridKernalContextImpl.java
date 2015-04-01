@@ -31,7 +31,6 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
@@ -56,8 +55,8 @@ import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -325,6 +324,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
      * @param restExecSvc REST executor service.
+     * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -339,7 +339,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService restExecSvc) {
+        ExecutorService restExecSvc) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -786,12 +786,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         if (res != null)
             return res;
 
-        if (cls.equals(GridCacheDrManager.class))
-            return (T)new GridOsCacheDrManager();
-        else if (cls.equals(IgniteCacheObjectProcessor.class))
+        if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(this);
-        else if (cls.equals(CacheConflictResolutionManager.class))
-            return (T)new CacheOsConflictResolutionManager<>();
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

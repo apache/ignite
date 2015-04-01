@@ -40,6 +40,7 @@ public interface MarshallerContext {
      * @param ldr Class loader.
      * @return Class.
      * @throws ClassNotFoundException If class was not found.
+     * @throws IgniteCheckedException In case of any other error.
      */
-    public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException;
+    public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
 }
