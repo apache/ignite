@@ -309,10 +309,12 @@ public class GridMapQueryExecutor implements GridMessageListener {
         }
 
         try {
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
-                page == 0 ? res.rowCount : -1, marshallRows(rows));
+            boolean loc = node.isLocal();
 
-            if (node.isLocal())
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
+                page == 0 ? res.rowCount : -1, loc ? null : marshallRows(rows), loc ? rows : null);
+
+            if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             else
                 ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
