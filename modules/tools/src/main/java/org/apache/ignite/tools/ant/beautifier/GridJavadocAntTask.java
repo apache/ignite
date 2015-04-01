@@ -252,12 +252,14 @@ public class GridJavadocAntTask extends MatchingTask {
                         tok.update(
                             "<link rel='shortcut icon' href='https://ignite.incubator.apache.org/favicon.ico'/>\n" +
                             "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shCore.css'/>\n" +
-                            "<link type='text/css' rel='stylesheet' href='" + SH_URL + "/styles/shThemeDefault.css'/>\n" +
+                            "<link type='text/css' rel='stylesheet' href='" + SH_URL +
+                                "/styles/shThemeDefault.css'/>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shCore.js'></script>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shLegacy.js'></script>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushJava.js'></script>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushPlain.js'></script>\n" +
-                            "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushJScript.js'></script>\n" +
+                            "<script type='text/javascript' src='" + SH_URL +
+                                "/scripts/shBrushJScript.js'></script>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushBash.js'></script>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushXml.js'></script>\n" +
                             "<script type='text/javascript' src='" + SH_URL + "/scripts/shBrushScala.js'></script>\n" +
