@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Cache version conflict resolver.
  */
-public abstract class GridCacheVersionAbstractConflictResolver {
+public interface CacheVersionConflictResolver {
     /**
      * Resolve the conflict.
      *
@@ -32,25 +32,9 @@ public abstract class GridCacheVersionAbstractConflictResolver {
      * @return Conflict resolution context.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCacheVersionConflictContext<K, V> resolve(GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
-        GridCacheVersionConflictContext<K, V> ctx = new GridCacheVersionConflictContext<>(oldEntry, newEntry);
-
-        resolve0(ctx, oldEntry, newEntry, atomicVerComparator);
-
-        return ctx;
-    }
-
-    /**
-     * Internal conflict resolution routine.
-     *
-     * @param ctx Context.
-     * @param oldEntry Old entry.
-     * @param newEntry New entry.
-     * @param atomicVerComparator Whether to use atomic version comparator.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected abstract <K, V> void resolve0(GridCacheVersionConflictContext<K, V> ctx,
-        GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
-        boolean atomicVerComparator) throws IgniteCheckedException;
+    public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        boolean atomicVerComparator
+    ) throws IgniteCheckedException;
 }

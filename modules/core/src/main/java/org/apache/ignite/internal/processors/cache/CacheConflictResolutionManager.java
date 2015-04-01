@@ -15,27 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 
-import java.text.*;
-import java.util.*;
-
-public class GridCachePartitionedFlagsTest extends GridCacheAbstractFlagsTest {
-
-    @Override
-    protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    @Override
-    public void testTestSyncCommitFlag() throws Exception {
-        // Temporary disable test run.
-        if (new Date().compareTo(new SimpleDateFormat("dd.MM.yyyy").parse("01.06.2012")) < 0)
-            return;
-
-        super.testTestSyncCommitFlag();
-    }
+/**
+ * Conflict resolver manager.
+ */
+public interface CacheConflictResolutionManager<K, V> extends GridCacheManager<K, V> {
+    /**
+     * @return Cache conflict resolver.
+     */
+    public CacheVersionConflictResolver conflictResolver();
 }

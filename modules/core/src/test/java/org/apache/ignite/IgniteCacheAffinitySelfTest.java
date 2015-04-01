@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     /** Initial grid count. */
-    private int GRID_COUNT = 3;
+    private int GRID_CNT = 3;
 
     /** Cache name */
     private final String CACHE1 = "Fair";
@@ -46,7 +46,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return GRID_COUNT;
+        return GRID_CNT;
     }
 
     /** {@inheritDoc} */
@@ -87,7 +87,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     }
 
     /**
-     * Throws Exception if failed.
+     * @throws Exception if failed.
      */
     public void testAffinity() throws Exception {
         checkAffinity();
@@ -97,7 +97,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
         startGrid(gridCount() - 1);
         startGrid(gridCount());
 
-        GRID_COUNT += 1;
+        GRID_CNT += 1;
 
         checkAffinity();
     }

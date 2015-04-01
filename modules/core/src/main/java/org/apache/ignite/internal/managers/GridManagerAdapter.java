@@ -281,6 +281,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new IgniteSpiContext() {
+                    @Override public boolean isStopping() {
+                        return ctx.isStopping();
+                    }
+
                     @Override public Collection<ClusterNode> remoteNodes() {
                         return ctx.discovery().remoteNodes();
                     }

@@ -4263,7 +4263,66 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     *
+     * @throws Exception If failed.
+     */
+    public void testWithSkipStore() throws Exception {
+        if (gridCount() > 1) // TODO IGNITE-656 (test primary/backup/near keys with multiple nodes).
+            return;
+
+        IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+        IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
+
+        List<String> keys = primaryKeysForCache(cache, 10);
+
+        for (int i = 0; i < keys.size(); ++i)
+            putToStore(keys.get(i), i);
+
+        assertFalse(cacheSkipStore.iterator().hasNext());
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+
+            assertNotNull(cache.get(key));
+        }
+
+        for (String key : keys) {
+            cacheSkipStore.remove(key);
+
+            assertNotNull(cache.get(key));
+        }
+
+        String newKey = "New key";
+
+        assertFalse(map.containsKey(newKey));
+
+        cacheSkipStore.put(newKey, 1);
+
+        assertFalse(map.containsKey(newKey));
+
+        cache.put(newKey, 1);
+
+        assertTrue(map.containsKey(newKey));
+
+        Iterator<Cache.Entry<String, Integer>> it = cacheSkipStore.iterator();
+
+        assertTrue(it.hasNext());
+
+        Cache.Entry<String, Integer> entry = it.next();
+
+        String rmvKey =  entry.getKey();
+
+        assertTrue(map.containsKey(rmvKey));
+
+        it.remove();
+
+        assertNull(cacheSkipStore.get(rmvKey));
+
+        assertTrue(map.containsKey(rmvKey));
+    }
+
+    /**
+     * @return Cache start mode.
      */
     protected CacheStartMode cacheStartType() {
         String mode = System.getProperty("cache.start.mode");

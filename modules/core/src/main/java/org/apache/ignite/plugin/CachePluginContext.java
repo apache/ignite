@@ -15,24 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
+package org.apache.ignite.plugin;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Tests cache value consistency for ATOMIC mode.
+ * TODO: Add interface description.
  */
-public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsistencyAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+public interface CachePluginContext<C extends CachePluginConfiguration> {
+    /**
+     * @return Ignite configuration.
+     */
+    public IgniteConfiguration igniteConfiguration();
+    
+    /**
+     * @return Plugin cache configuration.
+     */
+    public C cacheConfiguration();
 
-    /** {@inheritDoc} */
-    @Override protected int iterationCount() {
-        return 100_000;
-    }
+    /**
+     * @return Ignite cache configuration.
+     */
+    public CacheConfiguration igniteCacheConfiguration();
+
+    /**
+     * @return Grid.
+     */
+    public Ignite grid();
+
+    /**
+     * Gets logger for given class.
+     *
+     * @param cls Class to get logger for.
+     * @return Logger.
+     */
+    public IgniteLogger log(Class<?> cls);
 }
