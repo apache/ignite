@@ -233,10 +233,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (ccfg != null) {
             CacheMemoryMode memMode = ccfg.getMemoryMode();
 
+            boolean storeVal = ctx.config().isPeerClassLoadingEnabled() ||
+                GridQueryProcessor.isEnabled(ccfg) ||
+                !ccfg.isCopyOnRead();
+
             return new CacheObjectContext(ctx,
                 new GridCacheDefaultAffinityKeyMapper(),
                 ccfg.isCopyOnRead() && memMode == ONHEAP_TIERED,
-                ctx.config().isPeerClassLoadingEnabled() || GridQueryProcessor.isEnabled(ccfg));
+                storeVal);
         }
         else
             return new CacheObjectContext(
@@ -323,7 +327,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         /**
-         *
+         * @param val Value.
+         * @param valBytes Value bytes.
          */
         public IgniteCacheObjectImpl(Object val, byte[] valBytes) {
             super(val, valBytes);
@@ -341,7 +346,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     if (valBytes == null)
                         valBytes = ctx.processor().marshal(ctx, val);
 
-                    if (ctx.unmarshalValues()) {
+                    if (ctx.storeValue()) {
                         ClassLoader ldr = ctx.p2pEnabled() ?
                             IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
@@ -355,7 +360,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to marshal object: " + val, e);
                 }
-            } else
+            }
+            else
                 return new CacheObjectImpl(val, valBytes);
         }
     }
