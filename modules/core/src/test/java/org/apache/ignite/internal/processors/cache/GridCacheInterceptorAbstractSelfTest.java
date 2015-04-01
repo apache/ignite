@@ -74,6 +74,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = false;
 
         assertEquals(0, interceptor.invokeCnt.get());
+
+        atomicClockModeDelay(jcache(0));
     }
 
     /** {@inheritDoc} */

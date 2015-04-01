@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Failover tests for partitioned cache.
  */
-public class GridCachePartitionedFailoverSelfTest extends GridCacheAbstractFailoverSelfTest {
+public class GridCachePartitionedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;

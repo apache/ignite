@@ -483,9 +483,9 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private boolean preloadEntry(
-            ClusterNode pick, 
-            int p, 
-            GridCacheEntryInfo entry, 
+            ClusterNode pick,
+            int p,
+            GridCacheEntryInfo entry,
             AffinityTopologyVersion topVer
         ) throws IgniteCheckedException {
             try {
@@ -574,8 +574,8 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(
-            ClusterNode node, 
-            final AffinityTopologyVersion topVer, 
+            ClusterNode node,
+            final AffinityTopologyVersion topVer,
             GridDhtPartitionDemandMessage d,
             GridDhtPartitionsExchangeFuture exchFut
         ) throws InterruptedException, IgniteCheckedException {
@@ -1041,10 +1041,11 @@ public class GridDhtPartitionDemandPool<K, V> {
                 if (picked.isEmpty()) {
                     top.own(part);
 
-                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_DATA_LOST)) {
+                    if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
                         DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
-                        cctx.events().addPreloadEvent(p, EVT_CACHE_REBALANCE_DATA_LOST, discoEvt.eventNode(),
+                        cctx.events().addPreloadEvent(p,
+                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
                             discoEvt.type(), discoEvt.timestamp());
                     }
 

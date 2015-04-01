@@ -84,7 +84,6 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                                 tCfg.getDefaultTxConcurrency(),
                                 tCfg.getDefaultTxIsolation(),
                                 tCfg.getDefaultTxTimeout(),
-                                /*invalidate*/false,
                                 /*store enabled*/true,
                                 /*tx size*/0,
                                 /*group lock keys*/null,

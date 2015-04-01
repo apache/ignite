@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
 
-public class GridCacheReplicatedFlagsTest extends GridCacheAbstractFlagsTest {
+import static org.apache.ignite.cache.CacheMode.*;
+
+/**
+ *
+ */
+public class GridCacheAtomicReplicatedFailoverSelfTest extends GridCacheAtomicFailoverSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+        return REPLICATED;
     }
 }

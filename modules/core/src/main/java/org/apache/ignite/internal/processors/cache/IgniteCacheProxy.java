@@ -189,7 +189,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return flagOn(CacheFlag.SKIP_STORE);
+        return skipStore();
     }
 
     /** {@inheritDoc} */
@@ -1024,7 +1024,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll(Set<K> keys) {
+    @Override public void clearAll(Set<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1072,7 +1072,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void localClearAll(Set<K> keys) {
+    @Override public void localClearAll(Set<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1384,8 +1384,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             GridCacheProjectionImpl<K1, V1> prj0 = new GridCacheProjectionImpl<>(
                 (CacheProjection<K1, V1>)(prj != null ? prj : delegate),
                 (GridCacheContext<K1, V1>)ctx,
-                null,
-                prj != null ? prj.flags() : null,
+                prj != null ? prj.skipStore() : false,
                 prj != null ? prj.subjectId() : null,
                 true,
                 prj != null ? prj.expiry() : null);
@@ -1401,35 +1400,23 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @param flag Flag to turn on.
-     * @return Cache with given flags enabled.
+     * @return Cache with skip store enabled.
      */
-    public IgniteCache<K, V> flagOn(CacheFlag flag) {
+    public IgniteCache<K, V> skipStore() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            Set<CacheFlag> res;
+            boolean skip = prj != null && prj.skipStore();
 
-            Set<CacheFlag> flags0 = prj != null ? prj.flags() : null;
-
-            if (flags0 != null) {
-                if (flags0.contains(flag))
-                    return this;
-
-                res = EnumSet.copyOf(flags0);
-            }
-            else
-                res = EnumSet.noneOf(CacheFlag.class);
-
-            res.add(flag);
+            if (skip)
+                return this;
 
             GridCacheProjectionImpl<K, V> prj0 = new GridCacheProjectionImpl<>(
                 (prj != null ? prj : delegate),
                 ctx,
-                null,
-                res,
-                prj != null ? prj.subjectId() : null,
                 true,
+                prj != null ? prj.subjectId() : null,
+                prj != null && prj.isKeepPortable(),
                 prj != null ? prj.expiry() : null);
 
             return new IgniteCacheProxy<>(ctx,

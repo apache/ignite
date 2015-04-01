@@ -257,7 +257,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
 
                     return true;
                 }
@@ -293,7 +293,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
                 if (hasFilters || retVal || txEntry.op() == GridCacheOperation.DELETE) {
-                    cached.unswap(true, retVal);
+                    cached.unswap(retVal);
 
                     CacheObject val = cached.innerGet(
                         tx,

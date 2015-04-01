@@ -566,7 +566,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         IgniteCache<Integer, Integer> c = grid(0).cache(null);
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals("Unexpected entries for grid: " + i, 0, internalCache(i).offHeapEntriesCount());
+            assertEquals("Unexpected entries for grid: " + i, 0, grid(i).cache(null).localSize(CachePeekMode.OFFHEAP));
 
             assertEquals("Unexpected offheap size for grid: " + i, 0, internalCache(i).offHeapAllocatedSize());
         }
@@ -586,7 +586,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals("Unexpected entries for grid: " + i, 0, internalCache(i).offHeapEntriesCount());
+            assertEquals("Unexpected entries for grid: " + i, 0, grid(i).cache(null).localSize(CachePeekMode.OFFHEAP));
 
             assertEquals("Unexpected offheap size for grid: " + i, 0, internalCache(i).offHeapAllocatedSize());
         }

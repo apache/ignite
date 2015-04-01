@@ -22,6 +22,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -67,13 +68,16 @@ public class VisorCacheStoreConfiguration implements Serializable {
     private int flushThreadCnt;
 
     /**
+     * @param ignite Ignite instance.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache store configuration properties.
      */
     public static VisorCacheStoreConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
         VisorCacheStoreConfiguration cfg = new VisorCacheStoreConfiguration();
 
-        CacheStore store = ((IgniteKernal)ignite).internalCache(ccfg.getName()).context().store().configuredStore();
+        GridCacheAdapter<Object, Object> c = ((IgniteKernal)ignite).internalCache(ccfg.getName());
+
+        CacheStore store = c != null && c.context().started() ? c.context().store().configuredStore() : null;
 
         cfg.jdbcStore = store instanceof CacheAbstractJdbcStore;
 
@@ -156,10 +160,10 @@ public class VisorCacheStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param batchSize New maximum batch size for write-behind cache store operations.
+     * @param batchSz New maximum batch size for write-behind cache store operations.
      */
-    public void batchSize(int batchSize) {
-        this.batchSz = batchSize;
+    public void batchSize(int batchSz) {
+        this.batchSz = batchSz;
     }
 
     /**
@@ -184,10 +188,10 @@ public class VisorCacheStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param flushSize New maximum object count in write-behind cache.
+     * @param flushSz New maximum object count in write-behind cache.
      */
-    public void flushSize(int flushSize) {
-        this.flushSz = flushSize;
+    public void flushSize(int flushSz) {
+        this.flushSz = flushSz;
     }
 
     /**

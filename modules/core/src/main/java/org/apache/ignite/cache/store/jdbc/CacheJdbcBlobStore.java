@@ -23,6 +23,8 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -110,6 +112,9 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** Connection attribute name. */
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
+
+    /** Marshaller. */
+    private static final Marshaller marsh = new JdkMarshaller();
 
     /** Connection URL. */
     private String connUrl = DFLT_CONN_URL;
@@ -560,7 +565,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return ignite.configuration().getMarshaller().marshal(obj);
+        return marsh.marshal(obj);
     }
 
     /**
@@ -575,7 +580,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return ignite.configuration().getMarshaller().unmarshal(bytes, getClass().getClassLoader());
+        return marsh.unmarshal(bytes, getClass().getClassLoader());
     }
 
     /**

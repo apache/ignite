@@ -257,7 +257,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(id, rmv)) {
                         rmv.forceClose();
 
-                        if (!stopping) {
+                        if (!getSpiContext().isStopping()) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
                             if (recoveryData != null) {
@@ -694,9 +694,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Context initialization latch. */
     private final CountDownLatch ctxInitLatch = new CountDownLatch(1);
-
-    /** Stopping flag. */
-    private volatile boolean stopping;
 
     /** metrics listener. */
     private final GridNioMetricsListener metricsLsnr = new GridNioMetricsListener() {
@@ -1463,7 +1460,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        assert stopping;
+        assert getSpiContext().isStopping();
 
         unregisterMBean();
 
@@ -1498,8 +1495,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override protected void onContextDestroyed0() {
-        stopping = true;
-
         if (ctxInitLatch.getCount() > 0)
             // Safety.
             ctxInitLatch.countDown();
@@ -1624,8 +1619,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client = clients.get(nodeId);
 
             if (client == null) {
-                if (stopping)
-                    throw new IgniteSpiException("Grid is stopping.");
+                if (getSpiContext().isStopping())
+                    throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.
                 GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();

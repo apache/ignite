@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.reducefields;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -119,20 +119,20 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
-        assert orgCache.putx("o1", new Organization(1, "A"));
-        assert orgCache.putx("o2", new Organization(2, "B"));
+        orgCache.put("o1", new Organization(1, "A"));
+        orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<AffinityKey<String>, Person> personCache = ((IgniteKernal)grid(0)).getCache(null);
+        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new AffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
     }
 
     /** {@inheritDoc} */

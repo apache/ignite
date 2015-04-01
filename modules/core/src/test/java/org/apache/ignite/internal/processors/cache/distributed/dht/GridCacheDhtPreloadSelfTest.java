@@ -142,14 +142,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param c Cache.
-     * @return {@code True} if synchronous preloading.
-     */
-    private boolean isSync(GridCache<?, ?> c) {
-        return c.configuration().getRebalanceMode() == SYNC;
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testActivePartitionTransferSyncSameCoordinator() throws Exception {

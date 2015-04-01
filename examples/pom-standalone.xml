@@ -33,7 +33,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-examples</artifactId>
-    <version>${ignite.version}</version>
+    <version>to_be_replaced_by_ignite_version</version>
 
     <dependencies>
         <dependency>
@@ -45,37 +45,37 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-hibernate</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-schedule</artifactId>
-            <version>${ignite.version}</version>
+            <version>to_be_replaced_by_ignite_version</version>
         </dependency>
 
         <dependency>
@@ -178,7 +178,7 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-scalar</artifactId>
-                    <version>${ignite.version}</version>
+                    <version>to_be_replaced_by_ignite_version</version>
                 </dependency>
             </dependencies>
 

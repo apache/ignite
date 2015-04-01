@@ -247,8 +247,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param row Search row.
      * @return Row.
      */
-    public GridH2AbstractKeyValueRow findOne(GridSearchRowPointer row) {
-        return (GridH2AbstractKeyValueRow)tree.get(row);
+    public GridH2Row findOne(GridSearchRowPointer row) {
+        return tree.get(row);
     }
 
     /**

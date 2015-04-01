@@ -24,8 +24,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -148,15 +146,14 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             for (int j = 0; j < 5; j++) {
                 try {
-                    GridCache<Object, Object> cache = ((IgniteKernal)grid(i)).getCache(null);
+                    IgniteCache<Object, Object> cache = grid(i).cache(null);
 
-                    for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL})) {
+                    for (Cache.Entry<Object, Object> entry : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL}))
                         cache.remove(entry.getKey());
-                    }
 
                     break;
                 }
-                catch (CachePartialUpdateCheckedException e) {
+                catch (IgniteException e) {
                     if (j == 4)
                         throw new Exception("Failed to clear cache for grid: " + i, e);
 
@@ -169,15 +166,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Cache is not empty [entrySet=" + ((IgniteKernal)grid(i)).getCache(null).entrySet() +
+            assertEquals("Cache is not empty [entrySet=" + grid(i).cache(null).localEntries() +
                 ", i=" + i + ']',
-                0, ((IgniteKernal)grid(i)).getCache(null).size());
+                0, grid(i).cache(null).localSize());
 
 
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = grid(i).context().continuous();
 
-            assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
+            assertEquals(String.valueOf(i), 3, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStartAck")).size());
@@ -418,7 +415,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     public void testLocalNodeOnly() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
-        if (((IgniteKernal)grid(0)).getCache(null).configuration().getCacheMode() != PARTITIONED)
+        if (grid(0).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode() != PARTITIONED)
             return;
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
@@ -427,8 +424,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final CountDownLatch latch = new CountDownLatch(1);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer,Integer>() {
-            @Override
-            public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer,? extends Integer>> evts) {
                 for (CacheEntryEvent<? extends Integer,? extends Integer> e : evts) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -488,7 +484,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testBuffering() throws Exception {
-        if (((IgniteKernal)grid(0)).getCache(null).configuration().getCacheMode() != PARTITIONED)
+        if (grid(0).cache(null).getConfiguration(CacheConfiguration.class).getCacheMode() != PARTITIONED)
             return;
 
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);

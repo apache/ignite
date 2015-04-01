@@ -128,13 +128,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
-     * @return For the purpose of this test returns the near-only instance.
-     */
-    @Override protected GridCache<String, Integer> cache() {
-        return cache(nearIdx);
-    }
-
-    /**
      * @return A not near-only cache.
      */
     @Override protected IgniteCache<String, Integer> fullCache() {
@@ -216,15 +209,15 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
-     *
-     * @throws Exception
+     * @param inTx If {@code true} starts explicit transaction.
+     * @throws Exception If failed.
      */
     private void checkReaderTtl(boolean inTx) throws Exception {
         int ttl = 1000;
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
 
-        final GridCache<String, Integer> c = cache();
+        final IgniteCache<String, Integer> c = jcache();
 
         final String key = primaryKeysForCache(fullCache(), 1).get(0);
 
@@ -271,7 +264,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
             GridCacheEntryEx entry = null;
 
-            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
                 if (dht.context().isNear())
@@ -315,7 +308,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             GridCacheEntryEx entry = null;
 
-            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
                 if (dht.context().isNear())
@@ -356,7 +349,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             GridCacheEntryEx entry = null;
 
-            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
 
                 if (dht.context().isNear())
@@ -395,11 +388,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                         return false;
                     }
 
-                    // Get "cache" field from GridCacheProxyImpl.
-                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
-
-                    if (!c0.context().deferredDelete()) {
-                        GridCacheEntryEx e0 = c0.peekEx(key);
+                    if (!internalCache(c).context().deferredDelete()) {
+                        GridCacheEntryEx e0 = internalCache(c).peekEx(key);
 
                         return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
                     }

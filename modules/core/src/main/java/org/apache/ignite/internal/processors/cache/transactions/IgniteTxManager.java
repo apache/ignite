@@ -362,7 +362,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
-        boolean invalidate,
         boolean storeEnabled,
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
@@ -382,7 +381,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             concurrency,
             isolation,
             timeout,
-            invalidate,
             storeEnabled,
             txSize,
             grpLockKey,
@@ -2052,8 +2050,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          */
         private void commitIfPrepared(IgniteInternalTx tx) {
             assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
-            assert !F.isEmpty(tx.transactionNodes());
-            assert tx.nearXidVersion() != null;
+            assert !F.isEmpty(tx.transactionNodes()) : tx;
+            assert tx.nearXidVersion() != null : tx;
 
             GridCacheOptimisticCheckPreparedTxFuture fut = new GridCacheOptimisticCheckPreparedTxFuture<>(
                 cctx,

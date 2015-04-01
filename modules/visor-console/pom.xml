@@ -20,38 +20,36 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>../..</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-visor-console</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ssh</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -95,7 +93,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
@@ -147,9 +145,7 @@
                          <phase>prepare-package</phase>
                          <configuration>
                              <target>
-                                 <zip destfile="target/ignite-visor-console-${ignite.version}-javadoc.jar"
-                                      basedir="target/site/scaladocs"
-                                      encoding="UTF-8"/>
+                                 <zip destfile="target/ignite-visor-console-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
                              </target>
                          </configuration>
                      </execution>

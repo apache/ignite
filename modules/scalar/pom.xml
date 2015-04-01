@@ -20,26 +20,24 @@
 <!--
     POM file.
 -->
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite</artifactId>
-        <version>${ignite.version}</version>
-        <relativePath>../..</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-scalar</artifactId>
+    <version>1.0.1-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -51,7 +49,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -59,14 +57,14 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
+            <version>1.0.1-RC1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
@@ -112,7 +110,7 @@
                     <dependency>
                         <groupId>org.apache.ignite</groupId>
                         <artifactId>ignite-tools</artifactId>
-                        <version>${ignite.version}</version>
+                        <version>1.0.1-RC1-SNAPSHOT</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -126,16 +124,15 @@
                             <target>
                                 <copy todir="target/site/scaladocs">
                                     <fileset dir="../../assembly/docfiles">
-                                        <include name="img/**"/>
-                                        <include name="*.js"/>
+                                        <include name="img/**" />
+                                        <include name="*.js" />
                                     </fileset>
                                 </copy>
 
-                                <taskdef name="doctask"
-                                    classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
+                                <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
 
                                 <doctask css="dotted" dir="target/site/scaladocs" verify="false">
-                                    <include name="**/*.html"/>
+                                    <include name="**/*.html" />
                                 </doctask>
 
                                 <property name="footer">
@@ -143,7 +140,7 @@
                                         <table style="padding: 0px 10px 10px 10px; width: 100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>Ignite&#153; - Scalar DSL, ver. <strong>${ignite.version}</strong></nobr>
+                                                <nobr>Ignite&#153; - Scalar DSL, ver. <strong>${project.version}</strong></nobr>
                                                 <br>
                                                 <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
@@ -153,36 +150,34 @@
                                 </property>
 
                                 <replace dir="target/site/scaladocs" token="&lt;!--FOOTER--&gt;" value="${footer}">
-                                    <include name="**/*.html"/>
+                                    <include name="**/*.html" />
                                 </replace>
 
                                 <replace dir="target/site/scaladocs">
                                     <replacetoken>src="package.html"</replacetoken>
                                     <replacevalue>src=org/apache/ignite/scalar/scalar$.html</replacevalue>
-                                    <include name="**/index.html"/>
+                                    <include name="**/index.html" />
                                 </replace>
 
                                 <replace dir="target/site/scaladocs">
                                     <replacetoken>location.replace("package.html")</replacetoken>
                                     <replacevalue>location.replace("org/apache/ignite/scalar/scalar$.html")</replacevalue>
-                                    <include name="**/index.js"/>
+                                    <include name="**/index.js" />
                                 </replace>
 
                                 <replace dir="target/site/scaladocs">
                                     <replacetoken>docs.scala-lang.org/overviews/scaladoc/usage.html#members</replacetoken>
                                     <replacevalue>docs.scala-lang.org/overviews/scaladoc/interface.html</replacevalue>
-                                    <fileset dir="target/site/scaladocs"/>
+                                    <fileset dir="target/site/scaladocs" />
                                 </replace>
 
                                 <replaceregexp byline="true" flags="im" encoding="UTF-8">
-                                    <regexp pattern='(&lt;dt&gt;Attributes&lt;/dt&gt;&lt;dd&gt;protected\[)&lt;a.+&gt;(.+)&lt;/a&gt;(\]\s+&lt;/dd&gt;)'/>
-                                    <substitution expression="\1\2\3"/>
-                                    <fileset dir="target/site/scaladocs"/>
+                                    <regexp pattern="(&lt;dt&gt;Attributes&lt;/dt&gt;&lt;dd&gt;protected\[)&lt;a.+&gt;(.+)&lt;/a&gt;(\]\s+&lt;/dd&gt;)" />
+                                    <substitution expression="\1\2\3" />
+                                    <fileset dir="target/site/scaladocs" />
                                 </replaceregexp>
 
-                                <zip destfile="target/ignite-scalar-${ignite.version}-javadoc.jar"
-                                     basedir="target/site/scaladocs"
-                                     encoding="UTF-8"/>
+                                <zip destfile="target/ignite-scalar-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
                             </target>
                         </configuration>
                     </execution>

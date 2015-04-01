@@ -901,12 +901,11 @@ public interface GridCacheEntryEx {
     /**
      * Unswap ignoring flags.
      *
-     * @param ignoreFlags Whether to ignore swap flags.
      * @param needVal If {@code false} then do not need to deserialize value during unswap.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException;
+    @Nullable public CacheObject unswap(boolean needVal) throws IgniteCheckedException;
 
     /**
      * Tests whether or not given metadata is set.

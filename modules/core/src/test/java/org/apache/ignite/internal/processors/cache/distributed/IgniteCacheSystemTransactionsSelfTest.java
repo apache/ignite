@@ -24,9 +24,11 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -101,38 +103,18 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
-    public void testSystemMarshallerTxInsideSystemTx() throws Exception {
+    public void testMarshallerCacheShouldNotStartTx() throws Exception {
         IgniteKernal ignite = (IgniteKernal)grid(0);
 
-        GridCacheAdapter<Object, Object> utilityCache = ignite.context().cache().utilityCache();
+        final GridCacheAdapter<String,String> marshallerCache = (GridCacheAdapter<String, String>)(GridCacheAdapter)
+            ignite.context().cache().marshallerCache();
 
-        try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-            utilityCache.get("1");
-            utilityCache.put("1", "11");
-
-            CacheProjection<String,String> marshallerCache = (GridCacheAdapter<String, String>)(GridCacheAdapter)ignite.context().cache().marshallerCache();
-
-            marshallerCache.putIfAbsent("2", "2");
-
-            try (IgniteInternalTx itx = marshallerCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                assertEquals(null, marshallerCache.get("1"));
-                assertEquals("2", marshallerCache.get("2"));
-                assertEquals(null, marshallerCache.get("3"));
-
-                marshallerCache.put("3", "3");
-
-                itx.commit();
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                return marshallerCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
             }
-
-            utilityCache.put("2", "22");
-
-            tx.commit();
-        }
-
-        checkTransactionsCommitted();
-
-        checkEntries(CU.UTILITY_CACHE_NAME, 1, "11", 2, "22", 3, null);
-        checkEntries(CU.MARSH_CACHE_NAME,   1, null, 2, "2",  3, "3");
+        }, IgniteException.class, null);
     }
 
     /**
