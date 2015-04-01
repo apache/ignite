@@ -172,11 +172,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      */
     private void checkSizeBeforeLive(IgniteCache<Integer, Integer> cache, int size) throws Exception {
         if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
-            assertEquals(0, cache.localSize());
+            assertEquals(0, cache.localSize(CachePeekMode.ONHEAP));
             assertEquals(size, cache.localSize(CachePeekMode.OFFHEAP));
         }
         else {
-            assertEquals(size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size, cache.localSize());
+            assertEquals(size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size, cache.localSize(CachePeekMode.ONHEAP));
             assertEquals(size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(CachePeekMode.OFFHEAP));
         }
 
