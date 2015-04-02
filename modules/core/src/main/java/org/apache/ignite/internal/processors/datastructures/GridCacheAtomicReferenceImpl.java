@@ -228,7 +228,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
                     ref.set(val);
 
-                    atomicView.put(key, ref);
+                    atomicView.putx(key, ref);
 
                     tx.commit();
 

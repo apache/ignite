@@ -39,7 +39,6 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
@@ -69,7 +68,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     public GridNearAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx);
 
-        int size = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 1_000_000);
+        int size = CU.isSystemCache(ctx.name()) ? 100 :
+            Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 1_000_000);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(size / 10));
     }
@@ -364,7 +364,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean deserializePortable,
         boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))

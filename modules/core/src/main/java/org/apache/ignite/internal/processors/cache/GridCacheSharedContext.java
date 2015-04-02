@@ -38,8 +38,6 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-
 /**
  * Shared context.
  */
@@ -450,25 +448,6 @@ public class GridCacheSharedContext<K, V> {
         }
 
         return true;
-    }
-
-    /**
-     * @param flags Flags to turn on.
-     * @throws CacheFlagException If given flags are conflicting with given transaction.
-     */
-    public void checkTxFlags(@Nullable Collection<CacheFlag> flags) throws CacheFlagException {
-        IgniteInternalTx tx = tm().userTxx();
-
-        if (tx == null || F.isEmpty(flags))
-            return;
-
-        assert flags != null;
-
-        if (flags.contains(INVALIDATE) && !tx.isInvalidate())
-            throw new CacheFlagException(INVALIDATE);
-
-        if (flags.contains(SYNC_COMMIT) && !tx.syncCommit())
-            throw new CacheFlagException(SYNC_COMMIT);
     }
 
     /**

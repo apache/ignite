@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
 
-public class GridCacheReplicatedFlagsTest extends GridCacheAbstractFlagsTest {
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+
+/**
+ *
+ */
+public class IgniteCacheAtomicPrimaryWriteOrderStoreValueTest extends IgniteCacheAtomicStoreValueTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
     }
 }

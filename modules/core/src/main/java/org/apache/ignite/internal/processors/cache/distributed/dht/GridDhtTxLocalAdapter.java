@@ -548,7 +548,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     addActiveCache(dhtCache.context());
 
-                    cached.unswap(!read, read);
+                    cached.unswap(read);
 
                     txEntry = addEntry(NOOP,
                         null,

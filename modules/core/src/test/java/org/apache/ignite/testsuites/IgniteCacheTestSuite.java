@@ -238,7 +238,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicExpiredEntriesPreloadSelfTest.class));
 
-        suite.addTest(new TestSuite(GridCacheReturnValueTransferSelfTest.class));
         suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
 
         // TODO: GG-7242, GG-7243: Enabled when fixed.
@@ -415,6 +414,17 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
         suite.addTestSuite(GridCacheMarshallingNodeJoinSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
 
         return suite;
     }

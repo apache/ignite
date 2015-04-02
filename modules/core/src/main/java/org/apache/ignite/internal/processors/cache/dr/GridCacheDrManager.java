@@ -34,11 +34,6 @@ public interface GridCacheDrManager extends GridCacheManager {
     public byte dataCenterId();
 
     /**
-     * @return Cache version conflict resolver.
-     */
-    public GridCacheVersionAbstractConflictResolver conflictResolver();
-
-    /**
      * Performs replication.
      *
      * @param key Key.

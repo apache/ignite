@@ -112,8 +112,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         this.completionCb = completionCb;
         this.updateRes = updateRes;
 
-        forceTransformBackups = updateReq.forceTransformBackups();
-
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
 

@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.event.*;
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -29,6 +31,9 @@ import java.util.concurrent.*;
 public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** */
     private final CountDownLatch latch = new CountDownLatch(1);
+
+    /** */
+    private final File workDir;
 
     /** */
     private IgniteLogger log;
@@ -40,9 +45,30 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private int failedCnt;
 
     /**
-     * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
      */
-    public void onMarshallerCacheReady(GridKernalContext ctx) {
+    public MarshallerContextImpl() throws IgniteCheckedException {
+        workDir = U.resolveWorkDirectory("marshaller", false);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+            new ContinuousQueryListener(log, workDir),
+            null,
+            true,
+            true
+        );
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void onMarshallerCachePreloaded(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         log = ctx.log(MarshallerContextImpl.class);
@@ -89,15 +115,63 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) {
-        try {
-            if (cache == null)
-                U.awaitQuiet(latch);
+    @Override protected String className(int id) throws IgniteCheckedException {
+        if (cache == null)
+            U.awaitQuiet(latch);
 
-            return cache.get(id);
+        String clsName = cache.get(id);
+
+        if (clsName == null) {
+            File file = new File(workDir, id + ".classname");
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                clsName = reader.readLine();
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
+                    ", file=" + file.getAbsolutePath() + ']', e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+
+        return clsName;
+    }
+
+    /**
+     */
+    private static class ContinuousQueryListener implements CacheEntryUpdatedListener<Integer, String> {
+        /** */
+        private final IgniteLogger log;
+
+        /** */
+        private final File workDir;
+
+        /**
+         * @param log Logger.
+         * @param workDir Work directory.
+         */
+        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+            this.log = log;
+            this.workDir = workDir;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+            throws CacheEntryListenerException {
+            for (CacheEntryEvent<? extends Integer, ? extends String> evt : events) {
+                assert evt.getOldValue() == null : "Received non-null old value for system marshaller cache: " + evt;
+
+                File file = new File(workDir, evt.getKey() + ".classname");
+
+                try (Writer writer = new FileWriter(file)) {
+                    writer.write(evt.getValue());
+
+                    writer.flush();
+                }
+                catch (IOException e) {
+                    U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
+                        ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                }
+            }
         }
     }
 }

@@ -497,7 +497,14 @@
                 <configuration>
                     <rules>
                         <requireJavaVersion>
-                            <version>[1.7,)</version>
+                            <!--Detected JDK Version: 1.8.0 is not in the allowed range [1.7,1.8),[1.8.0-40,).-->
+                            <message>
+[INFO] ------------------------------------------------------------------------
+[ERROR] You are trying to compile Apache Ignite with inappropriate JDK version!
+[ERROR] Detected JDK Version: ${java.runtime.version}
+[ERROR] JDK version should be 1.7.0-* or >= 1.8.0-u40.
+                            </message>
+                            <version>[1.7,1.8),[1.8.0-40,)</version>
                         </requireJavaVersion>
                     </rules>
                 </configuration>
@@ -506,6 +513,25 @@
                         <goals>
                             <goal>enforce</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>true</excludeTransitive>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -622,28 +648,10 @@
             <id>release</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.8,)</jdk>
             </activation>
             <build>
                 <plugins>
-                    <plugin>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-libs</id>
-                                <phase>test-compile</phase>
-                                <goals>
-                                    <goal>copy-dependencies</goal>
-                                </goals>
-                                <configuration>
-                                    <excludeGroupIds>org.apache.ignite</excludeGroupIds>
-                                    <outputDirectory>target/libs</outputDirectory>
-                                    <includeScope>runtime</includeScope>
-                                    <excludeTransitive>true</excludeTransitive>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>

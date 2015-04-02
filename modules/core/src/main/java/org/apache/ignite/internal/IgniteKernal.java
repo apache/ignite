@@ -1671,6 +1671,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * @return {@code True} if node started shutdown sequence.
+     */
+    public boolean isStopping() {
+        return stopGuard.get();
+    }
+
+    /**
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
@@ -2033,10 +2040,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             SB sb = new SB();
 
             for (CacheConfiguration c : cacheCfgs) {
-                String name = c.getName();
-
-                if (name == null)
-                    name = "<default>";
+                String name = U.maskName(c.getName());
 
                 sb.a("'").a(name).a("', ");
             }
@@ -2417,12 +2421,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
-        Class<V> valCls) {
+    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache() {
         guard();
 
         try {
-            return ctx.cache().utilityCache(keyCls, valCls);
+            return ctx.cache().utilityCache();
         }
         finally {
             unguard();

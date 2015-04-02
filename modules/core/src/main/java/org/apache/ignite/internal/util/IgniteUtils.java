@@ -8347,7 +8347,7 @@ public abstract class IgniteUtils {
     /**
      * Nullifies work directory. For test purposes only.
      */
-    static void nullifyWorkDirectory() {
+    public static void nullifyWorkDirectory() {
         igniteWork = null;
     }
 
