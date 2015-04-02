@@ -29,10 +29,17 @@ import java.util.*;
  */
 public abstract class StreamAdapter<T, K, V> {
     /** Tuple extractor. */
-    private final StreamTupleExtractor<T, K, V> extractor;
+    private StreamTupleExtractor<T, K, V> extractor;
 
     /** Streamer. */
-    private final IgniteDataStreamer<K, V> stmr;
+    private IgniteDataStreamer<K, V> stmr;
+
+    /**
+     * Empty constructor.
+     */
+    public StreamAdapter() {
+        // No-op.
+    }
 
     /**
      * Stream adapter.
@@ -48,15 +55,29 @@ public abstract class StreamAdapter<T, K, V> {
     /**
      * @return Provided data streamer.
      */
-    public IgniteDataStreamer<K, V> streamer() {
+    public IgniteDataStreamer<K, V> getStreamer() {
         return stmr;
+    }
+
+    /**
+     * @param stmr Ignite data streamer.
+     */
+    public void setStreamer(IgniteDataStreamer<K, V> stmr) {
+        this.stmr = stmr;
     }
 
     /**
      * @return Provided tuple extractor.
      */
-    public StreamTupleExtractor<T, K, V> converter() {
+    public StreamTupleExtractor<T, K, V> getConverter() {
         return extractor;
+    }
+
+    /**
+     * @param extractor Extractor for key-value tuples from messages.
+     */
+    public void setExtractor(StreamTupleExtractor<T, K, V> extractor) {
+        this.extractor = extractor;
     }
 
     /**
