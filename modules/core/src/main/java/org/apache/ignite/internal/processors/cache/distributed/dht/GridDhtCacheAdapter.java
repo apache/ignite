@@ -94,9 +94,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx, AffinityTopologyVersion topVer, KeyCacheObject key, int hash,
-                CacheObject val, GridCacheMapEntry next, long ttl, int hdrId) {
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, ttl, hdrId);
+            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+                AffinityTopologyVersion topVer,
+                KeyCacheObject key,
+                int hash,
+                CacheObject val,
+                GridCacheMapEntry next,
+                int hdrId)
+            {
+                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
             }
         });
     }
@@ -346,14 +352,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public GridCacheEntryEx entryExx(KeyCacheObject key, AffinityTopologyVersion topVer, boolean allowDetached, boolean touch) {
         try {
             return allowDetached && !ctx.affinity().localNode(key, topVer) ?
-                new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0) :
+                new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0) :
                 entryEx(key, touch);
         }
         catch (GridDhtInvalidPartitionException e) {
             if (!allowDetached)
                 throw e;
 
-            return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0);
+            return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0);
         }
     }
 

@@ -1121,8 +1121,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     @Nullable private GridCacheEntryEx entry0(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create,
         boolean touch) {
-        GridTriple<GridCacheMapEntry> t = map.putEntryIfObsoleteOrAbsent(topVer, key, null,
-            ctx.config().getDefaultTimeToLive(), create);
+        GridTriple<GridCacheMapEntry> t = map.putEntryIfObsoleteOrAbsent(topVer, key, null, create);
 
         GridCacheEntryEx cur = t.get1();
         GridCacheEntryEx created = t.get2();

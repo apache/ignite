@@ -18,8 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.ttl.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
 
@@ -45,22 +43,6 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
 
         // Index rebuilding.
         suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
-
-        // Tests moved to this suite since they require GridH2IndexingSpi.
-        suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
-        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
-
-        //ttl
-        suite.addTestSuite(CacheTtlOffheapAtomicLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlOffheapAtomicPartitionedSelfTest.class);
-        suite.addTestSuite(CacheTtlOffheapTransactionalLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlOffheapTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapTransactionalLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapAtomicLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlOnheapAtomicPartitionedSelfTest.class);
 
         return suite;
     }

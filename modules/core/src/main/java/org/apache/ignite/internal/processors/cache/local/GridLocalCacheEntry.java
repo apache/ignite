@@ -43,10 +43,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
-        long ttl,
         int hdrId)
     {
-        super(ctx, key, hash, val, next, ttl, hdrId);
+        super(ctx, key, hash, val, next, hdrId);
     }
 
     /** {@inheritDoc} */

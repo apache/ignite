@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.util.*;
 
@@ -58,9 +59,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         cache.setAtomicityMode(atomicityMode());
         cache.setMemoryMode(memoryMode());
         cache.setOffHeapMaxMemory(0);
-        cache.setDefaultTimeToLive(DEFAULT_TIME_TO_LIVE);
         cache.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_SIZE));
         cache.setIndexedTypes(Integer.class, Integer.class);
+
+        cache.setExpiryPolicyFactory(
+            FactoryBuilder.factoryOf(new TouchedExpiryPolicy(new Duration(MILLISECONDS, DEFAULT_TIME_TO_LIVE))));
 
         cfg.setCacheConfiguration(cache);
 
