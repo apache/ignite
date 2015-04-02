@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -137,6 +138,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
 
+    /** Cache plugin manager. */
+    private CachePluginManager pluginMgr;
+
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
 
@@ -213,6 +217,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
      * @param jtaMgr JTA manager.
+     * @param pluginMgr Cache plugin manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
@@ -237,7 +242,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr,
-        CacheConflictResolutionManager<K, V> rslvrMgr
+        CacheConflictResolutionManager<K, V> rslvrMgr,
+        CachePluginManager pluginMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -253,6 +259,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
         assert rslvrMgr != null;
+        assert pluginMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
@@ -275,6 +282,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.drMgr = add(drMgr);
         this.jtaMgr = add(jtaMgr);
         this.rslvrMgr = add(rslvrMgr);
+        this.pluginMgr = add(pluginMgr);
 
         log = ctx.log(getClass());
 
@@ -994,6 +1002,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheJtaManagerAdapter jta() {
         return jtaMgr;
+    }
+
+    /**
+     * @return Cache plugin manager.
+     */
+    public CachePluginManager plugin() {
+        return pluginMgr;
     }
 
     /**

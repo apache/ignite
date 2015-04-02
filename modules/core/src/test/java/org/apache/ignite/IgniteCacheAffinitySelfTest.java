@@ -90,6 +90,8 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
      * @throws Exception if failed.
      */
     public void testAffinity() throws Exception {
+        fail("Enable when https://issues.apache.org/jira/browse/IGNITE-647 is fixed.");
+
         checkAffinity();
 
         stopGrid(gridCount() - 1);

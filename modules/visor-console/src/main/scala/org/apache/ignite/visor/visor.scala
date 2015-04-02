@@ -1515,7 +1515,7 @@ object visor extends VisorTag {
                     try
                         // Cache, IGFS, streamer and DR configurations should be excluded from daemon node config.
                         spring.loadConfigurations(url, "cacheConfiguration", "fileSystemConfiguration",
-                            "streamerConfiguration", "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
+                            "streamerConfiguration", "drSenderConfiguration", "drReceiverConfiguration").get1()
                     finally {
                         if (log4jTup != null)
                             U.removeLog4jNoOpLogger(log4jTup)
