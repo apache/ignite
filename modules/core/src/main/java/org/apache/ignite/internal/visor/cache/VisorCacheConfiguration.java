@@ -121,56 +121,37 @@ public class VisorCacheConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
-        VisorCacheConfiguration cfg = new VisorCacheConfiguration();
+    public VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
+        name = ccfg.getName();
+        mode = ccfg.getCacheMode();
+        atomicityMode = ccfg.getAtomicityMode();
+        atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
+        eagerTtl = ccfg.isEagerTtl();
+        writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
+        swapEnabled = ccfg.isSwapEnabled();
+        invalidate = ccfg.isInvalidate();
+        startSize = ccfg.getStartSize();
+        tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
+        offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
+        maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
+        memoryMode = ccfg.getMemoryMode();
+        interceptor = compactClass(ccfg.getInterceptor());
+        typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
+        statisticsEnabled = ccfg.isStatisticsEnabled();
+        mgmtEnabled = ccfg.isManagementEnabled();
+        ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
+        writerFactory = compactClass(ccfg.getCacheWriterFactory());
+        expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
 
-        cfg.name = ccfg.getName();
-        cfg.mode = ccfg.getCacheMode();
-        cfg.atomicityMode = ccfg.getAtomicityMode();
-        cfg.atomicWriteOrderMode = ccfg.getAtomicWriteOrderMode();
-        cfg.eagerTtl = ccfg.isEagerTtl();
-        cfg.writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
-        cfg.swapEnabled = ccfg.isSwapEnabled();
-        cfg.invalidate = ccfg.isInvalidate();
-        cfg.startSize = ccfg.getStartSize();
-        cfg.tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
-        cfg.offHeapMaxMemory = ccfg.getOffHeapMaxMemory();
-        cfg.maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
-        cfg.memoryMode = ccfg.getMemoryMode();
-        cfg.interceptor = compactClass(ccfg.getInterceptor());
-        cfg.typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
-        cfg.statisticsEnabled = ccfg.isStatisticsEnabled();
-        cfg.mgmtEnabled = ccfg.isManagementEnabled();
-        cfg.ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
-        cfg.writerFactory = compactClass(ccfg.getCacheWriterFactory());
-        cfg.expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
+        affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
+        rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
+        evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
+        nearCfg = VisorCacheNearConfiguration.from(ccfg);
+        dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
+        storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
+        qryCfg = VisorCacheQueryConfiguration.from(ccfg);
 
-        cfg.affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
-        cfg.rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
-        cfg.evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
-        cfg.nearCfg = VisorCacheNearConfiguration.from(ccfg);
-        cfg.dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
-        cfg.storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
-        cfg.qryCfg = VisorCacheQueryConfiguration.from(ccfg);
-
-        return cfg;
-    }
-
-    /**
-     * @param ignite Grid.
-     * @param caches Cache configurations.
-     * @return Data transfer object for cache configurations properties.
-     */
-    public static Iterable<VisorCacheConfiguration> list(Ignite ignite, CacheConfiguration[] caches) {
-        if (caches == null)
-            return Collections.emptyList();
-
-        final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
-
-        for (CacheConfiguration cache : caches)
-            cfgs.add(from(ignite, cache));
-
-        return cfgs;
+        return this;
     }
 
     /**
