@@ -31,7 +31,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -109,14 +108,16 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         c.setCacheConfiguration(cc);
 
+        c.setNearCacheConfiguration(mode());
+
         return c;
     }
 
     /**
      * @return Distribution mode.
      */
-    protected CacheDistributionMode mode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration mode() {
+        return new NearCacheConfiguration();
     }
 
     /**
