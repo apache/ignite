@@ -417,6 +417,15 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
 
+        suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
+
         return suite;
     }
 }

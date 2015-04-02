@@ -3674,7 +3674,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         try {
             GridCacheQueryManager qryMgr = cctx.queries();
 
-            if (qryMgr != null) {
+            if (qryMgr != null && qryMgr.enabled()) {
                 qryMgr.store(key.value(cctx.cacheObjectContext(), false),
                     null,
                     CU.value(val, cctx, false),
