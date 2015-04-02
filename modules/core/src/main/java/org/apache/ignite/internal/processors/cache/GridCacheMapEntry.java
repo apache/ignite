@@ -2800,42 +2800,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         return peek(heap, offheap, swap, topVer, plc);
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert val != null;
-
-        CacheObject old;
-
-        synchronized (this) {
-            checkObsolete();
-
-            if (isNew() || !valid(AffinityTopologyVersion.NONE))
-                unswap(true);
-
-            if (deletedUnlocked())
-                return null;
-
-            old = rawGetOrUnmarshalUnlocked(false);
-
-            GridCacheVersion nextVer = nextVersion();
-
-            // Update index inside synchronization since it can be updated
-            // in load methods without actually holding entry lock.
-            long expireTime = expireTimeExtras();
-
-            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-            updateIndex(val, expireTime, nextVer, old);
-
-            update(val, expireTime, ttlExtras(), nextVer);
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Poked cache entry [newVal=" + val + ", oldVal=" + old + ", entry=" + this + ']');
-
-        return old;
-    }
-
     /**
      * Checks that entries in group locks transactions are not locked during commit.
      *

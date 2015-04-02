@@ -595,19 +595,6 @@ public interface GridCacheEntryEx {
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
-     * This method overwrites current in-memory value with new value.
-     * <p>
-     * Note that this method is non-transactional and non-distributed and should almost
-     * never be used. It is meant to be used when fixing some heurisitic error state.
-     *
-     * @param val Value to set.
-     * @return Previous value.
-     * @throws IgniteCheckedException If poke operation failed.
-     * @throws GridCacheEntryRemovedException if entry was unexpectedly removed.
-     */
-    public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException;
-
-    /**
      * Sets new value if current version is <tt>0</tt>
      *
      * @param val New value.

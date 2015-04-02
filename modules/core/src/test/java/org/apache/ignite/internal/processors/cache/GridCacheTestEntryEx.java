@@ -606,15 +606,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return ver;
     }
 
-    /** {@inheritDoc} */
-    @Override public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        CacheObject old = this.val;
-
-        this.val = val;
-
-        return old;
-    }
-
     /** @inheritDoc */
     @Override public boolean initialValue(
         CacheObject val,
