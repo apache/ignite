@@ -36,7 +36,10 @@ import javax.cache.integration.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * TTL test.
@@ -58,17 +61,19 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
-        cache.setCacheMode(cacheMode());
-        cache.setAtomicityMode(atomicityMode());
-        cache.setMemoryMode(memoryMode());
-        cache.setOffHeapMaxMemory(0);
-        cache.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_SIZE));
-        cache.setIndexedTypes(Integer.class, Integer.class);
-        cache.setBackups(2);
+        ccfg.setCacheMode(cacheMode());
+        ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setMemoryMode(memoryMode());
+        ccfg.setOffHeapMaxMemory(0);
+        ccfg.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_SIZE));
+        ccfg.setIndexedTypes(Integer.class, Integer.class);
+        ccfg.setBackups(2);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
 
-        cache.setCacheStoreFactory(singletonFactory(new CacheStoreAdapter() {
+        ccfg.setCacheStoreFactory(singletonFactory(new CacheStoreAdapter() {
             @Override public void loadCache(IgniteBiInClosure clo, Object... args) {
                 for (int i = 0; i < SIZE; i++)
                     clo.apply(i, i);
@@ -87,10 +92,10 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
             }
         }));
 
-        cache.setExpiryPolicyFactory(
-            FactoryBuilder.factoryOf(new TouchedExpiryPolicy(new Duration(MILLISECONDS, DEFAULT_TIME_TO_LIVE))));
+        ccfg.setExpiryPolicyFactory(
+                FactoryBuilder.factoryOf(new TouchedExpiryPolicy(new Duration(MILLISECONDS, DEFAULT_TIME_TO_LIVE))));
 
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(ccfg);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -146,6 +151,16 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultTimeToLiveLoadAll() throws Exception {
+        defaultTimeToLiveLoadAll(false);
+
+        defaultTimeToLiveLoadAll(true);
+    }
+
+    /**
+     * @param replaceExisting Replace existing value flag.
+     * @throws Exception If failed.
+     */
+    private void defaultTimeToLiveLoadAll(boolean replaceExisting) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         CompletionListenerFuture fut = new CompletionListenerFuture();
@@ -155,7 +170,7 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < SIZE; ++i)
             keys.add(i);
 
-        cache.loadAll(keys, false, fut);
+        cache.loadAll(keys, replaceExisting, fut);
 
         fut.get();
 
@@ -235,6 +250,31 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testDefaultTimeToLivePreload() throws Exception {
+        if (cacheMode() == LOCAL)
+            return;
+
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        Map<Integer, Integer> entries = new HashMap<>();
+
+        for (int i = 0; i < SIZE; ++i)
+            entries.put(i, i);
+
+        cache.putAll(entries);
+
+        startGrid(gridCount());
+
+        checkSizeBeforeLive(SIZE, gridCount() + 1);
+
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+
+        checkSizeAfterLive(gridCount() + 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testTimeToLiveTtl() throws Exception {
         long time = DEFAULT_TIME_TO_LIVE + 2000;
 
@@ -255,6 +295,10 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         checkSizeAfterLive();
     }
 
+    /**
+     * @param size Expected size.
+     * @throws Exception If failed.
+     */
     private void checkSizeBeforeLive(int size) throws Exception {
         checkSizeBeforeLive(size, gridCount());
     }
@@ -268,6 +312,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCnt; ++i) {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
+            log.info("Size [node=" + i +
+                ", heap=" + cache.localSize(ONHEAP) +
+                ", offheap=" + cache.localSize(OFFHEAP) +
+                ", swap=" + cache.localSize(SWAP) + ']');
+
             if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
                 assertEquals("Unexpected size, node: " + i, 0, cache.localSize(ONHEAP));
                 assertEquals("Unexpected size, node: " + i, size, cache.localSize(OFFHEAP));
@@ -279,6 +328,9 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
                 assertEquals("Unexpected size, node: " + i,
                     size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(OFFHEAP));
             }
+
+            for (int key = 0; key < size; key++)
+                assertNotNull(cache.localPeek(key));
 
             assertFalse(cache.query(new SqlQuery<>(Integer.class, "_val >= 0")).getAll().isEmpty());
         }
@@ -298,6 +350,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     private void checkSizeAfterLive(int gridCnt) throws Exception {
         for (int i = 0; i < gridCnt; ++i) {
             IgniteCache<Integer, Integer> cache = jcache(i);
+
+            log.info("Size [node=" + i +
+                ", heap=" + cache.localSize(ONHEAP) +
+                ", offheap=" + cache.localSize(OFFHEAP) +
+                ", swap=" + cache.localSize(SWAP) + ']');
 
             assertEquals(0, cache.localSize());
             assertEquals(0, cache.localSize(OFFHEAP));
