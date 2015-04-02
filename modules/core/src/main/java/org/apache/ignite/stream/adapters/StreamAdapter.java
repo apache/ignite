@@ -69,14 +69,14 @@ public abstract class StreamAdapter<T, K, V> {
     /**
      * @return Provided tuple extractor.
      */
-    public StreamTupleExtractor<T, K, V> getConverter() {
+    public StreamTupleExtractor<T, K, V> getTupleExtractor() {
         return extractor;
     }
 
     /**
      * @param extractor Extractor for key-value tuples from messages.
      */
-    public void setExtractor(StreamTupleExtractor<T, K, V> extractor) {
+    public void setTupleExtractor(StreamTupleExtractor<T, K, V> extractor) {
         this.extractor = extractor;
     }
 
