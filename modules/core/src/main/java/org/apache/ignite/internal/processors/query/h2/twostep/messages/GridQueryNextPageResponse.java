@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
@@ -46,6 +47,7 @@ public class GridQueryNextPageResponse implements Message {
     private byte[] rows;
 
     /** */
+    @GridDirectTransient
     private transient Object plainRows;
 
     /**

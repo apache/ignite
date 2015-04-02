@@ -124,7 +124,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 desc.name(valCls != null ? typeName(valCls) : meta.getValueType());
 
                 desc.valueClass(valCls != null ? valCls : Object.class);
-                desc.keyClass(meta.getKeyType() == null ? Object.class : U.classForName(meta.getKeyType(), Object.class));
+                desc.keyClass(
+                    meta.getKeyType() == null ?
+                        Object.class :
+                        U.classForName(meta.getKeyType(), Object.class));
 
                 TypeId typeId;
 
@@ -1448,7 +1451,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 int isKeyProp0 = isKeyProp;
 
-                if (isKeyProp0 == 0) { // Key is allowed to be a non-portable object here.
+                if (isKeyProp0 == 0) {
+                    // Key is allowed to be a non-portable object here.
                     // We check key before value consistently with ClassProperty.
                     if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName))
                         isKeyProp = isKeyProp0 = 1;
