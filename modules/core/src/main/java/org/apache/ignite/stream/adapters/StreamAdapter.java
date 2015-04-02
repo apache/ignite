@@ -37,7 +37,7 @@ public abstract class StreamAdapter<T, K, V> {
     /**
      * Empty constructor.
      */
-    public StreamAdapter() {
+    protected StreamAdapter() {
         // No-op.
     }
 
