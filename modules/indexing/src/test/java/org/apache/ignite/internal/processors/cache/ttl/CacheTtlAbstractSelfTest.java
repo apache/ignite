@@ -21,17 +21,22 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.integration.*;
 import java.util.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 
 /**
  * TTL test.
@@ -61,17 +66,33 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         cache.setOffHeapMaxMemory(0);
         cache.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_SIZE));
         cache.setIndexedTypes(Integer.class, Integer.class);
+        cache.setBackups(2);
+
+        cache.setCacheStoreFactory(singletonFactory(new CacheStoreAdapter() {
+            @Override public void loadCache(IgniteBiInClosure clo, Object... args) {
+                for (int i = 0; i < SIZE; i++)
+                    clo.apply(i, i);
+            }
+
+            @Override public Object load(Object key) throws CacheLoaderException {
+                return key;
+            }
+
+            @Override public void write(Cache.Entry entry) throws CacheWriterException {
+                // No-op.
+            }
+
+            @Override public void delete(Object key) throws CacheWriterException {
+                // No-op.
+            }
+        }));
 
         cache.setExpiryPolicyFactory(
             FactoryBuilder.factoryOf(new TouchedExpiryPolicy(new Duration(MILLISECONDS, DEFAULT_TIME_TO_LIVE))));
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         return cfg;
     }
@@ -109,14 +130,82 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testDefaultTimeToLiveLoadCache() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        cache.loadCache(null);
+
+        checkSizeBeforeLive(SIZE);
+
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+
+        checkSizeAfterLive();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultTimeToLiveLoadAll() throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache(0);
+
+        CompletionListenerFuture fut = new CompletionListenerFuture();
+
+        Set<Integer> keys = new HashSet<>();
+
+        for (int i = 0; i < SIZE; ++i)
+            keys.add(i);
+
+        cache.loadAll(keys, false, fut);
+
+        fut.get();
+
+        checkSizeBeforeLive(SIZE);
+
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+
+        checkSizeAfterLive();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultTimeToLiveStreamerAdd() throws Exception {
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(null)) {
+            for (int i = 0; i < SIZE; i++)
+                streamer.addData(i, i);
+        }
+
+        checkSizeBeforeLive(SIZE);
+
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+
+        checkSizeAfterLive();
+
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite(0).dataStreamer(null)) {
+            streamer.allowOverwrite(true);
+
+            for (int i = 0; i < SIZE; i++)
+                streamer.addData(i, i);
+        }
+
+        checkSizeBeforeLive(SIZE);
+
+        Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
+
+        checkSizeAfterLive();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDefaultTimeToLivePut() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
-        List<Integer> keys = primaryKeys(cache, 1);
+        Integer key = 0;
 
-        cache.put(keys.get(0), 1);
+        cache.put(key, 1);
 
-        checkSizeBeforeLive(cache, 1);
+        checkSizeBeforeLive(1);
 
         Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
 
@@ -131,14 +220,12 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, Integer> entries = new HashMap<>();
 
-        List<Integer> keys = primaryKeys(cache, SIZE);
-
         for (int i = 0; i < SIZE; ++i)
-            entries.put(keys.get(i), i);
+            entries.put(i, i);
 
         cache.putAll(entries);
 
-        checkSizeBeforeLive(cache, SIZE);
+        checkSizeBeforeLive(SIZE);
 
         Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
 
@@ -149,54 +236,76 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTimeToLiveTtl() throws Exception {
-        IgniteCache<Integer, Integer> cache = jcache(0);
-
         long time = DEFAULT_TIME_TO_LIVE + 2000;
 
-        List<Integer> keys = primaryKeys(cache, SIZE);
+        IgniteCache<Integer, Integer> cache = this.<Integer, Integer>jcache(0).withExpiryPolicy(
+            new TouchedExpiryPolicy(new Duration(MILLISECONDS, time)));
 
         for (int i = 0; i < SIZE; i++)
-            cache.withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, time))).
-                put(keys.get(i), i);
+            cache.put(i, i);
 
-        checkSizeBeforeLive(cache, SIZE);
+        checkSizeBeforeLive(SIZE);
 
         Thread.sleep(DEFAULT_TIME_TO_LIVE + 500);
 
-        checkSizeBeforeLive(cache, SIZE);
+        checkSizeBeforeLive(SIZE);
 
         Thread.sleep(time - DEFAULT_TIME_TO_LIVE + 500);
 
         checkSizeAfterLive();
     }
 
+    private void checkSizeBeforeLive(int size) throws Exception {
+        checkSizeBeforeLive(size, gridCount());
+    }
+
     /**
+     * @param size Expected size.
+     * @param gridCnt Number of nodes.
      * @throws Exception If failed.
      */
-    private void checkSizeBeforeLive(IgniteCache<Integer, Integer> cache, int size) throws Exception {
-        if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
-            assertEquals(0, cache.localSize(CachePeekMode.ONHEAP));
-            assertEquals(size, cache.localSize(CachePeekMode.OFFHEAP));
-        }
-        else {
-            assertEquals(size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size, cache.localSize(CachePeekMode.ONHEAP));
-            assertEquals(size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(CachePeekMode.OFFHEAP));
-        }
+    private void checkSizeBeforeLive(int size, int gridCnt) throws Exception {
+        for (int i = 0; i < gridCnt; ++i) {
+            IgniteCache<Integer, Integer> cache = jcache(i);
 
-        assertFalse(cache.query(new SqlQuery<>(Integer.class, "_val >= 0")).getAll().isEmpty());
+            if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
+                assertEquals("Unexpected size, node: " + i, 0, cache.localSize(ONHEAP));
+                assertEquals("Unexpected size, node: " + i, size, cache.localSize(OFFHEAP));
+            }
+            else {
+                assertEquals("Unexpected size, node: " + i, size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size,
+                    cache.localSize(ONHEAP));
+
+                assertEquals("Unexpected size, node: " + i,
+                    size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(OFFHEAP));
+            }
+
+            assertFalse(cache.query(new SqlQuery<>(Integer.class, "_val >= 0")).getAll().isEmpty());
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     private void checkSizeAfterLive() throws Exception {
-        for (int i = 0; i < gridCount(); ++i) {
+        checkSizeAfterLive(gridCount());
+    }
+
+    /**
+     * @param gridCnt Number of nodes.
+     * @throws Exception If failed.
+     */
+    private void checkSizeAfterLive(int gridCnt) throws Exception {
+        for (int i = 0; i < gridCnt; ++i) {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
             assertEquals(0, cache.localSize());
-            assertEquals(0, cache.localSize(CachePeekMode.OFFHEAP));
-            assertEquals(0, cache.localSize(CachePeekMode.SWAP));
+            assertEquals(0, cache.localSize(OFFHEAP));
+            assertEquals(0, cache.localSize(SWAP));
             assertEquals(0, cache.query(new SqlQuery<>(Integer.class, "_val >= 0")).getAll().size());
+
+            for (int key = 0; key < SIZE; key++)
+                assertNull(cache.localPeek(key));
         }
     }
 }
