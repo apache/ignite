@@ -106,7 +106,7 @@ public class VisorGridConfiguration implements Serializable {
         inclEvtTypes = c.getIncludeEventTypes();
         rest = VisorRestConfiguration.from(c);
         userAttrs = c.getUserAttributes();
-        caches = VisorCacheConfiguration.list(ignite, c.getCacheConfiguration());
+        caches = collectCaches(ignite, c.getCacheConfiguration());
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
@@ -191,6 +191,32 @@ public class VisorGridConfiguration implements Serializable {
      */
     public Map<String, ?> userAttributes() {
         return userAttrs;
+    }
+
+    /**
+     * @return List of data transfer objects for caches.
+     */
+    private Iterable<VisorCacheConfiguration> collectCaches(IgniteEx ignite, CacheConfiguration[] ccfgs) {
+        if (ccfgs == null)
+            return Collections.emptyList();
+
+        final Collection<VisorCacheConfiguration> res = new ArrayList<>(ccfgs.length);
+
+        for (CacheConfiguration ccfg : ccfgs)
+            res.add(collectCache(ignite, ccfg));
+
+        return res;
+    }
+
+    /**
+     * Create data transfer object for cache configuration.
+     *
+     * @param ignite Ignite instance.
+     * @param ccfg Cache configuration.
+     * @return Data transfer objects for cache
+     */
+    protected VisorCacheConfiguration collectCache(IgniteEx ignite, CacheConfiguration ccfg) {
+        return new VisorCacheConfiguration().from(ignite, ccfg);
     }
 
     /**
