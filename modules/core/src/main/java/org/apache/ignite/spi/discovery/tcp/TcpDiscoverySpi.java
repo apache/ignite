@@ -1060,6 +1060,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
+     * @return {@code True} if node is stopping.
+     */
+    private boolean isNodeStopping() {
+        return super.getSpiContext().isStopping();
+    }
+
+    /**
      * @throws IgniteSpiException If any error occurs.
      * @return {@code true} if IP finder contains local address.
      */
@@ -4695,7 +4702,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     // Ping.
                     if (msg instanceof TcpDiscoveryPingRequest) {
-                        if (!getSpiContext().isStopping()) {
+                        if (!isNodeStopping()) {
                             TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
                             TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);

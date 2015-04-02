@@ -239,7 +239,7 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
                         uriMap.remove(mgr.getURI());
                 }
                 catch (IgniteCheckedException e) {
-                    CU.convertToCacheException(e);
+                    throw CU.convertToCacheException(e);
                 }
             }
         }

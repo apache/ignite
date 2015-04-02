@@ -1350,7 +1350,7 @@ public class IgfsDataManager extends IgfsManager {
             return new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), block);
 
         // If range is done, no colocated writes are attempted.
-        if (locRange == null || locRange.done())
+        if (locRange == null)
             return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
 
         long blockStart = block * fileInfo.blockSize();
@@ -1360,15 +1360,6 @@ public class IgfsDataManager extends IgfsManager {
             IgniteUuid affKey = fileInfo.fileMap().affinityKey(blockStart, false);
 
             return new IgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), block);
-        }
-
-        // Check if we have enough free space to do colocated writes.
-        if (dataCachePrj.igfsDataSpaceUsed() > dataCachePrj.igfsDataSpaceMax() *
-            igfsCtx.configuration().getFragmentizerLocalWritesRatio()) {
-            // Forbid further co-location.
-            locRange.markDone();
-
-            return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
         }
 
         if (!locRange.belongs(blockStart))

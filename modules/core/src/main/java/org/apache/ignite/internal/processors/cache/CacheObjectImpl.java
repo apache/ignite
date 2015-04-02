@@ -67,13 +67,17 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            val = ctx.processor().unmarshal(ctx, valBytes, ctx.kernalContext().config().getClassLoader());
+            Object val = ctx.processor().unmarshal(ctx, valBytes, ctx.kernalContext().config().getClassLoader());
+
+            if (ctx.storeValue())
+                this.val = val;
+
+            return (T)val;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to unmarshal object.", e);
         }
 
-        return (T)val;
     }
 
     /** {@inheritDoc} */
@@ -96,7 +100,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (val == null && ctx.unmarshalValues())
+        if (val == null && ctx.storeValue())
             val = ctx.processor().unmarshal(ctx, valBytes, ldr);
     }
 

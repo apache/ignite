@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * TODO: Add interface description.
+ * Cache plugin context.
  */
 public interface CachePluginContext<C extends CachePluginConfiguration> {
     /**
