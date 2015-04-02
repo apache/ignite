@@ -21,6 +21,7 @@ import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.processors.cache.{GridCacheUtils => CU}
 import org.apache.ignite.internal.util.typedef._
+import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -29,9 +30,9 @@ import org.apache.ignite.visor.visor._
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
+import java.util.{ArrayList => JavaList, Collection => JavaCollection}
 import java.util.UUID
 
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask.VisorCacheMetricsCollectorArg
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -493,8 +494,11 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
+            val caches = new JavaList[String](1)
+            name.foreach(caches.add)
+
             ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new VisorCacheMetricsCollectorArg(JavaBoolean.valueOf(name.isEmpty), systemCaches, name.orNull))).toList
+                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches.asInstanceOf[JavaCollection[String]]))).toList
         }
         catch {
             case e: IgniteException => Nil
@@ -502,7 +506,7 @@ class VisorCacheCommand {
     }
 
     /**
-     * Gets configuration of grid from specified node for callecting of node cache's configuration.
+     * Gets configuration of grid from specified node for collecting of node cache's configuration.
      *
      * @param node Specified node.
      * @return Grid configuration for specified node.

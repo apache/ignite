@@ -20,27 +20,24 @@ package org.apache.ignite.internal.visor.cache;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Task that collect cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<
-    VisorCacheMetricsCollectorTask.VisorCacheMetricsCollectorArg, Iterable<VisorCacheAggregatedMetrics>,
-    Map<String, VisorCacheMetrics>> {
+public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiTuple<Boolean, Collection<String>>,
+    Iterable<VisorCacheAggregatedMetrics>, Map<String, VisorCacheMetrics>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsCollectorJob job(VisorCacheMetricsCollectorArg arg) {
+    @Override protected VisorCacheMetricsCollectorJob job(IgniteBiTuple<Boolean, Collection<String>> arg) {
         return new VisorCacheMetricsCollectorJob(arg, debug);
     }
 
@@ -74,7 +71,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<
      * Job that collect cache metrics from node.
      */
     private static class VisorCacheMetricsCollectorJob
-        extends VisorJob<VisorCacheMetricsCollectorArg, Map<String, VisorCacheMetrics>> {
+        extends VisorJob<IgniteBiTuple<Boolean, Collection<String>>, Map<String, VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -84,15 +81,14 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<
          * @param arg Whether to collect metrics for all caches or for specified cache name only.
          * @param debug Debug flag.
          */
-        private VisorCacheMetricsCollectorJob(VisorCacheMetricsCollectorArg arg, boolean debug) {
+        private VisorCacheMetricsCollectorJob(IgniteBiTuple<Boolean, Collection<String>> arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, VisorCacheMetrics> run(final VisorCacheMetricsCollectorArg arg) {
-            Collection<? extends GridCache<?, ?>> caches = arg.allCaches
-                ? ignite.cachesx(new VisorSystemCachesPredicate(arg.systemCaches))
-                : F.asList(ignite.cachex(arg.cacheName));
+        @Override protected Map<String, VisorCacheMetrics> run(final IgniteBiTuple<Boolean, Collection<String>> arg) {
+            Collection<? extends GridCache<?, ?>> caches =
+                ignite.cachesx(new VisorCachesFilterPredicate(arg.get1(), arg.get2()));
 
             if (caches != null) {
                 Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
@@ -113,57 +109,30 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<
     }
 
     /**
-     * Arguments for {@link VisorCacheMetricsCollectorTask}.
+     * Predicate to filter required caches.
      */
-    @SuppressWarnings("PublicInnerClass")
-    public static class VisorCacheMetricsCollectorArg implements Serializable {
-        /** Collect metrics for all caches. */
-        private final Boolean allCaches;
-
-        /** Include system cache metrics. */
-        private final Boolean systemCaches;
-
-        /** Collect metrics for cache with name only. */
-        private final String cacheName;
-
-        /**
-         * Create task arguments with given parameters.
-         *
-         * @param allCaches Collect metrics for all caches.
-         * @param systemCaches Include system cache metrics.
-         * @param cacheName Collect metrics for cache with name only.
-         */
-        public VisorCacheMetricsCollectorArg(Boolean allCaches, Boolean systemCaches, String cacheName) {
-            this.allCaches = allCaches;
-            this.systemCaches = systemCaches;
-            this.cacheName = cacheName;
-        }
-
-        /** @return Collect metrics for all caches. */
-        public Boolean allCaches() {
-            return allCaches;
-        }
-
-        /** @return Include system cache metrics. */
-        public Boolean systemCaches() {
-            return systemCaches;
-        }
-
-        /** @return Collect metrics for cache with name only. */
-        public String cacheName() {
-            return cacheName;
-        }
-    }
-
-    private static class VisorSystemCachesPredicate implements IgnitePredicate<GridCache<?,?>> {
+    private static class VisorCachesFilterPredicate implements IgnitePredicate<GridCache<?,?>> {
+        /** Select system caches. */
         private final Boolean showSystem;
 
-        VisorSystemCachesPredicate(Boolean showSystem) {
+        /** Name of caches for selection */
+        private final Collection<String> names;
+
+        /**
+         * Create cache filtration predicate.
+         *
+         * @param showSystem Select system caches.
+         * @param names Name of caches for selection.
+         */
+        VisorCachesFilterPredicate(Boolean showSystem, Collection<String> names) {
             this.showSystem = showSystem;
+            this.names = names;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean apply(GridCache<?, ?> cache) {
-            return showSystem || !CU.isSystemCache(cache.name());
+            return (showSystem || !CU.isSystemCache(cache.name()))
+                && (names == null || names.isEmpty() || names.contains(cache.name()));
         }
     }
 }
