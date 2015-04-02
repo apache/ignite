@@ -234,11 +234,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean keepPortableInStore(@Nullable String cacheName) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onCacheProcessorStarted() {
         // No-op.
     }

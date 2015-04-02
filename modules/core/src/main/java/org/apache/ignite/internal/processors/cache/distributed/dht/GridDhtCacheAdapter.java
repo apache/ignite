@@ -360,7 +360,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /** {@inheritDoc} */
     @Override public void localLoad(Collection<? extends K> keys, final ExpiryPolicy plc)
         throws IgniteCheckedException {
-        if (ctx.store().isLocalStore()) {
+        if (ctx.store().isLocal()) {
             super.localLoad(keys, plc);
 
             return;
@@ -377,7 +377,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
-        ctx.store().loadAllFromStore(null, keys0, new CI2<KeyCacheObject, Object>() {
+        ctx.store().loadAll(null, keys0, new CI2<KeyCacheObject, Object>() {
             @Override public void apply(KeyCacheObject key, Object val) {
                 loadEntry(key, val, ver0, null, topVer, replicate, plc0);
             }
@@ -386,7 +386,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args) throws IgniteCheckedException {
-        if (ctx.store().isLocalStore()) {
+        if (ctx.store().isLocal()) {
             super.localLoadCache(p, args);
 
             return;

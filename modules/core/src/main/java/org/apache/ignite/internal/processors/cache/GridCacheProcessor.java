@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.plugin.*;
@@ -1020,10 +1021,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         
         pluginMgr.validate();
 
-        CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
-        GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
+        CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(ctx, cfg,
+            CacheConflictResolutionManager.class);
 
-        GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
+        GridCacheDrManager drMgr = pluginMgr.createComponent(ctx, cfg,GridCacheDrManager.class);
+
+        CacheStoreManager storeMgr = pluginMgr.createComponent(ctx, cfg, CacheStoreManager.class);
+
+        storeMgr.initialize(cfgStore, sesHolders);
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
@@ -1150,8 +1155,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             swapMgr = new GridCacheSwapManager(true);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
-            drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
             pluginMgr = new CachePluginManager(ctx, cfg);
+            drMgr = pluginMgr.createComponent(ctx, cfg, GridCacheDrManager.class);
 
             cacheCtx = new GridCacheContext(
                 ctx,

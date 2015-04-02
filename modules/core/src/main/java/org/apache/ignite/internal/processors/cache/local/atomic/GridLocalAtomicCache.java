@@ -1306,7 +1306,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             if (putMap != null) {
                 try {
-                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
+                    ctx.store().putAll(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
                         @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
                             return F.t(v, ver);
                         }
@@ -1320,7 +1320,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             }
             else {
                 try {
-                    ctx.store().removeAllFromStore(null, rmvKeys);
+                    ctx.store().removeAll(null, rmvKeys);
                 }
                 catch (CacheStorePartialUpdateException e) {
                     storeErr = e;

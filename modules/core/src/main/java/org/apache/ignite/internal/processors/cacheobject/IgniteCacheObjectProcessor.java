@@ -156,10 +156,4 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      *          with {@link IgniteImmutable} annotation.
      */
     public boolean immutable(Object obj);
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if portable format should be preserved when passing values to cache store.
-     */
-    public boolean keepPortableInStore(@Nullable String cacheName);
 }
