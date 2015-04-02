@@ -419,15 +419,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return super.evict(key, filter) & dht().evict(key, filter);
     }
 
-    /**
-     * @param key Key to evict.
-     * @param filter Optional filter.
-     * @return {@code True} if evicted.
-     */
-    public boolean evictNearOnly(K key, @Nullable CacheEntryPredicate[] filter) {
-        return super.evict(key, filter);
-    }
-
     /** {@inheritDoc} */
     @Override public void evictAll(Collection<? extends K> keys,
         @Nullable CacheEntryPredicate[] filter) {
@@ -442,21 +433,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         // Created object will be wrapped once some method is called.
         try {
             return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * Peeks only near cache without looking into DHT cache.
-     *
-     * @param key Key.
-     * @return Peeked value.
-     */
-    @Nullable public V peekNearOnly(K key) {
-        try {
-            return localPeek(key, CachePeekModes.ONHEAP_ONLY, null);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

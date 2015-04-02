@@ -283,7 +283,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         cache.put(1, "val1");
 
         assertEquals("val1", dhtPeek(1));
-        assertNull(near().peekNearOnly(1));
+        assertNull(near().peekEx(1));
 
         Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -292,7 +292,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         tx.commit();
 
         assertEquals("val1", dhtPeek(1));
-        assertNull(near().peekNearOnly(1));
+        assertNull(near().peekEx(1));
     }
 
     /** @throws Exception If failed. */
@@ -302,7 +302,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         cache.put(1, "val1");
 
         assertEquals("val1", dhtPeek(1));
-        assertNull(near().peekNearOnly(1));
+        assertNull(near().peekEx(1));
 
         Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -313,7 +313,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         tx.commit();
 
         assertNull(dhtPeek(1));
-        assertNull(near().peekNearOnly(1));
+        assertNull(near().peekEx(1));
     }
 
     /**
