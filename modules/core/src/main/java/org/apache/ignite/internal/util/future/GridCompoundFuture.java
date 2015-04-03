@@ -42,6 +42,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     private final ConcurrentLinkedDeque8<IgniteInternalFuture<T>> futs = new ConcurrentLinkedDeque8<>();
 
     /** Pending futures. */
+    @GridToStringInclude
     private final Collection<IgniteInternalFuture<T>> pending = new ConcurrentLinkedDeque8<>();
 
     /** Listener call count. */

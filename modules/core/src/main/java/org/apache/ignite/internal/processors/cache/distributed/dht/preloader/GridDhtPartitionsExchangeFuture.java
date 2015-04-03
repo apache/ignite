@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -564,13 +565,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (log.isDebugEnabled())
                     log.debug("Before waiting for partition release future: " + this);
 
-                partReleaseFut.get();
+                while (true) {
+                    try {
+                        partReleaseFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
+
+                        break;
+                    }
+                    catch (IgniteFutureTimeoutCheckedException ignored) {
+                        // Print pending transactions and locks that might have led to hang.
+                        dumpPendingObjects();
+                    }
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("After waiting for partition release future: " + this);
 
                 if (!F.isEmpty(reqs))
                     blockGateways();
+
+                if (exchId.isLeft())
+                    cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())
@@ -655,6 +669,29 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private boolean canSkipExchange() {
         return false; // TODO ignite-23;
+    }
+
+    /**
+     *
+     */
+    private void dumpPendingObjects() {
+        U.warn(log, "Failed to wait for partition release future. Dumping pending objects that might be the cause: " +
+            cctx.localNodeId());
+
+        U.warn(log, "Pending transactions:");
+
+        for (IgniteInternalTx tx : cctx.tm().activeTransactions())
+            U.warn(log, ">>> " + tx);
+
+        U.warn(log, "Pending explicit locks:");
+
+        for (GridCacheExplicitLockSpan lockSpan : cctx.mvcc().activeExplicitLocks())
+            U.warn(log, ">>> " + lockSpan);
+
+        U.warn(log, "Pending cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
+            U.warn(log, ">>> " + fut);
     }
 
     /**

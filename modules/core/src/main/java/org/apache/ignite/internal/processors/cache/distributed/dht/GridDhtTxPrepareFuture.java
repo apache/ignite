@@ -856,13 +856,15 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (!F.isEmpty(nearWrites)) {
                         for (IgniteTxEntry entry : nearWrites) {
                             try {
-                                GridCacheMvccCandidate added = entry.cached().candidate(version());
+                                if (entry.explicitVersion() == null) {
+                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                assert added != null;
-                                assert added.dhtLocal();
+                                    assert added != null : "Missing candidate for cache entry:" + entry;
+                                    assert added.dhtLocal();
 
-                                if (added.ownerVersion() != null)
-                                    req.owned(entry.txKey(), added.ownerVersion());
+                                    if (added.ownerVersion() != null)
+                                        req.owned(entry.txKey(), added.ownerVersion());
+                                }
 
                                 break;
                             }
@@ -912,15 +914,17 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                         for (IgniteTxEntry entry : nearMapping.writes()) {
                             try {
-                                GridCacheMvccCandidate added = entry.cached().candidate(version());
+                                if (entry.explicitVersion() == null) {
+                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
+                                    assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
+                                        "[added=" + added + ", entry=" + entry + ']';
+                                    assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                        "[added=" + added + ", entry=" + entry + ']';
 
-                                if (added != null && added.ownerVersion() != null)
-                                    req.owned(entry.txKey(), added.ownerVersion());
+                                    if (added != null && added.ownerVersion() != null)
+                                        req.owned(entry.txKey(), added.ownerVersion());
+                                }
 
                                 break;
                             }

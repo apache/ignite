@@ -2623,7 +2623,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        if (expireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
+        if (expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
 
         this.ver = ver;
@@ -3508,26 +3508,32 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
         try {
             synchronized (this) {
-                CacheObject expiredVal = val;
+                CacheObject expiredVal = saveValueForIndexUnlocked();
 
                 boolean hasOldBytes = valPtr != 0;
 
                 boolean expired = checkExpired();
 
                 if (expired) {
-                    if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                        if (!deletedUnlocked()) {
-                            update(null, 0L, 0L, ver);
+                    if (!obsolete()) {
+                        if (cctx.deferredDelete() && !detached() && !isInternal()) {
+                            if (!deletedUnlocked()) {
+                                update(null, 0L, 0L, ver);
 
-                            deletedUnlocked(true);
+                                deletedUnlocked(true);
 
-                            deferred = true;
+                                deferred = true;
+                            }
+                        }
+                        else {
+                            if (markObsolete0(obsoleteVer, true))
+                                obsolete = true; // Success, will return "true".
                         }
                     }
-                    else {
-                        if (markObsolete0(obsoleteVer, true))
-                            obsolete = true; // Success, will return "true".
-                    }
+
+                    clearIndex(expiredVal);
+
+                    releaseSwap();
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                         cctx.events().addEvent(partition(),

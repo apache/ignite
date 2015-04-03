@@ -1016,6 +1016,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Collection of active transactions.
+     */
+    public Collection<IgniteInternalTx> activeTransactions() {
+        return F.concat(false, idMap.values(), nearIdMap.values());
+    }
+
+    /**
      * @param xidVer Completed transaction version.
      * @param nearXidVer Optional near transaction ID.
      * @return If transaction was not already present in completed set.
