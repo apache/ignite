@@ -76,15 +76,17 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /**
      * @return Peeks value.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public V peek() {
         try {
-            CacheObject val = cached.peek(GridCachePeekMode.GLOBAL);
+            CacheObject val = cached.peek(true, false, false, null);
 
             return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
         }
         catch (GridCacheEntryRemovedException e) {
             return null;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -114,12 +116,15 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
                     return null;
 
                 try {
-                    CacheObject val = e.peek(GridCachePeekMode.GLOBAL, CU.empty0());
+                    CacheObject val = e.peek(true, false, false, null);
 
                     return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.
+                }
+                catch (IgniteCheckedException ex) {
+                    throw new IgniteException(ex);
                 }
             }
         }

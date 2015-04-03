@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -56,7 +55,6 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
@@ -133,10 +131,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
-                long ttl,
                 int hdrId)
             {
-                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val, next, ttl, hdrId);
+                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
             }
         });
 
@@ -254,27 +251,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        return new CacheEntryImpl<>(key, peek(key));
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
-        GridTuple<V> val = null;
-
-        if (ctx.isReplicated() || !modes.contains(NEAR_ONLY)) {
-            try {
-                val = peek0(true, key, modes, ctx.tm().txx());
-            }
-            catch (GridCacheFilterFailedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter validation failed for key: " + key);
-
-                return null;
-            }
+        try {
+            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
         }
-
-        return val != null ? val.get() : null;
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1783,8 +1765,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
-                            GridCacheVersionConflictContext ctx = updRes.conflictResolveResult();
-
                             // If put the same value as in request then do not need to send it back.
                             if (op == TRANSFORM || writeVal != updRes.newValue()) {
                                 res.addNearValue(i,
