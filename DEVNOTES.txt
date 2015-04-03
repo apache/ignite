@@ -1,12 +1,25 @@
-Maven Build Instructions
-========================
+Ignite Fabric Maven Build Instructions
+======================================
 Without LGPL dependencies (default):
   mvn clean package -DskipTests
 
 With LGPL dependencies:
   mvn clean package -DskipTests -Prelease,lgpl
 
-Look for ignite-fabric-<version>.zip in ./target directory.
+Look for incubator-ignite-<version>-bin.zip in ./target directory.
+
+NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
+
+
+Ignite Hadoop Accelerator Maven Build Instructions
+============================================
+mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X]
+
+Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
+
+Look for incubator-ignite-<version>-bin.zip in ./target directory.
+
+NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
 
 JCache TCK compliance

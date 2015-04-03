@@ -36,7 +36,7 @@ public class CacheStorePartialUpdateException extends IgniteCheckedException {
      * @param cause Cause.
      */
     @SuppressWarnings("unchecked")
-    CacheStorePartialUpdateException(Collection failedKeys, Exception cause) {
+    public CacheStorePartialUpdateException(Collection failedKeys, Exception cause) {
         super(cause);
 
         this.failedKeys = failedKeys;

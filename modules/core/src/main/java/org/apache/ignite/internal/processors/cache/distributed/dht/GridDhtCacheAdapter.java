@@ -94,9 +94,15 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx, AffinityTopologyVersion topVer, KeyCacheObject key, int hash,
-                CacheObject val, GridCacheMapEntry next, long ttl, int hdrId) {
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, ttl, hdrId);
+            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+                AffinityTopologyVersion topVer,
+                KeyCacheObject key,
+                int hash,
+                CacheObject val,
+                GridCacheMapEntry next,
+                int hdrId)
+            {
+                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
             }
         });
     }
@@ -346,21 +352,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public GridCacheEntryEx entryExx(KeyCacheObject key, AffinityTopologyVersion topVer, boolean allowDetached, boolean touch) {
         try {
             return allowDetached && !ctx.affinity().localNode(key, topVer) ?
-                new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0) :
+                new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0) :
                 entryEx(key, touch);
         }
         catch (GridDhtInvalidPartitionException e) {
             if (!allowDetached)
                 throw e;
 
-            return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0);
+            return new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void localLoad(Collection<? extends K> keys, final ExpiryPolicy plc)
         throws IgniteCheckedException {
-        if (ctx.store().isLocalStore()) {
+        if (ctx.store().isLocal()) {
             super.localLoad(keys, plc);
 
             return;
@@ -377,7 +383,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
-        ctx.store().loadAllFromStore(null, keys0, new CI2<KeyCacheObject, Object>() {
+        ctx.store().loadAll(null, keys0, new CI2<KeyCacheObject, Object>() {
             @Override public void apply(KeyCacheObject key, Object val) {
                 loadEntry(key, val, ver0, null, topVer, replicate, plc0);
             }
@@ -386,7 +392,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args) throws IgniteCheckedException {
-        if (ctx.store().isLocalStore()) {
+        if (ctx.store().isLocal()) {
             super.localLoadCache(p, args);
 
             return;

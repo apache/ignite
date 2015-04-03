@@ -769,6 +769,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (ccfg.getCacheMode() != LOCAL &&
             ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
-            U.sleep(100);
+            U.sleep(50);
     }
 }

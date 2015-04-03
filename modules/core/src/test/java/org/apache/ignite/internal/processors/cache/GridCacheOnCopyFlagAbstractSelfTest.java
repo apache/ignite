@@ -93,6 +93,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
         c.setDiscoverySpi(spi);
 
+        c.setPeerClassLoadingEnabled(false);
+
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return c;
@@ -388,13 +390,13 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             TestImmutableValue val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
-            assertSame(val0, e.getValue());
+            assertNotSame(val0, e.getValue());
 
             TestImmutableValue val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
 
-            assertSame(val0, val1);
+            assertNotSame(val0, val1);
 
-            assertSame(e.getValue(), cache.get(e.getKey()));
+            assertNotSame(e.getValue(), cache.get(e.getKey()));
         }
     }
 
@@ -410,7 +412,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
         for (int i = 0; i < ITER_CNT; i++) {
             String key = String.valueOf(i);
-            Long val = (long)i;
+            Long val = Long.MAX_VALUE - i;
 
             cache.put(key, val);
 
@@ -436,13 +438,13 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             Long val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
-            assertSame(val0, e.getValue());
+            assertNotSame(val0, e.getValue());
 
             Long val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
 
-            assertSame(val0, val1);
+            assertNotSame(val0, val1);
 
-            assertSame(e.getValue(), cache.get(e.getKey()));
+            assertNotSame(e.getValue(), cache.get(e.getKey()));
         }
     }
 
