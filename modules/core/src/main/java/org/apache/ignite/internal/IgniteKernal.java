@@ -451,8 +451,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override
-            public String apply(Map.Entry<String, ?> e) {
+            @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -1877,7 +1876,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             try {
                 U.onGridStop();
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 // Preserve interrupt status.
                 Thread.currentThread().interrupt();
             }
@@ -1924,7 +1923,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      * @return Kernal context.
      */
-    public GridKernalContext context() {
+    @Override public GridKernalContext context() {
         return ctx;
     }
 
@@ -2442,11 +2441,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean systemCache(@Nullable String name) {
-        return ctx.cache().systemCache(name);
     }
 
     /** {@inheritDoc} */

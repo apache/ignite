@@ -87,52 +87,39 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
         /** {@inheritDoc} */
         @Override protected Map<String, VisorCacheMetrics> run(final IgniteBiTuple<Boolean, Collection<String>> arg) {
-            Collection<? extends GridCache<?, ?>> caches =
-                ignite.cachesx(new VisorCachesFilterPredicate(arg.get1(), arg.get2()));
+            assert arg != null;
 
-            if (caches != null) {
-                Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
+            Boolean showSysCaches = arg.get1();
 
-                for (GridCache<?, ?> c : caches)
-                    res.put(c.name(), VisorCacheMetrics.from(c));
+            assert showSysCaches != null;
 
-                return res;
+            Collection<String> cacheNames = arg.get2();
+
+            assert cacheNames != null;
+
+            GridCacheProcessor cacheProcessor = ignite.context().cache();
+
+            Collection<GridCacheAdapter<?, ?>> caches = cacheProcessor.internalCaches();
+
+            Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
+
+            boolean allCaches = cacheNames.isEmpty();
+
+            for (GridCacheAdapter ca : caches) {
+                if (ca.context().started()) {
+                    String name = ca.name();
+
+                    if ((showSysCaches && cacheProcessor.systemCache(name)) || allCaches || cacheNames.contains(name))
+                        res.put(name, VisorCacheMetrics.from(ca));
+                }
             }
 
-            return null;
+            return res;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(VisorCacheMetricsCollectorJob.class, this);
-        }
-    }
-
-    /**
-     * Predicate to filter required caches.
-     */
-    private static class VisorCachesFilterPredicate implements IgnitePredicate<GridCache<?,?>> {
-        /** Select system caches. */
-        private final Boolean showSystem;
-
-        /** Name of caches for selection */
-        private final Collection<String> names;
-
-        /**
-         * Create cache filtration predicate.
-         *
-         * @param showSystem Select system caches.
-         * @param names Name of caches for selection.
-         */
-        VisorCachesFilterPredicate(Boolean showSystem, Collection<String> names) {
-            this.showSystem = showSystem;
-            this.names = names;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(GridCache<?, ?> cache) {
-            return (showSystem || !CU.isSystemCache(cache.name()))
-                && (names == null || names.isEmpty() || names.contains(cache.name()));
         }
     }
 }
