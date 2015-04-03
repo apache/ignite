@@ -476,7 +476,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
             cluster = (ClusterProcessor)comp;
-        else if (!(comp instanceof NodeValidator))
+        else if (!(comp instanceof NodeVersionValidatorProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)

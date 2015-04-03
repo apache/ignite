@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.spi;
 import org.apache.ignite.internal.processors.*;
 
 /**
- * Node Validator.
+ * Node Version Validator.
  */
-public interface NodeValidator extends GridProcessor {
+public interface NodeVersionValidatorProcessor extends GridProcessor {
     //No-op.
 }

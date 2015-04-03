@@ -27,22 +27,23 @@ import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * Node validator.
  */
-public class OsNodeValidator extends GridProcessorAdapter implements NodeValidator {
+public class OsNodeVersionValidatorProcessor extends GridProcessorAdapter implements NodeVersionValidatorProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public OsNodeValidator(GridKernalContext ctx) {
+    public OsNodeVersionValidatorProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_BUILD_VER, VER_STR);
+        ctx.addNodeAttribute(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
     }
 
     /** {@inheritDoc} */

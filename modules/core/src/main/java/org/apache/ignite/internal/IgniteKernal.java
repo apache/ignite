@@ -735,7 +735,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            startProcessor(createComponent(NodeValidator.class, ctx));
+            startProcessor(createComponent(NodeVersionValidatorProcessor.class, ctx));
             startProcessor(new GridClockSyncProcessor(ctx));
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -1157,7 +1157,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_GRID_NAME, gridName);
@@ -2727,8 +2726,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(ctx);
 
-        if (cls.equals(NodeValidator.class))
-            return (T)new OsNodeValidator(ctx);
+        if (cls.equals(NodeVersionValidatorProcessor.class))
+            return (T)new OsNodeVersionValidatorProcessor(ctx);
 
         Class<T> implCls = null;
 
