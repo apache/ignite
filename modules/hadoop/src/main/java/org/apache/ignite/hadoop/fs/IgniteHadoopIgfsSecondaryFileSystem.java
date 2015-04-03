@@ -83,6 +83,9 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         if (F.isEmpty(uri))
             uri = null;
 
+        if (F.isEmpty(cfgPath))
+            cfgPath = null;
+
         if (F.isEmpty(userName))
             userName = null;
 

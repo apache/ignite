@@ -14,17 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.ttl;
 
 import org.apache.ignite.cache.*;
 
 /**
- * Tests {@link GridCacheWriteBehindStore} in partitioned configuration.
+ * TTL test with offheap.
  */
-public class GridCacheWriteBehindStorePartitionedTest extends GridCacheWriteBehindStoreAbstractTest {
+public class CacheTtlOffheapTransactionalLocalSelfTest extends CacheTtlOffheapTransactionalAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+        return CacheMode.LOCAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
     }
 }

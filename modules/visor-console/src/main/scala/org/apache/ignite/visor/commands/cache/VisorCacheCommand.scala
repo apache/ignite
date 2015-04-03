@@ -820,7 +820,6 @@ object VisorCacheCommand {
         cacheT += ("Statistic Enabled", bool2Str(cfg.statisticsEnabled()))
         cacheT += ("Management Enabled", bool2Str(cfg.managementEnabled()))
 
-        cacheT += ("Time To Live", defaultCfg.timeToLive())
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
 
         cacheT += ("Write Synchronization Mode", safe(cfg.writeSynchronizationMode))
@@ -859,7 +858,6 @@ object VisorCacheCommand {
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.nearEvictMaxSize()))
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
-        cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Metadata type count", cfg.typeMeta().size())
         cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 

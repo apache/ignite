@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.task;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -343,7 +344,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         assert ctx.security().enabled();
 
-        return tasksMetaCache.peek(new GridTaskNameHashKey(taskNameHash));
+        try {
+            return tasksMetaCache.localPeek(
+                new GridTaskNameHashKey(taskNameHash), CachePeekModes.ONHEAP_ONLY, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

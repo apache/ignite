@@ -198,14 +198,6 @@ public class GridCacheAttributes implements Serializable {
         return ccfg.isSwapEnabled();
     }
 
-
-    /**
-     * @return Default time to live for cache entries.
-     */
-    public long defaultTimeToLive() {
-        return ccfg.getDefaultTimeToLive();
-    }
-
     /**
      * @return Flag indicating whether eviction is synchronized.
      */

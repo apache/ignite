@@ -75,6 +75,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isPortableObject(Object obj);
 
     /**
+     * Checks whether given class is portable.
+     *
+     * @param cls Class.
+     * @return {@code true} If the class was registered as portable.
+     */
+    public boolean isPortableClass(Class<?> cls);
+
+    /**
      * @param obj Portable object to get field from.
      * @param fieldName Field name.
      * @return Field value.
@@ -156,10 +164,4 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      *          with {@link IgniteImmutable} annotation.
      */
     public boolean immutable(Object obj);
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if portable format should be preserved when passing values to cache store.
-     */
-    public boolean keepPortableInStore(@Nullable String cacheName);
 }

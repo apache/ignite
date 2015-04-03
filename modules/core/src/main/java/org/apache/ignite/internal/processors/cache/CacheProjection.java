@@ -336,23 +336,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<V> reloadAsync(K key);
 
     /**
-     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
-     * peek mode.
-     * <p>
-     * This method will not load value from any persistent store or from a remote node.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
-     * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link GridCache#peek(Object, Collection)} method.
-     *
-     * @param key Entry key.
-     * @return Peeked value.
-     * @throws NullPointerException If key is {@code null}.
-     */
-    @Nullable public V peek(K key);
-
-    /**
      * @param key Key.
      * @param peekModes Peek modes.
      * @param plc Expiry policy if TTL should be updated.
@@ -368,25 +351,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If failed.
      */
     public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException;
-
-    /**
-     * Peeks at cached value using optional set of peek modes. This method will sequentially
-     * iterate over given peek modes in the order passed in, and try to peek at value using
-     * each peek mode. Once a {@code non-null} value is found, it will be immediately returned.
-     * <p>
-     * Note that if modes are not provided this method works exactly the same way as
-     * {@link #peek(Object)}, implicitly using {@link GridCachePeekMode#SMART} mode.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in any transactions, however, it may
-     * peek at transactional value depending on the peek modes used.
-     *
-     * @param key Entry key.
-     * @param modes Optional set of peek modes.
-     * @return Peeked value.
-     * @throws IgniteCheckedException If peek operation failed.
-     * @throws NullPointerException If key is {@code null}.
-     */
-    @Nullable public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException;
 
     /**
      * Retrieves value mapped to the specified key from cache. Value will only be returned if

@@ -148,7 +148,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"BusyWait"})
     public void testIntegrity() throws Exception {
         preloadMode = SYNC;
 
@@ -188,12 +187,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertEquals(EVT_CACHE_REBALANCE_STARTED, iter.next().type());
             assertEquals(EVT_CACHE_REBALANCE_STOPPED, iter.next().type());
 
-            GridCacheAdapter<Integer, String> cache2 = ((IgniteKernal)g2).internalCache(null);
+            IgniteCache<Integer, String> cache2 = g2.cache(null);
 
-            assertEquals("val1", cache2.peek(1));
-            assertEquals("val2", cache2.peek(2));
+            assertEquals("val1", cache2.localPeek(1, CachePeekMode.ONHEAP));
+            assertEquals("val2", cache2.localPeek(2, CachePeekMode.ONHEAP));
 
-            GridCacheEntryEx e2 = cache2.peekEx(1);
+            GridCacheAdapter<Integer, String> cacheAdapter2 = ((IgniteKernal)g2).internalCache(null);
+
+            GridCacheEntryEx e2 = cacheAdapter2.peekEx(1);
 
             assert e2 != null;
             assert e2 != e1;

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
@@ -127,7 +128,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheTtlManager ttlMgr;
 
     /** Store manager. */
-    private GridCacheStoreManager storeMgr;
+    private CacheStoreManager storeMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
@@ -233,7 +234,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         GridCacheSwapManager swapMgr,
-        GridCacheStoreManager storeMgr,
+        CacheStoreManager storeMgr,
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
@@ -882,7 +883,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocalStore() || cacheCfg.isWriteBehindEnabled();
+        return store().isLocal() || cacheCfg.isWriteBehindEnabled();
     }
 
     /**
@@ -951,7 +952,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Store manager.
      */
-    public GridCacheStoreManager store() {
+    public CacheStoreManager store() {
         return storeMgr;
     }
 

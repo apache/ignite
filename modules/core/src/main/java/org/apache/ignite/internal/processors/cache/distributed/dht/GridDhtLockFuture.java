@@ -945,7 +945,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             }
 
             try {
-                cctx.store().loadAllFromStore(
+                cctx.store().loadAll(
                     null,
                     loadMap.keySet(),
                     new CI2<KeyCacheObject, Object>() {
