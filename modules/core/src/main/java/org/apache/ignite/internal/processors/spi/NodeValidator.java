@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.spi;
 
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 
 /**
  * Node Validator.
  */
-public interface NodeValidator extends GridComponent {
+public interface NodeValidator extends GridProcessor {
     //No-op.
 }
