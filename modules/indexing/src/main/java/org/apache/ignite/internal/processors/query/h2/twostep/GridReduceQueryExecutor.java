@@ -445,20 +445,28 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             String name = expr.getAlias();
             long precision = expr.getPrecision();
             int displaySize = expr.getDisplaySize();
-            DataType dt = DataType.getDataType(type);
-            if (precision > 0 && (dt.defaultPrecision == 0 ||
-                (dt.defaultPrecision > precision && dt.defaultPrecision < Byte.MAX_VALUE))) {
-                // dont' set precision to MAX_VALUE if this is the default
-                precision = dt.defaultPrecision;
-            }
             int scale = expr.getScale();
-            if (scale > 0 && (dt.defaultScale == 0 ||
-                (dt.defaultScale > scale && dt.defaultScale < precision))) {
-                scale = dt.defaultScale;
+
+            if (type != Value.UNKNOWN) {
+                DataType dt = DataType.getDataType(type);
+
+                if (precision > 0 && (dt.defaultPrecision == 0 ||
+                    (dt.defaultPrecision > precision && dt.defaultPrecision < Byte.MAX_VALUE))) {
+                    // dont' set precision to MAX_VALUE if this is the default
+                    precision = dt.defaultPrecision;
+                }
+
+                if (scale > 0 && (dt.defaultScale == 0 ||
+                    (dt.defaultScale > scale && dt.defaultScale < precision)))
+                    scale = dt.defaultScale;
+
+                if (scale > precision)
+                    precision = scale;
             }
-            if (scale > precision) {
-                precision = scale;
+            else {
+                System.out.println("1");
             }
+
             Column col = new Column(name, type, precision, scale, displaySize);
             cols.add(col);
         }
@@ -481,7 +489,18 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             data.tableName = "T___";
             data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
             data.create = true;
-            data.columns = generateColumnsFromQuery((Query)ses.prepare(qry.query(), false));
+
+            Query prepare = (Query)ses.prepare(qry.query(), false);
+
+            ArrayList<Parameter> parsedParams = prepare.getParameters();
+
+            for (int i = Math.min(parsedParams.size(), qry.parameters().length); --i >= 0; ) {
+                Object val = qry.parameters()[i];
+
+                parsedParams.get(i).setValue(DataType.convertToValue(ses, val, Value.UNKNOWN));
+            }
+
+            data.columns = generateColumnsFromQuery(prepare);
 
             return new GridMergeTable(data);
         }
