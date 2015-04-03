@@ -101,12 +101,12 @@ public class VisorCache implements Serializable {
      * @param cacheName Cache name.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed to create data transfer object.
      */
-    public static VisorCache from(Ignite ignite, String cacheName, int sample) throws IgniteCheckedException {
+    public static VisorCache from(IgniteEx ignite, String cacheName, int sample) throws IgniteCheckedException {
         assert ignite != null;
 
-        GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
+        GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
 
         // Cache was not started.
         if (ca == null || !ca.context().started())
@@ -131,7 +131,6 @@ public class VisorCache implements Serializable {
         CacheConfiguration cfg = ca.configuration();
 
         CacheMode mode = cfg.getCacheMode();
-
 
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
             && ca.context().affinityNode();
