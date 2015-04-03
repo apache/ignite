@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.*;
 public class GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest
     extends GridCachePartitionedBasicStoreMultiNodeSelfTest {
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration mode() {
+    @Override protected NearCacheConfiguration nearCacheConfiguration() {
         return null;
     }
 }

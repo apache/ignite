@@ -108,7 +108,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
 
         c.setCacheConfiguration(cc);
 
-        c.setNearCacheConfiguration(mode());
+        c.setNearCacheConfiguration(nearCacheConfiguration());
 
         return c;
     }
@@ -116,7 +116,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @return Distribution mode.
      */
-    protected NearCacheConfiguration mode() {
+    protected NearCacheConfiguration nearCacheConfiguration() {
         return new NearCacheConfiguration();
     }
 
@@ -309,7 +309,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      */
     public void testMultipleOperations() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
-        //GridCache<Integer, String> cache = cache(0);
 
         try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
