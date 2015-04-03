@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.store;
 
 import org.apache.ignite.cache.*;
 
 /**
- * Tests {@link GridCacheWriteBehindStore} in grid configuration.
+ * Tests {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore} in grid configuration.
  */
-public class GridCacheWriteBehindStoreReplicatedTest extends GridCacheWriteBehindStoreAbstractTest {
+public class GridCacheWriteBehindStoreLocalTest extends GridCacheWriteBehindStoreAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+        return CacheMode.LOCAL;
     }
 }

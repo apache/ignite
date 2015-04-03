@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.transactions.*;
@@ -370,7 +371,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
 
                 return new GridFinishedFuture<>(
-                    cacheCtx.store().loadAllFromStore(this, keys, c));
+                    cacheCtx.store().loadAll(this, keys, c));
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
@@ -387,7 +388,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             return false;
                         }
 
-                        return cacheCtx.store().loadAllFromStore(IgniteTxLocalAdapter.this, keys, c);
+                        return cacheCtx.store().loadAll(IgniteTxLocalAdapter.this, keys, c);
                     }
                 },
                 true);
@@ -492,17 +493,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     @SuppressWarnings({"CatchGenericClass"})
     protected void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
-        GridCacheStoreManager store = store();
+        CacheStoreManager store = store();
 
-        if (store != null && store.writeThrough() && storeEnabled() &&
-            (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
+        if (store != null && store.isWriteThrough() && storeEnabled() &&
+            (!internal() || groupLock()) && (near() || store.isWriteToStoreFromDht())) {
             try {
                 if (writeEntries != null) {
                     Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
                     List<Object> rmvCol = null;
-                    GridCacheStoreManager writeStore = null;
+                    CacheStoreManager writeStore = null;
 
-                    boolean skipNear = near() && store.writeToStoreFromDht();
+                    boolean skipNear = near() && store.isWriteToStoreFromDht();
 
                     for (IgniteTxEntry e : writeEntries) {
                         if (skipNear && e.cached().isNear())
@@ -527,7 +528,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (rmvCol != null && !rmvCol.isEmpty()) {
                                 assert writeStore != null;
 
-                                writeStore.removeAllFromStore(this, rmvCol);
+                                writeStore.removeAll(this, rmvCol);
 
                                 // Reset.
                                 rmvCol.clear();
@@ -537,7 +538,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             // Batch-process puts if cache ID has changed.
                             if (writeStore != null && writeStore != cacheCtx.store() && putMap != null && !putMap.isEmpty()) {
-                                writeStore.putAllToStore(this, putMap);
+                                writeStore.putAll(this, putMap);
 
                                 // Reset.
                                 putMap.clear();
@@ -568,7 +569,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             if (putMap != null && !putMap.isEmpty()) {
                                 assert writeStore != null;
 
-                                writeStore.putAllToStore(this, putMap);
+                                writeStore.putAll(this, putMap);
 
                                 // Reset.
                                 putMap.clear();
@@ -577,7 +578,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             if (writeStore != null && writeStore != cacheCtx.store() && rmvCol != null && !rmvCol.isEmpty()) {
-                                writeStore.removeAllFromStore(this, rmvCol);
+                                writeStore.removeAll(this, rmvCol);
 
                                 // Reset.
                                 rmvCol.clear();
@@ -609,7 +610,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         assert writeStore != null;
 
                         // Batch put at the end of transaction.
-                        writeStore.putAllToStore(this, putMap);
+                        writeStore.putAll(this, putMap);
                     }
 
                     if (rmvCol != null && !rmvCol.isEmpty()) {
@@ -617,12 +618,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         assert writeStore != null;
 
                         // Batch remove at the end of transaction.
-                        writeStore.removeAllFromStore(this, rmvCol);
+                        writeStore.removeAll(this, rmvCol);
                     }
                 }
 
                 // Commit while locks are held.
-                store.txEnd(this, true);
+                store.sessionEnd(this, true);
             }
             catch (IgniteCheckedException ex) {
                 commitError(ex);
@@ -981,11 +982,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             }
         }
         else {
-            GridCacheStoreManager store = store();
+            CacheStoreManager store = store();
 
             if (store != null && (!internal() || groupLock())) {
                 try {
-                    store.txEnd(this, true);
+                    store.sessionEnd(this, true);
                 }
                 catch (IgniteCheckedException e) {
                     commitError(e);
@@ -1086,11 +1087,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 cctx.tm().rollbackTx(this);
 
-                GridCacheStoreManager store = store();
+                CacheStoreManager store = store();
 
-                if (store != null && (near() || store.writeToStoreFromDht())) {
+                if (store != null && (near() || store.isWriteToStoreFromDht())) {
                     if (!internal() || groupLock())
-                        store.txEnd(this, false);
+                        store.sessionEnd(this, false);
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {
@@ -3080,8 +3081,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     "(cache configurations are not compatible) [" +
                     "activeCaches=[" + cacheNames + "]" +
                     ", cacheName=" + cacheCtx.name() +
-                    ", txSystem=" + system() +
-                    ", cacheSystem=" + cacheCtx.system() + ']');
+                    ", cacheSystem=" + cacheCtx.system() +
+                    ", txSystem=" + system() + ']');
             }
             else
                 activeCacheIds.add(cacheId);
