@@ -766,7 +766,6 @@ object VisorCacheCommand {
         cacheT += ("Statistic Enabled", bool2Str(cfg.statisticsEnabled()))
         cacheT += ("Management Enabled", bool2Str(cfg.managementEnabled()))
 
-        cacheT += ("Time To Live", defaultCfg.timeToLive())
         cacheT += ("Time To Live Eager Flag", cfg.eagerTtl)
 
         cacheT += ("Write Synchronization Mode", safe(cfg.writeSynchronizationMode))

@@ -14,31 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.ttl;
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.internal.processors.affinity.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
 
 /**
- * Factory for cache entries.
+ * TTL test with offheap.
  */
-public interface GridCacheMapEntryFactory {
-    /**
-     * @param ctx Cache registry.
-     * @param topVer Topology version.
-     * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header id.
-     * @return New cache entry.
-     */
-    public GridCacheMapEntry create(GridCacheContext ctx,
-        AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val,
-        @Nullable GridCacheMapEntry next,
-        int hdrId);
+public class CacheTtlOffheapAtomicPartitionedSelfTest  extends CacheTtlOffheapAtomicAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 2;
+    }
 }

@@ -29,9 +29,6 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** TTL value. */
-    private long ttl;
-
     /** Default transaction timeout. */
     private long txLockTimeout;
 
@@ -45,17 +42,9 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     public static VisorCacheDefaultConfiguration from(CacheConfiguration ccfg) {
         VisorCacheDefaultConfiguration cfg = new VisorCacheDefaultConfiguration();
 
-        cfg.ttl = ccfg.getDefaultTimeToLive();
         cfg.txLockTimeout = ccfg.getDefaultLockTimeout();
 
         return cfg;
-    }
-
-    /**
-     * @return TTL value.
-     */
-    public long timeToLive() {
-        return ttl;
     }
 
     /**

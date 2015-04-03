@@ -139,7 +139,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl Time to live.
      * @param hdrId Header id.
      */
     protected GridCacheMapEntry(GridCacheContext<?, ?> cctx,
@@ -147,7 +146,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
-        long ttl,
         int hdrId)
     {
         if (log == null)
@@ -160,8 +158,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         this.key = key;
         this.hash = hash;
         this.cctx = cctx;
-
-        ttlAndExpireTimeExtras(ttl, CU.toExpireTime(ttl));
 
         val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
@@ -3515,19 +3511,25 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 boolean expired = checkExpired();
 
                 if (expired) {
-                    if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                        if (!deletedUnlocked()) {
-                            update(null, 0L, 0L, ver);
+                    if (!obsolete()) {
+                        if (cctx.deferredDelete() && !detached() && !isInternal()) {
+                            if (!deletedUnlocked()) {
+                                update(null, 0L, 0L, ver);
 
-                            deletedUnlocked(true);
+                                deletedUnlocked(true);
 
-                            deferred = true;
+                                deferred = true;
+                            }
+                        }
+                        else {
+                            if (markObsolete0(obsoleteVer, true))
+                                obsolete = true; // Success, will return "true".
                         }
                     }
-                    else {
-                        if (markObsolete0(obsoleteVer, true))
-                            obsolete = true; // Success, will return "true".
-                    }
+
+                    clearIndex(saveValueForIndexUnlocked());
+
+                    releaseSwap();
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                         cctx.events().addEvent(partition(),
