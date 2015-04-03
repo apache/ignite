@@ -25,8 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
@@ -67,7 +65,6 @@ public class OsNodeValidator extends GridProcessorAdapter implements NodeValidat
 
                 return new IgniteSpiNodeValidationResult(node.id(), errMsg, errMsg);
             }
-
         }
 
         return null;
