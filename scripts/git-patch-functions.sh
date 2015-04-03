@@ -23,6 +23,16 @@
 #
 # Define functions.
 #
+
+#
+# Formats patch. Create patch in one commit from user who run script and with default comment.
+#
+# Params:
+# - Git home.
+# - Default branch.
+# - Patch with patch.
+# - Suffix for created patch-file.
+#
 formatPatch () {
     GIT_HOME=$1
     DEFAULT_BRANCH=$2
@@ -33,11 +43,10 @@ formatPatch () {
 
     git checkout ${DEFAULT_BRANCH}
     git checkout -b tmppatch
-    
-    git merge --no-edit ${PATCHED_BRANCH}
-#    Or we can 'squashe' merge to make only one commit.
-#    git merge --squash ${PATCHED_BRANCH}
-#    git commit -a -m "# PATCHED_BRANCH"
+
+    # Merge to make only one commit.
+    git merge --squash ${PATCHED_BRANCH}
+    git commit -a -m "# ${PATCHED_BRANCH}"
 
     PATCH_FILE=${PATCHES_HOME}'/'${DEFAULT_BRANCH}_${PATCHED_BRANCH}${PATCH_SUFFIX}
 
@@ -52,6 +61,13 @@ formatPatch () {
     echo "Patch created: ${PATCH_FILE}"
 }
 
+#
+# Determines current branch.
+#
+# Params:
+# - Git home.
+# Return - Current branch.
+#
 determineCurrentBranch () {
     GIT_HOME=$1
     
@@ -62,6 +78,13 @@ determineCurrentBranch () {
     echo "$CURRENT_BRANCH"
 }
 
+#
+# Checks that given git repository has clean work tree (there is no uncommited changes).
+# Exit with code 1 in error case.
+#
+# Params:
+# - Git home.
+#
 requireCleanWorkTree () {
     cd $1 # At git home.
 
@@ -94,6 +117,14 @@ requireCleanWorkTree () {
     fi
 }
 
+#
+# Applies patch. Applies patch file created by formatPatch method.
+#
+# Params:
+# - Git home.
+# - Default branch.
+# - File with patch.
+#
 applyPatch () {
     GIT_HOME=$1
     DEFAULT_BRANCH=$2
@@ -110,10 +141,18 @@ applyPatch () {
     fi
 
     echo "Patch $PATCH_FILE will be applied to $DEFAULT_BRANCH branch."
-#    git apply ${PATCH_FILE}
+    
     git am ${PATCH_FILE}
 }
 
+#
+# Checks that given default branch and current branch are equal.
+# Exit with code 1 in error case.
+#
+# Params:
+# - Git home.
+# - Default branch.
+#
 currentAndDefaultBranchesShouldBeEqual () {
     GIT_HOME=$1
     DEFAULT_BRANCH=$2

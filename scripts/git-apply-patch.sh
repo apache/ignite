@@ -17,13 +17,27 @@
 #
 
 #
-# Git patch-file applyer.
+# Git patch-file applier.
 #
 echo 'Usage: scripts/git-apply-patch.sh <ignite-task> [-ih|--ignitehome <path>] [-idb|--ignitedefbranch <branch-name>] [-ph|--patchhome <path>]'
 echo "It should be called from IGNITE_HOME directory."
 echo "Patch will be applied to DEFAULT_BRANCH from PATCHES_HOME."
 echo "Note: you can use ${IGNITE_HOME}/scripts/git-patch-prop-local.sh to set your own local properties (to rewrite settings at git-patch-prop-local.sh). "
 echo
+
+#
+# Init home and import properties and functions.
+#
+if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
+    then IGNITE_HOME=$PWD
+fi
+
+. ${IGNITE_HOME}/scripts/git-patch-prop.sh # Import properties.
+. ${IGNITE_HOME}/scripts/git-patch-functions.sh # Import patch functions.
+
+if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
+    then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
+fi
 
 #
 # Ignite task.
@@ -42,31 +56,23 @@ do
         IGNITE_HOME="$2"
         shift
         ;;
+        
         -idb|--ignitedefbranch)
         IGNITE_DEFAULT_BRANCH="$2"
         shift
         ;;
+        
         -ph|--patchhome)
         PATCHES_HOME="$2"
         shift
         ;;
         *)
-                # unknown option
+        
+        echo "Unknown parameter: ${key}"
         ;;
     esac
     shift
 done
-
-if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
-    then IGNITE_HOME=$PWD
-fi
-
-. ${IGNITE_HOME}/scripts/git-patch-prop.sh # Import properties.
-. ${IGNITE_HOME}/scripts/git-patch-functions.sh # Import patch functions.
-
-if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
-    then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
-fi
 
 echo "IGNITE_HOME    : ${IGNITE_HOME}"
 echo "Master branch  : ${IGNITE_DEFAULT_BRANCH}"
