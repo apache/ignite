@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.spi;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
@@ -26,6 +27,7 @@ import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
  * Node validator.
@@ -36,6 +38,11 @@ public class OsNodeValidator extends GridProcessorAdapter implements NodeValidat
      */
     public OsNodeValidator(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_BUILD_VER, VER_STR);
     }
 
     /** {@inheritDoc} */

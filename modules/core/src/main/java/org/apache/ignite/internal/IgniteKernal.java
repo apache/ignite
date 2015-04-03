@@ -1157,7 +1157,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(ATTR_BUILD_VER, VER_STR);
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_USER_NAME, System.getProperty("user.name"));
