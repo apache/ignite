@@ -909,7 +909,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
 
-                assertEquals(CONTINUOUS, qe.queryType());
+                assertEquals(CONTINUOUS.name(), qe.queryType());
                 assertNull(qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());
@@ -933,7 +933,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                assertEquals(CONTINUOUS, qe.queryType());
+                assertEquals(CONTINUOUS.name(), qe.queryType());
                 assertNull(qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());

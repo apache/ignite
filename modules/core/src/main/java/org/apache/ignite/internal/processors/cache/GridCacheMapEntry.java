@@ -3993,14 +3993,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         assert cctx.deferredDelete();
 
         if (deleted) {
-            assert !deletedUnlocked();
+            assert !deletedUnlocked() : this;
 
             flags |= IS_DELETED_MASK;
 
             cctx.decrementPublicSize(this);
         }
         else {
-            assert deletedUnlocked();
+            assert deletedUnlocked() : this;
 
             flags &= ~IS_DELETED_MASK;
 
