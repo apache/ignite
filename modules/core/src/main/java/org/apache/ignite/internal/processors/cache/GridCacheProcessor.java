@@ -2302,14 +2302,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             IgniteCache<K,V> cache = (IgniteCache<K, V>)jCacheProxies.get(masked);
 
-            if (cache == null) {
-                DynamicCacheDescriptor desc = registeredCaches.get(masked);
+            DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
+            if (desc != null && !desc.cacheType().userCache())
+                throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
+
+            if (cache == null) {
                 if (desc == null || desc.cancelled())
                     throw new IllegalArgumentException("Cache is not started: " + cacheName);
-
-                if (!desc.cacheType().userCache())
-                    throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
                 DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
 

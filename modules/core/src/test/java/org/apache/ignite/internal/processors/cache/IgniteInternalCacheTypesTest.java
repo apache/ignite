@@ -25,7 +25,10 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -98,7 +101,31 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
      * @param ignite Ignite.
      * @param userCaches User caches.
      */
-    private void checkCacheTypes(Ignite ignite, String... userCaches) {
+    private void checkCacheTypes(final Ignite ignite, String... userCaches) {
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ignite.cache(CU.UTILITY_CACHE_NAME);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ignite.cache(CU.MARSH_CACHE_NAME);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ignite.cache(CU.ATOMICS_CACHE_NAME);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
         checkCache(ignite, CU.UTILITY_CACHE_NAME, UTILITY_CACHE_POOL, false, true);
 
         checkCache(ignite, CU.MARSH_CACHE_NAME, MARSH_CACHE_POOL, false, false);

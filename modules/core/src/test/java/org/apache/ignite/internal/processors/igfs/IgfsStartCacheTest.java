@@ -26,8 +26,10 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -123,7 +125,23 @@ public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     /**
      * @param ignite Ignite.
      */
-    private void checkIgfsCaches(Ignite ignite) {
+    private void checkIgfsCaches(final Ignite ignite) {
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ignite.cache("dataCache");
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ignite.cache("metaCache");
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
         checkCache(((IgniteKernal)ignite).internalCache("dataCache"));
         checkCache(((IgniteKernal)ignite).internalCache("metaCache"));
     }
