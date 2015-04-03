@@ -117,14 +117,14 @@ public class VisorCacheConfiguration implements Serializable {
     private VisorCacheQueryConfiguration qryCfg;
 
     /** System cache state. */
-    private boolean system;
+    private boolean sys;
 
     /**
      * @param ignite Grid.
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public VisorCacheConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
+    public VisorCacheConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
         name = ccfg.getName();
         mode = ccfg.getCacheMode();
         atomicityMode = ccfg.getAtomicityMode();
@@ -145,7 +145,7 @@ public class VisorCacheConfiguration implements Serializable {
         ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
         writerFactory = compactClass(ccfg.getCacheWriterFactory());
         expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
-        system = ignite.systemCache(ccfg.getName());
+        sys = ignite.systemCache(ccfg.getName());
         
         affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
         rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
@@ -358,7 +358,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @return System cache state.
      */
     public boolean system() {
-        return system;
+        return sys;
     }
 
     /** {@inheritDoc} */
