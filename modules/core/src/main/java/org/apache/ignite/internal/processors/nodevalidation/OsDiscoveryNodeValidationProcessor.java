@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.spi;
+package org.apache.ignite.internal.processors.nodevalidation;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
@@ -30,24 +30,18 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
- * Node validator.
+ * Node validation.
  */
-public class OsNodeVersionValidatorProcessor extends GridProcessorAdapter implements NodeVersionValidatorProcessor {
+public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public OsNodeVersionValidatorProcessor(GridKernalContext ctx) {
+    public OsDiscoveryNodeValidationProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(ATTR_BUILD_VER, VER_STR);
-        ctx.addNodeAttribute(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         ClusterNode locNode = ctx.discovery().localNode();
 
         // Check version.
@@ -71,7 +65,7 @@ public class OsNodeVersionValidatorProcessor extends GridProcessorAdapter implem
                 if (log.isDebugEnabled())
                     log.debug(errMsg);
 
-                return new IgniteSpiNodeValidationResult(node.id(), errMsg, errMsg);
+                return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);
             }
         }
 

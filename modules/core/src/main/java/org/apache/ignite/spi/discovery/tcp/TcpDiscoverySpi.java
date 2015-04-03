@@ -3216,7 +3216,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     }
                 }
 
-                IgniteSpiNodeValidationResult err = getSpiContext().validateNode(node);
+                IgniteNodeValidationResult err = getSpiContext().validateNode(node);
 
                 if (err != null) {
                     boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
