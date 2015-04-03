@@ -256,7 +256,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert entryPrimary != null;
         assert entryBackup != null;
 
-        assertEquals(val, nearOther.peek(key));
+        assertEquals(val, localPeek(nearOther, key));
 
         assertTrue(!entryPrimary.readers().isEmpty());
 
@@ -268,13 +268,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         futBackup.get(3000);
         futPrimary.get(3000);
 
-        assertNull(dhtPrimary.peek(key));
-        assertNull(nearPrimary.peek(key));
+        assertNull(localPeek(dhtPrimary, key));
+        assertNull(localPeek(nearPrimary, key));
 
-        assertNull(dhtBackup.peek(key));
-        assertNull(nearBackup.peek(key));
+        assertNull(localPeek(dhtBackup, key));
+        assertNull(localPeek(nearBackup, key));
 
-        assertNull(dhtOther.peek(key));
-        assertNull(nearOther.peek(key));
+        assertNull(localPeek(dhtOther, key));
+        assertNull(localPeek(nearOther, key));
     }
 }
