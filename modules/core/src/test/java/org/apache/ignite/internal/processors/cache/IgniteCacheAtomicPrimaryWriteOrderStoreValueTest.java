@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+
 /**
- * Tests {@link GridCacheWriteBehindStore} in grid configuration.
+ *
  */
-public class GridCacheWriteBehindStoreReplicatedTest extends GridCacheWriteBehindStoreAbstractTest {
+public class IgniteCacheAtomicPrimaryWriteOrderStoreValueTest extends IgniteCacheAtomicStoreValueTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
     }
 }

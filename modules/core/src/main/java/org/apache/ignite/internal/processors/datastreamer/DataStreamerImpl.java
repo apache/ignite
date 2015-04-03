@@ -43,6 +43,7 @@ import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
@@ -1390,6 +1391,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 GridCacheVersion ver = cctx.versions().next(topVer);
 
+                long ttl = CU.TTL_ETERNAL;
+                long expiryTime = CU.EXPIRE_TIME_ETERNAL;
+
+                ExpiryPolicy plc = cctx.expiry();
+
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
@@ -1398,10 +1404,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         entry.unswap(false);
 
+                        if (plc != null) {
+                            ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                            if (ttl == CU.TTL_ZERO)
+                                continue;
+                            else if (ttl == CU.TTL_NOT_CHANGED)
+                                ttl = 0;
+
+                            expiryTime = CU.toExpireTime(ttl);
+                        }
+
                         entry.initialValue(e.getValue(),
                             ver,
-                            CU.TTL_ETERNAL,
-                            CU.EXPIRE_TIME_ETERNAL,
+                            ttl,
+                            expiryTime,
                             false,
                             topVer,
                             GridDrType.DR_LOAD);

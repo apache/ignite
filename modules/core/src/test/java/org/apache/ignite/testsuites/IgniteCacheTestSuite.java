@@ -219,6 +219,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
         suite.addTest(new TestSuite(GridPartitionedBackupLoadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
@@ -414,6 +415,17 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
         suite.addTestSuite(GridCacheMarshallingNodeJoinSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
 
         return suite;
     }

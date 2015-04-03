@@ -20,6 +20,8 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -42,6 +44,9 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     /** */
     private boolean cache;
 
+    /** */
+    private String workDir;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -53,6 +58,8 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(disco);
 
         cfg.setMarshaller(new OptimizedMarshaller());
+
+        cfg.setWorkDirectory(workDir);
 
         if (cache) {
             CacheConfiguration ccfg = new CacheConfiguration();
@@ -111,6 +118,66 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
         assertNotNull(ignite.cache(null));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRestartAllNodes() throws Exception {
+        cache = false;
+
+        String home = U.getIgniteHome();
+
+        String[] workDirs = new String[3];
+
+        for (int i = 0; i < 3; i++) {
+            workDirs[i] = home + "/work/marshallerTestNode_" + i;
+
+            File file = new File(workDirs[i]);
+
+            if (file.exists())
+                assert U.delete(file);
+        }
+
+        try {
+            for (int i = 0; i < workDirs.length; i++) {
+                workDir = workDirs[i];
+
+                U.nullifyWorkDirectory();
+
+                startGrid(i);
+            }
+
+            Marshaller marsh = ignite(0).configuration().getMarshaller();
+
+            TestClass1 obj = new TestClass1();
+
+            obj.val = 111;
+
+            byte[] bytes = marsh.marshal(obj);
+
+            stopAllGrids();
+
+            for (int i = 0; i < workDirs.length; i++) {
+                workDir = workDirs[i];
+
+                U.nullifyWorkDirectory();
+
+                startGrid(i);
+            }
+
+            for (int i = 0; i < 3; i++) {
+                marsh = ignite(i).configuration().getMarshaller();
+
+                TestClass1 obj0 = marsh.unmarshal(bytes, null);
+
+                assertEquals(111, obj0.val);
+            }
+        }
+        finally {
+            for (String dir : workDirs)
+                assert U.delete(new File(dir));
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -153,7 +220,9 @@ public class OptimizedMarshallerNodeFailoverTest extends GridCommonAbstractTest 
     /**
      *
      */
-    static class TestClass1 implements Serializable {}
+    static class TestClass1 implements Serializable {
+        int val;
+    }
 
     /**
      *

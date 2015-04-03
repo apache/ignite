@@ -38,11 +38,13 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -126,7 +128,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheTtlManager ttlMgr;
 
     /** Store manager. */
-    private GridCacheStoreManager storeMgr;
+    private CacheStoreManager storeMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
@@ -136,6 +138,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
+
+    /** Cache plugin manager. */
+    private CachePluginManager pluginMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -213,6 +218,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
      * @param jtaMgr JTA manager.
+     * @param pluginMgr Cache plugin manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
@@ -228,7 +234,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         GridCacheSwapManager swapMgr,
-        GridCacheStoreManager storeMgr,
+        CacheStoreManager storeMgr,
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
@@ -237,7 +243,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr,
-        CacheConflictResolutionManager<K, V> rslvrMgr
+        CacheConflictResolutionManager<K, V> rslvrMgr,
+        CachePluginManager pluginMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -253,6 +260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
         assert rslvrMgr != null;
+        assert pluginMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
@@ -275,6 +283,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.drMgr = add(drMgr);
         this.jtaMgr = add(jtaMgr);
         this.rslvrMgr = add(rslvrMgr);
+        this.pluginMgr = add(pluginMgr);
 
         log = ctx.log(getClass());
 
@@ -874,7 +883,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocalStore() || cacheCfg.isWriteBehindEnabled();
+        return store().isLocal() || cacheCfg.isWriteBehindEnabled();
     }
 
     /**
@@ -943,7 +952,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Store manager.
      */
-    public GridCacheStoreManager store() {
+    public CacheStoreManager store() {
         return storeMgr;
     }
 
@@ -994,6 +1003,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheJtaManagerAdapter jta() {
         return jtaMgr;
+    }
+
+    /**
+     * @return Cache plugin manager.
+     */
+    public CachePluginManager plugin() {
+        return pluginMgr;
     }
 
     /**

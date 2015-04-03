@@ -1009,9 +1009,9 @@ public class VisorMimeTypes {
         int lastIdx = name.lastIndexOf('.');
 
         if (lastIdx != -1) {
-            String extention = name.substring(lastIdx + 1).toLowerCase();
+            String extension = name.substring(lastIdx + 1).toLowerCase();
 
-            return mimeTypes.get(extention);
+            return mimeTypes.get(extension);
         }
 
         return null;

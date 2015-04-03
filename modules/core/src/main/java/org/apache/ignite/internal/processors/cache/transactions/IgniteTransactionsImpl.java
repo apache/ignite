@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -136,6 +137,9 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+
+        if (sysCacheCtx != null && !sysCacheCtx.transactional())
+            throw new IgniteException("Failed to start transaction on non-transactional cache: " + sysCacheCtx.name());
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +

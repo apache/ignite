@@ -24,6 +24,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
@@ -444,11 +445,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      *
      * @return Store manager.
      */
-    protected GridCacheStoreManager store() {
+    protected CacheStoreManager store() {
         if (!activeCacheIds().isEmpty()) {
             int cacheId = F.first(activeCacheIds());
 
-            GridCacheStoreManager store = cctx.cacheContext(cacheId).store();
+            CacheStoreManager store = cctx.cacheContext(cacheId).store();
 
             return store.configured() ? store : null;
         }

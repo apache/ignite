@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -61,12 +62,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     public static final long DFLT_REBALANCE_THROTTLE = 0;
-
-    /**
-     * Default time to live. The value is <tt>0</tt> which means that
-     * cached objects never expire based on time.
-     */
-    public static final long DFLT_TIME_TO_LIVE = 0;
 
     /** Default number of backups. */
     public static final int DFLT_BACKUPS = 0;
@@ -178,9 +173,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
-
-    /** Default time to live for cache entries. */
-    private long ttl = DFLT_TIME_TO_LIVE;
 
     /** Cache expiration policy. */
     private EvictionPolicy evictPlc;
@@ -326,6 +318,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
+    /** Cache plugin configurations. */
+    private CachePluginConfiguration[] pluginCfgs;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -401,7 +396,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeFactory = cc.getCacheStoreFactory();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
-        ttl = cc.getDefaultTimeToLive();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -409,6 +403,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        pluginCfgs = cc.getPluginConfigurations();
     }
 
     /**
@@ -431,25 +426,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         A.ensure(name == null || !name.isEmpty(), "Name cannot be null or empty.");
 
         this.name = name;
-    }
-
-    /**
-     * Gets time to live for all objects in cache. This value can be overridden for individual objects.
-     * If not set, then value is {@code 0} which means that objects never expire.
-     *
-     * @return Time to live for all objects in cache.
-     */
-    public long getDefaultTimeToLive() {
-        return ttl;
-    }
-
-    /**
-     * Sets time to live for all objects in cache. This value can be override for individual objects.
-     *
-     * @param ttl Time to live for all objects in cache.
-     */
-    public void setDefaultTimeToLive(long ttl) {
-        this.ttl = ttl;
     }
 
     /**
@@ -1573,6 +1549,24 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setSqlOnheapRowCacheSize(int size) {
         this.sqlOnheapRowCacheSize = size;
+    }
+
+    /**
+     * Gets array of cache plugin configurations.
+     *
+     * @return Cache plugin configurations.
+     */
+    public CachePluginConfiguration[] getPluginConfigurations() {
+        return pluginCfgs != null ? pluginCfgs : new CachePluginConfiguration[0];
+    }
+
+    /**
+     * Sets cache plugin configurations.
+     *
+     * @param pluginCfgs Cache plugin configurations.
+     */
+    public void setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
+        this.pluginCfgs = pluginCfgs;
     }
 
     /** {@inheritDoc} */

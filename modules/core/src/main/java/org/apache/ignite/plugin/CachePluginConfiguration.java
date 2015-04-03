@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.plugin;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+
+import java.io.*;
 
 /**
- * Tests {@link GridCacheWriteBehindStore} in partitioned configuration.
+ * Cache plugin configuration. It is a point to extend existing {@link CacheConfiguration} 
+ * and extend existing functionality of cache.
  */
-public class GridCacheWriteBehindStorePartitionedTest extends GridCacheWriteBehindStoreAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
+public interface CachePluginConfiguration<K, V> extends Serializable {
+    /**
+     * Creates cache plugin provider.
+     *
+     * @return Cache plugin provider class.
+     * @param ctx
+     */
+    public CachePluginProvider createProvider(CachePluginContext ctx);
 }

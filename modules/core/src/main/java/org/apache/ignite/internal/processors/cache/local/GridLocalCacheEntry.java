@@ -35,7 +35,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl  Time to live.
      * @param hdrId Header id.
      */
     public GridLocalCacheEntry(GridCacheContext ctx,
@@ -43,10 +42,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
-        long ttl,
         int hdrId)
     {
-        super(ctx, key, hash, val, next, ttl, hdrId);
+        super(ctx, key, hash, val, next, hdrId);
     }
 
     /** {@inheritDoc} */

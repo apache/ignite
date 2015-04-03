@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
@@ -26,7 +27,7 @@ import java.nio.*;
 /**
  * Next page response.
  */
-public class GridQueryNextPageResponse implements Externalizable, Message {
+public class GridQueryNextPageResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,6 +46,10 @@ public class GridQueryNextPageResponse implements Externalizable, Message {
     /** */
     private byte[] rows;
 
+    /** */
+    @GridDirectTransient
+    private transient Object plainRows;
+
     /**
      * For {@link Externalizable}.
      */
@@ -58,16 +63,18 @@ public class GridQueryNextPageResponse implements Externalizable, Message {
      * @param page Page.
      * @param allRows All rows count.
      * @param rows Rows.
+     * @param plainRows Not marshalled rows for local node.
      */
     public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows,
-        byte[] rows) {
-        assert rows != null;
+        byte[] rows, Object plainRows) {
+        assert rows != null ^ plainRows != null;
 
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
         this.rows = rows;
+        this.plainRows = plainRows;
     }
 
     /**
@@ -105,22 +112,11 @@ public class GridQueryNextPageResponse implements Externalizable, Message {
         return rows;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(qryReqId);
-        out.writeInt(qry);
-        out.writeInt(page);
-        out.writeInt(allRows);
-        U.writeByteArray(out, rows);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        qryReqId = in.readLong();
-        qry = in.readInt();
-        page = in.readInt();
-        allRows = in.readInt();
-        rows = U.readByteArray(in);
+    /**
+     * @return Plain rows.
+     */
+    public Object plainRows() {
+        return plainRows;
     }
 
     /** {@inheritDoc} */
