@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -95,7 +96,6 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait")
     public void testEvictions() throws Exception {
         try {
             final Ignite ignite1 = startGrid(1);
@@ -240,7 +240,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             ", s2=" + cache2.size() + ']';
 
         for (Integer key : cache1.keySet()) {
-            Object e = cache1.peek(key);
+            Object e = cache1.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
 
             if (e != null)
                 assert cache2.containsKey(key) : "Cache2 does not contain key: " + key;

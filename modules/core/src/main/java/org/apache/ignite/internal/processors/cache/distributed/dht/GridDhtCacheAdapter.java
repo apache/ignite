@@ -880,8 +880,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             Cache.Entry<K, V> entry = (Cache.Entry<K, V>)o;
 
-            return partId == ctx.affinity().partition(entry.getKey()) &&
-                F.eq(entry.getValue(), peek(entry.getKey()));
+            try {
+                return partId == ctx.affinity().partition(entry.getKey()) &&
+                    F.eq(entry.getValue(), localPeek(entry.getKey(), CachePeekModes.ONHEAP_ONLY, null));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */

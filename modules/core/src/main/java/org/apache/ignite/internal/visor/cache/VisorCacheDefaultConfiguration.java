@@ -32,9 +32,6 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     /** Default transaction timeout. */
     private long txLockTimeout;
 
-    /** Default query timeout. */
-    private long qryTimeout;
-
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for default cache configuration properties.
@@ -52,13 +49,6 @@ public class VisorCacheDefaultConfiguration implements Serializable {
      */
     public long txLockTimeout() {
         return txLockTimeout;
-    }
-
-    /**
-     * @return Default query timeout.
-     */
-    public long queryTimeout() {
-        return qryTimeout;
     }
 
     /** {@inheritDoc} */

@@ -35,7 +35,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl  Time to live.
      * @param hdrId Header id.
      */
     public GridLocalCacheEntry(GridCacheContext ctx,
