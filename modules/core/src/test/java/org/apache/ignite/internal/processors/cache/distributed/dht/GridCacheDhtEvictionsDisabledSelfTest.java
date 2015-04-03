@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -26,6 +25,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test cache closure execution.
@@ -54,9 +55,8 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName("test");
-        cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setDefaultTimeToLive(0);
-        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setCacheMode(PARTITIONED);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setNearConfiguration(null);
 

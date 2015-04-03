@@ -461,24 +461,22 @@ public class GridCacheConcurrentMap {
      * @param topVer Topology version.
      * @param key Key.
      * @param val Value.
-     * @param ttl Time to live.
      * @return Cache entry for corresponding key-value pair.
      */
-    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
+    public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val) {
         assert key != null;
 
         checkWeakQueue();
 
         int hash = hash(key.hashCode());
 
-        return segmentFor(hash).put(key, hash, val, topVer, ttl);
+        return segmentFor(hash).put(key, hash, val, topVer);
     }
 
     /**
      * @param topVer Topology version.
      * @param key Key.
      * @param val Value.
-     * @param ttl Time to live.
      * @param create Create flag.
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
@@ -487,7 +485,6 @@ public class GridCacheConcurrentMap {
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
-        long ttl,
         boolean create)
     {
         assert key != null;
@@ -496,7 +493,7 @@ public class GridCacheConcurrentMap {
 
         int hash = hash(key.hashCode());
 
-        return segmentFor(hash).putIfObsolete(key, hash, val, topVer, ttl, create);
+        return segmentFor(hash).putIfObsolete(key, hash, val, topVer, create);
     }
 
     /**
@@ -505,12 +502,11 @@ public class GridCacheConcurrentMap {
      * this map had for any of the keys currently in the specified map.
      *
      * @param m mappings to be stored in this map.
-     * @param ttl Time to live.
      * @throws NullPointerException If the specified map is null.
      */
-    public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
+    public void putAll(Map<KeyCacheObject, CacheObject> m) {
         for (Map.Entry<KeyCacheObject, CacheObject> e : m.entrySet())
-            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue(), ttl);
+            putEntry(AffinityTopologyVersion.NONE, e.getKey(), e.getValue());
     }
 
     /**
@@ -896,15 +892,14 @@ public class GridCacheConcurrentMap {
          * @param hash Hash.
          * @param val Value.
          * @param topVer Topology version.
-         * @param ttl TTL.
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked"})
-        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer, long ttl) {
+        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer) {
             lock();
 
             try {
-                return put0(key, hash, val, topVer, ttl);
+                return put0(key, hash, val, topVer);
             }
             finally {
                 unlock();
@@ -916,11 +911,10 @@ public class GridCacheConcurrentMap {
          * @param hash Hash.
          * @param val Value.
          * @param topVer Topology version.
-         * @param ttl TTL.
          * @return Associated value.
          */
         @SuppressWarnings({"unchecked", "SynchronizationOnLocalVariableOrMethodParameter"})
-        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer, long ttl) {
+        private GridCacheMapEntry put0(KeyCacheObject key, int hash, CacheObject val, AffinityTopologyVersion topVer) {
             try {
                 SegmentHeader hdr = this.hdr;
 
@@ -950,12 +944,12 @@ public class GridCacheConcurrentMap {
                 if (e != null) {
                     retVal = e;
 
-                    e.rawPut(val, ttl);
+                    e.rawPut(val, 0);
                 }
                 else {
                     GridCacheMapEntry next = bin != null ? bin : null;
 
-                    GridCacheMapEntry newRoot = factory.create(ctx, topVer, key, hash, val, next, ttl, hdr.id());
+                    GridCacheMapEntry newRoot = factory.create(ctx, topVer, key, hash, val, next, hdr.id());
 
                     // Avoiding delete (decrement) before creation (increment).
                     synchronized (newRoot) {
@@ -989,7 +983,6 @@ public class GridCacheConcurrentMap {
          * @param hash Hash.
          * @param val Value.
          * @param topVer Topology version.
-         * @param ttl TTL.
          * @param create Create flag.
          * @return Triple where the first element is current entry associated with the key,
          *      the second is created entry and the third is doomed (all may be null).
@@ -999,7 +992,6 @@ public class GridCacheConcurrentMap {
             int hash,
             @Nullable CacheObject val,
             AffinityTopologyVersion topVer,
-            long ttl,
             boolean create)
         {
             lock();
@@ -1021,7 +1013,7 @@ public class GridCacheConcurrentMap {
 
                 if (bin == null) {
                     if (create)
-                        cur = created = put0(key, hash, val, topVer, ttl);
+                        cur = created = put0(key, hash, val, topVer);
 
                     return new GridTriple<>(cur, created, doomed);
                 }
@@ -1036,13 +1028,13 @@ public class GridCacheConcurrentMap {
                         doomed = remove(key, hash, null);
 
                         if (create)
-                            cur = created = put0(key, hash, val, topVer, ttl);
+                            cur = created = put0(key, hash, val, topVer);
                     }
                     else
                         cur = e;
                 }
                 else if (create)
-                    cur = created = put0(key, hash, val, topVer, ttl);
+                    cur = created = put0(key, hash, val, topVer);
 
                 return new GridTriple<>(cur, created, doomed);
             }
