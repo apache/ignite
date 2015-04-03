@@ -210,11 +210,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         // Put on primary node.
         nearPrimary.put(key, val, null);
 
-        assertEquals(val, nearPrimary.peek(key));
-        assertEquals(val, dhtPrimary.peek(key));
+        assertEquals(val, localPeek(nearPrimary, key));
+        assertEquals(val, localPeek(dhtPrimary, key));
 
-        assertEquals(val, nearBackup.peek(key));
-        assertEquals(val, dhtBackup.peek(key));
+        assertEquals(val, localPeek(nearBackup, key));
+        assertEquals(val, localPeek(dhtBackup, key));
 
         GridDhtCacheEntry entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
         GridDhtCacheEntry entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
@@ -281,11 +281,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         for (Integer key : keys) {
             String val = "v" + key;
 
-            assertEquals(val, nearPrimary.peek(key));
-            assertEquals(val, dhtPrimary.peek(key));
+            assertEquals(val, localPeek(nearPrimary, key));
+            assertEquals(val, localPeek(dhtPrimary, key));
 
-            assertEquals(val, nearBackup.peek(key));
-            assertEquals(val, dhtBackup.peek(key));
+            assertEquals(val, localPeek(nearBackup, key));
+            assertEquals(val, localPeek(dhtBackup, key));
         }
 
         final AtomicInteger cntBackup = new AtomicInteger();
@@ -324,8 +324,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         for (Integer key : keys) {
             String msg = "Failed key: " + key;
 
-            assertNull(msg, nearBackup.peek(key));
-            assertNull(msg, dhtBackup.peek(key));
+            assertNull(msg, localPeek(nearBackup, key));
+            assertNull(msg, localPeek(dhtBackup, key));
             assertNull(msg, nearBackup.peekEx(key));
             assertNull(msg, dhtBackup.peekEx(key));
         }
@@ -333,8 +333,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         for (Integer key : keys) {
             String msg = "Failed key: " + key;
 
-            assertNull(msg, nearPrimary.peek(key));
-            assertNull(msg, dhtPrimary.peek(key));
+            assertNull(msg, localPeek(nearPrimary, key));
+            assertNull(msg, localPeek(dhtPrimary, key));
             assertNull(msg, nearPrimary.peekEx(key));
             assertNull(dhtPrimary.peekEx(key));
         }
