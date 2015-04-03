@@ -15,30 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.store;
 
-import org.apache.ignite.internal.processors.affinity.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
 
 /**
- * Factory for cache entries.
+ * Tests {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore} in partitioned configuration.
  */
-public interface GridCacheMapEntryFactory {
-    /**
-     * @param ctx Cache registry.
-     * @param topVer Topology version.
-     * @param key Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header id.
-     * @return New cache entry.
-     */
-    public GridCacheMapEntry create(GridCacheContext ctx,
-        AffinityTopologyVersion topVer,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val,
-        @Nullable GridCacheMapEntry next,
-        int hdrId);
+public class GridCacheWriteBehindStorePartitionedTest extends GridCacheWriteBehindStoreAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
 }

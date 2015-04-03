@@ -34,12 +34,11 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl Time to live.
      * @param hdrId Header ID.
      */
     public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key, int hash, CacheObject val,
-        GridCacheMapEntry next, long ttl, int hdrId) {
-        super(ctx, key, hash, val, next, ttl, hdrId);
+        GridCacheMapEntry next, int hdrId) {
+        super(ctx, key, hash, val, next, hdrId);
     }
 
     /**

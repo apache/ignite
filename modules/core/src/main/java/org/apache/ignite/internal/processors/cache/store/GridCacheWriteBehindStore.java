@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
@@ -123,7 +123,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     private IgniteLogger log;
 
     /** Store manager. */
-    private GridCacheStoreManager storeMgr;
+    private CacheStoreManager storeMgr;
 
     /**
      * Creates a write-behind cache store for the given store.
@@ -135,7 +135,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @param store {@code GridCacheStore} that need to be wrapped.
      */
     public GridCacheWriteBehindStore(
-        GridCacheStoreManager storeMgr,
+        CacheStoreManager storeMgr,
         String gridName,
         String cacheName,
         IgniteLogger log,
@@ -663,7 +663,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         boolean initSes) {
 
         if (initSes && storeMgr != null)
-            storeMgr.initSession(null);
+            storeMgr.writeBehindSessionInit();
 
         try {
             boolean threwEx = true;
@@ -690,7 +690,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
             finally {
                 if (initSes && storeMgr != null)
-                    storeMgr.endSession(null, threwEx);
+                    storeMgr.writeBehindSessionEnd(threwEx);
             }
         }
         catch (Exception e) {

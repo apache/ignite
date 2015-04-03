@@ -75,12 +75,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
-                long ttl,
                 int hdrId
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
-                return new GridNearCacheEntry(ctx, key, hash, val, next, ttl, hdrId);
+                return new GridNearCacheEntry(ctx, key, hash, val, next, hdrId);
             }
         });
     }

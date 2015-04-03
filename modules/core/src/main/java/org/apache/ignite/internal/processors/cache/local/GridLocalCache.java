@@ -79,10 +79,9 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
-                long ttl,
                 int hdrId
             ) {
-                return new GridLocalCacheEntry(ctx, key, hash, val, next, ttl, hdrId);
+                return new GridLocalCacheEntry(ctx, key, hash, val, next, hdrId);
             }
         });
     }

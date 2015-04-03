@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.plugin.*;
 
 import java.util.*;
@@ -76,10 +77,13 @@ public class CachePluginManager extends GridCacheManagerAdapter {
     /**
      * Creates optional component.
      *
+     * @param ctx Kernal context.
+     * @param cfg Cache configuration.
      * @param cls Component class.
      * @return Created component.
      */
-    public <T> T createComponent(Class<T> cls) {
+    @SuppressWarnings("unchecked")
+    public <T> T createComponent(GridKernalContext ctx, CacheConfiguration cfg, Class<T> cls) {
         for (CachePluginProvider provider : providers) {
             T res = (T)provider.createComponent(cls);
             
@@ -91,6 +95,8 @@ public class CachePluginManager extends GridCacheManagerAdapter {
             return (T)new GridOsCacheDrManager();
         else if (cls.equals(CacheConflictResolutionManager.class))
             return (T)new CacheOsConflictResolutionManager<>();
+        else if (cls.equals(CacheStoreManager.class))
+            return (T)new CacheOsStoreManager(ctx, cfg);
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

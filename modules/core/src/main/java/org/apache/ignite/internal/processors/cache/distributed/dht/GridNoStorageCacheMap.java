@@ -71,7 +71,10 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer, KeyCacheObject key, @Nullable CacheObject val, long ttl) {
+    @Override public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        @Nullable CacheObject val)
+    {
         throw new AssertionError();
     }
 
@@ -80,12 +83,10 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
-        long ttl,
         boolean create)
     {
         if (create) {
-            GridCacheMapEntry entry = new GridDhtCacheEntry(ctx, topVer, key, hash(key.hashCode()), val,
-                null, 0, 0);
+            GridCacheMapEntry entry = new GridDhtCacheEntry(ctx, topVer, key, hash(key.hashCode()), val, null, 0);
 
             return new GridTriple<>(entry, null, null);
         }
@@ -94,7 +95,7 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<KeyCacheObject, CacheObject> m, long ttl) {
+    @Override public void putAll(Map<KeyCacheObject, CacheObject> m) {
         throw new AssertionError();
     }
 
