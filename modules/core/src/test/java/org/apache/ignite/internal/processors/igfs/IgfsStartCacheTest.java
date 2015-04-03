@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -31,11 +33,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.igfs.IgfsMode.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  *
  */
-public class IgsfStartCacheTest extends IgfsCommonAbstractTest {
+public class IgfsStartCacheTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -99,7 +102,11 @@ public class IgsfStartCacheTest extends IgfsCommonAbstractTest {
     public void testCacheStart() throws Exception {
         Ignite g0 = G.start(config(true, 0));
 
-        G.start(config(false, 1));
+        checkIgfsCaches(g0);
+
+        Ignite g1 = G.start(config(false, 1));
+
+        checkIgfsCaches(g1);
 
         IgniteFileSystem igfs = g0.fileSystem("igfs");
 
@@ -111,5 +118,23 @@ public class IgsfStartCacheTest extends IgfsCommonAbstractTest {
             for (int i = 0; i < 1000; i++)
                 bw.write("test-" + i);
         }
+    }
+
+    /**
+     * @param ignite Ignite.
+     */
+    private void checkIgfsCaches(Ignite ignite) {
+        checkCache(((IgniteKernal)ignite).internalCache("dataCache"));
+        checkCache(((IgniteKernal)ignite).internalCache("metaCache"));
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    private void checkCache(GridCacheAdapter cache) {
+        assertNotNull(cache);
+        assertFalse(cache.context().userCache());
+        assertFalse(cache.context().systemTx());
+        assertEquals(SYSTEM_POOL, cache.context().ioPolicy());
     }
 }
