@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.store;
 
 import org.apache.ignite.cache.*;
 
 /**
- * Tests {@link GridCacheWriteBehindStore} in partitioned configuration.
+ * Tests {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore} in partitioned configuration.
  */
 public class GridCacheWriteBehindStorePartitionedTest extends GridCacheWriteBehindStoreAbstractTest {
     /** {@inheritDoc} */

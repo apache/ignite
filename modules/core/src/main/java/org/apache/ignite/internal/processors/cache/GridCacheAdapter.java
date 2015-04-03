@@ -993,7 +993,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException In case of any errors.
      */
     @Nullable private Object peekDb(KeyCacheObject key) throws IgniteCheckedException {
-        return ctx.store().loadFromStore(ctx.tm().localTxx(), key);
+        return ctx.store().load(ctx.tm().localTxx(), key);
     }
 
     /**
@@ -1581,7 +1581,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return ctx.closures().callLocalSafe(new GPC<Object>() {
             @Nullable @Override public Object call() {
                 try {
-                    ctx.store().loadAllFromStore(tx, keys, vis);
+                    ctx.store().loadAll(tx, keys, vis);
                 }
                 catch (IgniteCheckedException e) {
                     throw new GridClosureException(e);
@@ -2096,7 +2096,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     return new GridEmbeddedFuture(
                         ctx.closures().callLocalSafe(ctx.projectSafe(new GPC<Map<K1, V1>>() {
                             @Override public Map<K1, V1> call() throws Exception {
-                                ctx.store().loadAllFromStore(null/*tx*/, loadKeys.keySet(), new CI2<KeyCacheObject, Object>() {
+                                ctx.store().loadAll(null/*tx*/, loadKeys.keySet(), new CI2<KeyCacheObject, Object>() {
                                     /** New version for all new entries. */
                                     private GridCacheVersion nextVer;
 
@@ -3676,7 +3676,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
-        if (ctx.store().isLocalStore()) {
+        if (ctx.store().isLocal()) {
             DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
@@ -3789,7 +3789,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ExpiryPolicy plc = prj != null ? prj.expiry() : null;
 
         if (replaceExisting) {
-            if (ctx.store().isLocalStore()) {
+            if (ctx.store().isLocal()) {
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (nodes.isEmpty())
@@ -3837,7 +3837,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
-            ctx.store().loadAllFromStore(null, keys0, new CIX2<KeyCacheObject, Object>() {
+            ctx.store().loadAll(null, keys0, new CIX2<KeyCacheObject, Object>() {
                 @Override public void applyx(KeyCacheObject key, Object val) {
                     col.add(new DataStreamerEntry(key, ctx.toCacheObject(val)));
 
@@ -3870,7 +3870,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         Collection<KeyCacheObject> keys0 = ctx.cacheKeysView(keys);
 
-        if (ctx.store().isLocalStore()) {
+        if (ctx.store().isLocal()) {
             DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
@@ -3890,7 +3890,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             // Version for all loaded entries.
             final GridCacheVersion ver0 = ctx.versions().nextForLoad();
 
-            ctx.store().loadAllFromStore(null, keys0, new CI2<KeyCacheObject, Object>() {
+            ctx.store().loadAll(null, keys0, new CI2<KeyCacheObject, Object>() {
                 @Override public void apply(KeyCacheObject key, Object val) {
                     long ttl = CU.ttlForLoad(plc0);
 

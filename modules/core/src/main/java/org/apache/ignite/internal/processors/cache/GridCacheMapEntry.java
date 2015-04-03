@@ -590,7 +590,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected Object readThrough(@Nullable IgniteInternalTx tx, KeyCacheObject key, boolean reload, UUID subjId,
         String taskName) throws IgniteCheckedException {
-        return cctx.store().loadFromStore(tx, key);
+        return cctx.store().load(tx, key);
     }
 
     /** {@inheritDoc} */
@@ -1077,7 +1077,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         // Persist outside of synchronization. The correctness of the
         // value will be handled by current transaction.
         if (writeThrough)
-            cctx.store().putToStore(tx, keyValue(false), CU.value(val, cctx, false), newVer);
+            cctx.store().put(tx, keyValue(false), CU.value(val, cctx, false), newVer);
 
         if (intercept)
             cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, val, val0));
@@ -1235,7 +1235,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         // Persist outside of synchronization. The correctness of the
         // value will be handled by current transaction.
         if (writeThrough)
-            cctx.store().removeFromStore(tx, keyValue(false));
+            cctx.store().remove(tx, keyValue(false));
 
         if (!cctx.deferredDelete()) {
             boolean marked = false;
@@ -1489,7 +1489,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().putToStore(null, keyValue(false), CU.value(updated, cctx, false), ver);
+                    cctx.store().put(null, keyValue(false), CU.value(updated, cctx, false), ver);
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
@@ -1523,7 +1523,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             else {
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().removeFromStore(null, keyValue(false));
+                    cctx.store().remove(null, keyValue(false));
 
                 boolean hasValPtr = valPtr != 0;
 
@@ -1724,10 +1724,10 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                             if (val == null) {
                                 assert deletedUnlocked();
 
-                                cctx.store().removeFromStore(null, keyValue(false));
+                                cctx.store().remove(null, keyValue(false));
                             }
                             else
-                                cctx.store().putToStore(null, keyValue(false), CU.value(val, cctx, false), ver);
+                                cctx.store().put(null, keyValue(false), CU.value(val, cctx, false), ver);
                         }
 
                         return new GridCacheUpdateAtomicResult(false,
@@ -1776,10 +1776,10 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                             if (val == null) {
                                 assert deletedUnlocked();
 
-                                cctx.store().removeFromStore(null, keyValue(false));
+                                cctx.store().remove(null, keyValue(false));
                             }
                             else
-                                cctx.store().putToStore(null, keyValue(false), CU.value(val, cctx, false), ver);
+                                cctx.store().put(null, keyValue(false), CU.value(val, cctx, false), ver);
                         }
                         else {
                             if (log.isDebugEnabled())
@@ -2029,7 +2029,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 // Try write-through.
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().putToStore(null, keyValue(false), CU.value(updated, cctx, false), newVer);
+                    cctx.store().put(null, keyValue(false), CU.value(updated, cctx, false), newVer);
 
                 if (!hadVal) {
                     boolean new0 = isNew();
@@ -2099,7 +2099,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().removeFromStore(null, keyValue(false));
+                    cctx.store().remove(null, keyValue(false));
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
@@ -3085,7 +3085,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 return null;
         }
 
-        return cctx.toCacheObject(cctx.store().loadFromStore(cctx.tm().localTxx(), key));
+        return cctx.toCacheObject(cctx.store().load(cctx.tm().localTxx(), key));
     }
 
     /**
@@ -3225,9 +3225,9 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     cctx.dataStructures().onEntryUpdated(key, false);
                 }
 
-                if (cctx.store().isLocalStore()) {
+                if (cctx.store().isLocal()) {
                     if (val != null)
-                        cctx.store().putToStore(null, keyValue(false), CU.value(val, cctx, false), ver);
+                        cctx.store().put(null, keyValue(false), CU.value(val, cctx, false), ver);
                 }
 
                 return true;

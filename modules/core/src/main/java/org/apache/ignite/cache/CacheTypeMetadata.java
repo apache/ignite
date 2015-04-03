@@ -98,9 +98,9 @@ public class CacheTypeMetadata implements Serializable {
 
         dbTbl = src.getDatabaseTable();
 
-        keyType = getKeyType();
+        keyType = src.getKeyType();
 
-        valType = getValueType();
+        valType = src.getValueType();
 
         keyFields = new ArrayList<>(src.getKeyFields());
 
