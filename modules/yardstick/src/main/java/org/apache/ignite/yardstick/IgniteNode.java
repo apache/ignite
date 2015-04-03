@@ -72,11 +72,14 @@ public class IgniteNode implements BenchmarkServer {
         for (CacheConfiguration cc : c.getCacheConfiguration()) {
             // IgniteNode can not run in CLIENT_ONLY mode,
             // except the case when it's used inside IgniteAbstractBenchmark.
-            boolean cl = args.isClientOnly() && !clientMode ?
+            boolean cl = args.isClientOnly() && !args.isNearCache() && !clientMode ?
                 false : args.isClientOnly();
 
             if (cl)
                 c.setClientMode(true);
+
+            if (args.isNearCache())
+                c.setNearCacheConfiguration(new NearCacheConfiguration());
 
             cc.setWriteSynchronizationMode(args.syncMode());
 
