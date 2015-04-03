@@ -56,7 +56,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Cache utility methods.
@@ -76,9 +75,6 @@ public class GridCacheUtils {
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
-
-    /** Peek flags. */
-    private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
 
     /** TTL: minimum positive value. */
     public static final long TTL_MINIMUM = 1L;
@@ -1023,13 +1019,6 @@ public class GridCacheUtils {
         }
 
         return vals;
-    }
-
-    /**
-     * @return Peek flags.
-     */
-    public static GridCachePeekMode[] peekFlags() {
-        return PEEK_FLAGS;
     }
 
     /**

@@ -404,7 +404,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             // Await for actual delete to occur.
             for (IgfsBlock block : file.blocks()) {
                 for (int i = 0; i < GRID_CNT; i++) {
-                    while (cache(grid(i).localNode().id()).peek(block.key()) != null)
+                    while (localPeek(cache(grid(i).localNode().id()), block.key()) != null)
                         U.sleep(100);
                 }
             }
@@ -651,39 +651,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Create block key.
-     *
-     * @param path Path.
-     * @param blockId Block ID.
-     * @return Block key.
-     * @throws Exception If failed.
-     */
-    private IgfsBlockKey blockKey(IgfsPath path, long blockId) throws Exception {
-        IgfsEx igfs0 = (IgfsEx)grid(0).fileSystem(IGFS_NAME);
-
-        IgniteUuid fileId = igfs0.context().meta().fileId(path);
-
-        return new IgfsBlockKey(fileId, null, true, blockId);
-    }
-
-    /**
-     * Determine primary node for the given block key.
-     *
-     * @param key Block key.
-     * @return Node ID.
-     */
-    private UUID primary(IgfsBlockKey key) {
-        IgniteEx grid = grid(0);
-
-        for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.affinity(DATA_CACHE_NAME).isPrimary(node, key))
-                return node.id();
-        }
-
-        return null;
-    }
-
-    /**
      * Determine primary and backup node IDs for the given block key.
      *
      * @param key Block key.
@@ -711,17 +678,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      */
     private IgfsImpl igfs(int idx) throws Exception {
         return (IgfsImpl)grid(idx).fileSystem(IGFS_NAME);
-    }
-
-    /**
-     * Get IGFS of the given node.
-     *
-     * @param ignite Node;
-     * @return IGFS.
-     * @throws Exception If failed.
-     */
-    private IgfsImpl igfs(Ignite ignite) throws Exception {
-        return (IgfsImpl) ignite.fileSystem(IGFS_NAME);
     }
 
     /**

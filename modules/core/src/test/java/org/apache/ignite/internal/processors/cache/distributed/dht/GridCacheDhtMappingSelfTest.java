@@ -90,7 +90,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
             GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)
                 ((IgniteKernal)g).<Integer, Integer>internalCache()).dht();
 
-            if (dht.peek(kv) != null) {
+            if (localPeek(dht, kv) != null) {
                 info("Key found on node: " + g.cluster().localNode().id());
 
                 cnt++;
