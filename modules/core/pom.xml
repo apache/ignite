@@ -270,34 +270,11 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <exec executable="${git.exec}" outputproperty="ignite.build">
-                                            <arg line="log -1 --format=%ct" />
-                                        </exec>
-
-                                        <exec executable="${git.exec}" outputproperty="ignite.revision">
-                                            <arg line="log -1 --format=%H" />
-                                        </exec>
-
                                         <tstamp>
                                             <format property="ignite.rel.date" pattern="ddMMyyyy" locale="en" />
                                         </tstamp>
 
                                         <property name="props.file" value="../../modules/core/target/classes/ignite.properties" />
-
-                                        <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.version=.*" />
-                                            <substitution expression="ignite.version=${project.version}" />
-                                        </replaceregexp>
-
-                                        <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.build=.*" />
-                                            <substitution expression="ignite.build=${ignite.build}" />
-                                        </replaceregexp>
-
-                                        <replaceregexp file="${props.file}" byline="true">
-                                            <regexp pattern="ignite.revision=.*" />
-                                            <substitution expression="ignite.revision=${ignite.revision}" />
-                                        </replaceregexp>
 
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.rel.date=.*" />
@@ -307,6 +284,31 @@
                                         <replaceregexp file="${props.file}" byline="true">
                                             <regexp pattern="ignite.update.status.params=.*" />
                                             <substitution expression="ignite.update.status.params=ver=${project.version}" />
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.version=.*" />
+                                            <substitution expression="ignite.version=${project.version}" />
+                                        </replaceregexp>
+
+                                        <!-- git (to be replaced by git hooks)-->
+
+                                        <exec executable="${git.exec}" outputproperty="ignite.build" failonerror="true">
+                                            <arg line="log -1 --format=%ct" />
+                                        </exec>
+
+                                        <exec executable="${git.exec}" outputproperty="ignite.revision" failonerror="true">
+                                            <arg line="log -1 --format=%H" />
+                                        </exec>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.revision=.*" />
+                                            <substitution expression="ignite.revision=${ignite.revision}" />
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${props.file}" byline="true">
+                                            <regexp pattern="ignite.build=.*" />
+                                            <substitution expression="ignite.build=${ignite.build}" />
                                         </replaceregexp>
                                     </target>
                                 </configuration>
