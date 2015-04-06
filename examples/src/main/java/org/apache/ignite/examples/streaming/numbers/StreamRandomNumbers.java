@@ -57,7 +57,7 @@ public class StreamRandomNumbers {
                 // Allow data updates.
                 stmr.allowOverwrite(true);
 
-                // Configure data transformation to count instances of the same word.
+                // Configure data transformation to count instances of the same number.
                 stmr.receiver(new StreamTransformer<Integer, Long>() {
                     @Override public Object process(MutableEntry<Integer, Long> e, Object... objects)
                         throws EntryProcessorException {

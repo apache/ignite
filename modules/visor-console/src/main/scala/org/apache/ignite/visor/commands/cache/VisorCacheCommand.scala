@@ -722,7 +722,7 @@ object VisorCacheCommand {
 
     /** Default cache name to show on screen. */
     private final val DFLT_CACHE_NAME = escapeName(null)
-    
+
     /** Default cache key. */
     protected val DFLT_CACHE_KEY = DFLT_CACHE_NAME + "-" + UUID.randomUUID().toString
 
@@ -804,7 +804,6 @@ object VisorCacheCommand {
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.nearEvictMaxSize()))
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())
-        cacheT += ("Default Query Timeout", defaultCfg.queryTimeout())
         cacheT += ("Metadata type count", cfg.typeMeta().size())
         cacheT += ("Cache Interceptor", safe(cfg.interceptor()))
 

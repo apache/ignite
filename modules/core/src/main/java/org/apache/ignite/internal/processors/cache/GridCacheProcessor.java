@@ -627,6 +627,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ClusterNode locNode = ctx.discovery().localNode();
 
+        // Init cache plugin managers.
+        final Map<String, CachePluginManager> cache2PluginMgr = new HashMap<>();
+
+        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+            CacheConfiguration locCcfg = desc.cacheConfiguration();
+            
+            CachePluginManager pluginMgr = new CachePluginManager(ctx, locCcfg);
+
+            cache2PluginMgr.put(locCcfg.getName(), pluginMgr);
+        }
+        
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
                 checkTransactionConfiguration(n);
@@ -640,8 +651,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                     CacheConfiguration rmtCfg = desc.remoteConfiguration(n.id());
 
-                    if (rmtCfg != null)
-                        checkCache(desc.cacheConfiguration(), rmtCfg, n);
+                    if (rmtCfg != null) {
+                        CacheConfiguration locCfg = desc.cacheConfiguration();
+                        
+                        checkCache(locCfg, rmtCfg, n);
+
+                        // Check plugin cache configurations.
+                        CachePluginManager pluginMgr = cache2PluginMgr.get(locCfg.getName());
+
+                        assert pluginMgr != null : " Map=" + cache2PluginMgr;
+
+                        pluginMgr.validateRemotes(rmtCfg, n);
+                    }
                 }
             }
         }
@@ -661,7 +682,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (filter.apply(locNode)) {
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
 
-                GridCacheContext ctx = createCache(ccfg, cacheObjCtx);
+                CachePluginManager pluginMgr = cache2PluginMgr.get(ccfg.getName());
+                
+                assert pluginMgr != null : " Map=" + cache2PluginMgr;
+                
+                GridCacheContext ctx = createCache(ccfg, pluginMgr, cacheObjCtx);
 
                 ctx.dynamicDeploymentId(desc.deploymentId());
 
@@ -975,16 +1000,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Cache configuration to use to create cache.
+     * @param pluginMgr Cache plugin manager.
      * @return Cache context.
      * @throws IgniteCheckedException If failed to create cache.
      */
     @SuppressWarnings({"unchecked"})
-    private GridCacheContext createCache(CacheConfiguration<?, ?> cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    private GridCacheContext createCache(CacheConfiguration<?, ?> cfg, @Nullable CachePluginManager pluginMgr,
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         assert cfg != null;
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
         validate(ctx.config(), cfg, cfgStore);
+
+        if (pluginMgr == null)
+            pluginMgr = new CachePluginManager(ctx, cfg);
+
+        pluginMgr.validate();
 
         CacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
 
@@ -1017,16 +1049,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-        CachePluginManager pluginMgr = new CachePluginManager(ctx, cfg);
         
-        pluginMgr.validate();
-
-        CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(ctx, cfg,
-            CacheConflictResolutionManager.class);
-
-        GridCacheDrManager drMgr = pluginMgr.createComponent(ctx, cfg,GridCacheDrManager.class);
-
-        CacheStoreManager storeMgr = pluginMgr.createComponent(ctx, cfg, CacheStoreManager.class);
+        CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
+        GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
+        CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1156,7 +1182,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);
-            drMgr = pluginMgr.createComponent(ctx, cfg, GridCacheDrManager.class);
+            drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
 
             cacheCtx = new GridCacheContext(
                 ctx,
@@ -1358,7 +1384,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
 
-            GridCacheContext cacheCtx = createCache(ccfg, cacheObjCtx);
+            GridCacheContext cacheCtx = createCache(ccfg, null, cacheObjCtx);
 
             cacheCtx.startTopologyVersion(topVer);
 
@@ -2028,14 +2054,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     true);
             }
         }
-        
-        // TODO 10006: implement remote configs validation.
-        // Check plugin configurations.
-//        for (CachePluginConfiguration locPluginCcfg : locCfg.getPluginConfigurations()) {
-//            CachePluginProvider provider = ...;
-//
-//            provider.validateRemote(locCfg, locPluginCcfg, rmtCfg, rmtNode);
-//        }
     }
 
     /**

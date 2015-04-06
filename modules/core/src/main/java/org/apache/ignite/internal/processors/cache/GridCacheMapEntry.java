@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
-import static org.apache.ignite.transactions.TransactionState.*;
 
 /**
  * Adapter for cache entry.
@@ -2751,25 +2750,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(GridCachePeekMode mode,
-        CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException {
-        try {
-            GridTuple<CacheObject> peek = peek0(false, mode, filter, cctx.tm().localTxx());
-
-            return peek != null ? peek.get() : null;
-        }
-        catch (GridCacheFilterFailedException ignore) {
-            assert false;
-
-            return null;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to perform entry peek() operation.", e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
         boolean swap,
@@ -2803,124 +2783,17 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject peek(Collection<GridCachePeekMode> modes,
-        CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException {
-        assert modes != null;
-
-        for (GridCachePeekMode mode : modes) {
-            try {
-                GridTuple<CacheObject> val = peek0(false, mode, filter, cctx.tm().localTxx());
-
-                if (val != null)
-                    return val.get();
-            }
-            catch (GridCacheFilterFailedException ignored) {
-                assert false;
-
-                return null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Unable to perform entry peek() operation.", e);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param failFast Fail-fast flag.
-     * @param mode Peek mode.
-     * @param filter Filter.
-     * @param tx Transaction to peek value at (if mode is TX value).
-     * @return Peeked value.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If removed.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable @Override public GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
-        CacheEntryPredicate[] filter, @Nullable IgniteInternalTx tx)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
-        assert tx == null || tx.local();
+    @Nullable @Override public CacheObject peek(
+        boolean heap,
+        boolean offheap,
+        boolean swap,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        IgniteInternalTx tx = cctx.tm().localTxx();
 
         AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
 
-        switch (mode) {
-            case TX:
-                return peekTx(failFast, filter, tx);
-
-            case GLOBAL:
-                return peekGlobal(failFast, topVer, filter, null);
-
-            case NEAR_ONLY:
-                return peekGlobal(failFast, topVer, filter, null);
-
-            case PARTITIONED_ONLY:
-                return peekGlobal(failFast, topVer, filter, null);
-
-            case SMART:
-                /*
-                 * If there is no ongoing transaction, or transaction is NOT in ACTIVE state,
-                 * which means that it is either rolling back, preparing to commit, or committing,
-                 * then we only check the global cache storage because value has already been
-                 * validated against filter and enlisted into transaction and, therefore, second
-                 * validation against the same enlisted value will be invalid (it will always be false).
-                 *
-                 * However, in ACTIVE state, we must also validate against other values that
-                 * may have enlisted into the same transaction and that's why we pass 'true'
-                 * to 'e.peek(true)' method in this case.
-                 */
-                return tx == null || tx.state() != ACTIVE ? peekGlobal(failFast, topVer, filter, null) :
-                    peekTxThenGlobal(failFast, filter, tx);
-
-            case SWAP:
-                return peekSwap(failFast, filter);
-
-            case DB:
-                return F.t(peekDb(failFast, filter));
-
-            default: // Should never be reached.
-                assert false;
-
-                return null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert val != null;
-
-        CacheObject old;
-
-        synchronized (this) {
-            checkObsolete();
-
-            if (isNew() || !valid(AffinityTopologyVersion.NONE))
-                unswap(true);
-
-            if (deletedUnlocked())
-                return null;
-
-            old = rawGetOrUnmarshalUnlocked(false);
-
-            GridCacheVersion nextVer = nextVersion();
-
-            // Update index inside synchronization since it can be updated
-            // in load methods without actually holding entry lock.
-            long expireTime = expireTimeExtras();
-
-            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-
-            updateIndex(val, expireTime, nextVer, old);
-
-            update(val, expireTime, ttlExtras(), nextVer);
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Poked cache entry [newVal=" + val + ", oldVal=" + old + ", entry=" + this + ']');
-
-        return old;
+        return peek(heap, offheap, swap, topVer, plc);
     }
 
     /**
@@ -2940,44 +2813,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 throw new IgniteCheckedException("Failed to update cache entry (entry was externally locked while " +
                     "accessing entry within group lock transaction) [entry=" + this + ", tx=" + tx + ']');
         }
-    }
-
-    /**
-     * @param failFast Fail fast flag.
-     * @param filter Filter.
-     * @param tx Transaction to peek value at (if mode is TX value).
-     * @return Peeked value.
-     * @throws GridCacheFilterFailedException If filter failed.
-     * @throws GridCacheEntryRemovedException If entry got removed.
-     * @throws IgniteCheckedException If unexpected cache failure occurred.
-     */
-    @Nullable private GridTuple<CacheObject> peekTxThenGlobal(boolean failFast,
-        CacheEntryPredicate[] filter,
-        IgniteInternalTx tx)
-        throws GridCacheFilterFailedException, GridCacheEntryRemovedException, IgniteCheckedException
-    {
-        GridTuple<CacheObject> peek = peekTx(failFast, filter, tx);
-
-        // If transaction has value (possibly null, which means value is to be deleted).
-        if (peek != null)
-            return peek;
-
-        AffinityTopologyVersion topVer = tx == null ? cctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
-
-        return peekGlobal(failFast, topVer, filter, null);
-    }
-
-    /**
-     * @param failFast Fail fast flag.
-     * @param filter Filter.
-     * @param tx Transaction to peek value at (if mode is TX value).
-     * @return Peeked value.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @Nullable private GridTuple<CacheObject> peekTx(boolean failFast,
-        CacheEntryPredicate[] filter,
-        @Nullable IgniteInternalTx tx) throws GridCacheFilterFailedException {
-        return tx == null ? null : tx.peek(cctx, failFast, key, filter);
     }
 
     /**
@@ -3036,52 +2871,6 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 cctx.cache().map().removeEntry(this);
             }
         }
-    }
-
-    /**
-     * @param failFast Fail fast flag.
-     * @param filter Filter.
-     * @return Value from swap storage.
-     * @throws IgniteCheckedException In case of any errors.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable private GridTuple<CacheObject> peekSwap(boolean failFast,
-        CacheEntryPredicate[] filter)
-        throws IgniteCheckedException, GridCacheFilterFailedException
-    {
-        if (!cctx.isAll(this, filter))
-            return F.t(CU.failed(failFast));
-
-        synchronized (this) {
-            if (checkExpired())
-                return null;
-        }
-
-        GridCacheSwapEntry e = cctx.swap().read(this, false, true, true);
-
-        return e != null ? F.t(e.value()) : null;
-    }
-
-    /**
-     * @param failFast Fail fast flag.
-     * @param filter Filter.
-     * @return Value from persistent store.
-     * @throws IgniteCheckedException In case of any errors.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Nullable private CacheObject peekDb(boolean failFast, CacheEntryPredicate[] filter)
-        throws IgniteCheckedException, GridCacheFilterFailedException {
-        if (!cctx.isAll(this, filter))
-            return CU.failed(failFast);
-
-        synchronized (this) {
-            if (checkExpired())
-                return null;
-        }
-
-        return cctx.toCacheObject(cctx.store().load(cctx.tm().localTxx(), key));
     }
 
     /**
@@ -3792,10 +3581,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     return null;
 
                 try {
-                    return e.peek(GridCachePeekMode.GLOBAL, CU.empty0());
+                    return e.peek(true, false, false, null);
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.
+                }
+                catch (IgniteCheckedException ex) {
+                    throw new IgniteException(ex);
                 }
             }
         }
@@ -4201,14 +3993,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         assert cctx.deferredDelete();
 
         if (deleted) {
-            assert !deletedUnlocked();
+            assert !deletedUnlocked() : this;
 
             flags |= IS_DELETED_MASK;
 
             cctx.decrementPublicSize(this);
         }
         else {
-            assert deletedUnlocked();
+            assert deletedUnlocked() : this;
 
             flags &= ~IS_DELETED_MASK;
 
