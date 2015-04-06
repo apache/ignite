@@ -469,7 +469,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

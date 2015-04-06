@@ -42,6 +42,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache start configuration. */
     private CacheConfiguration startCfg;
 
+    /** Cache type. */
+    private CacheType cacheType;
+
     /** Near node ID in case if near cache is being started. */
     private UUID initiatingNodeId;
 
@@ -156,6 +159,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void startCacheConfiguration(CacheConfiguration startCfg) {
         this.startCfg = startCfg;
+    }
+
+    /**
+     * @param cacheType Cache type.
+     */
+    public void cacheType(CacheType cacheType) {
+        this.cacheType = cacheType;
+    }
+
+    /**
+     * @return Cache type.
+     */
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**

@@ -430,14 +430,14 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code True} if cross-cache transaction can include this new cache.
      */
     public boolean txCompatible(IgniteInternalTx tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
-        if (cacheCtx.system() ^ tx.system())
+        if (cacheCtx.systemTx() ^ tx.system())
             return false;
 
         for (Integer cacheId : activeCacheIds) {
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
             // System transactions may sap only one cache.
-            if (cacheCtx.system()) {
+            if (cacheCtx.systemTx()) {
                 if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
                     return false;
             }

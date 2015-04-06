@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Result of joining node validation.
  */
-public class IgniteSpiNodeValidationResult {
+public class IgniteNodeValidationResult {
     /** Offending node ID. */
     private final UUID nodeId;
 
@@ -37,7 +37,7 @@ public class IgniteSpiNodeValidationResult {
      * @param msg Message logged locally.
      * @param sndMsg Message sent to joining node.
      */
-    public IgniteSpiNodeValidationResult(UUID nodeId, String msg, String sndMsg) {
+    public IgniteNodeValidationResult(UUID nodeId, String msg, String sndMsg) {
         this.nodeId = nodeId;
         this.msg = msg;
         this.sndMsg = sndMsg;
