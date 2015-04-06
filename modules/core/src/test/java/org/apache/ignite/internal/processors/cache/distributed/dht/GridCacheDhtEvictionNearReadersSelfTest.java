@@ -83,7 +83,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy(10));
 
-        cfg.setNearCacheConfiguration(nearCfg);
+        cacheCfg.setNearConfiguration(nearCfg);
 
         cfg.setCacheConfiguration(cacheCfg);
 

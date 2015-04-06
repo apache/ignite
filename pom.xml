@@ -31,9 +31,13 @@
     </parent>
 
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite</artifactId>
+    <artifactId>incubator-ignite</artifactId>
     <version>1.0.1-RC1-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <ignite.site>scp://localhost:/home</ignite.site>
+    </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
@@ -41,6 +45,13 @@
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+        <site>
+            <id>ignite-site</id>
+            <url>${ignite.site}/${project.artifactId}-${project.version}</url>
+        </site>
+    </distributionManagement>
 
     <modules>
         <module>modules/tools</module>
@@ -99,7 +110,7 @@
         </profile>
 
         <profile>
-            <id>clean-libs</id>
+            <id>dev-libs</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -124,6 +135,29 @@
                                             <directory>bin/include/schema-import</directory>
                                         </fileset>
                                     </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>dev-libs</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <target>
+                                        <copy todir="${basedir}/libs">
+                                            <fileset dir="${basedir}/target/release-package/libs"/>
+                                        </copy>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
@@ -323,7 +357,7 @@
                                     <descriptors>
                                         <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
                                     </descriptors>
-                                    <outputDirectory>${basedir}</outputDirectory>
+                                    <outputDirectory>${basedir}/target/release-package</outputDirectory>
                                     <finalName>libs</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
@@ -340,7 +374,7 @@
                                         <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml
                                         </descriptor>
                                     </descriptors>
-                                    <outputDirectory>${basedir}/libs</outputDirectory>
+                                    <outputDirectory>${basedir}/target/release-package/libs</outputDirectory>
                                     <finalName>optional</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
@@ -452,6 +486,107 @@
             <modules>
                 <module>examples</module>
             </modules>
+        </profile>
+
+        <profile>
+            <id>apache-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.ju-n.maven.plugins</groupId>
+                        <artifactId>checksum-maven-plugin</artifactId>
+                        <version>1.2</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>files</goal>
+                                </goals>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <failOnError>false</failOnError>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${basedir}/target</directory>
+                                    <includes>
+                                        <include>${project.artifactId}-${project.version}-source-release.zip</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                            <algorithms>
+                                <algorithm>MD5</algorithm>
+                                <algorithm>SHA-1</algorithm>
+                            </algorithms>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>apache-sources-pack</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <zip destfile="${basedir}/target/sources-pack-${project.version}.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target" prefix="sources-pack-${project.version}">
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip.asc" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip.md5" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip.sha1" />
+                                            </zipfileset>
+                                        </zip>
+                                        <mkdir dir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip" todir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc" todir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5" todir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1" todir="${basedir}/target/site"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>deploy-site</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-site-plugin</artifactId>
+                        <version>3.4</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.wagon</groupId>
+                                <artifactId>wagon-ssh</artifactId>
+                                <version>2.8</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <inputDirectory>${basedir}/target/site</inputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
