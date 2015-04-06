@@ -355,54 +355,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPutGetImmutable() throws Exception {
-        noInterceptor = true;
-
-        IgniteCache<TestImmutableKey, TestImmutableValue> cache = grid(0).cache(null);
-
-        Map<TestImmutableKey, TestImmutableValue> map = new HashMap<>();
-
-        for (int i = 0; i < ITER_CNT; i++) {
-            TestImmutableKey key = new TestImmutableKey(i, i);
-            TestImmutableValue val = new TestImmutableValue(i);
-
-            cache.put(key, val);
-
-            map.put(key, val);
-        }
-
-        GridCacheAdapter cache0 = internalCache(cache);
-
-        GridCacheContext cctx = cache0.context();
-
-        for (Map.Entry<TestImmutableKey, TestImmutableValue> e : map.entrySet()) {
-            GridCacheEntryEx entry = cache0.peekEx(e.getKey());
-
-            assertNotNull("No entry for key: " + e.getKey(), entry);
-
-            TestKey key0 = entry.key().value(cctx.cacheObjectContext(), false);
-
-            assertSame(key0, e.getKey());
-
-            TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
-
-            assertSame(key0, key1);
-
-            TestImmutableValue val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
-
-            assertNotSame(val0, e.getValue());
-
-            TestImmutableValue val1 = entry.rawGet().value(cctx.cacheObjectContext(), true);
-
-            assertNotSame(val0, val1);
-
-            assertNotSame(e.getValue(), cache.get(e.getKey()));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPutGetKnownImmutable() throws Exception {
         noInterceptor = true;
 
@@ -646,43 +598,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
          */
         public void delegate(CacheInterceptor<TestKey, TestValue> delegate) {
             this.delegate = delegate;
-        }
-    }
-
-    /**
-     *
-     */
-    @IgniteImmutable
-    public static class TestImmutableKey extends TestKey {
-        /**
-         *
-         */
-        public TestImmutableKey() {
-            // No-op.
-        }
-
-        /**
-         * @param key Key.
-         * @param field Field.
-         */
-        public TestImmutableKey(int key, int field) {
-            super(key, field);
-        }
-    }
-
-    /**
-     *
-     */
-    @IgniteImmutable
-    public static class TestImmutableValue {
-        /** */
-        public int val;
-
-        /**
-         * @param val Value.
-         */
-        public TestImmutableValue(int val) {
-            this.val = val;
         }
     }
 }

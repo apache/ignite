@@ -45,10 +45,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
-    /** */
-    private final GridBoundedConcurrentLinkedHashMap<Class<?>, Boolean> reflectionCache =
-            new GridBoundedConcurrentLinkedHashMap<>(1024, 1024);
-
     /**
      *
      */
@@ -216,21 +212,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public boolean immutable(Object obj) {
         assert obj != null;
 
-        Class<?> cls = obj.getClass();
-
-        if (IMMUTABLE_CLS.contains(cls))
-            return true;
-
-        Boolean immutable = reflectionCache.get(cls);
-
-        if (immutable != null)
-            return immutable;
-
-        immutable = IgniteUtils.hasAnnotation(cls, IgniteImmutable.class);
-
-        reflectionCache.putIfAbsent(cls, immutable);
-
-        return immutable;
+        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /** {@inheritDoc} */
