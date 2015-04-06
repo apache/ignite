@@ -20,7 +20,6 @@ package org.apache.ignite.visor.commands.cache
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.typedef._
-import java.util
 
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -28,7 +27,7 @@ import org.apache.ignite.lang.{IgniteUuid, IgniteBiTuple}
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
-import java.util.{Collections, UUID}
+import java.util.{Collection => JavaCollection, Collections, UUID}
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
@@ -387,10 +386,10 @@ class VisorCacheCommand {
                         println("  Total number of failures:   " + ad.failsQuery)
 
                         gCfg.foreach(ccfgs => ccfgs.find(ccfg => safeEquals(ccfg.name(), ad.cacheName()))
-                            .foreach(cfg => {
+                            .foreach(ccfg => {
                                 nl()
 
-                                showCacheConfiguration("Cache configuration:", cfg)
+                                showCacheConfiguration("Cache configuration:", ccfg)
                         }))
                     })
                 }
@@ -463,21 +462,17 @@ class VisorCacheCommand {
      * Gets configuration of grid from specified node for callecting of node cache's configuration.
      *
      * @param node Specified node.
-     * @return Grid configuration for specified node.
+     * @return Cache configurations for specified node.
      */
-    private def config(node: ClusterNode) = {
+    private def config(node: ClusterNode): JavaCollection[VisorCacheConfiguration] = {
         try {
-            val z = Collections.emptySet()[IgniteUuid]
-
-            ignite.compute(ignite.cluster.forNode(node)).withNoFailover()
-                .execute(classOf[VisorCacheConfigurationCollectorTask],
-                    toTaskArgument(node.id(), z.asInstanceOf[util.Collection[IgniteUuid]]))
+            cacheConfigurations(node.id())
         }
         catch {
             case e: IgniteException =>
                 scold(e.getMessage)
 
-                null
+                Collections.emptyList()
         }
     }
 

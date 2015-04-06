@@ -28,7 +28,7 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCacheConfigurationCollectorTask
-    extends VisorOneNodeTask<Collection<IgniteUuid>, Collection<VisorCacheConfiguration>> {
+    extends VisorOneNodeTask<Collection<IgniteUuid>, Map<IgniteUuid, VisorCacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 
