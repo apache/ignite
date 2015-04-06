@@ -479,7 +479,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(dhtPeek(1, key2));
         assertNull(dhtPeek(2, key2));
 
-        assertNull(near(0).peekEx(key2));
+        assertTrue(near(0).peekEx(key2) == null || near(0).peekEx(key2).deleted());
         assertNull(near(1).peekEx(key2));
         assertNull(near(2).peekEx(key2));
 
