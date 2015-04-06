@@ -47,15 +47,28 @@ public class DynamicCacheDescriptor {
     /** Started flag. */
     private boolean started;
 
+    /** Cache type. */
+    private CacheType cacheType;
+
     /** */
     private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
     /**
      * @param cacheCfg Cache configuration.
+     * @param cacheType Cache type.
+     * @param deploymentId Deployment ID.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgniteUuid deploymentId) {
+    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, CacheType cacheType, IgniteUuid deploymentId) {
         this.cacheCfg = cacheCfg;
+        this.cacheType = cacheType;
         this.deploymentId = deploymentId;
+    }
+
+    /**
+     * @return Cache type.
+     */
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**
