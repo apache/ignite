@@ -110,6 +110,8 @@ public class GridSqlQuerySplitter {
 
         // -- ORDER BY
         if (!srcQry.sort().isEmpty()) {
+            mapQry.clearSort();
+
             for (GridSqlSortColumn sortCol : srcQry.sort().values())
                 rdcQry.addSort(column(((GridSqlAlias)mapExps.get(sortCol.column())).alias()), sortCol);
         }
