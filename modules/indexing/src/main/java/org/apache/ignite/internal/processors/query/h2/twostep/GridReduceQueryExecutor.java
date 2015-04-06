@@ -463,9 +463,6 @@ public class GridReduceQueryExecutor implements GridMessageListener {
                 if (scale > precision)
                     precision = scale;
             }
-            else {
-                System.out.println("1");
-            }
 
             Column col = new Column(name, type, precision, scale, displaySize);
             cols.add(col);
@@ -492,7 +489,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
             Query prepare = (Query)ses.prepare(qry.query(), false);
 
-            ArrayList<Parameter> parsedParams = prepare.getParameters();
+            List<Parameter> parsedParams = prepare.getParameters();
 
             for (int i = Math.min(parsedParams.size(), qry.parameters().length); --i >= 0; ) {
                 Object val = qry.parameters()[i];
