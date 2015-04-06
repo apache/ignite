@@ -200,8 +200,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        if (testWorkDir != null)
-            U.delete(testWorkDir);
+        U.delete(testWorkDir);
     }
 
     /** {@inheritDoc} */

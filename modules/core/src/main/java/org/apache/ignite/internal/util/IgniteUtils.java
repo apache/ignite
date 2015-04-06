@@ -3012,8 +3012,9 @@ public abstract class IgniteUtils {
      * @return {@code true} if and only if the file or directory is successfully deleted,
      *      {@code false} otherwise
      */
-    public static boolean delete(File file) {
-        assert file != null;
+    public static boolean delete(@Nullable File file) {
+        if (file == null)
+            return false;
 
         boolean res = true;
 
