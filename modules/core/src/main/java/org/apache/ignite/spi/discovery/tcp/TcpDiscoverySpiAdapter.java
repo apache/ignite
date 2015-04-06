@@ -152,6 +152,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      */
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
+        super.injectResources(ignite);
+
         // Inject resource.
         if (ignite != null)
             setLocalAddress(ignite.configuration().getLocalHost());
