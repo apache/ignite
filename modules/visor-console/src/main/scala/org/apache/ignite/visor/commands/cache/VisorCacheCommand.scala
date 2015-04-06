@@ -20,14 +20,15 @@ package org.apache.ignite.visor.commands.cache
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.typedef._
+import java.util
+
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-import org.apache.ignite.lang.IgniteBiTuple
+import org.apache.ignite.lang.{IgniteUuid, IgniteBiTuple}
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
-import java.util.UUID
+import java.util.{Collections, UUID}
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
@@ -385,13 +386,13 @@ class VisorCacheCommand {
                         println("  Total number of executions: " + ad.execsQuery)
                         println("  Total number of failures:   " + ad.failsQuery)
 
-                        gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
-                            nl()
+                        gCfg.foreach(ccfgs => ccfgs.find(ccfg => safeEquals(ccfg.name(), ad.cacheName()))
+                            .foreach(cfg => {
+                                nl()
 
-                            showCacheConfiguration("Cache configuration:", cfg)
+                                showCacheConfiguration("Cache configuration:", cfg)
                         }))
                     })
-
                 }
                 else
                     println("\nUse \"-a\" flag to see detailed statistics.")
@@ -464,10 +465,14 @@ class VisorCacheCommand {
      * @param node Specified node.
      * @return Grid configuration for specified node.
      */
-    private def config(node: ClusterNode): VisorGridConfiguration = {
-        try
+    private def config(node: ClusterNode) = {
+        try {
+            val z = Collections.emptySet()[IgniteUuid]
+
             ignite.compute(ignite.cluster.forNode(node)).withNoFailover()
-                .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
+                .execute(classOf[VisorCacheConfigurationCollectorTask],
+                    toTaskArgument(node.id(), z.asInstanceOf[util.Collection[IgniteUuid]]))
+        }
         catch {
             case e: IgniteException =>
                 scold(e.getMessage)

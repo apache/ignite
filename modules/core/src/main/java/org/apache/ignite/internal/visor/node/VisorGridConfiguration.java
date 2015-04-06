@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.cache.*;
 
 import java.io.*;
 import java.util.*;
@@ -68,9 +67,6 @@ public class VisorGridConfiguration implements Serializable {
     /** User attributes. */
     private Map<String, ?> userAttrs;
 
-    /** Caches. */
-    private Iterable<VisorCacheConfiguration> caches;
-
     /** Igfss. */
     private Iterable<VisorIgfsConfiguration> igfss;
 
@@ -106,7 +102,6 @@ public class VisorGridConfiguration implements Serializable {
         inclEvtTypes = c.getIncludeEventTypes();
         rest = VisorRestConfiguration.from(c);
         userAttrs = c.getUserAttributes();
-        caches = collectCaches(ignite, c.getCacheConfiguration());
         igfss = VisorIgfsConfiguration.list(c.getFileSystemConfiguration());
         env = new HashMap<>(System.getenv());
         sysProps = IgniteSystemProperties.snapshot();
@@ -191,39 +186,6 @@ public class VisorGridConfiguration implements Serializable {
      */
     public Map<String, ?> userAttributes() {
         return userAttrs;
-    }
-
-    /**
-     * @return List of data transfer objects for caches.
-     */
-    private Iterable<VisorCacheConfiguration> collectCaches(IgniteEx ignite, CacheConfiguration[] ccfgs) {
-        if (ccfgs == null)
-            return Collections.emptyList();
-
-        final Collection<VisorCacheConfiguration> res = new ArrayList<>(ccfgs.length);
-
-        for (CacheConfiguration ccfg : ccfgs)
-            res.add(collectCache(ignite, ccfg));
-
-        return res;
-    }
-
-    /**
-     * Create data transfer object for cache configuration.
-     *
-     * @param ignite Ignite instance.
-     * @param ccfg Cache configuration.
-     * @return Data transfer objects for cache
-     */
-    protected VisorCacheConfiguration collectCache(IgniteEx ignite, CacheConfiguration ccfg) {
-        return new VisorCacheConfiguration().from(ignite, ccfg);
-    }
-
-    /**
-     * @return Caches.
-     */
-    public Iterable<VisorCacheConfiguration> caches() {
-        return caches;
     }
 
     /**

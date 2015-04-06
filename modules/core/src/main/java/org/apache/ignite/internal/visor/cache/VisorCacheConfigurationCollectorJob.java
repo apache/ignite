@@ -28,8 +28,8 @@ import java.util.*;
 /**
  * Job that collect cache metrics from node.
  */
-public class VisorCacheConfigurationCollectorJob extends VisorJob<Collection<IgniteUuid>,
-    Map<IgniteUuid, VisorCacheConfiguration>> {
+public class VisorCacheConfigurationCollectorJob
+    extends VisorJob<Collection<IgniteUuid>, Map<IgniteUuid, VisorCacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,12 +47,14 @@ public class VisorCacheConfigurationCollectorJob extends VisorJob<Collection<Ign
     @Override protected Map<IgniteUuid, VisorCacheConfiguration> run(Collection<IgniteUuid> arg) {
         Collection<GridCacheAdapter<?, ?>> caches = ignite.context().cache().internalCaches();
 
+        boolean all = arg == null || arg.isEmpty();
+
         Map<IgniteUuid, VisorCacheConfiguration> res = U.newHashMap(caches.size());
 
         for (GridCacheAdapter<?, ?> cache : caches) {
             IgniteUuid deploymentId = cache.context().dynamicDeploymentId();
 
-            if (arg.contains(deploymentId))
+            if (all || arg.contains(deploymentId))
                 res.put(deploymentId, config(cache.configuration()));
         }
 

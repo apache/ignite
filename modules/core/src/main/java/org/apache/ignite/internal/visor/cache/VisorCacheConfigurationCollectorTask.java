@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -31,31 +27,13 @@ import java.util.*;
  * Task that collect cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCacheConfigurationCollectorTask extends VisorMultiNodeTask<Collection<IgniteUuid>,
-    Map<UUID, Map<IgniteUuid, VisorCacheConfiguration>>, Map<IgniteUuid, VisorCacheConfiguration>> {
+public class VisorCacheConfigurationCollectorTask
+    extends VisorOneNodeTask<Collection<IgniteUuid>, Collection<VisorCacheConfiguration>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorCacheConfigurationCollectorJob job(Collection<IgniteUuid> arg) {
         return new VisorCacheConfigurationCollectorJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, Map<IgniteUuid, VisorCacheConfiguration>> reduce0(
-        List<ComputeJobResult> results)
-        throws IgniteException {
-        Map<UUID, Map<IgniteUuid, VisorCacheConfiguration>> taskRes = U.newHashMap(results.size());
-
-        for (ComputeJobResult jobRes : results) {
-            if (jobRes.getException() != null)
-                throw jobRes.getException();
-
-            Map<IgniteUuid, VisorCacheConfiguration> ccfgs = jobRes.getData();
-
-            taskRes.put(jobRes.getNode().id(), ccfgs);
-        }
-
-        return taskRes;
     }
 }
