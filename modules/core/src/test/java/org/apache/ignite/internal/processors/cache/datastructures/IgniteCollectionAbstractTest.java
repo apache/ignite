@@ -52,7 +52,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         cfg.setDiscoverySpi(spi);
 
         // TODO IGNITE-180: remove cache configuration when dynamic cache start is implemented.
-        TestCollectionConfiguration colCfg = collectionConfiguration();
+        /*TestCollectionConfiguration colCfg = collectionConfiguration();
 
         assertNotNull(colCfg);
 
@@ -67,7 +67,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
 
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(ccfg);*/
 
         return cfg;
     }
@@ -79,7 +79,13 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
     protected final CollectionConfiguration config(boolean collocated) {
         CollectionConfiguration cfg = new CollectionConfiguration();
 
-        cfg.setCacheName(COL_CACHE_NAME);
+        //cfg.setCacheName(COL_CACHE_NAME);
+        TestCollectionConfiguration colCfg = collectionConfiguration();
+        cfg.atomicityMode(colCfg.getAtomicityMode());
+        cfg.memoryMode(colCfg.getMemoryMode());
+        cfg.backups(colCfg.getBackups());
+        cfg.offHeapMaxMem(colCfg.getOffHeapMaxMemory());
+        cfg.cacheMode(colCfg.getCacheMode());
         cfg.setCollocated(collocated);
 
         return cfg;

@@ -90,7 +90,12 @@ public class IgniteQueueExample {
     private static IgniteQueue<String> initializeQueue(Ignite ignite, String queueName) throws IgniteException {
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
-        colCfg.setCacheName(CACHE_NAME);
+        CacheConfiguration cfg = ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class);
+        colCfg.atomicityMode(cfg.getAtomicityMode());
+        colCfg.memoryMode(cfg.getMemoryMode());
+        colCfg.cacheMode(cfg.getCacheMode());
+        colCfg.backups(cfg.getBackups());
+        colCfg.offHeapMaxMem(cfg.getOffHeapMaxMemory());
 
         // Initialize new FIFO queue.
         IgniteQueue<String> queue = ignite.queue(queueName, 0, colCfg);

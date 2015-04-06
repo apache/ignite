@@ -20,16 +20,28 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+
 /**
  * Configuration for Ignite collections.
  */
 public class CollectionConfiguration {
     /** Cache atomicity mode. */
-    private CacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode = ATOMIC;
 
-    private CacheMode cacheMode;
+    /** Cache mode. */
+    private CacheMode cacheMode = PARTITIONED;
 
-    private CacheMemoryMode memoryMode;
+    /** Cache memory mode. */
+    private CacheMemoryMode memoryMode = ONHEAP_TIERED;
+
+    /** Number of backups. */
+    private int backups = 0;
+
+    /** Off-heap memory size. */
+    private long offHeapMaxMem = -1;
 
     /** Collocated flag. */
     private boolean collocated;
@@ -50,28 +62,74 @@ public class CollectionConfiguration {
         this.collocated = collocated;
     }
 
+    /**
+     * @return Cache atomicity mode.
+     */
     public CacheAtomicityMode atomicityMode() {
         return atomicityMode;
     }
 
+    /**
+     * @param atomicityMode Cache atomicity mode.
+     */
     public void atomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
     }
 
+    /**
+     * @return Cache mode.
+     */
     public CacheMode cacheMode() {
         return cacheMode;
     }
 
+    /**
+     * @param cacheMode Cache mode.
+     */
     public void cacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
     }
 
+    /**
+     * @return Cache memory mode.
+     */
     public CacheMemoryMode memoryMode() {
         return memoryMode;
     }
 
+    /**
+     * @param memoryMode Memory mode.
+     */
     public void memoryMode(CacheMemoryMode memoryMode) {
         this.memoryMode = memoryMode;
+    }
+
+    /**
+     * @return Number of backups.
+     */
+    public int backups() {
+        return backups;
+    }
+
+    /**
+     * @param backups Cache number of backups.
+     */
+    public void backups(int backups) {
+        this.backups = backups;
+    }
+
+    /**
+     * @return Off-heap memory size.
+     */
+    public long offHeapMaxMem() {
+        return offHeapMaxMem;
+    }
+
+    /**
+     * @param offHeapMaxMem Off-heap memory size.
+     */
+    public void offHeapMaxMem(long offHeapMaxMem) {
+        this.offHeapMaxMem = offHeapMaxMem;
     }
 
     /** {@inheritDoc} */

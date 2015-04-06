@@ -86,7 +86,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testQueueAtomicClockCache() throws Exception {
+    /*public void testQueueAtomicClockCache() throws Exception {
         final String queueName = "testQueueAtomicClockCache";
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -103,7 +103,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
             "(change write order mode to PRIMARY in configuration)");
 
         assertNull(ignite(0).queue(queueName, 0, null));
-    }
+    }*/
 
     /**
      * @throws Exception If failed.

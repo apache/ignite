@@ -86,7 +86,12 @@ public class IgniteSetExample {
     private static IgniteSet<String> initializeSet(Ignite ignite, String setName) throws IgniteException {
         CollectionConfiguration setCfg = new CollectionConfiguration();
 
-        setCfg.setCacheName(CACHE_NAME);
+        CacheConfiguration cfg = ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class);
+        setCfg.atomicityMode(cfg.getAtomicityMode());
+        setCfg.memoryMode(cfg.getMemoryMode());
+        setCfg.cacheMode(cfg.getCacheMode());
+        setCfg.backups(cfg.getBackups());
+        setCfg.offHeapMaxMem(cfg.getOffHeapMaxMemory());
 
         // Initialize new set.
         IgniteSet<String> set = ignite.set(setName, setCfg);
