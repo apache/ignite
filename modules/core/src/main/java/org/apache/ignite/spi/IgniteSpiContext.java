@@ -302,7 +302,7 @@ public interface IgniteSpiContext {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.

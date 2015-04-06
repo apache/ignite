@@ -31,9 +31,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_BUILD_DATE = ATTR_PREFIX + ".build.date";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_COMPATIBLE_VERS = ATTR_PREFIX + ".compatible.vers";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_MARSHALLER = ATTR_PREFIX + ".marshaller";
 
     /** Internal attribute name constant. */
