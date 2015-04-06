@@ -1937,7 +1937,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         return validateHashIdResolvers(node);
     }
 
@@ -1945,7 +1945,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable private IgniteSpiNodeValidationResult validateHashIdResolvers(ClusterNode node) {
+    @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheConfiguration cfg = desc.cacheConfiguration();
 
@@ -1972,7 +1972,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
                             topNode.id() + ']';
 
-                        return new IgniteSpiNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                        return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
                     }
                 }
             }
