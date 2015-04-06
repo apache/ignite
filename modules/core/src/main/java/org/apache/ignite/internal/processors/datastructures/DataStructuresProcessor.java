@@ -678,19 +678,43 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
+        CacheConfiguration comCfg = null;
+
         if (cfg != null) {
             if (cap <= 0)
                 cap = Integer.MAX_VALUE;
 
-            if (ctx.cache().publicCache(cfg.getCacheName()) == null)
-                throw new IgniteCheckedException("Cache for collection is not configured: " + cfg.getCacheName());
+            ctx.gateway().readLock();
+            try{
+                for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()) {
+                    if (cfg.atomicityMode() == ccfg.getAtomicityMode() &&
+                        cfg.cacheMode() == ccfg.getCacheMode() &&
+                        cfg.memoryMode() == ccfg.getMemoryMode())
+                        comCfg = ccfg;
+                }
 
-            checkSupportsQueue(ctx.cache().internalCache(cfg.getCacheName()).context());
+                if (comCfg != null)
+                    checkSupportsQueue(ctx.cache().internalCache(comCfg.getName()).context());
+                else {
+                    comCfg = new CacheConfiguration();
+                    comCfg.setCacheMode(cfg.cacheMode());
+                    comCfg.setAtomicityMode(cfg.atomicityMode());
+                    comCfg.setMemoryMode(cfg.memoryMode());
+                    comCfg.setName("");
+
+                    ctx.grid().getOrCreateCache(comCfg);
+                }
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
+
+        assert comCfg != null;
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
             QUEUE,
-            cfg != null ? new QueueInfo(cfg.getCacheName(), cfg.isCollocated(), cap) : null);
+            cfg != null ? new QueueInfo(comCfg.getName(), cfg.isCollocated(), cap) : null);
 
         final int cap0 = cap;
 

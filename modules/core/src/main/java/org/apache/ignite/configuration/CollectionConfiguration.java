@@ -24,8 +24,12 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * Configuration for Ignite collections.
  */
 public class CollectionConfiguration {
-    /** Cache name. */
-    private String cacheName;
+    /** Cache atomicity mode. */
+    private CacheAtomicityMode atomicityMode;
+
+    private CacheMode cacheMode;
+
+    private CacheMemoryMode memoryMode;
 
     /** Collocated flag. */
     private boolean collocated;
@@ -46,18 +50,28 @@ public class CollectionConfiguration {
         this.collocated = collocated;
     }
 
-    /**
-     * @return Cache name.
-     */
-    public String getCacheName() {
-        return cacheName;
+    public CacheAtomicityMode atomicityMode() {
+        return atomicityMode;
     }
 
-    /**
-     * @param cacheName Cache name.
-     */
-    public void setCacheName(String cacheName) {
-        this.cacheName = cacheName;
+    public void atomicityMode(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+    }
+
+    public CacheMode cacheMode() {
+        return cacheMode;
+    }
+
+    public void cacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
+    }
+
+    public CacheMemoryMode memoryMode() {
+        return memoryMode;
+    }
+
+    public void memoryMode(CacheMemoryMode memoryMode) {
+        this.memoryMode = memoryMode;
     }
 
     /** {@inheritDoc} */
