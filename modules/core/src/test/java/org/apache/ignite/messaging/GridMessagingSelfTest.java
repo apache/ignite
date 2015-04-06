@@ -67,6 +67,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Integer I_TOPIC_2 = 2;
 
+    /** Message count. */
+    private static AtomicInteger MSG_CNT;
+
     /** */
     public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
 
@@ -161,6 +164,8 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MSG_CNT = new AtomicInteger();
+
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
     }
@@ -1087,5 +1092,50 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         U.sleep(1000);
 
         assertEquals(1, msgCnt.get());
+    }
+
+    /**
+     * Tests that message listener registers only for one oldest node.
+     *
+     * @throws Exception If an error occurred.
+     */
+    public void testRemoteListenForOldest() throws Exception {
+        remoteListenForOldest(ignite1);
+
+        // Restart oldest node.
+        stopGrid(1);
+
+        ignite1 = startGrid(1);
+
+        MSG_CNT.set(0);
+
+        // Ignite2 is oldest now.
+        remoteListenForOldest(ignite2);
+    }
+
+    /**
+     * @param expOldestIgnite Expected oldest ignite.
+     */
+    private void remoteListenForOldest(Ignite expOldestIgnite) throws InterruptedException {
+        ClusterGroup grp = ignite1.cluster().forOldest();
+
+        assertEquals(1, grp.nodes().size());
+        assertEquals(expOldestIgnite.cluster().localNode().id(), grp.node().id());
+
+        ignite1.message(grp).remoteListen(null, new P2<UUID, Object>() {
+            @Override public boolean apply(UUID nodeId, Object msg) {
+                System.out.println("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+
+                MSG_CNT.incrementAndGet();
+
+                return true;
+            }
+        });
+
+        ignite1.message().send(null, MSG_1);
+
+        Thread.sleep(3000);
+
+        assertEquals(1, MSG_CNT.get());
     }
 }

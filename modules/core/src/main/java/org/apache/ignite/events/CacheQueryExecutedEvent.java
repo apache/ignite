@@ -19,10 +19,9 @@ package org.apache.ignite.events;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -67,7 +66,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     private static final long serialVersionUID = 3738753361235304496L;
 
     /** Query type. */
-    private final CacheQueryType qryType;
+    private final String qryType;
 
     /** Cache name. */
     private final String cacheName;
@@ -112,7 +111,7 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
         ClusterNode node,
         String msg,
         int type,
-        CacheQueryType qryType,
+        String qryType,
         @Nullable String cacheName,
         @Nullable String clsName,
         @Nullable String clause,
@@ -139,9 +138,9 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     /**
      * Gets query type.
      *
-     * @return Query type.
+     * @return Query type. Can be {@code "SQL"}, {@code "TEXT"}, {@code "SCAN"} or {@code "SPI"}.
      */
-    public CacheQueryType queryType() {
+    public String queryType() {
         return qryType;
     }
 

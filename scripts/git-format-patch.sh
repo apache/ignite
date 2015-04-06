@@ -26,33 +26,6 @@ echo "Note: you can use ${IGNITE_HOME}/scripts/git-patch-prop-local.sh to set yo
 echo
 
 #
-# Read command line params.
-#
-while [[ $# > 1 ]]
-do
-    key="$1"
-
-    case $key in
-        -ih|--ignitehome)
-        IGNITE_HOME="$2"
-        shift
-        ;;
-        -idb|--ignitedefbranch)
-        IGNITE_DEFAULT_BRANCH="$2"
-        shift
-        ;;
-        -ph|--patchhome)
-        PATCHES_HOME="$2"
-        shift
-        ;;
-        *)
-                # unknown option
-        ;;
-    esac
-    shift
-done
-
-#
 # Init home and import properties and functions.
 #
 if [ -z ${IGNITE_HOME} ] # Script can be called from not IGNITE_HOME if IGNITE_HOME was set.
@@ -65,6 +38,36 @@ fi
 if [ -f ${IGNITE_HOME}/scripts/git-patch-prop-local.sh ] # Whether a local user properties file exists.
     then . ${IGNITE_HOME}/scripts/git-patch-prop-local.sh # Import user properties (it will rewrite global properties).
 fi
+
+#
+# Read command line params.
+#
+while [[ $# > 1 ]]
+do
+    key="$1"
+
+    case $key in
+        -ih|--ignitehome)
+        IGNITE_HOME="$2"
+        shift
+        ;;
+        
+        -idb|--ignitedefbranch)
+        IGNITE_DEFAULT_BRANCH="$2"
+        shift
+        ;;
+        
+        -ph|--patchhome)
+        PATCHES_HOME="$2"
+        shift
+        ;;
+        
+        *)
+        echo "Unknown parameter: ${key}"
+        ;;
+    esac
+    shift
+done
 
 IGNITE_CURRENT_BRANCH=$( determineCurrentBranch ${IGNITE_HOME} )
 
@@ -81,4 +84,4 @@ echo
 
 requireCleanWorkTree ${IGNITE_HOME}
 
-formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${IGNITE_CURRENT_BRANCH} _ignite.patch
+formatPatch ${IGNITE_HOME} ${IGNITE_DEFAULT_BRANCH} ${IGNITE_CURRENT_BRANCH} .patch
