@@ -2712,6 +2712,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private class AddCacheTemplateProcessor implements
         CacheEntryProcessor<CacheTemplateConfigurationKey, TemplateConfigurations, Void> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private Collection<CacheConfiguration> cfgs;
 
         /**
