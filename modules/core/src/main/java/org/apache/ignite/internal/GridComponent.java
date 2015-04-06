@@ -106,7 +106,7 @@ public interface GridComponent {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value

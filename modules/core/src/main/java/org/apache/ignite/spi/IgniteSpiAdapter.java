@@ -671,7 +671,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+        @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
             return null;
         }
 
