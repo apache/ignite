@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 
@@ -63,6 +64,11 @@ public class GridCachePluginContext<C extends CachePluginConfiguration> implemen
     /** {@inheritDoc} */
     @Override public Ignite grid() {        
         return ctx.grid();
+    }
+    
+    /** {@inheritDoc} */
+    @Override public ClusterNode localNode() {
+        return ctx.discovery().localNode();
     }
 
     /** {@inheritDoc} */

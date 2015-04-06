@@ -806,7 +806,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
          * @param isOldest Oldest flag.
          */
         private AgeClusterGroup(ClusterGroupAdapter parent, boolean isOldest) {
-            super(parent.ctx, parent.subjId, parent.p, parent.ids);
+            super(parent.ctx, parent.subjId, (IgnitePredicate<ClusterNode>) null);
 
             this.isOldest = isOldest;
 
@@ -823,6 +823,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 lastTopVer = ctx.discovery().topologyVersion();
 
                 this.node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
+                this.p = F.nodeForNodes(node);
             }
             finally {
                 unguard();

@@ -257,7 +257,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         clients.remove(id, rmv)) {
                         rmv.forceClose();
 
-                        if (!getSpiContext().isStopping()) {
+                        if (!isNodeStopping()) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
                             if (recoveryData != null) {
@@ -1460,7 +1460,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        assert getSpiContext().isStopping();
+        assert isNodeStopping();
 
         unregisterMBean();
 
@@ -1619,7 +1619,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client = clients.get(nodeId);
 
             if (client == null) {
-                if (getSpiContext().isStopping())
+                if (isNodeStopping())
                     throw new IgniteSpiException("Node is stopping.");
 
                 // Do not allow concurrent connects.

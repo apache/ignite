@@ -1004,7 +1004,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
 
-                    assertEquals(SCAN, qe.queryType());
+                    assertEquals(SCAN.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertNull(qe.className());
@@ -1027,7 +1027,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertEquals(SCAN, qe.queryType());
+                    assertEquals(SCAN.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertNull(qe.className());
@@ -1080,7 +1080,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryReadEvent<UUID, Person> qe = (CacheQueryReadEvent<UUID, Person>)evt;
 
-                    assertEquals(FULL_TEXT, qe.queryType());
+                    assertEquals(FULL_TEXT.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals("Person", qe.className());
@@ -1103,7 +1103,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertEquals(FULL_TEXT, qe.queryType());
+                    assertEquals(FULL_TEXT.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals("Person", qe.className());

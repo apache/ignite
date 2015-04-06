@@ -103,6 +103,11 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         delay = false;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */

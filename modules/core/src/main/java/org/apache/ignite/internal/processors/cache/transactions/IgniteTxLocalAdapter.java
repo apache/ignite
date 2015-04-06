@@ -3081,7 +3081,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     "(cache configurations are not compatible) [" +
                     "activeCaches=[" + cacheNames + "]" +
                     ", cacheName=" + cacheCtx.name() +
-                    ", cacheSystem=" + cacheCtx.system() +
+                    ", cacheSystem=" + cacheCtx.systemTx() +
                     ", txSystem=" + system() + ']');
             }
             else
