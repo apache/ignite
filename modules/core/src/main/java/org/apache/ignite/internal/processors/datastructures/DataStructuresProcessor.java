@@ -51,6 +51,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     public static final CacheDataStructuresConfigurationKey DATA_STRUCTURES_KEY =
         new CacheDataStructuresConfigurationKey();
 
+    /** */
+    public static final CacheDataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
+            new CacheDataStructuresCacheKey();
+
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
@@ -90,6 +94,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** */
     private GridCacheProjectionEx<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
 
+    /** */
+    private GridCacheProjectionEx<CacheDataStructuresCacheKey, List<CacheConfiguration>> utilityDataCache;
+
     /**
      * @param ctx Context.
      */
@@ -108,6 +115,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             return;
 
         utilityCache = (GridCacheProjectionEx)ctx.cache().utilityCache();
+
+        utilityDataCache = (GridCacheProjectionEx)ctx.cache().utilityCache();
 
         assert utilityCache != null;
 
@@ -684,13 +693,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (cap <= 0)
                 cap = Integer.MAX_VALUE;
 
-            cacheName = findCompatibleConfiguration(cfg);
-
-            if (cacheName ==  null) {
-                cacheName = getCacheName(cfg);
-
-                ctx.cache().dynamicStartCache(cacheConfiguration(cfg), cacheName, null, CacheType.DATASTRUCTURE, false).get();
-            }
+            cacheName = compatibleConfiguration(cfg);
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
@@ -710,24 +713,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Collection configuration.
+     * @param i Index.
      * @return Cache name.
      */
-    private String getCacheName(CollectionConfiguration cfg) {
-        return "data_structures_" + cfg.atomicityMode().name() + "_" +
-            cfg.backups() + "_" +
-            cfg.cacheMode() + "_" +
-            cfg.memoryMode() + "_" +
-            cfg.offHeapMaxMem();
+    private String getCacheName(CollectionConfiguration cfg, int i) {
+        return "data_structures_" + i;
     }
 
     /**
      * @param cfg Collection configuration.
+     * @param name Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(CollectionConfiguration cfg) {
+    private CacheConfiguration cacheConfiguration(CollectionConfiguration cfg, String name) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName(getCacheName(cfg));
+        ccfg.setName(name);
 
         ccfg.setBackups(cfg.backups());
         ccfg.setCacheMode(cfg.cacheMode());
@@ -741,20 +742,57 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param cfg Collection configuration.
      * @return Cache name.
      */
-    private String findCompatibleConfiguration(CollectionConfiguration cfg) {
-        for (CacheConfiguration ccfg : ctx.cache().dataStructuresCacheNames()) {
-            if (ccfg == null)
-                continue;
+    private String findCompatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
+        List<CacheConfiguration> cfgs = utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
 
+        if (cfgs == null)
+            return null;
+
+        for (CacheConfiguration ccfg : cfgs) {
             if (ccfg.getAtomicityMode() == cfg.atomicityMode() &&
-                ccfg.getMemoryMode() == cfg.memoryMode() &&
-                ccfg.getCacheMode() == cfg.cacheMode() &&
-                ccfg.getBackups() == cfg.backups() &&
-                ccfg.getOffHeapMaxMemory() == cfg.offHeapMaxMem())
+                    ccfg.getMemoryMode() == cfg.memoryMode() &&
+                    ccfg.getCacheMode() == cfg.cacheMode() &&
+                    ccfg.getBackups() == cfg.backups() &&
+                    ccfg.getOffHeapMaxMemory() == cfg.offHeapMaxMem())
                 return ccfg.getName();
         }
 
         return null;
+    }
+
+    /**
+     * @param cfg Collection configuration.
+     * @return Cache name.
+     */
+    private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
+        String cacheName = findCompatibleConfiguration(cfg);
+
+        if (cacheName == null) {
+            try (IgniteInternalTx tx = utilityDataCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                cacheName = findCompatibleConfiguration(cfg);
+
+                if (cacheName == null) {
+                    List<CacheConfiguration> oldVal = utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
+
+                    cacheName = getCacheName(cfg, oldVal != null ? oldVal.size() : 0);
+
+                    CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
+
+                    ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.DATASTRUCTURE, false).get();
+
+                    List<CacheConfiguration> newVal = oldVal != null ? new ArrayList(oldVal) :
+                            new ArrayList<CacheConfiguration>();
+
+                    newVal.add(newCfg);
+
+                    utilityDataCache.put(DATA_STRUCTURES_CACHE_KEY, newVal);
+                }
+
+                tx.commit();
+            }
+        }
+
+        return cacheName;
     }
 
     /**
@@ -1112,15 +1150,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         A.notNull(name, "name");
         String cacheName = null;
 
-        if (cfg != null) {
-            cacheName = findCompatibleConfiguration(cfg);
-
-            if (cacheName ==  null) {
-                cacheName = getCacheName(cfg);
-
-                ctx.cache().dynamicStartCache(cacheConfiguration(cfg), cacheName, null, CacheType.DATASTRUCTURE, false).get();
-            }
-        }
+        if (cfg != null)
+            cacheName = compatibleConfiguration(cfg);
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
             SET,
@@ -1166,7 +1197,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
+    @Nullable
+    private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
         return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
