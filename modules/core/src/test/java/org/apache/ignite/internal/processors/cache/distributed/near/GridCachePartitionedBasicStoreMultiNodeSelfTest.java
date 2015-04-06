@@ -106,9 +106,9 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
 
-        c.setCacheConfiguration(cc);
+        cc.setNearConfiguration(nearCacheConfiguration());
 
-        c.setNearCacheConfiguration(nearCacheConfiguration());
+        c.setCacheConfiguration(cc);
 
         return c;
     }

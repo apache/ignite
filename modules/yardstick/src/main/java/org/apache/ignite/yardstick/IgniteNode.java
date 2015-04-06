@@ -79,7 +79,7 @@ public class IgniteNode implements BenchmarkServer {
                 c.setClientMode(true);
 
             if (args.isNearCache())
-                c.setNearCacheConfiguration(new NearCacheConfiguration());
+                cc.setNearConfiguration(new NearCacheConfiguration());
 
             cc.setWriteSynchronizationMode(args.syncMode());
 

@@ -62,7 +62,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-        c.setNearCacheConfiguration(nearCfg);
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 
