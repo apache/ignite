@@ -964,6 +964,14 @@ public abstract class IgniteUtils {
     public static void dumpThreads(@Nullable IgniteLogger log) {
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
 
+        final Set<Long> deadlockedThreadsIds = getDeadlockedThreadIds(mxBean);
+
+        if (deadlockedThreadsIds.size() == 0)
+            warn(log, "No deadlocked threads detected.");
+        else
+            warn(log, "Deadlocked threads detected (see thread dump below) " +
+                    "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+
         ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
 
@@ -971,7 +979,7 @@ public abstract class IgniteUtils {
             .a(new SimpleDateFormat("yyyy/MM/dd HH:mm:ss z").format(new Date(U.currentTimeMillis()))).a(NL);
 
         for (ThreadInfo info : threadInfos) {
-            printThreadInfo(info, sb);
+            printThreadInfo(info, sb, deadlockedThreadsIds);
 
             sb.a(NL);
 
@@ -988,12 +996,41 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get deadlocks from the thread bean.
+     * @param mxBean the bean
+     * @return the set of deadlocked threads (may be empty Set, but never null).
+     */
+    private static Set<Long> getDeadlockedThreadIds(ThreadMXBean mxBean) {
+        final long[] deadlockedIds = mxBean.findDeadlockedThreads();
+
+        final Set<Long> deadlockedThreadsIds;
+
+        if (!F.isEmpty(deadlockedIds)) {
+            Set<Long> set = new HashSet<>();
+
+            for (long id : deadlockedIds)
+                set.add(id);
+
+            deadlockedThreadsIds = Collections.unmodifiableSet(set);
+        }
+        else
+            deadlockedThreadsIds = Collections.emptySet();
+
+        return deadlockedThreadsIds;
+    }
+
+    /**
      * Prints single thread info to a buffer.
      *
      * @param threadInfo Thread info.
      * @param sb Buffer.
      */
-    private static void printThreadInfo(ThreadInfo threadInfo, GridStringBuilder sb) {
+    private static void printThreadInfo(ThreadInfo threadInfo, GridStringBuilder sb, Set<Long> deadlockedIdSet) {
+        final long id = threadInfo.getThreadId();
+
+        if (deadlockedIdSet.contains(id))
+            sb.a("##### DEADLOCKED ");
+
         sb.a("Thread [name=\"").a(threadInfo.getThreadName())
             .a("\", id=").a(threadInfo.getThreadId())
             .a(", state=").a(threadInfo.getThreadState())
@@ -2975,8 +3012,9 @@ public abstract class IgniteUtils {
      * @return {@code true} if and only if the file or directory is successfully deleted,
      *      {@code false} otherwise
      */
-    public static boolean delete(File file) {
-        assert file != null;
+    public static boolean delete(@Nullable File file) {
+        if (file == null)
+            return false;
 
         boolean res = true;
 
