@@ -431,11 +431,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 for (GridCacheMvccCandidate c : cands) {
                     IgniteInternalTx tx = cctx.tm().tx(c.version());
 
-                    if (tx != null) {
-                        assert tx.local();
-
+                    if (tx != null && tx.local())
                         txFut.addTx(tx);
-                    }
                 }
             }
 

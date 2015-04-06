@@ -511,7 +511,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (owner != null && owner.version().equals(lockVer)) {
+        if (owner != null && owner.nearLocal() && owner.version().equals(lockVer)) {
             onDone(true);
 
             return true;

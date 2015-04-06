@@ -3280,7 +3280,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 boolean locCand = false;
 
-                if (explicitCand.nearLocal())
+                if (explicitCand.nearLocal() || explicitCand.local())
                     locCand = cctx.localNodeId().equals(explicitCand.nodeId());
                 else if (explicitCand.dhtLocal())
                     locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
