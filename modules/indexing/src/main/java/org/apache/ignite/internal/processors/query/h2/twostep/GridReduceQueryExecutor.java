@@ -445,25 +445,20 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             String name = expr.getAlias();
             long precision = expr.getPrecision();
             int displaySize = expr.getDisplaySize();
-            int scale = expr.getScale();
-
-            if (type != Value.UNKNOWN) {
-                DataType dt = DataType.getDataType(type);
-
-                if (precision > 0 && (dt.defaultPrecision == 0 ||
-                    (dt.defaultPrecision > precision && dt.defaultPrecision < Byte.MAX_VALUE))) {
-                    // dont' set precision to MAX_VALUE if this is the default
-                    precision = dt.defaultPrecision;
-                }
-
-                if (scale > 0 && (dt.defaultScale == 0 ||
-                    (dt.defaultScale > scale && dt.defaultScale < precision)))
-                    scale = dt.defaultScale;
-
-                if (scale > precision)
-                    precision = scale;
+            DataType dt = DataType.getDataType(type);
+            if (precision > 0 && (dt.defaultPrecision == 0 ||
+                (dt.defaultPrecision > precision && dt.defaultPrecision < Byte.MAX_VALUE))) {
+                // dont' set precision to MAX_VALUE if this is the default
+                precision = dt.defaultPrecision;
             }
-
+            int scale = expr.getScale();
+            if (scale > 0 && (dt.defaultScale == 0 ||
+                (dt.defaultScale > scale && dt.defaultScale < precision))) {
+                scale = dt.defaultScale;
+            }
+            if (scale > precision) {
+                precision = scale;
+            }
             Column col = new Column(name, type, precision, scale, displaySize);
             cols.add(col);
         }
