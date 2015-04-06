@@ -497,7 +497,7 @@
                             <failOnError>false</failOnError>
                             <fileSets>
                                 <fileSet>
-                                    <directory>target</directory>
+                                    <directory>${basedir}/target</directory>
                                     <includes>
                                         <include>ignite-${project.version}-source-release.zip</include>
                                     </includes>
