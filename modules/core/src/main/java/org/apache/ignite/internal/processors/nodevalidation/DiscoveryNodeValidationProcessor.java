@@ -15,17 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.nodevalidation;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.*;
 
 /**
- *
+ * Node validation.
  */
-public class GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest
-    extends GridCachePartitionedBasicStoreMultiNodeSelfTest {
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearCacheConfiguration() {
-        return null;
-    }
+public interface DiscoveryNodeValidationProcessor extends GridProcessor {
+    //No-op.
 }

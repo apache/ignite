@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -27,7 +26,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -95,7 +93,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
         colCfg.setCacheMode(collectionCacheMode());
         colCfg.setAtomicityMode(collectionCacheAtomicityMode());
-        colCfg.setDistributionMode(PARTITIONED_ONLY);
 
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);
@@ -144,9 +141,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         /** Default memory mode. */
         public static final CacheMemoryMode DFLT_MEMORY_MODE = ONHEAP_TIERED;
 
-        /** Default distribution mode. */
-        public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = PARTITIONED_ONLY;
-
         /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
         public static final long DFLT_OFFHEAP_MEMORY = -1;
 
@@ -155,9 +149,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
         /** Cache mode. */
         private CacheMode cacheMode = DFLT_CACHE_MODE;
-
-        /** Cache distribution mode. */
-        private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
         /** Number of backups. */
         private int backups = DFLT_BACKUPS;
@@ -222,20 +213,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
          */
         public void setMemoryMode(CacheMemoryMode memMode) {
             this.memMode = memMode;
-        }
-
-        /**
-         * @return Cache distribution mode.
-         */
-        public CacheDistributionMode getDistributionMode() {
-            return distro;
-        }
-
-        /**
-         * @param distro Cache distribution mode.
-         */
-        public void setDistributionMode(CacheDistributionMode distro) {
-            this.distro = distro;
         }
 
         /**

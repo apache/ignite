@@ -100,11 +100,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.ensure(timeout >= 0, "timeout cannot be negative");
         A.ensure(txSize >= 0, "transaction size cannot be negative");
 
+        checkTransactional(ctx);
+
         return txStart0(concurrency,
             isolation,
             timeout,
             txSize,
-            ctx.system() ? ctx : null);
+            ctx.systemTx() ? ctx : null);
     }
 
     /** {@inheritDoc} */
@@ -116,13 +118,15 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
+        checkTransactional(ctx);
+
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
-            ctx.system() ? ctx : null);
+            ctx.systemTx() ? ctx : null);
     }
 
     /**
@@ -137,9 +141,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
-
-        if (sysCacheCtx != null && !sysCacheCtx.transactional())
-            throw new IgniteException("Failed to start transaction on non-transactional cache: " + sysCacheCtx.name());
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
@@ -184,5 +185,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         cctx.resetTxMetrics();
+    }
+
+    /**
+     * @param ctx Cache context.
+     */
+    private void checkTransactional(GridCacheContext ctx) {
+        if (!ctx.transactional())
+            throw new IgniteException("Failed to start transaction on non-transactional cache: " + ctx.name());
     }
 }

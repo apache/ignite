@@ -83,8 +83,10 @@ public class GridSqlQuerySplitter {
 
         Set<String> colNames = new HashSet<>();
 
+        boolean aggregateFound = false;
+
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
-            splitSelectExpression(mapExps, rdcExps, colNames, i);
+            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i);
 
         // Fill select expressions.
         mapQry.clearSelect();
@@ -116,13 +118,20 @@ public class GridSqlQuerySplitter {
 
         // -- ORDER BY
         if (!srcSelect.sort().isEmpty()) {
+            if (aggregateFound) // Ordering over aggregates does not make sense.
+                mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
+
             for (GridSqlSortColumn sortCol : srcSelect.sort().values())
                 rdcQry.addSort(column(((GridSqlAlias)mapExps.get(sortCol.column())).alias()), sortCol);
         }
 
         // -- LIMIT
-        if (srcSelect.limit() != null)
-            rdcQry.limit(srcSelect.limit());
+        if (srcQry.limit() != null) {
+            if (aggregateFound)
+                mapQry.limit(null);
+
+            rdcQry.limit(srcQry.limit());
+        }
 
         // -- OFFSET
         if (srcSelect.offset() != null) {
@@ -226,12 +235,15 @@ public class GridSqlQuerySplitter {
      * @param rdcSelect Selects for reduce query.
      * @param colNames Set of unique top level column names.
      * @param idx Index.
+     * @return {@code true} If aggregate was found.
      */
-    private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
+    private static boolean splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
         Set<String> colNames, int idx) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
+
+        boolean aggregateFound = false;
 
         if (el instanceof GridSqlAlias) { // Unwrap from alias.
             alias = (GridSqlAlias)el;
@@ -239,6 +251,8 @@ public class GridSqlQuerySplitter {
         }
 
         if (el instanceof GridSqlAggregateFunction) {
+            aggregateFound = true;
+
             GridSqlAggregateFunction agg = (GridSqlAggregateFunction)el;
 
             GridSqlElement mapAgg, rdcAgg;
@@ -339,6 +353,8 @@ public class GridSqlQuerySplitter {
                 rdcSelect[idx] = rdcEl;
             }
         }
+
+        return aggregateFound;
     }
 
     /**
