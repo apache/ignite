@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.spi;
+package org.apache.ignite.internal.processors.nodevalidation;
 
 import org.apache.ignite.internal.processors.*;
 
 /**
- * Node Version Validator.
+ * Node validation.
  */
-public interface NodeVersionValidatorProcessor extends GridProcessor {
+public interface DiscoveryNodeValidationProcessor extends GridProcessor {
     //No-op.
 }

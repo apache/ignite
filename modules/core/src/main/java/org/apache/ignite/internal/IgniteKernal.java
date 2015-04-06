@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.spi.*;
+import org.apache.ignite.internal.processors.nodevalidation.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -735,7 +735,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            startProcessor(createComponent(NodeVersionValidatorProcessor.class, ctx));
+            startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
             startProcessor(new GridClockSyncProcessor(ctx));
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -748,7 +748,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
             startProcessor(new GridRestProcessor(ctx));
             startProcessor(new DataStreamProcessor(ctx));
-            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -1157,6 +1157,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
+        add(ATTR_BUILD_VER, VER_STR);
+        add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_GRID_NAME, gridName);
@@ -2726,8 +2728,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(ctx);
 
-        if (cls.equals(NodeVersionValidatorProcessor.class))
-            return (T)new OsNodeVersionValidatorProcessor(ctx);
+        if (cls.equals(DiscoveryNodeValidationProcessor.class))
+            return (T)new OsDiscoveryNodeValidationProcessor(ctx);
 
         Class<T> implCls = null;
 

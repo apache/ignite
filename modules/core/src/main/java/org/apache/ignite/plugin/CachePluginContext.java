@@ -18,7 +18,9 @@
 package org.apache.ignite.plugin;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 /**
  * Cache plugin context.
@@ -43,6 +45,15 @@ public interface CachePluginContext<C extends CachePluginConfiguration> {
      * @return Grid.
      */
     public Ignite grid();
+
+    /**
+     * Gets local grid node. Instance of local node is provided by underlying {@link DiscoverySpi}
+     * implementation used.
+     *
+     * @return Local grid node.
+     * @see DiscoverySpi
+     */
+    public ClusterNode localNode();
 
     /**
      * Gets logger for given class.
