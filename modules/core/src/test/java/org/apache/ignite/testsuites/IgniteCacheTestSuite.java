@@ -430,6 +430,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLockFailoverSelfTest.class);
         suite.addTestSuite(IgniteCacheMultiTxLockSelfTest.class);
 
+        suite.addTestSuite(IgniteInternalCacheTypesTest.class);
+
         return suite;
     }
 }

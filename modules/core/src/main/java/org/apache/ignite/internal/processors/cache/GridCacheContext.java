@@ -166,8 +166,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
-    /** System cache flag. */
-    private boolean sys;
+    /** Cache type. */
+    private CacheType cacheType;
 
     /** IO policy. */
     private GridIoPolicy plc;
@@ -207,6 +207,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ctx Kernal context.
      * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
+     * @param cacheType Cache type.
+     * @param affNode {@code True} if local node is affinity node.
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
@@ -218,6 +220,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
      * @param jtaMgr JTA manager.
+     * @param rslvrMgr Conflict resolution manager.
      * @param pluginMgr Cache plugin manager.
      */
     @SuppressWarnings({"unchecked"})
@@ -225,6 +228,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
+        CacheType cacheType,
         boolean affNode,
 
         /*
@@ -265,6 +269,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
+        this.cacheType = cacheType;
         this.affNode = affNode;
 
         /*
@@ -297,9 +302,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         cacheId = CU.cacheId(cacheName);
 
-        sys = ctx.cache().systemCache(cacheName);
-
-        plc = CU.isMarshallerCache(cacheName) ? MARSH_CACHE_POOL : sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+        plc = cacheType.ioPolicy();
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
@@ -434,10 +437,17 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return System cache flag.
+     * @return {@code True} if should use system transactions which are isolated from user transactions.
      */
-    public boolean system() {
-        return sys;
+    public boolean systemTx() {
+        return cacheType == CacheType.UTILITY;
+    }
+
+    /**
+     * @return {@code True} if cache created by user.
+     */
+    public boolean userCache() {
+        return cacheType.userCache();
     }
 
     /**

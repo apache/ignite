@@ -110,8 +110,7 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
             ignite.context().cache().marshallerCache();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return marshallerCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
             }
         }, IgniteException.class, null);

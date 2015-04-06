@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
+import org.apache.ignite.internal.processors.nodevalidation.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -97,9 +98,6 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Compatible versions. */
-    private static final String COMPATIBLE_VERS = IgniteProperties.get("ignite.compatible.vers");
 
     /** Ignite site that is shown in log messages. */
     static final String SITE = "ignite.incubator.apache.org";
@@ -189,10 +187,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
 
-    /** */
-    @GridToStringExclude
-    private final Collection<String> compatibleVers;
-
     /** Stop guard. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
@@ -213,13 +207,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         this.rsrcCtx = rsrcCtx;
-
-        String[] compatibleVers = COMPATIBLE_VERS.split(",");
-
-        for (int i = 0; i < compatibleVers.length; i++)
-            compatibleVers[i] = compatibleVers[i].trim();
-
-        this.compatibleVers = Collections.unmodifiableList(Arrays.asList(compatibleVers));
     }
 
     /** {@inheritDoc} */
@@ -748,6 +735,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
+            startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
             startProcessor(new GridClockSyncProcessor(ctx));
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -760,7 +748,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
             startProcessor(new GridRestProcessor(ctx));
             startProcessor(new DataStreamProcessor(ctx));
-            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -1171,7 +1159,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
-        add(ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_GRID_NAME, gridName);
@@ -2568,11 +2555,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> compatibleVersions() {
-        return compatibleVers;
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         Ignition.stop(gridName, true);
     }
@@ -2745,6 +2727,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(ctx);
+
+        if (cls.equals(DiscoveryNodeValidationProcessor.class))
+            return (T)new OsDiscoveryNodeValidationProcessor(ctx);
 
         Class<T> implCls = null;
 

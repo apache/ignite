@@ -86,11 +86,6 @@
         </fileSet>
 
         <fileSet>
-            <directory>libs</directory>
-            <outputDirectory>/libs</outputDirectory>
-        </fileSet>
-
-        <fileSet>
             <directory>examples</directory>
             <outputDirectory>/examples</outputDirectory>
             <includes>

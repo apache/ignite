@@ -977,11 +977,6 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<String> compatibleVersions() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isJmxRemoteEnabled() {
             return false;
         }

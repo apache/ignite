@@ -366,7 +366,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
         boolean partLock) {
-        assert sysCacheCtx == null || sysCacheCtx.system();
+        assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
 
@@ -392,6 +392,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param tx Created transaction.
      * @return Started transaction.
      */
@@ -415,7 +416,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // Do not add remote and dht local transactions as remote node may have the same thread ID
             // and overwrite local transaction.
             if (tx.local() && !tx.dht()) {
-                if (cacheCtx == null || !cacheCtx.system())
+                if (cacheCtx == null || !cacheCtx.systemTx())
                     threadMap.put(tx.threadId(), tx);
                 else
                     sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
@@ -692,12 +693,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cctx Cache context.
      * @param threadId Id of thread for transaction.
      * @return Transaction for thread with given ID.
      */
     @SuppressWarnings({"unchecked"})
     private <T> T tx(GridCacheContext cctx, long threadId) {
-        if (cctx == null || !cctx.system())
+        if (cctx == null || !cctx.systemTx())
             return (T)threadMap.get(threadId);
 
         TxThreadKey key = new TxThreadKey(threadId, cctx.cacheId());
