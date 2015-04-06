@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.nodevalidation;
 import org.apache.ignite.internal.processors.*;
 
 /**
- * Node Version Validation.
+ * Node validation.
  */
 public interface DiscoveryNodeValidationProcessor extends GridProcessor {
     //No-op.

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
@@ -27,7 +26,6 @@ import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
 
 /**
  * Node validation.
