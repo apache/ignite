@@ -481,7 +481,18 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             data.tableName = "T___";
             data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
             data.create = true;
-            data.columns = generateColumnsFromQuery((Query)ses.prepare(qry.query(), false));
+
+            Query prepare = (Query)ses.prepare(qry.query(), false);
+
+            List<Parameter> parsedParams = prepare.getParameters();
+
+            for (int i = Math.min(parsedParams.size(), qry.parameters().length); --i >= 0; ) {
+                Object val = qry.parameters()[i];
+
+                parsedParams.get(i).setValue(DataType.convertToValue(ses, val, Value.UNKNOWN));
+            }
+
+            data.columns = generateColumnsFromQuery(prepare);
 
             return new GridMergeTable(data);
         }

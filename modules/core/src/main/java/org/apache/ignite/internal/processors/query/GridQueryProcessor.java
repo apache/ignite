@@ -402,7 +402,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id;
 
-            if (ctx.cacheObjects().isPortableObject(val)) {
+            boolean portableVal = ctx.cacheObjects().isPortableObject(val);
+
+            if (portableVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
 
                 id = new TypeId(space, typeId);
@@ -415,12 +417,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null || !desc.registered())
                 return;
 
-            if (!desc.valueClass().isAssignableFrom(valCls))
+            if (!portableVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!desc.keyClass().isAssignableFrom(key.getClass()))
+            if (!ctx.cacheObjects().isPortableObject(key) && !desc.keyClass().isAssignableFrom(key.getClass()))
                 throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
                     desc.keyClass().getName() + ", actualCls=" + key.getClass().getName() + "]");
 

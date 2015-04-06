@@ -31,7 +31,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -107,6 +106,8 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
 
+        cc.setNearConfiguration(nearCacheConfiguration());
+
         c.setCacheConfiguration(cc);
 
         return c;
@@ -115,8 +116,8 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @return Distribution mode.
      */
-    protected CacheDistributionMode mode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearCacheConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /**
@@ -308,7 +309,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      */
     public void testMultipleOperations() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
-        //GridCache<Integer, String> cache = cache(0);
 
         try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
