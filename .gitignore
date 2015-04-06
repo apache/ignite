@@ -17,6 +17,6 @@ xcuserdata/
 atlassian-ide-plugin.xml
 *.iml
 target
-target/*
 /libs/
 pom-installed.xml
+git-patch-prop-local.sh
