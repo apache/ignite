@@ -494,6 +494,7 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <failOnError>false</failOnError>
                             <fileSets>
                                 <fileSet>
                                     <directory>target</directory>
@@ -522,6 +523,7 @@
                                 </goals>
                                 <phase>deploy</phase>
                                 <configuration>
+                                    <failOnError>false</failOnError>
                                     <target>
                                         <zip destfile="${basedir}/target/sources-pack-${project.version}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target" prefix="sources-pack-${project.version}">
