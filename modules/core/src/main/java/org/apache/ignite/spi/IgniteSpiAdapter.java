@@ -357,6 +357,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
+     * @return {@code True} if node is stopping.
+     */
+    protected final boolean isNodeStopping() {
+        return spiCtx.isStopping();
+    }
+
+    /**
      * @return {@code true} if this check is optional.
      */
     private boolean checkOptional() {
