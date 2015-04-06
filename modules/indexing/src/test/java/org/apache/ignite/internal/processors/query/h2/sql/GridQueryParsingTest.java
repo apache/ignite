@@ -172,6 +172,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select count(*) as a from Person");
         checkQuery("select count(*) as a, count(p.*), count(p.name) from Person p");
         checkQuery("select count(distinct p.name) from Person p");
+        checkQuery("select name, count(*) cnt from Person group by name order by cnt desc limit 10");
 
         checkQuery("select p.name, avg(p.old), max(p.old) from Person p group by p.name");
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name");
