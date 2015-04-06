@@ -508,7 +508,7 @@
                             <failOnError>false</failOnError>
                             <fileSets>
                                 <fileSet>
-                                    <directory>target</directory>
+                                    <directory>${basedir}/target</directory>
                                     <includes>
                                         <include>${project.artifactId}-${project.version}-source-release.zip</include>
                                     </includes>
