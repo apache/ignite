@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.springframework.beans.*;
@@ -32,7 +31,6 @@ import org.yardstickframework.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
@@ -74,11 +72,14 @@ public class IgniteNode implements BenchmarkServer {
         for (CacheConfiguration cc : c.getCacheConfiguration()) {
             // IgniteNode can not run in CLIENT_ONLY mode,
             // except the case when it's used inside IgniteAbstractBenchmark.
-            CacheDistributionMode distroMode = args.distributionMode() == CLIENT_ONLY && !clientMode ?
-                PARTITIONED_ONLY : args.distributionMode();
+            boolean cl = args.isClientOnly() && !args.isNearCache() && !clientMode ?
+                false : args.isClientOnly();
 
-            if (distroMode == CLIENT_ONLY)
+            if (cl)
                 c.setClientMode(true);
+
+            if (args.isNearCache())
+                cc.setNearConfiguration(new NearCacheConfiguration());
 
             cc.setWriteSynchronizationMode(args.syncMode());
 

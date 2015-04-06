@@ -75,8 +75,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
@@ -100,16 +99,14 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(nodeCount());
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
 
@@ -124,8 +121,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         int threadNum = 20;
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 CacheConfiguration ccfg = new CacheConfiguration();
 
                 ccfg.setName(DYNAMIC_CACHE_NAME);
@@ -184,8 +180,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         int threadNum = 20;
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 CacheConfiguration ccfg = new CacheConfiguration();
 
                 ccfg.setName(DYNAMIC_CACHE_NAME);
@@ -254,6 +249,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param mode Cache atomicity mode.
      * @throws Exception If failed.
      */
     private void checkStartStopCacheSimple(CacheAtomicityMode mode) throws Exception {
@@ -300,15 +296,13 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 f.get();
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     return kernal0.cache(DYNAMIC_CACHE_NAME);
                 }
             }, IllegalArgumentException.class, null);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     return caches[idx].get("1");
                 }
             }, IllegalStateException.class, null);
@@ -360,13 +354,13 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                     f.get();
 
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         return kernal0.cache(DYNAMIC_CACHE_NAME);
                     }
                 }, IllegalArgumentException.class, null);
             }
-        } finally {
+        }
+        finally {
             stopGrid(nodeCount() + 1);
             stopGrid(nodeCount());
         }
@@ -423,8 +417,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                     assertNotNull(grid(g).cache(DYNAMIC_CACHE_NAME));
                 else
                     GridTestUtils.assertThrows(log, new Callable<Object>() {
-                        @Override
-                        public Object call() throws Exception {
+                        @Override public Object call() throws Exception {
                             return kernal0.getCache(DYNAMIC_CACHE_NAME);
                         }
                     }, IllegalArgumentException.class, null);
@@ -434,7 +427,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             stopGrid(nodeCount() + 1);
             stopGrid(nodeCount());
-        } finally {
+        }
+        finally {
             testAttribute = true;
         }
     }
@@ -444,8 +438,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
      */
     public void testFailWhenConfiguredCacheExists() throws Exception {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 final Ignite kernal = grid(0);
 
                 CacheConfiguration ccfg = new CacheConfiguration();
@@ -482,8 +475,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             kernal.createCache(ccfg);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     IgniteKernal ignite = (IgniteKernal) grid(nodeCount());
 
                     return ignite.getCache(DYNAMIC_CACHE_NAME);
@@ -499,7 +491,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", ignite(g).cache(DYNAMIC_CACHE_NAME).get("1"));
 
             kernal.context().cache().dynamicStopCache(DYNAMIC_CACHE_NAME).get();
-        } finally {
+        }
+        finally {
             stopGrid(nodeCount());
         }
     }
@@ -540,7 +533,8 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", ignite(g).cache(DYNAMIC_CACHE_NAME).get("1"));
 
             kernal.context().cache().dynamicStopCache(DYNAMIC_CACHE_NAME).get();
-        } finally {
+        }
+        finally {
             stopGrid(nodeCount());
         }
     }
@@ -810,6 +804,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param nearOnly Near only flag.
      * @throws Exception If failed.
      */
     public void checkGetOrCreateNear(final boolean nearOnly) throws Exception {

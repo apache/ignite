@@ -19,7 +19,6 @@ package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.transactions.*;
 
@@ -44,8 +43,12 @@ public class IgniteBenchmarkArguments {
     private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
     /** */
-    @Parameter(names = {"-dm", "--distroMode"}, description = "Distribution mode")
-    private CacheDistributionMode distroMode = CacheDistributionMode.PARTITIONED_ONLY;
+    @Parameter(names = {"-cl", "--client"}, description = "Client flag")
+    private boolean clientOnly = false;
+
+    /** */
+    @Parameter(names = {"-nc", "--nearCache"}, description = "Near cache flag")
+    private boolean nearCacheFlag = false;
 
     /** */
     @Parameter(names = {"-wom", "--writeOrderMode"}, description = "Write ordering mode")
@@ -126,8 +129,15 @@ public class IgniteBenchmarkArguments {
     /**
      * @return Distribution.
      */
-    public CacheDistributionMode distributionMode() {
-        return distroMode;
+    public boolean isClientOnly() {
+        return clientOnly;
+    }
+
+    /**
+     * @return Near cache flag.
+     */
+    public boolean isNearCache() {
+        return nearCacheFlag;
     }
 
     /**
@@ -225,7 +235,7 @@ public class IgniteBenchmarkArguments {
      * @return Description.
      */
     public String description() {
-        return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-dm=" + distroMode +
+        return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
             (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency;
     }
 
