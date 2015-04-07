@@ -32,7 +32,7 @@ import java.util.*;
  */
 @GridInternal
 public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiTuple<Boolean, Collection<String>>,
-    Iterable<VisorCacheAggregatedMetrics>, Map<String, VisorCacheMetrics>> {
+    Iterable<VisorCacheAggregatedMetrics>, Map<String, IgniteBiTuple<Boolean, VisorCacheMetrics>>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,18 +47,23 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
         for (ComputeJobResult res : results) {
             if (res.getException() == null && res.getData() instanceof Map<?, ?>) {
-                Map<String, VisorCacheMetrics> cms = res.getData();
+                Map<String, IgniteBiTuple<Boolean, VisorCacheMetrics>> cms = res.getData();
 
-                for (Map.Entry<String, VisorCacheMetrics> entry : cms.entrySet()) {
+                for (Map.Entry<String, IgniteBiTuple<Boolean, VisorCacheMetrics>> entry : cms.entrySet()) {
                     VisorCacheAggregatedMetrics am = grpAggrMetrics.get(entry.getKey());
 
                     if (am == null) {
-                        am = new VisorCacheAggregatedMetrics(entry.getKey());
+                        String cacheName = entry.getKey();
+
+                        GridCacheProcessor proc = ignite.context().cache();
+
+                        am = new VisorCacheAggregatedMetrics(cacheName, proc.cacheMode(cacheName),
+                            entry.getValue().get1());
 
                         grpAggrMetrics.put(entry.getKey(), am);
                     }
 
-                    am.metrics().put(res.getNode().id(), entry.getValue());
+                    am.metrics().put(res.getNode().id(), entry.getValue().get2());
                 }
             }
         }
@@ -71,7 +76,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
      * Job that collect cache metrics from node.
      */
     private static class VisorCacheMetricsCollectorJob
-        extends VisorJob<IgniteBiTuple<Boolean, Collection<String>>, Map<String, VisorCacheMetrics>> {
+        extends VisorJob<IgniteBiTuple<Boolean, Collection<String>>, Map<String, IgniteBiTuple<Boolean, VisorCacheMetrics>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -86,7 +91,8 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, VisorCacheMetrics> run(final IgniteBiTuple<Boolean, Collection<String>> arg) {
+        @Override protected Map<String, IgniteBiTuple<Boolean, VisorCacheMetrics>> run(
+            final IgniteBiTuple<Boolean, Collection<String>> arg) {
             assert arg != null;
 
             Boolean showSysCaches = arg.get1();
@@ -101,7 +107,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
             Collection<GridCacheAdapter<?, ?>> caches = cacheProcessor.internalCaches();
 
-            Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
+            Map<String, IgniteBiTuple<Boolean, VisorCacheMetrics>> res = U.newHashMap(caches.size());
 
             boolean allCaches = cacheNames.isEmpty();
 
@@ -110,7 +116,8 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
                     String name = ca.name();
 
                     if ((showSysCaches && cacheProcessor.systemCache(name)) || allCaches || cacheNames.contains(name))
-                        res.put(name, VisorCacheMetrics.from(ca));
+                        res.put(name, new IgniteBiTuple<Boolean, VisorCacheMetrics>(
+                            ignite.context().cache().systemCache(name), VisorCacheMetrics.from(ca)));
                 }
             }
 

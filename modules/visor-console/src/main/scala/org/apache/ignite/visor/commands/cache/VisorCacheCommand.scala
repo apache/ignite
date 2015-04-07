@@ -30,8 +30,7 @@ import org.apache.ignite.visor.visor._
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
-import java.util.{ArrayList => JavaList, Collection => JavaCollection}
-import java.util.UUID
+import java.util.{ArrayList => JavaList, Collection => JavaCollection, UUID}
 
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
@@ -259,9 +258,13 @@ class VisorCacheCommand {
                 flags.exists(hasArgFlag(_, argLst))
             }
 
+            // Get cache stats data from all nodes.
+            val aggrData = cacheData(node, cacheName, showSystem)
+
             if (hasArgFlagIn("clear", "swap", "scan", "stop")) {
                 if (cacheName.isEmpty)
-                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop")) match {
+                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "swap", "stop"),
+                        aggrData) match {
                         case Some(name) =>
                             argLst = argLst ++ Seq("c" -> name)
 
@@ -274,7 +277,7 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (!CU.isSystemCache(name)) {
+                        if (!aggrData.exists(cache => cache.cacheName() == name && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
                             else if (hasArgFlag("swap", argLst))
@@ -304,9 +307,6 @@ class VisorCacheCommand {
             if (sortType.isDefined && !isValidSortType(sortType.get))
                 scold("Invalid '-s' argument in: " + args).^^
 
-            // Get cache stats data from all nodes.
-            val aggrData = cacheData(node, cacheName, showSystem)
-
             if (aggrData.isEmpty)
                 scold("No caches found.").^^
 
@@ -314,7 +314,7 @@ class VisorCacheCommand {
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -323,6 +323,7 @@ class VisorCacheCommand {
 
                     sumT += (
                         mkCacheName(ad.cacheName),
+                        ad.cacheMode(),
                         ad.nodes,
                         (
                             "min: " + ad.minimumSize,
@@ -598,12 +599,10 @@ class VisorCacheCommand {
      * @param showSystem Allow selection of system caches.
      * @return `Option` for ID of selected cache.
      */
-    def askForCache(title: String, node: Option[ClusterNode], showSystem: Boolean = false): Option[String] = {
+    def askForCache(title: String, node: Option[ClusterNode], showSystem: Boolean = false,
+        aggrData: Seq[VisorCacheAggregatedMetrics]): Option[String] = {
         assert(title != null)
         assert(visor.visor.isConnected)
-
-        // Get cache stats data from all nodes.
-        val aggrData = cacheData(node, None, showSystem)
 
         if (aggrData.isEmpty)
             scold("No caches found.").^^
@@ -614,7 +613,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Nodes", "Size")
+        sumT #= ("#", "Name(@)", "Mode", "Nodes", "Size")
 
         (0 until sortedAggrData.size) foreach (i => {
             val ad = sortedAggrData(i)
@@ -625,6 +624,7 @@ class VisorCacheCommand {
             sumT += (
                 i,
                 mkCacheName(ad.cacheName),
+                ad.cacheMode(),
                 ad.nodes,
                 (
                     "min: " + ad.minimumSize,

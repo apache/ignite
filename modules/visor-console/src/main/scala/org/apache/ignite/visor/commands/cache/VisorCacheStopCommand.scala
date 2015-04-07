@@ -19,9 +19,9 @@ package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.visor.visor._
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 /**
  * ==Overview==
@@ -105,21 +105,31 @@ class VisorCacheStopCommand {
             return
         }
 
-        val stopPrj = cachePrj.forRandom()
+        ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [n]: ", "n") match {
+            case "y" | "Y" =>
+                val stopPrj = cachePrj.forRandom()
 
-        val nid = stopPrj.node().id()
+                val nid = stopPrj.node().id()
 
-        try {
-            ignite.compute(stopPrj)
-                .withName("visor-cstop-task")
-                .withNoFailover()
-                .execute(classOf[VisorCacheStopTask], toTaskArgument(nid, cacheName))
+                try {
+                    ignite.compute(stopPrj)
+                        .withName("visor-cstop-task")
+                        .withNoFailover()
+                        .execute(classOf[VisorCacheStopTask], toTaskArgument(nid, cacheName))
 
-            println("Visor successfully stop cache: " + escapeName(cacheName))
-        }
-        catch {
-            case e: Exception =>
-                error(e)
+                    println("Visor successfully stop cache: " + escapeName(cacheName))
+                }
+                catch {
+                    case e: Exception =>
+                        error(e)
+                }
+
+            case "n" | "N" =>
+
+            case x =>
+                nl()
+
+                warn("Invalid answer: " + x)
         }
     }
 }
