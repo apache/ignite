@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.h2.jdbc.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
@@ -89,7 +90,7 @@ public class GridSqlQuerySplitter {
 
             int c = 0;
 
-            for (GridSqlElement expr : left.select()) {
+            for (GridSqlElement expr : left.select(true)) {
                 String colName;
 
                 if (expr instanceof GridSqlAlias)
@@ -102,11 +103,12 @@ public class GridSqlQuerySplitter {
                     expr = alias(colName, expr);
 
                     // Set generated alias to the expression.
-                    left.select().set(c, expr);
-                    left.allExpressions().set(c, expr);
+                    left.setSelectExpression(c, expr);
                 }
 
-                srcQry.addSelectExpression(column(colName));
+                GridSqlColumn col = column(colName);
+
+                srcQry.addSelectExpression(col, true);
 
                 qry0.sort();
 
@@ -126,8 +128,8 @@ public class GridSqlQuerySplitter {
         GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
-        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.select().size()];
+        List<GridSqlElement> mapExps = F.addAll(new ArrayList<GridSqlElement>(), srcQry.select(false).iterator());
+        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.visibleColumns()];
 
         Set<String> colNames = new HashSet<>();
 
@@ -140,13 +142,13 @@ public class GridSqlQuerySplitter {
         mapQry.clearSelect();
 
         for (GridSqlElement exp : mapExps)
-            mapQry.addSelectExpression(exp);
+            mapQry.addSelectExpression(exp, true);
 
         for (GridSqlElement rdcExp : rdcExps)
-            rdcQry.addSelectExpression(rdcExp);
+            rdcQry.addSelectExpression(rdcExp, true);
 
         // -- GROUP BY
-        if (!srcQry.groups().isEmpty()) {
+        if (srcQry.hasGroupBy()) {
             mapQry.clearGroups();
 
             for (int col : srcQry.groupColumns())
@@ -219,6 +221,9 @@ public class GridSqlQuerySplitter {
         findParams(union.left(), params, target);
         findParams(union.right(), params, target);
 
+        findParams(qry.limit(), params, target);
+        findParams(qry.offset(), params, target);
+
         return target;
     }
 
@@ -232,7 +237,7 @@ public class GridSqlQuerySplitter {
         if (params.length == 0)
             return target;
 
-        for (GridSqlElement el : qry.allExpressions())
+        for (GridSqlElement el : qry.select(false))
             findParams(el, params, target);
 
         findParams(qry.from(), params, target);

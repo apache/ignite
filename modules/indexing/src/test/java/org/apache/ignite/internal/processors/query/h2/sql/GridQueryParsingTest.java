@@ -208,6 +208,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select name from Person UNION select street from Address limit ?");
         checkQuery("select name from Person UNION select street from Address limit ? offset ?");
         checkQuery("(select name from Person limit 4) UNION (select street from Address limit 1) limit ? offset ?");
+        checkQuery("(select 2 a) union all (select 1) order by 1");
+        checkQuery("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
     }
 
     /**
@@ -282,9 +284,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         else
             throw new UnsupportedOperationException();
 
-        assertSqlEquals(prepared.getPlanSQL(), res);
-
         System.out.println(normalizeSql(res));
+
+        assertSqlEquals(prepared.getPlanSQL(), res);
     }
 
     @QuerySqlFunction

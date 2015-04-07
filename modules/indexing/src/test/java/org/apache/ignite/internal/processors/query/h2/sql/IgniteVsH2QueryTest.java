@@ -526,7 +526,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleReplSelect() throws Exception {
+    public void _testSimpleReplSelect() throws Exception {
         compareQueryRes0("select id, name, price from \"repl\".Product");
     }
 
@@ -552,6 +552,21 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         // Ensure we find something.
         assertNotSame(0, rs1.size());
+    }
+
+    /**
+     *
+     */
+    public void testUnion() throws SQLException {
+        String base = "select _val v from \"part\".Person";
+
+        compareQueryRes0(base + " union all " + base);
+        compareQueryRes0(base + " union " + base);
+
+        base = "select firstName||lastName name, salary from \"part\".Person";
+
+        assertEquals(10, compareOrderedQueryRes0(base + " union all " + base + " order by salary desc").size());
+        assertEquals(5, compareOrderedQueryRes0(base + " union " + base + " order by salary desc").size());
     }
 
     /**

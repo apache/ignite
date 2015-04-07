@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.apache.ignite.*;
 import org.h2.util.*;
 
 import java.util.*;
@@ -107,11 +106,24 @@ public abstract class GridSqlQuery implements Cloneable {
     }
 
     /**
+     * @return Number of visible columns.
+     */
+    protected abstract int visibleColumns();
+
+    /**
+     * @param col Column index.
+     * @return Expression for column index.
+     */
+    protected abstract GridSqlElement expression(int col);
+
+    /**
      * @param buff Statement builder.
      */
     protected void getSortLimitSQL(StatementBuilder buff) {
         if (!sort.isEmpty()) {
             buff.append("\nORDER BY ");
+
+            int visibleCols = visibleColumns();
 
             boolean first = true;
 
@@ -123,11 +135,17 @@ public abstract class GridSqlQuery implements Cloneable {
 
                 int idx = col.column();
 
-                if (idx >= 0)
+                assert idx >= 0 : idx;
+
+                if (idx < visibleCols)
                     buff.append(idx + 1);
                 else {
-                    throw new IgniteException("Failed to generate query: " + buff);
-//                    buff.append('=').append(StringUtils.unEnclose(entry.getKey().getSQL()));
+                    GridSqlElement expr = expression(idx);
+
+                    if (expr == null) // For plain select should never be null, for union H2 itself can't parse query.
+                        throw new IllegalStateException("Failed to build query: " + buff.toString());
+
+                    buff.append('=').append(StringUtils.unEnclose(expr.getSQL()));
                 }
 
                 if (!col.asc())

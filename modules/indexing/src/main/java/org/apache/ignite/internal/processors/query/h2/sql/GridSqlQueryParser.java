@@ -270,8 +270,8 @@ public class GridSqlQueryParser {
 
         ArrayList<Expression> expressions = select.getExpressions();
 
-        for (Expression exp : expressions)
-            res.addExpression(parseExpression(exp));
+        for (int i = 0; i < expressions.size(); i++)
+            res.addSelectExpression(parseExpression(expressions.get(i)), i < select.getColumnCount());
 
         int[] grpIdx = GROUP_INDEXES.get(select);
 
@@ -289,9 +289,6 @@ public class GridSqlQueryParser {
 
             res.having(parseExpression(expressions.get(havingIdx)));
         }
-
-        for (int i = 0; i < select.getColumnCount(); i++)
-            res.addSelectExpression(parseExpression(expressions.get(i)));
 
         processSortOrder(select.getSortOrder(), res);
 

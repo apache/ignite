@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class GridSqlSelect extends GridSqlQuery {
     /** */
-    private List<GridSqlElement> allExprs;
+    private List<GridSqlElement> allExprs = new ArrayList<>();
 
     /** */
     private List<GridSqlElement> select = new ArrayList<>();
@@ -48,6 +48,16 @@ public class GridSqlSelect extends GridSqlQuery {
 
     /** */
     private int havingCol = -1;
+
+    /** {@inheritDoc} */
+    @Override public int visibleColumns() {
+        return select.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridSqlElement expression(int col) {
+        return allExprs.get(col);
+    }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
@@ -91,27 +101,11 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /**
-     * @param expression Expression.
+     * @param visibleOnly If only visible expressions needed.
+     * @return Select phrase expressions.
      */
-    public void addExpression(GridSqlElement expression) {
-        if (allExprs == null)
-            allExprs = new ArrayList<>();
-
-        allExprs.add(expression);
-    }
-
-    /**
-     * @return All expressions in select, group by, order by.
-     */
-    public List<GridSqlElement> allExpressions() {
-        return allExprs;
-    }
-
-    /**
-     * @return Expressions.
-     */
-    public List<GridSqlElement> select() {
-        return select;
+    public Iterable<GridSqlElement> select(boolean visibleOnly) {
+        return visibleOnly ? select : allExprs;
     }
 
     /**
@@ -119,23 +113,52 @@ public class GridSqlSelect extends GridSqlQuery {
      */
     public void clearSelect() {
         select = new ArrayList<>();
+        allExprs = new ArrayList<>();
     }
 
     /**
      * @param expression Expression.
+     * @param visible Expression is visible in select phrase.
      */
-    public void addSelectExpression(GridSqlElement expression) {
+    public void addSelectExpression(GridSqlElement expression, boolean visible) {
         if (expression == null)
             throw new NullPointerException();
 
-        select.add(expression);
+        if (visible) {
+            if (select.size() != allExprs.size())
+                throw new IllegalStateException("Already started adding invisible columns.");
+
+            select.add(expression);
+        }
+        else if (select.isEmpty())
+            throw new IllegalStateException("No visible columns.");
+
+        allExprs.add(expression);
+    }
+
+    /**
+     * @param colIdx Column index.
+     * @param expression Expression.
+     */
+    public void setSelectExpression(int colIdx, GridSqlElement expression) {
+        if (colIdx < select.size()) // Assuming that all the needed expressions were already added.
+            select.set(colIdx, expression);
+
+        allExprs.set(colIdx, expression);
     }
 
     /**
      * @return Expressions.
      */
-    public List<GridSqlElement> groups() {
+    public Iterable<GridSqlElement> groups() {
         return groups;
+    }
+
+    /**
+     * @return {@code true} If the select has group by expression.
+     */
+    public boolean hasGroupBy() {
+        return !groups.isEmpty();
     }
 
     /**
@@ -252,7 +275,7 @@ public class GridSqlSelect extends GridSqlQuery {
         res.groups = new ArrayList<>(groups);
         res.grpCols =  grpCols == null ? null : grpCols.clone();
         res.select = new ArrayList<>(select);
-        res.allExprs = null;
+        res.allExprs = new ArrayList<>(allExprs);
 
         return res;
     }

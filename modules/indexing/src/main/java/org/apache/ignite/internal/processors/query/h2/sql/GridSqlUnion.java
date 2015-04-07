@@ -36,6 +36,16 @@ public class GridSqlUnion extends GridSqlQuery {
     private GridSqlQuery left;
 
     /** {@inheritDoc} */
+    @Override protected int visibleColumns() {
+        return left.visibleColumns();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridSqlElement expression(int col) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder();
 
