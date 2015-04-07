@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming.numbers;
+package org.apache.ignite.examples.java8.streaming.transformers;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
-import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -29,13 +30,12 @@ import java.util.*;
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start streaming using {@link StreamRandomNumbers}.</li>
- *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ *     <li>Start streaming using {@link StreamTransformerExample}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class StreamRandomNumbers {
+public class StreamTransformerExample {
     /** Random number generator. */
     private static final Random RAND = new Random();
 
@@ -50,28 +50,47 @@ public class StreamRandomNumbers {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
+            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
 
-            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                // Allow data updates.
-                stmr.allowOverwrite(true);
+            // Index key and value.
+            cfg.setIndexedTypes(Integer.class, Long.class);
 
-                // Configure data transformation to count instances of the same number.
-                stmr.receiver(new StreamTransformer<Integer, Long>() {
-                    @Override public Object process(MutableEntry<Integer, Long> e, Object... objects)
-                        throws EntryProcessorException {
+            // Auto-close cache at the end of the example.
+            try (IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(cfg)) {
+                try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
+                    // Allow data updates.
+                    stmr.allowOverwrite(true);
+
+                    // Configure data transformation to count instances of the same number.
+                    stmr.receiver(StreamTransformer.from((e, arg) -> {
+                        // Get current count.
                         Long val = e.getValue();
 
+                        // Increment count by 1.
                         e.setValue(val == null ? 1L : val + 1);
 
                         return null;
-                    }
-                });
+                    }));
 
-                // Stream random numbers into the streamer cache.
-                while (true)
-                    stmr.addData(RAND.nextInt(RANGE), 1L);
+                    // Stream 10 million of random numbers into the streamer cache.
+                    for (int i = 1; i <= 10_000_000; i++) {
+                        stmr.addData(RAND.nextInt(RANGE), 1L);
+
+                        if (i % 500_000 == 0)
+                            System.out.println("Number of tuples streamed into Ignite: " + i);
+                    }
+                }
+
+                // Query top 10 most popular numbers every.
+                SqlFieldsQuery top10Qry = new SqlFieldsQuery("select _key, _val from Long order by _val desc limit 10");
+
+                // Execute queries.
+                List<List<?>> top10 = stmCache.query(top10Qry).getAll();
+
+                System.out.println("Top 10 most popular numbers:");
+
+                // Print top 10 words.
+                ExamplesUtils.printQueryResults(top10);
             }
         }
     }
