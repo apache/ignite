@@ -160,8 +160,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param obj Value.
-     * @return {@code True} if object is of known immutable type of it is marked
-     *          with {@link IgniteImmutable} annotation.
+     * @return {@code True} if object is of known immutable type.
      */
     public boolean immutable(Object obj);
 }
