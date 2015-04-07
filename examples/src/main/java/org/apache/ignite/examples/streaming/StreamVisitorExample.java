@@ -152,7 +152,7 @@ public class StreamVisitorExample {
         /**
          * @param symbol Symbol.
          */
-        Instrument(String symbol) {
+        public Instrument(String symbol) {
             this.symbol = symbol;
         }
 
@@ -166,11 +166,6 @@ public class StreamVisitorExample {
                 open = price;
 
             this.latest = price;
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized String toString() {
-            return "Instrument [symbol=" + symbol + ", latest=" + latest + ", change=" + (latest - open) + ']';
         }
     }
 }
