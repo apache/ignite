@@ -88,13 +88,6 @@ public interface IgniteEx extends Ignite {
     public boolean allEventsUserRecordable(int[] types);
 
     /**
-     * Gets list of compatible versions.
-     *
-     * @return Compatible versions.
-     */
-    public Collection<String> compatibleVersions();
-
-    /**
      * Whether or not remote JMX management is enabled for this node.
      *
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.

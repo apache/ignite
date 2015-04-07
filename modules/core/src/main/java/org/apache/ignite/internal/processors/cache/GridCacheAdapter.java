@@ -1792,7 +1792,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return new GridFinishedFuture<>(e);
             }
 
-            tx = ctx.tm().threadLocalTx(ctx.system() ? ctx : null);
+            tx = ctx.tm().threadLocalTx(ctx.systemTx() ? ctx : null);
         }
 
         if (tx == null || tx.implicit()) {
@@ -4145,7 +4145,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
-                ctx.system() ? ctx : null,
+                ctx.systemTx() ? ctx : null,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
@@ -4216,7 +4216,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             tx = ctx.tm().newTx(
                 true,
                 op.single(),
-                ctx.system() ? ctx : null,
+                ctx.systemTx() ? ctx : null,
                 OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),

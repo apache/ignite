@@ -74,6 +74,8 @@ public class IgniteIgfsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgfsGroupDataBlockKeyMapperHashSelfTest.class);
 
+        suite.addTestSuite(IgfsStartCacheTest.class);
+
         return suite;
     }
 }

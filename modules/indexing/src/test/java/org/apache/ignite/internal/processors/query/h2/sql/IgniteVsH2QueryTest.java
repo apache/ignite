@@ -538,6 +538,13 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws SQLException If failed.
+     */
+    public void testAggregateOrderBy() throws SQLException {
+        compareOrderedQueryRes0("select firstName name, count(*) cnt from \"part\".Person group by name order by cnt desc");
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testNullParamSubstitution() throws Exception {

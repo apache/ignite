@@ -63,6 +63,9 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
     /** Evict near sync. */
     protected boolean evictNearSync = true;
 
+    /** Policy batch size. */
+    protected int plcBatchSize = 0;
+
     /** Policy max. */
     protected int plcMax = 10;
 
@@ -338,7 +341,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
                     int actual = colocated(i).size();
 
                     assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
-                        actual <= endSize);
+                        actual <= endSize + plcBatchSize);
                 }
 
                 checkPolicies(endPlcSize);
