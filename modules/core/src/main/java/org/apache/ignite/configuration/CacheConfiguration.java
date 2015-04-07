@@ -1415,11 +1415,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets flag indicating whether copy of of the value stored in cache should be created
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
-     * <p>
-     * Copies are not created for immutable types, see {@link IgniteImmutable}.
      *
      * @return Copy on get flag.
-     * @see IgniteImmutable
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
