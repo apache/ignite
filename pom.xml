@@ -155,7 +155,7 @@
                                 <configuration>
                                     <target>
                                         <copy todir="${basedir}/libs">
-                                            <fileset dir="${basedir}/target/release-package/libs"/>
+                                            <fileset dir="${basedir}/target/release-package/libs" />
                                         </copy>
                                     </target>
                                 </configuration>
@@ -544,11 +544,11 @@
                                                 <include name="${project.artifactId}-${project.version}-source-release.zip.sha1" />
                                             </zipfileset>
                                         </zip>
-                                        <mkdir dir="${basedir}/target/site"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip" todir="${basedir}/target/site"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc" todir="${basedir}/target/site"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5" todir="${basedir}/target/site"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1" todir="${basedir}/target/site"/>
+                                        <mkdir dir="${basedir}/target/site" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip" todir="${basedir}/target/site" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc" todir="${basedir}/target/site" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5" todir="${basedir}/target/site" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1" todir="${basedir}/target/site" />
                                     </target>
                                 </configuration>
                             </execution>

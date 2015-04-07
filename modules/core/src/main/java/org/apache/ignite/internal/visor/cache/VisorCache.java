@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -46,6 +47,9 @@ public class VisorCache implements Serializable {
 
     /** Cache name. */
     private String name;
+
+    /** Cache deployment ID. */
+    private IgniteUuid dynamicDeploymentId;
 
     /** Cache mode. */
     private CacheMode mode;
@@ -97,12 +101,12 @@ public class VisorCache implements Serializable {
      * @param cacheName Cache name.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed to create data transfer object.
      */
-    public static VisorCache from(Ignite ignite, String cacheName, int sample) throws IgniteCheckedException {
+    public static VisorCache from(IgniteEx ignite, String cacheName, int sample) throws IgniteCheckedException {
         assert ignite != null;
 
-        GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
+        GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
 
         // Cache was not started.
         if (ca == null || !ca.context().started())
@@ -127,7 +131,6 @@ public class VisorCache implements Serializable {
         CacheConfiguration cfg = ca.configuration();
 
         CacheMode mode = cfg.getCacheMode();
-
 
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
             && ca.context().affinityNode();
@@ -213,6 +216,7 @@ public class VisorCache implements Serializable {
         VisorCache cache = new VisorCache();
 
         cache.name = cacheName;
+        cache.dynamicDeploymentId = ca.context().dynamicDeploymentId();
         cache.mode = mode;
         cache.memorySize = memSz;
         cache.size = size;
@@ -262,6 +266,13 @@ public class VisorCache implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * @return Dynamic deployment ID.
+     */
+    public IgniteUuid dynamicDeploymentId() {
+        return dynamicDeploymentId;
     }
 
     /**
