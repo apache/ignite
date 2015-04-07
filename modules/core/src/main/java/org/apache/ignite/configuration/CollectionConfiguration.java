@@ -30,6 +30,9 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Configuration for Ignite collections.
  */
 public class CollectionConfiguration implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode = ATOMIC;
 
