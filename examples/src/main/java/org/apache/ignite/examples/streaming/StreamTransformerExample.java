@@ -62,7 +62,7 @@ public class StreamTransformerExample {
                     // Allow data updates.
                     stmr.allowOverwrite(true);
 
-                    // Configure data transformation to count instances of the same number.
+                    // Configure data transformation to count random numbers added to the stream.
                     stmr.receiver(new StreamTransformer<Integer, Long>() {
                         @Override
                         public Object process(MutableEntry<Integer, Long> e, Object... args) {
