@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
@@ -163,6 +164,19 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         checkGetOrCreate(ignite1, "org.apache.ignite", 6);
         checkGetOrCreate(ignite2, "org.apache.ignite", 6);
         checkGetOrCreate(ignite3, "org.apache.ignite", 6);
+
+        // Test name '*'.
+        CacheConfiguration template3 = new CacheConfiguration();
+
+        template3.setName("*");
+        template3.setBackups(7);
+
+        ignite1.addCacheConfiguration(template3);
+
+        checkGetOrCreate(ignite0, "x", 7);
+        checkGetOrCreate(ignite1, "x", 7);
+        checkGetOrCreate(ignite2, "x", 7);
+        checkGetOrCreate(ignite3, "x", 7);
     }
 
     /**
@@ -189,6 +203,53 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
 
         checkGetOrCreate(ignite0, "org.apache.ignite1", 3);
         checkGetOrCreate(ignite0, "org.apache.ignite1", 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddCacheConfigurationMultinode() throws Exception {
+        addTemplate = true;
+
+        final int GRID_CNT = 3;
+
+        startGridsMultiThreaded(GRID_CNT);
+
+        for (int i = 0; i < 10; i++) {
+            log.info("Iteration: " + i);
+
+            final AtomicInteger idx = new AtomicInteger();
+
+            final int iter = i;
+
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    int node = idx.getAndIncrement() % GRID_CNT;
+
+                    Ignite ignite = grid(node);
+
+                    log.info("Add configuration using node: " + ignite.name());
+
+                    CacheConfiguration cfg = new CacheConfiguration();
+
+                    cfg.setName("org.apache.ignite" + iter + "*");
+
+                    cfg.setBackups(iter);
+
+                    for (int i = 0; i < 100; i++)
+                        ignite.addCacheConfiguration(cfg);
+
+                    return null;
+                }
+            }, 15, "add-configuration");
+
+            for (int grid = 0; grid < GRID_CNT; grid++)
+                checkGetOrCreate(grid(grid), "org.apache.ignite" + iter, iter);
+        }
+
+        Ignite ignite = startGrid(GRID_CNT);
+
+        checkGetOrCreate(ignite, "org.apache.ignite3", 3);
     }
 
     /**
