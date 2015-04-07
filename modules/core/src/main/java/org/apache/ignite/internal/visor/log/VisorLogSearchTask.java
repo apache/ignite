@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.log;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -213,7 +212,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
             URL url = U.resolveIgniteUrl(arg.folder);
 
             if (url == null)
-                throw U.convertException(new GridInternalException(new FileNotFoundException("Log folder not found: " + arg.folder)));
+                throw new IgniteException(new FileNotFoundException("Log folder not found: " + arg.folder));
 
             UUID uuid = ignite.localNode().id();
             String nid = uuid.toString().toLowerCase();
