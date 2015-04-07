@@ -31,9 +31,13 @@
     </parent>
 
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite</artifactId>
+    <artifactId>incubator-ignite</artifactId>
     <version>1.0.1-RC1-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <ignite.site>scp://localhost:/home</ignite.site>
+    </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
@@ -41,6 +45,13 @@
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+        <site>
+            <id>ignite-site</id>
+            <url>${ignite.site}/${project.artifactId}-${project.version}</url>
+        </site>
+    </distributionManagement>
 
     <modules>
         <module>modules/tools</module>
@@ -499,7 +510,7 @@
                                 <fileSet>
                                     <directory>${basedir}/target</directory>
                                     <includes>
-                                        <include>ignite-${project.version}-source-release.zip</include>
+                                        <include>${project.artifactId}-${project.version}-source-release.zip</include>
                                     </includes>
                                 </fileSet>
                             </fileSets>
@@ -527,13 +538,49 @@
                                     <target>
                                         <zip destfile="${basedir}/target/sources-pack-${project.version}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target" prefix="sources-pack-${project.version}">
-                                                <include name="ignite-${project.version}-source-release.zip" />
-                                                <include name="ignite-${project.version}-source-release.zip.asc" />
-                                                <include name="ignite-${project.version}-source-release.zip.md5" />
-                                                <include name="ignite-${project.version}-source-release.zip.sha1" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip.asc" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip.md5" />
+                                                <include name="${project.artifactId}-${project.version}-source-release.zip.sha1" />
                                             </zipfileset>
                                         </zip>
+                                        <mkdir dir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip" todir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc" todir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5" todir="${basedir}/target/site"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1" todir="${basedir}/target/site"/>
                                     </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>deploy-site</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-site-plugin</artifactId>
+                        <version>3.4</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.wagon</groupId>
+                                <artifactId>wagon-ssh</artifactId>
+                                <version>2.8</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <inputDirectory>${basedir}/target/site</inputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
