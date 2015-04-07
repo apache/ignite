@@ -47,7 +47,7 @@ import org.h2.value.*;
 import org.jsr166.*;
 
 import javax.cache.*;
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
