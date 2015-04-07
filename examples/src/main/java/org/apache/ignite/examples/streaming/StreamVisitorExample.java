@@ -157,7 +157,7 @@ public class StreamVisitorExample {
         }
 
         /**
-         * Updates this instrument based on the latest price.
+         * Updates this instrument based on the latest market tick price.
          *
          * @param price Latest price.
          */
