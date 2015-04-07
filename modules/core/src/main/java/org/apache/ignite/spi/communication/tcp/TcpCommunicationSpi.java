@@ -591,9 +591,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Local port range. */
     private int locPortRange = DFLT_PORT_RANGE;
 
-    /** Grid name. */
-    private String gridName;
-
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf = true;
 
@@ -742,10 +739,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
+        super.injectResources(ignite);
+
         if (ignite != null) {
             setAddressResolver(ignite.configuration().getAddressResolver());
             setLocalAddress(ignite.configuration().getLocalHost());
-            gridName = ignite.name();
         }
     }
 
@@ -1189,7 +1187,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-        nodeIdMsg = new NodeIdMessage(ignite.configuration().getNodeId());
+        nodeIdMsg = new NodeIdMessage(getLocalNodeId());
 
         assertParameter(locPort > 1023, "locPort > 1023");
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
@@ -1557,7 +1555,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (log.isTraceEnabled())
             log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
 
-        UUID locNodeId = ignite.configuration().getNodeId();
+        UUID locNodeId = getLocalNodeId();
 
         if (node.id().equals(locNodeId))
             notifyListener(locNodeId, msg, NOOP);
@@ -1957,7 +1955,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
+                        HandshakeMessage msg = new HandshakeMessage(getLocalNodeId(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -2630,7 +2628,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 out.flush();
 
                 if (log.isDebugEnabled())
-                    log.debug("Sent local node ID [locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId="
+                    log.debug("Sent local node ID [locNodeId=" + getLocalNodeId() + ", rmtNodeId="
                         + rmtNodeId + ']');
             }
             catch (IOException e) {

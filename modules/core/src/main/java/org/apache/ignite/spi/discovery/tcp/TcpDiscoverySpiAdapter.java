@@ -152,6 +152,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      */
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
+        super.injectResources(ignite);
+
         // Inject resource.
         if (ignite != null)
             setLocalAddress(ignite.configuration().getLocalHost());
@@ -767,7 +769,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          *
          */
         SocketTimeoutWorker() {
-            super(ignite.name(), "tcp-disco-sock-timeout-worker", log);
+            super(gridName, "tcp-disco-sock-timeout-worker", log);
 
             setPriority(threadPri);
         }
@@ -935,7 +937,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @param name Thread name.
          */
         protected MessageWorkerAdapter(String name) {
-            super(ignite.name(), name, log);
+            super(gridName, name, log);
 
             setPriority(threadPri);
         }
@@ -943,7 +945,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
-                log.debug("Message worker started [locNodeId=" + ignite.configuration().getNodeId() + ']');
+                log.debug("Message worker started [locNodeId=" + getLocalNodeId() + ']');
 
             while (!isInterrupted()) {
                 TcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
