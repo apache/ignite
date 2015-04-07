@@ -38,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.*;
@@ -727,6 +728,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ccfg.setOffHeapMaxMemory(cfg.getOffHeapMaxMemory());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
+        ccfg.setRebalanceMode(SYNC);
 
         return ccfg;
     }
