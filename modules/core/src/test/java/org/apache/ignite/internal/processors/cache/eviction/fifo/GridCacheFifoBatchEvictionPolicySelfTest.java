@@ -381,5 +381,4 @@ public class GridCacheFifoBatchEvictionPolicySelfTest extends
         for (int i = 0; i < gridCnt; i++)
             assert policy(i).queue().size() <= plcMax + policy(i).getBatchSize();
     }
-
 }
