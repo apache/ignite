@@ -337,7 +337,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
-                    Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+                    Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
+                        ctx.processor().unmarshal(ctx, valBytes, ldr);
 
                     return new CacheObjectImpl(val, valBytes);
                 }
