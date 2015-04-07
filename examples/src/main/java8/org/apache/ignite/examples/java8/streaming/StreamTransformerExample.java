@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming.transformers;
+package org.apache.ignite.examples.java8.streaming;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.stream.*;
 
-import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -63,18 +62,15 @@ public class StreamTransformerExample {
                     stmr.allowOverwrite(true);
 
                     // Configure data transformation to count instances of the same number.
-                    stmr.receiver(new StreamTransformer<Integer, Long>() {
-                        @Override
-                        public Object process(MutableEntry<Integer, Long> e, Object... args) {
-                            // Get current count.
-                            Long val = e.getValue();
+                    stmr.receiver(StreamTransformer.from((e, arg) -> {
+                        // Get current count.
+                        Long val = e.getValue();
 
-                            // Increment count by 1.
-                            e.setValue(val == null ? 1L : val + 1);
+                        // Increment count by 1.
+                        e.setValue(val == null ? 1L : val + 1);
 
-                            return null;
-                        }
-                    });
+                        return null;
+                    }));
 
                     // Stream 10 million of random numbers into the streamer cache.
                     for (int i = 1; i <= 10_000_000; i++) {

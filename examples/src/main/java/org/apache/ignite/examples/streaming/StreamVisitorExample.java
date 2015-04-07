@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming.visitors;
+package org.apache.ignite.examples.streaming;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
