@@ -138,8 +138,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
                     assertSame(entry.getValue(), entry.getValue());
                     assertSame(entry.getKey(), entry.getKey());
 
-                    // Try change key and value.
-                    entry.getKey().field(WRONG_VALUE);
+                    // Try change value.
                     entry.getValue().val(WRONG_VALUE);
                 }
             });
@@ -161,8 +160,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
                     assertEquals(newTestVal, newVal);
 
-                    // Try change key and value.
-                    entry.getKey().field(WRONG_VALUE);
+                    // Try change value.
                     entry.getValue().val(WRONG_VALUE);
 
                     return newVal;
@@ -174,8 +172,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
                     assertSame(entry.getValue(), entry.getValue());
                     assertSame(entry.getKey(), entry.getKey());
 
-                    // Try change key and value.
-                    entry.getKey().field(WRONG_VALUE);
+                    // Try change value.
                     entry.getValue().val(WRONG_VALUE);
                 }
             });
@@ -221,7 +218,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
                 assertEquals(entry.getKey().key(), entry.getKey().field());
 
                 // Try changed entry.
-                entry.getKey().field(WRONG_VALUE);
                 entry.getValue().val(WRONG_VALUE);
 
                 return super.onBeforePut(entry, newVal);
@@ -231,7 +227,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
                 assertEquals(entry.getKey().key(), entry.getKey().field());
 
                 entry.getValue().val(WRONG_VALUE);
-                entry.getKey().field(WRONG_VALUE);
 
                 super.onAfterPut(entry);
             }
@@ -241,12 +236,10 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
             cache.invoke(new TestKey(i, i), new EntryProcessor<TestKey, TestValue, Object>() {
                 @Override public Object process(MutableEntry<TestKey, TestValue> entry, Object... arguments)
                     throws EntryProcessorException {
-                    // Check that we have correct value and key.
-                    assertEquals(entry.getKey().key(), entry.getKey().field());
+                    // Check that we have correct value.
                     assertEquals(entry.getKey().key(), entry.getValue().val());
 
                     // Try changed entry.
-                    entry.getKey().field(WRONG_VALUE);
                     entry.getValue().val(WRONG_VALUE);
 
                     return -1;
@@ -294,7 +287,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
 
-            assertNotSame(key0, key1);
+            assertSame(key0, key1);
 
             TestValue val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
@@ -340,7 +333,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
 
             TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
 
-            assertNotSame(key0, key1);
+            assertSame(key0, key1);
 
             byte[] val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
@@ -440,14 +433,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCacheAbstr
          */
         public int field() {
             return field;
-        }
-
-        /**
-         * *
-         * @param field Test field.
-         */
-        public void field(int field) {
-            this.field = field;
         }
 
         /** {@inheritDoc} */

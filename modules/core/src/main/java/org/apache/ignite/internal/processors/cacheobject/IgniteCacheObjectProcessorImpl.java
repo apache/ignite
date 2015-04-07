@@ -278,11 +278,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-            return super.value(ctx, false);  // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
                 if (!ctx.processor().immutable(val)) {

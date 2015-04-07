@@ -251,6 +251,15 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
                 assertNotNull("Unexpected value, node: " + g,
                     GridTestUtils.getFieldValue(keyObj, CacheObjectAdapter.class, "val"));
 
+                Object key0 = keyObj.value(cache0.context().cacheObjectContext(), true);
+                Object key1 = keyObj.value(cache0.context().cacheObjectContext(), false);
+                Object key2 = keyObj.value(cache0.context().cacheObjectContext(), true);
+                Object key3 = keyObj.value(cache0.context().cacheObjectContext(), false);
+
+                assertSame(key0, key1);
+                assertSame(key1, key2);
+                assertSame(key2, key3);
+
                 CacheObject obj = e.rawGet();
 
                 if (obj != null) {
@@ -378,6 +387,15 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
                 assertNotNull("Unexpected value, node: " + g,
                     GridTestUtils.getFieldValue(keyObj, CacheObjectAdapter.class, "val"));
+
+                Object key0 = keyObj.value(cache0.context().cacheObjectContext(), true);
+                Object key1 = keyObj.value(cache0.context().cacheObjectContext(), false);
+                Object key2 = keyObj.value(cache0.context().cacheObjectContext(), true);
+                Object key3 = keyObj.value(cache0.context().cacheObjectContext(), false);
+
+                assertSame(key0, key1);
+                assertSame(key1, key2);
+                assertSame(key2, key3);
 
                 CacheObject obj = e.rawGet();
 
