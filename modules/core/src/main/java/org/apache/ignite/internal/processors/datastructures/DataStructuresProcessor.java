@@ -53,7 +53,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /** */
     public static final CacheDataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
-            new CacheDataStructuresCacheKey();
+        new CacheDataStructuresCacheKey();
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -720,7 +720,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
-
         ccfg.setBackups(cfg.backups());
         ccfg.setCacheMode(cfg.cacheMode());
         ccfg.setMemoryMode(cfg.memoryMode());
@@ -1155,8 +1154,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable
-    private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
+    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
         return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
