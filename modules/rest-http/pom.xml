@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-rest-http</artifactId>
-    <version>1.0.1-RC1-SNAPSHOT</version>
+    <version>1.0.2-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -113,8 +113,4 @@
             <version>1.8.3</version>
         </dependency>
     </dependencies>
-
-  <scm>
-    <tag>ignite-sprint-3-release-test-branch</tag>
-  </scm>
 </project>

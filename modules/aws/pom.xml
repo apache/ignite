@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-aws</artifactId>
-    <version>1.0.1-RC1-SNAPSHOT</version>
+    <version>1.0.2-RC1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -99,8 +99,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-  <scm>
-    <tag>ignite-sprint-3-release-test-branch</tag>
-  </scm>
 </project>
