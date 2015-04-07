@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.h2.command.dml.*;
-import org.h2.message.*;
 import org.h2.util.*;
 
 import javax.cache.*;
-import java.util.*;
 
 /**
  *
@@ -39,7 +37,7 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StringBuilder buff = new StringBuilder();
+        StatementBuilder buff = new StatementBuilder();
 
         buff.append('(').append(left.getSQL()).append(')');
 
@@ -66,43 +64,7 @@ public class GridSqlUnion extends GridSqlQuery {
 
         buff.append('(').append(right.getSQL()).append(')');
 
-        if (!sort.isEmpty()) {
-            buff.append("\nORDER BY ");
-
-            boolean first = true;
-
-            for (Map.Entry<GridSqlElement, GridSqlSortColumn> entry : sort.entrySet()) {
-                if (first)
-                    first = false;
-                else
-                    buff.append(", ");
-
-                GridSqlElement expression = entry.getKey();
-
-                int idx = select.indexOf(expression);
-
-                if (idx >= 0)
-                    buff.append(idx + 1);
-                else
-                    buff.append('=').append(StringUtils.unEnclose(expression.getSQL()));
-
-                GridSqlSortColumn type = entry.getValue();
-
-                if (!type.asc())
-                    buff.append(" DESC");
-
-                if (type.nullsFirst())
-                    buff.append(" NULLS FIRST");
-                else if (type.nullsLast())
-                    buff.append(" NULLS LAST");
-            }
-        }
-
-        if (limit != null)
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
-
-        if (offset != null)
-            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+        getSortLimitSQL(buff);
 
         return buff.toString();
     }

@@ -26,6 +26,12 @@ import java.util.*;
  */
 public class GridSqlSelect extends GridSqlQuery {
     /** */
+    private List<GridSqlElement> allExprs;
+
+    /** */
+    private List<GridSqlElement> select = new ArrayList<>();
+
+    /** */
     private List<GridSqlElement> groups = new ArrayList<>();
 
     /** */
@@ -79,42 +85,50 @@ public class GridSqlSelect extends GridSqlQuery {
         if (having != null)
             buff.append("\nHAVING ").append(StringUtils.unEnclose(having.getSQL()));
 
-        if (!sort.isEmpty()) {
-            buff.append("\nORDER BY ");
-
-            buff.resetCount();
-
-            for (Map.Entry<GridSqlElement,GridSqlSortColumn> entry : sort.entrySet()) {
-                buff.appendExceptFirst(", ");
-
-                GridSqlElement expression = entry.getKey();
-
-                int idx = select.indexOf(expression);
-
-                if (idx >= 0)
-                    buff.append(idx + 1);
-                else
-                    buff.append('=').append(StringUtils.unEnclose(expression.getSQL()));
-
-                GridSqlSortColumn type = entry.getValue();
-
-                if (!type.asc())
-                    buff.append(" DESC");
-
-                if (type.nullsFirst())
-                    buff.append(" NULLS FIRST");
-                else if (type.nullsLast())
-                    buff.append(" NULLS LAST");
-            }
-        }
-
-        if (limit != null)
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
-
-        if (offset != null)
-            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+        getSortLimitSQL(buff);
 
         return buff.toString();
+    }
+
+    /**
+     * @param expression Expression.
+     */
+    public void addExpression(GridSqlElement expression) {
+        if (allExprs == null)
+            allExprs = new ArrayList<>();
+
+        allExprs.add(expression);
+    }
+
+    /**
+     * @return All expressions in select, group by, order by.
+     */
+    public List<GridSqlElement> allExpressions() {
+        return allExprs;
+    }
+
+    /**
+     * @return Expressions.
+     */
+    public List<GridSqlElement> select() {
+        return select;
+    }
+
+    /**
+     * Clears select list.
+     */
+    public void clearSelect() {
+        select = new ArrayList<>();
+    }
+
+    /**
+     * @param expression Expression.
+     */
+    public void addSelectExpression(GridSqlElement expression) {
+        if (expression == null)
+            throw new NullPointerException();
+
+        select.add(expression);
     }
 
     /**
@@ -237,6 +251,8 @@ public class GridSqlSelect extends GridSqlQuery {
 
         res.groups = new ArrayList<>(groups);
         res.grpCols =  grpCols == null ? null : grpCols.clone();
+        res.select = new ArrayList<>(select);
+        res.allExprs = null;
 
         return res;
     }

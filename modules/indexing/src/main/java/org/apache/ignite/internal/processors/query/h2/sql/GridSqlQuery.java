@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.*;
+import org.h2.util.*;
+
 import java.util.*;
 
 /**
@@ -27,13 +30,7 @@ public abstract class GridSqlQuery implements Cloneable {
     protected boolean distinct;
 
     /** */
-    protected List<GridSqlElement> allExprs;
-
-    /** */
-    protected List<GridSqlElement> select = new ArrayList<>();
-
-    /** */
-    protected Map<GridSqlElement,GridSqlSortColumn> sort = new LinkedHashMap<>();
+    protected List<GridSqlSortColumn> sort = new ArrayList<>();
 
     /** */
     protected GridSqlElement offset;
@@ -89,50 +86,9 @@ public abstract class GridSqlQuery implements Cloneable {
     public abstract String getSQL();
 
     /**
-     * @param expression Expression.
-     */
-    public void addExpression(GridSqlElement expression) {
-        if (allExprs == null)
-            allExprs = new ArrayList<>();
-
-        allExprs.add(expression);
-    }
-
-    /**
-     * @return All expressions in select, group by, order by.
-     */
-    public List<GridSqlElement> allExpressions() {
-        return allExprs;
-    }
-
-    /**
-     * @return Expressions.
-     */
-    public List<GridSqlElement> select() {
-        return select;
-    }
-
-    /**
-     * Clears select list.
-     */
-    public void clearSelect() {
-        select = new ArrayList<>();
-    }
-
-    /**
-     * @param expression Expression.
-     */
-    public void addSelectExpression(GridSqlElement expression) {
-        if (expression == null)
-            throw new NullPointerException();
-
-        select.add(expression);
-    }
-
-    /**
      * @return Sort.
      */
-    public Map<GridSqlElement,GridSqlSortColumn> sort() {
+    public List<GridSqlSortColumn> sort() {
         return sort;
     }
 
@@ -140,15 +96,56 @@ public abstract class GridSqlQuery implements Cloneable {
      *
      */
     public void clearSort() {
-        sort = new LinkedHashMap<>();
+        sort = new ArrayList<>();
     }
 
     /**
-     * @param expression Expression.
-     * @param sortType The sort type bit mask (SortOrder.DESCENDING, SortOrder.NULLS_FIRST, SortOrder.NULLS_LAST).
+     * @param sortCol The sort column.
      */
-    public void addSort(GridSqlElement expression, GridSqlSortColumn sortType) {
-        sort.put(expression, sortType);
+    public void addSort(GridSqlSortColumn sortCol) {
+        sort.add(sortCol);
+    }
+
+    /**
+     * @param buff Statement builder.
+     */
+    protected void getSortLimitSQL(StatementBuilder buff) {
+        if (!sort.isEmpty()) {
+            buff.append("\nORDER BY ");
+
+            boolean first = true;
+
+            for (GridSqlSortColumn col : sort) {
+                if (first)
+                    first = false;
+                else
+                    buff.append(", ");
+
+                int idx = col.column();
+
+                if (idx >= 0)
+                    buff.append(idx + 1);
+                else {
+                    throw new IgniteException("Failed to generate query: " + buff);
+//                    buff.append('=').append(StringUtils.unEnclose(entry.getKey().getSQL()));
+                }
+
+                if (!col.asc())
+                    buff.append(" DESC");
+
+                if (col.nullsFirst())
+                    buff.append(" NULLS FIRST");
+                else if (col.nullsLast())
+                    buff.append(" NULLS LAST");
+            }
+        }
+
+        if (limit != null)
+            buff.append(" LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
+
+        if (offset != null)
+            buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+
     }
 
     /** {@inheritDoc} */
@@ -157,9 +154,7 @@ public abstract class GridSqlQuery implements Cloneable {
         try {
             GridSqlQuery res = (GridSqlQuery)super.clone();
 
-            res.select = new ArrayList<>(select);
-            res.sort = new LinkedHashMap<>(sort);
-            res.allExprs = null;
+            res.sort = new ArrayList<>(sort);
 
             return res;
         }

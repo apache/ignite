@@ -57,6 +57,17 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param qry Query.
+     * @return Leftest simple query if this is UNION.
+     */
+    private static GridSqlSelect leftest(GridSqlQuery qry) {
+        if (qry instanceof GridSqlUnion)
+            return leftest(((GridSqlUnion)qry).left());
+
+        return (GridSqlSelect)qry;
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @param params Parameters.
      * @return Two step query.
@@ -65,21 +76,58 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        GridSqlQuery srcQry = GridSqlQueryParser.parse(stmt);
+        GridSqlQuery qry0 = GridSqlQueryParser.parse(stmt);
 
-        if (!(srcQry instanceof GridSqlSelect))
-            throw new UnsupportedOperationException(); // todo IGNITE-624 Support UNION,
+        GridSqlSelect srcQry;
 
-        GridSqlSelect srcSelect = (GridSqlSelect)srcQry;
+        if (qry0 instanceof GridSqlSelect)
+            srcQry = (GridSqlSelect)qry0;
+        else {
+            srcQry = new GridSqlSelect().from(new GridSqlSubquery(qry0));
+
+            GridSqlSelect left = leftest(qry0);
+
+            int c = 0;
+
+            for (GridSqlElement expr : left.select()) {
+                String colName;
+
+                if (expr instanceof GridSqlAlias)
+                    colName = ((GridSqlAlias)expr).alias();
+                else if (expr instanceof GridSqlColumn)
+                    colName = ((GridSqlColumn)expr).columnName();
+                else {
+                    colName = columnName(c);
+
+                    expr = alias(colName, expr);
+
+                    // Set generated alias to the expression.
+                    left.select().set(c, expr);
+                    left.allExpressions().set(c, expr);
+                }
+
+                srcQry.addSelectExpression(column(colName));
+
+                qry0.sort();
+
+                c++;
+            }
+
+            // ORDER BY
+            if (!qry0.sort().isEmpty()) {
+                for (GridSqlSortColumn col : qry0.sort())
+                    srcQry.addSort(col);
+            }
+        }
 
         final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
-        GridSqlSelect mapQry = srcSelect.clone();
+        GridSqlSelect mapQry = srcQry.clone();
         GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = new ArrayList<>(srcSelect.allExpressions());
-        GridSqlElement[] rdcExps = new GridSqlElement[srcSelect.select().size()];
+        List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
+        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.select().size()];
 
         Set<String> colNames = new HashSet<>();
 
@@ -98,31 +146,31 @@ public class GridSqlQuerySplitter {
             rdcQry.addSelectExpression(rdcExp);
 
         // -- GROUP BY
-        if (!srcSelect.groups().isEmpty()) {
+        if (!srcQry.groups().isEmpty()) {
             mapQry.clearGroups();
 
-            for (int col : srcSelect.groupColumns())
+            for (int col : srcQry.groupColumns())
                 mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
 
-            for (int col : srcSelect.groupColumns())
+            for (int col : srcQry.groupColumns())
                 rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
         }
 
         // -- HAVING
-        if (srcSelect.having() != null) {
+        if (srcQry.having() != null) {
             // TODO Find aggregate functions in HAVING clause.
-            rdcQry.whereAnd(column(columnName(srcSelect.havingColumn())));
+            rdcQry.whereAnd(column(columnName(srcQry.havingColumn())));
 
             mapQry.having(null);
         }
 
         // -- ORDER BY
-        if (!srcSelect.sort().isEmpty()) {
+        if (!srcQry.sort().isEmpty()) {
             if (aggregateFound) // Ordering over aggregates does not make sense.
                 mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
 
-            for (GridSqlSortColumn sortCol : srcSelect.sort().values())
-                rdcQry.addSort(column(((GridSqlAlias)mapExps.get(sortCol.column())).alias()), sortCol);
+            for (GridSqlSortColumn sortCol : srcQry.sort())
+                rdcQry.addSort(sortCol);
         }
 
         // -- LIMIT
@@ -134,14 +182,14 @@ public class GridSqlQuerySplitter {
         }
 
         // -- OFFSET
-        if (srcSelect.offset() != null) {
+        if (srcQry.offset() != null) {
             mapQry.offset(null);
 
-            rdcQry.offset(srcSelect.offset());
+            rdcQry.offset(srcQry.offset());
         }
 
         // -- DISTINCT
-        if (srcSelect.distinct()) {
+        if (srcQry.distinct()) {
             mapQry.distinct(false);
             rdcQry.distinct(true);
         }
@@ -166,7 +214,12 @@ public class GridSqlQuerySplitter {
         if (qry instanceof GridSqlSelect)
             return findParams((GridSqlSelect)qry, params, target);
 
-        throw new UnsupportedOperationException(); // todo IGNITE-624
+        GridSqlUnion union = (GridSqlUnion)qry;
+
+        findParams(union.left(), params, target);
+        findParams(union.right(), params, target);
+
+        return target;
     }
 
     /**
@@ -179,7 +232,7 @@ public class GridSqlQuerySplitter {
         if (params.length == 0)
             return target;
 
-        for (GridSqlElement el : qry.select())
+        for (GridSqlElement el : qry.allExpressions())
             findParams(el, params, target);
 
         findParams(qry.from(), params, target);
@@ -189,9 +242,6 @@ public class GridSqlQuerySplitter {
             findParams(el, params, target);
 
         findParams(qry.having(), params, target);
-
-        for (GridSqlElement el : qry.sort().keySet())
-            findParams(el, params, target);
 
         findParams(qry.limit(), params, target);
         findParams(qry.offset(), params, target);

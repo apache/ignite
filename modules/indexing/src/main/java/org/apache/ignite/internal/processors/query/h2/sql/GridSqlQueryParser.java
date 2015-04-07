@@ -293,27 +293,34 @@ public class GridSqlQueryParser {
         for (int i = 0; i < select.getColumnCount(); i++)
             res.addSelectExpression(parseExpression(expressions.get(i)));
 
-        SortOrder sortOrder = select.getSortOrder();
-
-        if (sortOrder != null) {
-            int[] indexes = sortOrder.getQueryColumnIndexes();
-            int[] sortTypes = sortOrder.getSortTypes();
-
-            for (int i = 0; i < indexes.length; i++) {
-                int colIdx = indexes[i];
-                int type = sortTypes[i];
-
-                res.addSort(parseExpression(expressions.get(colIdx)), new GridSqlSortColumn(colIdx,
-                    (type & SortOrder.DESCENDING) == 0,
-                    (type & SortOrder.NULLS_FIRST) != 0,
-                    (type & SortOrder.NULLS_LAST) != 0));
-            }
-        }
+        processSortOrder(select.getSortOrder(), res);
 
         res.limit(parseExpression(select.getLimit()));
         res.offset(parseExpression(select.getOffset()));
 
         return res;
+    }
+
+    /**
+     * @param sortOrder Sort order.
+     * @param qry Query.
+     */
+    private void processSortOrder(SortOrder sortOrder, GridSqlQuery qry) {
+        if (sortOrder == null)
+            return;
+
+        int[] indexes = sortOrder.getQueryColumnIndexes();
+        int[] sortTypes = sortOrder.getSortTypes();
+
+        for (int i = 0; i < indexes.length; i++) {
+            int colIdx = indexes[i];
+            int type = sortTypes[i];
+
+            qry.addSort(new GridSqlSortColumn(colIdx,
+                (type & SortOrder.DESCENDING) == 0,
+                (type & SortOrder.NULLS_FIRST) != 0,
+                (type & SortOrder.NULLS_LAST) != 0));
+        }
     }
 
     /**
@@ -348,7 +355,7 @@ public class GridSqlQueryParser {
         res.limit(parseExpression(union.getLimit()));
         res.offset(parseExpression(union.getOffset()));
 
-        assert UNION_SORT.get(union) == null; // todo IGNITE-624
+        processSortOrder(UNION_SORT.get(union), res);
 
         h2ObjToGridObj.put(union, res);
 
