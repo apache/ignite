@@ -549,6 +549,7 @@
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc" todir="${basedir}/target/site" />
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5" todir="${basedir}/target/site" />
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1" todir="${basedir}/target/site" />
+                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
                                     </target>
                                 </configuration>
                             </execution>
