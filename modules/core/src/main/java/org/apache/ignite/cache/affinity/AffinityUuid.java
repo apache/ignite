@@ -24,6 +24,9 @@ import org.apache.ignite.lang.*;
  * Guaranteed unique affinity-based key.
  */
 public class AffinityUuid extends AffinityKey<IgniteUuid> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Empty constructor.
      */
