@@ -32,10 +32,11 @@ import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
 import org.apache.ignite.internal.visor.VisorTaskArgument
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
+import org.apache.ignite.internal.visor.cache._
+import org.apache.ignite.internal.visor.node._
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
+import org.apache.ignite.lang._
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.VisorConsole.consoleReader
@@ -46,7 +47,7 @@ import java.io._
 import java.net._
 import java.text._
 import java.util.concurrent._
-import java.util.{HashSet => JHashSet, _}
+import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -836,7 +837,7 @@ object visor extends VisorTag {
      * Extract node from command arguments.
      *
      * @param argLst Command arguments.
-     * @return error message or node ref.
+     * @return Error message or node ref.
      */
     def parseNode(argLst: ArgList) = {
         val id8 = argValue("id8", argLst)
@@ -1827,7 +1828,7 @@ object visor extends VisorTag {
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid, false)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] = new VisorTaskArgument(new JHashSet(nids),
+    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] = new VisorTaskArgument(new JavaHashSet(nids),
       false)
 
     /** Convert to task argument. */
@@ -1835,7 +1836,28 @@ object visor extends VisorTag {
 
     /** Convert to task argument. */
     def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] = new VisorTaskArgument(
-        new JHashSet(nids), arg, false)
+        new JavaHashSet(nids), arg, false)
+
+    def compute(nid: UUID): IgniteCompute = ignite.compute(ignite.cluster.forNodeId(nid)).withNoFailover()
+
+    /**
+     * Gets configuration from specified node.
+     *
+     * @param nid Node ID to collect configuration from.
+     * @return Grid configuration.
+     */
+    def nodeConfiguration(nid: UUID): VisorGridConfiguration =
+        compute(nid).execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(nid))
+
+    /**
+     * Gets caches configurations from specified node.
+     *
+     * @param nid Node ID to collect configuration from.
+     * @return Collection of cache configurations.
+     */
+    def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
+        compute(nid).execute(classOf[VisorCacheConfigurationCollectorTask],
+            toTaskArgument(nid, null.asInstanceOf[JavaCollection[IgniteUuid]])).values()
 
     /**
      * Asks user to select a node from the list.
