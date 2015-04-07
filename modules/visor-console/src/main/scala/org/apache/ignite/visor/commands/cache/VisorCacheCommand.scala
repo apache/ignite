@@ -427,13 +427,13 @@ class VisorCacheCommand {
                     println("  Total number of executions: " + ad.execsQuery)
                     println("  Total number of failures:   " + ad.failsQuery)
 
-                    gCfg.foreach(_.caches().find(_.name() == ad.name()).foreach(cfg => {
-                        nl()
+                    gCfg.foreach(ccfgs => ccfgs.find(ccfg => safeEquals(ccfg.name(), ad.name()))
+                        .foreach(ccfg => {
+                            nl()
 
-                        showCacheConfiguration("Cache configuration:", cfg)
+                            showCacheConfiguration("Cache configuration:", ccfg)
                     }))
                 })
-
             }
             else
                 println("\nUse \"-a\" flag to see detailed statistics.")
@@ -509,17 +509,17 @@ class VisorCacheCommand {
      * Gets configuration of grid from specified node for collecting of node cache's configuration.
      *
      * @param node Specified node.
-     * @return Grid configuration for specified node.
+     * @return Cache configurations for specified node.
      */
-    private def config(node: ClusterNode): VisorGridConfiguration = {
-        try
-            ignite.compute(ignite.cluster.forNode(node)).withNoFailover()
-                .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
+    private def config(node: ClusterNode): JavaCollection[VisorCacheConfiguration] = {
+        try {
+            cacheConfigurations(node.id())
+        }
         catch {
             case e: IgniteException =>
                 scold(e.getMessage)
 
-                null
+                Collections.emptyList()
         }
     }
 
