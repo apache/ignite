@@ -195,7 +195,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.Command
 ::
 :: Remote debugging (JPDA).
 :: Uncomment and change if remote debugging is required.
-:: set JVM_OPTS=-Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n %JVM_OPTS%
+:: set JVM_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 %JVM_OPTS%
 ::
 
 if "%INTERACTIVE%" == "1" (
