@@ -56,24 +56,16 @@ public class IgniteQueueExample {
             System.out.println();
             System.out.println(">>> Ignite queue example started.");
 
-            CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
+            // Make queue name.
+            String queueName = UUID.randomUUID().toString();
 
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-            cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
+            queue = initializeQueue(ignite, queueName);
 
-            try (IgniteCache<Object, Object> cache = ignite.createCache(cfg)) {
-                // Make queue name.
-                String queueName = UUID.randomUUID().toString();
+            readFromQueue(ignite);
 
-                queue = initializeQueue(ignite, queueName);
+            writeToQueue(ignite);
 
-                readFromQueue(ignite);
-
-                writeToQueue(ignite);
-
-                clearAndRemoveQueue();
-            }
+            clearAndRemoveQueue();
         }
 
         System.out.println("Cache queue example finished.");
@@ -90,12 +82,7 @@ public class IgniteQueueExample {
     private static IgniteQueue<String> initializeQueue(Ignite ignite, String queueName) throws IgniteException {
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
-        CacheConfiguration cfg = ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class);
-        colCfg.atomicityMode(cfg.getAtomicityMode());
-        colCfg.memoryMode(cfg.getMemoryMode());
-        colCfg.cacheMode(cfg.getCacheMode());
-        colCfg.backups(cfg.getBackups());
-        colCfg.offHeapMaxMem(cfg.getOffHeapMaxMemory());
+        colCfg.setCacheMode(CacheMode.PARTITIONED);
 
         // Initialize new FIFO queue.
         IgniteQueue<String> queue = ignite.queue(queueName, 0, colCfg);

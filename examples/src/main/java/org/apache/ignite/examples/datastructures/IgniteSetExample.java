@@ -52,24 +52,14 @@ public class IgniteSetExample {
             System.out.println();
             System.out.println(">>> Ignite set example started.");
 
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+            // Make set name.
+            String setName = UUID.randomUUID().toString();
 
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            set = initializeSet(ignite, setName);
 
-            NearCacheConfiguration<Integer, String> nearCacheCfg = new NearCacheConfiguration<>();
+            writeToSet(ignite);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg, nearCacheCfg)) {
-                // Make set name.
-                String setName = UUID.randomUUID().toString();
-
-                set = initializeSet(ignite, setName);
-
-                writeToSet(ignite);
-
-                clearAndRemoveSet();
-            }
+            clearAndRemoveSet();
         }
 
         System.out.println("Ignite set example finished.");
@@ -86,12 +76,8 @@ public class IgniteSetExample {
     private static IgniteSet<String> initializeSet(Ignite ignite, String setName) throws IgniteException {
         CollectionConfiguration setCfg = new CollectionConfiguration();
 
-        CacheConfiguration cfg = ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class);
-        setCfg.atomicityMode(cfg.getAtomicityMode());
-        setCfg.memoryMode(cfg.getMemoryMode());
-        setCfg.cacheMode(cfg.getCacheMode());
-        setCfg.backups(cfg.getBackups());
-        setCfg.offHeapMaxMem(cfg.getOffHeapMaxMemory());
+        setCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        setCfg.setCacheMode(CacheMode.PARTITIONED);
 
         // Initialize new set.
         IgniteSet<String> set = ignite.set(setName, setCfg);

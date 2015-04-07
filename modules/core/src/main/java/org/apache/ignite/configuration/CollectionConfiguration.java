@@ -70,71 +70,71 @@ public class CollectionConfiguration implements Serializable {
     /**
      * @return Cache atomicity mode.
      */
-    public CacheAtomicityMode atomicityMode() {
+    public CacheAtomicityMode getAtomicityMode() {
         return atomicityMode;
     }
 
     /**
      * @param atomicityMode Cache atomicity mode.
      */
-    public void atomicityMode(CacheAtomicityMode atomicityMode) {
+    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
     }
 
     /**
      * @return Cache mode.
      */
-    public CacheMode cacheMode() {
+    public CacheMode getCacheMode() {
         return cacheMode;
     }
 
     /**
      * @param cacheMode Cache mode.
      */
-    public void cacheMode(CacheMode cacheMode) {
+    public void setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
     }
 
     /**
      * @return Cache memory mode.
      */
-    public CacheMemoryMode memoryMode() {
+    public CacheMemoryMode getMemoryMode() {
         return memoryMode;
     }
 
     /**
      * @param memoryMode Memory mode.
      */
-    public void memoryMode(CacheMemoryMode memoryMode) {
+    public void setMemoryMode(CacheMemoryMode memoryMode) {
         this.memoryMode = memoryMode;
     }
 
     /**
      * @return Number of backups.
      */
-    public int backups() {
+    public int getBackups() {
         return backups;
     }
 
     /**
      * @param backups Cache number of backups.
      */
-    public void backups(int backups) {
+    public void setBackups(int backups) {
         this.backups = backups;
     }
 
     /**
      * @return Off-heap memory size.
      */
-    public long offHeapMaxMem() {
+    public long getOffHeapMaxMemory() {
         return offHeapMaxMem;
     }
 
     /**
-     * @param offHeapMaxMem Off-heap memory size.
+     * @param offHeapMaxMemory Off-heap memory size.
      */
-    public void offHeapMaxMem(long offHeapMaxMem) {
-        this.offHeapMaxMem = offHeapMaxMem;
+    public void setOffHeapMaxMemory(long offHeapMaxMemory) {
+        this.offHeapMaxMem = offHeapMaxMemory;
     }
 
     /** {@inheritDoc} */

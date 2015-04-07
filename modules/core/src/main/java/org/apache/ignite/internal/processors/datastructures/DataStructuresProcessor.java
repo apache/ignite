@@ -721,10 +721,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
-        ccfg.setBackups(cfg.backups());
-        ccfg.setCacheMode(cfg.cacheMode());
-        ccfg.setMemoryMode(cfg.memoryMode());
-        ccfg.setOffHeapMaxMemory(cfg.offHeapMaxMem());
+        ccfg.setBackups(cfg.getBackups());
+        ccfg.setCacheMode(cfg.getCacheMode());
+        ccfg.setMemoryMode(cfg.getMemoryMode());
+        ccfg.setOffHeapMaxMemory(cfg.getOffHeapMaxMemory());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
@@ -736,15 +736,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Cache name.
      */
     private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
-        T2<String, IgniteCheckedException> res =
-            utilityDataCache.invoke(DATA_STRUCTURES_CACHE_KEY, new AddDataCacheProcessor(cfg)).get();
+        List<CacheCollectionInfo> caches = utilityDataCache.localPeek(DATA_STRUCTURES_CACHE_KEY, null, null);
 
-        IgniteCheckedException err = res.get2();
+        String cacheName = findCompatibleConfiguration(cfg, caches);
 
-        if (err != null)
-            throw err;
-
-        String cacheName = res.get1();
+        if (cacheName == null)
+            cacheName = utilityDataCache.invoke(DATA_STRUCTURES_CACHE_KEY, new AddDataCacheProcessor(cfg)).get();
 
         assert cacheName != null;
 
@@ -1240,6 +1237,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cfg Collection configuration.
+     * @param infos Data structure caches.
+     * @return Name of the cache with compatible configuration or null.
+     */
+    private static String findCompatibleConfiguration(CollectionConfiguration cfg, List<CacheCollectionInfo> infos) {
+        for (CacheCollectionInfo col : infos) {
+            if (col.cfg.getAtomicityMode() == cfg.getAtomicityMode() &&
+                col.cfg.getMemoryMode() == cfg.getMemoryMode() &&
+                col.cfg.getCacheMode() == cfg.getCacheMode() &&
+                col.cfg.getBackups() == cfg.getBackups() &&
+                col.cfg.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory())
+                return col.cacheName;
+        }
+
+        return null;
+    }
+
+    /**
      *
      */
     static enum DataStructureType {
@@ -1692,8 +1707,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *
      */
     static class AddDataCacheProcessor implements
-        EntryProcessor<CacheDataStructuresCacheKey, List<CacheCollectionInfo>,
-            T2<String, IgniteCheckedException>>, Externalizable {
+        EntryProcessor<CacheDataStructuresCacheKey, List<CacheCollectionInfo>, String>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1715,7 +1729,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public T2<String, IgniteCheckedException> process(
+        @Override public String process(
             MutableEntry<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> entry,
             Object... args)
         {
@@ -1724,21 +1738,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (list == null) {
                 list = new ArrayList<>();
 
-                list.add(new CacheCollectionInfo("datastructeres_0", cfg));
+                String newName = "datastructeres_" + 0;
+
+                list.add(new CacheCollectionInfo(newName, cfg));
 
                 entry.setValue(list);
 
-                return new T2<>("datastructeres_0", null);
+                return newName;
             }
 
-            for (CacheCollectionInfo col : list) {
-                if (col.cfg.atomicityMode() == cfg.atomicityMode() &&
-                    col.cfg.memoryMode() == cfg.memoryMode() &&
-                    col.cfg.cacheMode() == cfg.cacheMode() &&
-                    col.cfg.backups() == cfg.backups() &&
-                    col.cfg.offHeapMaxMem() == cfg.offHeapMaxMem())
-                    return new T2<>(col.cacheName, null);
-            }
+            String oldName = findCompatibleConfiguration(cfg, list);
+
+            if (oldName != null)
+                return oldName;
 
             String newName = "datastructeres_" + list.size();
 
@@ -1746,7 +1758,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             newList.add(new CacheCollectionInfo(newName, cfg));
 
-            return new T2<>(newName, null);
+            return newName;
         }
 
         /** {@inheritDoc} */

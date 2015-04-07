@@ -67,8 +67,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     }
 
     /** {@inheritDoc} */
-    @Override protected TestCollectionConfiguration collectionConfiguration() {
-        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(BACKUP_CNT);
 
