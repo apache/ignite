@@ -846,7 +846,8 @@ public class VisorTaskUtils {
                 zos.putNextEntry(entry);
 
                 zos.write(input);
-            } finally {
+            }
+            finally {
                 zos.closeEntry();
             }
         }

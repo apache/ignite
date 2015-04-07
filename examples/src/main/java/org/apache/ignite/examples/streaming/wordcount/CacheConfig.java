@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.numbers;
+package org.apache.ignite.examples.streaming.wordcount;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 
 import javax.cache.configuration.*;
@@ -33,10 +34,11 @@ public class CacheConfig {
     /**
      * Configure streaming cache.
      */
-    public static CacheConfiguration<Integer, Long> randomNumbersCache() {
-        CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
+    public static CacheConfiguration<AffinityUuid, String> wordCache() {
+        CacheConfiguration<AffinityUuid, String> cfg = new CacheConfiguration<>("words");
 
-        cfg.setIndexedTypes(Integer.class, Long.class);
+        // Index all words streamed into cache.
+        cfg.setIndexedTypes(AffinityUuid.class, String.class);
 
         // Sliding window of 1 seconds.
         cfg.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(SECONDS, 1))));
