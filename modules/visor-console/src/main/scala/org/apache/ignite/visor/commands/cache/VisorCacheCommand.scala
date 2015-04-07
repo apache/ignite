@@ -32,7 +32,6 @@ import java.lang.{Boolean => JavaBoolean}
 import java.util.{ArrayList => JavaList, Collection => JavaCollection, UUID}
 
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
@@ -494,11 +493,11 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            val caches = new JavaList[String](1)
+            val caches: JavaCollection[String] = new JavaList[String](1)
             name.foreach(caches.add)
 
             ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches.asInstanceOf[JavaCollection[String]]))).toList
+                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches))).toList
         }
         catch {
             case e: IgniteException => Nil
@@ -519,7 +518,7 @@ class VisorCacheCommand {
             case e: IgniteException =>
                 scold(e.getMessage)
 
-                Collections.emptyList()
+                null
         }
     }
 
