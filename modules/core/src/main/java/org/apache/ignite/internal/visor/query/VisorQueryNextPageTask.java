@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
@@ -77,7 +76,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
             VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
 
             if (t == null)
-                throw new GridInternalException("SQL query results are expired.");
+                throw new IgniteException("SQL query results are expired.");
 
             IgniteBiTuple<List<Object[]>, List<?>> nextRows = VisorQueryUtils.fetchSqlQueryRows(t.future(), t.next(), arg.get2());
 
@@ -101,7 +100,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
             VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
 
             if (t == null)
-                throw new GridInternalException("Scan query results are expired.");
+                throw new IgniteException("Scan query results are expired.");
 
             IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
                 VisorQueryUtils.fetchScanQueryRows(t.future(), t.next(), arg.get2());
