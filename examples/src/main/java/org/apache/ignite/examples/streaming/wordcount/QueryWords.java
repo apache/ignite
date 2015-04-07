@@ -15,33 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming.numbers;
+package org.apache.ignite.examples.streaming.wordcount;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.stream.*;
 
-import javax.cache.processor.*;
 import java.util.*;
 
 /**
- * Stream random numbers into the streaming cache.
+ * Periodically query popular numbers from the streaming cache.
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start streaming using {@link StreamRandomNumbers}.</li>
- *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ *     <li>Start streaming using {@link StreamWords}.</li>
+ *     <li>Start querying popular numbers using {@link QueryWords}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class StreamRandomNumbers {
-    /** Random number generator. */
-    private static final Random RAND = new Random();
-
-    /** Range within which to generate numbers. */
-    private static final int RANGE = 1000;
-
+public class QueryWords {
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -51,27 +45,32 @@ public class StreamRandomNumbers {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
+            IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
 
-            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                // Allow data updates.
-                stmr.allowOverwrite(true);
+            // Select top 10 words.
+            SqlFieldsQuery top10Qry = new SqlFieldsQuery(
+                "select _val, count(_val) as cnt from String group by _val order by cnt desc limit 10");
 
-                // Configure data transformation to count instances of the same number.
-                stmr.receiver(new StreamTransformer<Integer, Long>() {
-                    @Override public Object process(MutableEntry<Integer, Long> e, Object... objects)
-                        throws EntryProcessorException {
-                        Long val = e.getValue();
+            // Select average, min, and max counts among all the words.
+            SqlFieldsQuery statsQry = new SqlFieldsQuery(
+                "select avg(cnt), min(cnt), max(cnt) from (select count(_val) as cnt from String group by _val)");
 
-                        e.setValue(val == null ? 1L : val + 1);
+            // Query top 10 popular numbers every 5 seconds.
+            while (true) {
+                // Execute queries.
+                List<List<?>> top10 = stmCache.query(top10Qry).getAll();
+                List<List<?>> stats = stmCache.query(statsQry).getAll();
 
-                        return null;
-                    }
-                });
+                // Print average count.
+                List<?> row = stats.get(0);
 
-                // Stream random numbers into the streamer cache.
-                while (true)
-                    stmr.addData(RAND.nextInt(RANGE), 1L);
+                if (row.get(0) != null)
+                    System.out.printf("Query results [avg=%.2f, min=%d, max=%d]%n", row.get(0), row.get(1), row.get(2));
+
+                // Print top 10 words.
+                ExamplesUtils.printQueryResults(top10);
+
+                Thread.sleep(5000);
             }
         }
     }

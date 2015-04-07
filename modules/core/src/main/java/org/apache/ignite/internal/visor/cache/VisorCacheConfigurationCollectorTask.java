@@ -15,30 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming.marketdata;
+package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
+
+import java.util.*;
 
 /**
- * Configuration for the streaming caches for market data and financial instruments.
+ * Task that collect cache metrics from all nodes.
  */
-public class CacheConfig {
-    /**
-     * Configure streaming cache for market ticks.
-     */
-    public static CacheConfiguration<String, Double> marketTicksCache() {
-        return new CacheConfiguration<>("marketTicks");
-    }
+@GridInternal
+public class VisorCacheConfigurationCollectorTask
+    extends VisorOneNodeTask<Collection<IgniteUuid>, Map<IgniteUuid, VisorCacheConfiguration>> {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * Configure cache for financial instruments.
-     */
-    public static CacheConfiguration<String, Instrument> instrumentCache() {
-        CacheConfiguration<String, Instrument> instCache = new CacheConfiguration<>("instCache");
-
-        // Index some fields for querying portfolio positions.
-        instCache.setIndexedTypes(String.class, Instrument.class);
-
-        return instCache;
+    /** {@inheritDoc} */
+    @Override protected VisorCacheConfigurationCollectorJob job(Collection<IgniteUuid> arg) {
+        return new VisorCacheConfigurationCollectorJob(arg, debug);
     }
 }
