@@ -942,7 +942,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.kernalContext().continuous().onCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.jta().tmLookup(),
-            ctx.store().configuredStore()));
+                ctx.store().configuredStore()));
 
         if (log.isInfoEnabled())
             log.info("Stopped cache: " + cache.name());
@@ -2442,6 +2442,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void addCacheConfigurations(Collection<CacheConfiguration> cfgs) throws IgniteCheckedException {
         GridCacheAdapter<CacheTemplateConfigurationKey, TemplateConfigurations> utilityCache = utilityCache();
 
+        TemplateConfigurations templates =
+            utilityCache.localPeek(new CacheTemplateConfigurationKey(), CachePeekModes.ONHEAP_ONLY, null);
+
+        if (templates != null) {
+            cfgs = templates.needAdd(cfgs);
+
+            if (cfgs == null)
+                return;
+        }
+
         final int RETRY_CNT = 5;
 
         for (int i = 0; i < RETRY_CNT; i++) {
@@ -2763,6 +2773,57 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         public TemplateConfigurations() {
             // No-op.
+        }
+
+        /**
+         * Checks if need to add new templates.
+         *
+         * @param cfgs Templates to add.
+         * @return Templates which should be added.
+         */
+        @Nullable Collection<CacheConfiguration> needAdd(Collection<CacheConfiguration> cfgs) {
+            Collection<CacheConfiguration> res = null;
+
+            for (CacheConfiguration cfg : cfgs) {
+                boolean found = false;
+
+                if (cfg.getName() != null && cfg.getName().endsWith("*")) {
+                    String name0 = cfg.getName().substring(0, cfg.getName().length() - 1);
+
+                    if (wildcardNameCfgs != null) {
+                        for (CacheConfiguration cfg0 : wildcardNameCfgs) {
+                            if (F.eq(cfg0.getName(), name0)) {
+                                found = true;
+
+                                break;
+                            }
+                        }
+                    }
+                }
+                else {
+                    if (exactNameCfgs != null) {
+                        for (CacheConfiguration cfg0 : exactNameCfgs) {
+                            if (F.eq(cfg0.getName(), cfg.getName())) {
+                                found = true;
+
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!found) {
+                    if (res == null)
+                        res = new ArrayList<>();
+
+        System.out.println(Thread.currentThread().getName() + " need add: " + cfg + " " + exactNameCfgs);
+
+
+                    res.add(cfg);
+                }
+            }
+
+            return res;
         }
 
         /**
