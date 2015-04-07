@@ -45,10 +45,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
-    /** */
-    private final GridBoundedConcurrentLinkedHashMap<Class<?>, Boolean> reflectionCache =
-            new GridBoundedConcurrentLinkedHashMap<>(1024, 1024);
-
     /**
      *
      */
@@ -216,21 +212,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public boolean immutable(Object obj) {
         assert obj != null;
 
-        Class<?> cls = obj.getClass();
-
-        if (IMMUTABLE_CLS.contains(cls))
-            return true;
-
-        Boolean immutable = reflectionCache.get(cls);
-
-        if (immutable != null)
-            return immutable;
-
-        immutable = IgniteUtils.hasAnnotation(cls, IgniteImmutable.class);
-
-        reflectionCache.putIfAbsent(cls, immutable);
-
-        return immutable;
+        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /** {@inheritDoc} */
@@ -296,11 +278,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-            return super.value(ctx, false);  // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
                 if (!ctx.processor().immutable(val)) {
@@ -360,7 +337,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
-                    Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+                    Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
+                        ctx.processor().unmarshal(ctx, valBytes, ldr);
 
                     return new CacheObjectImpl(val, valBytes);
                 }
