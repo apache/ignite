@@ -725,6 +725,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ccfg.setBackups(cfg.getBackups());
         ccfg.setCacheMode(cfg.getCacheMode());
         ccfg.setMemoryMode(cfg.getMemoryMode());
+        ccfg.setAtomicityMode(cfg.getAtomicityMode());
         ccfg.setOffHeapMaxMemory(cfg.getOffHeapMaxMemory());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
