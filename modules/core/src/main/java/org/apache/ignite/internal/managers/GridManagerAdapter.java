@@ -479,9 +479,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+                    @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
                         for (GridComponent comp : ctx) {
-                            IgniteSpiNodeValidationResult err = comp.validateNode(node);
+                            IgniteNodeValidationResult err = comp.validateNode(node);
 
                             if (err != null)
                                 return err;
@@ -622,7 +622,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

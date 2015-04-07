@@ -15,17 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
+
+import java.util.*;
 
 /**
- *
+ * Task that collect cache metrics from all nodes.
  */
-public class GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest
-    extends GridCachePartitionedBasicStoreMultiNodeSelfTest {
+@GridInternal
+public class VisorCacheConfigurationCollectorTask
+    extends VisorOneNodeTask<Collection<IgniteUuid>, Map<IgniteUuid, VisorCacheConfiguration>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearCacheConfiguration() {
-        return null;
+    @Override protected VisorCacheConfigurationCollectorJob job(Collection<IgniteUuid> arg) {
+        return new VisorCacheConfigurationCollectorJob(arg, debug);
     }
 }
