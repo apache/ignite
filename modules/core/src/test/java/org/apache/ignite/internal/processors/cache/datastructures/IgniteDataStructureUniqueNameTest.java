@@ -28,18 +28,13 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
  */
 public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractTest {
-    /** */
-    private static final String ATOMIC_CLOCK_CACHE_NAME = "atomicClockCache";
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -65,20 +60,6 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         atomicCfg.setCacheMode(PARTITIONED);
 
         cfg.setAtomicConfiguration(atomicCfg);
-
-        CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
-
-        assert ccfgs.length == 1 : ccfgs.length;
-
-        CacheConfiguration ccfg = new CacheConfiguration();
-
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setName(ATOMIC_CLOCK_CACHE_NAME);
-        ccfg.setAtomicityMode(ATOMIC);
-        ccfg.setAtomicWriteOrderMode(CLOCK);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheConfiguration(ccfgs[0], ccfg);
 
         return cfg;
     }
