@@ -56,7 +56,7 @@ public class StreamVisitorExample {
                 return;
 
             // Market data cache with default configuration.
-            CacheConfiguration<String, Double> mktDataCfg = new CacheConfiguration<String, Double>("marketTicks");
+            CacheConfiguration<String, Double> mktDataCfg = new CacheConfiguration<>("marketTicks");
 
             // Financial instrument cache configuration.
             CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>("instCache");
