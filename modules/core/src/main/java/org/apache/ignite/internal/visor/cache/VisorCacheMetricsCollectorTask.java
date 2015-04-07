@@ -46,7 +46,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
-            if (res.getException() == null && res.getData() instanceof Map<?, ?>) {
+            if (res.getException() == null) {
                 Collection<VisorCacheMetrics> cms = res.getData();
 
                 for (VisorCacheMetrics cm : cms) {
@@ -109,7 +109,13 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
                 if (ca.context().started()) {
                     VisorCacheMetrics cm = VisorCacheMetrics.from(ignite, ca);
 
-                    if ((showSysCaches && cm.system()) || allCaches || cacheNames.contains(ca.name()))
+                    boolean addCache = allCaches || cacheNames.contains(ca.name());
+
+                    if (showSysCaches) {
+                        if (cm.system() && addCache)
+                            res.add(cm);
+                    }
+                    else if (!cm.system() && addCache)
                         res.add(cm);
                 }
             }

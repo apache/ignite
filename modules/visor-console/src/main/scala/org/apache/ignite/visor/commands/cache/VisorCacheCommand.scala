@@ -221,9 +221,9 @@ class VisorCacheCommand {
             if (hasArgFlag("i", argLst)) {
                 askForNode("Select node from:") match {
                     case Some(nid) => ask("Detailed statistics (y/n) [n]: ", "n") match {
-                        case "n" | "N" => nl(); cache("-id=" + nid).^^
-                        case "y" | "Y" => nl(); cache("-a -id=" + nid).^^
-                        case x => nl(); warn("Invalid answer: " + x).^^
+                        case "n" | "N" => nl(); cache("-id=" + nid); return;
+                        case "y" | "Y" => nl(); cache("-a -id=" + nid); return;
+                        case x => nl(); warn("Invalid answer: " + x); return;
                     }
                     case None => return
                 }
@@ -302,11 +302,17 @@ class VisorCacheCommand {
             val sortType = argValue("s", argLst)
             val reversed = hasArgName("r", argLst)
 
-            if (sortType.isDefined && !isValidSortType(sortType.get))
-                scold("Invalid '-s' argument in: " + args).^^
+            if (sortType.isDefined && !isValidSortType(sortType.get)) {
+                scold("Invalid '-s' argument in: " + args)
 
-            if (aggrData.isEmpty)
-                scold("No caches found.").^^
+                return
+            }
+
+            if (aggrData.isEmpty) {
+                scold("No caches found.")
+
+                return
+            }
 
             println("Time of the snapshot: " + formatDateTime(System.currentTimeMillis))
 
@@ -493,7 +499,7 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            val caches: JavaCollection[String] = new JavaList[String](1)
+            val caches: JavaCollection[String] = new JavaList[String]()
             name.foreach(caches.add)
 
             ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
@@ -602,8 +608,11 @@ class VisorCacheCommand {
         assert(title != null)
         assert(visor.visor.isConnected)
 
-        if (aggrData.isEmpty)
-            scold("No caches found.").^^
+        if (aggrData.isEmpty) {
+            scold("No caches found.")
+
+            return None
+        }
 
         val sortedAggrData = sortAggregatedData(aggrData, "cn", false)
 
