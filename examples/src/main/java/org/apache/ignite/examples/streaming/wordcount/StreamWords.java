@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.numbers;
+package org.apache.ignite.examples.streaming.wordcount;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.examples.*;
 
-import java.util.*;
+import java.io.*;
 
 /**
- * Periodically query popular numbers from the streaming cache.
+ * Stream words into Ignite cache.
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start streaming using {@link StreamRandomNumbers}.</li>
- *     <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ *     <li>Start streaming using {@link StreamWords}.</li>
+ *     <li>Start querying popular numbers using {@link QueryWords}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class QueryPopularNumbers {
+public class StreamWords {
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -44,30 +44,24 @@ public class QueryPopularNumbers {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
+            IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
 
-            // Select top 10 words.
-            SqlFieldsQuery top10Qry = new SqlFieldsQuery("select _key, _val from Long order by _val desc limit 10");
+            try (IgniteDataStreamer<AffinityUuid, String> stmr = ignite.dataStreamer(stmCache.getName())) {
+                // Stream words from "alice-in-wonderland" book.
+                while (true) {
+                    InputStream in = StreamWords.class.getResourceAsStream("alice-in-wonderland.txt");
 
-            // Select average, min, and max counts among all the words.
-            SqlFieldsQuery statsQry = new SqlFieldsQuery("select avg(_val), min(_val), max(_val) from Long");
-
-            // Query top 10 popular numbers every 5 seconds.
-            while (true) {
-                // Execute queries.
-                List<List<?>> top10 = stmCache.query(top10Qry).getAll();
-                List<List<?>> stats = stmCache.query(statsQry).getAll();
-
-                // Print average count.
-                List<?> row = stats.get(0);
-
-                if (row.get(0) != null)
-                    System.out.printf("Query results [avg=%.2f, min=%d, max=%d]%n", row.get(0), row.get(1), row.get(2));
-
-                // Print top 10 words.
-                ExamplesUtils.printQueryResults(top10);
-
-                Thread.sleep(5000);
+                    try (LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in))) {
+                        for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
+                            for (String word : line.split(" "))
+                                if (!word.isEmpty())
+                                    // Stream words into Ignite.
+                                    // By using AffinityUuid we ensure that identical
+                                    // words are processed on the same cluster node.
+                                    stmr.addData(new AffinityUuid(word), word);
+                        }
+                    }
+                }
             }
         }
     }

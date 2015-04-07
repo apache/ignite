@@ -15,30 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java8.streaming.marketdata;
+package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Configuration for the streaming caches for market data and financial instruments.
+ * Guaranteed unique affinity-based key.
  */
-public class CacheConfig {
+public class AffinityUuid extends AffinityKey<IgniteUuid> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * Configure streaming cache for market ticks.
+     * Empty constructor.
      */
-    public static CacheConfiguration<String, Double> marketTicksCache() {
-        return new CacheConfiguration<>("marketTicks");
+    public AffinityUuid() {
+        // No-op.
     }
 
     /**
-     * Configure cache for financial instruments.
+     * Constructs unique affinity UUID based on affinity key.
+     *
+     * @param affKey Affinity key to use for collocation.
      */
-    public static CacheConfiguration<String, Instrument> instrumentCache() {
-        CacheConfiguration<String, Instrument> instCache = new CacheConfiguration<>("instCache");
+    public AffinityUuid(Object affKey) {
+        super(IgniteUuid.randomUuid(), affKey);
+    }
 
-        // Index some fields for querying portfolio positions.
-        instCache.setIndexedTypes(String.class, Instrument.class);
-
-        return instCache;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(AffinityUuid.class, this);
     }
 }
