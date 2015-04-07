@@ -72,18 +72,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        cpy = cpy && needCopy(ctx);
-
-        if (cpy) {
-            try {
-                return (T)ctx.processor().unmarshal(ctx,
-                    valBytes,
-                    val.getClass().getClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal object.", e);
-            }
-        }
+        assert val != null;
 
         return (T)val;
     }
