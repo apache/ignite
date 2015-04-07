@@ -97,9 +97,9 @@ public class VisorCache implements Serializable {
      * @param cacheName Cache name.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed collect metrics.
      */
-    public static VisorCache from(Ignite ignite, String cacheName, int sample) throws IgniteCheckedException {
+    public static VisorCache from(IgniteEx ignite, String cacheName, int sample) throws IgniteCheckedException {
         assert ignite != null;
 
         GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
@@ -226,7 +226,7 @@ public class VisorCache implements Serializable {
         cache.partitions = ca.affinity().partitions();
         cache.primaryPartitions = pps;
         cache.backupPartitions = bps;
-        cache.metrics = VisorCacheMetrics.from(ca);
+        cache.metrics = VisorCacheMetrics.from(ignite, ca);
         cache.partitionsMap = partsMap;
 
         return cache;

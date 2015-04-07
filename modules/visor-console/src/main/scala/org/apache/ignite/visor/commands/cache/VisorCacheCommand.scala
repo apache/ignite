@@ -19,7 +19,6 @@ package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.processors.cache.{GridCacheUtils => CU}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
@@ -277,7 +276,7 @@ class VisorCacheCommand {
                     if (hasArgFlag("scan", argLst))
                         VisorCacheScanCommand().scan(argLst, node)
                     else {
-                        if (!aggrData.exists(cache => cache.cacheName() == name && cache.system())) {
+                        if (!aggrData.exists(cache => safeEquals(cache.name(), name) && cache.system())) {
                             if (hasArgFlag("clear", argLst))
                                 VisorCacheClearCommand().clear(argLst, node)
                             else if (hasArgFlag("swap", argLst))
@@ -319,11 +318,11 @@ class VisorCacheCommand {
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
                     // Add cache host as visor variable.
-                    registerCacheName(ad.cacheName)
+                    registerCacheName(ad.name())
 
                     sumT += (
-                        mkCacheName(ad.cacheName),
-                        ad.cacheMode(),
+                        mkCacheName(ad.name()),
+                        ad.mode(),
                         ad.nodes,
                         (
                             "min: " + ad.minimumSize,
@@ -358,11 +357,11 @@ class VisorCacheCommand {
 
             if (all) {
                 val sorted = aggrData.sortWith((k1, k2) => {
-                    if (k1.cacheName == null)
+                    if (k1.name() == null)
                         true
-                    else if (k2.cacheName == null)
+                    else if (k2.name() == null)
                         false
-                    else k1.cacheName.compareTo(k2.cacheName) < 0
+                    else k1.name().compareTo(k2.name()) < 0
                 })
 
                 val gCfg = node.map(config).collect {
@@ -370,7 +369,7 @@ class VisorCacheCommand {
                 }
 
                 sorted.foreach(ad => {
-                    val cacheNameVar = mkCacheName(ad.cacheName)
+                    val cacheNameVar = mkCacheName(ad.name())
 
                     println("\nCache '" + cacheNameVar + "':")
 
@@ -428,7 +427,7 @@ class VisorCacheCommand {
                     println("  Total number of executions: " + ad.execsQuery)
                     println("  Total number of failures:   " + ad.failsQuery)
 
-                    gCfg.foreach(_.caches().find(_.name() == ad.cacheName()).foreach(cfg => {
+                    gCfg.foreach(_.caches().find(_.name() == ad.name()).foreach(cfg => {
                         nl()
 
                         showCacheConfiguration("Cache configuration:", cfg)
@@ -580,7 +579,7 @@ class VisorCacheCommand {
             case "rd" => data.toList.sortBy(_.averageReads)
             case "wr" => data.toList.sortBy(_.averageWrites)
             case "cn" => data.toList.sortWith((x, y) =>
-                x.cacheName == null || (y.cacheName != null && x.cacheName.toLowerCase < y.cacheName.toLowerCase))
+                x.name() == null || (y.name() != null && x.name().toLowerCase < y.name().toLowerCase))
 
             case _ =>
                 assert(false, "Unknown sorting type: " + arg)
@@ -619,12 +618,12 @@ class VisorCacheCommand {
             val ad = sortedAggrData(i)
 
             // Add cache host as visor variable.
-            registerCacheName(ad.cacheName)
+            registerCacheName(ad.name())
 
             sumT += (
                 i,
-                mkCacheName(ad.cacheName),
-                ad.cacheMode(),
+                mkCacheName(ad.name()),
+                ad.mode(),
                 ad.nodes,
                 (
                     "min: " + ad.minimumSize,
@@ -641,7 +640,7 @@ class VisorCacheCommand {
             None
         else {
             try
-                Some(sortedAggrData(a.toInt).cacheName)
+                Some(sortedAggrData(a.toInt).name())
             catch {
                 case e: Throwable =>
                     warn("Invalid selection: " + a)
