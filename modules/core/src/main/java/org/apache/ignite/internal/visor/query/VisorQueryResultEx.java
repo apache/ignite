@@ -35,7 +35,7 @@ public class VisorQueryResultEx extends VisorQueryResult {
     private final String qryId;
 
     /** Query columns descriptors. */
-    private final VisorQueryField[] colNames;
+    private final Collection<VisorQueryField> colNames;
 
     /**
      * @param resNodeId Node where query executed.
@@ -48,7 +48,7 @@ public class VisorQueryResultEx extends VisorQueryResult {
     public VisorQueryResultEx(
         UUID resNodeId,
         String qryId,
-        VisorQueryField[] colNames,
+        Collection<VisorQueryField> colNames,
         List<Object[]> rows,
         Boolean hasMore,
         long duration
@@ -77,7 +77,7 @@ public class VisorQueryResultEx extends VisorQueryResult {
     /**
      * @return Columns names.
      */
-    public VisorQueryField[] columnNames() {
+    public Collection<VisorQueryField> columnNames() {
         return colNames;
     }
 

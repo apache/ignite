@@ -67,53 +67,68 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
             }
         }
 
-        /** Collect data from SQL query */
+        /**
+         * Collect data from SQL query.
+         *
+         * @param arg
+         * @return
+         * @throws IgniteCheckedException
+         */
         private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage =
+            ConcurrentMap<String, VisorQueryTask.VisorQueryCursorHolder> storage =
                 ignite.cluster().nodeLocalMap();
 
-            VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
+            VisorQueryTask.VisorQueryCursorHolder t = storage.get(arg.get1());
 
             if (t == null)
                 throw new GridInternalException("SQL query results are expired.");
 
-            IgniteBiTuple<List<Object[]>, List<?>> nextRows = VisorQueryUtils.fetchSqlQueryRows(t.future(), t.next(), arg.get2());
+            VisorQueryCursor cur = t.cursor();
 
-            boolean hasMore = nextRows.get2() != null;
+            List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.get2());
+
+            boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                storage.put(arg.get1(), new VisorQueryTask.VisorFutureResultSetHolder<>(t.future(), nextRows.get2(), true));
+                storage.put(arg.get1(), new VisorQueryTask.VisorQueryCursorHolder(t.cursor(), true));
             else
                 storage.remove(arg.get1());
 
-            return new VisorQueryResult(nextRows.get1(), hasMore, U.currentTimeMillis() - start);
+            return new VisorQueryResult(nextRows, hasMore, U.currentTimeMillis() - start);
         }
 
-        /** Collect data from SCAN query */
+        /**
+         * Collect data from SCAN query
+         *
+         * @param arg
+         * @return
+         * @throws IgniteCheckedException
+         */
         private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage =
+            ConcurrentMap<String, VisorQueryTask.VisorQueryCursorHolder> storage =
                 ignite.cluster().nodeLocalMap();
 
-            VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
+            VisorQueryTask.VisorQueryCursorHolder t = storage.get(arg.get1());
 
             if (t == null)
                 throw new GridInternalException("Scan query results are expired.");
 
-            IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
-                VisorQueryUtils.fetchScanQueryRows(t.future(), t.next(), arg.get2());
+            VisorQueryCursor cur = t.cursor();
 
-            Boolean hasMore = rows.get2() != null;
+            List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.get2());
+
+            Boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                storage.put(arg.get1(), new VisorQueryTask.VisorFutureResultSetHolder<>(t.future(), rows.get2(), true));
+                storage.put(arg.get1(), new VisorQueryTask.VisorQueryCursorHolder(cur, true));
             else
                 storage.remove(arg.get1());
 
-            return new VisorQueryResult(rows.get1(), hasMore, U.currentTimeMillis() - start);
+            return new VisorQueryResult(rows, hasMore, U.currentTimeMillis() - start);
         }
 
         /** {@inheritDoc} */

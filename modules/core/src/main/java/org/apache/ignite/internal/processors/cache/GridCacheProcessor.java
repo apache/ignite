@@ -2306,12 +2306,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
+     * @param userOnly If {@code true} then throws {@link IllegalStateException} in case of system cache.
      * @param <K> type of keys.
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName) {
+    public <K, V> IgniteCache<K, V> privateJCache(@Nullable String cacheName, boolean userOnly) {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + cacheName);
 
@@ -2322,7 +2323,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
-            if (desc != null && !desc.cacheType().userCache())
+            if (userOnly && desc != null && !desc.cacheType().userCache())
                 throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
             if (cache == null) {
@@ -2358,6 +2359,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
         }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param <K> type of keys.
+     * @param <V> type of values.
+     * @return Cache instance for given name.
+     */
+    public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName) {
+        return privateJCache(cacheName, true);
     }
 
     /**
