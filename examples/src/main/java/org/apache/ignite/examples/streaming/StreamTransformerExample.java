@@ -64,8 +64,7 @@ public class StreamTransformerExample {
 
                     // Configure data transformation to count random numbers added to the stream.
                     stmr.receiver(new StreamTransformer<Integer, Long>() {
-                        @Override
-                        public Object process(MutableEntry<Integer, Long> e, Object... args) {
+                        @Override public Object process(MutableEntry<Integer, Long> e, Object... args) {
                             // Get current count.
                             Long val = e.getValue();
 
