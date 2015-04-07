@@ -542,6 +542,7 @@
                                                 <include name="${project.artifactId}-${project.version}-source-release.zip.asc" />
                                                 <include name="${project.artifactId}-${project.version}-source-release.zip.md5" />
                                                 <include name="${project.artifactId}-${project.version}-source-release.zip.sha1" />
+                                                <include name="${basedir}/KEYS" />
                                             </zipfileset>
                                         </zip>
                                         <mkdir dir="${basedir}/target/site" />
