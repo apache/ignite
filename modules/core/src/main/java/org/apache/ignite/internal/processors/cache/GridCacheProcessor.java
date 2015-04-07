@@ -1291,23 +1291,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets a collection of currentlty started caches.
-     *
-     * @return Collection of started cache names.
-     */
-    public Collection<CacheConfiguration> dataStructuresCacheNames() {
-        Collection<CacheConfiguration> res = new HashSet<>();
-        for (String name : registeredCaches.keySet()) {
-            DynamicCacheDescriptor desc = registeredCaches.get(name);
-
-            if (desc.cacheType() == CacheType.DATASTRUCTURE)
-                res.add(desc.cacheConfiguration());
-        }
-
-        return res;
-    }
-
-    /**
      * Gets cache mode.
      *
      * @param cacheName Cache name to check.

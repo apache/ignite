@@ -20,6 +20,8 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -27,7 +29,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Configuration for Ignite collections.
  */
-public class CollectionConfiguration {
+public class CollectionConfiguration implements Externalizable {
     /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode = ATOMIC;
 
@@ -135,5 +137,25 @@ public class CollectionConfiguration {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CollectionConfiguration.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(atomicityMode.ordinal());
+        out.writeInt(cacheMode.ordinal());
+        out.writeObject(memoryMode);
+        out.writeInt(backups);
+        out.writeLong(offHeapMaxMem);
+        out.writeBoolean(collocated);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readInt());
+        cacheMode = CacheMode.fromOrdinal(in.readInt());
+        memoryMode = (CacheMemoryMode) in.readObject();
+        backups = in.readInt();
+        offHeapMaxMem = in.readLong();
+        collocated = in.readBoolean();
     }
 }

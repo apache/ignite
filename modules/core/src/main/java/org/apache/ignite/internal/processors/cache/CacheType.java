@@ -36,11 +36,6 @@ public enum CacheType {
     INTERNAL(false, SYSTEM_POOL),
 
     /**
-     * Internal datastructure's cache, should use separate thread pool.
-     */
-    DATASTRUCTURE(false, UTILITY_CACHE_POOL),
-
-    /**
      * Internal replicated cache, should use separate thread pool.
      */
     UTILITY(false, UTILITY_CACHE_POOL),

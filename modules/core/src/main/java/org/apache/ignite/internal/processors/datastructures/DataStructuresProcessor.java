@@ -95,7 +95,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private GridCacheProjectionEx<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
 
     /** */
-    private GridCacheProjectionEx<CacheDataStructuresCacheKey, List<CacheConfiguration>> utilityDataCache;
+    private GridCacheProjectionEx<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
 
     /**
      * @param ctx Context.
@@ -713,15 +713,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /**
      * @param cfg Collection configuration.
-     * @param i Index.
-     * @return Cache name.
-     */
-    private String getCacheName(CollectionConfiguration cfg, int i) {
-        return "data_structures_" + i;
-    }
-
-    /**
-     * @param cfg Collection configuration.
      * @param name Cache name.
      * @return Cache configuration.
      */
@@ -742,55 +733,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param cfg Collection configuration.
      * @return Cache name.
      */
-    private String findCompatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
-        List<CacheConfiguration> cfgs = utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
-
-        if (cfgs == null)
-            return null;
-
-        for (CacheConfiguration ccfg : cfgs) {
-            if (ccfg.getAtomicityMode() == cfg.atomicityMode() &&
-                    ccfg.getMemoryMode() == cfg.memoryMode() &&
-                    ccfg.getCacheMode() == cfg.cacheMode() &&
-                    ccfg.getBackups() == cfg.backups() &&
-                    ccfg.getOffHeapMaxMemory() == cfg.offHeapMaxMem())
-                return ccfg.getName();
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cfg Collection configuration.
-     * @return Cache name.
-     */
     private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
-        String cacheName = findCompatibleConfiguration(cfg);
+        T2<String, IgniteCheckedException> res =
+            utilityDataCache.invoke(DATA_STRUCTURES_CACHE_KEY, new AddDataCacheProcessor(cfg)).get();
 
-        if (cacheName == null) {
-            try (IgniteInternalTx tx = utilityDataCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                cacheName = findCompatibleConfiguration(cfg);
+        IgniteCheckedException err = res.get2();
 
-                if (cacheName == null) {
-                    List<CacheConfiguration> oldVal = utilityDataCache.get(DATA_STRUCTURES_CACHE_KEY);
+        if (err != null)
+            throw err;
 
-                    cacheName = getCacheName(cfg, oldVal != null ? oldVal.size() : 0);
+        String cacheName = res.get1();
 
-                    CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
+        assert cacheName != null;
 
-                    ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.DATASTRUCTURE, false).get();
+        CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
 
-                    List<CacheConfiguration> newVal = oldVal != null ? new ArrayList(oldVal) :
-                            new ArrayList<CacheConfiguration>();
-
-                    newVal.add(newCfg);
-
-                    utilityDataCache.put(DATA_STRUCTURES_CACHE_KEY, newVal);
-                }
-
-                tx.commit();
-            }
-        }
+        ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false).get();
 
         return cacheName;
     }
@@ -1394,6 +1352,54 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /**
      *
      */
+    static class CacheCollectionInfo implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private CollectionConfiguration cfg;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public CacheCollectionInfo() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Collection cache name.
+         * @param cfg CollectionConfiguration.
+         */
+        public CacheCollectionInfo(String cacheName, CollectionConfiguration cfg) {
+            this.cacheName = cacheName;
+            this.cfg = cfg;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cfg = new CollectionConfiguration();
+            cfg.readExternal(in);
+            cacheName = U.readString(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            cfg.writeExternal(out);
+            U.writeString(out, cacheName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CacheCollectionInfo.class, this);
+        }
+    }
+
+    /**
+     *
+     */
     static class QueueInfo extends CollectionInfo {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1689,6 +1695,86 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AddCollectionProcessor.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    static class AddDataCacheProcessor implements
+        EntryProcessor<CacheDataStructuresCacheKey, List<CacheCollectionInfo>,
+            T2<String, IgniteCheckedException>>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private CollectionConfiguration cfg;
+
+        /**
+         * @param cfg Data structure information.
+         */
+        AddDataCacheProcessor(CollectionConfiguration cfg) {
+            this.cfg = cfg;
+        }
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public AddDataCacheProcessor() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public T2<String, IgniteCheckedException> process(
+            MutableEntry<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> entry,
+            Object... args)
+        {
+            List<CacheCollectionInfo> list = entry.getValue();
+
+            if (list == null) {
+                list = new ArrayList<>();
+
+                list.add(new CacheCollectionInfo("datastructeres_0", cfg));
+
+                entry.setValue(list);
+
+                return new T2<>("datastructeres_0", null);
+            }
+
+            for (CacheCollectionInfo col : list) {
+                if (col.cfg.atomicityMode() == cfg.atomicityMode() &&
+                    col.cfg.memoryMode() == cfg.memoryMode() &&
+                    col.cfg.cacheMode() == cfg.cacheMode() &&
+                    col.cfg.backups() == cfg.backups() &&
+                    col.cfg.offHeapMaxMem() == cfg.offHeapMaxMem())
+
+                    return new T2<>(col.cacheName, null);
+            }
+
+            String newName = "datastructeres_" + list.size();
+
+            List<CacheCollectionInfo> newList = new ArrayList<>(list);
+
+            newList.add(new CacheCollectionInfo(newName, cfg));
+
+            return new T2<>(newName, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            cfg.writeExternal(out);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cfg = new CollectionConfiguration();
+
+            cfg.readExternal(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AddDataCacheProcessor.class, this);
         }
     }
 
