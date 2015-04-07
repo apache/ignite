@@ -46,4 +46,8 @@
             <version>1.6.4</version>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>ignite-sprint-3-release-test-branch</tag>
+  </scm>
 </project>

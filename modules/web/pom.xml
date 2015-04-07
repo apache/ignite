@@ -88,4 +88,8 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>ignite-sprint-3-release-test-branch</tag>
+  </scm>
 </project>

@@ -120,4 +120,8 @@
             </testResource>
         </testResources>
     </build>
+
+  <scm>
+    <tag>ignite-sprint-3-release-test-branch</tag>
+  </scm>
 </project>
