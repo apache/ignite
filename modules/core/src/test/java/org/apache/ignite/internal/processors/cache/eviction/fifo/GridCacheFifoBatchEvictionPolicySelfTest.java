@@ -30,7 +30,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  * FIFO batch eviction test.
  */
 public class GridCacheFifoBatchEvictionPolicySelfTest extends
-        GridCacheEvictionAbstractTest<FifoEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<FifoEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
