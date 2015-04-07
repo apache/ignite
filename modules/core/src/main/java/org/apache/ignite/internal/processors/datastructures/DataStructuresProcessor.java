@@ -1242,6 +1242,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Name of the cache with compatible configuration or null.
      */
     private static String findCompatibleConfiguration(CollectionConfiguration cfg, List<CacheCollectionInfo> infos) {
+        if (infos == null)
+            return null;
+
         for (CacheCollectionInfo col : infos) {
             if (col.cfg.getAtomicityMode() == cfg.getAtomicityMode() &&
                 col.cfg.getMemoryMode() == cfg.getMemoryMode() &&
