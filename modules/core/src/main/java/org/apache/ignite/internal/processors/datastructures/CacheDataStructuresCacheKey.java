@@ -37,7 +37,7 @@ public class CacheDataStructuresCacheKey implements GridCacheInternal, Externali
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 33;
+        return getClass().getName().hashCode();
     }
 
     /** {@inheritDoc} */

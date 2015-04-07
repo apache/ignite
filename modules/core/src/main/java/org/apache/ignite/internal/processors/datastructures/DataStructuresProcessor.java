@@ -38,6 +38,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -724,6 +725,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ccfg.setCacheMode(cfg.cacheMode());
         ccfg.setMemoryMode(cfg.memoryMode());
         ccfg.setOffHeapMaxMemory(cfg.offHeapMaxMem());
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         return ccfg;
     }
@@ -1237,16 +1240,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
-     * @throws IgniteCheckedException If {@link IgniteQueue} can with given cache.
-     */
-    private void checkSupportsQueue(GridCacheContext cctx) throws IgniteCheckedException {
-        if (cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK)
-            throw new IgniteCheckedException("IgniteQueue can not be used with ATOMIC cache with CLOCK write order mode" +
-                " (change write order mode to PRIMARY in configuration)");
-    }
-
-    /**
      *
      */
     static enum DataStructureType {
@@ -1378,14 +1371,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cfg = new CollectionConfiguration();
-            cfg.readExternal(in);
+            cfg = (CollectionConfiguration)in.readObject();
             cacheName = U.readString(in);
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            cfg.writeExternal(out);
+            out.writeObject(cfg);
             U.writeString(out, cacheName);
         }
 
@@ -1745,7 +1737,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     col.cfg.cacheMode() == cfg.cacheMode() &&
                     col.cfg.backups() == cfg.backups() &&
                     col.cfg.offHeapMaxMem() == cfg.offHeapMaxMem())
-
                     return new T2<>(col.cacheName, null);
             }
 
@@ -1760,14 +1751,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            cfg.writeExternal(out);
+            out.writeObject(cfg);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cfg = new CollectionConfiguration();
-
-            cfg.readExternal(in);
+            cfg = (CollectionConfiguration)in.readObject();
         }
 
         /** {@inheritDoc} */

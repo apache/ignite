@@ -86,29 +86,6 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testQueueAtomicClockCache() throws Exception {
-        final String queueName = "testQueueAtomicClockCache";
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                CollectionConfiguration colCfg = new CollectionConfiguration();
-
-                colCfg.cacheMode(PARTITIONED);
-                colCfg.atomicityMode(ATOMIC);
-
-                ignite(0).queue(queueName, 0, colCfg);
-
-                return null;
-            }
-        }, IgniteException.class, "IgniteQueue can not be used with ATOMIC cache with CLOCK write order mode " +
-            "(change write order mode to PRIMARY in configuration)");
-
-        assertNull(ignite(0).queue(queueName, 0, null));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testUniqueNameMultithreaded() throws Exception {
         testUniqueName(true);
     }
