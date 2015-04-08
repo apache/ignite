@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,14 +31,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
     private static final long serialVersionUID = 0L;
 
     /** Added node ID. */
-    private UUID nodeId;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryNodeAddFinishedMessage() {
-        // No-op.
-    }
+    private final UUID nodeId;
 
     /**
      * Constructor.
@@ -60,20 +52,6 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
      */
     public UUID nodeId() {
         return nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeUuid(out, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        nodeId = U.readUuid(in);
     }
 
     /** {@inheritDoc} */
