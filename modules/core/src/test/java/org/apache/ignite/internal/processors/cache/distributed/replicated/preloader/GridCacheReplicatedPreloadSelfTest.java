@@ -280,7 +280,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, String> cache2 = startGrid(2).cache(null);
 
-            assertEquals(keyCnt, cache2.localSize());
+            assertEquals(keyCnt, cache2.localSize(CachePeekMode.ALL));
         }
         finally {
             stopAllGrids();
@@ -304,11 +304,12 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, String> cache2 = startGrid(2).cache(null);
 
-            int size = cache2.localSize();
+            int size = cache2.localSize(CachePeekMode.ALL);
 
             info("Size of cache2: " + size);
 
-            assert waitCacheSize(cache2, keyCnt, getTestTimeout()) : "Actual cache size: " + cache2.localSize();
+            assert waitCacheSize(cache2, keyCnt, getTestTimeout()) :
+                "Actual cache size: " + cache2.localSize(CachePeekMode.ALL);
         }
         finally {
             stopAllGrids();
@@ -331,14 +332,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         long end = System.currentTimeMillis() + timeout;
 
-        while (cache.localSize() < expSize) {
+        while (cache.localSize(CachePeekMode.ALL) < expSize) {
             Thread.sleep(50);
 
             if (end - System.currentTimeMillis() <= 0)
                 break;
         }
 
-        return cache.localSize() >= expSize;
+        return cache.localSize(CachePeekMode.ALL) >= expSize;
     }
 
     /**
@@ -358,7 +359,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, String> cache2 = startGrid(2).cache(null);
 
-            assertEquals(cnt, cache2.localSize());
+            assertEquals(cnt, cache2.localSize(CachePeekMode.ALL));
         }
         finally {
             stopAllGrids();
@@ -382,7 +383,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, String> cache2 = startGrid(2).cache(null);
 
-            assertEquals(cnt, cache2.localSize());
+            assertEquals(cnt, cache2.localSize(CachePeekMode.ALL));
         }
         finally {
             stopAllGrids();
@@ -406,7 +407,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, String> cache2 = startGrid(2).cache(null);
 
-            assertEquals(cnt, cache2.localSize());
+            assertEquals(cnt, cache2.localSize(CachePeekMode.ALL));
         }
         finally {
             stopGrid(1);
@@ -450,7 +451,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 grid(0).cache(null).putAll(map);
 
             for (int gridIdx = 0; gridIdx < gridCnt; gridIdx++) {
-                assert grid(gridIdx).cache(null).localSize() == cnt : "Actual size: " + grid(gridIdx).cache(null).localSize();
+                assert grid(gridIdx).cache(null).localSize(CachePeekMode.ALL) == cnt :
+                    "Actual size: " + grid(gridIdx).cache(null).localSize(CachePeekMode.ALL);
 
                 info("Cache size is OK for grid index: " + gridIdx);
             }
@@ -467,7 +469,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             stopGrid(idx);
 
-            assert waitCacheSize(lastCache, cnt, 20 * 1000) : "Actual cache size: " + lastCache.localSize();
+            assert waitCacheSize(lastCache, cnt, 20 * 1000) :
+                "Actual cache size: " + lastCache.localSize(CachePeekMode.ALL);
         }
         finally {
             stopAllGrids();
