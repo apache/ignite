@@ -220,21 +220,21 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             // If this is the oldest node.
             if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cacheId)) {
                 if (node2part == null) {
-                    node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq);
+                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
                     if (log.isDebugEnabled())
                         log.debug("Created brand new full topology map on oldest node [exchId=" +
                             exchId + ", fullMap=" + fullMapString() + ']');
                 }
                 else if (!node2part.valid()) {
-                    node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq, node2part, false);
+                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
 
                     if (log.isDebugEnabled())
                         log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
                             node2part + ']');
                 }
                 else if (!node2part.nodeId().equals(loc.id())) {
-                    node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq, node2part, false);
+                    node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
 
                     if (log.isDebugEnabled())
                         log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +

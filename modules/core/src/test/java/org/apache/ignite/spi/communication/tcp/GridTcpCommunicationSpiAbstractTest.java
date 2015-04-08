@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.testframework.*;
 
@@ -79,8 +80,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
             ConcurrentMap<UUID, GridTcpCommunicationClient> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 20 && !clients.isEmpty(); i++) {
-                info("Check failed for SPI [grid=" + GridTestUtils.getFieldValue(spi, "gridName") +
-                    ", spi=" + spi + ']');
+                info("Check failed for SPI [grid=" +
+                    GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "gridName") + ", spi=" + spi + ']');
 
                 U.sleep(1000);
             }
