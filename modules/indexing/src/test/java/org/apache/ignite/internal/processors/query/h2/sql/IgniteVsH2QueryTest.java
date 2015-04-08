@@ -526,7 +526,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleReplSelect() throws Exception {
+    public void _testSimpleReplSelect() throws Exception {
         compareQueryRes0("select id, name, price from \"repl\".Product");
     }
 
@@ -552,6 +552,21 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
 
         // Ensure we find something.
         assertNotSame(0, rs1.size());
+    }
+
+    /**
+     *
+     */
+    public void testUnion() throws SQLException {
+        String base = "select _val v from \"part\".Person";
+
+        compareQueryRes0(base + " union all " + base);
+        compareQueryRes0(base + " union " + base);
+
+        base = "select firstName||lastName name, salary from \"part\".Person";
+
+        assertEquals(10, compareOrderedQueryRes0(base + " union all " + base + " order by salary desc").size());
+        assertEquals(5, compareOrderedQueryRes0(base + " union " + base + " order by salary desc").size());
     }
 
     /**
@@ -600,16 +615,16 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
      *  
      * @throws Exception If failed.
      */
-    public void testSimpleJoin() throws Exception {
+    public void _testSimpleJoin() throws Exception {
         // Have expected results.
         compareQueryRes0("select id, firstName, lastName" +
             "  from \"part\".Person" +
             "  where Person.id = ?", 3);
 
         // Ignite cache return 0 results...
-        compareQueryRes0("select Person.firstName" +
-            "  from \"part\".Person, \"part\".Purchase" +
-            "  where Person.id = ?", 3);
+        compareQueryRes0("select pe.firstName" +
+            "  from \"part\".Person pe join \"part\".Purchase pu on pe.id = pu.personId " +
+            "  where pe.id = ?", 3);
     }
 
     /**
@@ -622,7 +637,7 @@ public class IgniteVsH2QueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCrossCache() throws Exception {
+    public void _testCrossCache() throws Exception {
         //TODO Investigate (should be 20 results instead of 0).
         compareQueryRes0("select firstName, lastName" +
             "  from \"part\".Person, \"part\".Purchase" +

@@ -626,7 +626,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @Nullable @Override public ClusterNode getNode(UUID nodeId) {
         assert nodeId != null;
 
-        UUID locNodeId0 = ignite.configuration().getNodeId();
+        UUID locNodeId0 = getLocalNodeId();
 
         if (locNodeId0 != null && locNodeId0.equals(nodeId))
             // Return local node directly.
@@ -703,7 +703,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         locNode = new TcpDiscoveryNode(
-            ignite.configuration().getNodeId(),
+            getLocalNodeId(),
             addrs.get1(),
             addrs.get2(),
             tcpSrvr.port,
@@ -856,7 +856,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         if (hbFreq < 2000)
             U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
 
-        registerMBean(ignite.name(), this, TcpDiscoverySpiMBean.class);
+        registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
 
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
             TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
@@ -926,7 +926,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         if (msgWorker != null && msgWorker.isAlive() && !disconnect) {
             // Send node left message only if it is final stop.
-            msgWorker.addMessage(new TcpDiscoveryNodeLeftMessage(ignite.configuration().getNodeId()));
+            msgWorker.addMessage(new TcpDiscoveryNodeLeftMessage(getLocalNodeId()));
 
             synchronized (mux) {
                 long threshold = U.currentTimeMillis() + netTimeout;
@@ -1088,7 +1088,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @Override public boolean pingNode(UUID nodeId) {
         assert nodeId != null;
 
-        if (nodeId == ignite.configuration().getNodeId())
+        if (nodeId == getLocalNodeId())
             return true;
 
         TcpDiscoveryNode node = ring.node(nodeId);
@@ -1116,7 +1116,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private boolean pingNode(TcpDiscoveryNode node) {
         assert node != null;
 
-        if (node.id().equals(ignite.configuration().getNodeId()))
+        if (node.id().equals(getLocalNodeId()))
             return true;
 
         UUID clientNodeId = null;
@@ -1160,10 +1160,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         throws IgniteCheckedException {
         assert addr != null;
 
-        UUID locNodeId = ignite.configuration().getNodeId();
+        UUID locNodeId = getLocalNodeId();
 
         if (F.contains(locNodeAddrs, addr))
-            return F.t(ignite.configuration().getNodeId(), false);
+            return F.t(getLocalNodeId(), false);
 
         GridFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapter<>();
 
@@ -1388,7 +1388,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode,
-            exchange.collect(ignite.configuration().getNodeId()));
+            exchange.collect(getLocalNodeId()));
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -1550,7 +1550,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         boolean joinReqSent = false;
 
-        UUID locNodeId = ignite.configuration().getNodeId();
+        UUID locNodeId = getLocalNodeId();
 
         for (int i = 0; i < reconCnt; i++) {
             // Need to set to false on each new iteration,
@@ -1985,7 +1985,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * This method is intended for test purposes only.
      */
     void simulateNodeFailure() {
-        U.warn(log, "Simulating node failure: " + ignite.configuration().getNodeId());
+        U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
         U.interrupt(tcpSrvr);
         U.join(tcpSrvr, log);
@@ -2034,7 +2034,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         if (next != null)
-            msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(ignite.configuration().getNodeId(), next.id(),
+            msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), next.id(),
                 next.internalOrder()));
     }
 
@@ -2085,7 +2085,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             b.append(">>>").append("Dumping discovery SPI debug info.").append(U.nl());
             b.append(">>>").append(U.nl());
 
-            b.append("Local node ID: ").append(ignite.configuration().getNodeId()).append(U.nl()).append(U.nl());
+            b.append("Local node ID: ").append(getLocalNodeId()).append(U.nl()).append(U.nl());
             b.append("Local node: ").append(locNode).append(U.nl()).append(U.nl());
             b.append("SPI state: ").append(spiState).append(U.nl()).append(U.nl());
 
@@ -2141,7 +2141,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         assert debugMode;
 
         String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
-            '[' + Thread.currentThread().getName() + "][" + ignite.configuration().getNodeId() +
+            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
             "-" + locNode.internalOrder() + "] " +
             msg;
 
@@ -2205,7 +2205,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * Constructor.
          */
         private HeartbeatsSender() {
-            super(ignite.name(), "tcp-disco-hb-sender", log);
+            super(gridName, "tcp-disco-hb-sender", log);
 
             setPriority(threadPri);
         }
@@ -2227,9 +2227,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(ignite.configuration().getNodeId());
+                TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(getLocalNodeId());
 
-                msg.verify(ignite.configuration().getNodeId());
+                msg.verify(getLocalNodeId());
 
                 msgWorker.addMessage(msg);
 
@@ -2249,7 +2249,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * Constructor.
          */
         private CheckStatusSender() {
-            super(ignite.name(), "tcp-disco-status-check-sender", log);
+            super(gridName, "tcp-disco-status-check-sender", log);
 
             setPriority(threadPri);
         }
@@ -2313,7 +2313,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * Constructor.
          */
         private IpFinderCleaner() {
-            super(ignite.name(), "tcp-disco-ip-finder-cleaner", log);
+            super(gridName, "tcp-disco-ip-finder-cleaner", log);
 
             setPriority(threadPri);
         }
@@ -2579,7 +2579,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
                     if (wrk != null) {
-                        msg.verify(ignite.configuration().getNodeId());
+                        msg.verify(getLocalNodeId());
 
                         wrk.addMessage(msg);
                     }
@@ -2638,7 +2638,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             boolean searchNext = true;
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             while (true) {
                 if (searchNext) {
@@ -3035,7 +3035,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             TcpDiscoveryNode node = msg.node();
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             if (!msg.client()) {
                 boolean rmtHostLoopback = node.socketAddresses().size() == 1 &&
@@ -3354,7 +3354,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param msg Client reconnect message.
          */
         private void processClientReconnectMessage(TcpDiscoveryClientReconnectMessage msg) {
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             boolean isLocalNodeRouter = locNodeId.equals(msg.routerNodeId());
 
@@ -3436,7 +3436,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 return;
             }
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             if (isLocalNodeCoordinator()) {
                 if (msg.verified()) {
@@ -3650,7 +3650,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             boolean locNodeCoord = isLocalNodeCoordinator();
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             if (locNodeCoord) {
                 if (msg.verified()) {
@@ -3759,7 +3759,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private void processNodeLeftMessage(TcpDiscoveryNodeLeftMessage msg) {
             assert msg != null;
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             UUID leavingNodeId = msg.creatorNodeId();
 
@@ -4004,7 +4004,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             boolean locNodeCoord = isLocalNodeCoordinator();
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             if (locNodeCoord) {
                 if (msg.verified()) {
@@ -4093,7 +4093,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private void processStatusCheckMessage(TcpDiscoveryStatusCheckMessage msg) {
             assert msg != null;
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             if (msg.failedNodeId() != null) {
                 if (locNodeId.equals(msg.failedNodeId())) {
@@ -4215,7 +4215,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private void processHeartbeatMessage(TcpDiscoveryHeartbeatMessage msg) {
             assert msg != null;
 
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             if (ring.node(msg.creatorNodeId()) == null) {
                 if (log.isDebugEnabled())
@@ -4346,9 +4346,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             assert msgId != null;
 
             if (isLocalNodeCoordinator()) {
-                if (!ignite.configuration().getNodeId().equals(msg.verifierNodeId()))
+                if (!getLocalNodeId().equals(msg.verifierNodeId()))
                     // Message is not verified or verified by former coordinator.
-                    msg.verify(ignite.configuration().getNodeId());
+                    msg.verify(getLocalNodeId());
                 else
                     // Discard the message.
                     return;
@@ -4424,7 +4424,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @throws IgniteSpiException In case of error.
          */
         TcpServer() throws IgniteSpiException {
-            super(ignite.name(), "tcp-disco-srvr", log);
+            super(gridName, "tcp-disco-srvr", log);
 
             setPriority(threadPri);
 
@@ -4522,7 +4522,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param sock Socket to read data from.
          */
         SocketReader(Socket sock) {
-            super(ignite.name(), "tcp-disco-sock-reader", log);
+            super(gridName, "tcp-disco-sock-reader", log);
 
             this.sock = sock;
 
@@ -4533,7 +4533,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            UUID locNodeId = ignite.configuration().getNodeId();
+            UUID locNodeId = getLocalNodeId();
 
             try {
                 InputStream in;
@@ -4995,7 +4995,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 if (state == CONNECTING) {
                     if (noResAddrs.contains(rmtAddr) ||
-                        ignite.configuration().getNodeId().compareTo(msg.creatorNodeId()) < 0)
+                        getLocalNodeId().compareTo(msg.creatorNodeId()) < 0)
                         // Remote node node has not responded to join request or loses UUID race.
                         res = RES_WAIT;
                     else
@@ -5053,7 +5053,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * Constructor.
          */
         StatisticsPrinter() {
-            super(ignite.name(), "tcp-disco-stats-printer", log);
+            super(gridName, "tcp-disco-stats-printer", log);
 
             assert statsPrintFreq > 0;
 
@@ -5130,7 +5130,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 if (log.isDebugEnabled())
                     log.debug("Redirecting message to client [sock=" + sock + ", locNodeId="
-                        + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+                        + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
                 try {
                     prepareNodeAddedMessage(msg, nodeId, null, null);
@@ -5144,10 +5144,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
-                        + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                        + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
 
                 onException("Client connection failed [sock=" + sock + ", locNodeId="
-                    + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                    + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
 
                 U.interrupt(clientMsgWorkers.remove(nodeId));
 

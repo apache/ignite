@@ -545,7 +545,7 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
-                        <phase>install</phase>
+                        <phase>package</phase>
                         <configuration>
                             <stylesheetfile>
                                 ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/javadoc.css
