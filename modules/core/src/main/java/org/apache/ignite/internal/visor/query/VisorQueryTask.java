@@ -19,6 +19,8 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -34,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
  * Task for execute SCAN or SQL query and get first page of results.
@@ -43,6 +46,26 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
     IgniteBiTuple<? extends Exception, VisorQueryResultEx>> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** {@inheritDoc} */
+    @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
+        VisorTaskArgument<VisorQueryTask.VisorQueryArg> arg) {
+        String cacheName = taskArg.cacheName();
+
+        ClusterGroup prj = ignite.cluster().forDataNodes(cacheName);
+
+        if (prj.nodes().isEmpty())
+            throw new IgniteException("No data nodes for cache: " + escapeName(cacheName));
+
+        // First try to take local node to avoid network hop.
+        ClusterNode node = prj.node(ignite.localNode().id());
+
+        // Take any node from projection.
+        if (node == null)
+            node = prj.forRandom().node();
+
+        return Collections.singletonMap(job(taskArg), node);
+    }
 
     /** {@inheritDoc} */
     @Override protected VisorQueryJob job(VisorQueryArg arg) {
@@ -57,9 +80,6 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Node ids for query. */
-        private final Collection<UUID> proj;
-
         /** Cache name for query. */
         private final String cacheName;
 
@@ -70,23 +90,14 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         private final Integer pageSize;
 
         /**
-         * @param proj Node ids for query.
          * @param cacheName Cache name for query.
          * @param qryTxt Query text.
          * @param pageSize Result batch size.
          */
-        public VisorQueryArg(Collection<UUID> proj, String cacheName, String qryTxt, Integer pageSize) {
-            this.proj = proj;
+        public VisorQueryArg(String cacheName, String qryTxt, Integer pageSize) {
             this.cacheName = cacheName;
             this.qryTxt = qryTxt;
             this.pageSize = pageSize;
-        }
-
-        /**
-         * @return Proj.
-         */
-        public Collection<UUID> proj() {
-            return proj;
         }
 
         /**
