@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.util.*;
@@ -502,6 +505,31 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         );
 
         assert queue.isEmpty() : "Queue must be empty. " + queue.size();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReuseHash() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg);
+
+        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg);
+
+        assertEquals(getQueueCache(queue1), getQueueCache(queue2));
+    }
+
+    /**
+     * @param queue Ignite queue.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration getQueueCache(IgniteQueue queue) {
+        GridCacheQueueAdapter delegate = GridTestUtils.getFieldValue(queue, "delegate");
+
+        GridCacheAdapter cache = GridTestUtils.getFieldValue(delegate, GridCacheQueueAdapter.class, "cache");
+
+        return cache.configuration();
     }
 
     /**

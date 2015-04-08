@@ -33,6 +33,11 @@ public class GridCachePartitionedQueueJoinedNodeSelfTest extends GridCacheQueueJ
     }
 
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return CacheMemoryMode.ONHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }

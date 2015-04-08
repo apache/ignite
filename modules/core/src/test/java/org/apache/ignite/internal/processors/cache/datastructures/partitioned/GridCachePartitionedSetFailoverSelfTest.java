@@ -30,4 +30,9 @@ public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailove
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return CacheMemoryMode.ONHEAP_TIERED;
+    }
 }

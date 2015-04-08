@@ -27,6 +27,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 public class GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest
     extends GridCachePartitionedQueueCreateMultiNodeSelfTest {
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return CacheMemoryMode.ONHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }

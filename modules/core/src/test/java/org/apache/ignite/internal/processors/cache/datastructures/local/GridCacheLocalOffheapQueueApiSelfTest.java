@@ -14,24 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-
 /**
- * Queue tests with partitioned atomic cache.
+ * Queue tests with local cache.
  */
-public class GridCachePartitionedAtomicQueueApiSelfTest extends GridCachePartitionedQueueApiSelfTest {
+public class GridCacheLocalOffheapQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
+        return CacheMemoryMode.OFFHEAP_TIERED;
     }
 }

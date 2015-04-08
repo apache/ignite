@@ -33,6 +33,16 @@ public class GridCacheReplicatedQueueApiSelfTest extends GridCacheQueueApiSelfAb
     }
 
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return CacheMemoryMode.OFFHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long collectionOffHeapMaxMemory() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }

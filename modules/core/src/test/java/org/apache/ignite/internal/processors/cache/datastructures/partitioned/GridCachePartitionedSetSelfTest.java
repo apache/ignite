@@ -33,6 +33,11 @@ public class GridCachePartitionedSetSelfTest extends GridCacheSetAbstractSelfTes
     }
 
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return CacheMemoryMode.OFFHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }

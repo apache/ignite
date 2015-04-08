@@ -28,6 +28,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 public class GridCachePartitionedQueueFailoverDataConsistencySelfTest extends
     GridCacheAbstractQueueFailoverDataConsistencySelfTest {
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return CacheMemoryMode.ONHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }

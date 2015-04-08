@@ -71,6 +71,8 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
         colCfg.setCacheMode(collectionCacheMode());
         colCfg.setAtomicityMode(collectionCacheAtomicityMode());
+        colCfg.setMemoryMode(collectionMemoryMode());
+        colCfg.setOffHeapMaxMemory(collectionOffHeapMaxMemory());
 
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);
@@ -89,9 +91,21 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
     protected abstract CacheMode collectionCacheMode();
 
     /**
+     * @return Collection cache memory mode.
+     */
+    protected abstract CacheMemoryMode collectionMemoryMode();
+
+    /**
      * @return Collection cache atomicity mode.
      */
     protected abstract CacheAtomicityMode collectionCacheAtomicityMode();
+
+    /**
+     * @return Collection cache off-heap max memory.
+     */
+    protected long collectionOffHeapMaxMemory() {
+        return -1;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
