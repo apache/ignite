@@ -862,9 +862,17 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                 invalidateRdr,
                                 cctx);
 
-                            if (needVal)
+                            if (needVal) {
                                 // Mark last added key as needed to be preloaded.
                                 req.markLastKeyForPreload();
+
+                                if (tx != null) {
+                                    IgniteTxEntry txEntry = tx.entry(e.txKey());
+
+                                    // NOOP entries will be sent to backups on prepare step.
+                                    txEntry.op(GridCacheOperation.NOOP);
+                                }
+                            }
 
                             it.set(addOwned(req, e));
                         }

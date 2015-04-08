@@ -971,7 +971,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(entry);
 
-        if (expiry != null && entry.op() == READ) {
+        if (expiry != null && (entry.op() == READ || entry.op() == NOOP)) {
             entry.op(NOOP);
 
             entry.ttl(CU.toTtl(expiry.getExpiryForAccess()));

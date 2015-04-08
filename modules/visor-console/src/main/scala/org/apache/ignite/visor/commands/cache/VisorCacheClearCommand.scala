@@ -93,8 +93,7 @@ class VisorCacheClearCommand {
 
             case Some(s) if s.startsWith("@") =>
                 warn("Can't find cache variable with specified name: " + s,
-                    "Type 'cache' to see available cache variables."
-                )
+                    "Type 'cache' to see available cache variables.")
 
                 break()
 
