@@ -84,25 +84,41 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
-            AffinityTopologyVersion locAffVer = cctx.exchange().topologyVersion();
-            AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
+            IgniteInternalFuture<?> fut = null;
 
-            if (locAffVer.compareTo(rmtAffVer) < 0) {
-                if (log.isDebugEnabled())
-                    log.debug("Received message has higher topology version [msg=" + msg +
-                        ", locTopVer=" + locAffVer + ", rmtTopVer=" + rmtAffVer + ']');
+            if (cacheMsg.partitionExchangeMessage()) {
+                long locTopVer = cctx.discovery().topologyVersion();
+                long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 
-                IgniteInternalFuture<?> topFut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                if (locTopVer < rmtTopVer) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received message has higher topology version [msg=" + msg +
+                            ", locTopVer=" + locTopVer + ", rmtTopVer=" + rmtTopVer + ']');
 
-                if (topFut != null && !topFut.isDone()) {
-                    topFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> t) {
-                            handleMessage(nodeId, cacheMsg);
-                        }
-                    });
-
-                    return;
+                    fut = cctx.discovery().topologyFuture(rmtTopVer);
                 }
+            }
+            else {
+                AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
+                AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
+
+                if (locAffVer.compareTo(rmtAffVer) < 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received message has higher affinity topology version [msg=" + msg +
+                            ", locTopVer=" + locAffVer + ", rmtTopVer=" + rmtAffVer + ']');
+
+                    fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                }
+            }
+
+            if (fut != null && !fut.isDone()) {
+                fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
+                        handleMessage(nodeId, cacheMsg);
+                    }
+                });
+
+                return;
             }
 
             handleMessage(nodeId, cacheMsg);

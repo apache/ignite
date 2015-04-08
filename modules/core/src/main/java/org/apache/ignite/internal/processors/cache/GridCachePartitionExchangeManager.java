@@ -372,13 +372,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param cacheId Cache ID.
+     * @return Client partition topology.
      */
     public GridClientPartitionTopology clearClientTopology(int cacheId) {
         return clientTops.remove(cacheId);
     }
 
     /**
-     * Gets topology version of last completed partition exchange.
+     * Gets topology version of last partition exchange, it is possible that last partition exchange
+     * is not completed yet.
      *
      * @return Topology version.
      */
@@ -387,6 +389,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         return lastInitializedFut0 != null
             ? lastInitializedFut0.exchangeId().topologyVersion() : AffinityTopologyVersion.NONE;
+    }
+
+    /**
+     * @return Topology version of latest completed partition exchange.
+     */
+    public AffinityTopologyVersion readyAffinityVersion() {
+        return readyTopVer.get();
     }
 
     /**
@@ -796,7 +805,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (top != null)
                         updated |= top.update(null, entry.getValue()) != null;
-
                 }
 
                 if (updated)
