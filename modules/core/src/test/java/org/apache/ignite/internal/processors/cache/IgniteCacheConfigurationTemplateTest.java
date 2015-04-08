@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -78,6 +80,8 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         }
 
         cfg.setClientMode(clientMode);
+
+        cfg.setIncludeEventTypes(EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         return cfg;
     }
@@ -250,6 +254,55 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
         Ignite ignite = startGrid(GRID_CNT);
 
         checkGetOrCreate(ignite, "org.apache.ignite3", 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoPartitionExchangeForTemplate() throws Exception{
+        final int GRID_CNT = 3;
+
+        startGridsMultiThreaded(GRID_CNT);
+
+        final CountDownLatch evtLatch = new CountDownLatch(1);
+
+        log.info("Add templates.");
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            Ignite ignite = ignite(i);
+
+            ignite.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    log.info("Event: " + evt);
+
+                    evtLatch.countDown();
+
+                    return true;
+                }
+            }, EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
+        }
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            Ignite ignite = ignite(i);
+
+            CacheConfiguration ccfg = new CacheConfiguration();
+
+            ccfg.setName("cfg-" + i);
+
+            ignite.addCacheConfiguration(ccfg);
+        }
+
+        boolean evt = evtLatch.await(3000, TimeUnit.MILLISECONDS);
+
+        assertFalse(evt);
+
+        log.info("Start cache.");
+
+        checkGetOrCreate(ignite(0), "cfg-0", 0);
+
+        evt = evtLatch.await(3000, TimeUnit.MILLISECONDS);
+
+        assertTrue(evt);
     }
 
     /**
