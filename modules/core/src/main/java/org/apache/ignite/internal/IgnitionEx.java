@@ -1675,23 +1675,32 @@ public class IgnitionEx {
          */
         @SuppressWarnings("unchecked")
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-            CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
+            List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            final boolean hasHadoop = IgniteComponentType.HADOOP.inClassPath();
+            boolean clientDisco = cfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
 
-            final boolean hasAtomics = cfg.getAtomicConfiguration() != null;
+            // Add marshaller and utility caches.
+            if (!clientDisco) {
+                cacheCfgs.add(marshallerSystemCache());
 
-            final boolean clientDisco = cfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
+                cacheCfgs.add(utilitySystemCache());
+            }
 
-            CacheConfiguration[] copies;
+            if (IgniteComponentType.HADOOP.inClassPath())
+                cacheCfgs.add(CU.hadoopSystemCache());
 
-            if (cacheCfgs != null && cacheCfgs.length > 0) {
+            if (cfg.getAtomicConfiguration() != null && !clientDisco)
+                cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
+
+            CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
+
+            if (userCaches != null && userCaches.length > 0) {
                 if (!U.discoOrdered(cfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
                         "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
                         "like GridTcpDiscoverySpi)");
 
-                for (CacheConfiguration ccfg : cacheCfgs) {
+                for (CacheConfiguration ccfg : userCaches) {
                     if (CU.isHadoopSystemCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
@@ -1707,54 +1716,12 @@ public class IgnitionEx {
                     if (CU.isMarshallerCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
+
+                    cacheCfgs.add(ccfg);
                 }
-
-                int addCacheCnt = 2; // Always add marshaller and utility caches.
-
-                if (hasHadoop)
-                    addCacheCnt++;
-
-                if (hasAtomics)
-                    addCacheCnt++;
-
-                copies = new CacheConfiguration[cacheCfgs.length + addCacheCnt];
-
-                int cloneIdx = 2;
-
-                if (hasHadoop)
-                    copies[cloneIdx++] = CU.hadoopSystemCache();
-
-                if (hasAtomics)
-                    copies[cloneIdx++] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
-
-                for (CacheConfiguration ccfg : cacheCfgs)
-                    copies[cloneIdx++] = new CacheConfiguration(ccfg);
-            }
-            else {
-                int cacheCnt = 2; // Always add marshaller and utility caches.
-
-                if (hasHadoop)
-                    cacheCnt++;
-
-                if (hasAtomics)
-                    cacheCnt++;
-
-                copies = new CacheConfiguration[cacheCnt];
-
-                int cacheIdx = 2;
-
-                if (hasHadoop)
-                    copies[cacheIdx++] = CU.hadoopSystemCache();
-
-                if (hasAtomics)
-                    copies[cacheIdx] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
             }
 
-            // Always add marshaller and utility caches.
-            copies[0] = marshallerSystemCache(clientDisco);
-            copies[1] = utilitySystemCache(clientDisco);
-
-            cfg.setCacheConfiguration(copies);
+            cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
         }
 
         /**
@@ -1899,78 +1866,64 @@ public class IgnitionEx {
          *
          * @return Marshaller system cache configuration.
          */
-        private static CacheConfiguration marshallerSystemCache(boolean client) {
-            if (!client) {
-                CacheConfiguration cache = new CacheConfiguration();
+        private static CacheConfiguration marshallerSystemCache() {
+            CacheConfiguration cache = new CacheConfiguration();
 
-                cache.setName(CU.MARSH_CACHE_NAME);
-                cache.setCacheMode(REPLICATED);
-                cache.setAtomicityMode(ATOMIC);
-                cache.setSwapEnabled(false);
-                cache.setRebalanceMode(SYNC);
-                cache.setWriteSynchronizationMode(FULL_SYNC);
-                cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-                cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-                cache.setStartSize(300);
+            cache.setName(CU.MARSH_CACHE_NAME);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(ATOMIC);
+            cache.setSwapEnabled(false);
+            cache.setRebalanceMode(SYNC);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new RendezvousAffinityFunction(false, 20));
+            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+            cache.setStartSize(300);
 
-                return cache;
-            }
-
-            return null;
+            return cache;
         }
 
         /**
          * Creates utility system cache configuration.
          *
-         * @param client If {@code true} creates client-only cache configuration.
          * @return Utility system cache configuration.
          */
-        private static CacheConfiguration utilitySystemCache(boolean client) {
-            if (!client) {
-                CacheConfiguration cache = new CacheConfiguration();
+        private static CacheConfiguration utilitySystemCache() {
+            CacheConfiguration cache = new CacheConfiguration();
 
-                cache.setName(CU.UTILITY_CACHE_NAME);
-                cache.setCacheMode(REPLICATED);
-                cache.setAtomicityMode(TRANSACTIONAL);
-                cache.setSwapEnabled(false);
-                cache.setRebalanceMode(SYNC);
-                cache.setWriteSynchronizationMode(FULL_SYNC);
-                cache.setAffinity(new RendezvousAffinityFunction(false, 100));
-                cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+            cache.setName(CU.UTILITY_CACHE_NAME);
+            cache.setCacheMode(REPLICATED);
+            cache.setAtomicityMode(TRANSACTIONAL);
+            cache.setSwapEnabled(false);
+            cache.setRebalanceMode(SYNC);
+            cache.setWriteSynchronizationMode(FULL_SYNC);
+            cache.setAffinity(new RendezvousAffinityFunction(false, 100));
+            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
-                return cache;
-            }
-
-            return null;
+            return cache;
         }
 
         /**
          * Creates cache configuration for atomic data structures.
          *
          * @param cfg Atomic configuration.
-         * @param client If {@code true} creates client-only cache configuration.
          * @return Cache configuration for atomic data structures.
          */
-        private static CacheConfiguration atomicsSystemCache(AtomicConfiguration cfg, boolean client) {
-            if (!client) {
-                CacheConfiguration ccfg = new CacheConfiguration();
+        private static CacheConfiguration atomicsSystemCache(AtomicConfiguration cfg) {
+            CacheConfiguration ccfg = new CacheConfiguration();
 
-                ccfg.setName(CU.ATOMICS_CACHE_NAME);
-                ccfg.setAtomicityMode(TRANSACTIONAL);
-                ccfg.setSwapEnabled(false);
-                ccfg.setRebalanceMode(SYNC);
-                ccfg.setWriteSynchronizationMode(FULL_SYNC);
-                ccfg.setCacheMode(cfg.getCacheMode());
-                ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
-                ccfg.setNearConfiguration(new NearCacheConfiguration());
+            ccfg.setName(CU.ATOMICS_CACHE_NAME);
+            ccfg.setAtomicityMode(TRANSACTIONAL);
+            ccfg.setSwapEnabled(false);
+            ccfg.setRebalanceMode(SYNC);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+            ccfg.setCacheMode(cfg.getCacheMode());
+            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-                if (cfg.getCacheMode() == PARTITIONED)
-                    ccfg.setBackups(cfg.getBackups());
+            if (cfg.getCacheMode() == PARTITIONED)
+                ccfg.setBackups(cfg.getBackups());
 
-                return ccfg;
-            }
-
-            return null;
+            return ccfg;
         }
 
         /**
