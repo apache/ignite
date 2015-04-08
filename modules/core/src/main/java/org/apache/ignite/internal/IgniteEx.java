@@ -117,7 +117,7 @@ public interface IgniteEx extends Ignite {
     public Hadoop hadoop();
 
     /** {@inheritDoc} */
-    @Override public IgniteClusterEx cluster();
+    @Override IgniteClusterEx cluster();
 
     /**
      * Get latest version in string form.

@@ -109,13 +109,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
                 if (ca.context().started()) {
                     VisorCacheMetrics cm = VisorCacheMetrics.from(ignite, ca);
 
-                    boolean addCache = allCaches || cacheNames.contains(ca.name());
-
-                    if (showSysCaches) {
-                        if (cm.system() && addCache)
-                            res.add(cm);
-                    }
-                    else if (!cm.system() && addCache)
+                    if ((allCaches || cacheNames.contains(ca.name())) && (showSysCaches || !cm.system()))
                         res.add(cm);
                 }
             }
