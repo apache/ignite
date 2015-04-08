@@ -42,7 +42,7 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override protected GridSqlElement expression(int col) {
-        return null;
+        throw new IllegalStateException();
     }
 
     /** {@inheritDoc} */

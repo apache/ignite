@@ -148,6 +148,9 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param expression Expression.
      */
     public void setSelectExpression(int colIdx, GridSqlElement expression) {
+        if (expression == null)
+            throw new NullPointerException();
+
         if (colIdx < select.size()) // Assuming that all the needed expressions were already added.
             select.set(colIdx, expression);
 
