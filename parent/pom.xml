@@ -545,7 +545,7 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
-                        <phase>install</phase>
+                        <phase>package</phase>
                         <configuration>
                             <stylesheetfile>
                                 ${project.basedir}/${project.parent.relativePath}/../assembly/docfiles/javadoc.css
@@ -628,6 +628,7 @@
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.empty</exclude><!--should be empty-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.brokenxml</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/internal/processors/hadoop/books/*.txt</exclude><!--books examples-->
+                                        <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
