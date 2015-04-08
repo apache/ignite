@@ -510,7 +510,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
-    public void testReuseHash() throws Exception {
+    public void testReuseCache() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
         IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg);
