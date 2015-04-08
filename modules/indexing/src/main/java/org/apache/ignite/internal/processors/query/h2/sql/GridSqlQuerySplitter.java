@@ -83,7 +83,7 @@ public class GridSqlQuerySplitter {
 
         if (qry0 instanceof GridSqlSelect)
             srcQry = (GridSqlSelect)qry0;
-        else {
+        else { // Handle UNION.
             srcQry = new GridSqlSelect().from(new GridSqlSubquery(qry0));
 
             GridSqlSelect left = leftest(qry0);
@@ -124,11 +124,15 @@ public class GridSqlQuerySplitter {
 
         final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
+        // Create map and reduce queries.
         GridSqlSelect mapQry = srcQry.clone();
         GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = F.addAll(new ArrayList<GridSqlElement>(), srcQry.select(false).iterator());
+        List<GridSqlElement> mapExps = F.addAll(
+            new ArrayList<GridSqlElement>(srcQry.allColumns()),
+            srcQry.select(false));
+
         GridSqlElement[] rdcExps = new GridSqlElement[srcQry.visibleColumns()];
 
         Set<String> colNames = new HashSet<>();
@@ -141,11 +145,14 @@ public class GridSqlQuerySplitter {
         // Fill select expressions.
         mapQry.clearSelect();
 
-        for (GridSqlElement exp : mapExps)
+        for (GridSqlElement exp : mapExps) // Add all map expressions as visible.
             mapQry.addSelectExpression(exp, true);
 
-        for (GridSqlElement rdcExp : rdcExps)
+        for (GridSqlElement rdcExp : rdcExps) // Add corresponding visible reduce columns.
             rdcQry.addSelectExpression(rdcExp, true);
+
+        for (int i = rdcExps.length; i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
+            rdcQry.addSelectExpression(column(((GridSqlAlias)mapExps.get(i)).alias()), false);
 
         // -- GROUP BY
         if (srcQry.hasGroupBy()) {

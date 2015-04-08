@@ -23,7 +23,7 @@ import org.h2.util.*;
 import javax.cache.*;
 
 /**
- *
+ * Select query with UNION.
  */
 public class GridSqlUnion extends GridSqlQuery {
     /** */

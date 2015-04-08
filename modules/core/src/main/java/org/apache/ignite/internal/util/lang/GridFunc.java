@@ -5430,6 +5430,15 @@ public class GridFunc {
 
     /**
      * @param c Target collection.
+     * @param it Iterable to fetch.
+     * @return Modified target collection.
+     */
+    public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
+        return it == null ? c : addAll(c, it.iterator());
+    }
+
+    /**
+     * @param c Target collection.
      * @param it Iterator to fetch.
      * @return Modified target collection.
      */

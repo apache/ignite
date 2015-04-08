@@ -22,7 +22,7 @@ import org.h2.util.*;
 import java.util.*;
 
 /**
- *
+ * Plain SELECT query.
  */
 public class GridSqlSelect extends GridSqlQuery {
     /** */
@@ -52,6 +52,13 @@ public class GridSqlSelect extends GridSqlQuery {
     /** {@inheritDoc} */
     @Override public int visibleColumns() {
         return select.size();
+    }
+
+    /**
+     * @return Number of columns is select including invisible ones.
+     */
+    public int allColumns() {
+        return allExprs.size();
     }
 
     /** {@inheritDoc} */
