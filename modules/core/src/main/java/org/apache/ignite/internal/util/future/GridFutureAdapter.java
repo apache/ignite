@@ -430,7 +430,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(ArrayListener.class, this, "arr", Arrays.toString(arr));
+            return S.toString(ArrayListener.class, this, "arrSize", arr.length);
         }
     }
 
