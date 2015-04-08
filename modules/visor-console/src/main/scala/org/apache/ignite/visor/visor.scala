@@ -1820,23 +1820,23 @@ object visor extends VisorTag {
     /**
      * Guards against invalid percent readings.
      *
-     * @param v Value in '%' to guard. Any value below `0` and greater than `100`
-     *      will return `<n/a>` string.
+     * @param v Value in '%' to guard.
+     * @return Percent as string. Any value below `0` and greater than `100` will return `&lt;n/a&gt;` string.
      */
     def safePercent(v: Double): String = if (v < 0 || v > 100) NA else formatDouble(v) + " %"
 
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid, false)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] = new VisorTaskArgument(new JavaHashSet(nids),
-      false)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void]
+        = new VisorTaskArgument(new JavaHashSet(nids), false)
 
     /** Convert to task argument. */
     def toTaskArgument[A](nid: UUID, arg: A): VisorTaskArgument[A] = new VisorTaskArgument(nid, arg, false)
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] = new VisorTaskArgument(
-        new JavaHashSet(nids), arg, false)
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A]
+        = new VisorTaskArgument(new JavaHashSet(nids), arg, false)
 
     def compute(nid: UUID): IgniteCompute = ignite.compute(ignite.cluster.forNodeId(nid)).withNoFailover()
 

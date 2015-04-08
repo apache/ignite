@@ -679,6 +679,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * Starts dynamic caches.
+     * @throws IgniteCheckedException If failed.
      */
     private void startCaches() throws IgniteCheckedException {
         cctx.cache().prepareCachesStart(F.view(reqs, new IgnitePredicate<DynamicCacheChangeRequest>() {
