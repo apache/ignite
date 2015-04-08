@@ -1716,11 +1716,6 @@ public class IgnitionEx {
                     if (CU.isMarshallerCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
                             "\" because it is reserved for internal purposes.");
-                }
-
-                for (CacheConfiguration ccfg : userCaches) {
-                    if (ccfg == null)
-                        throw new NullPointerException("Cache configuration list must not contains null element");
 
                     cacheCfgs.add(ccfg);
                 }
