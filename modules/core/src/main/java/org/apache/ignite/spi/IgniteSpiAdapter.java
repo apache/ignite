@@ -54,9 +54,14 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     @LoggerResource
     private IgniteLogger log;
 
-    /** Ignite instance */
-    @IgniteInstanceResource
+    /** Ignite instance. */
     protected Ignite ignite;
+
+    /** Local node id. */
+    protected UUID nodeId;
+
+    /** Grid instance name. */
+    protected String gridName;
 
     /** SPI name. */
     private String name;
@@ -105,7 +110,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        return ignite.configuration().getNodeId();
+        return nodeId;
     }
 
     /** {@inheritDoc} */
@@ -186,6 +191,19 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         // Set dummy no-op context.
         spiCtx = new GridDummySpiContext(locNode, true);
+    }
+
+    /**
+     * Inject ignite instance.
+     */
+    @IgniteInstanceResource
+    protected void injectResources(Ignite ignite){
+        this.ignite = ignite;
+
+        if (ignite != null) {
+            nodeId = ignite.configuration().getNodeId();
+            gridName = ignite.name();
+        }
     }
 
     /**
