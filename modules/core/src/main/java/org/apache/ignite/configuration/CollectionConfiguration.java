@@ -18,7 +18,9 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 
@@ -41,6 +43,9 @@ public class CollectionConfiguration implements Serializable {
 
     /** Cache memory mode. */
     private CacheMemoryMode memoryMode = ONHEAP_TIERED;
+
+    /** Node filter specifying nodes on which this cache should be deployed. */
+    private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Number of backups. */
     private int backups = 0;
@@ -107,6 +112,20 @@ public class CollectionConfiguration implements Serializable {
      */
     public void setMemoryMode(CacheMemoryMode memoryMode) {
         this.memoryMode = memoryMode;
+    }
+
+    /**
+     * @return Predicate specifying on which nodes the cache should be started.
+     */
+    public IgnitePredicate<ClusterNode> getNodeFilter() {
+        return nodeFilter;
+    }
+
+    /**
+     * @param nodeFilter Predicate specifying on which nodes the cache should be started.
+     */
+    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+        this.nodeFilter = nodeFilter;
     }
 
     /**

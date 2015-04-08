@@ -727,6 +727,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ccfg.setMemoryMode(cfg.getMemoryMode());
         ccfg.setAtomicityMode(cfg.getAtomicityMode());
         ccfg.setOffHeapMaxMemory(cfg.getOffHeapMaxMemory());
+        ccfg.setNodeFilter(cfg.getNodeFilter());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setRebalanceMode(SYNC);
@@ -1253,7 +1254,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 col.cfg.getMemoryMode() == cfg.getMemoryMode() &&
                 col.cfg.getCacheMode() == cfg.getCacheMode() &&
                 col.cfg.getBackups() == cfg.getBackups() &&
-                col.cfg.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory())
+                col.cfg.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory() &&
+                ((col.cfg.getNodeFilter() == null && cfg.getNodeFilter() == null) ||
+                (col.cfg.getNodeFilter() != null && col.cfg.getNodeFilter().equals(cfg.getNodeFilter()))))
                 return col.cacheName;
         }
 
@@ -1714,6 +1717,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      */
     static class AddDataCacheProcessor implements
         EntryProcessor<CacheDataStructuresCacheKey, List<CacheCollectionInfo>, String>, Externalizable {
+        /** Cache name prefix. */
+        private static final String CACHE_NAME_PREFIX = "datastructures_";
+
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1744,7 +1750,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (list == null) {
                 list = new ArrayList<>();
 
-                String newName = "datastructeres_" + 0;
+                String newName = CACHE_NAME_PREFIX + 0;
 
                 list.add(new CacheCollectionInfo(newName, cfg));
 
@@ -1758,7 +1764,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (oldName != null)
                 return oldName;
 
-            String newName = "datastructeres_" + list.size();
+            String newName = CACHE_NAME_PREFIX + list.size();
 
             List<CacheCollectionInfo> newList = new ArrayList<>(list);
 
