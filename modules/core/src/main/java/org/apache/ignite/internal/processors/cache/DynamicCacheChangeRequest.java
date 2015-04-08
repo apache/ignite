@@ -60,6 +60,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Fail if exists flag. */
     private boolean failIfExists;
 
+    /** Template configuration flag. */
+    private boolean template;
+
     /**
      * Constructor creates cache stop request.
      *
@@ -82,6 +85,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
         this(cacheName, initiatingNodeId, false);
+    }
+
+    /**
+     * @param template {@code True} if this is request for adding template configuration.
+     */
+    public void template(boolean template) {
+        this.template = template;
+    }
+
+    /**
+     * @return {@code True} if this is template configuration.
+     */
+    public boolean template() {
+        return template;
     }
 
     /**
