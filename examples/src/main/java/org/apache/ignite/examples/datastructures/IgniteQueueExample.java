@@ -36,9 +36,6 @@ import java.util.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class IgniteQueueExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = IgniteQueueExample.class.getSimpleName();
-
     /** Number of retries */
     private static final int RETRIES = 20;
 

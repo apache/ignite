@@ -35,9 +35,6 @@ import java.util.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class IgniteSetExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = IgniteSetExample.class.getSimpleName();
-
     /** Set instance. */
     private static IgniteSet<String> set;
 
