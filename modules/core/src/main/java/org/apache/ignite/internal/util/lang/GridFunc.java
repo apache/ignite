@@ -5433,8 +5433,18 @@ public class GridFunc {
      * @param it Iterable to fetch.
      * @return Modified target collection.
      */
+    @SuppressWarnings("unchecked")
     public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
-        return it == null ? c : addAll(c, it.iterator());
+        if (it == null)
+            return c;
+
+        if (it instanceof Collection<?>) {
+            c.addAll((Collection<? extends T>)it);
+
+            return c;
+        }
+
+        return addAll(c, it.iterator());
     }
 
     /**
