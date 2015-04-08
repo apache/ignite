@@ -145,6 +145,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Dynamic cache change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
 
+    private Map<String, Boolean> cacheValidRes = new ConcurrentHashMap8<>();
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -789,6 +791,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            cacheValidRes.put(cacheCtx.name(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+        }
+
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         cctx.exchange().onExchangeDone(this, err);

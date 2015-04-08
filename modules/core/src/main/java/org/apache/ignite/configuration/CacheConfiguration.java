@@ -321,6 +321,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache plugin configurations. */
     private CachePluginConfiguration[] pluginCfgs;
 
+    /** Cache topology validator. */
+    private TopologyValidator topValidator;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -1564,6 +1567,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
+    }
+
+    /**
+     * Gets topology validator.
+     * @return validator.
+     */
+    public TopologyValidator getTopologyValidator() {
+        return topValidator;
+    }
+
+    /**
+     * Sets topology validator.
+     * @param topValidator validator.
+     */
+    public void setTopologyValidator(TopologyValidator topValidator) {
+        this.topValidator = topValidator;
     }
 
     /** {@inheritDoc} */
