@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.cache;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
@@ -32,13 +31,13 @@ import java.util.*;
  * Task that collect cache metrics from all nodes.
  */
 @GridInternal
-public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiTuple<Boolean, String>,
-    Iterable<VisorCacheAggregatedMetrics>, Map<String, VisorCacheMetrics>> {
+public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiTuple<Boolean, Collection<String>>,
+    Iterable<VisorCacheAggregatedMetrics>, Collection<VisorCacheMetrics>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheMetricsCollectorJob job(IgniteBiTuple<Boolean, String> arg) {
+    @Override protected VisorCacheMetricsCollectorJob job(IgniteBiTuple<Boolean, Collection<String>> arg) {
         return new VisorCacheMetricsCollectorJob(arg, debug);
     }
 
@@ -47,19 +46,19 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
-            if (res.getException() == null && res.getData() instanceof Map<?, ?>) {
-                Map<String, VisorCacheMetrics> cms = res.getData();
+            if (res.getException() == null) {
+                Collection<VisorCacheMetrics> cms = res.getData();
 
-                for (Map.Entry<String, VisorCacheMetrics> entry : cms.entrySet()) {
-                    VisorCacheAggregatedMetrics am = grpAggrMetrics.get(entry.getKey());
+                for (VisorCacheMetrics cm : cms) {
+                    VisorCacheAggregatedMetrics am = grpAggrMetrics.get(cm.name());
 
                     if (am == null) {
-                        am = new VisorCacheAggregatedMetrics(entry.getKey());
+                        am = VisorCacheAggregatedMetrics.from(cm);
 
-                        grpAggrMetrics.put(entry.getKey(), am);
+                        grpAggrMetrics.put(cm.name(), am);
                     }
 
-                    am.metrics().put(res.getNode().id(), entry.getValue());
+                    am.metrics().put(res.getNode().id(), cm);
                 }
             }
         }
@@ -72,7 +71,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
      * Job that collect cache metrics from node.
      */
     private static class VisorCacheMetricsCollectorJob
-        extends VisorJob<IgniteBiTuple<Boolean, String>, Map<String, VisorCacheMetrics>> {
+        extends VisorJob<IgniteBiTuple<Boolean, Collection<String>>, Collection<VisorCacheMetrics>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -82,26 +81,40 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
          * @param arg Whether to collect metrics for all caches or for specified cache name only.
          * @param debug Debug flag.
          */
-        private VisorCacheMetricsCollectorJob(IgniteBiTuple<Boolean, String> arg, boolean debug) {
+        private VisorCacheMetricsCollectorJob(IgniteBiTuple<Boolean, Collection<String>> arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, VisorCacheMetrics> run(IgniteBiTuple<Boolean, String> arg) {
-            Collection<? extends GridCache<?, ?>> caches = arg.get1()
-                ? ignite.cachesx()
-                : F.asList(ignite.cachex(arg.get2()));
+        @Override protected Collection<VisorCacheMetrics> run(final IgniteBiTuple<Boolean, Collection<String>> arg) {
+            assert arg != null;
 
-            if (caches != null) {
-                Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
+            Boolean showSysCaches = arg.get1();
 
-                for (GridCache<?, ?> c : caches)
-                    res.put(c.name(), VisorCacheMetrics.from(c));
+            assert showSysCaches != null;
 
-                return res;
+            Collection<String> cacheNames = arg.get2();
+
+            assert cacheNames != null;
+
+            GridCacheProcessor cacheProcessor = ignite.context().cache();
+
+            Collection<GridCacheAdapter<?, ?>> caches = cacheProcessor.internalCaches();
+
+            Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
+
+            boolean allCaches = cacheNames.isEmpty();
+
+            for (GridCacheAdapter ca : caches) {
+                if (ca.context().started()) {
+                    VisorCacheMetrics cm = VisorCacheMetrics.from(ignite, ca);
+
+                    if ((allCaches || cacheNames.contains(ca.name())) && (showSysCaches || !cm.system()))
+                        res.add(cm);
+                }
             }
 
-            return null;
+            return res;
         }
 
         /** {@inheritDoc} */
