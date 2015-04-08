@@ -997,4 +997,27 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             daemon = false;
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAwaitPartitionMapExchange() throws Exception {
+        try (IgniteCache ignored = grid(0).getOrCreateCache(new CacheConfiguration(DYNAMIC_CACHE_NAME))) {
+            awaitPartitionMapExchange();
+
+            startGrid(nodeCount());
+
+            awaitPartitionMapExchange();
+
+            startGrid(nodeCount() + 1);
+
+            awaitPartitionMapExchange();
+
+            stopGrid(nodeCount() + 1);
+
+            awaitPartitionMapExchange();
+
+            stopGrid(nodeCount());
+        }
+    }
 }
