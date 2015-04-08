@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -170,12 +169,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      nodes on the host than expected.
      * @param timeout Connection timeout.
      * @param maxConn Number of parallel SSH connections to one host.
-     * @return Collection of tuples, each containing host name, result (success of failure)
+     * @return Collection of start node results, each containing host name, result (success or failure)
      *      and error message (if any).
      * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
-    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart, int timeout,
+    public Collection<ClusterStartNodeResult> startNodes(File file, boolean restart, int timeout,
         int maxConn) throws IgniteException;
 
     /**
@@ -272,12 +271,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      nodes on the host than expected.
      * @param timeout Connection timeout in milliseconds.
      * @param maxConn Number of parallel SSH connections to one host.
-     * @return Collection of tuples, each containing host name, result (success of failure)
+     * @return Collection of start node results, each containing host name, result (success or failure)
      *      and error message (if any).
      * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
-    public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
+    public Collection<ClusterStartNodeResult> startNodes(Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
     /**
