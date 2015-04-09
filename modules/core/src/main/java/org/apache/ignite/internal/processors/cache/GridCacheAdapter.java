@@ -1285,13 +1285,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             .get();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
-        String taskName = ctx.kernalContext().job().currentTaskName();
-
-        return getAllAsync(keys, !ctx.config().isReadFromBackup(), /*skip tx*/true, null, null, taskName, true, false);
-    }
-
     /**
      * @param keys Keys.
      * @param reload Reload flag.

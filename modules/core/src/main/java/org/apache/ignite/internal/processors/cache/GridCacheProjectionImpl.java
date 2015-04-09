@@ -277,11 +277,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
-        return cache.getAllOutTxAsync(keys);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
         return cache.isIgfsDataCache();
     }

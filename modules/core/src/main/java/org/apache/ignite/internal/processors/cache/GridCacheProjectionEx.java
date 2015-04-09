@@ -183,15 +183,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     @Nullable public Map<K, V> getAllOutTx(List<K> keys) throws IgniteCheckedException;
 
     /**
-     * Asynchronously gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
-     * and will not lock any keys if pessimistic transaction is started by thread.
-     *
-     * @param keys Keys to get values for.
-     * @return Future with result.
-     */
-    public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
-
-    /**
      * Checks whether this cache is IGFS data cache.
      *
      * @return {@code True} in case this cache is IGFS data cache.

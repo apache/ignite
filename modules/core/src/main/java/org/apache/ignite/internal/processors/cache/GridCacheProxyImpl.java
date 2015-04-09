@@ -415,18 +415,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.getAllOutTxAsync(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
