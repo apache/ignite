@@ -944,7 +944,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        return primaryKeySet((CacheEntryPredicate[])null);
+        return map.keySet(
+            F0.and0(
+                (CacheEntryPredicate[]) null,
+                CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
     }
 
     /** {@inheritDoc} */
@@ -2304,13 +2307,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return fut0.chain(new CX1<IgniteInternalFuture<GridCacheReturn>, Map<K, EntryProcessorResult<T>>>() {
             @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<GridCacheReturn> fut)
                 throws IgniteCheckedException {
-                    GridCacheReturn ret = fut.get();
+                GridCacheReturn ret = fut.get();
 
-                    assert ret != null;
+                assert ret != null;
 
-                    return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
-                }
-            });
+                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -2336,7 +2339,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return fut0.chain(new CX1<IgniteInternalFuture<GridCacheReturn>, Map<K, EntryProcessorResult<T>>>() {
             @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<GridCacheReturn> fut)
-                    throws IgniteCheckedException {
+                throws IgniteCheckedException {
                 GridCacheReturn ret = fut.get();
 
                 assert ret != null;
@@ -3147,10 +3150,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
 
                 IgniteInternalFuture<GridCacheReturn> fut = (IgniteInternalFuture)tx.removeAllAsync(ctx,
-                        Collections.singletonList(key),
-                        null,
-                        true,
-                        ctx.equalsValArray(val));
+                    Collections.singletonList(key),
+                    null,
+                    true,
+                    ctx.equalsValArray(val));
 
                 return fut;
             }
@@ -4582,9 +4585,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable CacheEntryPredicate... filter) {
         return map.entries(
-                F0.and0(
-                        filter,
-                        CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
+            F0.and0(
+                filter,
+                CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
     }
 
     /**
@@ -4593,28 +4596,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
         return map.keySet(filter);
-    }
-
-    /**
-     * @param filter Primary key set.
-     * @return Primary key set.
-     */
-    public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
-        return map.keySet(
-                F0.and0(
-                        filter,
-                        CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
-    }
-
-    /**
-     * @param filter Filters to evaluate.
-     * @return Primary values.
-     */
-    public Collection<V> primaryValues(@Nullable CacheEntryPredicate... filter) {
-        return map.values(
-            F0.and0(
-                filter,
-                CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
     }
 
     /**
@@ -4646,15 +4627,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
 
         return getAllAsync(Collections.singletonList(key), deserializePortable).chain(
-                new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
+            new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
                     @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
-                        Map<K, V> map = e.get();
+                    Map<K, V> map = e.get();
 
-                        assert map.isEmpty() || map.size() == 1 : map.size();
+                    assert map.isEmpty() || map.size() == 1 : map.size();
 
-                        return map.get(key);
-                    }
-                });
+                    return map.get(key);
+                }
+            });
     }
 
     /**
