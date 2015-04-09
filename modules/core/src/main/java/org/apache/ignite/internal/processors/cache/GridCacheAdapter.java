@@ -3479,13 +3479,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public Transaction txStart() throws IllegalStateException {
-        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
-
-        return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
-    }
-
-    /** {@inheritDoc} */
     @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");

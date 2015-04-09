@@ -756,11 +756,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Transaction txStart() throws IllegalStateException {
-        return cache.txStart();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalTx txStartEx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
         return cache.txStartEx(concurrency, isolation);
     }

@@ -910,16 +910,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Set<Cache.Entry<K, V>> primaryEntrySet();
 
     /**
-     * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
-     * All defaults are set in {@link org.apache.ignite.configuration.CacheConfiguration} at startup.
-     *
-     * @return New transaction
-     * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
-     */
-    public Transaction txStart() throws IllegalStateException;
-
-    /**
      * Starts new transaction with the specified concurrency and isolation.
      *
      * @param concurrency Concurrency.
