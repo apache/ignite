@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.cluster.*;
 
 import java.util.concurrent.*;
 
@@ -25,6 +25,6 @@ import java.util.concurrent.*;
  * SSH-based node starter, returns tuple which contains hostname, success flag and error message
  * if attempt was not successful.
  */
-public interface IgniteNodeCallable extends Callable<GridTuple3<String, Boolean, String>> {
+public interface StartNodeCallable extends Callable<ClusterStartNodeResult> {
     // No-op.
 }

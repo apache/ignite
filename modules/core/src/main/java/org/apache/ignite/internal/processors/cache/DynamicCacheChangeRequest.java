@@ -119,7 +119,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a start request.
      */
     public boolean start() {
-        return startCfg != null;
+        return !template && startCfg != null;
     }
 
     /**

@@ -22,15 +22,12 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
 
 /**
  *
  */
-public class IgniteCacheConfigurationTemplateNotFoundTest extends GridCommonAbstractTest {
+public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -60,14 +57,14 @@ public class IgniteCacheConfigurationTemplateNotFoundTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    public void testTemplateNotFound() throws Exception {
+    public void testDefaultTemplate() throws Exception {
         Ignite ignite = startGrid(0);
 
-        checkTemplateNotFound(ignite, "org.apache.ignite");
+        checkDefaultTemplate(ignite, "org.apache.ignite");
 
-        checkTemplateNotFound(ignite, "org.apache.ignite.templat");
+        checkDefaultTemplate(ignite, "org.apache.ignite.templat");
 
-        checkTemplateNotFound(ignite, null);
+        checkDefaultTemplate(ignite, null);
 
         checkGetOrCreate(ignite, "org.apache.ignite.template", 3);
 
@@ -77,23 +74,23 @@ public class IgniteCacheConfigurationTemplateNotFoundTest extends GridCommonAbst
 
         ignite.addCacheConfiguration(templateCfg);
 
-        checkGetOrCreate(ignite, "org.apache.ignite", 4);
-
-        checkGetOrCreate(ignite, null, 4);
+        checkGetOrCreate(ignite, "org.apache.ignite2", 4);
     }
 
     /**
      * @param ignite Ignite.
      * @param cacheName Cache name.
      */
-    private void checkTemplateNotFound(final Ignite ignite, final String cacheName) {
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ignite.getOrCreateCache(cacheName);
+    private void checkDefaultTemplate(final Ignite ignite, final String cacheName) {
+        checkGetOrCreate(ignite, cacheName, 0);
 
-                return null;
-            }
-        }, IllegalArgumentException.class, null);
+        IgniteCache cache = ignite.getOrCreateCache(cacheName);
+
+        assertNotNull(cache);
+
+        CacheConfiguration cfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        assertEquals(CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE, cfg.getAtomicityMode());
     }
 
     /**

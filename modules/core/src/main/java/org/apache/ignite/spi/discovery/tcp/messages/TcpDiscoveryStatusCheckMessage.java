@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -42,20 +41,13 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     public static final int STATUS_RECON = 2;
 
     /** Creator node. */
-    private TcpDiscoveryNode creatorNode;
+    private final TcpDiscoveryNode creatorNode;
 
     /** Failed node id. */
-    private UUID failedNodeId;
+    private final UUID failedNodeId;
 
     /** Creator node status (initialized by coordinator). */
     private int status;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryStatusCheckMessage() {
-        // No-op.
-    }
 
     /**
      * Constructor.
@@ -104,24 +96,6 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      */
     public void status(int status) {
         this.status = status;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(creatorNode);
-        U.writeUuid(out, failedNodeId);
-        out.writeInt(status);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        creatorNode = (TcpDiscoveryNode)in.readObject();
-        failedNodeId = U.readUuid(in);
-        status = in.readInt();
     }
 
     /** {@inheritDoc} */
