@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -1559,7 +1560,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Discovery data.
      */
-    private static class DiscoveryData implements Externalizable {
+    private static class DiscoveryData implements Externalizable, GridPeerDeployAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1575,6 +1576,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         public DiscoveryData() {
             // No-op.
+        }
+
+        @Override
+        public Class<?> deployClass() {
+            return U.peerDeployAware0(items).deployClass();
+        }
+
+        @Override
+        public ClassLoader classLoader() {
+            return U.peerDeployAware0(items).classLoader();
         }
 
         /**
@@ -1616,7 +1627,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * Discovery data item.
      */
-    private static class DiscoveryDataItem implements Externalizable {
+    private static class DiscoveryDataItem implements Externalizable, GridPeerDeployAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1664,6 +1675,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             this.hnd = hnd;
             this.bufSize = bufSize;
             this.interval = interval;
+        }
+
+        @Override
+        public Class<?> deployClass() {
+            return prjPred.getClass();
+        }
+
+        @Override
+        public ClassLoader classLoader() {
+            return prjPred.getClass().getClassLoader();
         }
 
         /** {@inheritDoc} */

@@ -897,10 +897,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         if (dataMap != null) {
                             for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet()) {
-                                exchange.onExchange(newNodeId,
-                                    entry.getKey(),
-                                    entry.getValue(),
-                                    exchangeClassLoader(newNodeId));
+//                                exchange.onExchange(newNodeId,
+//                                    entry.getKey(),
+//                                    entry.getValue());
                             }
                         }
 
@@ -923,8 +922,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
-                    if (data != null)
-                        exchange.onExchange(newNodeId, newNodeId, data, exchangeClassLoader(newNodeId));
+//                    if (data != null)
+//                        exchange.onExchange(newNodeId, newNodeId, data);
                 }
             }
         }

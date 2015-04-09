@@ -725,19 +725,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     }
 
     /**
-     * @param nodeId Node ID.
-     * @return Class loader for exchange data unmarshalling.
-     */
-    protected ClassLoader exchangeClassLoader(UUID nodeId) {
-        assert ignite != null;
-
-        if (!ignite.configuration().isPeerClassLoadingEnabled() || nodeId.equals(getLocalNodeId()))
-            return null;
-
-        return null;
-    }
-
-    /**
      * @param msg Message.
      * @return Whether delivery of the message is ensured.
      */

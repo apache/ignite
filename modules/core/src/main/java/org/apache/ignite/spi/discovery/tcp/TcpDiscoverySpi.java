@@ -1377,6 +1377,87 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
     }
 
+    /** */
+    private GridConcurrentHashSet<ClassLoader> exchangeLdrs = new GridConcurrentHashSet();
+
+    /**
+     * @param nodeId Node ID>
+     * @return Marshalled exchange data.
+     * @throws IgniteSpiException If failed.
+     */
+    protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) throws IgniteSpiException {
+        boolean p2pEnaled = ignite.configuration().isPeerClassLoadingEnabled();
+
+        Map<Integer, Object> data = exchange.collect(nodeId);
+
+        Map<Integer, byte[]> data0 = U.newHashMap(data.size());
+
+        for (Map.Entry<Integer, Object> entry : data.entrySet()) {
+            try {
+                byte[] bytes = marsh.marshal(entry.getValue());
+
+                data0.put(entry.getKey(), bytes);
+
+                if (p2pEnaled) {
+                    ClassLoader ldr;
+
+                    if (entry.getValue() instanceof GridPeerDeployAware)
+                        ldr = ((GridPeerDeployAware)entry.getValue()).classLoader();
+                    else
+                        ldr = entry.getValue().getClass().getClassLoader();
+
+                    log.info("Add loader: " + entry.getValue() + " " + ldr);
+
+                    if (ldr != null) {
+                        if (exchangeLdrs.add(ldr))
+                            log.info("Added loader: " + ldr);
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to marshal discovery data " +
+                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+
+                throw new IgniteSpiException("Failed to marshal discovery data.", e);
+            }
+        }
+
+        return data0;
+    }
+
+    /**
+     * @param joiningNode Joining node.
+     * @param nodeId Remote node ID for which data is provided.
+     * @param data Collection of marshalled discovery data objects from different components.
+     */
+    protected void onExchange(TcpDiscoveryNode joiningNode,
+        UUID nodeId,
+        Map<Integer, byte[]> data) {
+        TcpDiscoveryNode node;
+
+        if (joiningNode.id().equals(nodeId))
+            node = joiningNode;
+        else
+            node = ring.node(nodeId);
+
+        ClassLoader clsLdr = exchangeClassLoader(node);
+
+        Map<Integer, Object> data0 = U.newHashMap(data.size());
+
+        for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
+            try {
+                Object compData = marsh.unmarshal(entry.getValue(), clsLdr);
+
+                data0.put(entry.getKey(), compData);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
+            }
+        }
+
+        exchange.onExchange(joiningNode.id(), nodeId, data0);
+    }
+
     /**
      * Tries to send join request message to a random node presenting in topology.
      * Address is provided by {@link TcpDiscoveryIpFinder} and message is
@@ -1388,7 +1469,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode,
-            exchange.collect(getLocalNodeId()));
+            collectExchangeData(getLocalNodeId()));
 
         // Time when it has been detected, that addresses from IP finder do not respond.
         long noResStart = 0;
@@ -2198,7 +2279,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private TcpDiscoveryGetClassResponse processGetClassRequest(TcpDiscoveryGetClassRequest req) {
         assert !F.isEmpty(req.className()) : req;
 
-        InputStream in = getClass().getResourceAsStream(req.className());
+        String rsrc = U.classNameToResourceName(req.className());
+
+        log.info("Get class request: " + req.className() + " " + rsrc);
+
+        InputStream in = locLdr.getResourceAsStream(rsrc);
 
         byte[] clsBytes = null;
         String err = null;
@@ -3591,9 +3676,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(node.id(), node.id(), data, exchangeClassLoader(node.id()));
+                        onExchange(node, node.id(), data);
 
-                    msg.addDiscoveryData(locNodeId, exchange.collect(node.id()));
+                    msg.addDiscoveryData(locNodeId, collectExchangeData(node.id()));
                 }
 
                 if (log.isDebugEnabled())
@@ -3662,12 +3747,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Notify outside of synchronized block.
                 if (dataMap != null) {
-                    for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet()) {
-                        exchange.onExchange(node.id(),
-                            entry.getKey(),
-                            entry.getValue(),
-                            exchangeClassLoader(node.id()));
-                    }
+                    for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
+                        onExchange(node, entry.getKey(), entry.getValue());
                 }
             }
 
@@ -5221,29 +5302,108 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             U.closeQuiet(sock);
         }
     }
+
+    /** */
+    private ConcurrentMap<UUID, DiscoveryDeploymentClassLoader> ldrs = new ConcurrentHashMap<>();
+
+    /** */
+    private LocalDeploymentClassLoader locLdr = new LocalDeploymentClassLoader(null);
+
+    /**
+     *
+     */
+    class LocalDeploymentClassLoader extends ClassLoader {
+        public LocalDeploymentClassLoader(ClassLoader parent) {
+            super(parent);
+        }
+
+        @Override
+        public InputStream getResourceAsStream(String name) {
+            log.info("Local getResourceAsStream: " + name);
+
+            for (ClassLoader ldr : exchangeLdrs) {
+                InputStream  in = ldr.getResourceAsStream(name);
+
+                if (in != null)
+                    return in;
+            }
+
+            return super.getResourceAsStream(name);
+        }
+
+        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
+            log.info("Local loadClass: " + name);
+
+            for (ClassLoader ldr : exchangeLdrs) {
+                try {
+                    return ldr.loadClass(name);
+                }
+                catch (ClassNotFoundException ignore) {
+                }
+            }
+
+            return super.loadClass(name);
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @return Class loader for exchange data unmarshalling.
+     */
+    protected ClassLoader exchangeClassLoader(TcpDiscoveryNode node) {
+        assert ignite != null;
+
+        UUID nodeId = node.id();
+
+        if (!ignite.configuration().isPeerClassLoadingEnabled())
+            return null;
+
+        if (nodeId.equals(getLocalNodeId()))
+            return locLdr;
+
+        DiscoveryDeploymentClassLoader ldr = ldrs.get(nodeId);
+
+        if (ldr == null)
+            ldr = F.addIfAbsent(ldrs, nodeId, new DiscoveryDeploymentClassLoader(node));
+
+        return ldr;
+    }
+
     /**
      *
      */
     private class DiscoveryDeploymentClassLoader extends ClassLoader {
         /** */
-        private final UUID nodeId;
+        private final TcpDiscoveryNode node;
 
         /** */
         private Socket sock;
 
         /**
-         * @param nodeId Node ID.
+         * @param node Node.
          */
-        public DiscoveryDeploymentClassLoader(UUID nodeId) {
-            this.nodeId = nodeId;
+        public DiscoveryDeploymentClassLoader(TcpDiscoveryNode node) {
+            assert !node.id().equals(getLocalNodeId());
+
+            this.node = node;
+        }
+
+        @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            // log.info("P2p load class: " + name);
+
+            return super.loadClass(name, resolve);
         }
 
         /** {@inheritDoc} */
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+            log.info("P2p find class: " + name);
+
             TcpDiscoveryGetClassResponse res = requestClass(name);
 
             if (res.error() != null)
                 throw new ClassNotFoundException(res.error());
+
+            log.info("P2p loaded: " + name);
 
             assert res.classBytes() != null;
 
@@ -5272,16 +5432,45 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 return res;
             }
             catch (IOException | IgniteCheckedException e) {
+                e.printStackTrace();
+
                 throw new ClassNotFoundException("Failed to load class: " + name, e);
             }
         }
 
         private Socket connect() {
             if (sock == null) {
-                TcpDiscoveryNode node = ring.node(nodeId);
+                for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
+                    sock = connect(addr);
 
-                if (node == null)
-                    return null;
+                    if (sock != null)
+                        break;
+                }
+            }
+
+            return sock;
+        }
+
+        private Socket connect(InetSocketAddress addr) {
+            UUID locNodeId  = getLocalNodeId();
+
+            Socket sock = null;
+
+            for (int i = 0; i < reconCnt; i++) {
+                try {
+                    sock = openSocket(addr);
+
+                    writeToSocket(sock, new TcpDiscoveryHandshakeRequest(locNodeId));
+
+                    TcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
+
+                    break;
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    e.printStackTrace();
+
+                    U.closeQuiet(sock);
+                }
             }
 
             return sock;

@@ -763,7 +763,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
      * @throws Exception If failed.
      */
     // TODO: GG-6730
-    public void _testNodeJoinWithP2P() throws Exception {
+    public void testNodeJoinWithP2P() throws Exception {
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT + 1);
@@ -800,8 +800,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
             assertEquals(GRID_CNT + 1, cnt.get());
         }
         finally {
-            stopGrid("anotherGrid1");
-            stopGrid("anotherGrid2");
+            stopGrid("anotherGrid");
 
             grid(0).events().stopRemoteListen(consumeId);
         }
