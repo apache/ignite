@@ -53,53 +53,25 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
 
-        if (cfg.getPluginConfigurations() != null) {
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
-                GridPluginContext pluginCtx = new GridPluginContext(ctx, pluginCfg, cfg);
+        ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
 
-                PluginProvider provider;
+        for (PluginProvider provider : ldr) {
+            GridPluginContext pluginCtx = new GridPluginContext(ctx, cfg);
 
-                try {
-                    if (pluginCfg.providerClass() == null)
-                        throw new IgniteException("Provider class is null.");
+            if (F.isEmpty(provider.name()))
+                throw new IgniteException("Plugin name can not be empty.");
 
-                    try {
-                        Constructor<? extends PluginProvider> ctr =
-                            pluginCfg.providerClass().getConstructor(PluginContext.class);
+            if (plugins.containsKey(provider.name()))
+                throw new IgniteException("Duplicated plugin name: " + provider.name());
 
-                        provider = ctr.newInstance(pluginCtx);
-                    }
-                    catch (NoSuchMethodException ignore) {
-                        try {
-                            Constructor<? extends PluginProvider> ctr =
-                                pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
+            plugins.put(provider.name(), provider);
 
-                            provider = ctr.newInstance(pluginCfg);
-                        }
-                        catch (NoSuchMethodException ignored) {
-                            provider = pluginCfg.providerClass().newInstance();
-                        }
-                    }
-                }
-                catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new IgniteException("Failed to create plugin provider instance.", e);
-                }
+            pluginCtxMap.put(provider, pluginCtx);
 
-                if (F.isEmpty(provider.name()))
-                    throw new IgniteException("Plugin name can not be empty.");
+            provider.initExtensions(pluginCtx, registry);
 
-                if (provider.plugin() == null)
-                    throw new IgniteException("Plugin is null.");
-
-                if (plugins.containsKey(provider.name()))
-                    throw new IgniteException("Duplicated plugin name: " + provider.name());
-
-                plugins.put(provider.name(), provider);
-
-                pluginCtxMap.put(provider, pluginCtx);
-
-                provider.initExtensions(pluginCtx, registry);
-            }
+            if (provider.plugin() == null)
+                throw new IgniteException("Plugin is null.");
         }
 
         extensions = registry.createExtensionMap();
