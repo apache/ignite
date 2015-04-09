@@ -1261,6 +1261,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
 
+    /** {@inheritDoc} */
     @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
         String schema = schema(ccfg.getName());
 
