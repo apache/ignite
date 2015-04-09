@@ -160,9 +160,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /**
-     * *
      * @throws Exception
      */
+    // TODO: IGNITE-705
     public void testAllExamples() throws Exception {
 //        compareQueryRes0("select ? limit ? offset ?");
 
@@ -280,6 +280,18 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         compareQueryRes0("select 'foo' as bar union select 'foo' as bar");
         compareQueryRes0("select 'foo' as bar union all select 'foo' as bar");
+
+//        compareQueryRes0("select count(*) as a from Person union select count(*) as a from Address");
+//        compareQueryRes0("select old, count(*) as a from Person group by old union select 1, count(*) as a from Address");
+//        compareQueryRes0("select name from Person MINUS select street from Address");
+//        compareQueryRes0("select name from Person EXCEPT select street from Address");
+//        compareQueryRes0("select name from Person INTERSECT select street from Address");
+//        compareQueryRes0("select name from Person UNION select street from Address limit 5");
+//        compareQueryRes0("select name from Person UNION select street from Address limit ?");
+//        compareQueryRes0("select name from Person UNION select street from Address limit ? offset ?");
+//        compareQueryRes0("(select name from Person limit 4) UNION (select street from Address limit 1) limit ? offset ?");
+//        compareQueryRes0("(select 2 a) union all (select 1) order by 1");
+//        compareQueryRes0("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
     }
 
     /**
@@ -407,12 +419,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void initializeH2Schema() throws SQLException {
-        Statement st = conn.createStatement();
-
-        st.execute("CREATE SCHEMA \"part\"");
-        st.execute("CREATE SCHEMA \"repl\"");
-
+    @Override protected Statement initializeH2Schema() throws SQLException {
+        Statement st = super.initializeH2Schema();
+        
         st.execute("create table \"part\".ORGANIZATION" +
             "  (_key int not null," +
             "  _val other not null," +
@@ -453,6 +462,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             "  street varchar(255))");
 
         conn.commit();
+        
+        return st;
     }
     
     /**
