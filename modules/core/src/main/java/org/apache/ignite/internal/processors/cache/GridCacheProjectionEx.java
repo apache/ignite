@@ -235,14 +235,6 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
 
     /**
-     * Gets set of primary entries containing internal entries.
-     *
-     * @param filter Optional filter.
-     * @return Primary entry set.
-     */
-    public Set<Cache.Entry<K, V>> primaryEntrySetx(CacheEntryPredicate... filter);
-
-    /**
      * @return {@link ExpiryPolicy} associated with this projection.
      */
     public @Nullable ExpiryPolicy expiry();

@@ -1083,7 +1083,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         // Clean up zombie assignments.
-                        for (Cache.Entry<Object, Object> e : cache.primaryEntrySetx()) {
+                        for (Cache.Entry<Object, Object> e :
+                            cache.entrySetx(CU.cachePrimary(ctx.grid().affinity(cache.name()), ctx.grid().localNode()))) {
                             if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                                 continue;
 

@@ -507,11 +507,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> primaryEntrySetx(CacheEntryPredicate... filter) {
-        return cache.primaryEntrySetx(filter);
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
         // TODO pass entry filter.
         return cache.entrySet(part);

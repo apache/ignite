@@ -948,14 +948,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> primaryEntrySetx(CacheEntryPredicate... filter) {
-        return map.entriesx(
-            F0.and0(
-                filter,
-                CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
         throw new UnsupportedOperationException();
     }
