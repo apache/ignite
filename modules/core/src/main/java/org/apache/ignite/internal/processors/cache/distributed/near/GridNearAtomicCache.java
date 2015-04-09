@@ -388,18 +388,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put0(
-        K key,
-        V val,
-        @Nullable CacheEntryPredicate[] filter
-    ) throws IgniteCheckedException {
+    @Override public V put0( K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         return dht.put0(key, val, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx0(K key,
-                                   V val,
-                                   @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean putx0(K key, V val, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         return dht.putx0(key, val, filter);
     }
 
@@ -412,17 +406,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync0(K key,
-                                                       V val,
-                                                       @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         return dht.putAsync0(key, val, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key,
-                                                              V val,
-                                                              @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         return dht.putxAsync0(key, val, filter);
     }
 
@@ -564,15 +554,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V remove0(K key,
-                               @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public V remove0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         return dht.remove0(key, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync0(K key,
-                                                          @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync0(K key, @Nullable CacheEntryPredicate... filter) {
         return dht.removeAsync0(key, filter);
     }
 
@@ -589,8 +577,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex0(K key,
-                                      @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean removex0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         return dht.removex0(key, filter);
     }
 

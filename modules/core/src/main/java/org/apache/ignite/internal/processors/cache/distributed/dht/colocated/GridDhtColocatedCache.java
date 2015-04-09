@@ -414,9 +414,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                if (!ctx.isAll(entry, CU.empty0()))
-                    break; // While.
-
                 GridCacheMvccCandidate lock =
                     ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), cacheKey, null);
 

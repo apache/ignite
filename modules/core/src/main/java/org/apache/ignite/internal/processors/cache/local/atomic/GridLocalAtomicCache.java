@@ -100,9 +100,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V put0(K key,
-                            V val,
-                            @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public V put0(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         return (V)updateAllInternal(UPDATE,
@@ -118,9 +116,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean putx0(K key,
-                                   V val,
-                                   @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean putx0(K key, V val, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         return (Boolean)updateAllInternal(UPDATE,
@@ -153,9 +149,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync0(K key,
-                                                       V val,
-                                                       @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -168,9 +162,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key,
-                                                              V val,
-                                                              @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -315,8 +307,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V remove0(K key,
-                               @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public V remove0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         return (V)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -330,8 +321,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync0(K key,
-                                                          @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync0(K key, @Nullable CacheEntryPredicate... filter) {
         return removeAllAsync0(Collections.singletonList(key), true, false, filter);
     }
 
@@ -358,8 +348,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean removex0(K key,
-                                      @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean removex0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -384,8 +373,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> removexAsync0(K key,
-                                                                 @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync0(K key, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), false, false, filter);
