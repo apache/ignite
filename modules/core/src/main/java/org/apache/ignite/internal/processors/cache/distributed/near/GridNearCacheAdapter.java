@@ -410,18 +410,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> entry(K key) {
-        // We don't try wrap entry from near or dht cache.
-        // Created object will be wrapped once some method is called.
-        try {
-            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean clearLocally0(K key, @Nullable CacheEntryPredicate[] filter) {
         return super.clearLocally0(key, filter) | dht().clearLocally0(key, filter);
     }

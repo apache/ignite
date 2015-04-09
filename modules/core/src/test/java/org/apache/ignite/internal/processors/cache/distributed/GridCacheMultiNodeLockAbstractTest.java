@@ -156,7 +156,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param key Key.
      */
     @SuppressWarnings({"BusyWait"})
-    private void checkUnlocked(IgniteCache<Integer,String> cache, Integer key) {
+    private void checkUnlocked(IgniteCache<Integer,String> cache, Integer key) throws IgniteCheckedException {
         assert !cache.isLocalLocked(key, true);
 
         if (partitioned()) {
@@ -199,7 +199,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkUnlocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
+    private void checkUnlocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) throws IgniteCheckedException {
         for (Integer key : keys)
             checkUnlocked(cache, key);
     }
@@ -229,7 +229,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param key Key.
      * @return Entries.
      */
-    private String entries(int key) {
+    private String entries(int key) throws IgniteCheckedException {
         if (partitioned()) {
             GridNearCacheAdapter<Integer, String> near1 = near(1);
             GridNearCacheAdapter<Integer, String> near2 = near(2);
@@ -241,8 +241,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                 ", de2=" + dht2.peekEx(key) + ']';
         }
 
-        return "Entries [e1=" + ((IgniteKernal)ignite1).internalCache(null).entry(key)
-            + ", e2=" + ((IgniteKernal)ignite2).internalCache(null).entry(key) + ']';
+        return "Entries [e1=" + "(" + key + ", " + ((IgniteKernal)ignite1).internalCache(null).get(key) + ")"
+            + ", e2=" + "(" + key + ", " + ((IgniteKernal)ignite2).internalCache(null).get(key) + ")" + ']';
     }
 
     /**

@@ -815,16 +815,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.deploy().onUndeploy(ldr, context());
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> entry(K key) {
-        A.notNull(key, "key");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        return entryEx(ctx.toCacheKeyObject(key), true).wrap();
-    }
-
     /**
      *
      * @param key Entry key.
@@ -948,11 +938,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> primaryEntrySet() {
-        return primaryEntrySet((CacheEntryPredicate[])null);
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<K> keySet() {
         return keySet((CacheEntryPredicate[])null);
     }
@@ -984,11 +969,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public Collection<V> values(CacheEntryPredicate... filter) {
         return map.values(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V> primaryValues() {
-        return primaryValues((CacheEntryPredicate[])null);
     }
 
     /**
@@ -3319,11 +3299,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void localRemoveAll() throws IgniteCheckedException {
-        localRemoveAll(null);
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         return new CacheMetricsSnapshot(metrics);
     }
@@ -3895,11 +3870,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public int globalSize() throws IgniteCheckedException {
-        return globalSize(false);
-    }
-
-    /** {@inheritDoc} */
     @Override public int nearSize() {
         return 0;
     }
@@ -3907,11 +3877,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public int primarySize() {
         return map.publicSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int globalPrimarySize() throws IgniteCheckedException {
-        return globalSize(true);
     }
 
     /** {@inheritDoc} */

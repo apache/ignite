@@ -813,25 +813,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Collection<V> values();
 
     /**
-     * Collection of cached values for which this node is primary.
-     * This collection is dynamic and may change with grid topology changes.
-     * Note that this collection will not contain values that are {@code null}
-     * because they were invalided. You can remove elements from this collection,
-     * but you cannot add elements to this collection. All removal operation will be
-     * reflected on the cache itself.
-     * <p>
-     * Iterator over this collection will not fail if collection was
-     * concurrently updated by another thread. This means that iterator may or
-     * may not return latest values depending on whether they were added before
-     * or after current iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the values cached on this node.
-     *
-     * @return Collection of primary cached values for the current node.
-     */
-    public Collection<V> primaryValues();
-
-    /**
      * Gets set of all entries cached on this node. You can remove
      * elements from this set, but you cannot add elements to this set.
      * All removal operation will be reflected on the cache itself.
@@ -853,18 +834,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      not found locally.
      */
     @Nullable public Set<Cache.Entry<K, V>> entrySet(int part);
-
-    /**
-     * Gets set of cache entries for which this node is primary.
-     * This set is dynamic and may change with grid topology changes. You can remove
-     * elements from this set, but you cannot add elements to this set.
-     * All removal operation will be reflected on the cache itself.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the entries cached on this node.
-     *
-     * @return Primary cache entries that pass through key filter.
-     */
-    public Set<Cache.Entry<K, V>> primaryEntrySet();
 
     /**
      * Starts new transaction with the specified concurrency and isolation.
@@ -907,20 +876,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      does not have a transaction.
      */
     @Nullable public Transaction tx();
-
-    /**
-     * Gets entry from cache with the specified key. The returned entry can
-     * be used even after entry key has been removed from cache. In that
-     * case, every operation on returned entry will result in creation of a
-     * new entry.
-     * <p>
-     * Note that this method can return {@code null} if projection is configured as
-     * pre-filtered and entry key and value don't pass key-value filter of the projection.
-     *
-     * @param key Entry key.
-     * @return Cache entry or {@code null} if projection pre-filtering was not passed.
-     */
-    @Nullable public Cache.Entry<K, V> entry(K key);
 
     /**
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
@@ -1234,11 +1189,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> removeAllAsync();
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void localRemoveAll() throws IgniteCheckedException;
-
-    /**
      * Synchronously acquires lock on a cached object with given
      * key only if the passed in filter (if any) passes. This method
      * together with filter check will be executed as one atomic operation.
@@ -1402,15 +1352,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes);
 
     /**
-     * Gets the number of all entries cached across all nodes.
-     * <p>
-     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
-     *
-     * @return Total cache size across all nodes.
-     */
-    public int globalSize() throws IgniteCheckedException;
-
-    /**
      * Gets size of near cache key set. This method will return count of all entries in near
      * cache and has O(1) complexity on base cache projection.
      * <p>
@@ -1433,15 +1374,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Number of primary entries in cache.
      */
     public int primarySize();
-
-    /**
-     * Gets the number of all primary entries cached across all nodes (excluding backups).
-     * <p>
-     * NOTE: this operation is distributed and will query all participating nodes for their primary cache sizes.
-     *
-     * @return Total primary cache size across all nodes.
-     */
-    public int globalPrimarySize() throws IgniteCheckedException;
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage

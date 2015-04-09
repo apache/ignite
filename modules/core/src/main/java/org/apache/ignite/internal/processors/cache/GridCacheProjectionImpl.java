@@ -216,16 +216,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public int globalSize() throws IgniteCheckedException {
-        return cache.globalSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int globalPrimarySize() throws IgniteCheckedException {
-        return cache.globalPrimarySize();
-    }
-
-    /** {@inheritDoc} */
     @Override public int nearSize() {
         return cctx.config().getCacheMode() == PARTITIONED && isNearEnabled(cctx) ?
              cctx.near().nearKeySet(null).size() : 0;
@@ -477,11 +467,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> primaryValues() {
-        return cache.primaryValues();
-    }
-
-    /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet() {
         return cache.entrySet();
     }
@@ -495,11 +480,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
         // TODO pass entry filter.
         return cache.entrySet(part);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> primaryEntrySet() {
-        return cache.primaryEntrySet();
     }
 
     /** {@inheritDoc} */
@@ -524,11 +504,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
         return cache.localEntries(peekModes);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> entry(K key) {
-        return cache.entry(key);
     }
 
     /** {@inheritDoc} */
@@ -668,11 +643,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         return cache.removeAllAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void localRemoveAll() throws IgniteCheckedException {
-        cache.localRemoveAll();
     }
 
     /** {@inheritDoc} */

@@ -386,16 +386,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        try {
-            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;

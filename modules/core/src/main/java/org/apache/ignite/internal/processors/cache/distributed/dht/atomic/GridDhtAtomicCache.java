@@ -250,16 +250,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        try {
-            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable final Collection<? extends K> keys,
         final boolean forcePrimary,
@@ -546,11 +536,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         A.notNull(key, "key", val, "val");
 
         return removexAsync0(key, ctx.equalsValArray(val));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void localRemoveAll() throws IgniteCheckedException {
-        removeAll(keySet());
     }
 
     /** {@inheritDoc} */

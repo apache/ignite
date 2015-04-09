@@ -295,15 +295,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        return super.entry(key);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
-     */
     @Override public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch)
         throws GridDhtInvalidPartitionException {
         return super.entryEx(key, touch);
