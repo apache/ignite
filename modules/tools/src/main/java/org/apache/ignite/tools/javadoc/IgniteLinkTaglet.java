@@ -35,49 +35,49 @@ public class IgniteLinkTaglet implements Taglet {
     /**
      * Return the name of this custom tag.
      */
-    public String getName() {
+    @Override public String getName() {
         return NAME;
     }
 
     /**
      * @return true since this tag can be used in a field doc comment.
      */
-    public boolean inField() {
+    @Override public boolean inField() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in a constructor doc comment.
      */
-    public boolean inConstructor() {
+    @Override public boolean inConstructor() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in a method doc comment.
      */
-    public boolean inMethod() {
+    @Override public boolean inMethod() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in an overview doc comment.
      */
-    public boolean inOverview() {
+    @Override public boolean inOverview() {
         return true;
     }
 
     /**
      * @return true since this tag can be used in a package doc comment.
      */
-    public boolean inPackage() {
+    @Override public boolean inPackage() {
         return true;
     }
 
     /**
      * @return true since this.
      */
-    public boolean inType() {
+    @Override public boolean inType() {
         return true;
     }
 
@@ -86,7 +86,7 @@ public class IgniteLinkTaglet implements Taglet {
      *
      * @return true since this is an inline tag.
      */
-    public boolean isInlineTag() {
+    @Override public boolean isInlineTag() {
         return true;
     }
 
@@ -117,7 +117,7 @@ public class IgniteLinkTaglet implements Taglet {
      *
      * @param tag <code>Tag</code> representation of this custom tag.
      */
-    public String toString(Tag tag) {
+    @Override public String toString(Tag tag) {
         if (tag.text() == null || tag.text().isEmpty())
             return "";
 
@@ -159,7 +159,7 @@ public class IgniteLinkTaglet implements Taglet {
      *
      * @param tags the array of <code>Tag</code>s representing of this custom tag.
      */
-    public String toString(Tag[] tags) {
+    @Override public String toString(Tag[] tags) {
         return null;
     }
 }

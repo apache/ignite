@@ -60,7 +60,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
-import javax.cache.processor.*;
 import javax.management.*;
 import java.io.*;
 import java.util.*;
@@ -575,7 +574,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
             // Initialize defaults.
             initialize(cfg, cacheObjCtx);
@@ -716,7 +715,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IgnitePredicate filter = ccfg.getNodeFilter();
 
             if (filter.apply(locNode)) {
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
                 CachePluginManager pluginMgr = cache2PluginMgr.get(ccfg.getName());
                 
@@ -1433,7 +1432,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.setNearConfiguration(nearCfg);
             }
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
             GridCacheContext cacheCtx = createCache(ccfg, null, cacheType, cacheObjCtx);
 
@@ -1725,7 +1724,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName) {
         try {
-            if (publicJCache(cacheName, false, true) != null) // Cache with given name already started.
+            if (publicJCache(cacheName, false) != null) // Cache with given name already started.
                 return new GridFinishedFuture<>();
 
             CacheConfiguration cfg = createConfigFromTemplate(cacheName);
@@ -1825,6 +1824,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable NearCacheConfiguration nearCfg,
         boolean failIfExists
     ) {
+        return dynamicStartCache(ccfg, cacheName, nearCfg, CacheType.USER, failIfExists);
+    }
+
+    /**
+     * Dynamically starts cache.
+     *
+     * @param ccfg Cache configuration.
+     * @param cacheName Cache name.
+     * @param nearCfg Near cache configuration.
+     * @param failIfExists Fail if exists flag.
+     * @return Future that will be completed when cache is deployed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public IgniteInternalFuture<?> dynamicStartCache(
+        @Nullable CacheConfiguration ccfg,
+        String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        CacheType cacheType,
+        boolean failIfExists
+    ) {
         assert ccfg != null || nearCfg != null;
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
@@ -1837,7 +1856,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (desc != null && !desc.cancelled()) {
                 if (failIfExists)
                     return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + cacheName));
+                        "(a cache with the same name is already started): " + cacheName));
                 else {
                     CacheConfiguration descCfg = desc.cacheConfiguration();
 
@@ -1849,7 +1868,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 return new GridFinishedFuture<>();
                             else
                                 return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near " +
-                                        "cache (local node is an affinity node for cache): " + cacheName));
+                                    "cache (local node is an affinity node for cache): " + cacheName));
                         }
                         else
                             // If local node has near cache, return success.
@@ -1869,7 +1888,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
-                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
                     initialize(cfg, cacheObjCtx);
 
@@ -1905,7 +1924,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
 
-        req.cacheType(CacheType.USER);
+        req.cacheType(cacheType);
 
         return F.first(initiateCacheChanges(F.asList(req)));
     }
@@ -2504,22 +2523,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName) throws IgniteCheckedException {
-        return publicJCache(cacheName, true, true);
+        return publicJCache(cacheName, true);
     }
 
     /**
      * @param cacheName Cache name.
      * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
      *        otherwise returns {@code null} in this case.
-     * @param failIfSys Fail is cache is system.
      * @param <K> type of keys.
      * @param <V> type of values.
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted,
-        boolean failIfSys) throws IgniteCheckedException
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @Nullable public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted)
+        throws IgniteCheckedException
     {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + cacheName);
@@ -2530,7 +2548,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
-        if (desc != null && !desc.cacheType().userCache() && failIfSys)
+        if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
         if (cache == null) {
@@ -2566,6 +2584,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return cache;
+    }
+
+    /**
+     * Get configuration for the given cache.
+     *
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    public CacheConfiguration cacheConfiguration(String name) {
+        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+
+        if (desc == null || desc.cancelled())
+            throw new IllegalStateException("Cache doesn't exist: " + name);
+        else
+            return desc.cacheConfiguration();
     }
 
     /**

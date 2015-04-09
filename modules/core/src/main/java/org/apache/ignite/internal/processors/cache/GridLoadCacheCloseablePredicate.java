@@ -15,8 +15,16 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.lang.*;
+
 /**
- * <!-- Package description. -->
- * Contains FTP scanner for URI deployer SPI.
+ * Special version of bi-predicate for LoadCache with close callback.
  */
-package org.apache.ignite.spi.deployment.uri.scanners.ftp;
+public interface GridLoadCacheCloseablePredicate<K, V> extends IgniteBiPredicate<K, V> {
+    /**
+     * Callback invoked when predicate is no longer needed.
+     */
+    public void onClose();
+}

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
+import org.apache.ignite.logger.NullLogger
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node._
@@ -1607,6 +1608,8 @@ object visor extends VisorTag {
 
         // Make sure visor starts without shutdown hook.
         System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
+
+        cfg.setGridLogger(new NullLogger)
 
         val startedGridName = try {
              Ignition.start(cfg).name

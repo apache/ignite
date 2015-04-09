@@ -14,30 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.datastructures.local;
 
-package org.apache.ignite.spi.deployment.uri.scanners.ftp;
+import org.apache.ignite.cache.*;
 
-import org.apache.ignite.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * An exception occurred during URI FTP deployment.
+ * Queue tests with local cache.
  */
-class GridUriDeploymentFtpException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new grid exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    GridUriDeploymentFtpException(String msg) { super(msg); }
-
-    /**
-     * Creates new grid ftp client exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    GridUriDeploymentFtpException(String msg, Throwable cause) { super(msg, cause); }
+public class GridCacheLocalOffheapQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return OFFHEAP_TIERED;
+    }
 }
