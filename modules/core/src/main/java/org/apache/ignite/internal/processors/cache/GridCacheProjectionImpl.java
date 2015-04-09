@@ -116,7 +116,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      *
      * @return Cache context.
      */
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return cctx;
     }
 

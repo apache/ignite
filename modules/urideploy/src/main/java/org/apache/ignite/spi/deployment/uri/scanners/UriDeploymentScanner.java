@@ -15,24 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.spi.deployment.uri.scanners;
 
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import java.net.*;
 
 /**
- * Queue tests with partitioned atomic cache.
+ * URI deployment scanner.
  */
-public class GridCachePartitionedAtomicQueueApiSelfTest extends GridCachePartitionedQueueApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
+public interface UriDeploymentScanner {
+    /**
+     * Check whether scanner is able to process the given URI.
+     *
+     * @param uri URI.
+     * @return {@code true} if scanner is able to process the URI.
+     */
+    boolean acceptsURI(URI uri);
 
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
-    }
+    /**
+     * Scan the given URI.
+     *
+     * @param scanCtx Scan context.
+     */
+    void scan(UriDeploymentScannerContext scanCtx);
+
+    /**
+     * Gets default scan frequency in milliseconds.
+     *
+     * @return Default scan frequency.
+     */
+    long getDefaultScanFrequency();
 }

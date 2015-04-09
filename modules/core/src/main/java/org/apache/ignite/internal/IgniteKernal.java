@@ -1021,11 +1021,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
-
-        if (!F.isEmpty(cfg.getPluginConfigurations())) {
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
-                A.notNull(pluginCfg.providerClass(), "PluginConfiguration.providerClass()");
-        }
     }
 
     /**
@@ -2240,19 +2235,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
-        return cache(name, true);
-    }
-
-    /**
-     * @param name Cache name.
-     * @param failIfSys Fail if requestsed cache is system cache.
-     * @return Cache.
-     */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name, boolean failIfSys) {
         guard();
 
         try {
-            return ctx.cache().publicJCache(name, true, failIfSys);
+            return ctx.cache().publicJCache(name, true);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);

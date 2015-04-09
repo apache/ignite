@@ -738,7 +738,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param ignite Ignite.
      */
     @IgniteInstanceResource
-    protected void injectResources(Ignite ignite) {
+    @Override protected void injectResources(Ignite ignite) {
         super.injectResources(ignite);
 
         if (ignite != null) {

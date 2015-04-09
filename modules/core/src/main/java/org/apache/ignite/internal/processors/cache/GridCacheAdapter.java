@@ -309,7 +309,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @return Context.
      */
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
