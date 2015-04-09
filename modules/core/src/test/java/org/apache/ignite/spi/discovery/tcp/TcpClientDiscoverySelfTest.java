@@ -420,7 +420,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testDataExchangeFromServer() throws Exception {
+    public void testDataExchangeFromServer() throws Exception {
         testDataExchange("server-0");
     }
 

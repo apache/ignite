@@ -883,6 +883,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
+                        gridStartTime = msg.gridStartTime();
+
                         for (TcpDiscoveryNode n : top) {
                             if (n.order() > 0)
                                 n.visible(true);
