@@ -1180,12 +1180,10 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param key Key whose mapping is to be removed from cache.
-     * @param filter Optional filter to check prior to removing value form cache. Note
-     *      that filter is checked atomically together with remove operation.
      * @return Future for the remove operation.
      * @throws NullPointerException if the key is {@code null}.
      */
-    public IgniteInternalFuture<V> removeAsync(K key, CacheEntryPredicate... filter);
+    public IgniteInternalFuture<V> removeAsync(K key);
 
     /**
      * Removes given key mapping from cache.
@@ -1200,15 +1198,12 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param key Key whose mapping is to be removed from cache.
-     * @param filter Optional filter to check prior to removing value form cache. Note
-     *      that filter is checked atomically together with remove operation.
      * @return {@code True} if filter passed validation and entry was removed, {@code false} otherwise.
      *      Note that if filter is not specified, this method will return {@code true}.
      * @throws NullPointerException if the key is {@code null}.
      * @throws IgniteCheckedException If remove failed.
      */
-    public boolean removex(K key, @Nullable CacheEntryPredicate... filter)
-        throws IgniteCheckedException;
+    public boolean removex(K key) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache.
@@ -1223,15 +1218,12 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param key Key whose mapping is to be removed from cache.
-     * @param filter Optional filter to check prior to removing value form cache. Note
-     *      that filter is checked atomically together with remove operation.
      * @return Future for the remove operation. The future will return {@code true}
      *      if optional filters passed validation and remove did occur, {@code false} otherwise.
      *      Note that if filter is not specified, this method will return {@code true}.
      * @throws NullPointerException if the key is {@code null}.
      */
-    public IgniteInternalFuture<Boolean> removexAsync(K key,
-        @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<Boolean> removexAsync(K key);
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -1282,12 +1274,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param keys Keys whose mappings are to be removed from cache.
-     * @param filter Optional filter to check prior to removing value form cache. Note
-     *      that filter is checked atomically together with remove operation.
      * @throws IgniteCheckedException If remove failed.
      */
-    public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
+    public void removeAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mappings from cache for entries for which the optionally
@@ -1300,13 +1289,10 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param keys Keys whose mappings are to be removed from cache.
-     * @param filter Optional filter to check prior to removing value form cache. Note
-     *      that filter is checked atomically together with remove operation.
      * @return Future for the remove operation. The future will complete whenever
      *      remove operation completes.
      */
-    public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys);
 
     /**
      * Removes mappings from cache for entries for which the optionally passed in filters do

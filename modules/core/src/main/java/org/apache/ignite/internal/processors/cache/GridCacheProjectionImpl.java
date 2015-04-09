@@ -623,18 +623,17 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V remove(K key) throws IgniteCheckedException {
-        return removeAsync(key, CU.empty0()).get();
+        return removeAsync(key).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(K key, CacheEntryPredicate[] filter) {
-        return cache.removeAsync0(key, filter);
+    @Override public IgniteInternalFuture<V> removeAsync(K key) {
+        return cache.removeAsync0(key, CU.empty0());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return removexAsync(key, filter).get();
+    @Override public boolean removex(K key) throws IgniteCheckedException {
+        return removexAsync(key).get();
     }
 
     /** {@inheritDoc} */
@@ -649,9 +648,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key,
-        @Nullable CacheEntryPredicate[] filter) {
-        return cache.removexAsync0(key, filter);
+    @Override public IgniteInternalFuture<Boolean> removexAsync(K key) {
+        return cache.removexAsync0(key);
     }
 
     /** {@inheritDoc} */
@@ -687,15 +685,13 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        cache.removeAll(keys, filter);
+    @Override public void removeAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        cache.removeAll(keys);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate[] filter) {
-        return cache.removeAllAsync(keys, filter);
+    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys) {
+        return cache.removeAllAsync(keys);
     }
 
     /** {@inheritDoc} */

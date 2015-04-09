@@ -408,7 +408,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        return removexAsync(key, ctx.equalsValArray(val));
+        return removexAsync0(key, ctx.equalsValArray(val));
     }
 
     /** {@inheritDoc} */

@@ -545,7 +545,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
-        return removexAsync(key, ctx.equalsValArray(val));
+        return removexAsync0(key, ctx.equalsValArray(val));
     }
 
     /** {@inheritDoc} */
