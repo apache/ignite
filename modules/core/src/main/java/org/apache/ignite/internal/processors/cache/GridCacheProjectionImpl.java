@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -351,7 +350,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> putAsync(K key, V val,
         @Nullable CacheEntryPredicate[] filter) {
-        return cache.putAsync(key, val, null, -1, filter);
+        return cache.putAsync0(key, val, null, -1, filter);
     }
 
     /** {@inheritDoc} */
@@ -415,7 +414,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val,
         @Nullable CacheEntryPredicate[] filter) {
-        return cache.putxAsync(key, val, null, -1, filter);
+        return cache.putxAsync0(key, val, null, -1, filter);
     }
 
     /** {@inheritDoc} */
@@ -640,7 +639,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> removeAsync(K key, CacheEntryPredicate[] filter) {
-        return cache.removeAsync(key, null, filter);
+        return cache.removeAsync0(key, null, filter);
     }
 
     /** {@inheritDoc} */
@@ -663,7 +662,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key,
         @Nullable CacheEntryPredicate[] filter) {
-        return cache.removexAsync(key, null, filter);
+        return cache.removexAsync0(key, null, filter);
     }
 
     /** {@inheritDoc} */
