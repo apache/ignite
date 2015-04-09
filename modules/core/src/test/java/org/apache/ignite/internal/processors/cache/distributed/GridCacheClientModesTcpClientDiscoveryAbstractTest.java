@@ -31,10 +31,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends GridCacheClientModesAbstractSelfTest {
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startClientLast(true);
-
-        super.beforeTestsStarted();
+    @Override protected boolean isClientStartedLast() {
+        return true;
     }
 
     /** {@inheritDoc} */
