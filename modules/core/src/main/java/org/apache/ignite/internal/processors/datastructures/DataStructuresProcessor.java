@@ -54,7 +54,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         new CacheDataStructuresConfigurationKey();
 
     /** */
-    public static final CacheDataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
+    private static final CacheDataStructuresCacheKey DATA_STRUCTURES_CACHE_KEY =
         new CacheDataStructuresCacheKey();
 
     /** Initial capacity. */
@@ -1109,6 +1109,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
+
         String cacheName = null;
 
         if (cfg != null)
