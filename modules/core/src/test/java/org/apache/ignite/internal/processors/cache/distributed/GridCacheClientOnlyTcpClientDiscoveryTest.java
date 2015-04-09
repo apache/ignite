@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
  * Tests TcpClientDiscovery SPI in the client mode only.
  */
 public class GridCacheClientOnlyTcpClientDiscoveryTest extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
@@ -33,5 +32,4 @@ public class GridCacheClientOnlyTcpClientDiscoveryTest extends GridCacheClientMo
     @Override protected boolean clientOnly() {
         return true;
     }
-
 }

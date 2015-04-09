@@ -21,10 +21,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
  * Tests TcpClientDiscovery SPI in the client mode with the near cache enabled.
  */
 public class GridCacheNearOnlyTcpClientDiscoveryTest extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected boolean clientOnly() {
         return false;
     }
-
 }

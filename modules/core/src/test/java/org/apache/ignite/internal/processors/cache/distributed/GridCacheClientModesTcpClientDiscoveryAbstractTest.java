@@ -17,19 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-
-import java.net.InetSocketAddress;
-import java.util.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-
 
 /**
  * Tests TcpClientDiscovery SPI in client modes.
  */
 public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends GridCacheClientModesAbstractSelfTest {
-
     /** {@inheritDoc} */
     @Override protected boolean isClientStartedLast() {
         return true;
@@ -40,18 +34,8 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (cfg.isClientMode() != null && cfg.isClientMode()) {
-            TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder();
-
-            ArrayList<String> addrList = new ArrayList<>(sharedTcpDiscoveryIpFinder().getRegisteredAddresses().size());
-
-            for (InetSocketAddress addr : sharedTcpDiscoveryIpFinder().getRegisteredAddresses()) {
-                addrList.add(addr.getHostString() + ":" + addr.getPort());
-            }
-
-            clientIpFinder.setAddresses(addrList);
-
             TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
-            discoverySpi.setIpFinder(clientIpFinder);
+            discoverySpi.setIpFinder(ipFinder);
 
             cfg.setDiscoverySpi(discoverySpi);
         }

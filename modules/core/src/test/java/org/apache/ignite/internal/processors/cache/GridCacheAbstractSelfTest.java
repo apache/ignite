@@ -58,7 +58,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
 
     /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @return Grids count to start.
@@ -334,11 +334,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected final boolean partitionedMode() {
         return cacheMode() == PARTITIONED;
     }
-
-    /**
-     * @return {@code TcpDiscoveryIpFinder} that is used and shared among grids.
-     */
-    protected final TcpDiscoveryIpFinder sharedTcpDiscoveryIpFinder() { return ipFinder; }
 
     /**
      * @return Default cache instance.
