@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+
 /**
  * Set tests.
  */
 public class GridCacheLocalAtomicOffheapSetSelfTest extends GridCacheLocalAtomicSetSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
+        return OFFHEAP_TIERED;
     }
 }

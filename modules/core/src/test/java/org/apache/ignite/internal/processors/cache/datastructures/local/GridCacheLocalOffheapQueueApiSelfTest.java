@@ -18,12 +18,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+
 /**
  * Queue tests with local cache.
  */
 public class GridCacheLocalOffheapQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
+        return OFFHEAP_TIERED;
     }
 }

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+
 /**
  * Set tests with off-heap values cache memory mode.
  */
 public class GridCachePartitionedOffHeapValuesSetSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.OFFHEAP_VALUES;
+        return OFFHEAP_VALUES;
     }
 }

@@ -18,12 +18,13 @@
 package org.apache.ignite.examples.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Ignite cache distributed queue example. This example demonstrates {@code FIFO} unbounded
@@ -79,7 +80,7 @@ public class IgniteQueueExample {
     private static IgniteQueue<String> initializeQueue(Ignite ignite, String queueName) throws IgniteException {
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
-        colCfg.setCacheMode(CacheMode.PARTITIONED);
+        colCfg.setCacheMode(PARTITIONED);
 
         // Initialize new FIFO queue.
         IgniteQueue<String> queue = ignite.queue(queueName, 0, colCfg);

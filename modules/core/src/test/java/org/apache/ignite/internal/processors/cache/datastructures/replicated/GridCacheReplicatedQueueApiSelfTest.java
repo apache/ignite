@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -34,7 +35,7 @@ public class GridCacheReplicatedQueueApiSelfTest extends GridCacheQueueApiSelfAb
 
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
+        return OFFHEAP_TIERED;
     }
 
     /** {@inheritDoc} */

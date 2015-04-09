@@ -27,6 +27,7 @@ import org.apache.ignite.resources.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.*;
 
@@ -69,7 +70,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
+        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */

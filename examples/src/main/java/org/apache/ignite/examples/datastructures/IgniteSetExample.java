@@ -18,12 +18,14 @@
 package org.apache.ignite.examples.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Ignite cache distributed set example.
@@ -73,8 +75,8 @@ public class IgniteSetExample {
     private static IgniteSet<String> initializeSet(Ignite ignite, String setName) throws IgniteException {
         CollectionConfiguration setCfg = new CollectionConfiguration();
 
-        setCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        setCfg.setCacheMode(CacheMode.PARTITIONED);
+        setCfg.setAtomicityMode(TRANSACTIONAL);
+        setCfg.setCacheMode(PARTITIONED);
 
         // Initialize new set.
         IgniteSet<String> set = ignite.set(setName, setCfg);

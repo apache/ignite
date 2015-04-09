@@ -32,6 +32,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -56,7 +57,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
+        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */

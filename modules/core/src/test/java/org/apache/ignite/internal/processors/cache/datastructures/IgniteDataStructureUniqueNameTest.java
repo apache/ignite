@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -47,7 +48,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
+        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */

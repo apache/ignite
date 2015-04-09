@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+
 /**
  * Queue multi node test.
  */
 public class GridCachePartitionedAtomicOffheapQueueMultiNodeSelfTest extends GridCachePartitionedAtomicQueueMultiNodeSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
+        return OFFHEAP_TIERED;
     }
 }
