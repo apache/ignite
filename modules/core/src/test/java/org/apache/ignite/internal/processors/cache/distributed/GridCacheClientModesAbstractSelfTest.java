@@ -32,10 +32,6 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Tests near-only cache.
  */
 public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbstractSelfTest {
-
-    /** Grids count to start. */
-    private final static int GRIDS_COUNT = 4;
-
     /** Grid cnt. */
     private static AtomicInteger gridCnt;
 
@@ -44,7 +40,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return GRIDS_COUNT;
+        return 4;
     }
 
     /** {@inheritDoc} */
@@ -62,7 +58,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         IgniteConfiguration cfg = super.getConfiguration(gridName);
         int count = gridCnt.incrementAndGet();
 
-        if ((count == GRIDS_COUNT && isClientStartedLast()) || (count == 1 && !isClientStartedLast())) {
+        if ((count == gridCount() && isClientStartedLast()) || (count == 1 && !isClientStartedLast())) {
             cfg.setClientMode(true);
 
             nearOnlyGridName = gridName;
