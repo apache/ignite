@@ -81,4 +81,8 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+  <scm>
+    <tag>1.0.2QAILS01</tag>
+  </scm>
 </project>

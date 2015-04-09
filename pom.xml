@@ -43,7 +43,7 @@
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
         <connection>scm:git:git://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
-        <tag>HEAD</tag>
+        <tag>1.0.2QAILS01</tag>
     </scm>
 
     <distributionManagement>
