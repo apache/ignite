@@ -667,12 +667,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheConfiguration locCcfg = desc.cacheConfiguration();
-            
+
             CachePluginManager pluginMgr = new CachePluginManager(ctx, locCcfg);
 
             cache2PluginMgr.put(locCcfg.getName(), pluginMgr);
         }
-        
+
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
                 checkTransactionConfiguration(n);
@@ -688,7 +688,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (rmtCfg != null) {
                         CacheConfiguration locCfg = desc.cacheConfiguration();
-                        
+
                         checkCache(locCfg, rmtCfg, n);
 
                         // Check plugin cache configurations.
@@ -718,9 +718,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
                 CachePluginManager pluginMgr = cache2PluginMgr.get(ccfg.getName());
-                
+
                 assert pluginMgr != null : " Map=" + cache2PluginMgr;
-                
+
                 GridCacheContext ctx = createCache(ccfg, pluginMgr, desc.cacheType(), cacheObjCtx);
 
                 ctx.dynamicDeploymentId(desc.deploymentId());
@@ -1089,7 +1089,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-        
+
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
@@ -2157,33 +2157,35 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            CacheConfiguration cfg = desc.cacheConfiguration();
+        if (!node.isClient()) {
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                CacheConfiguration cfg = desc.cacheConfiguration();
 
-            if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
-                RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
+                    RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
 
-                AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
+                    AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
-                assert hashIdRslvr != null;
+                    assert hashIdRslvr != null;
 
-                Object nodeHashObj = hashIdRslvr.resolve(node);
+                    Object nodeHashObj = hashIdRslvr.resolve(node);
 
-                for (ClusterNode topNode : ctx.discovery().allNodes()) {
-                    Object topNodeHashObj = hashIdRslvr.resolve(topNode);
+                    for (ClusterNode topNode : ctx.discovery().allNodes()) {
+                        Object topNodeHashObj = hashIdRslvr.resolve(topNode);
 
-                    if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
-                        String errMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
-                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
-                            ", existingNodeId=" + topNode.id() + ']';
+                        if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
+                            String errMsg = "Failed to add node to topology because it has the same hash code for " +
+                                "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
+                                ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
+                                ", existingNodeId=" + topNode.id() + ']';
 
-                        String sndMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
-                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
-                            topNode.id() + ']';
+                            String sndMsg = "Failed to add node to topology because it has the same hash code for " +
+                                "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
+                                ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
+                                topNode.id() + ']';
 
-                        return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                            return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                        }
                     }
                 }
             }

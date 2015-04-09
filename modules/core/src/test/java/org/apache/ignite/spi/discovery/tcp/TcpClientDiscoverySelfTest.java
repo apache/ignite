@@ -420,14 +420,14 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDataExchangeFromServer() throws Exception {
+    public void _testDataExchangeFromServer() throws Exception {
         testDataExchange("server-0");
     }
 
     /**
      * @throws Exception If failed.
      */
-    // TODO: GG-9174
+    // TODO: IGNITE-587
     public void _testDataExchangeFromClient() throws Exception {
         testDataExchange("client-0");
     }
