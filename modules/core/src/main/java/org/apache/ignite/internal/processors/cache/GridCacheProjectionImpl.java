@@ -262,11 +262,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsValue(V val) {
-        return cache.containsValue(val);
-    }
-
-    /** {@inheritDoc} */
     @Override public V reload(K key) throws IgniteCheckedException {
         return cache.reload(key);
     }

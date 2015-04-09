@@ -286,15 +286,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys);
 
     /**
-     * Returns {@code true} if this cache contains given value.
-     *
-     * @param val Value to check.
-     * @return {@code True} if given value is present in cache.
-     * @throws NullPointerException if the value is {@code null}.
-     */
-    public boolean containsValue(V val);
-
-    /**
      * Reloads a single key from persistent storage. This method
      * delegates to <code>CacheStore#load(Transaction, Object)</code>
      * method.

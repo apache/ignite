@@ -535,11 +535,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean containsValue(V val) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         try {
             return containsKeyAsync(key).get();
