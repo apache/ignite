@@ -41,7 +41,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
     /** Near-only cache grid name. */
     private static String nearOnlyGridName;
-    
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRIDS_COUNT;
