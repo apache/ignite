@@ -100,7 +100,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                 while (true) {
                     try {
-                        T data = (T)cache.remove(key, null);
+                        T data = (T)cache.remove(key);
 
                         if (data != null)
                             return data;
@@ -109,7 +109,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                             stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
                         while (U.currentTimeMillis() < stop ) {
-                            data = (T)cache.remove(key, null);
+                            data = (T)cache.remove(key);
 
                             if (data != null)
                                 return data;

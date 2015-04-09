@@ -458,15 +458,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
-     * @param filter Optional filter to check prior to putting value in cache. Note
-     *      that filter check is atomic with put operation.
      * @return Previous value associated with specified key, or {@code null}
      *  if entry did not pass the filter, or if there was no mapping for the key in swap
      *  or in persistent storage.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    @Nullable public V put(K key, V val, @Nullable CacheEntryPredicate... filter)
+    @Nullable public V put(K key, V val)
         throws IgniteCheckedException;
 
     /**
@@ -493,12 +491,10 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
-     * @param filter Optional filter to check prior to putting value in cache. Note
-     *      that filter check is atomic with put operation.
      * @return Future for the put operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<V> putAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -518,15 +514,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
-     * @param filter Optional filter to check prior to putting value in cache. Note
-     *      that filter check is atomic with put operation.
      * @return {@code True} if optional filter passed and value was stored in cache,
      *      {@code false} otherwise. Note that this method will return {@code true} if filter is not
      *      specified.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    public boolean putx(K key, V val, @Nullable CacheEntryPredicate... filter)
+    public boolean putx(K key, V val)
         throws IgniteCheckedException;
 
     /**
@@ -547,14 +541,12 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
-     * @param filter Optional filter to check prior to putting value in cache. Note
-     *      that filter check is atomic with put operation.
      * @return Future for the put operation. Future will return {@code true} if optional filter
      *      passed and value was stored in cache, {@code false} otherwise. Note that future will
      *      return {@code true} if filter is not specified.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<Boolean> putxAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -800,12 +792,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param m Key-value pairs to store in cache.
-     * @param filter Optional entry filter. If provided, then entry will
-     *      be stored only if the filter returned {@code true}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    public void putAll(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
+    public void putAll(@Nullable Map<? extends K, ? extends V> m) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pairs in cache. If filters are provided, then entries will
@@ -819,12 +808,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param m Key-value pairs to store in cache.
-     * @param filter Optional entry filter. If provided, then entry will
-     *      be stored only if the filter returned {@code true}.
      * @return Future for putAll operation.
      */
-    public IgniteInternalFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m);
 
     /**
      * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
@@ -840,23 +826,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Key set for this cache projection.
      */
     public Set<K> keySet();
-
-    /**
-     * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
-     * to this set. All removal operation will be reflected on the cache itself.
-     * <p>
-     * Iterator over this set will not fail if set was concurrently updated
-     * by another thread. This means that iterator may or may not return latest
-     * keys depending on whether they were added before or after current
-     * iterator position.
-     * <p>
-     * NOTE: this operation is not distributed and returns only the keys cached on this node.
-     *
-     * @param filter Optional filter to check prior to getting key form cache. Note
-     * that filter is checked atomically together with get operation.
-     * @return Key set for this cache projection.
-     */
-    public Set<K> keySet(@Nullable CacheEntryPredicate... filter);
 
     /**
      * Set of keys for which this node is primary.
@@ -1184,14 +1153,12 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * if there is one.
      *
      * @param key Key whose mapping is to be removed from cache.
-     * @param filter Optional filter to check prior to removing value form cache. Note
-     *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key, or {@code null}
      *      if there was no value for this key.
      * @throws NullPointerException If key is {@code null}.
      * @throws IgniteCheckedException If remove operation failed.
      */
-    @Nullable public V remove(K key, @Nullable CacheEntryPredicate... filter)
+    @Nullable public V remove(K key)
         throws IgniteCheckedException;
 
     /**
