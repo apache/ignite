@@ -392,19 +392,17 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         K key,
         V val,
         @Nullable GridCacheEntryEx cached,
-        long ttl,
         @Nullable CacheEntryPredicate[] filter
     ) throws IgniteCheckedException {
-        return dht.put0(key, val, cached, ttl, filter);
+        return dht.put0(key, val, cached, filter);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx0(K key,
                                    V val,
                                    @Nullable GridCacheEntryEx cached,
-                                   long ttl,
                                    @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.putx0(key, val, cached, ttl, filter);
+        return dht.putx0(key, val, cached, filter);
     }
 
     /** {@inheritDoc} */
@@ -419,9 +417,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<V> putAsync0(K key,
                                                        V val,
                                                        @Nullable GridCacheEntryEx entry,
-                                                       long ttl,
                                                        @Nullable CacheEntryPredicate... filter) {
-        return dht.putAsync0(key, val, entry, ttl, filter);
+        return dht.putAsync0(key, val, entry, filter);
     }
 
     /** {@inheritDoc} */
@@ -429,9 +426,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> putxAsync0(K key,
                                                               V val,
                                                               @Nullable GridCacheEntryEx entry,
-                                                              long ttl,
                                                               @Nullable CacheEntryPredicate... filter) {
-        return dht.putxAsync0(key, val, entry, ttl, filter);
+        return dht.putxAsync0(key, val, entry, filter);
     }
 
     /** {@inheritDoc} */

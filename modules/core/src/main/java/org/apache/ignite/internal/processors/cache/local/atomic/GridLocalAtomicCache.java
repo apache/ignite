@@ -103,7 +103,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public V put0(K key,
                             V val,
                             @Nullable GridCacheEntryEx cached,
-                            long ttl,
                             @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
@@ -123,7 +122,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public boolean putx0(K key,
                                    V val,
                                    @Nullable GridCacheEntryEx cached,
-                                   long ttl,
                                    @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
@@ -160,7 +158,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<V> putAsync0(K key,
                                                        V val,
                                                        @Nullable GridCacheEntryEx entry,
-                                                       long ttl,
                                                        @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
@@ -177,7 +174,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> putxAsync0(K key,
                                                               V val,
                                                               @Nullable GridCacheEntryEx entry,
-                                                              long ttl,
                                                               @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 

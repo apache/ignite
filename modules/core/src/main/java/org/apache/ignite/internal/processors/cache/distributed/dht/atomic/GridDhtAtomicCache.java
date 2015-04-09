@@ -301,15 +301,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put0(K key, V val, @Nullable GridCacheEntryEx cached, long ttl,
+    @Override public V put0(K key, V val, @Nullable GridCacheEntryEx cached,
                             @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return putAsync0(key, val, cached, ttl, filter).get();
+        return putAsync0(key, val, cached, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx0(K key, V val, @Nullable GridCacheEntryEx cached,
-                                   long ttl, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return putxAsync0(key, val, cached, ttl, filter).get();
+                                   @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+        return putxAsync0(key, val, cached, filter).get();
     }
 
     /** {@inheritDoc} */
@@ -320,8 +320,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable GridCacheEntryEx entry,
-                                                       long ttl, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable GridCacheEntryEx entry, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -337,7 +336,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable GridCacheEntryEx entry,
                                                               @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
