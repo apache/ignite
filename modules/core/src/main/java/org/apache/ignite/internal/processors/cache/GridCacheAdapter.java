@@ -3987,11 +3987,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public V promote(K key) throws IgniteCheckedException {
-        return promote(key, true);
-    }
-
     /**
      * @param key Key.
      * @param deserializePortable Deserialize portable flag.

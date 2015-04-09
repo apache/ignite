@@ -1454,18 +1454,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public int globalPrimarySize() throws IgniteCheckedException;
 
     /**
-     * This method promotes cache entry by given key, if any, from offheap or swap storage
-     * into memory.
-     * <h2 class="header">Transactions</h2>
-     * This method is not transactional.
-     *
-     * @param key Key to promote entry for.
-     * @return Unswapped entry value or {@code null} for non-existing key.
-     * @throws IgniteCheckedException If promote failed.
-     */
-    @Nullable public V promote(K key) throws IgniteCheckedException;
-
-    /**
      * This method unswaps cache entries by given keys, if any, from swap storage
      * into memory.
      * <h2 class="header">Transactions</h2>

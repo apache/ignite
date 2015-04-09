@@ -721,11 +721,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key) throws IgniteCheckedException {
-        return cache.promote(key, deserializePortables());
-    }
-
-    /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         cache.promoteAll(keys);
     }

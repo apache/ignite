@@ -441,12 +441,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V promote(K key) throws IgniteCheckedException {
-        // Unswap only from dht(). Near cache does not have swap storage.
-        return dht().promote(key);
-    }
-
-    /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         // Unswap only from dht(). Near cache does not have swap storage.
         // In near-only cache this is a no-op.
