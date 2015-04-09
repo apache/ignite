@@ -101,7 +101,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             assertNotNull(localPeek(cache, i));
 
-            cache.evict(i); // Swap.
+            cache.evictAll(Collections.singleton(i)); // Swap.
         }
 
         CacheQuery<Map.Entry<Integer, ObjectValue>> qry =

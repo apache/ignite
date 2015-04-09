@@ -542,11 +542,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void evictAll() {
-        cache.evictAll(keySet());
-    }
-
-    /** {@inheritDoc} */
     @Override public void clearLocally() {
         cache.clearLocally();
     }

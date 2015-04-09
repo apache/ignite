@@ -1510,11 +1510,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void evictAll() {
-        evictAll(keySet());
-    }
-
-    /** {@inheritDoc} */
     @Override public void evictAll(Collection<? extends K> keys) {
         evictAll(keys, (CacheEntryPredicate[])null);
     }

@@ -1025,18 +1025,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void evictAll() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            delegate.evictAll();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void clearLocally() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

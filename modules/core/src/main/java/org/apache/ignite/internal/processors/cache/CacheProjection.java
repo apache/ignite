@@ -935,16 +935,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean evict(K key);
 
     /**
-     * Attempts to evict all cache entries. Note, that entry will be
-     * evicted only if it's not used (not participating in any locks or
-     * transactions).
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
-     * be swapped to offheap, and then to disk.
-     * */
-    public void evictAll();
-
-    /**
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
