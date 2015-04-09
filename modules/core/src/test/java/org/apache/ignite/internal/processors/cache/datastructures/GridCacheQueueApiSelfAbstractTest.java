@@ -19,11 +19,15 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Queue basic tests.
@@ -502,6 +506,82 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         );
 
         assert queue.isEmpty() : "Queue must be empty. " + queue.size();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReuseCache() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg);
+
+        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg);
+
+        assertEquals(getQueueCache(queue1), getQueueCache(queue2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotReuseCache() throws Exception {
+        CollectionConfiguration colCfg1 = collectionConfiguration();
+
+        CollectionConfiguration colCfg2 = collectionConfiguration();
+
+        if (colCfg2.getAtomicityMode() == ATOMIC)
+            colCfg2.setAtomicityMode(TRANSACTIONAL);
+        else
+            colCfg2.setAtomicityMode(ATOMIC);
+
+        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
+
+        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
+
+        assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFilterNode() throws Exception {
+        CollectionConfiguration colCfg1 = collectionConfiguration();
+
+        CollectionConfiguration colCfg2 = collectionConfiguration();
+
+        colCfg2.setNodeFilter(CacheConfiguration.SERVER_NODES);
+
+        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
+
+        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
+
+        assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
+
+        colCfg1.setNodeFilter(CacheConfiguration.SERVER_NODES);
+
+        IgniteQueue queue3 = grid(0).queue("Queue3", 0, colCfg1);
+
+        assertEquals(getQueueCache(queue2), getQueueCache(queue3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSystemCache() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
+
+        final CacheConfiguration ccfg = getQueueCache(queue);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(0).cache(ccfg.getName());
+                return null;
+            }
+        }, IllegalStateException.class, "Failed to get cache because it is a system cache");
+
+        assertNotNull(((IgniteKernal)grid(0)).internalCache(ccfg.getName()));
     }
 
     /**

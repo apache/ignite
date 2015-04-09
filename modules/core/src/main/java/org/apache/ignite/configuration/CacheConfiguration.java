@@ -154,10 +154,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             return attr != null && !attr;
         }
+
+        @Override public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+
+            return obj.getClass().equals(this.getClass());
+        }
     };
 
     /** Filter that accepts all nodes. */
-    public static final IgnitePredicate<ClusterNode> ALL_NODES = F.alwaysTrue();
+    public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return true;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+
+            return obj.getClass().equals(this.getClass());
+        }
+    };
 
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;

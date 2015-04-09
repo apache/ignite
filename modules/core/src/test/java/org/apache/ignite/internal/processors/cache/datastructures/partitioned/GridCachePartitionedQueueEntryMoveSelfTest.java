@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -62,13 +63,18 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     }
 
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return ONHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected TestCollectionConfiguration collectionConfiguration() {
-        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(BACKUP_CNT);
 

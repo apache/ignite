@@ -26,10 +26,9 @@ import java.io.*;
 import java.net.*;
 
 /**
- * Base deployment scanner implementation. It simplifies scanner implementation
- * by providing loggers, executors and file names parsing methods.
+ * URI deployment scanner manager.
  */
-public abstract class GridUriDeploymentScanner {
+public class UriDeploymentScannerManager implements UriDeploymentScannerContext {
     /** Grid name. */
     private final String gridName;
 
@@ -52,16 +51,14 @@ public abstract class GridUriDeploymentScanner {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Underlying scanner. */
+    private final UriDeploymentScanner scanner;
+
     /** Scanner implementation. */
-    private IgniteSpiThread scanner;
+    private IgniteSpiThread scannerThread;
 
     /** Whether first scan completed or not. */
     private boolean firstScan = true;
-
-    /**
-     * Scans URI for new, updated or deleted files.
-     */
-    protected abstract void process();
 
     /**
      * Creates new scanner.
@@ -73,21 +70,24 @@ public abstract class GridUriDeploymentScanner {
      * @param filter Found files filter.
      * @param lsnr Scanner listener which should be notifier about changes.
      * @param log Logger.
+     * @param scanner Scanner.
      */
-    protected GridUriDeploymentScanner(
+    public UriDeploymentScannerManager(
         String gridName,
         URI uri,
         File deployDir,
         long freq,
         FilenameFilter filter,
         GridUriDeploymentScannerListener lsnr,
-        IgniteLogger log) {
+        IgniteLogger log,
+        UriDeploymentScanner scanner) {
         assert uri != null;
         assert freq > 0;
         assert deployDir != null;
         assert filter != null;
         assert log != null;
         assert lsnr != null;
+        assert scanner != null;
 
         this.gridName = gridName;
         this.uri = uri;
@@ -96,20 +96,21 @@ public abstract class GridUriDeploymentScanner {
         this.filter = filter;
         this.log = log.getLogger(getClass());
         this.lsnr = lsnr;
+        this.scanner = scanner;
     }
 
     /**
      * Starts scanner.
      */
     public void start() {
-        scanner = new IgniteSpiThread(gridName, "grid-uri-scanner", log) {
+        scannerThread = new IgniteSpiThread(gridName, "grid-uri-scanner", log) {
             /** {@inheritDoc} */
             @SuppressWarnings({"BusyWait"})
             @Override protected void body() throws InterruptedException  {
                 try {
                     while (!isInterrupted()) {
                         try {
-                            process();
+                            scanner.scan(UriDeploymentScannerManager.this);
                         }
                         finally {
                             // Do it in finally to avoid any hanging.
@@ -134,7 +135,7 @@ public abstract class GridUriDeploymentScanner {
             }
         };
 
-        scanner.start();
+        scannerThread.start();
 
         if (log.isDebugEnabled())
             log.debug("Grid URI deployment scanner started: " + this);
@@ -144,40 +145,28 @@ public abstract class GridUriDeploymentScanner {
      * Cancels scanner execution.
      */
     public void cancel() {
-        U.interrupt(scanner);
+        U.interrupt(scannerThread);
     }
 
     /**
      * Joins scanner thread.
      */
     public void join() {
-        U.join(scanner, log);
+        U.join(scannerThread, log);
 
         if (log.isDebugEnabled())
             log.debug("Grid URI deployment scanner stopped: " + this);
     }
 
-    /**
-     * Tests whether scanner was cancelled before or not.
-     *
-     * @return {@code true} if scanner was cancelled and {@code false}
-     *      otherwise.
-     */
-    protected boolean isCancelled() {
-        assert scanner != null;
+    /** {@inheritDoc} */
+    public boolean isCancelled() {
+        assert scannerThread != null;
 
-        return scanner.isInterrupted();
+        return scannerThread.isInterrupted();
     }
 
-    /**
-     * Creates temp file in temp directory.
-     *
-     * @param fileName File name.
-     * @param tmpDir dir to creating file.
-     * @return created file.
-     * @throws IOException if error occur.
-     */
-    protected File createTempFile(String fileName, File tmpDir) throws IOException {
+    /** {@inheritDoc} */
+    public File createTempFile(String fileName, File tmpDir) throws IOException {
         assert fileName != null;
 
         int idx = fileName.lastIndexOf('.');
@@ -195,92 +184,38 @@ public abstract class GridUriDeploymentScanner {
         return File.createTempFile(prefix, suffix, tmpDir);
     }
 
-    /**
-     * Gets file URI for the given file name. It extends any given name with {@link #uri}.
-     *
-     * @param name File name.
-     * @return URI for the given file name.
-     */
-    protected String getFileUri(String name) {
-        assert name != null;
-
-        String fileUri = uri.toString();
-
-        fileUri = fileUri.length() > 0 && fileUri.charAt(fileUri.length() - 1) == '/' ? fileUri + name :
-            fileUri + '/' + name;
-
-        return fileUri;
-    }
-
-    /**
-     * Tests whether first scan completed or not.
-     *
-     * @return {@code true} if first scan has been already completed and
-     *      {@code false} otherwise.
-     */
-    protected boolean isFirstScan() {
+    /** {@inheritDoc} */
+    public boolean isFirstScan() {
         return firstScan;
     }
 
-    /**
-     * Gets deployment URI.
-     *
-     * @return Deployment URI.
-     */
-    protected final URI getUri() {
+    /** {@inheritDoc} */
+    public URI getUri() {
         return uri;
     }
 
-    /**
-     * Gets deployment frequency.
-     *
-     * @return Deployment frequency.
-     */
-    protected final long getFrequency() {
-        return freq;
-    }
-
-    /**
-     * Gets temporary deployment directory.
-     *
-     * @return Temporary deployment directory.
-     */
-    protected final File getDeployDirectory() {
+    /** {@inheritDoc} */
+    public File getDeployDirectory() {
         return deployDir;
     }
 
-    /**
-     * Gets filter for found files. Before {@link #lsnr} is notified about
-     * changes with certain file last should be accepted by filter.
-     *
-     * @return New, updated or deleted file filter.
-     */
-    protected final FilenameFilter getFilter() {
+    /** {@inheritDoc} */
+    public FilenameFilter getFilter() {
         return filter;
     }
 
-    /**
-     * Gets deployment listener.
-     *
-     * @return Listener which should be notified about all deployment events
-     *      by scanner.
-     */
-    protected final GridUriDeploymentScannerListener getListener() {
+    /** {@inheritDoc} */
+    public GridUriDeploymentScannerListener getListener() {
         return lsnr;
     }
 
-    /**
-     * Gets scanner logger.
-     *
-     * @return Logger.
-     */
-    protected final IgniteLogger getLogger() {
+    /** {@inheritDoc} */
+    public IgniteLogger getLogger() {
         return log;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridUriDeploymentScanner.class, this,
-            "uri", uri != null ? U.hidePassword(uri.toString()) : null);
+        return S.toString(UriDeploymentScannerManager.class, this, "uri", U.hidePassword(uri.toString()));
     }
 }

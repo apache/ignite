@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.*;
@@ -28,8 +29,8 @@ import java.util.*;
  */
 public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
-    @Override protected TestCollectionConfiguration collectionConfiguration() {
-        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(0);
 
