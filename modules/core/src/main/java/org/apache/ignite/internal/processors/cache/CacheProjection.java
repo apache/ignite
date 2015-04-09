@@ -104,7 +104,7 @@ import java.util.concurrent.*;
  *  for nodes on which given keys reside. All {@code 'gridProjection(..)'} methods are not
  *  transactional and will not enlist keys into ongoing transaction.
  * </li>
- * <li>Method {@link GridCache#toMap()} to convert this interface into standard Java {@link ConcurrentMap} interface.
+ * <li>
  * </ul>
  * <h1 class="header">Extended Put And Remove Methods</h1>
  * All methods that end with {@code 'x'} provide the same functionality as their sibling
@@ -267,13 +267,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return {@code true} if this map contains no key-value mappings.
      */
     public boolean isEmpty();
-
-    /**
-     * Converts this API into standard Java {@link ConcurrentMap} interface.
-     *
-     * @return {@link ConcurrentMap} representation of given cache projection.
-     */
-    public ConcurrentMap<K, V> toMap();
 
     /**
      * @param key Key.
@@ -1096,10 +1089,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      * <p>
-     * This method is identical to calling {@link #clear(long) clear(0)}.
      *
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
-     * @deprecated Deprecated in favor of {@link #clear(long)} method.
      */
     public void clear() throws IgniteCheckedException;
 
@@ -1119,20 +1110,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Clear future.
      */
     public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys);
-
-    /**
-     * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
-     * clears local node's cache.
-     * <p>
-     * Ignite will make the best attempt to clearLocally caches on all nodes. If some caches
-     * could not be cleared, then exception will be thrown.
-     *
-     * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
-     *      Set it to larger value for large caches.
-     * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
-     */
-    public void clear(long timeout) throws IgniteCheckedException;
 
     /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,

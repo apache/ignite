@@ -612,11 +612,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void clear(long timeout) throws IgniteCheckedException {
-        cache.clear(timeout);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean clearLocally(K key) {
         return cache.clearLocally0(key);
     }
@@ -784,11 +779,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public Transaction tx() {
         return cache.tx();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ConcurrentMap<K, V> toMap() {
-        return new GridCacheMapAdapter<>(this);
     }
 
     /** {@inheritDoc} */

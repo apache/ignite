@@ -1160,7 +1160,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
-        clear(0);
+        // Clear local cache synchronously.
+        clearLocally();
+
+        clearRemotes(0, new GlobalClearAllCallable(name()));
     }
 
     /** {@inheritDoc} */
@@ -1187,14 +1190,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
         return clearAsync(new GlobalClearKeySetCallable<K, V>(name(), keys));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(long timeout) throws IgniteCheckedException {
-        // Clear local cache synchronously.
-        clearLocally();
-
-        clearRemotes(timeout, new GlobalClearAllCallable(name()));
     }
 
     /**
@@ -3523,11 +3518,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public long overflowSize() throws IgniteCheckedException {
         return ctx.swap().swapSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ConcurrentMap<K, V> toMap() {
-        return new GridCacheMapAdapter<>(this);
     }
 
     /**
