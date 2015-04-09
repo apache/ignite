@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
+import java.security.*;
 import java.util.*;
 
 /**
@@ -53,9 +54,20 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
 
-        ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+        List<PluginProvider> providers = AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
+            @Override public List<PluginProvider> run() {
+                List<PluginProvider> providers = new ArrayList<>();
 
-        for (PluginProvider provider : ldr) {
+                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+
+                for (PluginProvider provider : ldr)
+                    providers.add(provider);
+
+                return providers;
+            }
+        });
+
+        for (PluginProvider provider : providers) {
             GridPluginContext pluginCtx = new GridPluginContext(ctx, cfg);
 
             if (F.isEmpty(provider.name()))
