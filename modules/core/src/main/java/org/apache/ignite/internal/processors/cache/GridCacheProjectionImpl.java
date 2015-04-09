@@ -785,38 +785,33 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(K key, long timeout,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return cache.lock(key, timeout, filter);
+    @Override public boolean lock(K key, long timeout) throws IgniteCheckedException {
+        return cache.lock(key, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable CacheEntryPredicate[] filter) {
-        return cache.lockAsync(key, timeout, filter);
+    @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout) {
+        return cache.lockAsync(key, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return cache.lockAll(keys, timeout, filter);
+    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout) throws IgniteCheckedException {
+        return cache.lockAll(keys, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable CacheEntryPredicate[] filter) {
-        return cache.lockAllAsync(keys, timeout, filter);
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout) {
+        return cache.lockAllAsync(keys, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(K key, CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        cache.unlock(key, filter);
+    @Override public void unlock(K key) throws IgniteCheckedException {
+        cache.unlock(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        cache.unlockAll(keys, filter);
+    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        cache.unlockAll(keys);
     }
 
     /** {@inheritDoc} */

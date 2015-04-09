@@ -559,8 +559,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter) {
+        long accessTtl) {
         return lockAllAsyncInternal(
             keys,
             timeout,
@@ -570,7 +569,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             retval,
             isolation,
             accessTtl,
-            filter);
+            CU.empty0());
     }
 
     /**

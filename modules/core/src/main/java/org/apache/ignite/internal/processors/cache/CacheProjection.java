@@ -1385,12 +1385,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration), {@code -1} for immediate failure if
      *      lock cannot be acquired immediately).
-     * @param filter Optional filter to validate prior to acquiring the lock.
      * @return {@code True} if all filters passed and lock was acquired,
      *      {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
      */
-    public boolean lock(K key, long timeout, @Nullable CacheEntryPredicate... filter)
+    public boolean lock(K key, long timeout)
         throws IgniteCheckedException;
 
     /**
@@ -1407,13 +1406,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration, {@code -1} for immediate failure if
      *      lock cannot be acquired immediately).
-     * @param filter Optional filter to validate prior to acquiring the lock.
      * @return Future for the lock operation. The future will return {@code true}
      *      whenever all filters pass and locks are acquired before timeout is expired,
      *      {@code false} otherwise.
      */
-    public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout);
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1428,14 +1425,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
-     * @param filter Optional filter that needs to atomically pass in order for the locks
-     *      to be acquired.
      * @return {@code True} if all filters passed and locks were acquired before
      *      timeout has expired, {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
      */
-    public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
+    public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout) throws IgniteCheckedException;
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
@@ -1450,14 +1444,11 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
-     * @param filter Optional filter that needs to atomically pass in order for the locks
-     *      to be acquired.
      * @return Future for the collection of locks. The future will return
      *      {@code true} if all filters passed and locks were acquired before
      *      timeout has expired, {@code false} otherwise.
      */
-    public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable CacheEntryPredicate... filter);
+    public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout);
 
     /**
      * Unlocks given key only if current thread owns the lock. If optional filter
@@ -1470,10 +1461,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * which will acquire explicit locks for relevant cache operations.
      *
      * @param key Key to unlock.
-     * @param filter Optional filter that needs to pass prior to unlock taking effect.
      * @throws IgniteCheckedException If unlock execution resulted in error.
      */
-    public void unlock(K key, CacheEntryPredicate... filter) throws IgniteCheckedException;
+    public void unlock(K key) throws IgniteCheckedException;
 
     /**
      * Unlocks given keys only if current thread owns the locks. Only the keys
@@ -1487,12 +1477,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * which will acquire explicit locks for relevant cache operations.
      *
      * @param keys Keys to unlock.
-     * @param filter Optional filter which needs to pass for individual entries
-     *      to be unlocked.
      * @throws IgniteCheckedException If unlock execution resulted in error.
      */
-    public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
+    public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Checks if any node owns a lock for this key.

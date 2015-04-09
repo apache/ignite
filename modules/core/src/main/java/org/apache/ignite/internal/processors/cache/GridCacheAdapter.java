@@ -472,8 +472,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
-        long accessTtl,
-        CacheEntryPredicate[] filter);
+        long accessTtl);
 
     /**
      * Post constructor initialization for subclasses.
@@ -3259,23 +3258,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(K key, long timeout,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean lock(K key, long timeout) throws IgniteCheckedException {
         A.notNull(key, "key");
 
-        return lockAll(Collections.singletonList(key), timeout, filter);
+        return lockAll(Collections.singletonList(key), timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
         if (keyCheck)
             validateCacheKeys(keys);
 
-        IgniteInternalFuture<Boolean> fut = lockAllAsync(keys, timeout, filter);
+        IgniteInternalFuture<Boolean> fut = lockAllAsync(keys, timeout);
 
         boolean isInterrupted = false;
 
@@ -3297,25 +3294,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout) {
         A.notNull(key, "key");
 
         if (keyCheck)
             validateCacheKey(key);
 
-        return lockAllAsync(Collections.singletonList(key), timeout, filter);
+        return lockAllAsync(Collections.singletonList(key), timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(K key, CacheEntryPredicate... filter)
+    @Override public void unlock(K key)
         throws IgniteCheckedException {
         A.notNull(key, "key");
 
         if (keyCheck)
             validateCacheKey(key);
 
-        unlockAll(Collections.singletonList(key), filter);
+        unlockAll(Collections.singletonList(key));
     }
 
     /** {@inheritDoc} */

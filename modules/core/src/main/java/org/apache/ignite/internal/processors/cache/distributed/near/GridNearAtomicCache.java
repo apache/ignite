@@ -663,15 +663,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter) {
-        return dht.lockAllAsync(null, timeout, filter);
+        long accessTtl) {
+        return dht.lockAllAsync(null, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        dht.unlockAll(keys, filter);
+    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        dht.unlockAll(keys);
     }
 
     /** {@inheritDoc} */

@@ -357,8 +357,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter
+        long accessTtl
     ) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
@@ -371,7 +370,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.empty0());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -397,8 +396,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -416,7 +414,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                if (!ctx.isAll(entry, filter))
+                if (!ctx.isAll(entry, CU.empty0()))
                     break; // While.
 
                 GridCacheMvccCandidate lock =
