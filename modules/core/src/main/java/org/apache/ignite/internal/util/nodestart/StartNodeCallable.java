@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
+import org.apache.ignite.cluster.*;
+
 import java.util.concurrent.*;
 
 /**
- * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
+ * SSH-based node starter, returns tuple which contains hostname, success flag and error message
+ * if attempt was not successful.
  */
-public interface IgniteSshHelper {
-    /**
-     * Creates {@link Callable} starting node using SSH.
-     *
-     * @param spec Specification.
-     * @param timeout Connection timeout.
-     * @return {@link Callable} starting node using SSH.
-     */
-    public StartNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout);
+public interface StartNodeCallable extends Callable<ClusterStartNodeResult> {
+    // No-op.
 }

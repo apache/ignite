@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nodestart;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.lang.*;
-
-import java.util.concurrent.*;
+import org.apache.ignite.lang.*;
 
 /**
- * SSH-based node starter, returns tuple which contains hostname, success flag and error message
- * if attempt was not successful.
+ * Special version of bi-predicate for LoadCache with close callback.
  */
-public interface IgniteNodeCallable extends Callable<GridTuple3<String, Boolean, String>> {
-    // No-op.
+public interface GridLoadCacheCloseablePredicate<K, V> extends IgniteBiPredicate<K, V> {
+    /**
+     * Callback invoked when predicate is no longer needed.
+     */
+    public void onClose();
 }
