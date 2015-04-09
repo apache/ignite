@@ -1021,11 +1021,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
-
-        if (!F.isEmpty(cfg.getPluginConfigurations())) {
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
-                A.notNull(pluginCfg.providerClass(), "PluginConfiguration.providerClass()");
-        }
     }
 
     /**

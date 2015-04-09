@@ -1825,6 +1825,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable NearCacheConfiguration nearCfg,
         boolean failIfExists
     ) {
+        return dynamicStartCache(ccfg, cacheName, nearCfg, CacheType.USER, failIfExists);
+    }
+
+    /**
+     * Dynamically starts cache.
+     *
+     * @param ccfg Cache configuration.
+     * @param cacheName Cache name.
+     * @param nearCfg Near cache configuration.
+     * @param failIfExists Fail if exists flag.
+     * @return Future that will be completed when cache is deployed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public IgniteInternalFuture<?> dynamicStartCache(
+        @Nullable CacheConfiguration ccfg,
+        String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        CacheType cacheType,
+        boolean failIfExists
+    ) {
         assert ccfg != null || nearCfg != null;
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
@@ -1837,7 +1857,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (desc != null && !desc.cancelled()) {
                 if (failIfExists)
                     return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + cacheName));
+                        "(a cache with the same name is already started): " + cacheName));
                 else {
                     CacheConfiguration descCfg = desc.cacheConfiguration();
 
@@ -1849,7 +1869,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 return new GridFinishedFuture<>();
                             else
                                 return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near " +
-                                        "cache (local node is an affinity node for cache): " + cacheName));
+                                    "cache (local node is an affinity node for cache): " + cacheName));
                         }
                         else
                             // If local node has near cache, return success.
@@ -1905,7 +1925,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
 
-        req.cacheType(CacheType.USER);
+        req.cacheType(cacheType);
 
         return F.first(initiateCacheChanges(F.asList(req)));
     }

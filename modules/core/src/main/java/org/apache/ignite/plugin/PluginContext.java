@@ -26,14 +26,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Plugin context.
  */
 public interface PluginContext {
-    /**
-     * @return Plugin configuration.
-     */
-    public <C extends PluginConfiguration> C configuration();
-
     /**
      * @return Ignite configuration.
      */

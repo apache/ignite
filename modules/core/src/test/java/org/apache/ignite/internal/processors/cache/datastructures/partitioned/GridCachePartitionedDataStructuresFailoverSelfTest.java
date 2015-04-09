@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -31,6 +32,11 @@ public class GridCachePartitionedDataStructuresFailoverSelfTest
     /** {@inheritDoc} */
     @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */

@@ -30,7 +30,7 @@ public interface CachePluginConfiguration<K, V> extends Serializable {
      * Creates cache plugin provider.
      *
      * @return Cache plugin provider class.
-     * @param ctx
+     * @param ctx Plugin context.
      */
     public CachePluginProvider createProvider(CachePluginContext ctx);
 }

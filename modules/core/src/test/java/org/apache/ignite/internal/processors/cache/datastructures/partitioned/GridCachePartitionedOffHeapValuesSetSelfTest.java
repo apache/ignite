@@ -19,20 +19,14 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * Queue tests with partitioned atomic cache.
+ * Set tests with off-heap values cache memory mode.
  */
-public class GridCachePartitionedAtomicQueueApiSelfTest extends GridCachePartitionedQueueApiSelfTest {
+public class GridCachePartitionedOffHeapValuesSetSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return ATOMIC;
+        return OFFHEAP_VALUES;
     }
 }
