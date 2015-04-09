@@ -2282,6 +2282,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
+        guard();
+
+        try {
+            ctx.cache().createFromTemplate(cacheName).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
         A.notNull(cacheCfg, "cacheCfg");
 
@@ -2409,7 +2426,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheName).get();
+            ctx.cache().getOrCreateFromTemplate(cacheName).get();
 
             return ctx.cache().publicJCache(cacheName);
         }

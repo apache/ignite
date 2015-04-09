@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -96,7 +97,61 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testCreateFromTemplateConfiguration() throws Exception {
+    public void testCreateFromTemplate() throws Exception {
+        addTemplate = true;
+
+        Ignite ignite0 = startGrid(0);
+
+        checkCreate(ignite0, "org.apache.ignite.test.cache1", 4);
+        checkCreated(ignite0, "org.apache.ignite.test.cache1");
+
+        Ignite ignite1 = startGrid(1);
+
+        checkCreated(ignite1, "org.apache.ignite.test.cache1");
+
+        checkCreate(ignite1, "org.apache.ignite1", 3);
+        checkCreated(ignite1, "org.apache.ignite1");
+
+        checkCreated(ignite0, "org.apache.ignite1");
+
+        checkCreate(ignite0, "org.apache1", 2);
+        checkCreated(ignite0, "org.apache1");
+
+        checkCreated(ignite1, "org.apache1");
+
+        addTemplate = false;
+        clientMode = true;
+
+        Ignite ignite2 = startGrid(2);
+
+        assertNotNull(ignite2.cache("org.apache.ignite.test.cache1"));
+        assertNotNull(ignite2.cache("org.apache.ignite1"));
+        assertNotNull(ignite2.cache("org.apache1"));
+
+        CacheConfiguration template1 = new CacheConfiguration();
+
+        template1.setName(TEMPLATE3);
+        template1.setBackups(5);
+
+        ignite2.addCacheConfiguration(template1);
+
+        checkCreate(ignite0, "org.apache.ignite.test2.cache1", 5);
+
+        checkCreated(ignite0, "org.apache.ignite.test2.cache1");
+        checkCreated(ignite1, "org.apache.ignite.test2.cache1");
+        checkCreated(ignite2, "org.apache.ignite.test2.cache1");
+
+        Ignite ignite3 = startGrid(3);
+
+        checkCreate(ignite3, "org.apache.ignite.test2.cache2", 5);
+
+        checkNoTemplateCaches(4);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOrCreateFromTemplate() throws Exception {
         addTemplate = true;
 
         Ignite ignite0 = startGrid(0);
@@ -319,6 +374,35 @@ public class IgniteCacheConfigurationTemplateTest extends GridCommonAbstractTest
 
         assertEquals(name, cfg.getName());
         assertEquals(expBackups, cfg.getBackups());
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param name Cache name.
+     * @param expBackups Expected number of backups.
+     */
+    private void checkCreate(final Ignite ignite, final String name, int expBackups) {
+        IgniteCache cache = ignite.createCache(name);
+
+        assertNotNull(cache);
+
+        CacheConfiguration cfg = (CacheConfiguration)cache.getConfiguration(CacheConfiguration.class);
+
+        assertEquals(name, cfg.getName());
+        assertEquals(expBackups, cfg.getBackups());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private void checkCreated(final Ignite ignite, final String cacheName) {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.createCache(cacheName);
+
+                return null;
+            }
+        }, CacheExistsException.class, null);
     }
 
     /**
