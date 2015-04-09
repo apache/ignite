@@ -329,5 +329,5 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /** {@inheritDoc} */
-    public IgniteCluster withAsync();
+    @Override public IgniteCluster withAsync();
 }
