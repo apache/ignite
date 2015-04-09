@@ -257,7 +257,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
         registerMBean(gridName, this, FileSwapSpaceSpiMBean.class);
 
-        String path = baseDir + File.separator + gridName + File.separator + ignite.configuration().getNodeId();
+        String path = baseDir + File.separator + gridName + File.separator + getLocalNodeId();
 
         try {
             dir = U.resolveWorkDirectory(path, true);
@@ -1432,8 +1432,6 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
                         right = new SwapFile(new File(dir, name + ".right"), readStripesNum);
 
                         final Object mux = new Object();
-
-                        String gridName = ignite.name();
 
                         writer = new IgniteSpiThread(gridName,  "Swap writer: " + name, log) {
                             @Override protected void body() throws InterruptedException {

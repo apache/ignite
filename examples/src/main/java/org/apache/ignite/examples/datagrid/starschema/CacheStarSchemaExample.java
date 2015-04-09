@@ -73,25 +73,23 @@ public class CacheStarSchemaExample {
             System.out.println();
             System.out.println(">>> Cache star schema example started.");
 
-            CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>(PARTITIONED_CACHE_NAME);
 
             factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
-            factCacheCfg.setName(PARTITIONED_CACHE_NAME);
             factCacheCfg.setIndexedTypes(
                 Integer.class, FactPurchase.class
             );
 
-            CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Object> dimCacheCfg = new CacheConfiguration<>(REPLICATED_CACHE_NAME);
 
             dimCacheCfg.setCacheMode(CacheMode.REPLICATED);
-            dimCacheCfg.setName(REPLICATED_CACHE_NAME);
             dimCacheCfg.setIndexedTypes(
                 Integer.class, DimStore.class,
                 Integer.class, DimProduct.class
             );
 
-            try (IgniteCache<Integer, FactPurchase> factCache = ignite.createCache(factCacheCfg);
-                 IgniteCache<Integer, Object> dimCache = ignite.createCache(dimCacheCfg)) {
+            try (IgniteCache<Integer, FactPurchase> factCache = ignite.getOrCreateCache(factCacheCfg);
+                 IgniteCache<Integer, Object> dimCache = ignite.getOrCreateCache(dimCacheCfg)) {
                 populateDimensions(dimCache);
                 populateFacts(factCache);
 

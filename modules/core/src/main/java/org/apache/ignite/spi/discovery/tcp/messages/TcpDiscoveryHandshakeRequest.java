@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -28,13 +27,6 @@ import java.util.*;
 public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryHandshakeRequest() {
-        // No-op.
-    }
 
     /**
      * Constructor.
