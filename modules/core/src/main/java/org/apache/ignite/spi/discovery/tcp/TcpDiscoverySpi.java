@@ -2192,6 +2192,54 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         return dfltAllowMatch && bothHaveSamePerms;
     }
 
+    /**
+     * @param req Get class request.
+     */
+    private TcpDiscoveryGetClassResponse processGetClassRequest(TcpDiscoveryGetClassRequest req) {
+        assert !F.isEmpty(req.className()) : req;
+
+        InputStream in = getClass().getResourceAsStream(req.className());
+
+        byte[] clsBytes = null;
+        String err = null;
+
+        if (in != null) {
+            try {
+                GridByteArrayList bytes = new GridByteArrayList(1024);
+
+                bytes.readAll(in);
+
+                clsBytes = bytes.entireArray();
+            }
+            catch (IOException e) {
+                err = "Failed to load class '" + req.className() + "' due IO error: " + e;
+
+                U.error(log, err, e);
+            }
+            finally {
+                U.close(in, log);
+            }
+        }
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find requested class: " + req.className());
+
+            err = "Class '" + req.className() + "' not found.";
+        }
+
+        TcpDiscoveryGetClassResponse res;
+
+        if (clsBytes != null)
+            res = new TcpDiscoveryGetClassResponse(getLocalNodeId(), clsBytes);
+        else {
+            assert err != null;
+
+            res = new TcpDiscoveryGetClassResponse(getLocalNodeId(), err);
+        }
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoverySpi.class, this);
@@ -3540,10 +3588,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(node.id(), node.id(), data);
+                        exchange.onExchange(node.id(), node.id(), data, exchangeClassLoader(node.id()));
 
                     msg.addDiscoveryData(locNodeId, exchange.collect(node.id()));
                 }
@@ -3555,7 +3603,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Map<UUID, Map<Integer, Object>> dataMap;
+                Map<UUID, Map<Integer, byte[]>> dataMap;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -3614,8 +3662,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Notify outside of synchronized block.
                 if (dataMap != null) {
-                    for (Map.Entry<UUID, Map<Integer, Object>> entry : dataMap.entrySet())
-                        exchange.onExchange(node.id(), entry.getKey(), entry.getValue());
+                    for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet()) {
+                        exchange.onExchange(node.id(),
+                            entry.getKey(),
+                            entry.getValue(),
+                            exchangeClassLoader(node.id()));
+                    }
                 }
             }
 
@@ -4872,6 +4924,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             continue;
                         }
+                        else if (msg instanceof TcpDiscoveryGetClassRequest) {
+                            TcpDiscoveryGetClassResponse res = processGetClassRequest((TcpDiscoveryGetClassRequest)msg);
+
+                            writeToSocket(sock, res);
+
+                            continue;
+                        }
 
                         msgWorker.addMessage(msg);
 
@@ -5160,6 +5219,72 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             super.cleanup();
 
             U.closeQuiet(sock);
+        }
+    }
+    /**
+     *
+     */
+    private class DiscoveryDeploymentClassLoader extends ClassLoader {
+        /** */
+        private final UUID nodeId;
+
+        /** */
+        private Socket sock;
+
+        /**
+         * @param nodeId Node ID.
+         */
+        public DiscoveryDeploymentClassLoader(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+            TcpDiscoveryGetClassResponse res = requestClass(name);
+
+            if (res.error() != null)
+                throw new ClassNotFoundException(res.error());
+
+            assert res.classBytes() != null;
+
+            Class<?> cls = defineClass(name, res.classBytes(), 0, res.classBytes().length);
+
+            return cls;
+        }
+
+        /**
+         * @param name Class name.
+         * @return Class response.
+         * @throws ClassNotFoundException If request failed.
+         */
+        private TcpDiscoveryGetClassResponse requestClass(String name) throws ClassNotFoundException {
+            sock = connect();
+
+            if (sock == null)
+                throw new ClassNotFoundException("Failed to load class, can not connect to peer node " +
+                    "[cls=" + name + ", node=" + nodeId + ']');
+
+            try {
+                writeToSocket(sock, new TcpDiscoveryGetClassRequest(getLocalNodeId(), name));
+
+                TcpDiscoveryGetClassResponse res = readMessage(sock, null, netTimeout);
+
+                return res;
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new ClassNotFoundException("Failed to load class: " + name, e);
+            }
+        }
+
+        private Socket connect() {
+            if (sock == null) {
+                TcpDiscoveryNode node = ring.node(nodeId);
+
+                if (node == null)
+                    return null;
+            }
+
+            return sock;
         }
     }
 }

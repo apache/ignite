@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
@@ -170,6 +171,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
+
+    /** */
+    private JdkMarshaller jdkMarsh = new JdkMarshaller();
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -417,10 +421,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Object> collect(UUID nodeId) {
+            @Override public Map<Integer, byte[]> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                Map<Integer, Object> data = new HashMap<>();
+                Map<Integer, byte[]> data = new HashMap<>();
 
                 for (GridComponent comp : ctx.components()) {
                     Object compData = comp.collectDiscoveryData(nodeId);
@@ -428,29 +432,48 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (compData != null) {
                         assert comp.discoveryDataType() != null;
 
-                        data.put(comp.discoveryDataType().ordinal(), compData);
+                        try {
+                            byte[] bytes = jdkMarsh.marshal(compData);
+
+                            data.put(comp.discoveryDataType().ordinal(), bytes);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to marshal discovery data " +
+                                "[comp=" + comp + ", data=" + compData + ']', e);
+                        }
                     }
                 }
 
                 return data;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
-                for (Map.Entry<Integer, Object> e : data.entrySet()) {
+            @Override public void onExchange(UUID joiningNodeId,
+                UUID nodeId,
+                Map<Integer, byte[]> data,
+                ClassLoader clsLdr) {
+                for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
                     GridComponent comp = null;
 
                     for (GridComponent c : ctx.components()) {
-                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
+                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == entry.getKey()) {
                             comp = c;
 
                             break;
                         }
                     }
 
-                    if (comp != null)
-                        comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
+                    if (comp != null) {
+                        try {
+                            Object compData = jdkMarsh.unmarshal(entry.getValue(), clsLdr);
+
+                            comp.onDiscoveryDataReceived(joiningNodeId, nodeId, compData);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to unmarshal discovery data for component: "  + comp, e);
+                        }
+                    }
                     else
-                        U.warn(log, "Received discovery data for unknown component: " + e.getKey());
+                        U.warn(log, "Received discovery data for unknown component: " + entry.getKey());
                 }
             }
         });

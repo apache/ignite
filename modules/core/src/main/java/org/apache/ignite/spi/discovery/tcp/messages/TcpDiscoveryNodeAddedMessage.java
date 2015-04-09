@@ -54,10 +54,10 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Discovery data from new node. */
-    private Map<Integer, Object> newNodeDiscoData;
+    private Map<Integer, byte[]> newNodeDiscoData;
 
     /** Discovery data from old nodes. */
-    private Map<UUID, Map<Integer, Object>> oldNodesDiscoData;
+    private Map<UUID, Map<Integer, byte[]>> oldNodesDiscoData;
 
     /** Start time of the first grid node. */
     private final long gridStartTime;
@@ -70,8 +70,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      * @param newNodeDiscoData New Node discovery data.
      * @param gridStartTime Start time of the first grid node.
      */
-    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId, TcpDiscoveryNode node,
-        Map<Integer, Object> newNodeDiscoData,
+    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
+        TcpDiscoveryNode node,
+        Map<Integer, byte[]> newNodeDiscoData,
         long gridStartTime)
     {
         super(creatorNodeId);
@@ -163,21 +164,22 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /**
      * @return Discovery data from new node.
      */
-    public Map<Integer, Object> newNodeDiscoveryData() {
+    public Map<Integer, byte[]> newNodeDiscoveryData() {
         return newNodeDiscoData;
     }
 
     /**
      * @return Discovery data from old nodes.
      */
-    public Map<UUID, Map<Integer, Object>> oldNodesDiscoveryData() {
+    public Map<UUID, Map<Integer, byte[]>> oldNodesDiscoveryData() {
         return oldNodesDiscoData;
     }
 
     /**
+     * @param nodeId Node ID.
      * @param discoData Discovery data to add.
      */
-    public void addDiscoveryData(UUID nodeId, Map<Integer, Object> discoData) {
+    public void addDiscoveryData(UUID nodeId, Map<Integer, byte[]> discoData) {
         // Old nodes disco data may be null if message
         // makes more than 1 pass due to stopping of the nodes in topology.
         if (oldNodesDiscoData != null)

@@ -33,13 +33,18 @@ public interface DiscoverySpiDataExchange {
      * @param joiningNodeId ID of new node that joins topology.
      * @return Collection of discovery data objects from different components.
      */
-    public Map<Integer, Object> collect(UUID joiningNodeId);
+    public Map<Integer, byte[]> collect(UUID joiningNodeId);
 
     /**
      * Notifies discovery manager about data received from remote node.
      *
-     * @param joiningNodeId Remote node ID.
-     * @param data Collection of discovery data objects from different components.
+     * @param joiningNodeId Joining node ID.
+     * @param nodeId Remote node ID for which data is provided.
+     * @param data Collection of marshalled discovery data objects from different components.
+     * @param clsLdr Class loader to use for discovery data unmarshalling.
      */
-    public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data);
+    public void onExchange(UUID joiningNodeId,
+        UUID nodeId,
+        Map<Integer, byte[]> data,
+        ClassLoader clsLdr);
 }
