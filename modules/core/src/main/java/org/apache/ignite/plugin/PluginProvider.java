@@ -25,9 +25,6 @@ import java.util.*;
 
 /**
  * Pluggable ignite component.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface PluginProvider<C extends PluginConfiguration> {
     /**
@@ -51,6 +48,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
+     * @param ctx Plugin context.
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
