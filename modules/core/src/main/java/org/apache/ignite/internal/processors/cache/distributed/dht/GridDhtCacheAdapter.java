@@ -540,17 +540,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals);
     }
 
-    /** {@inheritDoc} */
-    @Override public V reload(K key)
-        throws IgniteCheckedException {
-        try {
-            return super.reload(key);
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return null;
-        }
-    }
-
     /**
      * @param keys Keys to get
      * @param readThrough Read through flag.

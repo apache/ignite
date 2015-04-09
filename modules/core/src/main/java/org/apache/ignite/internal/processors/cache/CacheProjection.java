@@ -286,33 +286,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys);
 
     /**
-     * Reloads a single key from persistent storage. This method
-     * delegates to <code>CacheStore#load(Transaction, Object)</code>
-     * method.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in transactions, however it does not violate
-     * cache integrity and can be used safely with or without transactions.
-     *
-     * @param key Key to reload.
-     * @return Reloaded value or current value if entry was updated while reloading.
-     * @throws IgniteCheckedException If reloading failed.
-     */
-    @Nullable public V reload(K key) throws IgniteCheckedException;
-
-    /**
-     * Asynchronously reloads a single key from persistent storage. This method
-     * delegates to <code>CacheStore#load(Transaction, Object)</code>
-     * method.
-     * <h2 class="header">Transactions</h2>
-     * This method does not participate in transactions, however it does not violate
-     * cache integrity and can be used safely with or without transactions.
-     *
-     * @param key Key to reload.
-     * @return Future to be completed whenever the entry is reloaded.
-     */
-    public IgniteInternalFuture<V> reloadAsync(K key);
-
-    /**
      * @param key Key.
      * @param peekModes Peek modes.
      * @param plc Expiry policy if TTL should be updated.

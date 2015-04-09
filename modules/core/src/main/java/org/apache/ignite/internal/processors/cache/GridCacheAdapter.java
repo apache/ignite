@@ -4722,50 +4722,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * @param key Key.
-     * @return Reloaded value.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override @Nullable public V reload(K key) throws IgniteCheckedException {
-        A.notNull(key, "key");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-        while (true) {
-            try {
-                KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
-
-                // Do not reload near entries, they will be reloaded in DHT cache.
-                if (ctx.isNear() && ctx.affinity().localNode(cacheKey, topVer))
-                    return null;
-
-                CacheObject val = entryEx(cacheKey).innerReload();
-
-                return (V)(val != null ? val.value(ctx.cacheObjectContext(), true) : null);
-            }
-            catch (GridCacheEntryRemovedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Attempted to reload a removed entry for key (will retry): " + key);
-            }
-        }
-    }
-
-    /**
-     * @param key Key.
-     * @return Reload future.
-     */
-    @Override public IgniteInternalFuture<V> reloadAsync(final K key) {
-        return ctx.closures().callLocalSafe(ctx.projectSafe(new Callable<V>() {
-            @Nullable @Override public V call() throws IgniteCheckedException {
-                return reload(key);
-            }
-        }), true);
-    }
-
-    /**
      * @param keys Keys.
      * @param deserializePortable Deserialize portable flag.
      * @return Read future.

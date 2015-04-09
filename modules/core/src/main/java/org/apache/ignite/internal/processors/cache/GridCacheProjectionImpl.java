@@ -262,16 +262,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key) throws IgniteCheckedException {
-        return cache.reload(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> reloadAsync(K key) {
-        return cache.reloadAsync(key);
-    }
-
-    /** {@inheritDoc} */
     @Override public V get(K key) throws IgniteCheckedException {
         return cache.get(key, deserializePortables());
     }

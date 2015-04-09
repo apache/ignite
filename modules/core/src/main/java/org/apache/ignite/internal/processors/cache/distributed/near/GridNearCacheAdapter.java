@@ -200,23 +200,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             skipVals);
     }
 
-    /** {@inheritDoc} */
-    @Override public V reload(K key)
-        throws IgniteCheckedException {
-        V val;
-
-        try {
-            val = dht().reload(key);
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return null;
-        }
-
-        V nearVal = super.reload(key);
-
-        return val == null ? nearVal : val;
-    }
-
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
