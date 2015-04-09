@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 /**
  * Tests for partitioned cache queries.
  */
-public class IgniteCachePartitionedQueryP2PDisabledSelfTest extends IgniteCachePartitionedQuerySelfTest {
+public class IgniteCachePartitionedQueryP2PEnabledSelfTest extends IgniteCachePartitionedQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
