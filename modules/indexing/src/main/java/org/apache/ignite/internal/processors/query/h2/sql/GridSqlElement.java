@@ -51,14 +51,6 @@ public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlEleme
     public abstract String getSQL();
 
     /**
-     * Clears all children.
-     */
-    public void clearChildren() {
-        if (size() != 0)
-            children = new ArrayList<>();
-    }
-
-    /**
      * @param expr Expr.
      * @return {@code this}.
      */

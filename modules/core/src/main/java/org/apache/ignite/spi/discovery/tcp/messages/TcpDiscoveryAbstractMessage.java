@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Base class to implement discovery messages.
  */
-public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
+public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +41,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** Sender of the message (transient). */
-    private UUID senderNodeId;
+    private transient UUID senderNodeId;
 
     /** Message ID. */
     private IgniteUuid id;
@@ -230,26 +230,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Externalizable {
             flags |= mask;
         else
             flags &= ~mask;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
-        U.writeUuid(out, verifierNodeId);
-        out.writeLong(topVer);
-        U.writeUuid(out, destClientNodeId);
-        out.writeInt(flags);
-        out.writeShort(pendingIdx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
-        verifierNodeId = U.readUuid(in);
-        topVer = in.readLong();
-        destClientNodeId = U.readUuid(in);
-        flags = in.readInt();
-        pendingIdx = in.readShort();
     }
 
     /** {@inheritDoc} */

@@ -276,6 +276,27 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
+        assert g != null;
+
+        return g.getOrCreateCache(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
+        assert g != null;
+
+        return g.createCache(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
+        assert g != null;
+
+        g.addCacheConfiguration(cacheCfg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
         assert g != null;
 

@@ -410,6 +410,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
+        suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
