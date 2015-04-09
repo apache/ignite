@@ -2007,7 +2007,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public V put(K key, V val, @Nullable CacheEntryPredicate... filter)
         throws IgniteCheckedException {
-        return put0(key, val, null, filter);
+        return put0(key, val, filter);
     }
 
     /**
@@ -2015,14 +2015,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      * @param key Key.
      * @param val Value.
-     * @param cached Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public V put0(final K key,
                             final V val,
-                            @Nullable final GridCacheEntryEx cached,
                             @Nullable final CacheEntryPredicate[] filter)
         throws IgniteCheckedException
     {
@@ -2039,7 +2037,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         V prevVal = syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return (V)tx.putAllAsync(ctx, F.t(key, val), true, cached, -1, filter).get().value();
+                return (V)tx.putAllAsync(ctx, F.t(key, val), true, null, -1, filter).get().value();
             }
 
             @Override public String toString() {
@@ -2058,12 +2056,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      * @param key Key.
      * @param val Value.
-     * @param cached Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean putx0(final K key, final V val, @Nullable final GridCacheEntryEx cached, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
+    public boolean putx0(final K key, final V val, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2073,7 +2070,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.putAllAsync(ctx, F.t(key, val), false, cached, -1, filter).get().success();
+                return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, filter).get().success();
             }
 
             @Override public String toString() {
@@ -2089,7 +2086,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<V> fut = putAsync0(key, val, null, filter);
+        IgniteInternalFuture<V> fut = putAsync0(key, val, filter);
 
         if (statsEnabled)
             fut.listen(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
@@ -2102,11 +2099,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      * @param key Key.
      * @param val Value.
-     * @param entry Optional cached entry.
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> putAsync0(final K key, final V val, @Nullable final GridCacheEntryEx entry, @Nullable final CacheEntryPredicate... filter) {
+    public IgniteInternalFuture<V> putAsync0(final K key, final V val, @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2116,7 +2112,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return asyncOp(new AsyncOp<V>(key) {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), true, entry, -1, filter)
+                return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, filter)
                     .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
             }
 
@@ -2400,7 +2396,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<Boolean> fut = putxAsync0(key, val, null, filter);
+        IgniteInternalFuture<Boolean> fut = putxAsync0(key, val, filter);
 
         if (statsEnabled)
             fut.listen(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
@@ -2413,12 +2409,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      * @param key Key.
      * @param val Value.
-     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Putx operation future.
      */
     public IgniteInternalFuture<Boolean> putxAsync0(final K key, final V val,
-                                                    @Nullable final GridCacheEntryEx entry,
                                                     @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
@@ -2429,7 +2423,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return asyncOp(new AsyncOp<Boolean>(key) {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, F.t(key, val), false, entry, -1, filter).chain(
+                return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, filter).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
             }
 
@@ -2776,19 +2770,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Nullable @Override public V remove(K key, CacheEntryPredicate[] filter)
         throws IgniteCheckedException {
-        return remove0(key, null, filter);
+        return remove0(key, filter);
     }
 
     /**
      * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    public V remove0(final K key, @Nullable final GridCacheEntryEx entry,
+    public V remove0(final K key,
                      @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -2801,7 +2794,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         V prevVal = syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                V ret = (V) tx.removeAllAsync(ctx, Collections.singletonList(key), entry, true, filter).get().value();
+                V ret = (V) tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter).get().value();
 
                 if (ctx.config().getInterceptor() != null)
                     return (V) ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
@@ -2826,7 +2819,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<V> fut = removeAsync0(key, null, filter);
+        IgniteInternalFuture<V> fut = removeAsync0(key, filter);
 
         if (statsEnabled)
             fut.listen(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
@@ -2838,11 +2831,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Optional cached entry.
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> removeAsync0(final K key, @Nullable final GridCacheEntryEx entry,
+    public IgniteInternalFuture<V> removeAsync0(final K key,
                                                 @Nullable final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -2936,7 +2928,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        boolean rmv = removex0(key, null, filter);
+        boolean rmv = removex0(key, filter);
 
         if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
@@ -2948,12 +2940,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-     public boolean removex0(final K key, @Nullable final GridCacheEntryEx entry,
+     public boolean removex0(final K key,
                              @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -2966,7 +2957,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         boolean rmv = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).get().success();
+                return tx.removeAllAsync(ctx, Collections.singletonList(key), null, false, filter).get().success();
             }
 
             @Override public String toString() {
@@ -2984,18 +2975,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key, CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
-        return removexAsync0(key, null, filter);
+        return removexAsync0(key, filter);
     }
 
     /**
      * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> removexAsync0(final K key, @Nullable final GridCacheEntryEx entry,
+    public IgniteInternalFuture<Boolean> removexAsync0(final K key,
                                                        @Nullable final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -3008,7 +2998,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
-                return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).chain(
+                return tx.removeAllAsync(ctx, Collections.singletonList(key), null, false, filter).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
             }
 

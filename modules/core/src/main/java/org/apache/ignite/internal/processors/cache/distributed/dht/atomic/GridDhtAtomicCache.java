@@ -301,15 +301,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put0(K key, V val, @Nullable GridCacheEntryEx cached,
-                            @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return putAsync0(key, val, cached, filter).get();
+    @Override public V put0(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        return putAsync0(key, val, filter).get();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx0(K key, V val, @Nullable GridCacheEntryEx cached,
-                                   @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return putxAsync0(key, val, cached, filter).get();
+    @Override public boolean putx0(K key, V val, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+        return putxAsync0(key, val, filter).get();
     }
 
     /** {@inheritDoc} */
@@ -320,7 +318,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable GridCacheEntryEx entry, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -336,8 +334,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable GridCacheEntryEx entry,
-                                                              @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -500,15 +497,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V remove0(K key, @Nullable GridCacheEntryEx entry,
-                               @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return removeAsync0(key, entry, filter).get();
+    @Override public V remove0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+        return removeAsync0(key, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync0(K key, @Nullable GridCacheEntryEx entry,
-                                                          @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync0(K key, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, true, false, filter);
@@ -529,15 +524,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex0(K key, @Nullable GridCacheEntryEx entry,
-                                      @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return removexAsync0(key, entry, filter).get();
+    @Override public boolean removex0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+        return removexAsync0(key, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> removexAsync0(K key, @Nullable GridCacheEntryEx entry,
-                                                                 @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync0(K key, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, false, false, filter);
