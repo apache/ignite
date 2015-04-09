@@ -1302,15 +1302,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public V get(K key, @Nullable GridCacheEntryEx entry, boolean deserializePortable,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        String taskName = ctx.kernalContext().job().currentTaskName();
-
-        return getAllAsync(F.asList(key), !ctx.config().isReadFromBackup(), /*skip tx*/false, entry, null, taskName,
-            deserializePortable, false).get().get(key);
-    }
-
-    /** {@inheritDoc} */
     @Override public V getForcePrimary(K key) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
@@ -2020,8 +2011,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return put(key, val, null, -1, filter);
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public V put(final K key,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
+     * @param ttl Optional time-to-live. If negative, leaves ttl value unchanged.
+     * @param filter Optional filter.
+     * @return Previous value.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public V put(final K key,
         final V val,
         @Nullable final GridCacheEntryEx cached,
         final long ttl,
@@ -2055,8 +2056,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return prevVal;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean putx(final K key, final V val, @Nullable final GridCacheEntryEx cached,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
+     * @param ttl Optional time-to-live. If negative, leaves ttl value unchanged.
+     * @param filter Optional filter.
+     * @return Previous value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean putx(final K key, final V val, @Nullable final GridCacheEntryEx cached,
         final long ttl, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
@@ -2091,8 +2102,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return fut;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putAsync(final K key, final V val, @Nullable final GridCacheEntryEx entry,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param entry Optional cached entry.
+     * @param ttl Optional time-to-live value. If negative, leaves ttl value unchanged.
+     * @param filter Optional filter.
+     * @return Put operation future.
+     */
+    public IgniteInternalFuture<V> putAsync(final K key, final V val, @Nullable final GridCacheEntryEx entry,
         final long ttl, @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
@@ -2395,8 +2415,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return fut;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxAsync(final K key, final V val,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
+     * @param ttl Optional time-to-live. If negative, leave ttl value unchanged.
+     * @param filter Optional filter.
+     * @return Putx operation future.
+     */
+    public IgniteInternalFuture<Boolean> putxAsync(final K key, final V val,
         @Nullable final GridCacheEntryEx entry, final long ttl,
         @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
@@ -2758,8 +2787,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return remove(key, null, filter);
     }
 
-    /** {@inheritDoc} */
-    @Override public V remove(final K key, @Nullable final GridCacheEntryEx entry,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key to remove.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
+     * @param filter Optional filter.
+     * @return Previous value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public V remove(final K key, @Nullable final GridCacheEntryEx entry,
         @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -2805,8 +2842,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return fut;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(final K key, @Nullable final GridCacheEntryEx entry,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key to remove.
+     * @param entry Optional cached entry.
+     * @param filter Optional filter.
+     * @return Put operation future.
+     */
+    public IgniteInternalFuture<V> removeAsync(final K key, @Nullable final GridCacheEntryEx entry,
         @Nullable final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -2908,8 +2952,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return rmv;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean removex(final K key, @Nullable final GridCacheEntryEx entry,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key to remove.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
+     * @param filter Optional filter.
+     * @return Previous value.
+     * @throws IgniteCheckedException If failed.
+     */
+     public boolean removex(final K key, @Nullable final GridCacheEntryEx entry,
         @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -2943,8 +2995,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return removexAsync(key, null, filter);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(final K key, @Nullable final GridCacheEntryEx entry,
+    /**
+     * Internal method that is called from {@link CacheEntryImpl}.
+     *
+     * @param key Key to remove.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
+     * @param filter Optional filter.
+     * @return Putx operation future.
+     */
+    public IgniteInternalFuture<Boolean> removexAsync(final K key, @Nullable final GridCacheEntryEx entry,
         @Nullable final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 

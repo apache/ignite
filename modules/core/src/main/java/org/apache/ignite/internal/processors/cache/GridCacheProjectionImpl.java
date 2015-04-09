@@ -283,12 +283,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V get(K key, @Nullable GridCacheEntryEx entry, boolean deserializePortable,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return cache.get(key, entry, deserializePortable, filter);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAsync(K key) {
         return cache.getAsync(key, deserializePortables());
     }
@@ -355,29 +349,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V put(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return cache.put(key, val, entry, ttl, filter);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> putAsync(K key, V val,
         @Nullable CacheEntryPredicate[] filter) {
-        return putAsync(key, val, null, -1, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
-        @Nullable CacheEntryPredicate[] filter) {
-        A.notNull(key, "key", val, "val");
-
-        return cache.putAsync(key, val, entry, ttl, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return cache.putx(key, val, entry, ttl, filter);
+        return cache.putAsync(key, val, null, -1, filter);
     }
 
     /** {@inheritDoc} */
@@ -441,15 +415,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val,
         @Nullable CacheEntryPredicate[] filter) {
-        return putxAsync(key, val, null, -1, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx entry,
-        long ttl, @Nullable CacheEntryPredicate[] filter) {
-        A.notNull(key, "key", val, "val");
-
-        return cache.putxAsync(key, val, entry, ttl, filter);
+        return cache.putxAsync(key, val, null, -1, filter);
     }
 
     /** {@inheritDoc} */
@@ -673,20 +639,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V remove(K key, @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return removeAsync(key, entry, filter).get();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> removeAsync(K key, CacheEntryPredicate[] filter) {
-        return removeAsync(key, null, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) {
-        return cache.removeAsync(key, entry, filter);
+        return cache.removeAsync(key, null, filter);
     }
 
     /** {@inheritDoc} */
@@ -707,21 +661,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key, @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return removexAsync(key, entry, filter).get();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key,
         @Nullable CacheEntryPredicate[] filter) {
-        return removexAsync(key, null, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) {
-        return cache.removexAsync(key, entry, filter);
+        return cache.removexAsync(key, null, filter);
     }
 
     /** {@inheritDoc} */
