@@ -336,6 +336,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code TcpDiscoveryIpFinder} that is used and shared among grids.
+     */
+    protected final TcpDiscoveryIpFinder sharedTcpDiscoveryIpFinder() { return ipFinder; }
+
+    /**
      * @return Default cache instance.
      */
     @SuppressWarnings({"unchecked"})

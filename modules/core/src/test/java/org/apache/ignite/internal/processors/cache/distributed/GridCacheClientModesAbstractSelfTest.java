@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -33,15 +32,22 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Tests near-only cache.
  */
 public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbstractSelfTest {
+
+    /** Grids count to start. */
+    private final static int GRIDS_COUNT = 4;
+
     /** Grid cnt. */
     private static AtomicInteger gridCnt;
 
     /** Near-only cache grid name. */
     private static String nearOnlyGridName;
 
+    /** Client's grid start order, i.e. first or last. First by default. */
+    private static boolean startClientLast;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 4;
+        return GRIDS_COUNT;
     }
 
     /** {@inheritDoc} */
@@ -57,8 +63,9 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+        int count = gridCnt.incrementAndGet();
 
-        if (gridCnt.getAndIncrement() == 0) {
+        if ((startClientLast && count == GRIDS_COUNT) || (!startClientLast && count == 1)) {
             cfg.setClientMode(true);
 
             nearOnlyGridName = gridName;
@@ -97,6 +104,22 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @return If {@code true} then uses CLIENT_ONLY mode, otherwise NEAR_ONLY.
      */
     protected abstract boolean clientOnly();
+
+    /**
+     * @return boolean {@code true} if client's grid is started last, {@code false} if it's started first.
+     */
+    public static boolean isClientStartedLast() {
+        return startClientLast;
+    }
+
+    /**
+     * Sets client's grid start order.
+     *
+     * @param startClientLast {@code true} to start the grid last, {@code false} to start it first.
+     */
+    public static void startClientLast(boolean startClientLast) {
+        GridCacheClientModesAbstractSelfTest.startClientLast = startClientLast;
+    }
 
     /**
      * @throws Exception If failed.
