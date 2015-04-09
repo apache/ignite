@@ -27,7 +27,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -1511,7 +1510,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1528,7 +1527,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1541,6 +1540,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param indexedTypes Key and value type pairs.
      */
     public void setIndexedTypes(Class<?>... indexedTypes) {
+        A.ensure(indexedTypes == null || (indexedTypes.length & 1) == 0,
+            "Number of indexed types is expected to be even. Refer to method javadoc for details.");
+
         this.indexedTypes = indexedTypes;
     }
 
