@@ -200,11 +200,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return cacheCfg.getName();
     }
 
-    /** {@inheritDoc} */
-    @Override public ClusterGroup gridProjection() {
-        return ctx.grid().cluster().forCacheNodes(name());
-    }
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */

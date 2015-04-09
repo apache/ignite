@@ -285,7 +285,7 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     static void evict(Ignite ignite, CacheProjection<Object,Object> cache, Object key) throws CacheException {
         try {
-            ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
+            ignite.compute(ignite.cluster()).call(new ClearKeyCallable(key, cache.name()));
         }
         catch (IgniteException e) {
             throw new CacheException(e);

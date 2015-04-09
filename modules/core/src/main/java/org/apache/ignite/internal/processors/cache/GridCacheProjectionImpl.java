@@ -533,11 +533,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup gridProjection() {
-        return cache.gridProjection();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key,
         CachePeekMode[] peekModes,
         @Nullable IgniteCacheExpiryPolicy plc)

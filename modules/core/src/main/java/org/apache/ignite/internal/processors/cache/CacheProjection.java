@@ -188,13 +188,6 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public String name();
 
     /**
-     * Gets grid projection for this cache. This projection includes all nodes which have this cache configured.
-     *
-     * @return Projection instance.
-     */
-    public ClusterGroup gridProjection();
-
-    /**
      * Gets base cache for this projection.
      *
      * @param <K1> Cache key type.

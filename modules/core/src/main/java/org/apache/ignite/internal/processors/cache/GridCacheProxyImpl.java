@@ -128,11 +128,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup gridProjection() {
-        return cache.gridProjection();
-    }
-
-    /** {@inheritDoc} */
     @Override public <K1, V1> GridCache<K1, V1> cache() {
         return cache.cache();
     }
