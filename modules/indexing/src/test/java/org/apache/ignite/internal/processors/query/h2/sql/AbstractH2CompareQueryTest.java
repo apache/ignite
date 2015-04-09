@@ -119,7 +119,11 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
+        Statement st = conn.createStatement();
         
+        st.execute("DROP ALL OBJECTS");
+
         conn.close();
         
         stopAllGrids();
@@ -140,7 +144,14 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      *
      * @throws SQLException If exception.
      */
-    protected abstract void initializeH2Schema() throws SQLException;
+    protected Statement initializeH2Schema() throws SQLException {
+        Statement st = conn.createStatement();
+
+        st.execute("CREATE SCHEMA \"part\"");
+        st.execute("CREATE SCHEMA \"repl\"");
+
+        return st;
+    }
 
     /**
      * Gets connection from a pool.

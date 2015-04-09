@@ -22,16 +22,16 @@ import org.apache.ignite.internal.processors.cache.*;
 import java.io.*;
 
 /**
- * Key used to store in utility cache information about all created data structures.
+ * Internal key for data structures processor.
  */
-public class CacheDataStructuresConfigurationKey implements GridCacheInternal, Externalizable {
+public class CacheDataStructuresCacheKey implements GridCacheInternal, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      *
      */
-    public CacheDataStructuresConfigurationKey() {
+    public CacheDataStructuresCacheKey() {
         // No-op.
     }
 
@@ -42,7 +42,7 @@ public class CacheDataStructuresConfigurationKey implements GridCacheInternal, E
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return obj == this || (obj instanceof CacheDataStructuresConfigurationKey);
+        return obj == this || (obj instanceof CacheDataStructuresCacheKey);
     }
 
     /** {@inheritDoc} */
@@ -57,6 +57,6 @@ public class CacheDataStructuresConfigurationKey implements GridCacheInternal, E
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheDataStructuresConfigurationKey []";
+        return "CacheDataStructuresCacheKey []";
     }
 }

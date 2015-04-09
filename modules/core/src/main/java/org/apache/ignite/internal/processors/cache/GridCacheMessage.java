@@ -86,6 +86,13 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @return {@code True} if this message is partition exchange message.
+     */
+    public boolean partitionExchangeMessage() {
+        return false;
+    }
+
+    /**
      * @return {@code True} if class loading errors should be ignored, false otherwise.
      */
     public boolean ignoreClassErrors() {
