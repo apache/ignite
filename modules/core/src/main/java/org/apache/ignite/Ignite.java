@@ -217,6 +217,17 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg);
 
     /**
+     * Dynamically starts new cache using template configuration.
+     * <p>
+     * If local node is an affinity node, this method will return the instance of started cache.
+     * Otherwise, it will create a client cache on local node.
+     *
+     * @param cacheName Cache name.
+     * @return Instance of started cache.
+     */
+    public <K, V> IgniteCache<K, V> createCache(String cacheName);
+
+    /**
      * Gets existing cache with the given name or creates new one with the given configuration.
      *
      * @param cacheCfg Cache configuration to use.

@@ -55,9 +55,6 @@ public class StreamVisitorExample {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            // Market data cache with default configuration.
-            CacheConfiguration<String, Double> mktDataCfg = new CacheConfiguration<>("marketTicks");
-
             // Financial instrument cache configuration.
             CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>("instCache");
 
@@ -67,7 +64,7 @@ public class StreamVisitorExample {
 
             // Auto-close caches at the end of the example.
             try (
-                IgniteCache<String, Double> mktCache = ignite.getOrCreateCache(mktDataCfg);
+                IgniteCache<String, Double> mktCache = ignite.getOrCreateCache("marketTicks"); // Default config.
                 IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(instCfg)
             ) {
                 try (IgniteDataStreamer<String, Double> mktStmr = ignite.dataStreamer(mktCache.getName())) {

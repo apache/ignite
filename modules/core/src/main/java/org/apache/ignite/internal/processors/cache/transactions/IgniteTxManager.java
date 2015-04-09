@@ -1263,7 +1263,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             // 15. Update metrics.
             if (!tx.dht() && tx.local()) {
-                cctx.txMetrics().onTxCommit();
+                if (!tx.system())
+                    cctx.txMetrics().onTxCommit();
 
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -1337,7 +1338,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
-                cctx.txMetrics().onTxRollback();
+                if (!tx.system())
+                    cctx.txMetrics().onTxRollback();
 
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);

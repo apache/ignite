@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -32,14 +31,7 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** ID of the message to discard (this and all preceding). */
-    private IgniteUuid msgId;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryDiscardMessage() {
-        // No-op.
-    }
+    private final IgniteUuid msgId;
 
     /**
      * Constructor.
@@ -60,20 +52,6 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
      */
     public IgniteUuid msgId() {
         return msgId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeGridUuid(out, msgId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        msgId = U.readGridUuid(in);
     }
 
     /** {@inheritDoc} */

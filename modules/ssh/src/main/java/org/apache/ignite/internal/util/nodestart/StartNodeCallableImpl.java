@@ -19,8 +19,9 @@ package org.apache.ignite.internal.util.nodestart;
 
 import com.jcraft.jsch.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
@@ -34,7 +35,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * SSH-based node starter.
  */
-public class IgniteNodeCallableImpl implements IgniteNodeCallable {
+public class StartNodeCallableImpl implements StartNodeCallable {
     /** Default Ignite home path for Windows (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_WIN = "%IGNITE_HOME%";
 
@@ -60,7 +61,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
     /**
      * Required by Externalizable.
      */
-    public IgniteNodeCallableImpl() {
+    public StartNodeCallableImpl() {
         spec = null;
         timeout = 0;
 
@@ -73,7 +74,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
      * @param spec Specification.
      * @param timeout Connection timeout.
      */
-    public IgniteNodeCallableImpl(IgniteRemoteStartSpecification spec, int timeout) {
+    public StartNodeCallableImpl(IgniteRemoteStartSpecification spec, int timeout) {
         assert spec != null;
 
         this.spec = spec;
@@ -81,7 +82,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTuple3<String, Boolean, String> call() {
+    @Override public ClusterStartNodeResult call() {
         JSch ssh = new JSch();
 
         Session ses = null;
@@ -159,13 +160,13 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
 
             shell(ses, startNodeCmd);
 
-            return new GridTuple3<>(spec.host(), true, null);
+            return new ClusterStartNodeResultImpl(spec.host(), true, null);
         }
         catch (IgniteInterruptedCheckedException e) {
-            return new GridTuple3<>(spec.host(), false, e.getMessage());
+            return new ClusterStartNodeResultImpl(spec.host(), false, e.getMessage());
         }
         catch (Exception e) {
-            return new GridTuple3<>(spec.host(), false, X.getFullStackTrace(e));
+            return new ClusterStartNodeResultImpl(spec.host(), false, X.getFullStackTrace(e));
         }
         finally {
             if (ses != null && ses.isConnected())
@@ -180,7 +181,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
      * @param cmd Command.
      * @throws JSchException In case of SSH error.
      * @throws IOException If IO error occurs.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread was interrupted while waiting.
+     * @throws IgniteInterruptedCheckedException If thread was interrupted while waiting.
      */
     private void shell(Session ses, String cmd) throws JSchException, IOException, IgniteInterruptedCheckedException {
         ChannelShell ch = null;
@@ -288,7 +289,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
      * @param log Logger.
      * @return This callable for chaining method calls.
      */
-    public IgniteNodeCallable setLogger(IgniteLogger log) {
+    public StartNodeCallable setLogger(IgniteLogger log) {
         this.log = log;
 
         return this;

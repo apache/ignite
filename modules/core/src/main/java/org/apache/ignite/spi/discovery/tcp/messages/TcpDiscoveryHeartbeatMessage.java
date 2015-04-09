@@ -47,17 +47,10 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
 
     /** Map to store nodes metrics. */
     @GridToStringExclude
-    private Map<UUID, MetricsSet> metrics;
+    private final Map<UUID, MetricsSet> metrics = new HashMap<>();
 
     /** Client node IDs. */
-    private Collection<UUID> clientNodeIds;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryHeartbeatMessage() {
-        // No-op.
-    }
+    private final Collection<UUID> clientNodeIds = new HashSet<>();
 
     /**
      * Constructor.
@@ -66,9 +59,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      */
     public TcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
         super(creatorNodeId);
-
-        metrics = U.newHashMap(1);
-        clientNodeIds = new HashSet<>();
     }
 
     /**
@@ -153,36 +143,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      */
     public void addClientNodeId(UUID clientNodeId) {
         clientNodeIds.add(clientNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeInt(metrics.size());
-
-        if (!metrics.isEmpty()) {
-            for (Map.Entry<UUID, MetricsSet> e : metrics.entrySet()) {
-                U.writeUuid(out, e.getKey());
-                out.writeObject(e.getValue());
-            }
-        }
-
-        U.writeCollection(out, clientNodeIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        int metricsSize = in.readInt();
-
-        metrics = U.newHashMap(metricsSize);
-
-        for (int i = 0; i < metricsSize; i++)
-            metrics.put(U.readUuid(in), (MetricsSet)in.readObject());
-
-        clientNodeIds = U.readCollection(in);
     }
 
     /** {@inheritDoc} */
