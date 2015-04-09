@@ -42,7 +42,9 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalAtomicOffheapSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalOffheapQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalCountDownLatchSelfTest.class));
 
@@ -59,18 +61,25 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSequenceMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedOffHeapValuesQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueMultiNodeSelfTest.class));
+
         // TODO: IGNITE-80.
         //suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
         //suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedOffHeapValuesSetSelfTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedSetNoBackupsSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedCountDownLatchSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedOffheapSetFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetFailoverSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedQueueRotativeMultiNodeTest.class));
@@ -82,6 +91,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
 
         // TODO: GG-2699
         //suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
+        //suite.addTest(new TestSuite(GridCachePartitionedOffheapDataStructuresFailoverSelfTest.class));
         // TODO: GG-4807 Uncomment when fix
         // suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
