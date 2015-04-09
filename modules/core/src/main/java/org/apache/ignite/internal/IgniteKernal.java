@@ -2235,19 +2235,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
-        return cache(name, true);
-    }
-
-    /**
-     * @param name Cache name.
-     * @param failIfSys Fail if requestsed cache is system cache.
-     * @return Cache.
-     */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name, boolean failIfSys) {
         guard();
 
         try {
-            return ctx.cache().publicJCache(name, true, failIfSys);
+            return ctx.cache().publicJCache(name, true);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -180,12 +181,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (log == null)
             log = U.logger(ctx, logRef, DataStreamerImpl.class);
 
-        ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
+        CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-        if (node == null)
-            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
-
-        this.cacheObjCtx = ctx.cacheObjects().contextForCache(node, cacheName, null);
+        this.cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
         this.cacheName = cacheName;
         this.flushQ = flushQ;
 

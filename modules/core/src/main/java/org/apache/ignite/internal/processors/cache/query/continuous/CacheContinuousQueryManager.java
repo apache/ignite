@@ -274,34 +274,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    public UUID executeInternalQueryForNonInternalKeys(CacheEntryUpdatedListener<?, ?> locLsnr,
-        CacheEntryEventSerializableFilter rmtFilter,
-        boolean loc,
-        boolean notifyExisting)
-        throws IgniteCheckedException
-    {
-        return executeQuery0(
-            locLsnr,
-            rmtFilter,
-            ContinuousQuery.DFLT_PAGE_SIZE,
-            ContinuousQuery.DFLT_TIME_INTERVAL,
-            ContinuousQuery.DFLT_AUTO_UNSUBSCRIBE,
-            false,
-            notifyExisting,
-            true,
-            false,
-            true,
-            loc ? cctx.grid().cluster().forLocal() : null);
-    }
-
-    /**
-     * @param locLsnr Local listener.
-     * @param rmtFilter Remote filter.
-     * @param loc Local flag.
-     * @param notifyExisting Notify existing flag.
-     * @return Continuous routine ID.
-     * @throws IgniteCheckedException In case of error.
-     */
     public UUID executeInternalQuery(CacheEntryUpdatedListener<?, ?> locLsnr,
         CacheEntryEventSerializableFilter rmtFilter,
         boolean loc,

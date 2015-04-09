@@ -15,8 +15,33 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.spi.deployment.uri.scanners;
+
+import java.net.*;
+
 /**
- * <!-- Package description. -->
- * Contains internal tests or test related classes and interfaces.
+ * URI deployment scanner.
  */
-package org.apache.ignite.spi.deployment.uri.scanners.ftp;
+public interface UriDeploymentScanner {
+    /**
+     * Check whether scanner is able to process the given URI.
+     *
+     * @param uri URI.
+     * @return {@code true} if scanner is able to process the URI.
+     */
+    boolean acceptsURI(URI uri);
+
+    /**
+     * Scan the given URI.
+     *
+     * @param scanCtx Scan context.
+     */
+    void scan(UriDeploymentScannerContext scanCtx);
+
+    /**
+     * Gets default scan frequency in milliseconds.
+     *
+     * @return Default scan frequency.
+     */
+    long getDefaultScanFrequency();
+}
