@@ -21,15 +21,16 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 
+import java.io.Serializable;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
-public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest {
+public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest implements Serializable {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -69,7 +70,7 @@ public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest {
 
     /** topology validator test */
     public void testTopologyValidator() throws Exception {
-
+        startGrid();
 
         jcache().getName();
     }

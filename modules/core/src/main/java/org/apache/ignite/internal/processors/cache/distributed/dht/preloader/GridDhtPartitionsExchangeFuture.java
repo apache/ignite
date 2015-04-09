@@ -792,7 +792,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            cacheValidRes.put(cacheCtx.name(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+            if (!CU.isSystemCache(cacheCtx.name()) && (cacheCtx.config().getTopologyValidator() != null))
+                cacheValidRes.put(cacheCtx.name(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
         }
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
