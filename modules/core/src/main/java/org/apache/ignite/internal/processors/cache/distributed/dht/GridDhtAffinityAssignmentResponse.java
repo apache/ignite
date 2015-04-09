@@ -72,6 +72,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean partitionExchangeMessage() {
+        return true;
+    }
+
     /**
      * @return Topology version.
      */
