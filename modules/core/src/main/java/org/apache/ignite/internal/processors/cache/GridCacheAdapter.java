@@ -3452,39 +3452,48 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
-        if (ctx.store().isLocal()) {
-            DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
+        if (p != null)
+            ctx.kernalContext().resource().injectGeneric(p);
 
-            try {
-                ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
+        try {
+            if (ctx.store().isLocal()) {
+                DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
-                LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
+                try {
+                    ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
 
-                ctx.store().loadCache(c, args);
+                    LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
-                c.onDone();
+                    ctx.store().loadCache(c, args);
+
+                    c.onDone();
+                }
+                finally {
+                    ldr.closeEx(false);
+                }
             }
-            finally {
-                ldr.closeEx(false);
+            else {
+                // Version for all loaded entries.
+                final GridCacheVersion ver0 = ctx.versions().nextForLoad();
+
+                ctx.store().loadCache(new CIX3<KeyCacheObject, Object, GridCacheVersion>() {
+                    @Override public void applyx(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver)
+                        throws IgniteException {
+                        assert ver == null;
+
+                        long ttl = CU.ttlForLoad(plc);
+
+                        if (ttl == CU.TTL_ZERO)
+                            return;
+
+                        loadEntry(key, val, ver0, (IgniteBiPredicate<Object, Object>) p, topVer, replicate, ttl);
+                    }
+                }, args);
             }
         }
-        else {
-            // Version for all loaded entries.
-            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
-
-            ctx.store().loadCache(new CIX3<KeyCacheObject, Object, GridCacheVersion>() {
-                @Override public void applyx(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver)
-                    throws IgniteException {
-                    assert ver == null;
-
-                    long ttl = CU.ttlForLoad(plc);
-
-                    if (ttl == CU.TTL_ZERO)
-                        return;
-
-                    loadEntry(key, val, ver0, (IgniteBiPredicate<Object, Object>)p, topVer, replicate, ttl);
-                }
-            }, args);
+        finally {
+            if (p instanceof GridLoadCacheCloseablePredicate)
+                ((GridLoadCacheCloseablePredicate)p).onClose();
         }
     }
 
