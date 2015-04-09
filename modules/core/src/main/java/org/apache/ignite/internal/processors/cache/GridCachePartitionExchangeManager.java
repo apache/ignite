@@ -796,6 +796,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
+                    if (cacheCtx != null && !cacheCtx.started())
+                        continue; // Can safely ignore background exchange.
+
                     GridDhtPartitionTopology top = null;
 
                     if (cacheCtx == null)
