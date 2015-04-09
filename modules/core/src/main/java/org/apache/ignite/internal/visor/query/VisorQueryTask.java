@@ -195,7 +195,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
 
                 GridCacheProcessor cacheProcessor = ignite.context().cache();
 
-                IgniteCache<Object, Object> c = cacheProcessor.privateJCache(arg.cacheName(), false);
+                IgniteCache<Object, Object> c = cacheProcessor.jcache(arg.cacheName());
 
                 if (scan) {
                     ScanQuery<Object, Object> qry = new ScanQuery<>(null);
