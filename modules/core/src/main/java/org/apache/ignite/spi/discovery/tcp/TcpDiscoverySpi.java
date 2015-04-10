@@ -5504,7 +5504,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
             }
 
-            p2pLdrs.remove(nodeId, this);
+            p2pLdrs.remove(node.id(), this);
 
             return null;
         }
@@ -5568,7 +5568,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     TcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
 
-                    if (!res.creatorNodeId().equals(nodeId))
+                    if (!res.creatorNodeId().equals(node.id()))
                         return null;
 
                     stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
