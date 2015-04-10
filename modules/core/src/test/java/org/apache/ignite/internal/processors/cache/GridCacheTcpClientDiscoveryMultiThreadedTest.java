@@ -137,9 +137,9 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
                             IgniteCache<Integer, Integer> cache = node.cache(null);
                             boolean isNearCacheNode = nearCacheNode[clientIdx - serverNodesCount];
 
-                            for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
+                            for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++)
                                 cache.put(i, i);
-                            }
+
 
                             for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
                                 assertEquals(i, (int) cache.get(i));
@@ -222,12 +222,10 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
      * @param cache Cache instance to use.
      */
     private void performSimpleOperationsOnCache(IgniteCache<Integer, Integer> cache) {
-        for (int i = 100; i < 200; i++) {
+        for (int i = 100; i < 200; i++)
             cache.put(i, i);
-        }
 
-        for (int i = 100; i < 200; i++) {
+        for (int i = 100; i < 200; i++)
             assertEquals(i, (int) cache.get(i));
-        }
     }
 }
