@@ -330,9 +330,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected final Ignite startGridsMultiThreaded(int cnt) throws Exception {
+        return startGridsMultiThreaded(cnt, true);
+    }
+
+    /**
+     * @param cnt Count.
+     * @param awaitPartitionMapExchange If we need to await partition map exchange.
+     * @return Ignite.
+     * @throws Exception If failed.
+     */
+    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartitionMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        awaitPartitionMapExchange();
+        if (awaitPartitionMapExchange)
+            awaitPartitionMapExchange();
 
         return g;
     }
