@@ -674,12 +674,12 @@ public class GridClientConfiguration {
             int idx = cred.indexOf(':');
 
             if (idx >= 0 && idx < cred.length() - 1) {
-                setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(
-                    new GridSecurityCredentials(cred.substring(0, idx), cred.substring(idx + 1))));
+                setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(
+                    new SecurityCredentials(cred.substring(0, idx), cred.substring(idx + 1))));
             }
             else {
-                setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(
-                    new GridSecurityCredentials(null, null, cred)));
+                setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(
+                    new SecurityCredentials(null, null, cred)));
             }
         }
 

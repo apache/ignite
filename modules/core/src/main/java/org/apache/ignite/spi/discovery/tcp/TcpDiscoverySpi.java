@@ -1262,7 +1262,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             spiState = CONNECTING;
         }
 
-        GridSecurityCredentials locCred = (GridSecurityCredentials)locNode.getAttributes()
+        SecurityCredentials locCred = (SecurityCredentials)locNode.getAttributes()
             .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
         // Marshal credentials for backward compatibility and security.
@@ -1696,7 +1696,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @return Security credentials.
      * @throws IgniteSpiException If unmarshal fails.
      */
-    private GridSecurityCredentials unmarshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
+    private SecurityCredentials unmarshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
         try {
             byte[] credBytes = (byte[])node.getAttributes().get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
@@ -3125,7 +3125,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (nodeAuth != null) {
                     // Authenticate node first.
                     try {
-                        GridSecurityCredentials cred = unmarshalCredentials(node);
+                        SecurityCredentials cred = unmarshalCredentials(node);
 
                         SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
@@ -3472,7 +3472,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     boolean authFailed = true;
 
                     try {
-                        GridSecurityCredentials cred = unmarshalCredentials(node);
+                        SecurityCredentials cred = unmarshalCredentials(node);
 
                         if (cred == null) {
                             if (log.isDebugEnabled())

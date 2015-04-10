@@ -24,21 +24,21 @@ import org.apache.ignite.*;
  * when custom logic for storing security credentials is not required and it
  * is OK to specify credentials directly in configuration.
  */
-public class GridSecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
+public class SecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
     /** */
-    private GridSecurityCredentials cred;
+    private SecurityCredentials cred;
 
     /**
      * Constructs security credentials provider based on security credentials passed in.
      *
      * @param cred Security credentials.
      */
-    public GridSecurityCredentialsBasicProvider(GridSecurityCredentials cred) {
+    public SecurityCredentialsBasicProvider(SecurityCredentials cred) {
         this.cred = cred;
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityCredentials credentials() throws IgniteCheckedException {
+    @Override public SecurityCredentials credentials() throws IgniteCheckedException {
         return cred;
     }
 }

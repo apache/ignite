@@ -39,7 +39,7 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
+    @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred)
         throws IgniteCheckedException {
         return null;
     }

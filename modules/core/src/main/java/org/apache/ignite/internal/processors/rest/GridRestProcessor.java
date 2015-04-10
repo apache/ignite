@@ -464,21 +464,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
 
-        GridSecurityCredentials cred;
+        SecurityCredentials cred;
 
-        if (req.credentials() instanceof GridSecurityCredentials)
-            cred = (GridSecurityCredentials)req.credentials();
+        if (req.credentials() instanceof SecurityCredentials)
+            cred = (SecurityCredentials)req.credentials();
         else if (req.credentials() instanceof String) {
             String credStr = (String)req.credentials();
 
             int idx = credStr.indexOf(':');
 
             cred = idx >= 0 && idx < credStr.length() ?
-                new GridSecurityCredentials(credStr.substring(0, idx), credStr.substring(idx + 1)) :
-                new GridSecurityCredentials(credStr, null);
+                new SecurityCredentials(credStr.substring(0, idx), credStr.substring(idx + 1)) :
+                new SecurityCredentials(credStr, null);
         }
         else {
-            cred = new GridSecurityCredentials();
+            cred = new SecurityCredentials();
 
             cred.setUserObject(req.credentials());
         }

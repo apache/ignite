@@ -37,7 +37,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return {@code True} if succeeded, {@code false} otherwise.
      * @throws IgniteCheckedException If error occurred.
      */
-    public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) throws IgniteCheckedException;
+    public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException;
 
     /**
      * Gets flag indicating whether all nodes or coordinator only should run the authentication for joining node.

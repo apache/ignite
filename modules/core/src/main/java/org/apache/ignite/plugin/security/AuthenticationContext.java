@@ -31,7 +31,7 @@ public class AuthenticationContext {
     private UUID subjId;
 
     /** Credentials. */
-    private GridSecurityCredentials credentials;
+    private SecurityCredentials credentials;
 
     /** Subject address. */
     private InetSocketAddress addr;
@@ -77,7 +77,7 @@ public class AuthenticationContext {
      *
      * @return Security credentials.
      */
-    public GridSecurityCredentials credentials() {
+    public SecurityCredentials credentials() {
         return credentials;
     }
 
@@ -86,7 +86,7 @@ public class AuthenticationContext {
      *
      * @param credentials Security credentials.
      */
-    public void credentials(GridSecurityCredentials credentials) {
+    public void credentials(SecurityCredentials credentials) {
         this.credentials = credentials;
     }
 
