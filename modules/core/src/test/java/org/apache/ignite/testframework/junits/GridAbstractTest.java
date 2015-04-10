@@ -621,8 +621,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid(int idx) throws Exception {
-        return startGrid(getTestGridName(idx));
+    protected IgniteEx startGrid(int idx) throws Exception {
+        return (IgniteEx)startGrid(getTestGridName(idx));
     }
 
     /**

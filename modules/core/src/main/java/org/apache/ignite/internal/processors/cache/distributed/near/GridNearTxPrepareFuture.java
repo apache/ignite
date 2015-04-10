@@ -68,7 +68,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     private IgniteUuid futId;
 
     /** Transaction. */
-    @GridToStringExclude
+    @GridToStringInclude
     private GridNearTxLocal tx;
 
     /** Error. */
@@ -198,6 +198,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                 tx.removeKeysMapping(nodeId, mappings);
             }
+
             if (e instanceof IgniteTxRollbackCheckedException) {
                 if (marked) {
                     try {
@@ -308,62 +309,59 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     public void prepare() {
         if (tx.optimistic()) {
-            GridDhtTopologyFuture topFut = topologyReadLock();
+            // Obtain the topology version to use.
+            AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
 
-            try {
-                if (topFut == null) {
-                    assert isDone();
+            if (topVer != null) {
+                tx.topologyVersion(topVer);
 
-                    return;
-                }
+                prepare0();
 
-                if (topFut.isDone()) {
-                    try {
-                        if (!tx.state(PREPARING)) {
-                            if (tx.setRollbackOnly()) {
-                                if (tx.timedOut())
-                                    onError(null, null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                                        "was rolled back: " + this));
-                                else
-                                    onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
-                                        "[state=" + tx.state() + ", tx=" + this + ']'));
-                            }
-                            else
-                                onError(null, null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
-                                    "prepare [state=" + tx.state() + ", tx=" + this + ']'));
-
-                            return;
-                        }
-
-                        tx.topologyVersion(topFut.topologyVersion());
-
-                        // Make sure to add future before calling prepare.
-                        cctx.mvcc().addFuture(this);
-
-                        prepare0();
-                    }
-                    catch (TransactionTimeoutException | TransactionOptimisticException e) {
-                        onError(cctx.localNodeId(), null, e);
-                    }
-                }
-                else {
-                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                            cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
-                                @Override public void run() {
-                                    prepare();
-                                }
-                            });
-                        }
-                    });
-                }
+                return;
             }
-            finally {
-                topologyReadUnlock();
-            }
+
+            prepareOnTopology();
+
         }
         else
             preparePessimistic();
+    }
+
+    /**
+     *
+     */
+    private void prepareOnTopology() {
+        GridDhtTopologyFuture topFut = topologyReadLock();
+
+        try {
+            if (topFut == null) {
+                assert isDone();
+
+                return;
+            }
+
+            if (topFut.isDone()) {
+                tx.topologyVersion(topFut.topologyVersion());
+
+                prepare0();
+            }
+            else {
+                topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override
+                    public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                        cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                            @Override
+                            public void run() {
+                                prepareOnTopology();
+                            }
+                        });
+                    }
+                });
+            }
+        }
+        finally {
+            topologyReadUnlock();
+        }
     }
 
     /**
@@ -431,11 +429,33 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         assert tx.optimistic();
 
         try {
+            if (!tx.state(PREPARING)) {
+                if (tx.setRollbackOnly()) {
+                    if (tx.timedOut())
+                        onError(null, null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
+                            "was rolled back: " + this));
+                    else
+                        onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
+                            "[state=" + tx.state() + ", tx=" + this + ']'));
+                }
+                else
+                    onError(null, null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
+                        "prepare [state=" + tx.state() + ", tx=" + this + ']'));
+
+                return;
+            }
+
+            // Make sure to add future before calling prepare.
+            cctx.mvcc().addFuture(this);
+
             prepare(
                 tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry>emptyList(),
                 tx.writeEntries());
 
             markInitialized();
+        }
+        catch (TransactionTimeoutException | TransactionOptimisticException e) {
+            onError(cctx.localNodeId(), null, e);
         }
         catch (IgniteCheckedException e) {
             onDone(e);
@@ -592,6 +612,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 tx.onePhaseCommit(),
                 tx.needReturnValue() && tx.implicit(),
                 tx.implicitSingle(),
+                m.explicitLock(),
                 tx.subjectId(),
                 tx.taskNameHash());
 
@@ -682,6 +703,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             tx.onePhaseCommit(),
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
+            m.explicitLock(),
             tx.subjectId(),
             tx.taskNameHash());
 
@@ -789,6 +811,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         }
 
         cur.add(entry);
+
+        if (entry.explicitVersion() != null) {
+            tx.markExplicit(primary.id());
+
+            cur.markExplicitLock();
+        }
 
         entry.nodeId(primary.id());
 

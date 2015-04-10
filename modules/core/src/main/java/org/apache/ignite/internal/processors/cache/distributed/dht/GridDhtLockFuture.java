@@ -188,7 +188,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             lockVer = cctx.mvcc().mappedVersion(nearLockVer);
 
             if (lockVer == null)
-                lockVer = cctx.versions().onReceivedAndNext(nearNodeId, nearLockVer);
+                lockVer = nearLockVer;
         }
 
         futId = IgniteUuid.randomUuid();
@@ -749,9 +749,16 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 try {
                     while (true) {
                         try {
-                            hasRmtNodes = cctx.dhtMap(nearNodeId, topVer, entry, log, dhtMap, null);
+                            hasRmtNodes = cctx.dhtMap(
+                                nearNodeId,
+                                topVer,
+                                entry,
+                                tx == null ? lockVer : null,
+                                log,
+                                dhtMap,
+                                null);
 
-                            GridCacheMvccCandidate cand = entry.mappings(lockVer);
+                            GridCacheMvccCandidate cand = entry.candidate(lockVer);
 
                             // Possible in case of lock cancellation.
                             if (cand == null) {
@@ -870,7 +877,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                     IgniteTxEntry txEntry = tx.entry(e.txKey());
 
                                     // NOOP entries will be sent to backups on prepare step.
-                                    txEntry.op(GridCacheOperation.NOOP);
+                                    if (txEntry.op() == GridCacheOperation.READ)
+                                        txEntry.op(GridCacheOperation.NOOP);
                                 }
                             }
 
@@ -1105,6 +1113,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             if (tx != null)
                                 tx.removeDhtMapping(node.id(), entry);
+                            else
+                                entry.removeMapping(lockVer, node);
                         }
                     }
 
