@@ -258,11 +258,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         rmv.forceClose();
 
                         if (!isNodeStopping()) {
-                            boolean failed = getSpiContext().tryFailNode(id);
+                            GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
-                            if (!failed) {
-                                GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
-
+                            if (!getSpiContext().tryFailNode(id)) {
                                 if (recoveryData != null) {
                                     if (recoveryData.nodeAlive(getSpiContext().node(id))) {
                                         if (!recoveryData.messagesFutures().isEmpty()) {
@@ -277,6 +275,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                         recoveryData.onNodeLeft();
                                 }
                             }
+                            else
+                                recoveryData.onNodeLeft();
                         }
                     }
 
