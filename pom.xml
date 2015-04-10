@@ -489,7 +489,7 @@
         </profile>
 
         <profile>
-            <id>apache-release</id>
+            <id>deploy-ignite-site</id>
             <build>
                 <plugins>
                     <plugin>
@@ -520,14 +520,7 @@
                             </algorithms>
                         </configuration>
                     </plugin>
-                </plugins>
-            </build>
-        </profile>
 
-        <profile>
-            <id>deploy-ignite-site</id>
-            <build>
-                <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
