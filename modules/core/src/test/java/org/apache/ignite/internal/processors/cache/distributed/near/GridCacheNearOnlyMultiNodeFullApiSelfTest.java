@@ -174,7 +174,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         checkSize(map.keySet());
 
-        assertEquals(10, nearCache.localSize());
+        assertEquals(10, nearCache.localSize(CachePeekMode.ALL));
 
         int fullCacheSize = 0;
 

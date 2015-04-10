@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Job execution request.
  */
-public class GridJobExecuteRequest implements Message, GridTaskMessage {
+public class GridJobExecuteRequest implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -227,9 +227,11 @@ public class GridJobExecuteRequest implements Message, GridTaskMessage {
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid getSessionId() {
+    
+    /**
+     * @return Task session ID.
+     */
+    public IgniteUuid getSessionId() {
         return sesId;
     }
 

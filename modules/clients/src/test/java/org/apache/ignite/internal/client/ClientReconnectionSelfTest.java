@@ -178,40 +178,43 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO: IGNITE-590.
+     *
      * @throws Exception If failed.
      */
-    // TODO Uncomment when GG-3789 fixed.
-//    public void testIdleConnection() throws Exception {
-//        for (int i = 0; i < SERVERS_CNT; i++)
-//            runServer(i, false);
-//
-//        GridClient client = client(); // Here client opens initial connection and fetches topology.
-//
-//        try {
-//            // Only first server in list should be contacted.
-//            assertEquals(1, srvs[0].getConnectCount());
-//
-//            Thread.sleep(35000); // Timeout as idle.
-//
-//            assertEquals(1, srvs[0].getDisconnectCount());
-//
-//            for (int i = 1; i < SERVERS_CNT; i++)
-//                assertEquals(0, srvs[i].getConnectCount());
-//
-//            srvs[0].resetCounters();
-//
-//            // On new request connection should be re-opened.
-//            client.compute().refreshTopology(false, false);
-//
-//            assertEquals(1, srvs[0].getConnectCount());
-//
-//            for (int i = 1; i < SERVERS_CNT; i++)
-//                assertEquals(0, srvs[i].getConnectCount());
-//        }
-//        finally {
-//            GridClientFactory.stop(client.id());
-//        }
-//    }
+    public void testIdleConnection() throws Exception {
+        int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.
+        
+        for (int i = 0; i < srvsCnt; i++)
+            runServer(i, false);
+
+        GridClient client = client(); // Here client opens initial connection and fetches topology.
+
+        try {
+            // Only first server in list should be contacted.
+            assertEquals(1, srvs[0].getConnectCount());
+
+            Thread.sleep(35000); // Timeout as idle.
+
+            assertEquals(1, srvs[0].getDisconnectCount());
+
+            for (int i = 1; i < srvsCnt; i++)
+                assertEquals(0, srvs[i].getConnectCount());
+
+            srvs[0].resetCounters();
+
+            // On new request connection should be re-opened.
+            client.compute().refreshTopology(false, false);
+
+            assertEquals(1, srvs[0].getConnectCount());
+
+            for (int i = 1; i < srvsCnt; i++)
+                assertEquals(0, srvs[i].getConnectCount());
+        }
+        finally {
+            GridClientFactory.stop(client.id());
+        }
+    }
 
     /**
      * Runs a new server with given index.

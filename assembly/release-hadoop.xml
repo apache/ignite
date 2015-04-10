@@ -35,10 +35,6 @@
 
     <files>
         <file>
-            <source>modules/hadoop/docs/hadoop_readme.pdf</source>
-            <outputDirectory>.</outputDirectory>
-        </file>
-        <file>
             <source>modules/hadoop/config/core-site.ignite.xml</source>
             <outputDirectory>/config/hadoop</outputDirectory>
         </file>

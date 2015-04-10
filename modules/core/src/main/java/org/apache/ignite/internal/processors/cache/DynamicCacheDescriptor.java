@@ -53,15 +53,30 @@ public class DynamicCacheDescriptor {
     /** */
     private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
+    /** Template configuration flag. */
+    private boolean template;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
+     * @param template {@code True} if this is template configuration.
      * @param deploymentId Deployment ID.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, CacheType cacheType, IgniteUuid deploymentId) {
+    public DynamicCacheDescriptor(CacheConfiguration cacheCfg,
+        CacheType cacheType,
+        boolean template,
+        IgniteUuid deploymentId) {
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
+        this.template = template;
         this.deploymentId = deploymentId;
+    }
+
+    /**
+     * @return {@code True} if this is template configuration.
+     */
+    public boolean template() {
+        return template;
     }
 
     /**

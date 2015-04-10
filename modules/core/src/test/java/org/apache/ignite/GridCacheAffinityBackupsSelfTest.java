@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
@@ -35,7 +34,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Affinity function. */
-    private AffinityFunction func;
+    private int funcType;
 
     /** */
     private int nodesCnt = 5;
@@ -48,7 +47,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(backups);
-        ccfg.setAffinity(func);
+        ccfg.setAffinity(funcType == 0 ? new FairAffinityFunction() : new RendezvousAffinityFunction());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -60,7 +59,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testRendezvousBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new RendezvousAffinityFunction());
+            checkBackups(i, 1);
     }
 
     /**
@@ -68,17 +67,17 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testFairBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new FairAffinityFunction());
+            checkBackups(i, 0);
     }
 
     /**
      * @param backups Number of backups.
-     * @param func Affinity function.
+     * @param funcType Affinity function type.
      * @throws Exception If failed.
      */
-    private void checkBackups(int backups, AffinityFunction func) throws Exception {
+    private void checkBackups(int backups, int funcType) throws Exception {
         this.backups = backups;
-        this.func = func;
+        this.funcType = funcType;
 
         startGrids(nodesCnt);
 

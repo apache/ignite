@@ -77,12 +77,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.enterprisedt</groupId>
-            <artifactId>edtFTPj</artifactId>
-            <version>1.5.3</version>
-        </dependency>
-
-        <dependency>
             <groupId>net.sf.jtidy</groupId>
             <artifactId>jtidy</artifactId>
             <version>r938</version>

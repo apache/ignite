@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.h2.jdbc.*;
 import org.h2.value.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -56,6 +58,17 @@ public class GridSqlQuerySplitter {
     }
 
     /**
+     * @param qry Query.
+     * @return Leftest simple query if this is UNION.
+     */
+    private static GridSqlSelect leftest(GridSqlQuery qry) {
+        if (qry instanceof GridSqlUnion)
+            return leftest(((GridSqlUnion)qry).left());
+
+        return (GridSqlSelect)qry;
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @param params Parameters.
      * @return Two step query.
@@ -64,33 +77,85 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        GridSqlSelect srcQry = GridSqlQueryParser.parse(stmt);
+        GridSqlQuery qry0 = GridSqlQueryParser.parse(stmt);
+
+        GridSqlSelect srcQry;
+
+        if (qry0 instanceof GridSqlSelect)
+            srcQry = (GridSqlSelect)qry0;
+        else { // Handle UNION.
+            srcQry = new GridSqlSelect().from(new GridSqlSubquery(qry0));
+
+            GridSqlSelect left = leftest(qry0);
+
+            int c = 0;
+
+            for (GridSqlElement expr : left.select(true)) {
+                String colName;
+
+                if (expr instanceof GridSqlAlias)
+                    colName = ((GridSqlAlias)expr).alias();
+                else if (expr instanceof GridSqlColumn)
+                    colName = ((GridSqlColumn)expr).columnName();
+                else {
+                    colName = columnName(c);
+
+                    expr = alias(colName, expr);
+
+                    // Set generated alias to the expression.
+                    left.setSelectExpression(c, expr);
+                }
+
+                GridSqlColumn col = column(colName);
+
+                srcQry.addSelectExpression(col, true);
+
+                qry0.sort();
+
+                c++;
+            }
+
+            // ORDER BY
+            if (!qry0.sort().isEmpty()) {
+                for (GridSqlSortColumn col : qry0.sort())
+                    srcQry.addSort(col);
+            }
+        }
 
         final String mergeTable = TABLE_FUNC_NAME + "()"; // table(0); TODO
 
+        // Create map and reduce queries.
         GridSqlSelect mapQry = srcQry.clone();
         GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
-        List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
-        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.select().size()];
+        List<GridSqlElement> mapExps = F.addAll(
+            new ArrayList<GridSqlElement>(srcQry.allColumns()),
+            srcQry.select(false));
+
+        GridSqlElement[] rdcExps = new GridSqlElement[srcQry.visibleColumns()];
 
         Set<String> colNames = new HashSet<>();
 
+        boolean aggregateFound = false;
+
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
-            splitSelectExpression(mapExps, rdcExps, colNames, i);
+            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i);
 
         // Fill select expressions.
         mapQry.clearSelect();
 
-        for (GridSqlElement exp : mapExps)
-            mapQry.addSelectExpression(exp);
+        for (GridSqlElement exp : mapExps) // Add all map expressions as visible.
+            mapQry.addSelectExpression(exp, true);
 
-        for (GridSqlElement rdcExp : rdcExps)
-            rdcQry.addSelectExpression(rdcExp);
+        for (GridSqlElement rdcExp : rdcExps) // Add corresponding visible reduce columns.
+            rdcQry.addSelectExpression(rdcExp, true);
+
+        for (int i = rdcExps.length; i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
+            rdcQry.addSelectExpression(column(((GridSqlAlias)mapExps.get(i)).alias()), false);
 
         // -- GROUP BY
-        if (!srcQry.groups().isEmpty()) {
+        if (srcQry.hasGroupBy()) {
             mapQry.clearGroups();
 
             for (int col : srcQry.groupColumns())
@@ -110,13 +175,20 @@ public class GridSqlQuerySplitter {
 
         // -- ORDER BY
         if (!srcQry.sort().isEmpty()) {
-            for (GridSqlSortColumn sortCol : srcQry.sort().values())
-                rdcQry.addSort(column(((GridSqlAlias)mapExps.get(sortCol.column())).alias()), sortCol);
+            if (aggregateFound) // Ordering over aggregates does not make sense.
+                mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
+
+            for (GridSqlSortColumn sortCol : srcQry.sort())
+                rdcQry.addSort(sortCol);
         }
 
         // -- LIMIT
-        if (srcQry.limit() != null)
+        if (srcQry.limit() != null) {
+            if (aggregateFound)
+                mapQry.limit(null);
+
             rdcQry.limit(srcQry.limit());
+        }
 
         // -- OFFSET
         if (srcQry.offset() != null) {
@@ -147,11 +219,32 @@ public class GridSqlQuerySplitter {
      * @param target Extracted parameters.
      * @return Extracted parameters list.
      */
+    private static List<Object> findParams(GridSqlQuery qry, Object[] params, ArrayList<Object> target) {
+        if (qry instanceof GridSqlSelect)
+            return findParams((GridSqlSelect)qry, params, target);
+
+        GridSqlUnion union = (GridSqlUnion)qry;
+
+        findParams(union.left(), params, target);
+        findParams(union.right(), params, target);
+
+        findParams(qry.limit(), params, target);
+        findParams(qry.offset(), params, target);
+
+        return target;
+    }
+
+    /**
+     * @param qry Select.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @return Extracted parameters list.
+     */
     private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
         if (params.length == 0)
             return target;
 
-        for (GridSqlElement el : qry.select())
+        for (GridSqlElement el : qry.select(false))
             findParams(el, params, target);
 
         findParams(qry.from(), params, target);
@@ -161,9 +254,6 @@ public class GridSqlQuerySplitter {
             findParams(el, params, target);
 
         findParams(qry.having(), params, target);
-
-        for (GridSqlElement el : qry.sort().keySet())
-            findParams(el, params, target);
 
         findParams(qry.limit(), params, target);
         findParams(qry.offset(), params, target);
@@ -176,7 +266,7 @@ public class GridSqlQuerySplitter {
      * @param params Parameters.
      * @param target Extracted parameters.
      */
-    private static void findParams(GridSqlElement el, Object[] params, ArrayList<Object> target) {
+    private static void findParams(@Nullable GridSqlElement el, Object[] params, ArrayList<Object> target) {
         if (el == null)
             return;
 
@@ -207,12 +297,15 @@ public class GridSqlQuerySplitter {
      * @param rdcSelect Selects for reduce query.
      * @param colNames Set of unique top level column names.
      * @param idx Index.
+     * @return {@code true} If aggregate was found.
      */
-    private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
+    private static boolean splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
         Set<String> colNames, int idx) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
+
+        boolean aggregateFound = false;
 
         if (el instanceof GridSqlAlias) { // Unwrap from alias.
             alias = (GridSqlAlias)el;
@@ -220,6 +313,8 @@ public class GridSqlQuerySplitter {
         }
 
         if (el instanceof GridSqlAggregateFunction) {
+            aggregateFound = true;
+
             GridSqlAggregateFunction agg = (GridSqlAggregateFunction)el;
 
             GridSqlElement mapAgg, rdcAgg;
@@ -320,6 +415,8 @@ public class GridSqlQuerySplitter {
                 rdcSelect[idx] = rdcEl;
             }
         }
+
+        return aggregateFound;
     }
 
     /**

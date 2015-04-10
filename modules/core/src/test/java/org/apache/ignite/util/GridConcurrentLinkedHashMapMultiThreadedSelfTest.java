@@ -150,7 +150,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
         assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
 
-//      TODO GG-4788 - Need to fix iterators for ConcurrentLinkedHashMap in perSegment mode
+//      TODO IGNITE-606 - Need to fix iterators for ConcurrentLinkedHashMap in perSegment mode
 //        LinkedList<Integer> keys = new LinkedList<Integer>(linkedMap.keySet());
 //
 //        while (!keys.isEmpty()) {
@@ -211,7 +211,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
         assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
         assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
 
-//      TODO GG-4788 - Need to fix iterators for ConcurrentLinkedHashMap in perSegment mode
+//      TODO IGNITE-606 - Need to fix iterators for ConcurrentLinkedHashMap in perSegment mode
 //        LinkedList<Integer> keys = new LinkedList<Integer>(linkedMap.keySet());
 //
 //        while (!keys.isEmpty()) {

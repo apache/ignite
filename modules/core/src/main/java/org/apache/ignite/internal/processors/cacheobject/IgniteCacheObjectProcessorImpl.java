@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
@@ -44,10 +43,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
-
-    /** */
-    private final GridBoundedConcurrentLinkedHashMap<Class<?>, Boolean> reflectionCache =
-            new GridBoundedConcurrentLinkedHashMap<>(1024, 1024);
 
     /**
      *
@@ -95,7 +90,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
+    @Override @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
 
@@ -190,47 +185,26 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName,
-        @Nullable CacheConfiguration ccfg) {
-        if (ccfg != null) {
-            CacheMemoryMode memMode = ccfg.getMemoryMode();
+    @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) {
+        assert ccfg != null;
 
-            boolean storeVal = ctx.config().isPeerClassLoadingEnabled() ||
-                GridQueryProcessor.isEnabled(ccfg) ||
-                !ccfg.isCopyOnRead();
+        CacheMemoryMode memMode = ccfg.getMemoryMode();
 
-            return new CacheObjectContext(ctx,
-                new GridCacheDefaultAffinityKeyMapper(),
-                ccfg.isCopyOnRead() && memMode == ONHEAP_TIERED,
-                storeVal);
-        }
-        else
-            return new CacheObjectContext(
-                ctx,
-                new GridCacheDefaultAffinityKeyMapper(),
-                false,
-                ctx.config().isPeerClassLoadingEnabled());
+        boolean storeVal = ctx.config().isPeerClassLoadingEnabled() ||
+            GridQueryProcessor.isEnabled(ccfg) ||
+            !ccfg.isCopyOnRead();
+
+        return new CacheObjectContext(ctx,
+            ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
+            ccfg.isCopyOnRead() && memMode == ONHEAP_TIERED,
+            storeVal);
     }
 
     /** {@inheritDoc} */
     @Override public boolean immutable(Object obj) {
         assert obj != null;
 
-        Class<?> cls = obj.getClass();
-
-        if (IMMUTABLE_CLS.contains(cls))
-            return true;
-
-        Boolean immutable = reflectionCache.get(cls);
-
-        if (immutable != null)
-            return immutable;
-
-        immutable = IgniteUtils.hasAnnotation(cls, IgniteImmutable.class);
-
-        reflectionCache.putIfAbsent(cls, immutable);
-
-        return immutable;
+        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /** {@inheritDoc} */
@@ -296,11 +270,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-            return super.value(ctx, false);  // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             try {
                 if (!ctx.processor().immutable(val)) {
@@ -360,7 +329,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
-                    Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+                    Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
+                        ctx.processor().unmarshal(ctx, valBytes, ldr);
 
                     return new CacheObjectImpl(val, valBytes);
                 }

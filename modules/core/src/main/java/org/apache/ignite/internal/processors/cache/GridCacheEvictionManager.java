@@ -253,11 +253,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
-            ClusterNode locNode = cctx.localNode();
-
-            DiscoveryEvent evt = new DiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
-
-            evt.topologySnapshot(locNode.order(), cctx.discovery().topology(locNode.order()));
+            DiscoveryEvent evt = cctx.discovery().localJoinEvent();
 
             backupWorker.addEvent(evt);
 

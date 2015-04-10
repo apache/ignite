@@ -1,5 +1,5 @@
 Apache Ignite Examples
-----------------------
+======================
 
 This folder contains code examples for various Apache Ignite functionality.
 
@@ -18,8 +18,15 @@ The examples folder contains he following subfolders:
   are excluded by default, enable `java8-examples` Maven profile to include them (JDK8 is required).
 - `src/main/scala` - contains examples demonstrating usage of API provided by Scalar.
 
+
 Starting Remote Nodes
----------------------
+=====================
 
 Remote nodes for examples should always be started with special configuration file which enables P2P
 class loading: `examples/config/example-ignite.xml`. To run a remote node in IDE use `ExampleNodeStartup` class.
+
+
+Javay7 vs Java8
+===============
+Some examples (not all) which can benefit from Java8 Lambda support were re-written with Java8 lambdas.
+For full set of examples, look at both Java7 and Java8 packages.

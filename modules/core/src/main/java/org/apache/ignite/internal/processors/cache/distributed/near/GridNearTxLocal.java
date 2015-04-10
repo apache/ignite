@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -59,14 +60,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         new ConcurrentHashMap8<>();
 
     /** Future. */
+    @GridToStringExclude
     private final AtomicReference<IgniteInternalFuture<IgniteInternalTx>> prepFut =
         new AtomicReference<>();
 
     /** */
+    @GridToStringExclude
     private final AtomicReference<GridNearTxFinishFuture> commitFut =
         new AtomicReference<>();
 
     /** */
+    @GridToStringExclude
     private final AtomicReference<GridNearTxFinishFuture> rollbackFut =
         new AtomicReference<>();
 
@@ -126,6 +130,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             implicit,
             implicitSingle,
             sys,
+            false,
             plc,
             concurrency,
             isolation,
@@ -527,6 +532,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @return {@code True} if mapping was found.
      */
     public boolean markExplicit(UUID nodeId) {
+        explicitLock = true;
+
         GridDistributedTxMapping m = mappings.get(nodeId);
 
         if (m != null) {

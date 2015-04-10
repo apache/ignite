@@ -104,7 +104,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /**
      * @return Cache context.
      */
-    public GridCacheContext context() {
+    @Override public GridCacheContext context() {
         return ctx;
     }
 
