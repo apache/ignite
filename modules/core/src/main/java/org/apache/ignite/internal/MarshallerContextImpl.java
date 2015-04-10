@@ -131,6 +131,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
                     ", file=" + file.getAbsolutePath() + ']', e);
             }
+
+            // Must explicitly put entry to cache to invoke other continuous queries.
+            registerClassName(id, clsName);
         }
 
         return clsName;

@@ -229,10 +229,10 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                     try {
                         latch.countDown();
 
-                        cache.lockAll(Arrays.asList(keys.get(0), keys.get(1))).tryLock(50000, MILLISECONDS);
+                        isOk.set(!cache.lockAll(Arrays.asList(keys.get(0), keys.get(1))).tryLock(5000, MILLISECONDS));
                     }
                     catch (InterruptedException ignored) {
-                        isOk.set(true);
+                        isOk.set(false);
                     }
                 }
             });

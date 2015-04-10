@@ -1426,6 +1426,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         UUID nearNodeId,
         AffinityTopologyVersion topVer,
         GridDhtCacheEntry entry,
+        GridCacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1441,6 +1442,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
+        Collection<ClusterNode> nearRemoteNodes = null;
+
         if (nearMap != null) {
             Collection<UUID> readers = entry.readers();
 
@@ -1455,11 +1458,62 @@ public class GridCacheContext<K, V> implements Externalizable {
             else if (log.isDebugEnabled())
                 log.debug("Entry has no near readers: " + entry);
 
-            if (nearNodes != null && !nearNodes.isEmpty())
-                ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+            if (nearNodes != null && !nearNodes.isEmpty()) {
+                nearRemoteNodes = F.view(nearNodes, F.notIn(dhtNodes));
+
+                ret |= map(entry, nearRemoteNodes, nearMap);
+            }
+        }
+
+        if (explicitLockVer != null) {
+            Collection<ClusterNode> dhtNodeIds = new ArrayList<>(dhtRemoteNodes);
+            Collection<ClusterNode> nearNodeIds = F.isEmpty(nearRemoteNodes) ? null : new ArrayList<>(nearRemoteNodes);
+
+            if (!F.isEmpty(nearNodeIds))
+                U.dumpStack("Added near mapped nodes: " + entry + ", " + nearNodeIds);
+
+            entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
 
         return ret;
+    }
+
+    /**
+     * @param entry Entry.
+     * @param log Log.
+     * @param dhtMap Dht mappings.
+     * @param nearMap Near mappings.
+     * @return {@code True} if mapped.
+     * @throws GridCacheEntryRemovedException If reader for entry is removed.
+     */
+    public boolean dhtMap(
+        GridDhtCacheEntry entry,
+        GridCacheVersion explicitLockVer,
+        IgniteLogger log,
+        Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
+        Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
+    ) throws GridCacheEntryRemovedException {
+        assert explicitLockVer != null;
+
+        GridCacheMvccCandidate cand = entry.candidate(explicitLockVer);
+
+        if (cand != null) {
+            Collection<ClusterNode> dhtNodes = cand.mappedDhtNodes();
+
+            if (log.isDebugEnabled())
+                log.debug("Mapping explicit lock to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+
+            Collection<ClusterNode> nearNodes = cand.mappedNearNodes();
+
+            boolean ret = map(entry, dhtNodes, dhtMap);
+
+            if (nearNodes != null && !nearNodes.isEmpty())
+                ret |= map(entry, nearNodes, nearMap);
+
+            return ret;
+        }
+
+        return false;
     }
 
     /**

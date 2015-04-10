@@ -50,6 +50,7 @@ import static org.apache.ignite.events.EventType.*;
 public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String VALUE = createValue();
+    public static final CachePeekMode[] ALL_PEEK_MODES = new CachePeekMode[]{CachePeekMode.ALL};
 
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -111,7 +112,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             final CountDownLatch startLatch = new CountDownLatch(1);
 
-            int oldSize = cache1.localSize();
+            int oldSize = cache1.localSize(CachePeekMode.ALL);
 
             IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
@@ -156,7 +157,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             checkCachesConsistency(ignite1, ignite2);
 
-            oldSize = cache1.size();
+            oldSize = cache1.size(CachePeekMode.ALL);
 
             info("Evicting on constant topology.");
 
@@ -192,8 +193,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = ignite1.cache(null).localSize();
-                return size1 != oldSize && size1 == ignite2.cache(null).localSize();
+                int size1 = ignite1.cache(null).localSize(CachePeekMode.ALL);
+                return size1 != oldSize && size1 == ignite2.cache(null).localSize(CachePeekMode.ALL);
             }
         }, getTestTimeout()));
 
@@ -223,9 +224,9 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         GridCacheAdapter<Integer, Object> cache2 = g2.internalCache();
 
         for (int i = 0; i < 3; i++) {
-            if (cache1.size() != cache2.size()) {
-                U.warn(log, "Sizes do not match (will retry in 1000 ms) [s1=" + cache1.size() +
-                    ", s2=" + cache2.size() + ']');
+            if (cache1.size(ALL_PEEK_MODES) != cache2.size(ALL_PEEK_MODES)) {
+                U.warn(log, "Sizes do not match (will retry in 1000 ms) [s1=" + cache1.size(ALL_PEEK_MODES) +
+                    ", s2=" + cache2.size(ALL_PEEK_MODES) + ']');
 
                 U.sleep(1000);
             }
@@ -233,11 +234,11 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 break;
         }
 
-        info("Cache1 size: " + cache1.size());
-        info("Cache2 size: " + cache2.size());
+        info("Cache1 size: " + cache1.size(ALL_PEEK_MODES));
+        info("Cache2 size: " + cache2.size(ALL_PEEK_MODES));
 
-        assert cache1.size() == cache2.size() : "Sizes do not match [s1=" + cache1.size() +
-            ", s2=" + cache2.size() + ']';
+        assert cache1.size(ALL_PEEK_MODES) == cache2.size(ALL_PEEK_MODES) :
+            "Sizes do not match [s1=" + cache1.size(ALL_PEEK_MODES) + ", s2=" + cache2.size(ALL_PEEK_MODES) + ']';
 
         for (Integer key : cache1.keySet()) {
             Object e = cache1.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);

@@ -243,13 +243,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /**
-     * Completes this future.
-     */
-    void complete() {
-        onComplete();
-    }
-
-    /**
      * Initializes future.
      */
     public void finish() {
@@ -279,9 +272,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         if (tx.onePhaseCommit())
             return false;
 
-        boolean res = false;
-
         boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
+
+        if (tx.explicitLock())
+            sync = true;
+
+        boolean res = false;
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
@@ -313,8 +309,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.system(),
                 tx.ioPolicy(),
                 tx.isSystemInvalidate(),
-                tx.syncCommit(),
-                tx.syncRollback(),
+                sync,
+                sync,
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
@@ -365,8 +361,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.system(),
                     tx.ioPolicy(),
                     tx.isSystemInvalidate(),
-                    tx.syncCommit(),
-                    tx.syncRollback(),
+                    sync,
+                    sync,
                     tx.completedBase(),
                     tx.committedVersions(),
                     tx.rolledbackVersions(),

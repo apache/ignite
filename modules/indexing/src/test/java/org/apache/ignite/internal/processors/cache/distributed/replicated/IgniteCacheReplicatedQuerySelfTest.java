@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -149,9 +150,9 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         for (int i = 0; i < keyCnt; i++)
             cache1.put(new CacheKey(i), new CacheValue("val" + i));
 
-        assertEquals(keyCnt, cache1.localSize());
-        assertEquals(keyCnt, cache2.localSize());
-        assertEquals(keyCnt, cache3.localSize());
+        assertEquals(keyCnt, cache1.localSize(ALL));
+        assertEquals(keyCnt, cache2.localSize(ALL));
+        assertEquals(keyCnt, cache3.localSize(ALL));
 
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
             cache1.query(new SqlQuery<CacheKey, CacheValue>(CacheValue.class, "true"));

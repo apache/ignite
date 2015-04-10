@@ -70,7 +70,7 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<UriD
 
         assert newGarFile.exists();
 
-        Thread.sleep(UriDeploymentSpi.DFLT_DISK_SCAN_FREQUENCY + 3000);
+        Thread.sleep(UriDeploymentFileScanner.DFLT_SCAN_FREQ + 3000);
 
         assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3") != null :
             "Failed to find resource for added GAR file.";
@@ -82,7 +82,7 @@ public class GridFileDeploymentUndeploySelfTest extends GridSpiAbstractTest<UriD
 
         assert !newGarFile.exists();
 
-        Thread.sleep(UriDeploymentSpi.DFLT_DISK_SCAN_FREQUENCY + 3000);
+        Thread.sleep(UriDeploymentFileScanner.DFLT_SCAN_FREQ + 3000);
 
         assert getSpi().findResource("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask3") == null;
         assert getSpi().findResource("GridUriDeploymentTestWithNameTask3") == null;

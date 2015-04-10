@@ -151,7 +151,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param ignite Ignite.
      */
     @IgniteInstanceResource
-    protected void injectResources(Ignite ignite) {
+    @Override protected void injectResources(Ignite ignite) {
         super.injectResources(ignite);
 
         // Inject resource.

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -76,7 +77,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
-        @SuppressWarnings("unchecked")
         @Override public void onMessage(final UUID nodeId, Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
@@ -84,54 +84,77 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             final GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
-            int msgIdx = cacheMsg.lookupIndex();
+            IgniteInternalFuture<?> fut = null;
 
-            IgniteBiInClosure<UUID, GridCacheMessage> c = null;
+            if (cacheMsg.partitionExchangeMessage()) {
+                long locTopVer = cctx.discovery().topologyVersion();
+                long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 
-            if (msgIdx >= 0) {
-                IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
+                if (locTopVer < rmtTopVer) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received message has higher topology version [msg=" + msg +
+                            ", locTopVer=" + locTopVer + ", rmtTopVer=" + rmtTopVer + ']');
 
-                if (cacheClsHandlers != null)
-                    c = cacheClsHandlers[msgIdx];
+                    fut = cctx.discovery().topologyFuture(rmtTopVer);
+                }
+            }
+            else {
+                AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
+                AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
+
+                if (locAffVer.compareTo(rmtAffVer) < 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received message has higher affinity topology version [msg=" + msg +
+                            ", locTopVer=" + locAffVer + ", rmtTopVer=" + rmtAffVer + ']');
+
+                    fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
+                }
             }
 
-            if (c == null)
-                c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
-
-            if (c == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Received message without registered handler (will ignore) [msg=" + msg +
-                        ", nodeId=" + nodeId + ']');
+            if (fut != null && !fut.isDone()) {
+                fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
+                        handleMessage(nodeId, cacheMsg);
+                    }
+                });
 
                 return;
             }
 
-            long locTopVer = cctx.discovery().topologyVersion();
-            long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
-
-            if (locTopVer < rmtTopVer) {
-                if (log.isDebugEnabled())
-                    log.debug("Received message has higher topology version [msg=" + msg +
-                        ", locTopVer=" + locTopVer + ", rmtTopVer=" + rmtTopVer + ']');
-
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
-
-                if (!topFut.isDone()) {
-                    final IgniteBiInClosure<UUID, GridCacheMessage> c0 = c;
-
-                    topFut.listen(new CI1<IgniteInternalFuture<Long>>() {
-                        @Override public void apply(IgniteInternalFuture<Long> t) {
-                            onMessage0(nodeId, cacheMsg, c0);
-                        }
-                    });
-
-                    return;
-                }
-            }
-
-            onMessage0(nodeId, cacheMsg, c);
+            handleMessage(nodeId, cacheMsg);
         }
     };
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param cacheMsg Message.
+     */
+    @SuppressWarnings("unchecked")
+    private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg) {
+        int msgIdx = cacheMsg.lookupIndex();
+
+        IgniteBiInClosure<UUID, GridCacheMessage> c = null;
+
+        if (msgIdx >= 0) {
+            IgniteBiInClosure[] cacheClsHandlers = idxClsHandlers.get(cacheMsg.cacheId());
+
+            if (cacheClsHandlers != null)
+                c = cacheClsHandlers[msgIdx];
+        }
+
+        if (c == null)
+            c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
+
+        if (c == null) {
+            if (log.isDebugEnabled())
+                log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
+                    ", nodeId=" + nodeId + ']');
+
+            return;
+        }
+
+        onMessage0(nodeId, cacheMsg, c);
+    }
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {

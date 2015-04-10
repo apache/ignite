@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+
 /**
- * <!-- Package description. -->
- * Contains internal tests or test related classes and interfaces.
+ * Set tests with off-heap values cache memory mode.
  */
-package org.apache.ignite.spi.deployment.uri.scanners.ftp;
+public class GridCachePartitionedOffHeapValuesSetSelfTest extends GridCachePartitionedSetSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return OFFHEAP_VALUES;
+    }
+}

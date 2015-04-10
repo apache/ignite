@@ -199,9 +199,7 @@ public class GridSqlQueryParser {
             else if (tbl instanceof TableView) {
                 Query qry = VIEW_QUERY.get((TableView)tbl);
 
-                assert0(qry instanceof Select, qry);
-
-                res = new GridSqlSubquery(parse((Select)qry));
+                res = new GridSqlSubquery(parse(qry));
             }
             else if (tbl instanceof FunctionTable)
                 res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl));
@@ -518,8 +516,18 @@ public class GridSqlQueryParser {
 
             GridSqlFunction res = new GridSqlFunction(null, f.getName());
 
-            for (Expression arg : f.getArgs())
-                res.addChild(parseExpression(arg));
+            if (f.getArgs() != null) {
+                for (Expression arg : f.getArgs()) {
+                    if (arg == null) {
+                        if (f.getFunctionType() != Function.CASE)
+                            throw new IllegalStateException("Function type with null arg: " + f.getFunctionType());
+
+                        continue;
+                    }
+
+                    res.addChild(parseExpression(arg));
+                }
+            }
 
             if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
                 res.setCastType(new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize())
@@ -535,8 +543,10 @@ public class GridSqlQueryParser {
 
             GridSqlFunction res = new GridSqlFunction(alias.getSchema().getName(), f.getName());
 
-            for (Expression arg : f.getArgs())
-                res.addChild(parseExpression(arg));
+            if (f.getArgs() != null) {
+                for (Expression arg : f.getArgs())
+                    res.addChild(parseExpression(arg));
+            }
 
             return res;
         }

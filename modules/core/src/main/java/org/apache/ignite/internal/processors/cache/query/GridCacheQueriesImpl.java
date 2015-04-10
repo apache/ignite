@@ -148,7 +148,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
      *
      * @return Query.
      */
-    public <R> CacheQuery<R> createSpiQuery() {
+    @Override public <R> CacheQuery<R> createSpiQuery() {
         return new GridCacheQueryAdapter<>(ctx,
             SPI,
             null,

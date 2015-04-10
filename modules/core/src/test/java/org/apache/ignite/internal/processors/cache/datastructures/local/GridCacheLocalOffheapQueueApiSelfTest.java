@@ -14,9 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.datastructures.local;
+
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * <!-- Package description. -->
- * Contains FTP scanner for URI deployer SPI.
+ * Queue tests with local cache.
  */
-package org.apache.ignite.spi.deployment.uri.scanners.ftp;
+public class GridCacheLocalOffheapQueueApiSelfTest extends GridCacheLocalQueueApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return OFFHEAP_TIERED;
+    }
+}

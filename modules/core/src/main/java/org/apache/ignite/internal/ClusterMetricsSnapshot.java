@@ -1311,7 +1311,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
 
-        return off;
+        return buf.position();
     }
 
     /**
