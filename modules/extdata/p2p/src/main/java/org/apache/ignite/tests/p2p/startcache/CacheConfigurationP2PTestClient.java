@@ -20,6 +20,9 @@ package org.apache.ignite.tests.p2p.startcache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.io.*;
 import java.util.*;
@@ -27,15 +30,35 @@ import java.util.*;
 /**
  *
  */
-public class CacheConfigP2PStartClient {
+public class CacheConfigurationP2PTestClient {
     /**
      * @param args Arguments.
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
+        System.out.println("Starting test client node.");
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        cfg.setPeerClassLoadingEnabled(true);
+
+        cfg.setLocalHost("127.0.0.1");
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+
+        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
+
+        U.setWorkDirectory(null, U.getIgniteHome());
+
         try (Ignite ignite = Ignition.start(cfg)) {
+            System.out.println("Test external node started");
+
             int nodes = ignite.cluster().nodes().size();
 
             if (nodes != 3)

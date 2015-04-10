@@ -5401,8 +5401,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param node Node.
          */
         public DiscoveryDeploymentClassLoader(TcpDiscoveryNode node) {
-            assert !node.isClient();
-            assert !node.id().equals(getLocalNodeId());
+            assert !node.isClient() : node;
+            assert !node.id().equals(getLocalNodeId()) : node;
 
             this.node = node;
         }
