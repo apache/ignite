@@ -27,7 +27,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.*;
@@ -40,6 +40,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.*;
 import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage.*;
 
 /**
@@ -376,7 +377,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(Serializable evt) {
-        throw new UnsupportedOperationException();
+        sockRdr.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt));
     }
 
     /**
@@ -858,6 +859,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
                     else if (msg instanceof TcpDiscoveryHeartbeatMessage)
                         processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
+                    else if (msg instanceof TcpDiscoveryCustomEventMessage)
+                        processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
 
                     if (ensured(msg))
                         lastMsgId = msg.id();
@@ -1153,6 +1156,51 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         }
 
         /**
+         * @param msg Message.
+         */
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+            if (msg.verified()) {
+                DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
+
+                if (lsnr != null) {
+                    TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
+
+                    if (node != null && node.visible())
+                        notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allNodes(), msg.message());
+                    else if (log.isDebugEnabled())
+                        log.debug("Received metrics from unknown node: " + nodeId);
+                }
+            }
+            else {
+                if (getLocalNodeId().equals(msg.creatorNodeId())) {
+                    Socket sock0 = sock;
+
+                    if (sock0 != null) {
+                        try {
+                            writeToSocket(sock0, msg);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Heartbeat message sent [sock=" + sock0 + ", msg=" + msg + ']');
+                        }
+                        catch (IOException | IgniteCheckedException e) {
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to send custom message [sock=" + sock0 +
+                                    ", msg=" + msg + ']', e);
+
+                            U.closeQuiet(sock0);
+
+                            sock = null;
+
+                            interrupt();
+                        }
+                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Failed to send custom message (node is disconnected): " + msg);
+                }
+            }
+        }
+
+        /**
          * @param nodeId Node ID.
          * @param metrics Metrics.
          * @param tstamp Timestamp.
@@ -1222,6 +1270,17 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param top Topology snapshot.
          */
         private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top) {
+            notifyDiscovery(type, topVer, node, top, null);
+        }
+
+        /**
+         * @param type Event type.
+         * @param topVer Topology version.
+         * @param node Node.
+         * @param top Topology snapshot.
+         */
+        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top,
+            @Nullable Serializable data) {
             DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {
@@ -1229,7 +1288,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     log.debug("Discovery notification [node=" + node + ", type=" + U.gridEventName(type) +
                         ", topVer=" + topVer + ']');
 
-                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), null);
+                lsnr.onDiscovery(type, topVer, node, top, new TreeMap<>(topHist), data);
             }
             else if (log.isDebugEnabled())
                 log.debug("Skipped discovery notification [node=" + node + ", type=" + U.gridEventName(type) +

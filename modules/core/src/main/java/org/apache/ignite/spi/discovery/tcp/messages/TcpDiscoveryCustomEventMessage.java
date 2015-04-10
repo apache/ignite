@@ -23,6 +23,7 @@ import java.util.*;
 /**
  * Wrapped for custom message.
  */
+@TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
 public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
     /** */
