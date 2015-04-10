@@ -1152,12 +1152,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
-            if (!(msg instanceof GridTaskMessage)) {
-                U.warn(log, "Received message of unknown type: " + msg);
-
-                return;
-            }
-
             if (msg instanceof GridJobExecuteResponse)
                 processJobExecuteResponse(nodeId, (GridJobExecuteResponse)msg);
             else if (jobResOnly)
