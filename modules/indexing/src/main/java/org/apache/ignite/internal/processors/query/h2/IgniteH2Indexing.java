@@ -831,11 +831,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String generateQuery(String qry, TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
+        final String qry0 = qry;
+
         String t = tbl.fullTableName();
 
         String from = " ";
 
-        String upper = qry.trim().toUpperCase();
+        qry = qry.trim();
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            if (!qry.startsWith("*"))
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
+                    "use SqlFieldsQuery instead: " + qry0);
+
+            qry = qry.substring(1).trim();
+            upper = qry.toUpperCase();
+        }
 
         if (!upper.startsWith("FROM"))
             from = " FROM " + t +
@@ -1247,6 +1261,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
 
+    /** {@inheritDoc} */
     @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
         String schema = schema(ccfg.getName());
 

@@ -245,7 +245,7 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     *  @return Cache mode.
+     * @return Cache mode.
      */
     public CacheMode mode() {
         return mode;
