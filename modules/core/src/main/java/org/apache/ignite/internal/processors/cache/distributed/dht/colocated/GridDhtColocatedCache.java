@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -484,9 +485,20 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 assert !n.isLocal();
 
-                if (!F.isEmpty(req.keys()))
-                    // We don't wait for reply to this message.
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                if (!F.isEmpty(req.keys())) {
+                    try {
+                        // We don't wait for reply to this message.
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                                ", n=" + n + ", e=" + e + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                    }
+                }
             }
         }
         catch (IgniteCheckedException ex) {
@@ -567,8 +579,18 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);
 
-                    // We don't wait for reply to this message.
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                    try {
+                        // We don't wait for reply to this message.
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                                ", n=" + n + ", e=" + e + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                    }
                 }
             }
         }
