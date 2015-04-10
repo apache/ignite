@@ -5462,6 +5462,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         /** {@inheritDoc} */
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
+            try {
+                return U.gridClassLoader().loadClass(name);
+            }
+            catch (ClassNotFoundException ignore) {
+                // Ignore.
+            }
+
             lock.readLock().lock();
 
             try {
