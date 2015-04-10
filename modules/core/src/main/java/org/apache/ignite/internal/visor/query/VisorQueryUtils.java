@@ -39,8 +39,8 @@ public class VisorQueryUtils {
 
     /** Columns for SCAN queries. */
     public static final Collection<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
-        new VisorQueryField("", "Key Class"), new VisorQueryField("", "Key"),
-        new VisorQueryField("", "Value Class"), new VisorQueryField("", "Value")
+        new VisorQueryField(null, null, "Key Class", ""), new VisorQueryField(null, null, "Key", ""),
+        new VisorQueryField(null, null, "Value Class", ""), new VisorQueryField(null, null, "Value", "")
     );
 
     /**
@@ -84,7 +84,7 @@ public class VisorQueryUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        Boolean first = true;
+        boolean first = true;
 
         for (Object v : arr) {
             if (first)
@@ -141,7 +141,7 @@ public class VisorQueryUtils {
      * @param obj Object instance to check.
      * @return {@code true} if it is one of known types.
      */
-    private static Boolean isKnownType(Object obj) {
+    private static boolean isKnownType(Object obj) {
         return obj instanceof String ||
             obj instanceof Boolean ||
             obj instanceof Byte ||

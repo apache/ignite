@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -58,40 +59,33 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
 
         /** {@inheritDoc} */
         @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) {
-            try {
-                return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
         /**
          * Collect data from SQL query.
          *
-         * @param arg
-         * @return
-         * @throws IgniteCheckedException
+         * @param arg Query name and page size.
+         * @return Query result with next page.
          */
-        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
+        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryTask.VisorQueryCursorHolder> storage =
-                ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryCursorHolder<List<?>>> storage = ignite.cluster().nodeLocalMap();
 
-            VisorQueryTask.VisorQueryCursorHolder t = storage.get(arg.get1());
+            VisorQueryCursorHolder<List<?>> holder = storage.get(arg.get1());
 
-            if (t == null)
+            if (holder == null)
                 throw new IgniteException("SQL query results are expired.");
 
-            VisorQueryCursor cur = t.cursor();
+            VisorQueryCursor<List<?>> cur = holder.cursor();
 
             List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.get2());
 
             boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                storage.put(arg.get1(), new VisorQueryTask.VisorQueryCursorHolder(t.cursor(), true));
+                holder.accessed(true);
             else
                 storage.remove(arg.get1());
 
@@ -101,29 +95,27 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         /**
          * Collect data from SCAN query
          *
-         * @param arg
-         * @return
-         * @throws IgniteCheckedException
+         * @param arg Query name and page size.
+         * @return Next page with data.
          */
-        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
+        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryTask.VisorQueryCursorHolder> storage =
-                ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryCursorHolder<Cache.Entry<Object, Object>>> storage = ignite.cluster().nodeLocalMap();
 
-            VisorQueryTask.VisorQueryCursorHolder t = storage.get(arg.get1());
+            VisorQueryCursorHolder<Cache.Entry<Object, Object>> holder = storage.get(arg.get1());
 
-            if (t == null)
+            if (holder == null)
                 throw new IgniteException("Scan query results are expired.");
 
-            VisorQueryCursor cur = t.cursor();
+            VisorQueryCursor<Cache.Entry<Object, Object>> cur = holder.cursor();
 
             List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.get2());
 
-            Boolean hasMore = cur.hasNext();
+            boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                storage.put(arg.get1(), new VisorQueryTask.VisorQueryCursorHolder(cur, true));
+                holder.accessed(true);
             else
                 storage.remove(arg.get1());
 
