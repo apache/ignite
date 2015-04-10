@@ -41,17 +41,29 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTupl
         VisorTaskArgument<VisorQueryArg> arg) {
         String cacheName = taskArg.cacheName();
 
-        ClusterGroup prj = ignite.cluster().forDataNodes(cacheName);
+        ClusterNode node;
 
-        if (prj.nodes().isEmpty())
-            throw new IgniteException("No data nodes for cache: " + escapeName(cacheName));
+        if (taskArg.localCacheNodeId() == null) {
+            ClusterGroup prj = ignite.cluster().forDataNodes(cacheName);
 
-        // First try to take local node to avoid network hop.
-        ClusterNode node = prj.node(ignite.localNode().id());
+            if (prj.nodes().isEmpty())
+                throw new IgniteException("No data nodes for cache: " + escapeName(cacheName));
 
-        // Take any node from projection.
-        if (node == null)
-            node = prj.forRandom().node();
+            // First try to take local node to avoid network hop.
+            node = prj.node(ignite.localNode().id());
+
+            // Take any node from projection.
+            if (node == null)
+                node = prj.forRandom().node();
+        }
+        else {
+            node = ignite.cluster().node(taskArg.localCacheNodeId());
+
+            if (node == null)
+                throw new IgniteException("No data node for local cache: " + escapeName(cacheName));
+        }
+
+        assert node != null;
 
         return Collections.singletonMap(job(taskArg), node);
     }

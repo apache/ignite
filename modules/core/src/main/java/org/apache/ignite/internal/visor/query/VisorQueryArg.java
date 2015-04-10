@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Arguments for {@link VisorQueryTask}.
@@ -25,6 +26,9 @@ import java.io.*;
 public class VisorQueryArg implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Node ID in case of local cache. */
+    private final UUID locCacheNodeId;
 
     /** Cache name for query. */
     private final String cacheName;
@@ -36,14 +40,23 @@ public class VisorQueryArg implements Serializable {
     private final Integer pageSize;
 
     /**
+     * @param locCacheNodeId Node ID in case of local cache or {@code null} otherwise.
      * @param cacheName Cache name for query.
      * @param qryTxt Query text.
      * @param pageSize Result batch size.
      */
-    public VisorQueryArg(String cacheName, String qryTxt, Integer pageSize) {
+    public VisorQueryArg(UUID locCacheNodeId, String cacheName, String qryTxt, Integer pageSize) {
+        this.locCacheNodeId = locCacheNodeId;
         this.cacheName = cacheName;
         this.qryTxt = qryTxt;
         this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Node ID in case of local cache or {@code null} otherwise.
+     */
+    public UUID localCacheNodeId() {
+        return locCacheNodeId;
     }
 
     /**
