@@ -83,6 +83,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Affinity tests.
         suite.addTestSuite(GridFairAffinityFunctionNodesSelfTest.class);
+        suite.addTestSuite(IgniteFairAffinityDynamicCacheSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 
