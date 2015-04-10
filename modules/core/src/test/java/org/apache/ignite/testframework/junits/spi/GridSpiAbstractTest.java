@@ -219,9 +219,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                     return new HashMap<>();
                 }
 
-                @Override public void onExchange(UUID joiningNodeId,
-                    UUID nodeId,
-                    Map<Integer, Object> data) {
+                @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
                 }
             });
 
