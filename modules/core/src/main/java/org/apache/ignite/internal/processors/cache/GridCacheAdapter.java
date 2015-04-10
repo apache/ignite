@@ -944,10 +944,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        return map.keySet(
-            F0.and0(
-                (CacheEntryPredicate[]) null,
-                CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
+        return primaryKeySet((CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
@@ -4596,6 +4593,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
         return map.keySet(filter);
+    }
+
+    /**
+     * @param filter Primary key set.
+     * @return Primary key set.
+     */
+    public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
+        return map.keySet(
+            F0.and0(
+                filter,
+                CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
     }
 
     /**

@@ -377,6 +377,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
+        return new GridCacheKeySet<>(ctx, primaryEntrySet(filter), null);
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<V> values(CacheEntryPredicate... filter) {
         return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cacheHasPeekValue()));
     }
