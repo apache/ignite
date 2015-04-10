@@ -290,7 +290,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private ConcurrentLinkedDeque<String> debugLog;
 
     /** Class loaders for event data unmarshalling. */
-    private ConcurrentMap<UUID, DiscoveryDeploymentClassLoader> p2pLdrs = new ConcurrentHashMap<>();
+    private transient ConcurrentMap<UUID, DiscoveryDeploymentClassLoader> p2pLdrs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @IgniteInstanceResource
