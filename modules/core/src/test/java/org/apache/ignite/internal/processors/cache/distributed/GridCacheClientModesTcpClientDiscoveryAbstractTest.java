@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * Tests TcpClientDiscovery SPI in client modes.
@@ -34,11 +37,23 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (cfg.isClientMode() != null && cfg.isClientMode()) {
+            TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
+            ArrayList<String> addresses = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
+
+            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses()) {
+                addresses.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
+            }
+
+            clientFinder.setAddresses(addresses);
+
             TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
-            discoverySpi.setIpFinder(ipFinder);
+            discoverySpi.setIpFinder(clientFinder);
+
 
             cfg.setDiscoverySpi(discoverySpi);
         }
+
+        cfg.setLocalHost("127.0.0.1");
 
         return cfg;
     }

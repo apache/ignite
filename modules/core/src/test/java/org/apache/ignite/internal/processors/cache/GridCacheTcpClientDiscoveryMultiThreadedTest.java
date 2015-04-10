@@ -12,11 +12,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-
-import java.util.Arrays;
-import java.util.concurrent.Callable;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -29,7 +30,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     private final static int SERVER_NODES_COUNT = 3;
 
     /** Client nodes count. */
-    private final static int CLIENT_NODES_COUNT = 3;
+    private final static int CLIENT_NODES_COUNT = 4;
 
     /** Array to hold info on whether a client node has a near cache or not */
     private static boolean[] nearCacheNode;
@@ -71,12 +72,23 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
         // Filling configuration for client nodes
         if (nodesCount > SERVER_NODES_COUNT) {
-            TcpClientDiscoverySpi disco = new TcpClientDiscoverySpi();
-            disco.setIpFinder(ipFinder);
+            TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
+            ArrayList<String> addresses = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
 
+            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses()) {
+                addresses.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
+            }
+
+            clientFinder.setAddresses(addresses);
+
+            TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
+            discoverySpi.setIpFinder(clientFinder);
+
+            cfg.setDiscoverySpi(discoverySpi);
             cfg.setClientMode(true);
-            //cfg.setDiscoverySpi(disco);
         }
+
+        cfg.setLocalHost("127.0.0.1");
 
         return cfg;
     }
@@ -134,7 +146,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
                                 assertEquals(i, (int) cache.localPeek(i, CachePeekMode.ONHEAP));
                         }
 
-                        //stopGrid(clientIdx);
+                        stopGrid(clientIdx);
 
                         return null;
                     }
