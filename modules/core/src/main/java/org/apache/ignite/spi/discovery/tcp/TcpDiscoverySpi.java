@@ -2328,19 +2328,23 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private Map<Integer, byte[]> collectExchangeData(UUID nodeId) throws IgniteSpiException {
         Map<Integer, Serializable> data = exchange.collect(nodeId);
 
-        Map<Integer, byte[]> data0 = U.newHashMap(data.size());
+        Map<Integer, byte[]> data0 = null;
 
-        for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
-            try {
-                byte[] bytes = marsh.marshal(entry.getValue());
+        if (data != null) {
+            data0 = U.newHashMap(data.size());
 
-                data0.put(entry.getKey(), bytes);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to marshal discovery data " +
-                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+            for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
+                try {
+                    byte[] bytes = marsh.marshal(entry.getValue());
 
-                throw new IgniteSpiException("Failed to marshal discovery data.", e);
+                    data0.put(entry.getKey(), bytes);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to marshal discovery data " +
+                        "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+
+                    throw new IgniteSpiException("Failed to marshal discovery data.", e);
+                }
             }
         }
 
