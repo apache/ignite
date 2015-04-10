@@ -870,7 +870,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                     IgniteTxEntry txEntry = tx.entry(e.txKey());
 
                                     // NOOP entries will be sent to backups on prepare step.
-                                    txEntry.op(GridCacheOperation.NOOP);
+                                    if (txEntry.op() == GridCacheOperation.READ)
+                                        txEntry.op(GridCacheOperation.NOOP);
                                 }
                             }
 
