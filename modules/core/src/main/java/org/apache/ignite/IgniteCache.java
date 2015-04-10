@@ -22,6 +22,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
@@ -87,6 +88,15 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public Entry<K, V> randomEntry();
 
+    /**
+     * Returns cache with the specified expired policy set. This policy will be used for each operation
+     * invoked on the returned cache.
+     * <p>
+     * This method does not modify existing cache instance.
+     *
+     * @param plc Expire policy to use.
+     * @return Cache instance with the specified expiry policy set.
+     */
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
@@ -514,6 +524,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
+
+    /**
+     * Gets snapshot metrics for caches in cluster group.
+     *
+     * @param grp Cluster group.
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics(ClusterGroup grp);
 
     /**
      * Gets MxBean for this cache.

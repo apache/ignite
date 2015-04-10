@@ -31,7 +31,7 @@ public class GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest extends GridCac
         return REPLICATED;
     }
 
-    // TODO: remove when GG-7437 is fixed.
+    // TODO: remove when IGNITE-601 is fixed.
     /** {@inheritDoc} */
     @Override protected boolean lockingEnabled() {
         return false;

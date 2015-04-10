@@ -110,7 +110,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         this.delegate = delegate;
     }
 
-
     /** {@inheritDoc} */
     @Override public String name() {
         return cctx.name();
@@ -353,9 +352,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         long misses0 = misses.get();
         long reads0 = reads.get();
 
-        if (misses0 == 0) {
+        if (misses0 == 0)
             return 0;
-        }
 
         return (float) misses0 / reads0 * 100.0f;
     }
@@ -468,9 +466,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         txCommits.incrementAndGet();
         commitTimeNanos.addAndGet(duration);
 
-        if (delegate != null) {
+        if (delegate != null)
             delegate.onTxCommit(duration);
-        }
     }
 
     /**

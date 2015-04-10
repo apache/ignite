@@ -187,7 +187,7 @@ public class ClassesGenerator {
 
             if (Serializable.class.isAssignableFrom(cls) && !AbstractQueuedSynchronizer.class.isAssignableFrom(cls)) {
                 if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
-                    !cls.getSimpleName().isEmpty() && cls.getName().startsWith("org.apache.ignite")) {
+                    !cls.getSimpleName().isEmpty()) {
                     try {
                         Field field = cls.getDeclaredField("serialVersionUID");
 

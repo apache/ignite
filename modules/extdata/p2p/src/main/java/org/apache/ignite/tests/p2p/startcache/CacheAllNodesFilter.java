@@ -15,34 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.security;
+package org.apache.ignite.tests.p2p.startcache;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Supported security subject types. Subject type can be retrieved form {@link GridSecuritySubject#type()} method.
+ *
  */
-public enum GridSecuritySubjectType {
-    /**
-     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
-     */
-    REMOTE_NODE,
-
-    /**
-     * Subject type for remote client.
-     */
-    REMOTE_CLIENT;
-
-    /** Enumerated values. */
-    private static final GridSecuritySubjectType[] VALS = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
-     */
-    @Nullable public static GridSecuritySubjectType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+public class CacheAllNodesFilter implements IgnitePredicate<ClusterNode> {
+    /** {@inheritDoc} */
+    @Override public boolean apply(ClusterNode clusterNode) {
+        return true;
     }
 }

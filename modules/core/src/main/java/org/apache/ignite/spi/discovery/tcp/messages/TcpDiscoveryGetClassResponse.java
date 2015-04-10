@@ -26,6 +26,9 @@ import java.util.*;
  */
 public class TcpDiscoveryGetClassResponse extends TcpDiscoveryAbstractMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private String errMsg;
 
     /** */
