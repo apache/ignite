@@ -51,6 +51,9 @@ public abstract class GridMergeIndex extends BaseIndex {
      */
     private ArrayList<Row> fetched = new ArrayList<>();
 
+    /** */
+    private int fetchedCnt;
+
     /**
      * @param tbl Table.
      * @param name Index name.
@@ -164,7 +167,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @return {@code true} If we have fetched all the remote rows.
      */
     public boolean fetchedAll() {
-        return fetched.size() == rowsCnt.get();
+        return fetchedCnt == rowsCnt.get();
     }
 
     /**
@@ -307,6 +310,8 @@ public abstract class GridMergeIndex extends BaseIndex {
                     else
                         fetched.add(cur);
                 }
+
+                fetchedCnt++;
 
                 return true;
             }
