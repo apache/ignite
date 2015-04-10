@@ -539,23 +539,23 @@
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
-                                <phase>deploy</phase>
+                                <phase>install</phase>
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
                                         <mkdir dir="${basedir}/target/site" />
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" />
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc"/>
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false"/>
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" />
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false"/>
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1"/>
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false"/>
                                         <copy file="${basedir}/target/ignite-fabric-${project.version}-incubating.zip"
-                                              toDir="${basedir}/target/site"/>
+                                              toDir="${basedir}/target/site" failonerror="false"/>
                                         <copy file="${basedir}/target/ignite-hadoop-${project.version}-incubating.zip"
-                                              toDir="${basedir}/target/site"/>
+                                              toDir="${basedir}/target/site" failonerror="false"/>
                                         <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
                                     </target>
                                 </configuration>
