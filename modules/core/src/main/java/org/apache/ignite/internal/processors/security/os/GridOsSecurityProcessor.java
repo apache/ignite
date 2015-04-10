@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -65,8 +66,8 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, GridSecurityPermission perm, @Nullable SecurityContext securityCtx)
-        throws GridSecurityException {
+    @Override public void authorize(String name, SecurityPermission perm, @Nullable SecurityContext securityCtx)
+        throws SecurityException {
         // No-op.
     }
 

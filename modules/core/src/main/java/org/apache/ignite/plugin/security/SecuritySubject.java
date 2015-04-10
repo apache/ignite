@@ -22,7 +22,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Security subject representing authenticated node or client with a set of permissions.
+ * Security subject representing authenticated node with a set of permissions.
  */
 public interface SecuritySubject extends Serializable {
     /**
@@ -33,7 +33,7 @@ public interface SecuritySubject extends Serializable {
     public UUID id();
 
     /**
-     * Gets subject type, either node or client.
+     * Gets subject type for node.
      *
      * @return Subject type.
      */

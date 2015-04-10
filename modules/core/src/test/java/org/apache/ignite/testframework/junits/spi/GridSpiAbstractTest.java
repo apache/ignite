@@ -39,7 +39,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -699,17 +698,17 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+        @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+        @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
+        @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
             return null;
         }
     }

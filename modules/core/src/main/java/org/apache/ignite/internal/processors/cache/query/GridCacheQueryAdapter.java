@@ -395,7 +395,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<ClusterNode> nodes = nodes();
 
-        cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty())
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());

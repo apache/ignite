@@ -26,10 +26,10 @@ import java.io.*;
 
 /**
  * Security credentials used for node authentication. Security credentials
- * are provided by {@link GridSecurityCredentialsProvider} which is specified on
- * client or node startup in configuration.
+ * are provided by {@link SecurityCredentialsProvider} which is specified on
+ * node startup in configuration.
  * <p>
- * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
+ * Getting credentials through {@link SecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
  * environment, possibly in encrypted format. Ignite comes with
  * {@link SecurityCredentialsBasicProvider} which simply provides

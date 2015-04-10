@@ -104,7 +104,7 @@ public class GridClientConfiguration {
     private Map<String, GridClientDataConfiguration> dataCfgs = Collections.emptyMap();
 
     /** Credentials. */
-    private GridSecurityCredentialsProvider credProvider;
+    private SecurityCredentialsProvider credProvider;
 
     /** Executor. */
     private ExecutorService executor;
@@ -347,7 +347,7 @@ public class GridClientConfiguration {
      *
      * @return Credentials provider.
      */
-    public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
+    public SecurityCredentialsProvider getSecurityCredentialsProvider() {
         return credProvider;
     }
 
@@ -356,7 +356,7 @@ public class GridClientConfiguration {
      *
      * @param credProvider Client credentials provider.
      */
-    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credProvider) {
+    public void setSecurityCredentialsProvider(SecurityCredentialsProvider credProvider) {
         this.credProvider = credProvider;
     }
 

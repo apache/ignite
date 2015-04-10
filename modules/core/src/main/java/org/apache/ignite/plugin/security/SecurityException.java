@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * Common security exception for the grid.
  */
-public class GridSecurityException extends IgniteException {
+public class SecurityException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,10 @@ public class GridSecurityException extends IgniteException {
      * @param msg Exception message.
      * @param cause Exception cause.
      */
-    public GridSecurityException(String msg, @Nullable Throwable cause) {
+    public SecurityException(
+        String msg,
+        @Nullable Throwable cause
+    ) {
         super(msg, cause);
     }
 
@@ -43,7 +46,7 @@ public class GridSecurityException extends IgniteException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridSecurityException(Throwable cause) {
+    public SecurityException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -52,7 +55,7 @@ public class GridSecurityException extends IgniteException {
      *
      * @param msg Exception message.
      */
-    public GridSecurityException(String msg) {
+    public SecurityException(String msg) {
         super(msg);
     }
 }

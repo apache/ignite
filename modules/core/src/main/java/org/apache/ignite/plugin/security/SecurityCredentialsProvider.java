@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 
 /**
  * Security credentials provider for specifying security credentials.
- * Security credentials used for client or node authentication.
+ * Security credentials used for node authentication.
  * <p>
- * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
+ * Getting credentials through {@link SecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
  * environment, possibly in encrypted format. Ignite comes with
  * {@link SecurityCredentialsBasicProvider} which simply provides
@@ -33,7 +33,7 @@ import org.apache.ignite.*;
  * specifying {@link SecurityCredentials#setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
-public interface GridSecurityCredentialsProvider {
+public interface SecurityCredentialsProvider {
     /**
      * Gets security credentials.
      *

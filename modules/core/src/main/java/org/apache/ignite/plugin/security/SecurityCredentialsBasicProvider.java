@@ -20,11 +20,11 @@ package org.apache.ignite.plugin.security;
 import org.apache.ignite.*;
 
 /**
- * Basic implementation for {@link GridSecurityCredentialsProvider}. Use it
+ * Basic implementation for {@link SecurityCredentialsProvider}. Use it
  * when custom logic for storing security credentials is not required and it
  * is OK to specify credentials directly in configuration.
  */
-public class SecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
+public class SecurityCredentialsBasicProvider implements SecurityCredentialsProvider {
     /** */
     private SecurityCredentials cred;
 

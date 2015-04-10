@@ -47,7 +47,7 @@ public interface SecurityPermissionSet extends Serializable {
      *
      * @return Map of task names to task permissions.
      */
-    public Map<String, Collection<GridSecurityPermission>> taskPermissions();
+    public Map<String, Collection<SecurityPermission>> taskPermissions();
 
     /**
      * Map of cache names to cache permissions. Wildcards are allowed at the
@@ -55,12 +55,12 @@ public interface SecurityPermissionSet extends Serializable {
      *
      * @return Map of cache names to cache permissions.
      */
-    public Map<String, Collection<GridSecurityPermission>> cachePermissions();
+    public Map<String, Collection<SecurityPermission>> cachePermissions();
 
     /**
      * Collection of system-wide permissions (events enable/disable, Visor task execution).
      *
      * @return Collection of system-wide permissions.
      */
-    @Nullable public Collection<GridSecurityPermission> systemPermissions();
+    @Nullable public Collection<SecurityPermission> systemPermissions();
 }
