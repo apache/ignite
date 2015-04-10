@@ -71,9 +71,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      */
     public TcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
         super(creatorNodeId);
-
-        metrics = U.newHashMap(1);
-        clientNodeIds = new HashSet<>();
     }
 
     /**
