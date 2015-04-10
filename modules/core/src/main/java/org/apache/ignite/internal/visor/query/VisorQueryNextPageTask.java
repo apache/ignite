@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -58,61 +59,73 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
 
         /** {@inheritDoc} */
         @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) {
-            try {
-                return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
+            return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
         }
 
-        /** Collect data from SQL query */
-        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
+        /**
+         * Collect data from SQL query.
+         *
+         * @param arg Query name and page size.
+         * @return Query result with next page.
+         */
+        private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage =
-                ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryCursor<List<?>>> storage = ignite.cluster().nodeLocalMap();
 
-            VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
+            String qryId = arg.get1();
 
-            if (t == null)
+            VisorQueryCursor<List<?>> cur = storage.get(qryId);
+
+            if (cur == null)
                 throw new IgniteException("SQL query results are expired.");
 
-            IgniteBiTuple<List<Object[]>, List<?>> nextRows = VisorQueryUtils.fetchSqlQueryRows(t.future(), t.next(), arg.get2());
+            List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.get2());
 
-            boolean hasMore = nextRows.get2() != null;
+            boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                storage.put(arg.get1(), new VisorQueryTask.VisorFutureResultSetHolder<>(t.future(), nextRows.get2(), true));
-            else
-                storage.remove(arg.get1());
+                cur.accessed(true);
+            else {
+                storage.remove(qryId);
 
-            return new VisorQueryResult(nextRows.get1(), hasMore, U.currentTimeMillis() - start);
+                cur.close();
+            }
+
+            return new VisorQueryResult(nextRows, hasMore, U.currentTimeMillis() - start);
         }
 
-        /** Collect data from SCAN query */
-        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
+        /**
+         * Collect data from SCAN query
+         *
+         * @param arg Query name and page size.
+         * @return Next page with data.
+         */
+        private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage =
-                ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryCursor<Cache.Entry<Object, Object>>> storage = ignite.cluster().nodeLocalMap();
 
-            VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
+            String qryId = arg.get1();
 
-            if (t == null)
+            VisorQueryCursor<Cache.Entry<Object, Object>> cur = storage.get(qryId);
+
+            if (cur == null)
                 throw new IgniteException("Scan query results are expired.");
 
-            IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> rows =
-                VisorQueryUtils.fetchScanQueryRows(t.future(), t.next(), arg.get2());
+            List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.get2());
 
-            Boolean hasMore = rows.get2() != null;
+            boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                storage.put(arg.get1(), new VisorQueryTask.VisorFutureResultSetHolder<>(t.future(), rows.get2(), true));
-            else
-                storage.remove(arg.get1());
+                cur.accessed(true);
+            else {
+                storage.remove(qryId);
 
-            return new VisorQueryResult(rows.get1(), hasMore, U.currentTimeMillis() - start);
+                cur.close();
+            }
+
+            return new VisorQueryResult(rows, hasMore, U.currentTimeMillis() - start);
         }
 
         /** {@inheritDoc} */

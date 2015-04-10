@@ -34,7 +34,7 @@ public interface GridQueryFieldMetadata extends Externalizable {
     /**
      * Gets name of type to which this field belongs.
      *
-     * @return Gets type name.
+     * @return Type name.
      */
     public String typeName();
 
