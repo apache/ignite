@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 /**
  * Fail fast test.
  */
-public class GridFailFastSelfTest extends GridCommonAbstractTest {
+public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
