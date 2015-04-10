@@ -160,7 +160,7 @@ class VisorCacheScanCommand {
                     .withName("visor-cscan-task")
                     .withNoFailover()
                     .execute(classOf[VisorQueryTask],
-                        toTaskArgument(nid, new VisorQueryArg(cacheName, "SCAN", pageSize)))
+                        toTaskArgument(nid, new VisorQueryArg(null, cacheName, "SCAN", pageSize)))
                     match {
                     case x if x.get1() != null =>
                         error(x.get1())
