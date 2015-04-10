@@ -18,27 +18,44 @@
 package org.apache.ignite.plugin.security;
 
 import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Basic implementation for {@link GridSecurityCredentialsProvider}. Use it
- * when custom logic for storing security credentials is not required and it
- * is OK to specify credentials directly in configuration.
+ * Common security exception for the grid.
  */
-public class GridSecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
+public class SecurityException extends IgniteException {
     /** */
-    private GridSecurityCredentials cred;
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Constructs security credentials provider based on security credentials passed in.
+     * Constructs security grid exception with given message and cause.
      *
-     * @param cred Security credentials.
+     * @param msg Exception message.
+     * @param cause Exception cause.
      */
-    public GridSecurityCredentialsBasicProvider(GridSecurityCredentials cred) {
-        this.cred = cred;
+    public SecurityException(
+        String msg,
+        @Nullable Throwable cause
+    ) {
+        super(msg, cause);
     }
 
-    /** {@inheritDoc} */
-    @Override public GridSecurityCredentials credentials() throws IgniteCheckedException {
-        return cred;
+    /**
+     * Creates new security grid exception given throwable as a cause and
+     * source of error message.
+     *
+     * @param cause Non-null throwable cause.
+     */
+    public SecurityException(Throwable cause) {
+        this(cause.getMessage(), cause);
+    }
+
+    /**
+     * Constructs security grid exception with given message.
+     *
+     * @param msg Exception message.
+     */
+    public SecurityException(String msg) {
+        super(msg);
     }
 }

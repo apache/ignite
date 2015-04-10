@@ -15,16 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Grid task related message.
+ * Supported security subject types. Subject type can be retrieved form {@link SecuritySubject#type()} method.
  */
-public interface GridTaskMessage {
+public enum SecuritySubjectType {
     /**
-     * @return Session ID.
+     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
      */
-    public IgniteUuid getSessionId();
+    REMOTE_NODE,
+
+    /**
+     * Subject type for remote client.
+     */
+    REMOTE_CLIENT;
+
+    /** Enumerated values. */
+    private static final SecuritySubjectType[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value.
+     */
+    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

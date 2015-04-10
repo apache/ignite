@@ -83,7 +83,7 @@ public class GridTcpRouterConfiguration {
     private IgniteLogger log;
 
     /** Credentials. */
-    private GridSecurityCredentialsProvider credsProvider;
+    private SecurityCredentialsProvider credsProvider;
 
     /**
      * Gets TCP host or IP address for router to bind to.
@@ -197,7 +197,7 @@ public class GridTcpRouterConfiguration {
      *
      * @return Credentials.
      */
-    @Nullable public GridSecurityCredentialsProvider getSecurityCredentialsProvider() {
+    @Nullable public SecurityCredentialsProvider getSecurityCredentialsProvider() {
         return credsProvider;
     }
 
@@ -295,7 +295,7 @@ public class GridTcpRouterConfiguration {
      *
      * @param credsProvider Credentials provider.
      */
-    public void setSecurityCredentialsProvider(GridSecurityCredentialsProvider credsProvider) {
+    public void setSecurityCredentialsProvider(SecurityCredentialsProvider credsProvider) {
         this.credsProvider = credsProvider;
     }
 

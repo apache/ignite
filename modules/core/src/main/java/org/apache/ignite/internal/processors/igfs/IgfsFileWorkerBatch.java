@@ -19,29 +19,27 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
 
 /**
  * Work batch is an abstraction of the logically grouped tasks.
  */
-public class IgfsFileWorkerBatch {
-    /** Completion latch. */
-    private final CountDownLatch completeLatch = new CountDownLatch(1);
+public abstract class IgfsFileWorkerBatch implements Runnable {
+    /** Stop marker. */
+    private static final byte[] STOP_MARKER = new byte[0];
 
-    /** Finish guard. */
-    private final AtomicBoolean finishGuard = new AtomicBoolean();
-
-    /** Lock for finish operation. */
-    private final ReadWriteLock finishLock = new ReentrantReadWriteLock();
+    /** Cancel marker. */
+    private static final byte[] CANCEL_MARKER = new byte[0];
 
     /** Tasks queue. */
-    private final BlockingDeque<IgfsFileWorkerTask> queue = new LinkedBlockingDeque<>();
+    private final BlockingDeque<byte[]> queue = new LinkedBlockingDeque<>();
+
+    /** Future which completes when batch processing is finished. */
+    private final GridFutureAdapter fut = new GridFutureAdapter();
 
     /** Path to the file in the primary file system. */
     private final IgfsPath path;
@@ -49,11 +47,8 @@ public class IgfsFileWorkerBatch {
     /** Output stream to the file. */
     private final OutputStream out;
 
-    /** Caught exception. */
-    private volatile IgniteCheckedException err;
-
-    /** Last task marker. */
-    private boolean lastTask;
+    /** Finishing flag. */
+    private volatile boolean finishing;
 
     /**
      * Constructor.
@@ -70,88 +65,106 @@ public class IgfsFileWorkerBatch {
     }
 
     /**
-     * Perform write.
+     * Perform write if batch is not finishing yet.
      *
      * @param data Data to be written.
-     * @return {@code True} in case operation was enqueued.
+     * @return {@code True} in case write was enqueued.
      */
-    boolean write(final byte[] data) {
-        return addTask(new IgfsFileWorkerTask() {
-            @Override public void execute() throws IgniteCheckedException {
-                try {
-                    out.write(data);
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException("Failed to write data to the file due to secondary file system " +
-                        "exception: " + path, e);
-                }
-            }
-        });
-    }
+    synchronized boolean write(final byte[] data) {
+        if (!finishing) {
+            queue.add(data);
 
-    /**
-     * Process the batch.
-     */
-    void process() {
-        try {
-            boolean cancelled = false;
-
-            while (!cancelled) {
-                try {
-                    IgfsFileWorkerTask task = queue.poll(1000, TimeUnit.MILLISECONDS);
-
-                    if (task == null)
-                        continue;
-
-                    task.execute();
-
-                    if (lastTask)
-                        cancelled = true;
-                }
-                catch (IgniteCheckedException e) {
-                    err = e;
-
-                    cancelled = true;
-                }
-                catch (InterruptedException ignore) {
-                    Thread.currentThread().interrupt();
-
-                    cancelled = true;
-                }
-            }
+            return true;
         }
-        finally {
-            try {
-                onComplete();
-            }
-            finally {
-                U.closeQuiet(out);
-
-                completeLatch.countDown();
-            }
-        }
+        else
+            return false;
     }
 
     /**
      * Add the last task to that batch which will release all the resources.
      */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    void finish() {
-        if (finishGuard.compareAndSet(false, true)) {
-            finishLock.writeLock().lock();
+    synchronized void finish() {
+        if (!finishing) {
+            finishing = true;
 
-            try {
-                queue.add(new IgfsFileWorkerTask() {
-                    @Override public void execute() {
+            queue.add(STOP_MARKER);
+        }
+    }
+
+    /**
+     * Cancel batch processing.
+     */
+    synchronized void cancel() {
+        queue.addFirst(CANCEL_MARKER);
+    }
+
+    /**
+     * @return {@code True} if finish was called on this batch.
+     */
+    boolean finishing() {
+        return finishing;
+    }
+
+    /**
+     * Process the batch.
+     */
+    @SuppressWarnings("unchecked")
+    public void run() {
+        Throwable err = null;
+
+        try {
+            while (true) {
+                try {
+                    byte[] data = queue.poll(1000, TimeUnit.MILLISECONDS);
+
+                    if (data == STOP_MARKER) {
                         assert queue.isEmpty();
 
-                        lastTask = true;
+                        break;
                     }
-                });
+                    else if (data == CANCEL_MARKER)
+                        throw new IgniteCheckedException("Write to file was cancelled due to node stop.");
+                    else if (data != null) {
+                        try {
+                            out.write(data);
+                        }
+                        catch (IOException e) {
+                            throw new IgniteCheckedException("Failed to write data to the file due to secondary " +
+                                "file system exception: " + path, e);
+                        }
+                    }
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    err = e;
+
+                    break;
+                }
+                catch (Exception e) {
+                    err = e;
+
+                    break;
+                }
             }
-            finally {
-                finishLock.writeLock().unlock();
-            }
+        }
+        catch (Throwable e) {
+            // Safety. This should never happen under normal conditions.
+            err = e;
+        }
+        finally {
+            // Order of events is very important here. First, we close the stream so that metadata locks are released.
+            // This action must be the very first because otherwise a writer thread could interfere with itself.
+            U.closeQuiet(out);
+
+            // Next, we invoke callback so that IgfsImpl is able to enqueue new requests. This is safe because
+            // at this point file processing is completed.
+            onDone();
+
+            // Finally, we complete the future, so that waiting threads could resume.
+            assert !fut.isDone();
+
+            fut.onDone(null, err);
         }
     }
 
@@ -161,29 +174,7 @@ public class IgfsFileWorkerBatch {
      * @throws IgniteCheckedException In case any exception has occurred during batch tasks processing.
      */
     void await() throws IgniteCheckedException {
-        try {
-            completeLatch.await();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
-
-        IgniteCheckedException err0 = err;
-
-        if (err0 != null)
-            throw err0;
-    }
-
-    /**
-     * Await for that worker batch to complete in case it was marked as finished.
-     *
-     * @throws IgniteCheckedException In case any exception has occurred during batch tasks processing.
-     */
-    void awaitIfFinished() throws IgniteCheckedException {
-        if (finishGuard.get())
-            await();
+        fut.get();
     }
 
     /**
@@ -196,41 +187,7 @@ public class IgfsFileWorkerBatch {
     }
 
     /**
-     * Callback invoked when all the tasks within the batch are completed.
+     * Callback invoked when execution finishes.
      */
-    protected void onComplete() {
-        // No-op.
-    }
-
-    /**
-     * Add task to the queue.
-     *
-     * @param task Task to add.
-     * @return {@code True} in case the task was added to the queue.
-     */
-    private boolean addTask(IgfsFileWorkerTask task) {
-        finishLock.readLock().lock();
-
-        try {
-            if (!finishGuard.get()) {
-                try {
-                    queue.put(task);
-
-                    return true;
-                }
-                catch (InterruptedException ignore) {
-                    // Task was not enqueued due to interruption.
-                    Thread.currentThread().interrupt();
-
-                    return false;
-                }
-            }
-            else
-                return false;
-
-        }
-        finally {
-            finishLock.readLock().unlock();
-        }
-    }
+    protected abstract void onDone();
 }

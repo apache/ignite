@@ -23,6 +23,8 @@ package org.apache.ignite.java8.examples;
  * MemcacheRestExample multi-node self test.
  */
 public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesSelfTest {
+    // TODO: IGNITE-711 next example(s) should be implemented for java 8 
+    // or testing method(s) should be removed if example(s) does not applicable for java 8.
     /** {@inheritDoc} */
 //    @Override protected void beforeTest() throws Exception {
 //        for (int i = 0; i < RMT_NODES_CNT; i++)

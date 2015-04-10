@@ -624,7 +624,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -685,7 +685,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -1073,7 +1073,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void clearLocally() {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally();
 
@@ -1741,7 +1741,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals
     ) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
        if (keyCheck)
             validateCacheKeys(keys);
@@ -4466,7 +4466,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public void clearLocally0(Collection<? extends K> keys,
         @Nullable CacheEntryPredicate... filter) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         if (F.isEmpty(keys))
             return;
@@ -4491,7 +4491,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         return clearLocally(ctx.versions().next(), key, filter);
     }

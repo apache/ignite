@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
@@ -329,7 +331,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (ctx.security().enabled()) {
             spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                @Override public SecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
+                @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
                     try {
                         return ctx.security().authenticateNode(node, cred);
                     }
@@ -643,6 +645,27 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nm.setOutboundMessagesQueueSize(io.getOutboundMessagesQueueSize());
 
                 return nm;
+            }
+
+            /** {@inheritDoc} */
+            @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+                Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
+
+                if (F.isEmpty(caches))
+                    return Collections.emptyMap();
+
+                Map<Integer, CacheMetrics> metrics = null;
+
+                for (GridCacheAdapter<?, ?> cache : caches) {
+                    if (cache.configuration().isStatisticsEnabled()) {
+                        if (metrics == null)
+                            metrics = U.newHashMap(caches.size());
+
+                        metrics.put(cache.context().cacheId(), cache.metrics());
+                    }
+                }
+
+                return metrics == null ? Collections.<Integer, CacheMetrics>emptyMap() : metrics;
             }
         };
     }

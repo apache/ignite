@@ -457,10 +457,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     }
 
     /**
+     * TODO: IGNITE-583.
+     *
      * @throws Exception If failed.
      */
-    // TODO: GG-4807 Uncomment when fix
-    public void _testIterator() throws Exception {
+    public void testIterator() throws Exception {
         final String queueName = UUID.randomUUID().toString();
 
         info("Queue name: " + queueName);
