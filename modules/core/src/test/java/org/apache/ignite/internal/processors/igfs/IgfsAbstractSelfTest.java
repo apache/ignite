@@ -1526,7 +1526,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         os.write(chunk);
 
-        igfs.stop();
+        igfs.stop(true);
 
         // Reset test state.
         afterTestsStopped();
@@ -2593,12 +2593,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<IgfsPath, IgfsFileWorker> workerMap = (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
+        Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
 
-        for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
+        for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
-
-            U.join(entry.getValue());
+            entry.getValue().await();
         }
 
         // Clear igfs.
@@ -2621,12 +2620,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             workerMapFld.setAccessible(true);
 
             // Wait for all workers to finish.
-            Map<IgfsPath, IgfsFileWorker> workerMap = (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfsEx);
+            Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
 
-            for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
+            for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
                 entry.getValue().cancel();
-
-                U.join(entry.getValue());
+                entry.getValue().await();
             }
         }
 
