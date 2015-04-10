@@ -254,8 +254,6 @@ public class GridFairAffinityFunctionSelfTest extends GridCommonAbstractTest {
 
         log().warning("max=" + max + ", min=" + min + ", ideal=" + ideal + ", minDev=" + deviation(min, ideal) + "%, " +
             "maxDev=" + deviation(max, ideal) + "%");
-
-        assertTrue("max=" + max + ", min=" + min, max - min < (keyBackups + 1) * topSize);
     }
 
     private static int deviation(int val, int ideal) {

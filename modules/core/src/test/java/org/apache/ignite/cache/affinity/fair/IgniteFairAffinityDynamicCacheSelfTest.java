@@ -70,27 +70,30 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testStartStopCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+        for (int k = 0; k < 10; k++) {
+            CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
 
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setBackups(1);
-        cacheCfg.setName("test");
-        cacheCfg.setAffinity(new FairAffinityFunction());
+            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+            cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+            cacheCfg.setBackups(1);
+            cacheCfg.setName("test");
+            cacheCfg.setAffinity(new FairAffinityFunction());
 
-        final IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg);
+            final IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg);
 
-        for (int i = 0; i < 10_000; i++)
-            cache.put(i, i);
+            for (int i = 0; i < 10_000; i++)
+                cache.put(i, i);
 
-        IgniteInternalFuture<Object> destFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ignite(0).destroyCache(cache.getName());
+            IgniteInternalFuture<Object> destFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    ignite(0).destroyCache(cache.getName());
 
-                return null;
-            }
-        });
+                    return null;
+                }
+            });
 
-        destFut.get(2000L);
+            destFut.get(2000L);
+        }
     }
 }
