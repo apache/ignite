@@ -60,7 +60,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private static final long serialVersionUID = 0L;
 
     /** Per-transaction read map. */
-    @GridToStringExclude
+    @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
@@ -2646,14 +2646,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 if (fut.isDone()) {
                     try {
-                        return plc1.apply(fut.get(), null);
+                        return nonInterruptable(plc1.apply(fut.get(), null));
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
-                            return plc1.apply(false, e);
+                            return nonInterruptable(plc1.apply(false, e));
                         }
                         catch (Exception e1) {
                             return new GridFinishedFuture<>(e1);
@@ -2661,10 +2661,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     }
                 }
                 else
-                    return new GridEmbeddedFuture<>(
+                    return nonInterruptable(new GridEmbeddedFuture<>(
                         fut,
                         plc1
-                    );
+                    ));
             }
             else {
                 if (implicit()) {
@@ -2679,22 +2679,24 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         return new GridFinishedFuture<>(e);
                     }
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
-                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
+                    return nonInterruptable(commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
+                        @Override
+                        public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;
                         }
-                    });
+                    }));
                 }
                 else
-                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
-                        @Override public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f) throws IgniteCheckedException {
+                    return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
+                        @Override
+                        public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f) throws IgniteCheckedException {
                             f.get();
 
                             return ret;
                         }
-                    });
+                    }));
             }
         }
         catch (RuntimeException e) {
@@ -2866,14 +2868,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 if (fut.isDone()) {
                     try {
-                        return plc1.apply(fut.get(), null);
+                        return nonInterruptable(plc1.apply(fut.get(), null));
                     }
                     catch (GridClosureException e) {
                         return new GridFinishedFuture<>(e.unwrap());
                     }
                     catch (IgniteCheckedException e) {
                         try {
-                            return plc1.apply(false, e);
+                            return nonInterruptable(plc1.apply(false, e));
                         }
                         catch (Exception e1) {
                             return new GridFinishedFuture<>(e1);
@@ -2881,10 +2883,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     }
                 }
                 else
-                    return new GridEmbeddedFuture<>(
+                    return nonInterruptable(new GridEmbeddedFuture<>(
                         fut,
                         plc1
-                    );
+                    ));
             }
             else {
                 if (implicit()) {
@@ -2892,26 +2894,26 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     // with prepare response, if required.
                     assert loadFut.isDone();
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
-                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
-                            throws IgniteCheckedException
-                        {
+                    return nonInterruptable(commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
+                        @Override
+                        public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
+                            throws IgniteCheckedException {
                             txFut.get();
 
                             return (GridCacheReturn)implicitRes;
                         }
-                    });
+                    }));
                 }
                 else
-                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
-                        @Override public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f)
-                            throws IgniteCheckedException
-                        {
+                    return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
+                        @Override
+                        public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f)
+                            throws IgniteCheckedException {
                             f.get();
 
                             return ret;
                         }
-                    });
+                    }));
             }
         }
         catch (IgniteCheckedException e) {
@@ -2919,6 +2921,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             return new GridFinishedFuture<>(e);
         }
+    }
+
+    /**
+     * @param fut Future.
+     * @return Future ignoring interrupts on {@code get()}.
+     */
+    private <T> IgniteInternalFuture<T> nonInterruptable(IgniteInternalFuture<T> fut) {
+        // Safety.
+        if (fut instanceof GridFutureAdapter)
+            ((GridFutureAdapter)fut).ignoreInterrupts(true);
+
+        return fut;
     }
 
     /**
@@ -3264,7 +3278,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (explicitCand != null) {
                 GridCacheVersion explicitVer = explicitCand.version();
 
-                if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx()) {
+                boolean locCand = false;
+
+                if (explicitCand.nearLocal() || explicitCand.local())
+                    locCand = cctx.localNodeId().equals(explicitCand.nodeId());
+                else if (explicitCand.dhtLocal())
+                    locCand = cctx.localNodeId().equals(explicitCand.otherNodeId());
+
+                if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
                     txEntry.explicitVersion(explicitVer);
 
                     if (explicitVer.isLess(minVer))
@@ -3538,7 +3559,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 if (!locked)
                     throw new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
-                        "within provided timeout for transaction [timeout=" + timeout() + ", tx=" + this + ']'));
+                        "within provided timeout for transaction [timeout=" + timeout() +
+                        ", tx=" + IgniteTxLocalAdapter.this + ']'));
 
                 IgniteInternalFuture<T> fut = postLock();
 
