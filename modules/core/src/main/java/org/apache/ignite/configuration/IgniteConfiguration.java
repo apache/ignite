@@ -1564,25 +1564,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets configuration (descriptors) for all near caches.
-     *
-     * @return Client cache configurations.
-     */
-    public NearCacheConfiguration[] getNearCacheConfiguration() {
-        return nearCacheCfg;
-    }
-
-    /**
-     * Sets configuration for all near caches.
-     *
-     * @param nearCacheCfg Near cache configurations.
-     */
-    @SuppressWarnings({"ZeroLengthArrayAllocation"})
-    public void setNearCacheConfiguration(NearCacheConfiguration... nearCacheCfg) {
-        this.nearCacheCfg = nearCacheCfg == null ? new NearCacheConfiguration[0] : nearCacheCfg;
-    }
-
-    /**
      * Gets client mode flag.
      *
      * @return Client mode flag.
