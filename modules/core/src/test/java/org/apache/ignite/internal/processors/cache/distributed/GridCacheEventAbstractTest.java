@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -195,12 +193,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /**
      * @throws Exception If test failed.
+     *
+     * Note: test was disabled for REPPLICATED cache case because IGNITE-607.
+     * This comment should be removed if test passed stably.
      */
     public void testGetPutRemove() throws Exception {
-        // TODO: GG-7578.
-        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
-            return;
-
         runTest(
             new TestCacheRunnable() {
                 @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
@@ -294,12 +291,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /**
      * @throws Exception If test failed.
+     *
+     * Note: test was disabled for REPPLICATED cache case because IGNITE-607.
+     * This comment should be removed if test passed stably.
      */
     public void testGetPutRemoveAsync() throws Exception {
-        // TODO: GG-7578.
-        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
-            return;
-
         runTest(new TestCacheRunnable() {
             @Override public void run(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 IgniteCache<String, Integer> asyncCache = cache.withAsync();

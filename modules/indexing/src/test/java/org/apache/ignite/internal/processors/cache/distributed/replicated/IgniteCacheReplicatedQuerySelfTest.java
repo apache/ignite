@@ -299,11 +299,9 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /**
-     * TODO
-     *
      * @throws Exception If failed.
      */
-    public void _testLostIterator() throws Exception {
+    public void testLostIterator() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 1000; i++)
@@ -338,11 +336,14 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
     }
 
     /**
-     * TODO enable
+     * TODO: IGNITE-613.
      *
      * @throws Exception If failed.
      */
-    public void _testNodeLeft() throws Exception {
+    public void testNodeLeft() throws Exception {
+        // Test works long and fails after. Should be enabled after fix.
+        fail("https://issues.apache.org/jira/browse/IGNITE-613");
+        
         try {
             Ignite g = startGrid();
 
