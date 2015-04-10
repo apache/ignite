@@ -287,7 +287,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
                     sum++;
 
-            assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize());
+            assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(CachePeekMode.ALL));
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -312,7 +312,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         int globalSize = globalPrimarySize * times;
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalSize, jcache(i).size());
+            assertEquals(globalSize, jcache(i).size(CachePeekMode.ALL));
     }
 
     /**
@@ -3731,7 +3731,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected void checkSize(Collection<String> keys) throws Exception {
         if (nearEnabled())
-            assertEquals(keys.size(), jcache().localSize());
+            assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
                 GridCacheContext<String, Integer> ctx = context(i);
@@ -3753,7 +3753,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
                 }
 
-                assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize());
+                assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(CachePeekMode.ALL));
             }
         }
     }
@@ -3764,7 +3764,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected void checkKeySize(Collection<String> keys) throws Exception {
         if (nearEnabled())
-            assertEquals("Invalid key size: " + jcache().localSize(), keys.size(), jcache().localSize());
+            assertEquals("Invalid key size: " + jcache().localSize(CachePeekMode.ALL),
+                keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
                 GridCacheContext<String, Integer> ctx = context(i);
@@ -3775,7 +3776,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                         size++;
 
-                assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize());
+                assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize(CachePeekMode.ALL));
             }
         }
     }
