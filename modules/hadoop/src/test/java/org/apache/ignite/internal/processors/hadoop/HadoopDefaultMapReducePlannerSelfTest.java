@@ -675,7 +675,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() {
+        @Override public void stop(boolean cancel) {
             // No-op.
         }
 
