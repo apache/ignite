@@ -760,10 +760,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
     }
 
     /**
+     * TODO: IGNITE-585.
+     *
      * @throws Exception If failed.
      */
-    // TODO: GG-6730
-    public void _testNodeJoinWithP2P() throws Exception {
+    public void testNodeJoinWithP2P() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-585");
+        
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT + 1);

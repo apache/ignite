@@ -15,18 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.plugin.security;
 
 import org.apache.ignite.*;
 
 /**
- * Generic IGFS worker task which could potentially throw an exception.
+ * Basic implementation for {@link SecurityCredentialsProvider}. Use it
+ * when custom logic for storing security credentials is not required and it
+ * is OK to specify credentials directly in configuration.
  */
-public interface IgfsFileWorkerTask {
+public class SecurityCredentialsBasicProvider implements SecurityCredentialsProvider {
+    /** */
+    private SecurityCredentials cred;
+
     /**
-     * Execute task logic.
+     * Constructs security credentials provider based on security credentials passed in.
      *
-     * @throws IgniteCheckedException If failed.
+     * @param cred Security credentials.
      */
-    public void execute() throws IgniteCheckedException;
+    public SecurityCredentialsBasicProvider(SecurityCredentials cred) {
+        this.cred = cred;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityCredentials credentials() throws IgniteCheckedException {
+        return cred;
+    }
 }

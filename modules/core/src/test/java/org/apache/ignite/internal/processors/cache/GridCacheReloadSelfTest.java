@@ -121,8 +121,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
-    //TODO: Active when ticket GG-3926 will be ready.
-    public void _testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
+    public void testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
         cacheMode = PARTITIONED;
 
         doTest();

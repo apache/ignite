@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits.spi;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -38,7 +39,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -99,15 +99,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @return Allow all permission security set.
      */
-    private static GridSecurityPermissionSet getAllPermissionSet() {
-        return new GridSecurityPermissionSetImpl();
-    }
-
-    /**
-     * @return Grid allow all security subject.
-     */
-    protected GridSecuritySubject getGridSecuritySubject(final GridSecuritySubjectType type, final UUID id) {
-        return new GridSecuritySubjectImpl(id, type);
+    private static SecurityPermissionSet getAllPermissionSet() {
+        return new SecurityPermissionSetImpl();
     }
 
     /**
@@ -348,6 +341,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         return new DiscoveryMetricsProvider() {
             /** {@inheritDoc} */
             @Override public ClusterMetrics metrics() { return new ClusterMetricsSnapshot(); }
+
+            /** {@inheritDoc} */
+            @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+                return Collections.emptyMap();
+            }
         };
     }
 
@@ -690,7 +688,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
     }
 
-    private static class GridSecurityPermissionSetImpl implements GridSecurityPermissionSet {
+    private static class SecurityPermissionSetImpl implements SecurityPermissionSet {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -700,64 +698,18 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> taskPermissions() {
+        @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Override public Map<String, Collection<GridSecurityPermission>> cachePermissions() {
+        @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
+        @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
             return null;
-        }
-    }
-
-    private static class GridSecuritySubjectImpl implements GridSecuritySubject {
-        /** Node Id. */
-        private UUID id;
-
-        /** Grid security type. */
-        private GridSecuritySubjectType type;
-
-        private GridSecurityPermissionSet permission;
-
-        public GridSecuritySubjectImpl() {
-        }
-
-        public GridSecuritySubjectImpl(UUID id, GridSecuritySubjectType type) {
-            this.id = id;
-
-            this.type = type;
-
-            permission = getAllPermissionSet();
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridSecuritySubjectType type() {
-            return type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object login() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public InetSocketAddress address() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridSecurityPermissionSet permissions() {
-            return permission;
         }
     }
 }

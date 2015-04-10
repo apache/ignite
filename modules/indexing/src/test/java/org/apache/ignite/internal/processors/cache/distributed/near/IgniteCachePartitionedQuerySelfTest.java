@@ -27,6 +27,7 @@ import javax.cache.Cache;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 
 /**
  * Tests for partitioned cache queries.
@@ -60,7 +61,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.localSize());
+        assertEquals(4, cache0.localSize(ALL));
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
@@ -99,7 +100,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.localSize());
+        assertEquals(4, cache0.localSize(ALL));
 
         assert grid(0).cluster().nodes().size() == gridCount();
 

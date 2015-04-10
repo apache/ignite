@@ -22,9 +22,9 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Security subject representing authenticated node or client with a set of permissions.
+ * Security subject representing authenticated node with a set of permissions.
  */
-public interface GridSecuritySubject extends Serializable {
+public interface SecuritySubject extends Serializable {
     /**
      * Gets subject ID.
      *
@@ -33,11 +33,11 @@ public interface GridSecuritySubject extends Serializable {
     public UUID id();
 
     /**
-     * Gets subject type, either node or client.
+     * Gets subject type for node.
      *
      * @return Subject type.
      */
-    public GridSecuritySubjectType type();
+    public SecuritySubjectType type();
 
     /**
      * Login provided via subject security credentials.
@@ -58,5 +58,5 @@ public interface GridSecuritySubject extends Serializable {
      *
      * @return Authorized permission set for the subject.
      */
-    public GridSecurityPermissionSet permissions();
+    public SecurityPermissionSet permissions();
 }

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.plugin.segmentation;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 /**
  * Policy that defines how node will react on topology segmentation. Note that default
- * segmentation policy is defined by {@link org.apache.ignite.configuration.IgniteConfiguration#DFLT_SEG_PLC} property.
- * @see GridSegmentationResolver
+ * segmentation policy is defined by {@link IgniteConfiguration#DFLT_SEG_PLC} property.
+ * @see SegmentationResolver
  */
-public enum GridSegmentationPolicy {
+public enum SegmentationPolicy {
     /**
      * When segmentation policy is {@code RESTART_JVM}, all listeners will receive
      * {@link org.apache.ignite.events.EventType#EVT_NODE_SEGMENTED} event and then JVM will be restarted.
