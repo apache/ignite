@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits.spi;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -348,6 +349,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         return new DiscoveryMetricsProvider() {
             /** {@inheritDoc} */
             @Override public ClusterMetrics metrics() { return new ClusterMetricsSnapshot(); }
+
+            /** {@inheritDoc} */
+            @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+                return Collections.emptyMap();
+            }
         };
     }
 

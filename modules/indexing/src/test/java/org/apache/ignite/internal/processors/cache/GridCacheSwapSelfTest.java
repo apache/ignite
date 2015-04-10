@@ -238,10 +238,11 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO: IGNITE-599.
+     *
      * @throws Exception If failed.
      */
-    // TODO: enable when GG-7341 is fixed.
-    public void _testSwapEviction() throws Exception {
+    public void testSwapEviction() throws Exception {
         try {
             final CountDownLatch evicted = new CountDownLatch(10);
 

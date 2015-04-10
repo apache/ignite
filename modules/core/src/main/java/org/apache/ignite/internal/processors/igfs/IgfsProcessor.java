@@ -178,7 +178,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 mgr.stop(cancel);
             }
 
-            igfsCtx.igfs().stop();
+            igfsCtx.igfs().stop(cancel);
         }
 
         igfsCache.clear();

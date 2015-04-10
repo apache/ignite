@@ -60,7 +60,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private String gridName;
 
     /** Subject ID. */
-    private UUID subjId;
+    protected UUID subjId;
 
     /** Cluster group predicate. */
     protected IgnitePredicate<ClusterNode> p;
@@ -320,12 +320,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final IgnitePredicate<ClusterNode> predicate() {
+    @Override public IgnitePredicate<ClusterNode> predicate() {
         return p != null ? p : F.<ClusterNode>alwaysTrue();
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
+    @Override public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
         A.notNull(p, "p");
 
         guard();
@@ -657,7 +657,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             IgniteKernal g = IgnitionEx.gridx(gridName);
 
             return ids != null ? new ClusterGroupAdapter(g.context(), subjId, ids) :
-                p != null ? new ClusterGroupAdapter(g.context(), subjId, p) : g;
+                new ClusterGroupAdapter(g.context(), subjId, p);
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -788,11 +788,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** Oldest flag. */
         private boolean isOldest;
 
-        /** Selected node. */
-        private volatile ClusterNode node;
-
-        /** Last topology version. */
-        private volatile long lastTopVer;
+        /** State. */
+        private volatile AgeClusterGroupState state;
 
         /**
          * Required for {@link Externalizable}.
@@ -806,7 +803,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
          * @param isOldest Oldest flag.
          */
         private AgeClusterGroup(ClusterGroupAdapter parent, boolean isOldest) {
-            super(parent.ctx, parent.subjId, (IgnitePredicate<ClusterNode>) null);
+            super(parent.ctx, parent.subjId, parent.p, parent.ids);
 
             this.isOldest = isOldest;
 
@@ -820,10 +817,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             guard();
 
             try {
-                lastTopVer = ctx.discovery().topologyVersion();
+                long lastTopVer = ctx.discovery().topologyVersion();
 
-                this.node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
-                this.p = F.nodeForNodes(node);
+                ClusterNode node = isOldest ? U.oldest(super.nodes(), null) : U.youngest(super.nodes(), null);
+
+                IgnitePredicate<ClusterNode> p = F.nodeForNodes(node);
+
+                state = new AgeClusterGroupState(node, p, lastTopVer);
             }
             finally {
                 unguard();
@@ -832,20 +832,136 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         /** {@inheritDoc} */
         @Override public ClusterNode node() {
-            if (ctx.discovery().topologyVersion() != lastTopVer)
+            if (ctx.discovery().topologyVersion() != state.lastTopVer)
                 reset();
 
-            return node;
+            return state.node;
         }
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> nodes() {
-            if (ctx.discovery().topologyVersion() != lastTopVer)
+            if (ctx.discovery().topologyVersion() != state.lastTopVer)
                 reset();
 
-            ClusterNode node = this.node;
+            ClusterNode node = state.node;
 
             return node == null ? Collections.<ClusterNode>emptyList() : Collections.singletonList(node);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePredicate<ClusterNode> predicate() {
+            if (ctx.discovery().topologyVersion() != state.lastTopVer)
+                reset();
+
+            return state.p;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClusterGroup forPredicate(IgnitePredicate<ClusterNode> p) {
+            A.notNull(p, "p");
+
+            guard();
+
+            try {
+                if (p != null)
+                    ctx.resource().injectGeneric(p);
+
+                return new ClusterGroupAdapter(ctx, this.subjId, new GroupPredicate(this, p));
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                unguard();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            out.writeBoolean(isOldest);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            isOldest = in.readBoolean();
+        }
+
+        /**
+         * Reconstructs object on unmarshalling.
+         *
+         * @return Reconstructed object.
+         * @throws ObjectStreamException Thrown in case of unmarshalling error.
+         */
+        protected Object readResolve() throws ObjectStreamException {
+            ClusterGroupAdapter parent = (ClusterGroupAdapter)super.readResolve();
+
+            return new AgeClusterGroup(parent, isOldest);
+        }
+    }
+
+    /**
+     * Container for age-based cluster group state.
+     */
+    private static class AgeClusterGroupState {
+        /** Selected node. */
+        private final ClusterNode node;
+
+        /** Node predicate. */
+        private final IgnitePredicate<ClusterNode> p;
+
+        /** Last topology version. */
+        private final long lastTopVer;
+
+        /**
+         * @param node Node.
+         * @param p Predicate.
+         * @param lastTopVer Last topology version.
+         */
+        public AgeClusterGroupState(ClusterNode node, IgnitePredicate<ClusterNode> p, long lastTopVer) {
+            this.node = node;
+            this.p = p;
+            this.lastTopVer = lastTopVer;
+        }
+    }
+
+    /**
+     * Dynamic cluster group based predicate.
+     */
+    private static class GroupPredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Target cluster group. */
+        private final ClusterGroup grp;
+
+        /** Predicate. */
+        private final IgnitePredicate<ClusterNode> p;
+
+        /**
+         * @param grp Cluster group.
+         * @param p Predicate.
+         */
+        public GroupPredicate(ClusterGroup grp, IgnitePredicate<ClusterNode> p) {
+            this.grp = grp;
+            this.p = p;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            A.notNull(node, "node is null");
+
+            return grp.predicate().apply(node) && p.apply(node);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getName() +
+                " [grp='" + grp.getClass().getName() +
+                "', p='" + p.getClass().getName() + "']";
         }
     }
 }
