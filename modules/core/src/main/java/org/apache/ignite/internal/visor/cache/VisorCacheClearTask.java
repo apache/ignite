@@ -71,6 +71,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
             this.cacheName = cacheName;
 
             lsnr = new IgniteInClosure<IgniteFuture<Integer>>() {
+                /** */
+                private static final long serialVersionUID = 0L;
+
                 @Override public void apply(IgniteFuture<Integer> f) {
                     assert futs[0].isDone();
                     assert futs[1] == null || futs[1].isDone();
