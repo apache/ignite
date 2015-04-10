@@ -2268,7 +2268,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             return null;
 
         if (node.id().equals(getLocalNodeId()) || node.isClient())
-            return U.gridClassLoader();
+            return null;
 
         DiscoveryDeploymentClassLoader ldr = p2pLdrs.get(node.id());
 
@@ -2291,7 +2291,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             return null;
 
         if (nodeId.equals(getLocalNodeId()))
-            return U.gridClassLoader();
+            return null;
 
         TcpDiscoveryNode node;
 
@@ -2305,12 +2305,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     log.debug("Node provided exchange data left, will use local class loader " +
                         "for exchange data [nodeId=" + nodeId + ']');
 
-                return U.gridClassLoader();
+                return null;
             }
         }
 
         if (node.isClient()) // Do not support loading from client nodes.
-            return U.gridClassLoader();
+            return null;
 
         DiscoveryDeploymentClassLoader ldr = p2pLdrs.get(nodeId);
 
