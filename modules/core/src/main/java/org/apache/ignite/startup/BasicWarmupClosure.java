@@ -244,8 +244,11 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
         ExecutorService svc = Executors.newFixedThreadPool(threadCnt);
 
         try {
-            for (CacheConfiguration cc : first.configuration().getCacheConfiguration()) {
-                GridCache<Object, Object> cache0 = ((IgniteKernal)first).getCache(cc.getName());
+            for (IgniteCacheProxy cache : ((IgniteKernal)first).caches()) {
+                if (!cache.context().userCache())
+                    continue;
+
+                GridCache<Object, Object> cache0 = cache.context().cache();
 
                 for (String warmupMethod : warmupMethods) {
                     Collection<Future> futs = new ArrayList<>(threadCnt);
@@ -303,7 +306,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
                         futs.add(svc.submit(call));
                     }
 
-                    out("Running warmup [cacheName=" + U.maskName(cc.getName()) + ", method=" + warmupMethod + ']');
+                    out("Running warmup [cacheName=" + U.maskName(cache.getName()) + ", method=" + warmupMethod + ']');
 
                     for (Future fut : futs)
                         fut.get();
