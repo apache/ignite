@@ -560,7 +560,7 @@
         </profile>
 
         <profile>
-            <id>deploy-site</id>
+            <id>deploy-ignite-site</id>
             <build>
                 <plugins>
                     <plugin>
