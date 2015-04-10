@@ -29,14 +29,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Serializable msg;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryCustomEventMessage() {
-        // No-op.
-    }
+    private final Serializable msg;
 
     /**
      * @param creatorNodeId Creator node id.
@@ -52,19 +45,5 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
      */
     public Serializable message() {
         return msg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        msg = (Serializable)in.readObject();
     }
 }

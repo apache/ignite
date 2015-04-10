@@ -30,27 +30,18 @@ import java.util.*;
  */
 public class GridPluginContext implements PluginContext {
     /** */
-    private final PluginConfiguration cfg;
-
-    /** */
     private final GridKernalContext ctx;
 
     /** */
-    private IgniteConfiguration igniteCfg;
+    private final IgniteConfiguration igniteCfg;
 
     /**
      * @param ctx Kernal context.
-     * @param cfg Plugin configuration.
+     * @param igniteCfg Ignite configuration.
      */
-    public GridPluginContext(GridKernalContext ctx, PluginConfiguration cfg, IgniteConfiguration igniteCfg) {
-        this.cfg = cfg;
+    public GridPluginContext(GridKernalContext ctx, IgniteConfiguration igniteCfg) {
         this.ctx = ctx;
         this.igniteCfg = igniteCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <C extends PluginConfiguration> C configuration() {
-        return (C)cfg;
     }
 
     /** {@inheritDoc} */

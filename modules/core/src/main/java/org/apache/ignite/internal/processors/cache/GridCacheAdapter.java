@@ -309,7 +309,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @return Context.
      */
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
@@ -626,7 +626,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, false);
 
         Collection<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
 
@@ -687,7 +687,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, false);
 
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
@@ -3452,39 +3452,48 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
-        if (ctx.store().isLocal()) {
-            DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
+        if (p != null)
+            ctx.kernalContext().resource().injectGeneric(p);
 
-            try {
-                ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
+        try {
+            if (ctx.store().isLocal()) {
+                DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
-                LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
+                try {
+                    ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
 
-                ctx.store().loadCache(c, args);
+                    LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
-                c.onDone();
+                    ctx.store().loadCache(c, args);
+
+                    c.onDone();
+                }
+                finally {
+                    ldr.closeEx(false);
+                }
             }
-            finally {
-                ldr.closeEx(false);
+            else {
+                // Version for all loaded entries.
+                final GridCacheVersion ver0 = ctx.versions().nextForLoad();
+
+                ctx.store().loadCache(new CIX3<KeyCacheObject, Object, GridCacheVersion>() {
+                    @Override public void applyx(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver)
+                        throws IgniteException {
+                        assert ver == null;
+
+                        long ttl = CU.ttlForLoad(plc);
+
+                        if (ttl == CU.TTL_ZERO)
+                            return;
+
+                        loadEntry(key, val, ver0, (IgniteBiPredicate<Object, Object>) p, topVer, replicate, ttl);
+                    }
+                }, args);
             }
         }
-        else {
-            // Version for all loaded entries.
-            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
-
-            ctx.store().loadCache(new CIX3<KeyCacheObject, Object, GridCacheVersion>() {
-                @Override public void applyx(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver)
-                    throws IgniteException {
-                    assert ver == null;
-
-                    long ttl = CU.ttlForLoad(plc);
-
-                    if (ttl == CU.TTL_ZERO)
-                        return;
-
-                    loadEntry(key, val, ver0, (IgniteBiPredicate<Object, Object>)p, topVer, replicate, ttl);
-                }
-            }, args);
+        finally {
+            if (p instanceof GridLoadCacheCloseablePredicate)
+                ((GridLoadCacheCloseablePredicate)p).onClose();
         }
     }
 
@@ -3728,7 +3737,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
         assert peekModes != null;
 
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, true);
 
         IgniteClusterEx cluster = ctx.grid().cluster();
 
@@ -3760,7 +3769,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, true);
 
         int size = 0;
 
@@ -4911,15 +4920,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /**
      * @param peekModes Cache peek modes array.
+     * @param primary Defines the default behavior if affinity flags are not specified.
      * @return Peek modes flags.
      */
-    private static PeekModes parsePeekModes(CachePeekMode[] peekModes) {
+    private static PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
         PeekModes modes = new PeekModes();
 
         if (F.isEmpty(peekModes)) {
-            modes.near = true;
             modes.primary = true;
-            modes.backup = true;
+
+            if (!primary) {
+                modes.backup = true;
+                modes.near = true;
+            }
 
             modes.heap = true;
             modes.offheap = true;
@@ -4985,8 +4998,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         if (!(modes.primary || modes.backup || modes.near)) {
             modes.primary = true;
-            modes.backup = true;
-            modes.near = true;
+
+            if (!primary) {
+                modes.backup = true;
+                modes.near = true;
+            }
         }
 
         assert modes.heap || modes.offheap || modes.swap;

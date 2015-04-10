@@ -40,5 +40,5 @@ For more information (e.g. exclude list) see "check-licenses" profile in "parent
 
 Useful Release Commands
 ========================
-ZIP: zip -r9 apache-ignite-X.X.X-src apache-ignite-X.X.X-src.zip
-PGP: gpg --armor --output apache-ignite-X.X.X-src.zip.asc --detach-sig apache-ignite-X.X.X-src.zip
+ZIP: zip -r9 apache-ignite-X.X.X-src.zip apache-ignite-X.X.X-src
+GPG: gpg --armor --output apache-ignite-X.X.X-src.zip.asc --detach-sig apache-ignite-X.X.X-src.zip

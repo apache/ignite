@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.nio.*;
 import java.util.*;
 
 import static java.lang.Math.*;
@@ -1252,65 +1253,65 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      * @return New offset.
      */
     public static int serialize(byte[] data, int off, ClusterMetrics metrics) {
-        int start = off;
+        ByteBuffer buf = ByteBuffer.wrap(data, off, METRICS_SIZE);
 
-        off = U.intToBytes(metrics.getMaximumActiveJobs(), data, off);
-        off = U.intToBytes(metrics.getCurrentActiveJobs(), data, off);
-        off = U.floatToBytes(metrics.getAverageActiveJobs(), data, off);
-        off = U.intToBytes(metrics.getMaximumWaitingJobs(), data, off);
-        off = U.intToBytes(metrics.getCurrentWaitingJobs(), data, off);
-        off = U.floatToBytes(metrics.getAverageWaitingJobs(), data, off);
-        off = U.intToBytes(metrics.getMaximumRejectedJobs(), data, off);
-        off = U.intToBytes(metrics.getCurrentRejectedJobs(), data, off);
-        off = U.floatToBytes(metrics.getAverageRejectedJobs(), data, off);
-        off = U.intToBytes(metrics.getMaximumCancelledJobs(), data, off);
-        off = U.intToBytes(metrics.getCurrentCancelledJobs(), data, off);
-        off = U.floatToBytes(metrics.getAverageCancelledJobs(), data, off);
-        off = U.intToBytes(metrics.getTotalRejectedJobs(), data, off);
-        off = U.intToBytes(metrics.getTotalCancelledJobs(), data, off);
-        off = U.intToBytes(metrics.getTotalExecutedJobs(), data, off);
-        off = U.longToBytes(metrics.getMaximumJobWaitTime(), data, off);
-        off = U.longToBytes(metrics.getCurrentJobWaitTime(), data, off);
-        off = U.doubleToBytes(metrics.getAverageJobWaitTime(), data, off);
-        off = U.longToBytes(metrics.getMaximumJobExecuteTime(), data, off);
-        off = U.longToBytes(metrics.getCurrentJobExecuteTime(), data, off);
-        off = U.doubleToBytes(metrics.getAverageJobExecuteTime(), data, off);
-        off = U.intToBytes(metrics.getTotalExecutedTasks(), data, off);
-        off = U.longToBytes(metrics.getCurrentIdleTime(), data, off);
-        off = U.longToBytes(metrics.getTotalIdleTime(), data, off);
-        off = U.intToBytes(metrics.getTotalCpus(), data, off);
-        off = U.doubleToBytes(metrics.getCurrentCpuLoad(), data, off);
-        off = U.doubleToBytes(metrics.getAverageCpuLoad(), data, off);
-        off = U.doubleToBytes(metrics.getCurrentGcCpuLoad(), data, off);
-        off = U.longToBytes(metrics.getHeapMemoryInitialized(), data, off);
-        off = U.longToBytes(metrics.getHeapMemoryUsed(), data, off);
-        off = U.longToBytes(metrics.getHeapMemoryCommitted(), data, off);
-        off = U.longToBytes(metrics.getHeapMemoryMaximum(), data, off);
-        off = U.longToBytes(metrics.getHeapMemoryTotal(), data, off);
-        off = U.longToBytes(metrics.getNonHeapMemoryInitialized(), data, off);
-        off = U.longToBytes(metrics.getNonHeapMemoryUsed(), data, off);
-        off = U.longToBytes(metrics.getNonHeapMemoryCommitted(), data, off);
-        off = U.longToBytes(metrics.getNonHeapMemoryMaximum(), data, off);
-        off = U.longToBytes(metrics.getNonHeapMemoryTotal(), data, off);
-        off = U.longToBytes(metrics.getStartTime(), data, off);
-        off = U.longToBytes(metrics.getNodeStartTime(), data, off);
-        off = U.longToBytes(metrics.getUpTime(), data, off);
-        off = U.intToBytes(metrics.getCurrentThreadCount(), data, off);
-        off = U.intToBytes(metrics.getMaximumThreadCount(), data, off);
-        off = U.longToBytes(metrics.getTotalStartedThreadCount(), data, off);
-        off = U.intToBytes(metrics.getCurrentDaemonThreadCount(), data, off);
-        off = U.longToBytes(metrics.getLastDataVersion(), data, off);
-        off = U.intToBytes(metrics.getSentMessagesCount(), data, off);
-        off = U.longToBytes(metrics.getSentBytesCount(), data, off);
-        off = U.intToBytes(metrics.getReceivedMessagesCount(), data, off);
-        off = U.longToBytes(metrics.getReceivedBytesCount(), data, off);
-        off = U.intToBytes(metrics.getOutboundMessagesQueueSize(), data, off);
-        off = U.intToBytes(metrics.getTotalNodes(), data, off);
+        buf.putInt(metrics.getMaximumActiveJobs());
+        buf.putInt(metrics.getCurrentActiveJobs());
+        buf.putFloat(metrics.getAverageActiveJobs());
+        buf.putInt(metrics.getMaximumWaitingJobs());
+        buf.putInt(metrics.getCurrentWaitingJobs());
+        buf.putFloat(metrics.getAverageWaitingJobs());
+        buf.putInt(metrics.getMaximumRejectedJobs());
+        buf.putInt(metrics.getCurrentRejectedJobs());
+        buf.putFloat(metrics.getAverageRejectedJobs());
+        buf.putInt(metrics.getMaximumCancelledJobs());
+        buf.putInt(metrics.getCurrentCancelledJobs());
+        buf.putFloat(metrics.getAverageCancelledJobs());
+        buf.putInt(metrics.getTotalRejectedJobs());
+        buf.putInt(metrics.getTotalCancelledJobs());
+        buf.putInt(metrics.getTotalExecutedJobs());
+        buf.putLong(metrics.getMaximumJobWaitTime());
+        buf.putLong(metrics.getCurrentJobWaitTime());
+        buf.putDouble(metrics.getAverageJobWaitTime());
+        buf.putLong(metrics.getMaximumJobExecuteTime());
+        buf.putLong(metrics.getCurrentJobExecuteTime());
+        buf.putDouble(metrics.getAverageJobExecuteTime());
+        buf.putInt(metrics.getTotalExecutedTasks());
+        buf.putLong(metrics.getCurrentIdleTime());
+        buf.putLong(metrics.getTotalIdleTime());
+        buf.putInt(metrics.getTotalCpus());
+        buf.putDouble(metrics.getCurrentCpuLoad());
+        buf.putDouble(metrics.getAverageCpuLoad());
+        buf.putDouble(metrics.getCurrentGcCpuLoad());
+        buf.putLong(metrics.getHeapMemoryInitialized());
+        buf.putLong(metrics.getHeapMemoryUsed());
+        buf.putLong(metrics.getHeapMemoryCommitted());
+        buf.putLong(metrics.getHeapMemoryMaximum());
+        buf.putLong(metrics.getHeapMemoryTotal());
+        buf.putLong(metrics.getNonHeapMemoryInitialized());
+        buf.putLong(metrics.getNonHeapMemoryUsed());
+        buf.putLong(metrics.getNonHeapMemoryCommitted());
+        buf.putLong(metrics.getNonHeapMemoryMaximum());
+        buf.putLong(metrics.getNonHeapMemoryTotal());
+        buf.putLong(metrics.getStartTime());
+        buf.putLong(metrics.getNodeStartTime());
+        buf.putLong(metrics.getUpTime());
+        buf.putInt(metrics.getCurrentThreadCount());
+        buf.putInt(metrics.getMaximumThreadCount());
+        buf.putLong(metrics.getTotalStartedThreadCount());
+        buf.putInt(metrics.getCurrentDaemonThreadCount());
+        buf.putLong(metrics.getLastDataVersion());
+        buf.putInt(metrics.getSentMessagesCount());
+        buf.putLong(metrics.getSentBytesCount());
+        buf.putInt(metrics.getReceivedMessagesCount());
+        buf.putLong(metrics.getReceivedBytesCount());
+        buf.putInt(metrics.getOutboundMessagesQueueSize());
+        buf.putInt(metrics.getTotalNodes());
 
-        assert off - start == METRICS_SIZE : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual=" +
-                (off - start) + ']';
+        assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
+            + (buf.position() - off) + ']';
 
-        return off;
+        return buf.position();
     }
 
     /**
@@ -1321,222 +1322,67 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      * @return Deserialized node metrics.
      */
     public static ClusterMetrics deserialize(byte[] data, int off) {
-        int start = off;
-
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+
+        ByteBuffer buf = ByteBuffer.wrap(data, off, METRICS_SIZE);
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 
-        metrics.setMaximumActiveJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setCurrentActiveJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setAverageActiveJobs(U.bytesToFloat(data, off));
-
-        off += 4;
-
-        metrics.setMaximumWaitingJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setCurrentWaitingJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setAverageWaitingJobs(U.bytesToFloat(data, off));
-
-        off += 4;
-
-        metrics.setMaximumRejectedJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setCurrentRejectedJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setAverageRejectedJobs(U.bytesToFloat(data, off));
-
-        off += 4;
-
-        metrics.setMaximumCancelledJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setCurrentCancelledJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setAverageCancelledJobs(U.bytesToFloat(data, off));
-
-        off += 4;
-
-        metrics.setTotalRejectedJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setTotalCancelledJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setTotalExecutedJobs(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setMaximumJobWaitTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setCurrentJobWaitTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setAverageJobWaitTime(U.bytesToDouble(data, off));
-
-        off += 8;
-
-        metrics.setMaximumJobExecuteTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setCurrentJobExecuteTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setAverageJobExecuteTime(U.bytesToDouble(data, off));
-
-        off += 8;
-
-        metrics.setTotalExecutedTasks(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setCurrentIdleTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setTotalIdleTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setAvailableProcessors(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setCurrentCpuLoad(U.bytesToDouble(data, off));
-
-        off += 8;
-
-        metrics.setAverageCpuLoad(U.bytesToDouble(data, off));
-
-        off += 8;
-
-        metrics.setCurrentGcCpuLoad(U.bytesToDouble(data, off));
-
-        off += 8;
-
-        metrics.setHeapMemoryInitialized(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setHeapMemoryUsed(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setHeapMemoryCommitted(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setHeapMemoryMaximum(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setHeapMemoryTotal(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setNonHeapMemoryInitialized(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setNonHeapMemoryUsed(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setNonHeapMemoryCommitted(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setNonHeapMemoryMaximum(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setNonHeapMemoryTotal(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setStartTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setNodeStartTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setUpTime(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setCurrentThreadCount(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setMaximumThreadCount(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setTotalStartedThreadCount(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setCurrentDaemonThreadCount(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setLastDataVersion(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setSentMessagesCount(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setSentBytesCount(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setReceivedMessagesCount(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setReceivedBytesCount(U.bytesToLong(data, off));
-
-        off += 8;
-
-        metrics.setOutboundMessagesQueueSize(U.bytesToInt(data, off));
-
-        off += 4;
-
-        metrics.setTotalNodes(U.bytesToInt(data, off));
-
-        off += 4;
-
-        assert off - start == METRICS_SIZE : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual=" +
-                (off - start) + ']';
+        metrics.setMaximumActiveJobs(buf.getInt());
+        metrics.setCurrentActiveJobs(buf.getInt());
+        metrics.setAverageActiveJobs(buf.getFloat());
+        metrics.setMaximumWaitingJobs(buf.getInt());
+        metrics.setCurrentWaitingJobs(buf.getInt());
+        metrics.setAverageWaitingJobs(buf.getFloat());
+        metrics.setMaximumRejectedJobs(buf.getInt());
+        metrics.setCurrentRejectedJobs(buf.getInt());
+        metrics.setAverageRejectedJobs(buf.getFloat());
+        metrics.setMaximumCancelledJobs(buf.getInt());
+        metrics.setCurrentCancelledJobs(buf.getInt());
+        metrics.setAverageCancelledJobs(buf.getFloat());
+        metrics.setTotalRejectedJobs(buf.getInt());
+        metrics.setTotalCancelledJobs(buf.getInt());
+        metrics.setTotalExecutedJobs(buf.getInt());
+        metrics.setMaximumJobWaitTime(buf.getLong());
+        metrics.setCurrentJobWaitTime(buf.getLong());
+        metrics.setAverageJobWaitTime(buf.getDouble());
+        metrics.setMaximumJobExecuteTime(buf.getLong());
+        metrics.setCurrentJobExecuteTime(buf.getLong());
+        metrics.setAverageJobExecuteTime(buf.getDouble());
+        metrics.setTotalExecutedTasks(buf.getInt());
+        metrics.setCurrentIdleTime(buf.getLong());
+        metrics.setTotalIdleTime(buf.getLong());
+        metrics.setAvailableProcessors(buf.getInt());
+        metrics.setCurrentCpuLoad(buf.getDouble());
+        metrics.setAverageCpuLoad(buf.getDouble());
+        metrics.setCurrentGcCpuLoad(buf.getDouble());
+        metrics.setHeapMemoryInitialized(buf.getLong());
+        metrics.setHeapMemoryUsed(buf.getLong());
+        metrics.setHeapMemoryCommitted(buf.getLong());
+        metrics.setHeapMemoryMaximum(buf.getLong());
+        metrics.setHeapMemoryTotal(buf.getLong());
+        metrics.setNonHeapMemoryInitialized(buf.getLong());
+        metrics.setNonHeapMemoryUsed(buf.getLong());
+        metrics.setNonHeapMemoryCommitted(buf.getLong());
+        metrics.setNonHeapMemoryMaximum(buf.getLong());
+        metrics.setNonHeapMemoryTotal(buf.getLong());
+        metrics.setStartTime(buf.getLong());
+        metrics.setNodeStartTime(buf.getLong());
+        metrics.setUpTime(buf.getLong());
+        metrics.setCurrentThreadCount(buf.getInt());
+        metrics.setMaximumThreadCount(buf.getInt());
+        metrics.setTotalStartedThreadCount(buf.getLong());
+        metrics.setCurrentDaemonThreadCount(buf.getInt());
+        metrics.setLastDataVersion(buf.getLong());
+        metrics.setSentMessagesCount(buf.getInt());
+        metrics.setSentBytesCount(buf.getLong());
+        metrics.setReceivedMessagesCount(buf.getInt());
+        metrics.setReceivedBytesCount(buf.getLong());
+        metrics.setOutboundMessagesQueueSize(buf.getInt());
+        metrics.setTotalNodes(buf.getInt());
+
+        assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
+            + (buf.position() - off) + ']';
 
         return metrics;
     }

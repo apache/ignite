@@ -19,9 +19,6 @@ package org.apache.ignite.plugin;
 
 /**
  * Marker interface for all Ignite plugins.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface IgnitePlugin {
     // No-op.
