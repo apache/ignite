@@ -238,7 +238,7 @@
 #
                                     ]]>
                                 </argument>
-                                <argument>org.apache.ignite:org.jdk8.backport</argument>
+                                <argument>org.apache.ignite:org.jsr166</argument>
                             </arguments>
                         </configuration>
                     </execution>
