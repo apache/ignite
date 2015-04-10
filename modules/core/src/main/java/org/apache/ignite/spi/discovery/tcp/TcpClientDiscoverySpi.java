@@ -379,6 +379,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public void failNode(UUID nodeId) {
+        // No-op.
+    }
+
     /**
      * @param recon Reconnect flag.
      * @return Whether joined successfully.

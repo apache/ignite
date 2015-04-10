@@ -723,5 +723,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         @Override public boolean isStopping() {
             return stopping;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryFailNode(UUID nodeId) {
+            return false;
+        }
     }
 }
