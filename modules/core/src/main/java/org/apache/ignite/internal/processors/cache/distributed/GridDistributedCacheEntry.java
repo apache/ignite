@@ -314,13 +314,23 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
 
                 refreshRemotes();
 
-                if (emptyAfter)
+                if (emptyAfter) {
                     mvccExtras(null);
+
+                    onUnlock();
+                }
             }
         }
 
         // This call must be outside of synchronization.
         checkOwnerChanged(prev, owner, val);
+    }
+
+    /**
+     *
+     */
+    public void onUnlock() {
+        // No-op.
     }
 
     /**
