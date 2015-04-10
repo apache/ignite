@@ -4330,7 +4330,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         {
             assert nodeId != null;
             assert metrics != null;
-            assert cacheMetrics != null;
 
             TcpDiscoveryNode node = ring.node(nodeId);
 

@@ -56,9 +56,25 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /** Cache 2. */
     private IgniteCache<Integer, Integer> cache2;
 
+    /** Daemon grid. */
+    private boolean daemon;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDaemon(daemon);
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(GRID_CNT);
+
+        daemon = true;
+
+        startGrid(GRID_CNT);
     }
 
     /** {@inheritDoc} */
@@ -150,7 +166,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
      */
     private void awaitMetricsUpdate() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(GRID_CNT * 2);
+        final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 2);
 
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event ignore) {
