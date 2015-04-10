@@ -34,7 +34,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     private final TcpDiscoveryNode node;
 
     /** Discovery data. */
-    private final Map<Integer, Object> discoData;
+    private final Map<Integer, byte[]> discoData;
 
     /**
      * Constructor.
@@ -42,7 +42,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
      * @param node New node that wants to join.
      * @param discoData Discovery data.
      */
-    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, Map<Integer, Object> discoData) {
+    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, Map<Integer, byte[]> discoData) {
         super(node.id());
 
         this.node = node;
@@ -61,7 +61,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     /**
      * @return Discovery data.
      */
-    public Map<Integer, Object> discoveryData() {
+    public Map<Integer, byte[]> discoveryData() {
         return discoData;
     }
 

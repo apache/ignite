@@ -898,11 +898,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         if (msg.topologyHistory() != null)
                             topHist.putAll(msg.topologyHistory());
 
-                        Map<UUID, Map<Integer, Object>> dataMap = msg.oldNodesDiscoveryData();
+                        Map<UUID, Map<Integer, byte[]>> dataMap = msg.oldNodesDiscoveryData();
 
-                        if (dataMap != null) {
-                            for (Map.Entry<UUID, Map<Integer, Object>> entry : dataMap.entrySet())
-                                exchange.onExchange(newNodeId, entry.getKey(), entry.getValue());
+                        if (!locNode.isDaemon() && dataMap != null) {
+                            for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
+                                onExchange(newNodeId, entry.getKey(), entry.getValue(), null);
                         }
 
                         locNode.setAttributes(node.attributes());
@@ -922,10 +922,10 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     if (log.isDebugEnabled())
                         log.debug("Added new node to topology: " + node);
 
-                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
-                    if (data != null)
-                        exchange.onExchange(newNodeId, newNodeId, data);
+                    if (!locNode.isDaemon() && data != null)
+                        onExchange(newNodeId, newNodeId, data, null);
                 }
             }
         }

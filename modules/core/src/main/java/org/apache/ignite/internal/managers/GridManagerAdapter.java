@@ -571,12 +571,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object collectDiscoveryData(UUID nodeId) {
+    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         // No-op.
     }
 
