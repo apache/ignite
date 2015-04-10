@@ -18,6 +18,7 @@
 package org.apache.ignite.plugin.segmentation;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 
 import java.io.*;
 
@@ -35,14 +36,14 @@ import java.io.*;
  * mark the topology as segmented in case it is not available. In other words
  * you can equate the service outage with network outage via segmentation resolution
  * and employ the unified approach in dealing with these types of problems.
- * @see org.apache.ignite.configuration.IgniteConfiguration#getSegmentationResolvers()
- * @see org.apache.ignite.configuration.IgniteConfiguration#getSegmentationPolicy()
- * @see org.apache.ignite.configuration.IgniteConfiguration#getSegmentCheckFrequency()
- * @see org.apache.ignite.configuration.IgniteConfiguration#isAllSegmentationResolversPassRequired()
- * @see org.apache.ignite.configuration.IgniteConfiguration#isWaitForSegmentOnStart()
- * @see GridSegmentationPolicy
+ * @see IgniteConfiguration#getSegmentationResolvers()
+ * @see IgniteConfiguration#getSegmentationPolicy()
+ * @see IgniteConfiguration#getSegmentCheckFrequency()
+ * @see IgniteConfiguration#isAllSegmentationResolversPassRequired()
+ * @see IgniteConfiguration#isWaitForSegmentOnStart()
+ * @see SegmentationPolicy
  */
-public interface GridSegmentationResolver extends Serializable {
+public interface SegmentationResolver extends Serializable {
     /**
      * Checks whether segment is valid.
      * <p>
@@ -54,7 +55,7 @@ public interface GridSegmentationResolver extends Serializable {
      * Nodes in correct segment will continue operate as if nodes in the invalid segment
      * simply left the topology (i.e. the topology just got "smaller"). Nodes in the
      * invalid segment will realized that were "left out or disconnected" from the correct segment
-     * and will try to reconnect via {@link GridSegmentationPolicy segmentation policy} set
+     * and will try to reconnect via {@link SegmentationPolicy segmentation policy} set
      * in configuration.
      *
      * @return {@code True} if segment is correct, {@code false} otherwise.
