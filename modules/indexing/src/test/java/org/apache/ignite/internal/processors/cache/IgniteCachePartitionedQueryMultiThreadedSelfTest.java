@@ -138,7 +138,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         cache0.put(p3.id(), p3);
         cache0.put(p4.id(), p4);
 
-        assertEquals(4, cache0.localSize());
+        assertEquals(4, cache0.localSize(CachePeekMode.ALL));
 
         assert grid(0).cluster().nodes().size() == GRID_CNT;
 

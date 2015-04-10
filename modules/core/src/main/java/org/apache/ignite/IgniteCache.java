@@ -87,6 +87,15 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public Entry<K, V> randomEntry();
 
+    /**
+     * Returns cache with the specified expired policy set. This policy will be used for each operation
+     * invoked on the returned cache.
+     * <p>
+     * This method does not modify existing cache instance.
+     *
+     * @param plc Expire policy to use.
+     * @return Cache instance with the specified expiry policy set.
+     */
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
