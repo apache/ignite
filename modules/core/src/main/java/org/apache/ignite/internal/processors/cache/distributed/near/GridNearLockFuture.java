@@ -152,6 +152,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         this.accessTtl = accessTtl;
         this.filter = filter;
 
+        ignoreInterrupts(true);
+
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
@@ -509,7 +511,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (owner != null && owner.version().equals(lockVer)) {
+        if (owner != null && owner.nearLocal() && owner.version().equals(lockVer)) {
             onDone(true);
 
             return true;
@@ -649,8 +651,13 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      */
     void map() {
         // Obtain the topology version to use.
-        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersionSnapshot() :
-            cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+
+        if (topVer != null && tx != null)
+            tx.topologyVersion(topVer);
+
+        if (topVer == null && tx != null)
+            topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
             // Continue mapping on the same topology version as it was before.

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.processor.*;
@@ -71,17 +70,23 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
     /**
      * @throws Exception If failed.
-     * TODO IGNITE-581 enable when fixed
+     * TODO IGNITE-581 enable when fixed.
      */
-    public void _testTransformTransactionalNoBackups() throws Exception {
+    public void testTransformTransactionalNoBackups() throws Exception {
+        // Test works too long and fails.
+        fail("https://issues.apache.org/jira/browse/IGNITE-581");
+
         checkTransform(TRANSACTIONAL, PRIMARY, 0);
     }
 
     /**
      * @throws Exception If failed.
-     * TODO IGNITE-581 enable when fixed
+     * TODO IGNITE-581 enable when fixed.
      */
-    public void _testTransformTransactionalOneBackup() throws Exception {
+    public void testTransformTransactionalOneBackup() throws Exception {
+        // Test works too long and fails.
+        fail("https://issues.apache.org/jira/browse/IGNITE-581");
+
         checkTransform(TRANSACTIONAL, PRIMARY, 1);
     }
 

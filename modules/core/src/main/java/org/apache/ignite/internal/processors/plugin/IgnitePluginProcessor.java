@@ -27,6 +27,7 @@ import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
+import java.security.*;
 import java.util.*;
 
 /**
@@ -53,53 +54,36 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
 
-        if (cfg.getPluginConfigurations() != null) {
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
-                GridPluginContext pluginCtx = new GridPluginContext(ctx, pluginCfg, cfg);
+        List<PluginProvider> providers = AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
+            @Override public List<PluginProvider> run() {
+                List<PluginProvider> providers = new ArrayList<>();
 
-                PluginProvider provider;
+                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
 
-                try {
-                    if (pluginCfg.providerClass() == null)
-                        throw new IgniteException("Provider class is null.");
+                for (PluginProvider provider : ldr)
+                    providers.add(provider);
 
-                    try {
-                        Constructor<? extends PluginProvider> ctr =
-                            pluginCfg.providerClass().getConstructor(PluginContext.class);
-
-                        provider = ctr.newInstance(pluginCtx);
-                    }
-                    catch (NoSuchMethodException ignore) {
-                        try {
-                            Constructor<? extends PluginProvider> ctr =
-                                pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
-
-                            provider = ctr.newInstance(pluginCfg);
-                        }
-                        catch (NoSuchMethodException ignored) {
-                            provider = pluginCfg.providerClass().newInstance();
-                        }
-                    }
-                }
-                catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new IgniteException("Failed to create plugin provider instance.", e);
-                }
-
-                if (F.isEmpty(provider.name()))
-                    throw new IgniteException("Plugin name can not be empty.");
-
-                if (provider.plugin() == null)
-                    throw new IgniteException("Plugin is null.");
-
-                if (plugins.containsKey(provider.name()))
-                    throw new IgniteException("Duplicated plugin name: " + provider.name());
-
-                plugins.put(provider.name(), provider);
-
-                pluginCtxMap.put(provider, pluginCtx);
-
-                provider.initExtensions(pluginCtx, registry);
+                return providers;
             }
+        });
+
+        for (PluginProvider provider : providers) {
+            GridPluginContext pluginCtx = new GridPluginContext(ctx, cfg);
+
+            if (F.isEmpty(provider.name()))
+                throw new IgniteException("Plugin name can not be empty.");
+
+            if (plugins.containsKey(provider.name()))
+                throw new IgniteException("Duplicated plugin name: " + provider.name());
+
+            plugins.put(provider.name(), provider);
+
+            pluginCtxMap.put(provider, pluginCtx);
+
+            provider.initExtensions(pluginCtx, registry);
+
+            if (provider.plugin() == null)
+                throw new IgniteException("Plugin is null.");
         }
 
         extensions = registry.createExtensionMap();

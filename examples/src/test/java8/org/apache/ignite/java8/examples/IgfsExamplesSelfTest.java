@@ -32,6 +32,9 @@ public class IgfsExamplesSelfTest extends GridAbstractExamplesTest {
     private static final String IGFS_LOOPBACK_CFG = "modules/core/src/test/config/igfs-loopback.xml";
 
     /**
+     * TODO: IGNITE-711 next example(s) should be implemented for java 8 
+     * or testing method(s) should be removed if example(s) does not applicable for java 8.
+     *
      * @throws Exception If failed.
      */
 //    public void testIgniteFsApiExample() throws Exception {

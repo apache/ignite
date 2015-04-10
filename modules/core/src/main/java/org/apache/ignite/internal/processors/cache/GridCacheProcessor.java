@@ -60,7 +60,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
-import javax.cache.processor.*;
 import javax.management.*;
 import java.io.*;
 import java.util.*;
@@ -575,7 +574,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
             // Initialize defaults.
             initialize(cfg, cacheObjCtx);
@@ -668,12 +667,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheConfiguration locCcfg = desc.cacheConfiguration();
-            
+
             CachePluginManager pluginMgr = new CachePluginManager(ctx, locCcfg);
 
             cache2PluginMgr.put(locCcfg.getName(), pluginMgr);
         }
-        
+
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
                 checkTransactionConfiguration(n);
@@ -689,7 +688,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (rmtCfg != null) {
                         CacheConfiguration locCfg = desc.cacheConfiguration();
-                        
+
                         checkCache(locCfg, rmtCfg, n);
 
                         // Check plugin cache configurations.
@@ -716,12 +715,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IgnitePredicate filter = ccfg.getNodeFilter();
 
             if (filter.apply(locNode)) {
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
                 CachePluginManager pluginMgr = cache2PluginMgr.get(ccfg.getName());
-                
+
                 assert pluginMgr != null : " Map=" + cache2PluginMgr;
-                
+
                 GridCacheContext ctx = createCache(ccfg, pluginMgr, desc.cacheType(), cacheObjCtx);
 
                 ctx.dynamicDeploymentId(desc.deploymentId());
@@ -1090,7 +1089,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-        
+
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
@@ -1433,7 +1432,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.setNearConfiguration(nearCfg);
             }
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
             GridCacheContext cacheCtx = createCache(ccfg, null, cacheType, cacheObjCtx);
 
@@ -1725,7 +1724,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName) {
         try {
-            if (publicJCache(cacheName, false, true) != null) // Cache with given name already started.
+            if (publicJCache(cacheName, false) != null) // Cache with given name already started.
                 return new GridFinishedFuture<>();
 
             CacheConfiguration cfg = createConfigFromTemplate(cacheName);
@@ -1889,7 +1888,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
-                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
                     initialize(cfg, cacheObjCtx);
 
@@ -2158,33 +2157,35 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            CacheConfiguration cfg = desc.cacheConfiguration();
+        if (!node.isClient()) {
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                CacheConfiguration cfg = desc.cacheConfiguration();
 
-            if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
-                RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
+                    RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
 
-                AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
+                    AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
-                assert hashIdRslvr != null;
+                    assert hashIdRslvr != null;
 
-                Object nodeHashObj = hashIdRslvr.resolve(node);
+                    Object nodeHashObj = hashIdRslvr.resolve(node);
 
-                for (ClusterNode topNode : ctx.discovery().allNodes()) {
-                    Object topNodeHashObj = hashIdRslvr.resolve(topNode);
+                    for (ClusterNode topNode : ctx.discovery().allNodes()) {
+                        Object topNodeHashObj = hashIdRslvr.resolve(topNode);
 
-                    if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
-                        String errMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
-                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
-                            ", existingNodeId=" + topNode.id() + ']';
+                        if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
+                            String errMsg = "Failed to add node to topology because it has the same hash code for " +
+                                "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
+                                ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
+                                ", existingNodeId=" + topNode.id() + ']';
 
-                        String sndMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
-                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
-                            topNode.id() + ']';
+                            String sndMsg = "Failed to add node to topology because it has the same hash code for " +
+                                "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
+                                ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
+                                topNode.id() + ']';
 
-                        return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                            return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                        }
                     }
                 }
             }
@@ -2524,22 +2525,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName) throws IgniteCheckedException {
-        return publicJCache(cacheName, true, true);
+        return publicJCache(cacheName, true);
     }
 
     /**
      * @param cacheName Cache name.
      * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
      *        otherwise returns {@code null} in this case.
-     * @param failIfSys Fail is cache is system.
      * @param <K> type of keys.
      * @param <V> type of values.
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted,
-        boolean failIfSys) throws IgniteCheckedException
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @Nullable public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted)
+        throws IgniteCheckedException
     {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + cacheName);
@@ -2550,7 +2550,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
-        if (desc != null && !desc.cacheType().userCache() && failIfSys)
+        if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
         if (cache == null) {
@@ -2586,6 +2586,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return cache;
+    }
+
+    /**
+     * Get configuration for the given cache.
+     *
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    public CacheConfiguration cacheConfiguration(String name) {
+        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+
+        if (desc == null || desc.cancelled())
+            throw new IllegalStateException("Cache doesn't exist: " + name);
+        else
+            return desc.cacheConfiguration();
     }
 
     /**

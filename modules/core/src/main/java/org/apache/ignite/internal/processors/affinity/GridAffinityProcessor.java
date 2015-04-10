@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -404,7 +405,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         f.reset();
         m.reset();
 
-        return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(n, cacheName, null));
+        CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
+
+        return new AffinityInfo(f, m, t.get3(), ctx.cacheObjects().contextForCache(ccfg));
     }
 
     /**

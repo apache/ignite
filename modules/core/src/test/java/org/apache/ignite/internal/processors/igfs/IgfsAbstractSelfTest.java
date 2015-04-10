@@ -780,12 +780,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * Ensure that formatting is not propagated to the secondary file system.
+     * 
+     * TODO: IGNITE-586.
      *
      * @throws Exception If failed.
      */
-    // TODO Enable after GG-8578.
     @SuppressWarnings("ConstantConditions")
-    public void _testFormat() throws Exception {
+    public void testFormat() throws Exception {
+        // Test works too long and fails.
+        fail("https://issues.apache.org/jira/browse/IGNITE-586");
+        
         IgniteKernal grid = (IgniteKernal)G.ignite("grid");
         GridCacheAdapter cache = grid.internalCache("dataCache");
 

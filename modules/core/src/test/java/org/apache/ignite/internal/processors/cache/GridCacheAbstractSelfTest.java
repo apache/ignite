@@ -112,7 +112,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                     final int fi = i;
 
                     assertTrue(
-                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize()
+                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
                         + ", local entries " + entrySet(jcache(fi).localEntries()),
                         GridTestUtils.waitForCondition(
                             // Preloading may happen as nodes leave, so we need to wait.
@@ -120,12 +120,12 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
-                                    if (jcache(fi).size() > 0) {
+                                    if (jcache(fi).size(CachePeekMode.ALL) > 0) {
                                         for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
                                             jcache(fi).remove(k.getKey());
                                     }
 
-                                    return jcache(fi).localSize() == 0;
+                                    return jcache(fi).localSize(CachePeekMode.ALL) == 0;
                                 }
                             },
                             getTestTimeout()));
@@ -145,7 +145,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         ", entrySet=" + jcache(i).localEntries() + ']');
 
                     assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
-                        0, jcache(i).localSize());
+                        0, jcache(i).localSize(CachePeekMode.ALL));
 
                     break;
                 }
@@ -165,7 +165,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().localSize());
+        assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         resetStore();
     }

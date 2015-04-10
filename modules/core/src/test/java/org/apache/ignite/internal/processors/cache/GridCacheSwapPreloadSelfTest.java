@@ -124,7 +124,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            int size = grid(1).cache(null).localSize();
+            int size = grid(1).cache(null).localSize(CachePeekMode.ALL);
 
             info("New node cache size: " + size);
 
@@ -201,7 +201,8 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             fut = null;
 
-            int size = grid(1).cache(null).localSize(CachePeekMode.ONHEAP);
+            int size = grid(1).cache(null).localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP,
+                CachePeekMode.NEAR, CachePeekMode.ONHEAP);
 
             info("New node cache size: " + size);
 
