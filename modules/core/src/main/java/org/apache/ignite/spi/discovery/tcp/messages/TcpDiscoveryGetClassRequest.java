@@ -35,6 +35,7 @@ public class TcpDiscoveryGetClassRequest extends TcpDiscoveryAbstractMessage {
      */
     public TcpDiscoveryGetClassRequest(UUID creatorNodeId, String clsName) {
         super(creatorNodeId);
+
         this.clsName = clsName;
     }
 

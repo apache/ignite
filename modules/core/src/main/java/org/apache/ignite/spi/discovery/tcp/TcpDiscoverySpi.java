@@ -289,7 +289,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ConcurrentLinkedDeque<String> debugLog;
 
-    /** */
+    /** Thread periodically closing unused p2p class loader connections. */
     private DeploymentClassLoadersCleaner p2pLdrCleaner;
 
     /** Class loaders for event data unmarshalling. */
