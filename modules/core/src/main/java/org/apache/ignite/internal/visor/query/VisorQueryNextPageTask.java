@@ -71,23 +71,26 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryCursorHolder<List<?>>> storage = ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryCursor<List<?>>> storage = ignite.cluster().nodeLocalMap();
 
-            VisorQueryCursorHolder<List<?>> holder = storage.get(arg.get1());
+            String qryId = arg.get1();
 
-            if (holder == null)
+            VisorQueryCursor<List<?>> cur = storage.get(qryId);
+
+            if (cur == null)
                 throw new IgniteException("SQL query results are expired.");
-
-            VisorQueryCursor<List<?>> cur = holder.cursor();
 
             List<Object[]> nextRows = VisorQueryUtils.fetchSqlQueryRows(cur, arg.get2());
 
             boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                holder.accessed(true);
-            else
-                storage.remove(arg.get1());
+                cur.accessed(true);
+            else {
+                storage.remove(qryId);
+
+                cur.close();
+            }
 
             return new VisorQueryResult(nextRows, hasMore, U.currentTimeMillis() - start);
         }
@@ -101,23 +104,26 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) {
             long start = U.currentTimeMillis();
 
-            ConcurrentMap<String, VisorQueryCursorHolder<Cache.Entry<Object, Object>>> storage = ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, VisorQueryCursor<Cache.Entry<Object, Object>>> storage = ignite.cluster().nodeLocalMap();
 
-            VisorQueryCursorHolder<Cache.Entry<Object, Object>> holder = storage.get(arg.get1());
+            String qryId = arg.get1();
 
-            if (holder == null)
+            VisorQueryCursor<Cache.Entry<Object, Object>> cur = storage.get(qryId);
+
+            if (cur == null)
                 throw new IgniteException("Scan query results are expired.");
-
-            VisorQueryCursor<Cache.Entry<Object, Object>> cur = holder.cursor();
 
             List<Object[]> rows = VisorQueryUtils.fetchScanQueryRows(cur, arg.get2());
 
             boolean hasMore = cur.hasNext();
 
             if (hasMore)
-                holder.accessed(true);
-            else
-                storage.remove(arg.get1());
+                cur.accessed(true);
+            else {
+                storage.remove(qryId);
+
+                cur.close();
+            }
 
             return new VisorQueryResult(rows, hasMore, U.currentTimeMillis() - start);
         }

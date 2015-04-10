@@ -82,13 +82,18 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                 long duration = U.currentTimeMillis() - start; // Scan duration + fetch duration.
 
-                ignite.cluster().<String, VisorQueryCursorHolder>nodeLocalMap().put(qryId,
-                    new VisorQueryCursorHolder<>(cur, false));
+                boolean hasNext = cur.hasNext();
 
-                scheduleResultSetHolderRemoval(qryId);
+                if (hasNext) {
+                    ignite.cluster().<String, VisorQueryCursor>nodeLocalMap().put(qryId, cur);
+
+                    scheduleResultSetHolderRemoval(qryId);
+                }
+                else
+                    cur.close();
 
                 return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
-                    SCAN_COL_NAMES, rows, cur.hasNext(), duration));
+                    SCAN_COL_NAMES, rows, hasNext, duration));
             }
             else {
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
@@ -114,13 +119,18 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                     long duration = U.currentTimeMillis() - start; // Query duration + fetch duration.
 
-                    ConcurrentMap<String, VisorQueryCursorHolder<List<?>>> storage = ignite.cluster().nodeLocalMap();
-                    storage.put(qryId, new VisorQueryCursorHolder<>(cur, false));
+                    boolean hasNext = cur.hasNext();
 
-                    scheduleResultSetHolderRemoval(qryId);
+                    if (hasNext) {
+                        ignite.cluster().<String, VisorQueryCursor<List<?>>>nodeLocalMap().put(qryId, cur);
+
+                        scheduleResultSetHolderRemoval(qryId);
+                    }
+                    else
+                        cur.close();
 
                     return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
-                        names, rows, cur.hasNext(), duration));
+                        names, rows, hasNext, duration));
                 }
             }
         }
@@ -130,24 +140,28 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
     }
 
     /**
-     * @param id Unique query result id.
+     * @param qryId Unique query result id.
      */
-    private void scheduleResultSetHolderRemoval(final String id) {
+    private void scheduleResultSetHolderRemoval(final String qryId) {
         ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(RMV_DELAY) {
             @Override public void onTimeout() {
-                ConcurrentMap<String, VisorQueryCursorHolder> storage = ignite.cluster().nodeLocalMap();
+                ConcurrentMap<String, VisorQueryCursor> storage = ignite.cluster().nodeLocalMap();
 
-                VisorQueryCursorHolder holder = storage.get(id);
+                VisorQueryCursor cur = storage.get(qryId);
 
-                if (holder != null) {
-                    // If future was accessed since last scheduling,  set access flag to false and reschedule.
-                    if (holder.accessed()) {
-                        holder.accessed(false);
+                if (cur != null) {
+                    // If cursor was accessed since last scheduling, set access flag to false and reschedule.
+                    if (cur.accessed()) {
+                        cur.accessed(false);
 
-                        scheduleResultSetHolderRemoval(id);
+                        scheduleResultSetHolderRemoval(qryId);
                     }
-                    else
-                        storage.remove(id); // Remove stored future otherwise.
+                    else {
+                        // Remove stored cursor otherwise.
+                        storage.remove(qryId);
+
+                        cur.close();
+                    }
                 }
             }
         });
