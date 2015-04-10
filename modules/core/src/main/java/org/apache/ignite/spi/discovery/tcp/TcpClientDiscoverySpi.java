@@ -406,6 +406,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                 }
 
+                Collection<InetSocketAddress> addrs0 = new ArrayList<>(addrs);
+
                 Iterator<InetSocketAddress> it = addrs.iterator();
 
                 while (it.hasNext() && !Thread.currentThread().isInterrupted()) {
@@ -520,7 +522,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                 if (addrs.isEmpty()) {
                     U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
-                        "in 2000ms): " + addrs);
+                        "in 2000ms): " + addrs0);
 
                     U.sleep(2000);
                 }
@@ -881,6 +883,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Collection<TcpDiscoveryNode> top = msg.topology();
 
                     if (top != null) {
+                        gridStartTime = msg.gridStartTime();
+
                         for (TcpDiscoveryNode n : top) {
                             if (n.order() > 0)
                                 n.visible(true);
