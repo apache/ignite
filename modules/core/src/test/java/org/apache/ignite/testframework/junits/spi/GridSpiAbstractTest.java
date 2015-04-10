@@ -208,11 +208,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
             discoSpi.setMetricsProvider(createMetricsProvider());
 
             discoSpi.setDataExchange(new DiscoverySpiDataExchange() {
-                @Override public Map<Integer, Object> collect(UUID nodeId) {
+                @Override public Map<Integer, Serializable> collect(UUID nodeId) {
                     return new HashMap<>();
                 }
 
-                @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
+                @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
                 }
             });
 

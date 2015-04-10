@@ -419,13 +419,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Object> collect(UUID nodeId) {
+            @Override public Map<Integer, Serializable> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                Map<Integer, Object> data = new HashMap<>();
+                Map<Integer, Serializable> data = new HashMap<>();
 
                 for (GridComponent comp : ctx.components()) {
-                    Object compData = comp.collectDiscoveryData(nodeId);
+                    Serializable compData = comp.collectDiscoveryData(nodeId);
 
                     if (compData != null) {
                         assert comp.discoveryDataType() != null;
@@ -437,8 +437,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
-                for (Map.Entry<Integer, Object> e : data.entrySet()) {
+            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
                     GridComponent comp = null;
 
                     for (GridComponent c : ctx.components()) {

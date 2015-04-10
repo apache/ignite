@@ -17,32 +17,60 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
+
 import java.util.*;
 
 /**
  *
  */
-public class TcpDiscoveryGetClassRequest extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClassResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String clsName;
+    private String errMsg;
+
+    /** */
+    private byte[] clsBytes;
 
     /**
      * @param creatorNodeId Creator node ID.
-     * @param clsName Class name.
+     * @param clsBytes Class bytes.
      */
-    public TcpDiscoveryGetClassRequest(UUID creatorNodeId, String clsName) {
+    public TcpDiscoveryClassResponse(UUID creatorNodeId, byte[] clsBytes) {
         super(creatorNodeId);
 
-        this.clsName = clsName;
+        this.clsBytes = clsBytes;
     }
 
     /**
-     * @return Class name.
+     * @param creatorNodeId Creator node ID.
+     * @param errMsg Error message.
      */
-    public String className() {
-        return clsName;
+    public TcpDiscoveryClassResponse(UUID creatorNodeId, String errMsg) {
+        super(creatorNodeId);
+
+        this.errMsg = errMsg;
+    }
+
+    /**
+     * @return Error if class loading failed.
+     */
+    @Nullable public String error() {
+        return errMsg;
+    }
+
+    /**
+     * @return Loaded class bytes.
+     */
+    public byte[] classBytes() {
+        return clsBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryClassResponse.class, this, "super", super.toString());
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.util.*;
 
 /**
@@ -45,5 +47,10 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
      */
     public byte[] messageBytes() {
         return msgBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
     }
 }

@@ -754,11 +754,11 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         Map<Integer, byte[]> data,
         ClassLoader clsLdr)
     {
-        Map<Integer, Object> data0 = U.newHashMap(data.size());
+        Map<Integer, Serializable> data0 = U.newHashMap(data.size());
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
-                Object compData = marsh.unmarshal(entry.getValue(), clsLdr);
+                Serializable compData = marsh.unmarshal(entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }

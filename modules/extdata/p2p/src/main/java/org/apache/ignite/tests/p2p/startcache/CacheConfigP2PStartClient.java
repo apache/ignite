@@ -35,25 +35,41 @@ public class CacheConfigP2PStartClient {
     public static void main(String[] args) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        Ignite ignite = Ignition.start(cfg);
+        try (Ignite ignite = Ignition.start(cfg)) {
+            int nodes = ignite.cluster().nodes().size();
 
-        int nodes = ignite.cluster().nodes().size();
+            if (nodes != 3)
+                throw new Exception("Unexpected nodes number: " + nodes);
 
-        if (nodes != 3)
-            throw new Exception("Unexpected nodes number: " + nodes);
+            CacheConfiguration<Integer, Organization1> ccfg1 = new CacheConfiguration<>();
 
-        CacheConfiguration<Integer, Organization1> ccfg1 = new CacheConfiguration<>();
+            ccfg1.setName("cache1");
 
-        ccfg1.setNodeFilter(new CacheAllNodesFilter());
+            ccfg1.setNodeFilter(new CacheAllNodesFilter());
 
-        ccfg1.setIndexedTypes(Integer.class, Organization1.class);
+            ccfg1.setIndexedTypes(Integer.class, Organization1.class);
 
-        IgniteCache<Integer, Organization1> cache1 = ignite.createCache(ccfg1);
+            System.out.println("Create cache1.");
 
-        for (int i = 0; i < 500; i++)
-            cache1.put(i, new Organization1("org-" + i));
+            IgniteCache<Integer, Organization1> cache1 = ignite.createCache(ccfg1);
 
-        Thread.sleep(5000);
+            for (int i = 0; i < 500; i++)
+                cache1.put(i, new Organization1("org-" + i));
+
+            System.out.println("Sleep some time.");
+
+            Thread.sleep(5000); // Sleep some time to wait when connection of p2p loader is closed.
+
+            System.out.println("Create cache2.");
+
+            CacheConfiguration<Integer, Organization2> ccfg2 = new CacheConfiguration<>();
+
+            ccfg2.setName("cache2");
+
+            ccfg2.setIndexedTypes(Integer.class, Organization1.class);
+
+            IgniteCache<Integer, Organization2> cache2 = ignite.createCache(ccfg2);
+        }
     }
 
     /**
