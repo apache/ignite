@@ -15,8 +15,34 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.plugin.security;
+
+import org.jetbrains.annotations.*;
+
 /**
- * <!-- Package description. -->
- * Contains internal tests or test related classes and interfaces.
+ * Supported security subject types. Subject type can be retrieved form {@link SecuritySubject#type()} method.
  */
-package org.apache.ignite.spi.deployment.uri.scanners.ftp;
+public enum SecuritySubjectType {
+    /**
+     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
+     */
+    REMOTE_NODE,
+
+    /**
+     * Subject type for remote client.
+     */
+    REMOTE_CLIENT;
+
+    /** Enumerated values. */
+    private static final SecuritySubjectType[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value.
+     */
+    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
+}

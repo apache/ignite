@@ -71,7 +71,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
-import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.*;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -1552,7 +1552,7 @@ public class IgnitionEx {
             myCfg.setIgniteHome(ggHome);
 
             // Validate segmentation configuration.
-            GridSegmentationPolicy segPlc = cfg.getSegmentationPolicy();
+            SegmentationPolicy segPlc = cfg.getSegmentationPolicy();
 
             // 1. Warn on potential configuration problem: grid is not configured to wait
             // for correct segment after segmentation happens.

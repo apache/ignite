@@ -103,7 +103,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());

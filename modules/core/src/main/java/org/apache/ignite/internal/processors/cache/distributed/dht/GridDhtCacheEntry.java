@@ -295,7 +295,9 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /**
      * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
      */
-    public void onUnlock() {
+    @Override public void onUnlock() {
+        super.onUnlock();
+
         locPart.onUnlock();
     }
 
@@ -429,11 +431,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 for (GridCacheMvccCandidate c : cands) {
                     IgniteInternalTx tx = cctx.tm().tx(c.version());
 
-                    if (tx != null) {
-                        assert tx.local();
-
+                    if (tx != null && tx.local())
                         txFut.addTx(tx);
-                    }
                 }
             }
 
@@ -642,13 +641,34 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate mappings(GridCacheVersion ver)
-        throws GridCacheEntryRemovedException {
+    @Nullable public synchronized GridCacheMvccCandidate mappings(
+        GridCacheVersion ver,
+        Collection<ClusterNode> dhtNodeIds,
+        Collection<ClusterNode> nearNodeIds
+    ) throws GridCacheEntryRemovedException {
         checkObsolete();
 
         GridCacheMvcc mvcc = mvccExtras();
 
-        return mvcc == null ? null : mvcc.candidate(ver);
+        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+
+        if (cand != null)
+            cand.mappedNodeIds(dhtNodeIds, nearNodeIds);
+
+        return cand;
+    }
+
+    /**
+     * @param ver Version.
+     * @param mappedNode Mapped node to remove.
+     */
+    public synchronized void removeMapping(GridCacheVersion ver, ClusterNode mappedNode) {
+        GridCacheMvcc mvcc = mvccExtras();
+
+        GridCacheMvccCandidate cand = mvcc == null ? null : mvcc.candidate(ver);
+
+        if (cand != null)
+            cand.removeMappedNode(mappedNode);
     }
 
     /**

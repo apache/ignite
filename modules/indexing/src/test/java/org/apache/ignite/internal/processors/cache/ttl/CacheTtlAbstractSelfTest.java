@@ -313,20 +313,20 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
             log.info("Size [node=" + i +
-                ", heap=" + cache.localSize(ONHEAP) +
-                ", offheap=" + cache.localSize(OFFHEAP) +
-                ", swap=" + cache.localSize(SWAP) + ']');
+                ", heap=" + cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP) +
+                ", offheap=" + cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP) +
+                ", swap=" + cache.localSize(PRIMARY, BACKUP, NEAR, SWAP) + ']');
 
             if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED) {
-                assertEquals("Unexpected size, node: " + i, 0, cache.localSize(ONHEAP));
-                assertEquals("Unexpected size, node: " + i, size, cache.localSize(OFFHEAP));
+                assertEquals("Unexpected size, node: " + i, 0, cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP));
+                assertEquals("Unexpected size, node: " + i, size, cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP));
             }
             else {
                 assertEquals("Unexpected size, node: " + i, size > MAX_CACHE_SIZE ? MAX_CACHE_SIZE : size,
-                    cache.localSize(ONHEAP));
+                    cache.localSize(PRIMARY, BACKUP, NEAR, ONHEAP));
 
                 assertEquals("Unexpected size, node: " + i,
-                    size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(OFFHEAP));
+                    size > MAX_CACHE_SIZE ? size - MAX_CACHE_SIZE : 0, cache.localSize(PRIMARY, BACKUP, NEAR, OFFHEAP));
             }
 
             for (int key = 0; key < size; key++)

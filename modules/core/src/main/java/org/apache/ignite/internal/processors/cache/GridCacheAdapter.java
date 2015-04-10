@@ -304,7 +304,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @return Context.
      */
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
@@ -612,9 +612,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, false);
 
         Collection<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
 
@@ -673,9 +673,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, false);
 
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
@@ -1036,7 +1036,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void clearLocally() {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally();
 
@@ -1678,7 +1678,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals
     ) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
        if (keyCheck)
             validateCacheKeys(keys);
@@ -3782,7 +3782,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
         assert peekModes != null;
 
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, true);
 
         IgniteClusterEx cluster = ctx.grid().cluster();
 
@@ -3814,7 +3814,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        PeekModes modes = parsePeekModes(peekModes);
+        PeekModes modes = parsePeekModes(peekModes, true);
 
         int size = 0;
 
@@ -4496,7 +4496,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public void clearLocally0(Collection<? extends K> keys,
         @Nullable CacheEntryPredicate... filter) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         if (F.isEmpty(keys))
             return;
@@ -4521,7 +4521,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         return clearLocally(ctx.versions().next(), key, filter);
     }
@@ -4884,15 +4884,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /**
      * @param peekModes Cache peek modes array.
+     * @param primary Defines the default behavior if affinity flags are not specified.
      * @return Peek modes flags.
      */
-    private static PeekModes parsePeekModes(CachePeekMode[] peekModes) {
+    private static PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
         PeekModes modes = new PeekModes();
 
         if (F.isEmpty(peekModes)) {
-            modes.near = true;
             modes.primary = true;
-            modes.backup = true;
+
+            if (!primary) {
+                modes.backup = true;
+                modes.near = true;
+            }
 
             modes.heap = true;
             modes.offheap = true;
@@ -4958,8 +4962,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         if (!(modes.primary || modes.backup || modes.near)) {
             modes.primary = true;
-            modes.backup = true;
-            modes.near = true;
+
+            if (!primary) {
+                modes.backup = true;
+                modes.near = true;
+            }
         }
 
         assert modes.heap || modes.offheap || modes.swap;

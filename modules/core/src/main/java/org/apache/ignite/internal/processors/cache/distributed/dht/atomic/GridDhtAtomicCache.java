@@ -260,7 +260,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -757,7 +757,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
+        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -818,7 +818,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 

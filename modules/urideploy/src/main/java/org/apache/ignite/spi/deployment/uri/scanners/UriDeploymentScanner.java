@@ -15,18 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.spi.deployment.uri.scanners;
 
-import org.apache.ignite.*;
+import java.net.*;
 
 /**
- * Generic IGFS worker task which could potentially throw an exception.
+ * URI deployment scanner.
  */
-public interface IgfsFileWorkerTask {
+public interface UriDeploymentScanner {
     /**
-     * Execute task logic.
+     * Check whether scanner is able to process the given URI.
      *
-     * @throws IgniteCheckedException If failed.
+     * @param uri URI.
+     * @return {@code true} if scanner is able to process the URI.
      */
-    public void execute() throws IgniteCheckedException;
+    boolean acceptsURI(URI uri);
+
+    /**
+     * Scan the given URI.
+     *
+     * @param scanCtx Scan context.
+     */
+    void scan(UriDeploymentScannerContext scanCtx);
+
+    /**
+     * Gets default scan frequency in milliseconds.
+     *
+     * @return Default scan frequency.
+     */
+    long getDefaultScanFrequency();
 }

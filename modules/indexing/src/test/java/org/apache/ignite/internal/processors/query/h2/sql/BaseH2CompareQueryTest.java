@@ -305,17 +305,19 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      * @throws SQLException If failed.
      */
     public void testAggregateOrderBy() throws SQLException {
-        compareOrderedQueryRes0("select firstName name, count(*) cnt from \"part\".Person group by name order by cnt desc");
+        compareOrderedQueryRes0(
+            "select firstName name, count(*) cnt from \"part\".Person " +
+            "group by name order by cnt, name desc");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNullParamSubstitution() throws Exception {
-        List<List<?>> rs1 = compareQueryRes0("select id from \"part\".Person where lastname is ?", null);
+        List<List<?>> rs1 = compareQueryRes0("select ? from \"part\".Person", null);
 
         // Ensure we find something.
-        assertNotSame(0, rs1.size());
+        assertFalse(rs1.isEmpty());
     }
 
     /**
@@ -329,8 +331,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         base = "select firstName||lastName name, salary from \"part\".Person";
 
-        assertEquals(10, compareOrderedQueryRes0(base + " union all " + base + " order by salary desc").size());
-        assertEquals(5, compareOrderedQueryRes0(base + " union " + base + " order by salary desc").size());
+        assertEquals(PERS_CNT * 2, compareOrderedQueryRes0(base + " union all " + base + " order by salary desc").size());
+        assertEquals(PERS_CNT, compareOrderedQueryRes0(base + " union " + base + " order by salary desc").size());
     }
 
     /**

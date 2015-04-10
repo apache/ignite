@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -340,15 +341,15 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache2.put(2, "val2");
         cache3.put(3, "val3");
 
-        assertEquals(3, cache1.localSize());
-        assertEquals(3, cache2.localSize());
-        assertEquals(3, cache3.localSize());
+        assertEquals(3, cache1.localSize(CachePeekMode.ALL));
+        assertEquals(3, cache2.localSize(CachePeekMode.ALL));
+        assertEquals(3, cache3.localSize(CachePeekMode.ALL));
 
         cache1.clear();
 
-        assertEquals(0, cache1.localSize());
-        assertEquals(0, cache2.localSize());
-        assertEquals(0, cache3.localSize());
+        assertEquals(0, cache1.localSize(CachePeekMode.ALL));
+        assertEquals(0, cache2.localSize(CachePeekMode.ALL));
+        assertEquals(0, cache3.localSize(CachePeekMode.ALL));
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -1261,7 +1262,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             spiState = CONNECTING;
         }
 
-        GridSecurityCredentials locCred = (GridSecurityCredentials)locNode.getAttributes()
+        SecurityCredentials locCred = (SecurityCredentials)locNode.getAttributes()
             .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
         // Marshal credentials for backward compatibility and security.
@@ -1695,7 +1696,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @return Security credentials.
      * @throws IgniteSpiException If unmarshal fails.
      */
-    private GridSecurityCredentials unmarshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
+    private SecurityCredentials unmarshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
         try {
             byte[] credBytes = (byte[])node.getAttributes().get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
@@ -2175,14 +2176,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * Checks if two given {@link GridSecurityPermissionSet} objects contain the same permissions.
+     * Checks if two given {@link SecurityPermissionSet} objects contain the same permissions.
      * Each permission belongs to one of three groups : cache, task or system.
      *
      * @param locPerms The first set of permissions.
      * @param rmtPerms The second set of permissions.
      * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
      */
-    private boolean permissionsEqual(GridSecurityPermissionSet locPerms, GridSecurityPermissionSet rmtPerms) {
+    private boolean permissionsEqual(SecurityPermissionSet locPerms, SecurityPermissionSet rmtPerms) {
         boolean dfltAllowMatch = !(locPerms.defaultAllowAll() ^ rmtPerms.defaultAllowAll());
 
         boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
@@ -3124,7 +3125,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (nodeAuth != null) {
                     // Authenticate node first.
                     try {
-                        GridSecurityCredentials cred = unmarshalCredentials(node);
+                        SecurityCredentials cred = unmarshalCredentials(node);
 
                         SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
@@ -3471,7 +3472,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     boolean authFailed = true;
 
                     try {
-                        GridSecurityCredentials cred = unmarshalCredentials(node);
+                        SecurityCredentials cred = unmarshalCredentials(node);
 
                         if (cred == null) {
                             if (log.isDebugEnabled())
@@ -4240,7 +4241,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 return;
             }
 
-            if (locNodeId.equals(msg.creatorNodeId()) && !msg.hasMetrics(locNodeId) && msg.senderNodeId() != null) {
+            if (locNodeId.equals(msg.creatorNodeId()) && !hasMetrics(msg, locNodeId) && msg.senderNodeId() != null) {
                 if (log.isDebugEnabled())
                     log.debug("Discarding heartbeat message that has made two passes: " + msg);
 
@@ -4252,21 +4253,27 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (spiStateCopy() == CONNECTED) {
                 if (msg.hasMetrics()) {
                     for (Map.Entry<UUID, MetricsSet> e : msg.metrics().entrySet()) {
+                        UUID nodeId = e.getKey();
+
                         MetricsSet metricsSet = e.getValue();
 
-                        updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
+                        Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics() ?
+                                msg.cacheMetrics().get(nodeId) : Collections.<Integer, CacheMetrics>emptyMap();
+
+                        updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tstamp);
 
                         for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                            updateMetrics(t.get1(), t.get2(), tstamp);
+                            updateMetrics(t.get1(), t.get2(), cacheMetrics, tstamp);
                     }
                 }
             }
 
             if (ring.hasRemoteNodes()) {
                 if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
-                    !msg.hasMetrics(locNodeId)) && spiStateCopy() == CONNECTED) {
+                    !hasMetrics(msg, locNodeId)) && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, metricsProvider.metrics());
+                    msg.setCacheMetrics(locNodeId, metricsProvider.cacheMetrics());
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
@@ -4280,7 +4287,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
                 else {
                     // Message is on its second ring.
-                    msg.removeMetrics(locNodeId);
+                    removeMetrics(msg, locNodeId);
 
                     Collection<UUID> clientNodeIds = msg.clientNodeIds();
 
@@ -4313,16 +4320,23 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @param nodeId Node ID.
          * @param metrics Metrics.
+         * @param cacheMetrics Cache metrics.
          * @param tstamp Timestamp.
          */
-        private void updateMetrics(UUID nodeId, ClusterMetrics metrics, long tstamp) {
+        private void updateMetrics(UUID nodeId,
+            ClusterMetrics metrics,
+            Map<Integer, CacheMetrics> cacheMetrics,
+            long tstamp)
+        {
             assert nodeId != null;
             assert metrics != null;
+            assert cacheMetrics != null;
 
             TcpDiscoveryNode node = ring.node(nodeId);
 
             if (node != null) {
                 node.setMetrics(metrics);
+                node.setCacheMetrics(cacheMetrics);
 
                 node.lastUpdateTime(tstamp);
 
@@ -4330,6 +4344,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             }
             else if (log.isDebugEnabled())
                 log.debug("Received metrics from unknown node: " + nodeId);
+        }
+
+        /**
+         * @param msg Message.
+         */
+        private boolean hasMetrics(TcpDiscoveryHeartbeatMessage msg, UUID nodeId) {
+            return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
 
         /**
@@ -5114,9 +5135,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (hbMsg.creatorNodeId().equals(nodeId)) {
                     metrics = hbMsg.metrics().get(nodeId).metrics();
 
-                    hbMsg.removeMetrics(nodeId);
+                    removeMetrics(hbMsg, nodeId);
 
                     assert !hbMsg.hasMetrics();
+                    assert !hbMsg.hasCacheMetrics();
                 }
             }
 
@@ -5161,5 +5183,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             U.closeQuiet(sock);
         }
+    }
+
+    /**
+     * @param msg Message.
+     * @param nodeId Node ID.
+     */
+    private static void removeMetrics(TcpDiscoveryHeartbeatMessage msg, UUID nodeId) {
+        msg.removeMetrics(nodeId);
+        msg.removeCacheMetrics(nodeId);
     }
 }

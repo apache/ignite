@@ -780,12 +780,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * Ensure that formatting is not propagated to the secondary file system.
+     * 
+     * TODO: IGNITE-586.
      *
      * @throws Exception If failed.
      */
-    // TODO Enable after GG-8578.
     @SuppressWarnings("ConstantConditions")
-    public void _testFormat() throws Exception {
+    public void testFormat() throws Exception {
+        // Test works too long and fails.
+        fail("https://issues.apache.org/jira/browse/IGNITE-586");
+        
         IgniteKernal grid = (IgniteKernal)G.ignite("grid");
         GridCacheAdapter cache = grid.internalCache("dataCache");
 
@@ -1522,7 +1526,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         os.write(chunk);
 
-        igfs.stop();
+        igfs.stop(true);
 
         // Reset test state.
         afterTestsStopped();
@@ -2589,12 +2593,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         workerMapFld.setAccessible(true);
 
         // Wait for all workers to finish.
-        Map<IgfsPath, IgfsFileWorker> workerMap = (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfs);
+        Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
 
-        for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
+        for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
             entry.getValue().cancel();
-
-            U.join(entry.getValue());
+            entry.getValue().await();
         }
 
         // Clear igfs.
@@ -2617,12 +2620,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             workerMapFld.setAccessible(true);
 
             // Wait for all workers to finish.
-            Map<IgfsPath, IgfsFileWorker> workerMap = (Map<IgfsPath, IgfsFileWorker>)workerMapFld.get(igfsEx);
+            Map<IgfsPath, IgfsFileWorkerBatch> workerMap = (Map<IgfsPath, IgfsFileWorkerBatch>)workerMapFld.get(igfs);
 
-            for (Map.Entry<IgfsPath, IgfsFileWorker> entry : workerMap.entrySet()) {
+            for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> entry : workerMap.entrySet()) {
                 entry.getValue().cancel();
-
-                U.join(entry.getValue());
+                entry.getValue().await();
             }
         }
 

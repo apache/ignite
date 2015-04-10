@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.*;
 
 /**
- * Grid task related message.
+ * Basic implementation for {@link SecurityCredentialsProvider}. Use it
+ * when custom logic for storing security credentials is not required and it
+ * is OK to specify credentials directly in configuration.
  */
-public interface GridTaskMessage {
+public class SecurityCredentialsBasicProvider implements SecurityCredentialsProvider {
+    /** */
+    private SecurityCredentials cred;
+
     /**
-     * @return Session ID.
+     * Constructs security credentials provider based on security credentials passed in.
+     *
+     * @param cred Security credentials.
      */
-    public IgniteUuid getSessionId();
+    public SecurityCredentialsBasicProvider(SecurityCredentials cred) {
+        this.cred = cred;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SecurityCredentials credentials() throws IgniteCheckedException {
+        return cred;
+    }
 }
