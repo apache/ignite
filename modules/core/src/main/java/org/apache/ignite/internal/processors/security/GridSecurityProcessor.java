@@ -61,7 +61,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return Collection of authenticated nodes.
      * @throws IgniteCheckedException If error occurred.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
+    public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
 
     /**
      * Gets authenticated node subject.
@@ -70,7 +70,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @return Security subject.
      * @throws IgniteCheckedException If error occurred.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
+    public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
 
     /**
      * Authorizes grid operation.

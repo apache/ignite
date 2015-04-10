@@ -31,7 +31,7 @@ import java.util.*;
  * Property {@link #defaultAllowAll()} specifies whether to allow or deny
  * cache and task operations if they were not explicitly specified.
  */
-public interface GridSecurityPermissionSet extends Serializable {
+public interface SecurityPermissionSet extends Serializable {
     /**
      * Flag indicating whether to allow or deny cache and task operations
      * if they were not explicitly specified.

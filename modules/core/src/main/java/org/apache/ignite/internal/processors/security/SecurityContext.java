@@ -26,7 +26,7 @@ public interface SecurityContext {
     /**
      * @return Security subject.
      */
-    public GridSecuritySubject subject();
+    public SecuritySubject subject();
 
     /**
      * Checks whether task operation is allowed.

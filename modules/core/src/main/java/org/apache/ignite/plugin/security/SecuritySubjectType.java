@@ -20,9 +20,9 @@ package org.apache.ignite.plugin.security;
 import org.jetbrains.annotations.*;
 
 /**
- * Supported security subject types. Subject type can be retrieved form {@link GridSecuritySubject#type()} method.
+ * Supported security subject types. Subject type can be retrieved form {@link SecuritySubject#type()} method.
  */
-public enum GridSecuritySubjectType {
+public enum SecuritySubjectType {
     /**
      * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
      */
@@ -34,7 +34,7 @@ public enum GridSecuritySubjectType {
     REMOTE_CLIENT;
 
     /** Enumerated values. */
-    private static final GridSecuritySubjectType[] VALS = values();
+    private static final SecuritySubjectType[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -42,7 +42,7 @@ public enum GridSecuritySubjectType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static GridSecuritySubjectType fromOrdinal(byte ord) {
+    @Nullable public static SecuritySubjectType fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

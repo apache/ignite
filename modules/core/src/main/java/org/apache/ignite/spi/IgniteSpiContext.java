@@ -310,7 +310,7 @@ public interface IgniteSpiContext {
      * @return Collection of authenticated subjects.
      * @throws IgniteException If any exception occurs.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteException;
+    public Collection<SecuritySubject> authenticatedSubjects() throws IgniteException;
 
     /**
      * Gets security subject based on subject ID.
@@ -319,7 +319,7 @@ public interface IgniteSpiContext {
      * @return Authorized security subject.
      * @throws IgniteException If any exception occurs.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
+    public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
 
     /**
      * Reads swapped cache value from off-heap and swap.

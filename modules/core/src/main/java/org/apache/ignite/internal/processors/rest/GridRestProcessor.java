@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
-import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
+import static org.apache.ignite.plugin.security.SecuritySubjectType.*;
 
 /**
  * Rest processor implementation.

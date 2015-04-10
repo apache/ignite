@@ -55,12 +55,12 @@ public class GridOsSecurityProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
+    @Override public Collection<SecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedSubject(UUID nodeId) {
+    @Override public SecuritySubject authenticatedSubject(UUID nodeId) {
         return null;
     }
 
