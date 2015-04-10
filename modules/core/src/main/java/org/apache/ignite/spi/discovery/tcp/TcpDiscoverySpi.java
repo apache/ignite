@@ -2265,10 +2265,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         assert ignite != null;
 
         if (!ignite.configuration().isPeerClassLoadingEnabled())
-            return null;
+            return U.gridClassLoader();
 
         if (node.id().equals(getLocalNodeId()) || node.isClient())
-            return null;
+            return U.gridClassLoader();
 
         DiscoveryDeploymentClassLoader ldr = p2pLdrs.get(node.id());
 
@@ -2288,10 +2288,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         assert ignite != null;
 
         if (!ignite.configuration().isPeerClassLoadingEnabled())
-            return null;
+            return U.gridClassLoader();
 
         if (nodeId.equals(getLocalNodeId()))
-            return null;
+            return U.gridClassLoader();
 
         TcpDiscoveryNode node;
 
@@ -2305,12 +2305,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     log.debug("Node provided exchange data left, will use local class loader " +
                         "for exchange data [nodeId=" + nodeId + ']');
 
-                return null;
+                return U.gridClassLoader();
             }
         }
 
         if (node.isClient()) // Do not support loading from client nodes.
-            return null;
+            return U.gridClassLoader();
 
         DiscoveryDeploymentClassLoader ldr = p2pLdrs.get(nodeId);
 
@@ -5405,6 +5405,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param node Node.
          */
         public DiscoveryDeploymentClassLoader(TcpDiscoveryNode node) {
+            super(U.gridClassLoader());
+
             assert !node.isClient() : node;
             assert !node.id().equals(getLocalNodeId()) : node;
 
@@ -5462,13 +5464,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         /** {@inheritDoc} */
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
-            try {
-                return U.gridClassLoader().loadClass(name);
-            }
-            catch (ClassNotFoundException ignore) {
-                // Ignore.
-            }
-
             lock.readLock().lock();
 
             try {
