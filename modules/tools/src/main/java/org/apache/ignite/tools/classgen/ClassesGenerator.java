@@ -186,7 +186,8 @@ public class ClassesGenerator {
             Class<?> cls = Class.forName(clsName, false, ldr);
 
             if (Serializable.class.isAssignableFrom(cls) && !AbstractQueuedSynchronizer.class.isAssignableFrom(cls)) {
-                if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum()) {
+                if (!cls.isInterface() && !Modifier.isAbstract(cls.getModifiers()) && !cls.isEnum() &&
+                    !cls.getSimpleName().isEmpty()) {
                     try {
                         Field field = cls.getDeclaredField("serialVersionUID");
 
