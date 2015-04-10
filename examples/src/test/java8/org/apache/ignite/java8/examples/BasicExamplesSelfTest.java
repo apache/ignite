@@ -53,6 +53,7 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
         IgniteExecutorServiceExample.main(EMPTY_ARGS);
     }
 
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8 or testing method(s) should be removed if example(s) does not applicable for java 8.
 //    /**
 //     * @throws Exception If failed.
 //     */
@@ -67,6 +68,8 @@ public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
         ComputeRunnableExample.main(EMPTY_ARGS);
     }
 
+//    TODO: IGNITE-711 next example(s) should be implemented for java 8
+//    or testing method(s) should be removed if example(s) does not applicable for java 8.
 //    /**
 //     * @throws Exception If failed.
 //     */
