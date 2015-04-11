@@ -408,7 +408,6 @@
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
 
@@ -425,7 +424,6 @@
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
 
@@ -442,7 +440,6 @@
                                     <outputDirectory>target/release-package</outputDirectory>
                                     <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
                         </executions>
