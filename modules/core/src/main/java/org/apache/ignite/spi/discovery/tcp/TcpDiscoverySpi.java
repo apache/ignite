@@ -2211,7 +2211,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param req Get class request.
      * @return Get class response.
      */
-    private TcpDiscoveryClassResponse processGetClassRequest(TcpDiscoveryClassRequest req) {
+    private TcpDiscoveryClassResponse processClassRequest(TcpDiscoveryClassRequest req) {
         assert !F.isEmpty(req.className()) : req;
 
         String rsrc = U.classNameToResourceName(req.className());
@@ -3722,7 +3722,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
-                    if (!locNode.isDaemon() && data != null)
+                    if (data != null)
                         onExchange(node.id(), node.id(), data, exchangeClassLoader(node, node.id()));
 
                     msg.addDiscoveryData(locNodeId, collectExchangeData(node.id()));
@@ -3793,7 +3793,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
 
                 // Notify outside of synchronized block.
-                if (!locNode.isDaemon() && dataMap != null) {
+                if (dataMap != null) {
                     for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet()) {
                         onExchange(node.id(),
                             entry.getKey(),
@@ -4594,7 +4594,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
-                if (!locNode.isDaemon() && lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+                if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
                     assert msg.messageBytes() != null;
 
                     TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
@@ -4604,17 +4604,17 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     try {
                         if (msgObj == null)
                             msgObj = marsh.unmarshal(msg.messageBytes(), customMessageClassLoader(node));
+
+                        lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                            msg.topologyVersion(),
+                            node,
+                            snapshot,
+                            hist,
+                            msgObj);
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSpiException("Failed to unmarshal discovery custom message.", e);
+                        U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
-
-                    lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                        msg.topologyVersion(),
-                        node,
-                        snapshot,
-                        hist,
-                        msgObj);
                 }
             }
 
@@ -5091,7 +5091,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             continue;
                         }
                         else if (msg instanceof TcpDiscoveryClassRequest) {
-                            TcpDiscoveryClassResponse res = processGetClassRequest((TcpDiscoveryClassRequest)msg);
+                            TcpDiscoveryClassResponse res = processClassRequest((TcpDiscoveryClassRequest) msg);
 
                             writeToSocket(sock, res);
 

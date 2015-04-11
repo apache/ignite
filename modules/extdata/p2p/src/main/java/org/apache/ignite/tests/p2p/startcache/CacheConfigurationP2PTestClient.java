@@ -18,13 +18,12 @@
 package org.apache.ignite.tests.p2p.startcache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -61,7 +60,7 @@ public class CacheConfigurationP2PTestClient {
 
             int nodes = ignite.cluster().nodes().size();
 
-            if (nodes != 3)
+            if (nodes != 4)
                 throw new Exception("Unexpected nodes number: " + nodes);
 
             CacheConfiguration<Integer, Organization1> ccfg1 = new CacheConfiguration<>();
@@ -79,6 +78,11 @@ public class CacheConfigurationP2PTestClient {
             for (int i = 0; i < 500; i++)
                 cache1.put(i, new Organization1("org-" + i));
 
+            SqlQuery<Integer, Organization1> qry1 = new SqlQuery<>(Organization1.class, "_key >= 0");
+
+            if (cache1.query(qry1).getAll().isEmpty())
+                throw new Exception("Query failed.");
+
             System.out.println("Sleep some time.");
 
             Thread.sleep(5000); // Sleep some time to wait when connection of p2p loader is closed.
@@ -89,67 +93,22 @@ public class CacheConfigurationP2PTestClient {
 
             ccfg2.setName("cache2");
 
-            ccfg2.setIndexedTypes(Integer.class, Organization1.class);
+            ccfg2.setIndexedTypes(Integer.class, Organization2.class);
 
             IgniteCache<Integer, Organization2> cache2 = ignite.createCache(ccfg2);
+
+            for (int i = 0; i < 500; i++)
+                cache2.put(i, new Organization2("org-" + i));
+
+            SqlQuery<Integer, Organization2> qry2 = new SqlQuery<>(Organization2.class, "_key >= 0");
+
+            if (cache2.query(qry2).getAll().isEmpty())
+                throw new Exception("Query failed.");
+
+            cache1.close();
+
+            cache2.close();
         }
     }
 
-    /**
-     * Organization class.
-     */
-    private static class Organization1 implements Serializable {
-        /** Organization ID (indexed). */
-        @QuerySqlField(index = true)
-        private UUID id;
-
-        /** Organization name (indexed). */
-        @QuerySqlField(index = true)
-        private String name;
-
-        /**
-         * Create organization.
-         *
-         * @param name Organization name.
-         */
-        Organization1(String name) {
-            id = UUID.randomUUID();
-
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Organization [id=" + id + ", name=" + name + ']';
-        }
-    }
-
-    /**
-     * Organization class.
-     */
-    private static class Organization2 implements Serializable {
-        /** Organization ID (indexed). */
-        @QuerySqlField(index = true)
-        private UUID id;
-
-        /** Organization name (indexed). */
-        @QuerySqlField(index = true)
-        private String name;
-
-        /**
-         * Create organization.
-         *
-         * @param name Organization name.
-         */
-        Organization2(String name) {
-            id = UUID.randomUUID();
-
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "Organization [id=" + id + ", name=" + name + ']';
-        }
-    }
 }

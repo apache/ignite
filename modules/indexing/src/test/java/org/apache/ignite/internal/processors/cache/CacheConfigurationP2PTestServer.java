@@ -36,21 +36,7 @@ public class CacheConfigurationP2PTestServer {
     public static void main(String[] args) throws Exception {
         System.out.println("Starting test server node.");
 
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setPeerClassLoadingEnabled(true);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
+        IgniteConfiguration cfg = CacheConfigurationP2PTest.createConfiguration();
 
         U.setWorkDirectory(null, U.getIgniteHome());
 
