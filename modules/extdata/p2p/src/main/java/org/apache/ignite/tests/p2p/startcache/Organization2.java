@@ -15,40 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.tests.p2p.startcache;
+
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
- * Query field descriptor. This descriptor is used to provide metadata
- * about fields returned in query result.
+ * Organization class.
  */
-public interface GridQueryFieldMetadata extends Externalizable {
-    /**
-     * Gets schema name.
-     *
-     * @return Schema name.
-     */
-    public String schemaName();
+class Organization2 implements Serializable {
+    /** Organization ID (indexed). */
+    @QuerySqlField(index = true)
+    private UUID id;
+
+    /** Organization name (indexed). */
+    @QuerySqlField(index = true)
+    private String name;
 
     /**
-     * Gets name of type to which this field belongs.
+     * Create organization.
      *
-     * @return Type name.
+     * @param name Organization name.
      */
-    public String typeName();
+    Organization2(String name) {
+        id = UUID.randomUUID();
 
-    /**
-     * Gets field name.
-     *
-     * @return Field name.
-     */
-    public String fieldName();
+        this.name = name;
+    }
 
-    /**
-     * Gets field type name.
-     *
-     * @return Field type name.
-     */
-    public String fieldTypeName();
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Organization2 [id=" + id + ", name=" + name + ']';
+    }
 }

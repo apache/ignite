@@ -15,40 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.tests.p2p.startcache;
 
-import java.io.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Query field descriptor. This descriptor is used to provide metadata
- * about fields returned in query result.
+ *
  */
-public interface GridQueryFieldMetadata extends Externalizable {
-    /**
-     * Gets schema name.
-     *
-     * @return Schema name.
-     */
-    public String schemaName();
-
-    /**
-     * Gets name of type to which this field belongs.
-     *
-     * @return Type name.
-     */
-    public String typeName();
-
-    /**
-     * Gets field name.
-     *
-     * @return Field name.
-     */
-    public String fieldName();
-
-    /**
-     * Gets field type name.
-     *
-     * @return Field type name.
-     */
-    public String fieldTypeName();
+public class CacheAllNodesFilter implements IgnitePredicate<ClusterNode> {
+    /** {@inheritDoc} */
+    @Override public boolean apply(ClusterNode clusterNode) {
+        return true;
+    }
 }
