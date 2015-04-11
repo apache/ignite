@@ -30,6 +30,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Multithreaded update test with off heap enabled.
  */
 public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */

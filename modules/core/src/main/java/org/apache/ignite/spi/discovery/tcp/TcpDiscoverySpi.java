@@ -51,7 +51,6 @@ import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
@@ -239,9 +238,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private CheckStatusSender chkStatusSnd;
 
-    /** IP finder and p2p loaders cleaner. */
+    /** IP finder cleaner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private DiscoveryCleaner cleaner;
+    private IpFinderCleaner ipFinderCleaner;
 
     /** Statistics printer thread. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -288,10 +287,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ConcurrentLinkedDeque<String> debugLog;
-
-    /** Class loaders for event data unmarshalling. */
-    @GridToStringExclude
-    private transient ConcurrentMap<UUID, DiscoveryDeploymentClassLoader> p2pLdrs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @IgniteInstanceResource
@@ -765,9 +760,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         chkStatusSnd = new CheckStatusSender();
         chkStatusSnd.start();
 
-        if (ipFinder.isShared() || ignite.configuration().isPeerClassLoadingEnabled()) {
-            cleaner = new DiscoveryCleaner();
-            cleaner.start();
+        if (ipFinder.isShared()) {
+            ipFinderCleaner = new IpFinderCleaner();
+            ipFinderCleaner.start();
         }
 
         if (log.isDebugEnabled() && !restart)
@@ -982,8 +977,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         U.interrupt(chkStatusSnd);
         U.join(chkStatusSnd, log);
 
-        U.interrupt(cleaner);
-        U.join(cleaner, log);
+        U.interrupt(ipFinderCleaner);
+        U.join(ipFinderCleaner, log);
 
         U.interrupt(msgWorker);
         U.join(msgWorker, log);
@@ -2011,8 +2006,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         U.interrupt(chkStatusSnd);
         U.join(chkStatusSnd, log);
 
-        U.interrupt(cleaner);
-        U.join(cleaner, log);
+        U.interrupt(ipFinderCleaner);
+        U.join(ipFinderCleaner, log);
 
         Collection<SocketReader> tmp;
 
@@ -2110,7 +2105,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             b.append("    Check status sender: ").append(threadStatus(chkStatusSnd)).append(U.nl());
             b.append("    HB sender: ").append(threadStatus(hbsSnd)).append(U.nl());
             b.append("    Socket timeout worker: ").append(threadStatus(sockTimeoutWorker)).append(U.nl());
-            b.append("    Cleaner: ").append(threadStatus(cleaner)).append(U.nl());
+            b.append("    IP finder cleaner: ").append(threadStatus(ipFinderCleaner)).append(U.nl());
             b.append("    Stats printer: ").append(threadStatus(statsPrinter)).append(U.nl());
 
             b.append(U.nl());
@@ -2205,120 +2200,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             F.eqNotOrdered(rmtPerms.taskPermissions(), locPerms.taskPermissions());
 
         return dfltAllowMatch && bothHaveSamePerms;
-    }
-
-    /**
-     * @param req Get class request.
-     * @return Get class response.
-     */
-    private TcpDiscoveryClassResponse processClassRequest(TcpDiscoveryClassRequest req) {
-        assert !F.isEmpty(req.className()) : req;
-
-        String rsrc = U.classNameToResourceName(req.className());
-
-        InputStream in = U.gridClassLoader().getResourceAsStream(rsrc);
-
-        byte[] clsBytes = null;
-        String err = null;
-
-        if (in != null) {
-            try {
-                GridByteArrayList bytes = new GridByteArrayList(1024);
-
-                bytes.readAll(in);
-
-                clsBytes = bytes.entireArray();
-            }
-            catch (IOException e) {
-                err = "Failed to load class due IO error [cls=" + req.className() + ", err=" + e + ']';
-
-                U.error(log, err, e);
-            }
-            finally {
-                U.close(in, log);
-            }
-        }
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find requested class: " + req.className());
-
-            err = "Failed to find requested class: " + req.className();
-        }
-
-        TcpDiscoveryClassResponse res;
-
-        if (clsBytes != null)
-            res = new TcpDiscoveryClassResponse(getLocalNodeId(), clsBytes);
-        else {
-            assert err != null;
-
-            res = new TcpDiscoveryClassResponse(getLocalNodeId(), err);
-        }
-
-        return res;
-    }
-
-    /**
-     * @param node Node created event.
-     * @return Class loader for custom event unmarshalling.
-     */
-    @Nullable protected ClassLoader customMessageClassLoader(TcpDiscoveryNode node) {
-        assert ignite != null;
-
-        if (!ignite.configuration().isPeerClassLoadingEnabled())
-            return U.gridClassLoader();
-
-        if (node.id().equals(getLocalNodeId()) || node.isClient())
-            return U.gridClassLoader();
-
-        DiscoveryDeploymentClassLoader ldr = p2pLdrs.get(node.id());
-
-        if (ldr == null)
-            ldr = F.addIfAbsent(p2pLdrs, node.id(), new DiscoveryDeploymentClassLoader(node));
-
-        return ldr;
-    }
-
-    /**
-     * @param joiningNode Joining node.
-     * @param nodeId Remote node provided data.
-     * @return Class loader for exchange data unmarshalling.
-     */
-    @Nullable protected ClassLoader exchangeClassLoader(TcpDiscoveryNode joiningNode, UUID nodeId) {
-        assert joiningNode != null;
-        assert ignite != null;
-
-        if (!ignite.configuration().isPeerClassLoadingEnabled())
-            return U.gridClassLoader();
-
-        if (nodeId.equals(getLocalNodeId()))
-            return U.gridClassLoader();
-
-        TcpDiscoveryNode node;
-
-        if (joiningNode.id().equals(nodeId))
-            node = joiningNode;
-        else {
-            node = ring.node(nodeId);
-
-            if (node == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Node provided exchange data left, will use local class loader " +
-                        "for exchange data [nodeId=" + nodeId + ']');
-
-                return U.gridClassLoader();
-            }
-        }
-
-        if (node.isClient()) // Do not support loading from client nodes.
-            return U.gridClassLoader();
-
-        DiscoveryDeploymentClassLoader ldr = p2pLdrs.get(nodeId);
-
-        if (ldr == null)
-            ldr = F.addIfAbsent(p2pLdrs, nodeId, new DiscoveryDeploymentClassLoader(node));
-
-        return ldr;
     }
 
     /**
@@ -2471,19 +2352,18 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * Thread that periodically tries to release p2p class loaders connections, cleans
-     * IP finder and keeps it in the correct state, unregistering addresses of the nodes
-     * that has left the topology.
+     * Thread that cleans IP finder and keeps it in the correct state, unregistering
+     * addresses of the nodes that has left the topology.
      * <p>
-     * IP finder cleaner should run only on coordinator node and will clean IP finder
+     * This thread should run only on coordinator node and will clean IP finder
      * if and only if {@link TcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
-    private class DiscoveryCleaner extends IgniteSpiThread {
+    private class IpFinderCleaner extends IgniteSpiThread {
         /**
          * Constructor.
          */
-        private DiscoveryCleaner() {
-            super(gridName, "tcp-disco-cleaner", log);
+        private IpFinderCleaner() {
+            super(gridName, "tcp-disco-ip-finder-cleaner", log);
 
             setPriority(threadPri);
         }
@@ -2492,20 +2372,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         @SuppressWarnings("BusyWait")
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
-                log.debug("Tcp discovery cleaner has been started.");
+                log.debug("IP finder cleaner has been started.");
 
             while (!isInterrupted()) {
                 Thread.sleep(ipFinderCleanFreq);
-
-                for (DiscoveryDeploymentClassLoader ldr : p2pLdrs.values()) {
-                    if (ring.node(ldr.nodeId()) == null) {
-                        ldr.onNodeLeft();
-
-                        p2pLdrs.remove(ldr.nodeId(), ldr);
-                    }
-                    else
-                        ldr.closeConnectionIfNotUsed();
-                }
 
                 if (!isLocalNodeCoordinator())
                     continue;
@@ -3723,7 +3593,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        onExchange(node.id(), node.id(), data, exchangeClassLoader(node, node.id()));
+                        onExchange(node.id(), node.id(), data, U.gridClassLoader());
 
                     msg.addDiscoveryData(locNodeId, collectExchangeData(node.id()));
                 }
@@ -3794,12 +3664,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Notify outside of synchronized block.
                 if (dataMap != null) {
-                    for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet()) {
-                        onExchange(node.id(),
-                            entry.getKey(),
-                            entry.getValue(),
-                            exchangeClassLoader(node, entry.getKey()));
-                    }
+                    for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
+                        onExchange(node.id(), entry.getKey(), entry.getValue(), U.gridClassLoader());
                 }
             }
 
@@ -4603,7 +4469,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     try {
                         if (msgObj == null)
-                            msgObj = marsh.unmarshal(msg.messageBytes(), customMessageClassLoader(node));
+                            msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -5090,13 +4956,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                             continue;
                         }
-                        else if (msg instanceof TcpDiscoveryClassRequest) {
-                            TcpDiscoveryClassResponse res = processClassRequest((TcpDiscoveryClassRequest) msg);
-
-                            writeToSocket(sock, res);
-
-                            continue;
-                        }
 
                         msgWorker.addMessage(msg);
 
@@ -5386,208 +5245,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             super.cleanup();
 
             U.closeQuiet(sock);
-        }
-    }
-
-    /**
-     *
-     */
-    private class DiscoveryDeploymentClassLoader extends ClassLoader {
-        /** */
-        private final TcpDiscoveryNode node;
-
-        /** */
-        private Socket sock;
-
-        /** */
-        private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-        /**
-         * @param node Node.
-         */
-        public DiscoveryDeploymentClassLoader(TcpDiscoveryNode node) {
-            super(U.gridClassLoader());
-
-            assert !node.isClient() : node;
-            assert !node.id().equals(getLocalNodeId()) : node;
-
-            this.node = node;
-        }
-
-        /**
-         * @return Target node ID.
-         */
-        UUID nodeId() {
-            return node.id();
-        }
-
-        /**
-         * Node left callback.
-         */
-        void onNodeLeft() {
-            lock.writeLock().lock();
-
-            try {
-                if (sock != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Closing deployment class loader connection on node left [node=" + node.id() + ']');
-
-                    U.closeQuiet(sock);
-
-                    sock = null;
-                }
-            }
-            finally {
-                lock.writeLock().unlock();
-            }
-        }
-
-        /**
-         * Closes connection if there is no class loading in progress.
-         */
-        void closeConnectionIfNotUsed() {
-            if (lock.writeLock().tryLock()) {
-                try {
-                    if (sock != null) {
-                        if (log.isDebugEnabled())
-                            log.debug("Closing idle deployment class loader connection [node=" + node.id() + ']');
-
-                        U.closeQuiet(sock);
-
-                        sock = null;
-                    }
-                }
-                finally {
-                    lock.writeLock().unlock();
-                }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
-            lock.readLock().lock();
-
-            try {
-                TcpDiscoveryClassResponse res = requestClass(name);
-
-                if (res == null)
-                    throw new ClassNotFoundException("Failed to load class, can not connect to peer node " +
-                        "[cls=" + name + ", node=" + node.id() + ']');
-
-                if (res.error() != null)
-                    throw new ClassNotFoundException(res.error());
-
-                assert res.classBytes() != null;
-
-                return defineClass(name, res.classBytes(), 0, res.classBytes().length);
-            }
-            finally {
-                lock.readLock().unlock();
-            }
-        }
-
-        /**
-         * @param name Class name.
-         * @return Class response or {@code null} if failed to connect.
-         */
-        @Nullable private synchronized TcpDiscoveryClassResponse requestClass(String name) {
-            TcpDiscoveryClassRequest msg = new TcpDiscoveryClassRequest(getLocalNodeId(), name);
-
-            for (int i = 0; i < reconCnt; i++) {
-                if (sock == null) {
-                    sock = connect(node);
-
-                    if (sock == null)
-                        break;
-                }
-
-                try {
-                    return request(sock, msg);
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    U.closeQuiet(sock);
-
-                    sock = null;
-                }
-            }
-
-            p2pLdrs.remove(node.id(), this);
-
-            return null;
-        }
-
-        /**
-         * @param sock Socket.
-         * @param msg Message.
-         * @return Response.
-         * @throws IOException If request failed.
-         * @throws IgniteCheckedException If request failed.
-         */
-        private TcpDiscoveryClassResponse request(Socket sock, TcpDiscoveryClassRequest msg)
-            throws IOException, IgniteCheckedException
-        {
-            long tstamp = U.currentTimeMillis();
-
-            writeToSocket(sock, msg);
-
-            stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
-
-            TcpDiscoveryClassResponse res = readMessage(sock, null, netTimeout);
-
-            stats.onMessageReceived(res);
-
-            return res;
-        }
-
-        /**
-         * @param node Node.
-         * @return Socket or {@code null} if failed to connect.
-         */
-        private Socket connect(TcpDiscoveryNode node) {
-            Socket sock = null;
-
-            for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
-                sock = connect(addr);
-
-                if (sock != null)
-                    break;
-            }
-
-            return sock;
-        }
-
-        /**
-         * @param addr Address.
-         * @return Socket or {@code null} if failed to connect.
-         */
-        private Socket connect(InetSocketAddress addr) {
-            TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(getLocalNodeId());
-
-            for (int i = 0; i < reconCnt; i++) {
-                Socket sock = null;
-
-                long tstamp = U.currentTimeMillis();
-
-                try {
-                    sock = openSocket(addr);
-
-                    writeToSocket(sock, req);
-
-                    TcpDiscoveryHandshakeResponse res = readMessage(sock, null, netTimeout);
-
-                    if (!res.creatorNodeId().equals(node.id()))
-                        return null;
-
-                    stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
-
-                    return sock;
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    U.closeQuiet(sock);
-                }
-            }
-
-            return null;
         }
     }
 }

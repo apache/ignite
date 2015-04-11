@@ -80,8 +80,10 @@ public class CacheConfigurationP2PTestClient {
 
             SqlQuery<Integer, Organization1> qry1 = new SqlQuery<>(Organization1.class, "_key >= 0");
 
-            if (cache1.query(qry1).getAll().isEmpty())
-                throw new Exception("Query failed.");
+            int cnt = cache1.query(qry1).getAll().size();
+
+            if (cnt != 500)
+                throw new Exception("Unexpected query result: " + cnt);
 
             System.out.println("Sleep some time.");
 
@@ -97,13 +99,15 @@ public class CacheConfigurationP2PTestClient {
 
             IgniteCache<Integer, Organization2> cache2 = ignite.createCache(ccfg2);
 
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < 600; i++)
                 cache2.put(i, new Organization2("org-" + i));
 
             SqlQuery<Integer, Organization2> qry2 = new SqlQuery<>(Organization2.class, "_key >= 0");
 
-            if (cache2.query(qry2).getAll().isEmpty())
-                throw new Exception("Query failed.");
+            cnt = cache2.query(qry2).getAll().size();
+
+            if (cnt != 600)
+                throw new Exception("Unexpected query result: " + cnt);
 
             cache1.close();
 
