@@ -18,51 +18,59 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
- * Wrapped for custom message.
+ *
  */
-@TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClassResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private transient Serializable msg;
+    private String errMsg;
 
     /** */
-    private final byte[] msgBytes;
+    private byte[] clsBytes;
 
     /**
-     * @param creatorNodeId Creator node id.
-     * @param msgBytes Serialized message.
+     * @param creatorNodeId Creator node ID.
+     * @param clsBytes Class bytes.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg, byte[] msgBytes) {
+    public TcpDiscoveryClassResponse(UUID creatorNodeId, byte[] clsBytes) {
         super(creatorNodeId);
 
-        this.msg = msg;
-        this.msgBytes = msgBytes;
+        this.clsBytes = clsBytes;
     }
 
     /**
-     * @return Message.
+     * @param creatorNodeId Creator node ID.
+     * @param errMsg Error message.
      */
-    public Serializable message() {
-        return msg;
+    public TcpDiscoveryClassResponse(UUID creatorNodeId, String errMsg) {
+        super(creatorNodeId);
+
+        this.errMsg = errMsg;
     }
 
     /**
-     * @return Serialized message.
+     * @return Error if class loading failed.
      */
-    public byte[] messageBytes() {
-        return msgBytes;
+    @Nullable public String error() {
+        return errMsg;
+    }
+
+    /**
+     * @return Loaded class bytes.
+     */
+    public byte[] classBytes() {
+        return clsBytes;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryClassResponse.class, this, "super", super.toString());
     }
 }

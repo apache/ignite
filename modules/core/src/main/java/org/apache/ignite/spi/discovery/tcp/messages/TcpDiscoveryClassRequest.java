@@ -19,50 +19,37 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
- * Wrapped for custom message.
+ *
  */
-@TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClassRequest extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private transient Serializable msg;
-
-    /** */
-    private final byte[] msgBytes;
+    private String clsName;
 
     /**
-     * @param creatorNodeId Creator node id.
-     * @param msgBytes Serialized message.
+     * @param creatorNodeId Creator node ID.
+     * @param clsName Class name.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg, byte[] msgBytes) {
+    public TcpDiscoveryClassRequest(UUID creatorNodeId, String clsName) {
         super(creatorNodeId);
 
-        this.msg = msg;
-        this.msgBytes = msgBytes;
+        this.clsName = clsName;
     }
 
     /**
-     * @return Message.
+     * @return Class name.
      */
-    public Serializable message() {
-        return msg;
-    }
-
-    /**
-     * @return Serialized message.
-     */
-    public byte[] messageBytes() {
-        return msgBytes;
+    public String className() {
+        return clsName;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryClassRequest.class, this, "super", super.toString());
     }
 }

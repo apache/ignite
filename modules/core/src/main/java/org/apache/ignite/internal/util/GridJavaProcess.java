@@ -82,7 +82,7 @@ public final class GridJavaProcess {
      */
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC) throws Exception {
-        return exec(cls, params, log, printC, procKilledC, null, null);
+        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, null, null);
     }
 
     /**
@@ -101,6 +101,25 @@ public final class GridJavaProcess {
     public static GridJavaProcess exec(Class cls, String params, @Nullable IgniteLogger log,
         @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
         @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
+        return exec(cls.getCanonicalName(), params, log, printC, procKilledC, jvmArgs, cp);
+    }
+
+    /**
+     * Executes main() method of the given class in a separate system process.
+     *
+     * @param clsName Class with main() method to be run.
+     * @param params main() method parameters.
+     * @param printC Optional closure to be called each time wrapped process prints line to system.out or system.err.
+     * @param procKilledC Optional closure to be called when process termination is detected.
+     * @param log Log to use.
+     * @param jvmArgs JVM arguments to use.
+     * @param cp Additional classpath.
+     * @return Wrapper around {@link Process}
+     * @throws Exception If any problem occurred.
+     */
+    public static GridJavaProcess exec(String clsName, String params, @Nullable IgniteLogger log,
+        @Nullable IgniteInClosure<String> printC, @Nullable GridAbsClosure procKilledC,
+        @Nullable Collection<String> jvmArgs, @Nullable String cp) throws Exception {
         if (!(U.isLinux() || U.isMacOs() || U.isWindows()))
             throw new Exception("Your OS is not supported.");
 
@@ -111,7 +130,6 @@ public final class GridJavaProcess {
 
         String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
-        String clsName = cls.getCanonicalName();
 
         if (cp != null)
             classpath += System.getProperty("path.separator") + cp;
@@ -158,6 +176,22 @@ public final class GridJavaProcess {
         killProc.waitFor();
 
         assert killProc.exitValue() == 0 : "Process killing was not successful";
+
+        if (procKilledC != null)
+            procKilledC.apply();
+
+        U.interrupt(osGrabber);
+        U.interrupt(esGrabber);
+
+        U.join(osGrabber, log);
+        U.join(esGrabber, log);
+    }
+
+    /**
+     * Kills process using {@link Process#destroy()}.
+     */
+    public void killProcess() {
+        proc.destroy();
 
         if (procKilledC != null)
             procKilledC.apply();

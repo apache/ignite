@@ -128,8 +128,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @param metricsProvider Metrics provider.
      * @param ver Version.
      */
-    public TcpDiscoveryNode(UUID id, Collection<String> addrs, Collection<String> hostNames, int discPort,
-                            DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver) {
+    public TcpDiscoveryNode(UUID id,
+        Collection<String> addrs,
+        Collection<String> hostNames, int discPort,
+        DiscoveryMetricsProvider metricsProvider, IgniteProductVersion ver)
+    {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -145,6 +148,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         consistentId = U.consistentId(addrs, discPort);
 
         metrics = metricsProvider.metrics();
+        cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
@@ -248,9 +252,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      * @param cacheMetrics Cache metrics.
      */
     public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
-        assert cacheMetrics != null;
-
-        this.cacheMetrics = cacheMetrics;
+        this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 
     /**
