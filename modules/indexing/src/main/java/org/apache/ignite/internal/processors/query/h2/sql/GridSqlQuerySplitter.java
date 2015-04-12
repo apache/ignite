@@ -71,9 +71,10 @@ public class GridSqlQuerySplitter {
     /**
      * @param stmt Prepared statement.
      * @param params Parameters.
+     * @param colocated Colocated query.
      * @return Two step query.
      */
-    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params) {
+    public static GridCacheTwoStepQuery split(JdbcPreparedStatement stmt, Object[] params, boolean colocated) {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
@@ -140,7 +141,7 @@ public class GridSqlQuerySplitter {
         boolean aggregateFound = false;
 
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
-            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i);
+            aggregateFound |= splitSelectExpression(mapExps, rdcExps, colNames, i, colocated);
 
         // Fill select expressions.
         mapQry.clearSelect();
@@ -161,12 +162,14 @@ public class GridSqlQuerySplitter {
             for (int col : srcQry.groupColumns())
                 mapQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
 
-            for (int col : srcQry.groupColumns())
-                rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
+            if (!colocated) {
+                for (int col : srcQry.groupColumns())
+                    rdcQry.addGroupExpression(column(((GridSqlAlias)mapExps.get(col)).alias()));
+            }
         }
 
         // -- HAVING
-        if (srcQry.having() != null) {
+        if (srcQry.having() != null && !colocated) {
             // TODO Find aggregate functions in HAVING clause.
             rdcQry.whereAnd(column(columnName(srcQry.havingColumn())));
 
@@ -297,10 +300,11 @@ public class GridSqlQuerySplitter {
      * @param rdcSelect Selects for reduce query.
      * @param colNames Set of unique top level column names.
      * @param idx Index.
+     * @param colocated If it is a colocated query.
      * @return {@code true} If aggregate was found.
      */
     private static boolean splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
-        Set<String> colNames, int idx) {
+        Set<String> colNames, int idx, boolean colocated) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
@@ -312,7 +316,7 @@ public class GridSqlQuerySplitter {
             el = alias.child();
         }
 
-        if (el instanceof GridSqlAggregateFunction) {
+        if (!colocated && el instanceof GridSqlAggregateFunction) {
             aggregateFound = true;
 
             GridSqlAggregateFunction agg = (GridSqlAggregateFunction)el;

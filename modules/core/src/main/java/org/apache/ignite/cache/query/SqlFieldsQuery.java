@@ -39,6 +39,9 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     @GridToStringInclude
     private Object[] args;
 
+    /** */
+    private boolean colocated;
+
     /**
      * Constructs sql fields query.
      *
@@ -88,6 +91,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setArgs(Object... args) {
         this.args = args;
+
+        return this;
+    }
+
+    /**
+     * Checks if this query colocated.
+     *
+     * @return {@code true} If the query is colocated.
+     */
+    public boolean isColocated() {
+        return colocated;
+    }
+
+    /**
+     * Sets flag defining if this query colocated.
+     *
+     * @param colocated Flag value.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setColocated(boolean colocated) {
+        this.colocated = colocated;
 
         return this;
     }
