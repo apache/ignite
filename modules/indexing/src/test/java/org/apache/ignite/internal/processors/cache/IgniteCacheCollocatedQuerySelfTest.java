@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  */
-public class IgniteCacheColocatedQuerySelfTest extends GridCommonAbstractTest {
+public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String QRY =
         "select productId, sum(price) s, count(1) c " +
@@ -108,11 +108,11 @@ public class IgniteCacheColocatedQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * @param c Cache.
-     * @param colocated Colocated.
+     * @param collocated Colocated.
      * @return Result.
      */
-    private static List<List<?>> query(IgniteCache<AffinityUuid,Purchase> c, boolean colocated) {
-        return c.query(new SqlFieldsQuery(QRY).setArgs(30, 5).setColocated(colocated)).getAll();
+    private static List<List<?>> query(IgniteCache<AffinityUuid,Purchase> c, boolean collocated) {
+        return c.query(new SqlFieldsQuery(QRY).setArgs(30, 5).setCollocated(collocated)).getAll();
     }
 
     /**
