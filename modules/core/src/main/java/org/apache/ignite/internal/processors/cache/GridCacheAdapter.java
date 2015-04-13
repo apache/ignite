@@ -2041,32 +2041,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         });
     }
 
-    /**
-     * @param key Key.
-     * @param val Value.
-     * @param filter Optional filter.
-     * @return Previous value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean putx0(final K key, final V val, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
-        A.notNull(key, "key", val, "val");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        validateCacheValue(val);
-
-        return syncOp(new SyncOp<Boolean>(true) {
-            @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, filter).get().success();
-            }
-
-            @Override public String toString() {
-                return "put [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
-            }
-        });
-    }
-
     /** {@inheritDoc} */
     @Override public boolean putx(final K key, final V val) throws IgniteCheckedException {
         return putx(key, val, CU.empty0(), true);

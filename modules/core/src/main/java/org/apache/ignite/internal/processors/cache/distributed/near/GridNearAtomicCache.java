@@ -393,11 +393,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx0(K key, V val, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.putx0(key, val, filter);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean putx(K key,
         V val,
         CacheEntryPredicate[] filter, boolean enableStat) throws IgniteCheckedException {
