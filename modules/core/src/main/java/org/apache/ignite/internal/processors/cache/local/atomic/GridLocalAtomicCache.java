@@ -276,14 +276,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
-        @Nullable CacheEntryPredicate[] filter) {
+    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m) {
         return updateAllAsync0(m,
             null,
             null,
             false,
             false,
-            filter).chain(RET2NULL);
+            CU.empty0()).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */

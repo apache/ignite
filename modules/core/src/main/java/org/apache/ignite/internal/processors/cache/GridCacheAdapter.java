@@ -1639,15 +1639,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return getAllAsync(keys,
-                true,
-                entry,
-                !skipTx,
-                subjId,
-                taskName,
-                deserializePortable,
-                forcePrimary,
-                skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
-                skipVals);
+            true,
+            entry,
+            !skipTx,
+            subjId,
+            taskName,
+            deserializePortable,
+            forcePrimary,
+            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals);
     }
 
     /**
@@ -2686,16 +2686,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m) {
-        return putAllAsync(m, CU.empty0());
-    }
-
-    /**
-     * @param m Map to put.
-     * @param filter Filter.
-     * @return Put future.
-     */
-    public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m,
-        @Nullable final CacheEntryPredicate... filter) {
         if (F.isEmpty(m))
             return new GridFinishedFuture<Object>();
 
@@ -2706,11 +2696,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return asyncOp(new AsyncInOp(m.keySet()) {
             @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, m, false, null, -1, filter).chain(RET2NULL);
+                return tx.putAllAsync(ctx, m, false, null, -1, CU.empty0()).chain(RET2NULL);
             }
 
             @Override public String toString() {
-                return "putAllAsync [map=" + m + ", filter=" + Arrays.toString(filter) + ']';
+                return "putAllAsync [map=" + m + ']';
             }
         });
     }
