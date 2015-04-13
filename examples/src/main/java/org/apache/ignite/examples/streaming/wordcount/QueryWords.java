@@ -66,12 +66,8 @@ public class QueryWords {
                 // Print average count.
                 List<?> row = stats.get(0);
 
-                int size = stmCache.size();
-
                 if (row.get(0) != null)
-
-                    System.out.printf("Query results [total=%d, avg=%.2f, min=%d, max=%d]%n",
-                        size, row.get(0), row.get(1), row.get(2));
+                    System.out.printf("Query results [avg=%.2f, min=%d, max=%d]%n", row.get(0), row.get(1), row.get(2));
 
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top10);
