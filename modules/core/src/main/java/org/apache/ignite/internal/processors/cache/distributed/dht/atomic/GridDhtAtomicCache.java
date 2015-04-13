@@ -507,7 +507,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean removex(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
         return removexAsync0(key, filter).get();
     }
 

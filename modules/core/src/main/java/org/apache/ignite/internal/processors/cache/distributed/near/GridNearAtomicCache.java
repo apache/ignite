@@ -570,8 +570,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.removex0(key, filter);
+    @Override public boolean removex(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+        return dht.removex(key, filter);
     }
 
     /** {@inheritDoc} */

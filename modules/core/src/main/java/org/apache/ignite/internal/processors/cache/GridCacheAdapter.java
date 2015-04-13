@@ -2898,7 +2898,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        boolean rmv = removex0(key, CU.empty0());
+        boolean rmv = removex(key, CU.empty0());
 
         if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
@@ -2912,7 +2912,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-     public boolean removex0(final K key, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
+     public boolean removex(final K key, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
