@@ -317,12 +317,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> putAsync(K key, V val) {
-        return cache.putAsync0(key, val, CU.empty0());
+        return cache.putAsync(key, val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val) throws IgniteCheckedException {
-        return cache.putxAsync0(key, val, CU.empty0()).get();
+        return cache.putx(key, val);
     }
 
     /** {@inheritDoc} */
@@ -379,7 +379,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val) {
-        return cache.putxAsync0(key, val, CU.empty0());
+        return cache.putxAsync(key, val);
     }
 
     /** {@inheritDoc} */
@@ -441,7 +441,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m) {
-        return cache.putAllAsync(m, CU.empty0());
+        return cache.putAllAsync(m);
     }
 
     /** {@inheritDoc} */
@@ -561,7 +561,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> removeAsync(K key) {
-        return cache.removeAsync(key, CU.empty0());
+        return cache.removeAsync(key);
     }
 
     /** {@inheritDoc} */
