@@ -326,7 +326,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean removex(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean removex(K key) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -340,7 +340,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             expiryPerCall(),
             false,
             false,
-            filter,
+            CU.empty0(),
             ctx.writeThrough());
 
         if (statsEnabled && rmv)
