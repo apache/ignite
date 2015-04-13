@@ -2012,7 +2012,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    protected IgniteInternalFuture<V> putAsync0(final K key, final V val, @Nullable final CacheEntryPredicate... filter) {
+    public IgniteInternalFuture<V> putAsync0(final K key, final V val, @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -2343,7 +2343,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    protected IgniteInternalFuture<Boolean> putxAsync0(final K key, final V val,
+    public IgniteInternalFuture<Boolean> putxAsync0(final K key, final V val,
         @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
