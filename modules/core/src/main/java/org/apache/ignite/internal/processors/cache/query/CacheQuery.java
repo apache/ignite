@@ -35,7 +35,6 @@ import org.jetbrains.annotations.*;
  * or joins must be annotated with {@link QuerySqlField} annotation.
  * <h2 class="header">Field Queries</h2>
  * By default {@code select} clause is ignored as query result contains full objects.
- * If it is needed to select individual fields, use {@link CacheQueries#createSqlFieldsQuery(String)} method.
  * This type of query replaces full objects with individual fields. Note that selected fields
  * must be annotated with {@link QuerySqlField} annotation.
  * <h2 class="header">Cross-Cache Queries</h2>
