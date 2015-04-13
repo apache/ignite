@@ -837,7 +837,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return exp == null && val == null ? c.removeAsync(key) :
                 exp == null ? c.putIfAbsentAsync(key, val) :
                     val == null ? c.removeAsync(key, exp) :
-                        c.getAndReplaceAsync(key, exp, val);
+                        c.replaceAsync(key, exp, val);
         }
     }
 

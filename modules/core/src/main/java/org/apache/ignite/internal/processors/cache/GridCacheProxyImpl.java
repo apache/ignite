@@ -753,11 +753,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.getAndReplace(key, oldVal, newVal);
+            return delegate.replace(key, oldVal, newVal);
         }
         finally {
             gate.leave(prev);
@@ -765,11 +765,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.getAndReplaceAsync(key, oldVal, newVal);
+            return delegate.replaceAsync(key, oldVal, newVal);
         }
         finally {
             gate.leave(prev);

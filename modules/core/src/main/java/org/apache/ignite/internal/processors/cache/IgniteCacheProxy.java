@@ -931,12 +931,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAndReplaceAsync(key, oldVal, newVal));
+                    setFuture(delegate.replaceAsync(key, oldVal, newVal));
 
                     return false;
                 }
                 else
-                    return delegate.getAndReplace(key, oldVal, newVal);
+                    return delegate.replace(key, oldVal, newVal);
             }
             finally {
                 gate.leave(prev);

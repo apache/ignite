@@ -395,12 +395,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return getAndReplaceAsync(key, oldVal, newVal).get();
+    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return replaceAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         return putAsync(key, newVal, ctx.equalsValArray(oldVal));

@@ -1491,7 +1491,7 @@ public class IgfsMetaManager extends IgfsManager {
                         throw fsException("Failed to update file info (file types differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
-                    boolean b = metaCache.getAndReplace(fileId, oldInfo, newInfo);
+                    boolean b = metaCache.replace(fileId, oldInfo, newInfo);
 
                     assert b : "Inconsistent transaction state [oldInfo=" + oldInfo + ", newInfo=" + newInfo +
                         ", c=" + c + ']';

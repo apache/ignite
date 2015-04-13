@@ -423,12 +423,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return getAndReplaceAsync(key, oldVal, newVal).get();
+    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return replaceAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         CacheEntryPredicate fltr = cctx.equalsValue(oldVal);
 
         return cache.putAsync(key, newVal, fltr);

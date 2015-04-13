@@ -706,7 +706,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
      */
-    public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException;
+    public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
@@ -726,7 +726,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pairs in cache. If filters are provided, then entries will

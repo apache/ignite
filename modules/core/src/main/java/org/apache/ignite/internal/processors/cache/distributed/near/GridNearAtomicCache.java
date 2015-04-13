@@ -450,13 +450,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return dht.getAndReplace(key, oldVal, newVal);
+    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return dht.replace(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
-        return dht.getAndReplaceAsync(key, oldVal, newVal);
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+        return dht.replaceAsync(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
