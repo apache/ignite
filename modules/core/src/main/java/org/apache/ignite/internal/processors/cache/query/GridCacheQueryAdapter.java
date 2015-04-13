@@ -363,36 +363,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<T> execute(@Nullable Object... args) {
-        return execute(null, null, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
-        return execute(rmtReducer, null, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> CacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
-        return execute(null, rmtTransform, args);
-    }
-
-    @Override public QueryMetrics metrics() {
-        return metrics.copy();
-    }
-
-    @Override public void resetMetrics() {
-        metrics = new GridCacheQueryMetricsAdapter();
-    }
-
-    /**
-     * @param rmtReducer Optional reducer.
-     * @param rmtTransform Optional transformer.
-     * @param args Arguments.
-     * @return Future.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    private <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
-        @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<ClusterNode> nodes = nodes();
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
@@ -405,7 +375,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (cctx.deploymentEnabled()) {
             try {
-                cctx.deploy().registerClasses(filter, rmtReducer, rmtTransform);
+                cctx.deploy().registerClasses(filter, null, null);
                 cctx.deploy().registerClasses(args);
             }
             catch (IgniteCheckedException e) {
@@ -418,18 +388,26 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
-            (IgniteClosure<Object, Object>)rmtTransform, args);
+        GridCacheQueryBean bean = new GridCacheQueryBean(this, null, null, args);
 
         GridCacheQueryManager qryMgr = cctx.queries();
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
         if (type == SQL_FIELDS || type == SPI)
-            return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
+            return (CacheQueryFuture<T>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else
-            return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+            return (CacheQueryFuture<T>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+    }
+
+
+    @Override public QueryMetrics metrics() {
+        return metrics.copy();
+    }
+
+    @Override public void resetMetrics() {
+        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**

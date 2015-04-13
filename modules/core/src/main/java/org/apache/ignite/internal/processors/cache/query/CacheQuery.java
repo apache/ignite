@@ -21,7 +21,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -258,24 +257,6 @@ public interface CacheQuery<T> {
      * @return Future for the query result.
      */
     public CacheQueryFuture<T> execute(@Nullable Object... args);
-
-    /**
-     * Executes the query the same way as {@link #execute(Object...)} method but reduces result remotely.
-     *
-     * @param rmtReducer Remote reducer.
-     * @param args Optional arguments.
-     * @return Future for the query result.
-     */
-    public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args);
-
-    /**
-     * Executes the query the same way as {@link #execute(Object...)} method but transforms result remotely.
-     *
-     * @param rmtTransform Remote transformer.
-     * @param args Optional arguments.
-     * @return Future for the query result.
-     */
-    public <R> CacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args);
 
     /**
      * Gets metrics for this query.
