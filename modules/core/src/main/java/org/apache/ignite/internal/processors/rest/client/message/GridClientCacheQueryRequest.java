@@ -106,26 +106,8 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     /** Page size. */
     private int pageSize;
 
-    /** Timeout. */
-    private long timeout;
-
-    /** Include backups flag. */
-    private boolean includeBackups;
-
-    /** Enable dedup flag. */
-    private boolean enableDedup;
-
-    /** Keep portable flag. */
-    private boolean keepPortable;
-
     /** Class name. */
     private String clsName;
-
-    /** Remote reducer class name. */
-    private String rmtReducerClsName;
-
-    /** Remote transformer class name. */
-    private String rmtTransformerClsName;
 
     /** Query arguments. */
     private Object[] qryArgs;
@@ -215,55 +197,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
     }
 
     /**
-     * @return Query timeout.
-     */
-    public long timeout() {
-        return timeout;
-    }
-
-    /**
-     * @param timeout Query timeout.
-     */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
-     * @return Include backups flag.
-     */
-    public boolean includeBackups() {
-        return includeBackups;
-    }
-
-    /**
-     * @param includeBackups Include backups flag.
-     */
-    public void includeBackups(boolean includeBackups) {
-        this.includeBackups = includeBackups;
-    }
-
-    /**
-     * @return Enable de-duplication flag.
-     */
-    public boolean enableDedup() {
-        return enableDedup;
-    }
-
-    /**
-     * @return Keep portable flag.
-     */
-    public boolean keepPortable() {
-        return keepPortable;
-    }
-
-    /**
-     * @param enableDedup Enable de-duplication flag.
-     */
-    public void enableDedup(boolean enableDedup) {
-        this.enableDedup = enableDedup;
-    }
-
-    /**
      * @return Class name.
      */
     public String className() {
@@ -275,34 +208,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
      */
     public void className(String clsName) {
         this.clsName = clsName;
-    }
-
-    /**
-     * @return Remote reducer class name.
-     */
-    public String remoteReducerClassName() {
-        return rmtReducerClsName;
-    }
-
-    /**
-     * @param rmtReducerClsName Remote reducer class name.
-     */
-    public void remoteReducerClassName(String rmtReducerClsName) {
-        this.rmtReducerClsName = rmtReducerClsName;
-    }
-
-    /**
-     * @return Remote transformer class name.
-     */
-    public String remoteTransformerClassName() {
-        return rmtTransformerClsName;
-    }
-
-    /**
-     * @param rmtTransformerClsName Remote transformer class name.
-     */
-    public void remoteTransformerClassName(String rmtTransformerClsName) {
-        this.rmtTransformerClsName = rmtTransformerClsName;
     }
 
     /**
@@ -329,13 +234,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         cacheName = U.readString(in);
         clause = U.readString(in);
         pageSize = in.readInt();
-        timeout = in.readLong();
-        includeBackups = in.readBoolean();
-        enableDedup = in.readBoolean();
-        keepPortable = in.readBoolean();
         clsName = U.readString(in);
-        rmtReducerClsName = U.readString(in);
-        rmtTransformerClsName = U.readString(in);
         qryArgs = U.readArray(in);
     }
 
@@ -348,14 +247,7 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
         out.writeInt(type == null ? -1 : type.ordinal());
         U.writeString(out, cacheName);
         U.writeString(out, clause);
-        out.writeInt(pageSize);
-        out.writeLong(timeout);
-        out.writeBoolean(includeBackups);
-        out.writeBoolean(enableDedup);
-        out.writeBoolean(keepPortable);
         U.writeString(out, clsName);
-        U.writeString(out, rmtReducerClsName);
-        U.writeString(out, rmtTransformerClsName);
         U.writeArray(out, qryArgs);
     }
 

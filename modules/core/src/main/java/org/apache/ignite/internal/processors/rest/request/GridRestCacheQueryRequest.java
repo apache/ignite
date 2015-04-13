@@ -81,53 +81,12 @@ public class GridRestCacheQueryRequest extends GridRestRequest implements Serial
     }
 
     /**
-     * @return Timeout.
-     */
-    public long timeout() {
-        return msg.timeout();
-    }
-
-    /**
-     * @return Include backups.
-     */
-    public boolean includeBackups() {
-        return msg.includeBackups();
-    }
-
-    /**
-     * @return Enable dedup.
-     */
-    public boolean enableDedup() {
-        return msg.enableDedup();
-    }
-
-    /**
-     * @return Keep portable flag.
-     */
-    public boolean keepPortable() {
-        return msg.keepPortable();
-    }
-
-    /**
      * @return Class name.
      */
     public String className() {
         return msg.className();
     }
 
-    /**
-     * @return Remot reducer class name.
-     */
-    public String remoteReducerClassName() {
-        return msg.remoteReducerClassName();
-    }
-
-    /**
-     * @return Remote transformer class name.
-     */
-    public String remoteTransformerClassName() {
-        return msg.remoteTransformerClassName();
-    }
 
     /**
      * @return Query arguments.

@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
@@ -175,10 +174,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     ) throws IgniteCheckedException {
         if (wrapper == null)
             throw new IgniteCheckedException("Failed to find query future (query has been expired).");
-
-        GridCacheQueryFutureAdapter<?, ?, ?> fut = wrapper.future();
-
-        Collection<Object> col = (Collection<Object>)fut.nextPage();
+        Collection<Object> col = wrapper.result();
 
         GridCacheRestResponse res = new GridCacheRestResponse();
 
@@ -268,28 +264,28 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         @Override public GridRestResponse call() throws Exception {
             long qryId = qryIdGen.getAndIncrement();
 
-            CacheQueries<Object,Object> queries = ((IgniteKernal)g).getCache(req.cacheName()).queries();
+            IgniteCache cache = g.cache(req.cacheName());
 
-            CacheQuery<?> qry;
+            Query qry;
 
             switch (req.type()) {
                 case SQL:
-                    qry = queries.createSqlQuery(req.className(), req.clause());
+                    qry = new SqlQuery(req.className(), req.clause()).setArgs(req.queryArguments());
 
                     break;
 
                 case SQL_FIELDS:
-                    qry = queries.createSqlFieldsQuery(req.clause());
+                    qry = new SqlFieldsQuery(req.clause()).setArgs(req.queryArguments());
 
                     break;
 
                 case FULL_TEXT:
-                    qry = queries.createFullTextQuery(req.className(), req.clause());
+                    qry = new TextQuery(req.className(), req.clause());
 
                     break;
 
                 case SCAN:
-                    qry = queries.createScanQuery(instance(IgniteBiPredicate.class, req.className()));
+                    qry = new ScanQuery(instance(IgniteBiPredicate.class, req.className()));
 
                     break;
 
@@ -297,38 +293,12 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
                     throw new IgniteCheckedException("Unsupported query type: " + req.type());
             }
 
-            boolean keepPortable = req.keepPortable();
-
-            if (!keepPortable) {
-                if (req.type() != GridClientCacheQueryRequest.GridQueryType.SCAN &&
-                    (req.remoteReducerClassName() == null && req.remoteTransformerClassName() == null))
-                    // Do not deserialize values on server if not needed.
-                    keepPortable = true;
-            }
-
-            ((GridCacheQueryAdapter)qry).keepPortable(keepPortable);
-            ((GridCacheQueryAdapter)qry).subjectId(req.clientId());
-
             if (req.pageSize() > 0)
-                qry = qry.pageSize(req.pageSize());
+                qry = qry.setPageSize(req.pageSize());
 
-            if (req.timeout() > 0)
-                qry = qry.timeout(req.timeout());
+            List<?> fut;
 
-            qry = qry.includeBackups(req.includeBackups()).enableDedup(req.enableDedup()).keepAll(false);
-
-            GridCacheQueryFutureAdapter<?, ?, ?> fut;
-
-            if (req.remoteReducerClassName() != null)
-                fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(
-                    instance(IgniteReducer.class, req.remoteReducerClassName()),
-                    req.queryArguments());
-            else if (req.remoteTransformerClassName() != null)
-                fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(
-                    instance(IgniteClosure.class, req.remoteTransformerClassName()),
-                    req.queryArguments());
-            else
-                fut = (GridCacheQueryFutureAdapter<?, ?, ?>)qry.execute(req.queryArguments());
+            fut = cache.query(qry).getAll();
 
             ConcurrentMap<QueryExecutionKey, QueryFutureWrapper> locMap = g.cluster().nodeLocalMap();
 
@@ -447,7 +417,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      */
     private static class QueryFutureWrapper {
         /** Query future. */
-        private final GridCacheQueryFutureAdapter<?, ?, ?> qryFut;
+        private final List qryFut;
 
         /** Last future use timestamp. */
         private volatile long lastUseTs;
@@ -455,7 +425,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /**
          * @param qryFut Query future.
          */
-        private QueryFutureWrapper(GridCacheQueryFutureAdapter<?, ?, ?> qryFut) {
+        private QueryFutureWrapper(List qryFut) {
             this.qryFut = qryFut;
 
             lastUseTs = U.currentTimeMillis();
@@ -464,7 +434,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /**
          * @return Query future.
          */
-        private GridCacheQueryFutureAdapter<?, ?, ?> future() {
+        private List result() {
             lastUseTs = U.currentTimeMillis();
 
             return qryFut;
