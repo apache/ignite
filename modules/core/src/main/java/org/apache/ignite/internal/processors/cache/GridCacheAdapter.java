@@ -2944,7 +2944,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn replace(final K key, final V oldVal, final V newVal)
+    @Override public GridCacheReturn replacex(final K key, final V oldVal, final V newVal)
         throws IgniteCheckedException
     {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
@@ -3006,7 +3006,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> replaceAsync(final K key, final V oldVal, final V newVal)
+    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(final K key, final V oldVal, final V newVal)
     {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 

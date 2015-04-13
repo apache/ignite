@@ -586,15 +586,15 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        return cache.replaceAsync(key, oldVal, newVal);
+        return cache.replacexAsync(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replaceAsync(key, oldVal, newVal).get();
+    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return replacexAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */

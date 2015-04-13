@@ -95,7 +95,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      *      flag.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<GridCacheReturn> replaceAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -116,7 +116,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
      */
-    public GridCacheReturn replace(K key, V oldVal, V newVal) throws IgniteCheckedException;
+    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
