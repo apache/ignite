@@ -29,7 +29,7 @@ import javax.cache.*;
  *
  * @see IgniteCache#query(Query)
  */
-public class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
+public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
