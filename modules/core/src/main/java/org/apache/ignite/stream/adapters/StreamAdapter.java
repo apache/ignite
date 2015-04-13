@@ -34,6 +34,9 @@ public abstract class StreamAdapter<T, K, V> {
     /** Streamer. */
     private IgniteDataStreamer<K, V> stmr;
 
+    /** Ignite. */
+    private Ignite ignite;
+
     /**
      * Empty constructor.
      */
@@ -78,6 +81,20 @@ public abstract class StreamAdapter<T, K, V> {
      */
     public void setTupleExtractor(StreamTupleExtractor<T, K, V> extractor) {
         this.extractor = extractor;
+    }
+
+    /**
+     * @return Provided {@link Ignite} instance.
+     */
+    public Ignite getIgnite() {
+        return ignite;
+    }
+
+    /**
+     * @param ignite {@link Ignite} instance.
+     */
+    public void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
     }
 
     /**

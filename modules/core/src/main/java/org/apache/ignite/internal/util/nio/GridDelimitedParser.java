@@ -23,45 +23,45 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * This class implements stream parser based on {@link GridNioServerBuffer}.
+ * This class implements stream parser based on {@link GridNioDelimitedBuffer}.
  * <p>
- * The rule for this parser is that every message sent over the stream is prepended with
- * 4-byte integer header containing message size. So, the stream structure is as follows:
+ * The rule for this parser is that every message sent over the stream is appended with
+ * delimiter (bytes array). So, the stream structure is as follows:
  * <pre>
- *     +--+--+--+--+--+--+...+--+--+--+--+--+--+--+...+--+
- *     | MSG_SIZE  |   MESSAGE  | MSG_SIZE  |   MESSAGE  |
- *     +--+--+--+--+--+--+...+--+--+--+--+--+--+--+...+--+
+ *     +--+--+...+--+--+--+--+--+--+--+...+--+--+--+--+--+-
+ *     |   MESSAGE  | DELIMITER  |  MESSAGE  | DELIMITER  |
+ *     +--+--+...+--+--+--+--+--+--+--+...+--+--+--+--+--+-
  * </pre>
  */
-public class GridBufferedParser implements GridNioParser {
+public class GridDelimitedParser implements GridNioParser {
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** */
+    /** Delimiter. */
+    private final byte[] delim;
+
+    /** Direct buffer. */
     private final boolean directBuf;
 
-    /** */
-    private final ByteOrder order; // TODO: GG-6460
-
     /**
+     * @param delim Delimiter.
      * @param directBuf Direct buffer.
-     * @param order Byte order.
      */
-    public GridBufferedParser(boolean directBuf, ByteOrder order) {
+    public GridDelimitedParser(byte[] delim, boolean directBuf) {
+        this.delim = delim;
         this.directBuf = directBuf;
-        this.order = order;
     }
 
     /** {@inheritDoc} */
     @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        GridNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
+        GridNioDelimitedBuffer nioBuf = ses.meta(BUF_META_KEY);
 
         // Decode for a given session is called per one thread, so there should not be any concurrency issues.
         // However, we make some additional checks.
         if (nioBuf == null) {
-            nioBuf = new GridNioServerBuffer();
+            nioBuf = new GridNioDelimitedBuffer(delim);
 
-            GridNioServerBuffer old = ses.addMeta(BUF_META_KEY, nioBuf);
+            GridNioDelimitedBuffer old = ses.addMeta(BUF_META_KEY, nioBuf);
 
             assert old == null;
         }
@@ -73,12 +73,11 @@ public class GridBufferedParser implements GridNioParser {
     @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
         byte[] msg0 = (byte[])msg;
 
-        ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length + 4) : ByteBuffer.allocate(msg0.length + 4);
+        int cap = msg0.length + delim.length;
+        ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
 
-        //res.order(order); // TODO: GG-6460
-
-        res.putInt(msg0.length);
         res.put(msg0);
+        res.put(delim);
 
         res.flip();
 
@@ -87,6 +86,6 @@ public class GridBufferedParser implements GridNioParser {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return GridBufferedParser.class.getSimpleName();
+        return this.getClass().getSimpleName();
     }
 }
