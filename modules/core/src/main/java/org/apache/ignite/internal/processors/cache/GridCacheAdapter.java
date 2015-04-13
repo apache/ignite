@@ -2726,18 +2726,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(K key)
-        throws IgniteCheckedException {
-        return remove(key, CU.empty0());
-    }
-
-    /**
-     * @param key Key to remove.
-     * @param filter Optional filter.
-     * @return Previous value.
-     * @throws IgniteCheckedException If failed.
-     */
-    public V remove(final K key, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Nullable @Override public V remove(final K key) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2749,7 +2738,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         V prevVal = syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                V ret = tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter).get().value();
+                V ret = tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, CU.empty0()).get().value();
 
                 if (ctx.config().getInterceptor() != null)
                     return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
@@ -2758,7 +2747,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override public String toString() {
-                return "remove [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
+                return "remove [key=" + key + ']';
             }
         });
 

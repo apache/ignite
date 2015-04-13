@@ -289,7 +289,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V remove(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public V remove(K key) throws IgniteCheckedException {
         return (V)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -297,7 +297,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             expiryPerCall(),
             true,
             false,
-            filter,
+            CU.empty0(),
             ctx.writeThrough());
     }
 
