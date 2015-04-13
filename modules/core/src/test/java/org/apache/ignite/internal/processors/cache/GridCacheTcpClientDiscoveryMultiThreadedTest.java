@@ -105,50 +105,54 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
         client = true;
 
-        startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
+        for (int n = 0; n < 3; n++) {
 
-        checkTopology(gridCount());
+            startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
 
-        awaitPartitionMapExchange();
+            checkTopology(gridCount());
 
-        // Explicitly create near cache for even client nodes
-        for (int i = srvNodesCnt; i < gridCount(); i++)
-            grid(i).createNearCache(null, new NearCacheConfiguration<>());
+            awaitPartitionMapExchange();
 
-        final AtomicInteger threadsCnt = new AtomicInteger();
+            // Explicitly create near cache for even client nodes
+            for (int i = srvNodesCnt; i < gridCount(); i++)
+                grid(i).createNearCache(null, new NearCacheConfiguration<>());
 
-        IgniteInternalFuture<?> f = multithreadedAsync(
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    int clientIdx = srvNodesCnt + threadsCnt.getAndIncrement();
+            final AtomicInteger threadsCnt = new AtomicInteger();
 
-                    Ignite node = grid(clientIdx);
+            IgniteInternalFuture<?> f = multithreadedAsync(
+                    new Callable<Object>() {
+                        @Override
+                        public Object call() throws Exception {
+                            int clientIdx = srvNodesCnt + threadsCnt.getAndIncrement();
 
-                    assert node.configuration().isClientMode();
+                            Ignite node = grid(clientIdx);
 
-                    IgniteCache<Integer, Integer> cache = node.cache(null);
+                            assert node.configuration().isClientMode();
 
-                    boolean isNearCacheNode = clientIdx % 2 == 0;
+                            IgniteCache<Integer, Integer> cache = node.cache(null);
 
-                    for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++)
-                        cache.put(i, i);
+                            boolean isNearCacheNode = clientIdx % 2 == 0;
 
-                    for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
-                        assertEquals(i, (int)cache.get(i));
+                            for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++)
+                                cache.put(i, i);
 
-                        if (isNearCacheNode)
-                            assertEquals(i, (int)cache.localPeek(i, CachePeekMode.ONHEAP));
-                    }
+                            for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
+                                assertEquals(i, (int) cache.get(i));
 
-                    stopGrid(clientIdx);
+                                if (isNearCacheNode)
+                                    assertEquals(i, (int) cache.localPeek(i, CachePeekMode.ONHEAP));
+                            }
 
-                    return null;
-                }
-            },
-            clientNodesCnt
-        );
+                            stopGrid(clientIdx);
 
-        f.get();
+                            return null;
+                        }
+                    },
+                    clientNodesCnt
+            );
+
+            f.get();
+        }
     }
 
     /**

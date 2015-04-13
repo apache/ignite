@@ -353,6 +353,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Cache interceptor tests.
         suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite());
 
+        // Cache + TcpClientDiscovery SPI tests.
+        suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
+
         // Multi node update.
         suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
         // TODO: GG-5353.
