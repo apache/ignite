@@ -379,11 +379,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(Serializable evt) {
         try {
-            byte[] msgBytes;
-
-            msgBytes = marsh.marshal(evt);
-
-            sockRdr.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt, msgBytes));
+            sockRdr.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(evt)));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -1184,8 +1180,16 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 if (lsnr != null) {
                     TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
-                    if (node != null && node.visible())
-                        notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allNodes(), msg.message());
+                    if (node != null && node.visible()) {
+                        try {
+                            Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+
+                            notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allNodes(), msgObj);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to unmarshal discovery custom message.", e);
+                        }
+                    }
                     else if (log.isDebugEnabled())
                         log.debug("Received metrics from unknown node: " + nodeId);
                 }
