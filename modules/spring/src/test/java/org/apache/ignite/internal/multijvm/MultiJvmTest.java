@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -29,21 +30,16 @@ import java.util.*;
 public class MultiJvmTest extends GridCommonAbstractTest {
     /** Proces name to process map. */
     private final Map<String, GridJavaProcess> nodes = new HashMap<>();
-    
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest(); 
-    }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         for (GridJavaProcess process : nodes.values())
             process.kill();
-        
+
         nodes.clear();
-        
-        super.afterTest(); 
+
+        super.afterTestsStopped();
     }
+
 
     /**
      * @throws Exception If failed.
@@ -54,7 +50,7 @@ public class MultiJvmTest extends GridCommonAbstractTest {
         Thread.sleep(10_000);
     }
 
-    private GridJavaProcess runIgniteProcess(final String nodeName, String cfg) throws Exception {
+    protected GridJavaProcess runIgniteProcess(final String nodeName, String cfg) throws Exception {
         GridJavaProcess ps = GridJavaProcess.exec(
             IgniteNodeRunner.class,
             cfg, // Params.
@@ -74,4 +70,26 @@ public class MultiJvmTest extends GridCommonAbstractTest {
         
         return ps;
     }
+
+    protected void executeTaskAndWaitForFinish(String nodeName, Class<? extends IgniteNodeRunner.Task> taskCls,
+        Object... args) throws Exception {
+        GridJavaProcess proc = nodes.get(nodeName);
+
+        OutputStream os = proc.getProcess().getOutputStream();
+
+        String argsAsStr = "";
+
+        for (Object arg : args)
+            argsAsStr += arg.toString();
+
+        OutputStreamWriter writer = new OutputStreamWriter(os);
+        
+        writer.write(IgniteNodeRunner.EXECUTE_TASK + taskCls.getName() + IgniteNodeRunner.TASK_ARGS + argsAsStr + '\n');
+        
+        writer.flush();
+
+        // Wait for finish.
+        Thread.sleep(3_000);
+    }
+
 }

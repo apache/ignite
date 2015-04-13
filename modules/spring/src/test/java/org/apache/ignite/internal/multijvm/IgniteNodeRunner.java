@@ -22,20 +22,69 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.io.*;
+
 /**
  * Run ignite node. 
  */
 public class IgniteNodeRunner {
+    public static final String TASK_EXECUTED = "Event.TaskExecuted";
+    public static final String EXECUTE_TASK = "Cmd.ExecuteTask=";
+    public static final String TASK_ARGS = ", Cmd.TaskArgs=";
+    public static final String STOP = "Cmd.Stop";
+
     public static void main(String[] args) throws Exception {
-        X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
+        try {
+            X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
-        assert args != null;
-        assert args.length == 1;
+            assert args != null;
+            assert args.length >= 1;
 
-        X.println("Starting Ignite Node...");
+            X.println("Starting Ignite Node...");
 
-        String cfg = args[0];
+            String cfg = args[0];
 
-        Ignition.start(cfg);
+            Ignite ignite = Ignition.start(cfg);
+
+            // Read commands.
+            String cmd;
+
+            final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+            boolean running = true;
+
+            while (running) {
+                cmd = br.readLine();
+    
+                X.println(">>>>> Got cmd [" + cmd + ']');
+    
+                if (cmd.startsWith(EXECUTE_TASK)) {
+                    String taskClsName = cmd.substring(EXECUTE_TASK.length(), cmd.indexOf(TASK_ARGS));
+                    String taskArgs = cmd.substring(cmd.indexOf(TASK_ARGS) + TASK_ARGS.length());
+    
+                    X.println(">>>>> Task=" + taskClsName + ", args=" + taskArgs);
+    
+                    Task task = (Task)Class.forName(taskClsName).newInstance();
+                    
+                    task.execute(ignite, taskArgs.split(" "));
+    
+                    X.println(TASK_EXECUTED);
+                }
+                else if (cmd.startsWith(STOP)) {
+                    Ignition.stopAll(false);
+    
+                    running = false;
+                }
+            }
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+            
+            System.exit(1);
+        }
+    }
+    
+    public static interface Task {
+        boolean execute(Ignite ignite, String... args);
     }
 }
