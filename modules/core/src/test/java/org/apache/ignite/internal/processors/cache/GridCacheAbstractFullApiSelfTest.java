@@ -4267,8 +4267,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testWithSkipStore() throws Exception {
-        if (gridCount() > 1) // TODO IGNITE-656 (test primary/backup/near keys with multiple nodes).
-            return;
+        //if (gridCount() > 1) // TODO IGNITE-656 (test primary/backup/near keys with multiple nodes).
+        //    return;
 
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 

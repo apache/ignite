@@ -1115,6 +1115,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
+                        //TODO: support skipStore for putAll
                         if (keys.size() > 1 &&                             // Several keys ...
                             writeThrough() &&                              // and store is enabled ...
                             !ctx.store().isLocal() &&                 // and this is not local store ...
@@ -1703,7 +1704,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     op,
                     writeVal,
                     req.invokeArguments(),
-                    primary && writeThrough(),
+                    primary && writeThrough() && !req.skipStore(),
                     req.returnValue(),
                     expiry,
                     true,

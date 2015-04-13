@@ -585,7 +585,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 invokeArgs,
                 filter,
                 subjId,
-                taskNameHash);
+                taskNameHash,
+                cctx.skipStore());
 
             req.addUpdateEntry(cacheKey,
                 val,
@@ -707,7 +708,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             invokeArgs,
                             filter,
                             subjId,
-                            taskNameHash);
+                            taskNameHash,
+                            cctx.skipStore());
 
                         pendingMappings.put(nodeId, mapped);
 
