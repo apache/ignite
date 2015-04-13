@@ -89,17 +89,6 @@ public interface CacheQueries<K, V> {
     public IgniteInternalFuture<?> rebuildIndexes(String typeName);
 
     /**
-     * Forces this cache to rebuild search indexes of all types. Sometimes indexes
-     * may hold references to objects that have already been removed from cache. Although
-     * not affecting query results, these objects may consume extra memory. Rebuilding
-     * indexes will remove any redundant references that may have temporarily got stuck
-     * inside in-memory index.
-     *
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    public IgniteInternalFuture<?> rebuildAllIndexes();
-
-    /**
      * Accumulated metrics for all queries executed for this cache.
      *
      * @return Cache query metrics.

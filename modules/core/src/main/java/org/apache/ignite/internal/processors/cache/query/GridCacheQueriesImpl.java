@@ -141,18 +141,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildAllIndexes() {
-        return ctx.queries().rebuildAllIndexes();
-    }
-
-    /** {@inheritDoc} */
     @Override public QueryMetrics metrics() {
         return ctx.queries().metrics();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        ctx.queries().resetMetrics();
     }
 
     /** {@inheritDoc} */

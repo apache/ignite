@@ -371,7 +371,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             if (clsName == null)
-                ((IgniteKernal)g).getCache(cacheName).queries().rebuildAllIndexes();
+                ((IgniteKernal)g).context().query().rebuildAllIndexes();
             else
                 ((IgniteKernal)g).getCache(cacheName).queries().rebuildIndexes(clsName);
 
