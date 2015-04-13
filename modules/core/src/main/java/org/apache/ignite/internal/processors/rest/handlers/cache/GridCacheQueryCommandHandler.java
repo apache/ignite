@@ -373,7 +373,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
             if (clsName == null)
                 ((IgniteKernal)g).context().query().rebuildAllIndexes();
             else
-                ((IgniteKernal)g).getCache(cacheName).queries().rebuildIndexes(clsName);
+                ((IgniteKernal)g).context().query().rebuildIndexes(cacheName, clsName);
 
             return null;
         }

@@ -63,32 +63,6 @@ public interface CacheQueries<K, V> {
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
-     * may hold references to objects that have already been removed from cache. Although
-     * not affecting query results, these objects may consume extra memory. Rebuilding
-     * indexes will remove any redundant references that may have temporarily got stuck
-     * inside in-memory index.
-     *
-     * @param cls Value type to rebuild indexes for.
-     *
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls);
-
-    /**
-     * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
-     * may hold references to objects that have already been removed from cache. Although
-     * not affecting query results, these objects may consume extra memory. Rebuilding
-     * indexes will remove any redundant references that may have temporarily got stuck
-     * inside in-memory index.
-     *
-     * @param typeName Value type name to rebuild indexes for.
-     *
-     * @return Future that will be completed when rebuilding of all indexes is finished.
-     */
-    public IgniteInternalFuture<?> rebuildIndexes(String typeName);
-
-    /**
      * Accumulated metrics for all queries executed for this cache.
      *
      * @return Cache query metrics.

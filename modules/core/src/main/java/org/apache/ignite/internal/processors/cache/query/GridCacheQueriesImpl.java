@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -124,20 +123,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
         return ctx.kernalContext().query().queryTwoStep(ctx, new SqlFieldsQuery(sqlQry).setArgs(params));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
-        A.notNull(cls, "cls");
-
-        return ctx.queries().rebuildIndexes(cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexes(String typeName) {
-        A.notNull("typeName", typeName);
-
-        return ctx.queries().rebuildIndexes(typeName);
     }
 
     /** {@inheritDoc} */

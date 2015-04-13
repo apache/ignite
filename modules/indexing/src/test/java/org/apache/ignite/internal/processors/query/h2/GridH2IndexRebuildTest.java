@@ -153,7 +153,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
      * @throws Exception if failed.
      */
     public void testRebuildIndexes() throws Exception {
-        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(ArrayList.class).get();
+        grid(0).context().query().rebuildIndexes(null, ArrayList.class.getName()).get();
 
         grid(0).context().query().rebuildAllIndexes().get();
 
@@ -186,8 +186,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
             cache2.remove(ENTRY_CNT * 2 + i);
         }
 
-        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(TestValue1.class).get();
-        ((IgniteKernal)grid(0)).internalCache(null).queries().rebuildIndexes(TestValue2.class).get();
+        grid(0).context().query().rebuildIndexes(null, TestValue1.class.getName()).get();
+        grid(0).context().query().rebuildIndexes(null, TestValue2.class.getName()).get();
 
         assertEquals(1, cache1.query(qry1).getAll().size());
         assertEquals(1, cache1.query(qry2).getAll().size());
@@ -216,13 +216,13 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));
 
-        checkCancel(((IgniteKernal)grid(0)).getCache(null).queries().rebuildIndexes("TestValue1"));
+        checkCancel(grid(0).context().query().rebuildIndexes(null, "TestValue1"));
 
         checkCancel(grid(0).context().query().rebuildAllIndexes());
 
         spi.sleepInRebuild = false;
 
-        final IgniteInternalFuture<?> fut1 = ((IgniteKernal)grid(0)).getCache(null).queries().rebuildIndexes(TestValue1.class);
+        final IgniteInternalFuture<?> fut1 = grid(0).context().query().rebuildIndexes(null, TestValue1.class.getName());
 
         assertFalse(fut1.isCancelled());
 
