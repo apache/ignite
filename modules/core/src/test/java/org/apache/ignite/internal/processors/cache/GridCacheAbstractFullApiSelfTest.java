@@ -4293,6 +4293,87 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNotNull(cache.get(key));
         }
 
+        cache.removeAll();
+
+        for (String key : keys)
+            assertNull(cache.get(key));
+
+        // Put/remove data from multiple nodes.
+
+        keys = new ArrayList<>(1000);
+
+        for (int i = 0; i < 1000; i++)
+            keys.add("key_" + i);
+
+        for (int i = 0; i < keys.size(); ++i)
+            cache.put(keys.get(i), i);
+
+        for (String key : keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        for (String key : keys) {
+            cacheSkipStore.remove(key);
+
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        for (String key : keys) {
+            cache.remove(key);
+
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        assertFalse(cacheSkipStore.iterator().hasNext());
+        assertTrue(map.size() == 0);
+
+        // putAll/removeAll from multiple nodes.
+
+        Map<String, Integer> data = new HashMap<>();
+
+        for (int i = 0; i < keys.size(); i++)
+            data.put(keys.get(i), i);
+
+        cacheSkipStore.putAll(data);
+
+        for (String key : keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        cache.putAll(data);
+
+        for (String key : keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cacheSkipStore.removeAll();
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cache.removeAll();
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        // Final checks
+
         String newKey = "New key";
 
         assertFalse(map.containsKey(newKey));
@@ -4311,7 +4392,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Cache.Entry<String, Integer> entry = it.next();
 
-        String rmvKey =  entry.getKey();
+        String rmvKey = entry.getKey();
 
         assertTrue(map.containsKey(rmvKey));
 

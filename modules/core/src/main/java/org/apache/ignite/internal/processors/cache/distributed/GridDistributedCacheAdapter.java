@@ -291,6 +291,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                          (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
                     ((DataStreamerImpl)dataLdr).maxRemapCount(0);
 
+                    //dataLdr.skipStore(); //Pass skip store flag here (needed for removeAll operation)
+
                     dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
                     for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {

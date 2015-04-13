@@ -372,7 +372,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals);
+                    skipVals,
+                    cctx.skipStore());
 
                 add(fut); // Append new future.
 
