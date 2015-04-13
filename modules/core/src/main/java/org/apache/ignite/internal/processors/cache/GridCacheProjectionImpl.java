@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -36,7 +35,6 @@ import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
@@ -563,7 +561,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> removeAsync(K key) {
-        return cache.removeAsync0(key, CU.empty0());
+        return cache.removeAsync(key, CU.empty0());
     }
 
     /** {@inheritDoc} */

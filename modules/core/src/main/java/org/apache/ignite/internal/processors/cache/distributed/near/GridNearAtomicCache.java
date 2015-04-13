@@ -547,14 +547,14 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V remove0(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.remove0(key, filter);
+    @Override public V remove(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
+        return dht.remove(key, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync0(K key, @Nullable CacheEntryPredicate... filter) {
-        return dht.removeAsync0(key, filter);
+    @Override public IgniteInternalFuture<V> removeAsync(K key, @Nullable CacheEntryPredicate... filter) {
+        return dht.removeAsync(key, filter);
     }
 
     /** {@inheritDoc} */
