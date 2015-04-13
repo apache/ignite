@@ -365,23 +365,6 @@
                             </execution>
 
                             <execution>
-                                <id>dependencies-optional</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml
-                                        </descriptor>
-                                    </descriptors>
-                                    <outputDirectory>${basedir}/target/release-package/libs</outputDirectory>
-                                    <finalName>optional</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>release</id>
                                 <phase>prepare-package</phase>
                                 <goals>
