@@ -105,9 +105,4 @@ public interface CacheQueries<K, V> {
      * @return Cache query metrics.
      */
     public QueryMetrics metrics();
-
-    /**
-     * Resets accumulated metrics.
-     */
-    public void resetMetrics();
 }
