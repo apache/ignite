@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -67,7 +68,7 @@ public abstract class GridCacheNearOnlySelfTest extends GridCacheClientModesAbst
 
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
-            return CacheAtomicityMode.ATOMIC;
+            return ATOMIC;
         }
     }
 
@@ -80,7 +81,7 @@ public abstract class GridCacheNearOnlySelfTest extends GridCacheClientModesAbst
 
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
-            return CacheAtomicityMode.TRANSACTIONAL;
+            return TRANSACTIONAL;
         }
     }
 
@@ -93,7 +94,7 @@ public abstract class GridCacheNearOnlySelfTest extends GridCacheClientModesAbst
 
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
-            return CacheAtomicityMode.ATOMIC;
+            return ATOMIC;
         }
     }
 
@@ -106,7 +107,7 @@ public abstract class GridCacheNearOnlySelfTest extends GridCacheClientModesAbst
 
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
-            return CacheAtomicityMode.TRANSACTIONAL;
+            return TRANSACTIONAL;
         }
     }
 }

@@ -3436,7 +3436,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
                             processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
-                                node.id(), node.order()));
+                                node.id(), node.internalOrder()));
                         }
                     }
                 }
@@ -4345,7 +4345,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                                 if (aliveCheck == 0 && isLocalNodeCoordinator()) {
                                     processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
-                                        clientNode.id(), clientNode.order()));
+                                        clientNode.id(), clientNode.internalOrder()));
                                 }
                             }
                         }

@@ -60,7 +60,7 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
 
     /** */
     public static class CaseNearCache extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
-
+        // No-op.
     }
 
     /** */
