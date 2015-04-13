@@ -313,6 +313,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Rechecks topology.
      */
     private void initTopology(GridCacheContext cacheCtx) throws IgniteCheckedException {
+        if (stopping(cacheCtx.cacheId()))
+            return;
+
         if (canCalculateAffinity(cacheCtx)) {
             if (log.isDebugEnabled())
                 log.debug("Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');

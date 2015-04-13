@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.lang.reflect.*;
 import java.security.*;
 import java.util.*;
@@ -153,11 +154,11 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
-        Map<String, Object> discData = null;
+    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
+        HashMap<String, Serializable> discData = null;
 
         for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
-            Object data = e.getValue().provideDiscoveryData(nodeId);
+            Serializable data = e.getValue().provideDiscoveryData(nodeId);
 
             if (data != null) {
                 if (discData == null)
@@ -171,11 +172,11 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID nodeId, UUID rmtNodeId, Object data) {
-        Map<String, Object> discData = (Map<String, Object>)data;
+    @Override public void onDiscoveryDataReceived(UUID nodeId, UUID rmtNodeId, Serializable data) {
+        Map<String, Serializable> discData = (Map<String, Serializable>)data;
 
         if (discData != null) {
-            for (Map.Entry<String, Object> e : discData.entrySet()) {
+            for (Map.Entry<String, Serializable> e : discData.entrySet()) {
                 PluginProvider provider = plugins.get(e.getKey());
 
                 if (provider != null)

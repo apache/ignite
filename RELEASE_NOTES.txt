@@ -1,6 +1,19 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.1
+---------------------------------------
+
+* Fixed SQL Union support
+* Added "collocated" mode for SQL queries.
+* Fixed Word-Count streaming example to produce better results.
+* Added AffinityUuid class for easier generation of unique collocated keys.
+* Added support for cache configuration templates.
+* Added support for (*) star notation in cache names.
+* Removed edtFTPj scanner from URI deployment due to licensing issues.
+* Made deployment scanners for URI-based deployment pluggable.
+* Many stability and fault-tolerance fixes.
+
 Apache Ignite In-Memory Data Fabric 1.0
 ---------------------------------------
 

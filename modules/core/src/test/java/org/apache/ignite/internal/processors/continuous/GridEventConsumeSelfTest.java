@@ -803,8 +803,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
             assertEquals(GRID_CNT + 1, cnt.get());
         }
         finally {
-            stopGrid("anotherGrid1");
-            stopGrid("anotherGrid2");
+            stopGrid("anotherGrid");
 
             grid(0).events().stopRemoteListen(consumeId);
         }

@@ -49,7 +49,9 @@ public class QueryWords {
 
             // Select top 10 words.
             SqlFieldsQuery top10Qry = new SqlFieldsQuery(
-                "select _val, count(_val) as cnt from String group by _val order by cnt desc limit 10");
+                "select _val, count(_val) as cnt from String group by _val order by cnt desc limit 10",
+                true /*collocated*/
+            );
 
             // Select average, min, and max counts among all the words.
             SqlFieldsQuery statsQry = new SqlFieldsQuery(

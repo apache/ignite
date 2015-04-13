@@ -262,7 +262,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             exists = meta.exists(fileInfo.id());
         }
         catch (IgniteCheckedException e) {
-            throw new IOError(e); // Something unrecoverable.
+            throw new IOException("File to read file metadata: " + fileInfo.path(), e);
         }
 
         if (!exists) {
@@ -330,7 +330,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 exists = !deleted && meta.exists(fileInfo.id());
             }
             catch (IgniteCheckedException e) {
-                throw new IOError(e); // Something unrecoverable.
+                throw new IOException("File to read file metadata: " + fileInfo.path(), e);
             }
 
             if (exists) {
@@ -370,7 +370,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     throw new IOException("File was concurrently deleted: " + path);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new IOError(e); // Something unrecoverable.
+                    throw new IOException("File to read file metadata: " + fileInfo.path(), e);
                 }
 
                 meta.updateParentListingAsync(parentId, fileInfo.id(), fileName, bytes, modificationTime);

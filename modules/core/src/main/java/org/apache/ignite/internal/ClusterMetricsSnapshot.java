@@ -1381,9 +1381,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         metrics.setOutboundMessagesQueueSize(buf.getInt());
         metrics.setTotalNodes(buf.getInt());
 
-        assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
-            + (buf.position() - off) + ']';
-
         return metrics;
     }
 

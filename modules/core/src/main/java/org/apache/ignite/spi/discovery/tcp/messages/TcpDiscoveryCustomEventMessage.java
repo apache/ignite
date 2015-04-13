@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -29,15 +31,20 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final Serializable msg;
+    private transient Serializable msg;
+
+    /** */
+    private final byte[] msgBytes;
 
     /**
      * @param creatorNodeId Creator node id.
+     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg, byte[] msgBytes) {
         super(creatorNodeId);
 
         this.msg = msg;
+        this.msgBytes = msgBytes;
     }
 
     /**
@@ -45,5 +52,17 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
      */
     public Serializable message() {
         return msg;
+    }
+
+    /**
+     * @return Serialized message.
+     */
+    public byte[] messageBytes() {
+        return msgBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
     }
 }
