@@ -291,7 +291,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put0(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public V put(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         return putAsync0(key, val, filter).get();
     }
 

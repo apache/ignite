@@ -1949,22 +1949,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
     }
 
-    /**
-     * @param key Key to store in cache.
-     * @param val Value to be associated with the given key.
-     * @param filter Filter.
-     * @return Previous value associated with specified key, or {@code null}
-     *  if entry did not pass the filter, or if there was no mapping for the key in swap
-     *  or in persistent storage.
-     * @throws IgniteCheckedException If failed.
-     */
-    public V put(K key, V val, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return put0(key, val, filter);
-    }
-
     /** {@inheritDoc} */
     @Override public V put(K key, V val) throws IgniteCheckedException {
-        return put0(key, val, CU.empty0());
+        return put(key, val, CU.empty0());
     }
 
     /**
@@ -1974,7 +1961,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V put0(final K key, final V val, @Nullable final CacheEntryPredicate[] filter)
+    @Nullable public V put(final K key, final V val, @Nullable final CacheEntryPredicate[] filter)
         throws IgniteCheckedException
     {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
