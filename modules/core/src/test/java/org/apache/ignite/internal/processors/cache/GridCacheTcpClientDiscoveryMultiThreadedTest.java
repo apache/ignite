@@ -94,6 +94,11 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         return PARTITIONED;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 2 * 60 * 1000;
+    }
+
     /**
      * @throws Exception If failed.
      */
