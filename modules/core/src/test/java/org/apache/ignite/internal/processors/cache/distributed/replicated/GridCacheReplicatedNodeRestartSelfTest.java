@@ -34,6 +34,8 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setAtomicityMode(atomicityMode());
+
         cc.setName(CACHE_NAME);
 
         cc.setCacheMode(REPLICATED);

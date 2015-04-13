@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -129,6 +130,13 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         keyCnt = DFLT_KEY_CNT;
         retries = DFLT_RETRIES;
         idx = -1;
+    }
+
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -504,7 +512,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (TransactionRollbackException | ClusterTopologyException |CacheException ignored) {
+                                catch (TransactionRollbackException | ClusterTopologyException | CacheException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -585,6 +593,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void checkRestartWithTx(long duration, int putThreads, int restartThreads) throws Throwable {
+        if (atomicityMode() == ATOMIC)
+            return;
+
         final long endTime = System.currentTimeMillis() + duration;
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
@@ -651,13 +662,6 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                         }
 
                                         tx.commit();
-                                    }
-                                    catch (ClusterTopologyException | CacheException e) {
-                                        if (e instanceof CacheException
-                                            && !(e.getCause() instanceof ClusterTopologyException))
-                                            throw e;
-
-                                        // It is ok if primary node leaves grid.
                                     }
                                 }
                                 catch (ClusterTopologyException | CacheException e) {
@@ -743,6 +747,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void checkRestartWithTxPutAll(long duration, int putThreads, int restartThreads) throws Throwable {
+        if (atomicityMode() == ATOMIC)
+            return;
+
         final long endTime = System.currentTimeMillis() + duration;
 
         final AtomicReference<Throwable> err = new AtomicReference<>();

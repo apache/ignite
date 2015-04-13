@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  *
  */
-public class GridCacheAtomicPutAllFailoverSelfTest extends GridCachePutAllFailoverSelfTest {
+public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRestartTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
