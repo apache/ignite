@@ -924,7 +924,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet() {
-        return entrySet((CacheEntryPredicate[])null);
+        return entrySet((CacheEntryPredicate[]) null);
     }
 
     /** {@inheritDoc} */
@@ -939,17 +939,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<K> keySet() {
-        return keySet((CacheEntryPredicate[])null);
+        return keySet((CacheEntryPredicate[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        return primaryKeySet((CacheEntryPredicate[])null);
+        return primaryKeySet((CacheEntryPredicate[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<V> values() {
-        return values((CacheEntryPredicate[])null);
+        return values((CacheEntryPredicate[]) null);
     }
 
     /**
@@ -1271,7 +1271,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
             taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+            @Override
+            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
@@ -1475,16 +1476,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     @Nullable protected GridCacheEntryEx entryExSafe(KeyCacheObject key, AffinityTopologyVersion topVer) {
         return entryEx(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean evict(K key) {
-        return evict(key, (CacheEntryPredicate[])null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void evictAll(Collection<? extends K> keys) {
-        evictAll(keys, (CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
@@ -4376,26 +4367,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return clearLocally(ctx.versions().next(), key, filter);
     }
 
-    /**
-     * @param key Key.
-     * @param filter Filters to evaluate.
-     * @return {@code True} if evicted.
-     */
-    public boolean evict(K key, @Nullable CacheEntryPredicate... filter) {
+    /** {@inheritDoc} */
+    @Override public boolean evict(K key) {
         A.notNull(key, "key");
 
         if (keyCheck)
             validateCacheKey(key);
 
-        return evictx(key, ctx.versions().next(), filter);
+        return evictx(key, ctx.versions().next(), CU.empty0());
     }
 
-    /**
-     * @param keys Keys.
-     * @param filter Filters to evaluate.
-     */
-    public void evictAll(Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) {
+    /** {@inheritDoc} */
+    @Override public void evictAll(Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
         if (F.isEmpty(keys))
@@ -4406,7 +4389,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        if (!ctx.evicts().evictSyncOrNearSync() && F.isEmptyOrNulls(filter) && ctx.isSwapOrOffheapEnabled()) {
+        if (!ctx.evicts().evictSyncOrNearSync() && ctx.isSwapOrOffheapEnabled()) {
             try {
                 ctx.evicts().batchEvict(keys, obsoleteVer);
             }
@@ -4416,7 +4399,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
         else {
             for (K k : keys)
-                evictx(k, obsoleteVer, filter);
+                evictx(k, obsoleteVer, CU.empty0());
         }
     }
 
