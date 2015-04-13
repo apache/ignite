@@ -32,8 +32,7 @@ import org.jetbrains.annotations.*;
  * <h1 class="header">SQL Queries</h1>
  * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
- * or joins must be annotated with {@link QuerySqlField} annotation. Query can be created
- * with {@link CacheQueries#createSqlQuery(Class, String)} method.
+ * or joins must be annotated with {@link QuerySqlField} annotation.
  * <h2 class="header">Field Queries</h2>
  * By default {@code select} clause is ignored as query result contains full objects.
  * If it is needed to select individual fields, use {@link CacheQueries#createSqlFieldsQuery(String)} method.
