@@ -154,6 +154,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * @param cache Cache.
      * @param key Key.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"BusyWait"})
     private void checkUnlocked(IgniteCache<Integer,String> cache, Integer key) throws IgniteCheckedException {
@@ -195,9 +196,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     }
 
     /**
-     *
      * @param cache Cache.
      * @param keys Keys.
+     * @throws IgniteCheckedException If failed.
      */
     private void checkUnlocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) throws IgniteCheckedException {
         for (Integer key : keys)
@@ -228,6 +229,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      *
      * @param key Key.
      * @return Entries.
+     * @throws IgniteCheckedException If failed.
      */
     private String entries(int key) throws IgniteCheckedException {
         if (partitioned()) {
