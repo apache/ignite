@@ -42,7 +42,6 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
-import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -302,7 +301,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        CacheEntryPredicate[] filter, boolean enableStat) throws IgniteCheckedException {
         return putxAsync(key, val, filter).get();
     }
 

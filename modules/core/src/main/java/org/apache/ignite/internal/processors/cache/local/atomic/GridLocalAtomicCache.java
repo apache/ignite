@@ -133,7 +133,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public boolean putx(K key,
         V val,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        CacheEntryPredicate[] filter, boolean enableStat) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         return (Boolean)updateAllInternal(UPDATE,
@@ -186,7 +186,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException {
-        return putx(key, val, ctx.noValArray());
+        return putx(key, val, ctx.noValArray(), true);
     }
 
     /** {@inheritDoc} */
@@ -207,7 +207,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean replacex(K key, V val) throws IgniteCheckedException {
-        return putx(key, val, ctx.hasValArray());
+        return putx(key, val, ctx.hasValArray(), true);
     }
 
     /** {@inheritDoc} */
@@ -219,7 +219,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
         A.notNull(oldVal, "oldVal");
 
-        return putx(key, newVal, ctx.equalsValArray(oldVal));
+        return putx(key, newVal, ctx.equalsValArray(oldVal), true);
     }
 
     /** {@inheritDoc} */
