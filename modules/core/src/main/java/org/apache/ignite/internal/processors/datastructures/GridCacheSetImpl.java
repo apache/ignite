@@ -165,7 +165,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return cache.putxIfAbsent(key, true);
+                return cache.putIfAbsent(key, true);
             }
         });
     }
@@ -178,7 +178,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                return cache.removex(key);
+                return cache.remove(key);
             }
         });
     }

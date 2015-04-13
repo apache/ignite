@@ -51,7 +51,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     /** {@inheritDoc} */
     @Override public void put(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         } catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }

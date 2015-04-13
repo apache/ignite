@@ -312,7 +312,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
                         fut.get();
 
                     for (int key = 0; key < keyRange; key++)
-                        cache0.remove(key);
+                        cache0.getAndRemove(key);
                 }
             }
         }
@@ -468,7 +468,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.put(key, key);
+            cache.getAndPut(key, key);
         }
     }
 
@@ -485,7 +485,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.putx(key, key);
+            cache.put(key, key);
         }
     }
 
@@ -502,7 +502,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.remove(key);
+            cache.getAndRemove(key);
         }
     }
 
@@ -519,7 +519,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.removex(key);
+            cache.remove(key);
         }
     }
 
@@ -536,7 +536,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.putIfAbsent(key, key);
+            cache.getAndPutIfAbsent(key, key);
         }
     }
 

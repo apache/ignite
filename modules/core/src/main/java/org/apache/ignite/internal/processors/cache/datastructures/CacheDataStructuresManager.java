@@ -165,7 +165,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             if (create) {
                 hdr = new GridCacheQueueHeader(IgniteUuid.randomUuid(), cap, colloc, 0, 0, null);
 
-                GridCacheQueueHeader old = queueHdrView.putIfAbsent(key, hdr);
+                GridCacheQueueHeader old = queueHdrView.getAndPutIfAbsent(key, hdr);
 
                 if (old != null) {
                     if (old.capacity() != cap || old.collocated() != colloc)
@@ -507,7 +507,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException {
         return DataStructuresProcessor.retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
-                return (T)cache.putIfAbsent(key, val);
+                return (T)cache.getAndPutIfAbsent(key, val);
             }
         });
     }

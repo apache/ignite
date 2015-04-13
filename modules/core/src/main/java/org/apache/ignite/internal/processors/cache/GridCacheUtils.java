@@ -393,34 +393,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets closure which returns {@code Entry} given cache key.
-     * If current cache is DHT and key doesn't belong to current partition,
-     * {@code null} is returned.
-     *
-     * @param ctx Cache context.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
-     */
-    public static <K, V> IgniteClosure<K, Cache.Entry<K, V>> cacheKey2Entry(
-        final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, Cache.Entry<K, V>>() {
-            @Nullable @Override public Cache.Entry<K, V> apply(K k) {
-                try {
-                    return ctx.cache().entry(k);
-                }
-                catch (GridDhtInvalidPartitionException ignored) {
-                    return null;
-                }
-            }
-
-            @Override public String toString() {
-                return "Key-to-entry transformer.";
-            }
-        };
-    }
-
-    /**
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})

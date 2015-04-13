@@ -713,7 +713,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         String existingName = tasksMetaCache.get(key);
 
         if (existingName == null)
-            existingName = tasksMetaCache.putIfAbsent(key, taskName);
+            existingName = tasksMetaCache.getAndPutIfAbsent(key, taskName);
 
         if (existingName != null && !F.eq(existingName, taskName))
             throw new IgniteCheckedException("Task name hash collision for security-enabled node " +

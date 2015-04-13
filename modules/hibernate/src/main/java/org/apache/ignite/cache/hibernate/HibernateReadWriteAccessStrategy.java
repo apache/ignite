@@ -97,7 +97,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         boolean success = false;
 
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             success = true;
         }
@@ -172,7 +172,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             TxContext ctx = txCtx.get();
 
             if (ctx != null) {
-                cache.putx(key, val);
+                cache.put(key, val);
 
                 unlock(ctx, key);
 
@@ -202,7 +202,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         boolean success = false;
 
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             success = true;
 
@@ -225,7 +225,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             TxContext ctx = txCtx.get();
 
             if (ctx != null)
-                cache.removex(key);
+                cache.remove(key);
 
             success = true;
         }

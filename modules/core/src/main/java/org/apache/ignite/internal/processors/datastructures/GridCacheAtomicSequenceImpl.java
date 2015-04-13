@@ -496,7 +496,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                     // Global counter must be more than reserved upper bound.
                     seq.set(newUpBound + 1);
 
-                    seqView.putx(key, seq);
+                    seqView.put(key, seq);
 
                     tx.commit();
 

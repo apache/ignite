@@ -139,7 +139,7 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     protected void putFromLoad(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -285,7 +285,7 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     static void evict(Ignite ignite, CacheProjection<Object,Object> cache, Object key) throws CacheException {
         try {
-            ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
+            ignite.compute(ignite.cluster()).call(new ClearKeyCallable(key, cache.name()));
         }
         catch (IgniteException e) {
             throw new CacheException(e);

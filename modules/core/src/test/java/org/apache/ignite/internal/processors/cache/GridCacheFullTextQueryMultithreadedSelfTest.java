@@ -79,7 +79,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < keyCnt; i++) {
-                        c.put(i, new H2TextValue(txt));
+                        c.getAndPut(i, new H2TextValue(txt));
 
                         if (i % logFreq == 0)
                             X.println("Stored values: " + i);

@@ -68,10 +68,10 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
 
         WKTReader r = new WKTReader();
 
-        cache.put(0, new EnemyCamp(r.read("POINT(25 75)"), "A"));
-        cache.put(1, new EnemyCamp(r.read("POINT(70 70)"), "B"));
-        cache.put(2, new EnemyCamp(r.read("POINT(70 30)"), "C"));
-        cache.put(3, new EnemyCamp(r.read("POINT(75 25)"), "D"));
+        cache.getAndPut(0, new EnemyCamp(r.read("POINT(25 75)"), "A"));
+        cache.getAndPut(1, new EnemyCamp(r.read("POINT(70 70)"), "B"));
+        cache.getAndPut(2, new EnemyCamp(r.read("POINT(70 30)"), "C"));
+        cache.getAndPut(3, new EnemyCamp(r.read("POINT(75 25)"), "D"));
 
         CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(EnemyCamp.class,
             "coords && ?");
@@ -86,21 +86,21 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
         checkPoints(res, "C", "D");
 
         // Move B to the first polygon.
-        cache.put(1, new EnemyCamp(r.read("POINT(20 75)"), "B"));
+        cache.getAndPut(1, new EnemyCamp(r.read("POINT(20 75)"), "B"));
 
         res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).get();
 
         checkPoints(res, "A", "B");
 
         // Move B to the second polygon.
-        cache.put(1, new EnemyCamp(r.read("POINT(30 30)"), "B"));
+        cache.getAndPut(1, new EnemyCamp(r.read("POINT(30 30)"), "B"));
 
         res = qry.execute(r.read("POLYGON((10 5, 10 35, 70 30, 75 25, 10 5))")).get();
 
         checkPoints(res, "B", "C", "D");
 
         // Remove B.
-        cache.remove(1, CU.empty0());
+        cache.getAndRemove(1);
 
         res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).get();
 
@@ -134,7 +134,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
             int x = rnd.nextInt(1, 100);
             int y = rnd.nextInt(1, 100);
 
-            cache1.put(idx, new EnemyCamp(r.read("POINT(" + x + " " + y + ")"), Integer.toString(idx)));
+            cache1.getAndPut(idx, new EnemyCamp(r.read("POINT(" + x + " " + y + ")"), Integer.toString(idx)));
 
             points[idx] = Integer.toString(idx);
         }
@@ -159,7 +159,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                     int x = rnd.nextInt(1, 100);
                     int y = rnd.nextInt(1, 100);
 
-                    cache.put(idx, new EnemyCamp(r.read("POINT(" + x + " " + y + ")"), Integer.toString(idx)));
+                    cache.getAndPut(idx, new EnemyCamp(r.read("POINT(" + x + " " + y + ")"), Integer.toString(idx)));
 
                     U.sleep(50);
                 }

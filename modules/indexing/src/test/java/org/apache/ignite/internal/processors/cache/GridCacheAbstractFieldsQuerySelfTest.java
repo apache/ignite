@@ -177,7 +177,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     /** @throws Exception If failed. */
     public void testCacheMetaData() throws Exception {
         // Put internal key to test filtering of internal objects.
-        ((IgniteKernal)grid(0)).getCache(null).put(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
+        ((IgniteKernal)grid(0)).getCache(null).getAndPut(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
 
         try {
             Collection<GridCacheSqlMetadata> metas =
@@ -262,7 +262,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             assert wasEmpty;
         }
         finally {
-            ((IgniteKernal)grid(0)).getCache(null).removex(new GridCacheInternalKeyImpl("LONG"));
+            ((IgniteKernal)grid(0)).getCache(null).remove(new GridCacheInternalKeyImpl("LONG"));
         }
     }
 
@@ -767,7 +767,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)grid(0)).internalCache(CACHE);
 
         for (int i = 0; i < 200; i++)
-            cache.put(i, i);
+            cache.getAndPut(i, i);
 
         CacheQuery<List<?>> qry =
             cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0).cluster());
@@ -785,7 +785,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         
         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)grid(0)).internalCache(CACHE_NO_PRIMITIVES);
 
-        cache.put("key", "val");
+        cache.getAndPut("key", "val");
 
         Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
 
@@ -812,7 +812,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         PersonKey key = new PersonKey(id);
         Person val = new Person("John", 20, 1);
 
-        cache.put(key, val);
+        cache.getAndPut(key, val);
 
         Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
 

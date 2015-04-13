@@ -1646,8 +1646,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     true,
                     isolation,
                     isInvalidate(),
-                    accessTtl,
-                    CU.empty0());
+                    accessTtl);
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
@@ -2619,8 +2618,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     retval,
                     isolation,
                     isInvalidate(),
-                    -1L,
-                    CU.empty0());
+                    -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(GridCacheReturn ret)
@@ -2841,8 +2839,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     retval,
                     isolation,
                     isInvalidate(),
-                    -1L,
-                    CU.empty0());
+                    -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override protected GridCacheReturn postLock(GridCacheReturn ret)
@@ -3038,8 +3035,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     false,
                     isolation,
                     isInvalidate(),
-                    -1L,
-                    CU.empty0()) :
+                    -1L) :
                 new GridFinishedFuture<>();
         }
         catch (IgniteCheckedException e) {

@@ -388,90 +388,65 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put(
-        K key,
-        V val,
-        @Nullable GridCacheEntryEx cached,
-        long ttl,
-        @Nullable CacheEntryPredicate[] filter
-    ) throws IgniteCheckedException {
-        return dht.put(key, val, cached, ttl, filter);
+    @Override public V getAndPut(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        return dht.getAndPut(key, val, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key,
-        V val,
-        @Nullable GridCacheEntryEx cached,
-        long ttl,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.putx(key, val, cached, ttl, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putx(K key,
-        V val,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return dht.putx(key, val, filter);
+    @Override public boolean put(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        return dht.put(key, val, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync(K key,
-        V val,
-        @Nullable GridCacheEntryEx entry,
-        long ttl,
-        @Nullable CacheEntryPredicate... filter) {
-        return dht.putAsync(key, val, entry, ttl, filter);
+    @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
+        return dht.getAndPutAsync0(key, val, filter);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync(K key,
-        V val,
-        @Nullable GridCacheEntryEx entry,
-        long ttl,
-        @Nullable CacheEntryPredicate... filter) {
-        return dht.putxAsync(key, val, entry, ttl, filter);
+    @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
+        return dht.putAsync0(key, val, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public V putIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        return dht.getAndPutIfAbsent(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
+        return dht.getAndPutIfAbsentAsync(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
         return dht.putIfAbsent(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
         return dht.putIfAbsentAsync(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException {
-        return dht.putxIfAbsent(key, val);
+    @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
+        return dht.getAndReplace(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val) {
-        return dht.putxIfAbsentAsync(key, val);
+    @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
+        return dht.getAndReplaceAsync(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public V replace(K key, V val) throws IgniteCheckedException {
+    @Override public boolean replace(K key, V val) throws IgniteCheckedException {
         return dht.replace(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
         return dht.replaceAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replacex(K key, V val) throws IgniteCheckedException {
-        return dht.replacex(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replacexAsync(K key, V val) {
-        return dht.replacexAsync(key, val);
     }
 
     /** {@inheritDoc} */
@@ -507,15 +482,14 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m, CacheEntryPredicate[] filter)
+    @Override public void putAll(Map<? extends K, ? extends V> m)
         throws IgniteCheckedException {
-        dht.putAll(m, filter);
+        dht.putAll(m);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
-        @Nullable CacheEntryPredicate[] filter) {
-        return dht.putAllAsync(m, filter);
+    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m) {
+        return dht.putAllAsync(m);
     }
 
     /** {@inheritDoc} */
@@ -572,45 +546,36 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V remove(K key,
-        @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.remove(key, entry, filter);
+    @Override public V getAndRemove(K key) throws IgniteCheckedException {
+        return dht.getAndRemove(key);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync(K key,
-        @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) {
-        return dht.removeAsync(key, entry, filter);
+    @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
+        return dht.getAndRemoveAsync(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(Collection<? extends K> keys, CacheEntryPredicate... filter)
+    @Override public void removeAll(Collection<? extends K> keys)
         throws IgniteCheckedException {
-        dht.removeAll(keys, filter);
+        dht.removeAll(keys);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
-        return dht.removeAllAsync(keys, filter);
+    @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys) {
+        return dht.removeAllAsync(keys);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key,
-        @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return dht.removex(key, entry, filter);
+    @Override public boolean remove(K key) throws IgniteCheckedException {
+        return dht.remove(key);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key,
-        @Nullable GridCacheEntryEx entry,
-        @Nullable CacheEntryPredicate... filter) {
-        return dht.removexAsync(key, entry, filter);
+    @Override public IgniteInternalFuture<Boolean> removeAsync(K key, @Nullable CacheEntryPredicate... filter) {
+        return dht.removeAsync(key, filter);
     }
 
     /** {@inheritDoc} */
@@ -631,11 +596,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         return dht.removeAllAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void localRemoveAll() throws IgniteCheckedException {
-        dht.localRemoveAll();
     }
 
     /** {@inheritDoc} */
@@ -663,15 +623,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter) {
-        return dht.lockAllAsync(null, timeout, filter);
+        long accessTtl) {
+        return dht.lockAllAsync(null, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        dht.unlockAll(keys, filter);
+    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        dht.unlockAll(keys);
     }
 
     /** {@inheritDoc} */
