@@ -54,8 +54,7 @@ import org.jetbrains.annotations.*;
  * and annotated with {@link QuerySqlFunction}. Classes containing these methods must be registered in
  * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
- * Ignite supports full text queries based on Apache Lucene engine. This queries are created by
- * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
+ * Ignite supports full text queries based on Apache Lucene engine. Note that all fields that
  * are expected to show up in text query results must be annotated with {@link QueryTextField}
  * annotation.
  * <h1 class="header">Scan Queries</h1>

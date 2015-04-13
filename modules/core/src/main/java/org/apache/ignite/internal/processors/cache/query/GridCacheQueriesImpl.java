@@ -76,20 +76,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
-        A.notNull(cls, "cls");
-        A.notNull(search, "search");
-
-        return new GridCacheQueryAdapter<>(ctx,
-            TEXT,
-            ctx.kernalContext().query().typeName(U.box(cls)),
-            search,
-            null,
-            false,
-            prj != null && prj.isKeepPortable());
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);

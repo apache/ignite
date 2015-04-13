@@ -55,16 +55,6 @@ public interface CacheQueries<K, V> {
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search);
 
     /**
-     * Creates user's full text query, queried class, and query clause.
-     * For more information refer to {@link CacheQuery} documentation.
-     *
-     * @param cls Query class.
-     * @param search Search clause.
-     * @return Created query.
-     */
-    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search);
-
-    /**
      * Creates user's predicate based scan query.
      *
      * @param filter Scan filter.
