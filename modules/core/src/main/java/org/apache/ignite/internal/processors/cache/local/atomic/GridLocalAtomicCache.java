@@ -303,8 +303,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync(K key, @Nullable CacheEntryPredicate... filter) {
-        return removeAllAsync0(Collections.singletonList(key), true, false, filter);
+    @Override public IgniteInternalFuture<V> removeAsync(K key) {
+        return removeAllAsync0(Collections.singletonList(key), true, false, CU.empty0());
     }
 
     /** {@inheritDoc} */

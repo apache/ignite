@@ -2758,16 +2758,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(K key) {
-        return removeAsync(key, CU.empty0());
-    }
-
-    /**
-     * @param key Key to remove.
-     * @param filter Optional filter.
-     * @return Put operation future.
-     */
-    public IgniteInternalFuture<V> removeAsync(final K key, @Nullable final CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(final K key) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2780,12 +2771,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>(key) {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
                 // TODO should we invoke interceptor here?
-                return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter)
+                return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, CU.empty0())
                     .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>) RET2VAL);
             }
 
             @Override public String toString() {
-                return "removeAsync [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
+                return "removeAsync [key=" + key + ']';
             }
         });
 
