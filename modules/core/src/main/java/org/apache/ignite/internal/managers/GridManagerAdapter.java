@@ -398,27 +398,37 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Nullable @Override public <K, V> V put(String cacheName, K key, V val, long ttl) {
-                        if (ttl > 0) {
-                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+                        try {
+                            if (ttl > 0) {
+                                ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
+                                IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                            return cache.getAndPut(key, val);
+                                return cache.getAndPut(key, val);
+                            }
+                            else
+                                return ctx.cache().<K, V>jcache(cacheName).getAndPut(key, val);
                         }
-                        else
-                            return ctx.cache().<K, V>jcache(cacheName).getAndPut(key, val);
+                        catch (IgniteCheckedException e) {
+                            throw CU.convertToCacheException(e);
+                        }
                     }
 
                     @Nullable @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
-                        if (ttl > 0) {
-                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+                        try {
+                            if (ttl > 0) {
+                                ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
+                                IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                            return cache.getAndPutIfAbsent(key, val);
+                                return cache.getAndPutIfAbsent(key, val);
+                            }
+                            else
+                                return ctx.cache().<K, V>jcache(cacheName).getAndPutIfAbsent(key, val);
                         }
-                        else
-                            return ctx.cache().<K, V>jcache(cacheName).getAndPutIfAbsent(key, val);
+                        catch (IgniteCheckedException e) {
+                            throw CU.convertToCacheException(e);
+                        }
                     }
 
                     @Nullable @Override public <K, V> V remove(String cacheName, K key) {
@@ -480,7 +490,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return null;
                     }
 
-                    @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
+                    @Override public Collection<SecuritySubject> authenticatedSubjects() {
                         try {
                             return ctx.security().authenticatedSubjects();
                         }
@@ -489,7 +499,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
+                    @Override public SecuritySubject authenticatedSubject(UUID subjId) {
                         try {
                             return ctx.security().authenticatedSubject(subjId);
                         }
@@ -561,12 +571,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object collectDiscoveryData(UUID nodeId) {
+    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         // No-op.
     }
 

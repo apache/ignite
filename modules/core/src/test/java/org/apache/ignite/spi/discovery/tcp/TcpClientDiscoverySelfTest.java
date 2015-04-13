@@ -425,10 +425,11 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO: IGNITE-587.
+     *
      * @throws Exception If failed.
      */
-    // TODO: GG-9174
-    public void _testDataExchangeFromClient() throws Exception {
+    public void testDataExchangeFromClient() throws Exception {
         testDataExchange("client-0");
     }
 

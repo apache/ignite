@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -47,10 +48,14 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
 
     /** Map to store nodes metrics. */
     @GridToStringExclude
-    private Map<UUID, MetricsSet> metrics;
+    private final Map<UUID, MetricsSet> metrics = new HashMap<>();
 
     /** Client node IDs. */
-    private Collection<UUID> clientNodeIds;
+    private final Collection<UUID> clientNodeIds = new HashSet<>();
+
+    /** Cahce metrics by node. */
+    @GridToStringExclude
+    private final Map<UUID, Map<Integer, CacheMetrics>> cacheMetrics = new HashMap<>();
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -66,9 +71,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      */
     public TcpDiscoveryHeartbeatMessage(UUID creatorNodeId) {
         super(creatorNodeId);
-
-        metrics = U.newHashMap(1);
-        clientNodeIds = new HashSet<>();
     }
 
     /**
@@ -83,6 +85,21 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         assert !this.metrics.containsKey(nodeId);
 
         this.metrics.put(nodeId, new MetricsSet(metrics));
+    }
+
+    /**
+     * Sets cache metrics for particular node.
+     *
+     * @param nodeId Node ID.
+     * @param metrics Node cache metrics.
+     */
+    public void setCacheMetrics(UUID nodeId, Map<Integer, CacheMetrics> metrics) {
+        assert nodeId != null;
+        assert metrics != null;
+        assert !this.cacheMetrics.containsKey(nodeId);
+
+        if (!F.isEmpty(metrics))
+            this.cacheMetrics.put(nodeId, metrics);
     }
 
     /**
@@ -113,12 +130,32 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * Removes cache metrics for particular node from the message.
+     *
+     * @param nodeId Node ID.
+     */
+    public void removeCacheMetrics(UUID nodeId) {
+        assert nodeId != null;
+
+        cacheMetrics.remove(nodeId);
+    }
+
+    /**
      * Gets metrics map.
      *
      * @return Metrics map.
      */
     public Map<UUID, MetricsSet> metrics() {
         return metrics;
+    }
+
+    /**
+     * Gets cache metrics map.
+     *
+     * @return Cache metrics map.
+     */
+    public Map<UUID, Map<Integer, CacheMetrics>> cacheMetrics() {
+        return cacheMetrics;
     }
 
     /**
@@ -129,12 +166,30 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @return {@code True} this message contains cache metrics.
+     */
+    public boolean hasCacheMetrics() {
+        return !cacheMetrics.isEmpty();
+    }
+
+    /**
      * @return {@code True} if this message contains metrics.
      */
     public boolean hasMetrics(UUID nodeId) {
         assert nodeId != null;
 
         return metrics.get(nodeId) != null;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     *
+     * @return {@code True} if this message contains cache metrics for particular node.
+     */
+    public boolean hasCacheMetrics(UUID nodeId) {
+        assert nodeId != null;
+
+        return cacheMetrics.get(nodeId) != null;
     }
 
     /**
@@ -153,36 +208,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      */
     public void addClientNodeId(UUID clientNodeId) {
         clientNodeIds.add(clientNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeInt(metrics.size());
-
-        if (!metrics.isEmpty()) {
-            for (Map.Entry<UUID, MetricsSet> e : metrics.entrySet()) {
-                U.writeUuid(out, e.getKey());
-                out.writeObject(e.getValue());
-            }
-        }
-
-        U.writeCollection(out, clientNodeIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        int metricsSize = in.readInt();
-
-        metrics = U.newHashMap(metricsSize);
-
-        for (int i = 0; i < metricsSize; i++)
-            metrics.put(U.readUuid(in), (MetricsSet)in.readObject());
-
-        clientNodeIds = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

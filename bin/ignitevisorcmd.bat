@@ -24,30 +24,34 @@
 if "%OS%" == "Windows_NT"  setlocal
 
 :: Check JAVA_HOME.
-if not "%JAVA_HOME%" == "" goto checkJdk
-    echo %0, ERROR: JAVA_HOME environment variable is not found.
-    echo %0, ERROR: Please create JAVA_HOME variable pointing to location of JDK 1.7 or JDK 1.8.
-    echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
+if defined JAVA_HOME  goto checkJdk
+    echo %0, ERROR:
+    echo JAVA_HOME environment variable is not found.
+    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
+    echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :checkJdk
 :: Check that JDK is where it should be.
 if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
-    echo %0, ERROR: The JDK is not found in %JAVA_HOME%.
-    echo %0, ERROR: Please modify your script so that JAVA_HOME would point to valid location of JDK.
+    echo %0, ERROR:
+    echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
+    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :checkJdkVersion
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
-    echo %0, ERROR: The version of JAVA installed in %JAVA_HOME% is incorrect.
-    echo %0, ERROR: Please install JDK 1.7 or 1.8.
-    echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
+    echo %0, ERROR:
+    echo The version of JAVA installed in %JAVA_HOME% is incorrect.
+    echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
+    echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
 :: Check IGNITE_HOME.
 :checkIgniteHome1
-if not "%IGNITE_HOME%" == "" goto checkIgniteHome2
+if defined IGNITE_HOME goto checkIgniteHome2
     pushd "%~dp0"/..
     set IGNITE_HOME=%CD%
     popd
@@ -82,10 +86,15 @@ set SCRIPTS_HOME=%IGNITE_HOME%\bin
 :: Remove trailing spaces
 for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
 
-if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
+if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
     echo %0, WARN: IGNITE_HOME environment variable may be pointing to wrong folder: %IGNITE_HOME%
 
-:run
+:setProgName
+::
+:: Set program name.
+::
+set PROG_NAME=ignitevisorcmd.bat
+if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 ::
 :: Set IGNITE_LIBS
@@ -102,12 +111,6 @@ if %ERRORLEVEL% neq 0 (
     echo Arguments parsing failed
     exit /b %ERRORLEVEL%
 )
-
-::
-:: Set program name.
-::
-set PROG_NAME=ignite.bat
-if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 ::
 :: JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.

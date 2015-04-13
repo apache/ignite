@@ -377,6 +377,9 @@ public class VisorTaskUtils {
         final AtomicBoolean lastFound = new AtomicBoolean(lastOrder < 0);
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
             @Override public boolean apply(Event e) {
                 // Detects that events were lost.
                 if (!lastFound.get() && (lastOrder == e.localOrder()))

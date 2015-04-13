@@ -1018,6 +1018,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Collection of active transactions.
+     */
+    public Collection<IgniteInternalTx> activeTransactions() {
+        return F.concat(false, idMap.values(), nearIdMap.values());
+    }
+
+    /**
      * @param xidVer Completed transaction version.
      * @param nearXidVer Optional near transaction ID.
      * @return If transaction was not already present in completed set.
@@ -1263,7 +1270,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             // 15. Update metrics.
             if (!tx.dht() && tx.local()) {
-                cctx.txMetrics().onTxCommit();
+                if (!tx.system())
+                    cctx.txMetrics().onTxCommit();
 
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -1337,7 +1345,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
-                cctx.txMetrics().onTxRollback();
+                if (!tx.system())
+                    cctx.txMetrics().onTxRollback();
 
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);

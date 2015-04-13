@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -151,8 +152,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 IgniteCache<String, MyValue> c1 = grid(j).cache("one");
                 IgniteCache<String, MyValue> c2 = grid(j).cache("two");
 
-                int size1 = c1.localSize();
-                int size2 = c2.localSize();
+                int size1 = c1.localSize(CachePeekMode.ALL);
+                int size2 = c2.localSize(CachePeekMode.ALL);
 
                 assertEquals(" Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']', keys.length, size1);
                 assertEquals(" Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']', keys.length / 2, size2);

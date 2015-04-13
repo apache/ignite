@@ -116,12 +116,9 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
-     * @param node Node.
-     * @param cacheName Cache name.
      * @return Cache object context.
      */
-    public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName,
-        @Nullable CacheConfiguration ccfg);
+    public CacheObjectContext contextForCache(CacheConfiguration ccfg);
 
     /**
      * @param ctx Cache context.
@@ -160,8 +157,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param obj Value.
-     * @return {@code True} if object is of known immutable type of it is marked
-     *          with {@link IgniteImmutable} annotation.
+     * @return {@code True} if object is of known immutable type.
      */
     public boolean immutable(Object obj);
 }

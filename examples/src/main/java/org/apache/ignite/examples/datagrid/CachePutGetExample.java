@@ -18,8 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 
 import java.util.*;
@@ -45,13 +43,7 @@ public class CachePutGetExample {
      */
     public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
-
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // Individual puts and gets.
                 putGet(cache);
 

@@ -270,6 +270,9 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                 nl.get(arg.keyOrder()) : -1L;
 
             Collection<Event> evts = ignite.events().localQuery(new IgnitePredicate<Event>() {
+                /** */
+                private static final long serialVersionUID = 0L;
+
                 @Override public boolean apply(Event evt) {
                     return evt.localOrder() > startEvtOrder &&
                         (arg.typeArgument() == null || F.contains(arg.typeArgument(), evt.type())) &&

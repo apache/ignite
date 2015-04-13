@@ -420,7 +420,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                 }
             }
 
-            GridSecurityCredentials cred = null;
+            SecurityCredentials cred = null;
 
             try {
                 if (cfg.getSecurityCredentialsProvider() != null)

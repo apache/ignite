@@ -55,12 +55,15 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCachePartitionedQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(IgniteCachePartitionedQueryMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryIndexSelfTest.class);
+        suite.addTestSuite(IgniteCacheCollocatedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheLargeResultSelfTest.class);
         suite.addTestSuite(GridCacheQueryInternalKeysSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryOffheapMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheSqlQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheOffheapTieredMultithreadedSelfTest.class);
 //        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class); TODO IGNITE-484
         suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
@@ -100,8 +103,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridOrderedMessageCancelSelfTest.class);
 
-        // H2 comparison.
-        suite.addTestSuite(IgniteVsH2QueryTest.class);
+        // Ignite cache and H2 comparison.
+        suite.addTestSuite(BaseH2CompareQueryTest.class);
+        suite.addTestSuite(H2CompareBigQueryTest.class);
 
         return suite;
     }

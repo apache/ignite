@@ -62,7 +62,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final Map<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();
 
     /** Type descriptors. */
-    private final Map<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
 
     /** */
     private ExecutorService execSvc;
@@ -108,62 +108,81 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
      */
     public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
         idx.registerCache(ccfg);
 
-        if (!F.isEmpty(ccfg.getTypeMetadata())) {
-            for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                if (F.isEmpty(meta.getValueType()))
-                    throw new IgniteCheckedException("Value type is not set: " + meta);
+        try {
+            if (!F.isEmpty(ccfg.getTypeMetadata())) {
+                for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
+                    if (F.isEmpty(meta.getValueType()))
+                        throw new IgniteCheckedException("Value type is not set: " + meta);
 
-                TypeDescriptor desc = new TypeDescriptor(ccfg);
+                    TypeDescriptor desc = new TypeDescriptor(ccfg);
 
-                Class<?> valCls = U.classForName(meta.getValueType(), null);
+                    Class<?> valCls = U.classForName(meta.getValueType(), null);
 
-                desc.name(valCls != null ? typeName(valCls) : meta.getValueType());
+                    desc.name(valCls != null ? typeName(valCls) : meta.getValueType());
 
-                desc.valueClass(valCls != null ? valCls : Object.class);
-                desc.keyClass(
-                    meta.getKeyType() == null ?
-                        Object.class :
-                        U.classForName(meta.getKeyType(), Object.class));
+                    desc.valueClass(valCls != null ? valCls : Object.class);
+                    desc.keyClass(
+                        meta.getKeyType() == null ?
+                            Object.class :
+                            U.classForName(meta.getKeyType(), Object.class));
 
-                TypeId typeId;
+                    TypeId typeId;
 
-                if (valCls == null || ctx.cacheObjects().isPortableClass(valCls)) {
-                    processPortableMeta(meta, desc);
+                    if (valCls == null || ctx.cacheObjects().isPortableClass(valCls)) {
+                        processPortableMeta(meta, desc);
 
-                    typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                    }
+                    else {
+                        processClassMeta(meta, desc);
+
+                        typeId = new TypeId(ccfg.getName(), valCls);
+                    }
+
+                    addTypeByName(ccfg, desc);
+                    types.put(typeId, desc);
+
+                    desc.registered(idx.registerType(ccfg.getName(), desc));
                 }
-                else {
-                    processClassMeta(meta, desc);
+            }
 
-                    typeId = new TypeId(ccfg.getName(), valCls);
+            Class<?>[] clss = ccfg.getIndexedTypes();
+
+            if (!F.isEmpty(clss)) {
+                for (int i = 0; i < clss.length; i += 2) {
+                    Class<?> keyCls = clss[i];
+                    Class<?> valCls = clss[i + 1];
+
+                    TypeDescriptor desc = processKeyAndValueClasses(ccfg, keyCls, valCls);
+
+                    addTypeByName(ccfg, desc);
+                    types.put(new TypeId(ccfg.getName(), valCls), desc);
+
+                    desc.registered(idx.registerType(ccfg.getName(), desc));
                 }
-
-                desc.registered(idx.registerType(ccfg.getName(), desc));
-
-                typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
-                types.put(typeId, desc);
             }
         }
+        catch (IgniteCheckedException | RuntimeException e) {
+            idx.unregisterCache(ccfg);
 
-        Class<?>[] clss = ccfg.getIndexedTypes();
-
-        if (!F.isEmpty(clss)) {
-            for (int i = 0; i < clss.length; i += 2) {
-                Class<?> keyCls = clss[i];
-                Class<?> valCls = clss[i + 1];
-
-                TypeDescriptor desc = processKeyAndValueClasses(ccfg, keyCls, valCls);
-
-                desc.registered(idx.registerType(ccfg.getName(), desc));
-
-                typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
-                types.put(new TypeId(ccfg.getName(), valCls), desc);
-            }
+            throw e;
         }
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param desc Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
+        if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
+            throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                "in cache '" + ccfg.getName() + "'.");
     }
 
     /**

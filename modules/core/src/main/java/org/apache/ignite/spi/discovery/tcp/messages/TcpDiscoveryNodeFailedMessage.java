@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -33,17 +32,10 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** ID of the failed node. */
-    private UUID failedNodeId;
+    private final UUID failedNodeId;
 
     /** Internal order of the failed node. */
-    private long order;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryNodeFailedMessage() {
-        // No-op.
-    }
+    private final long order;
 
     /**
      * Constructor.
@@ -76,22 +68,6 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
      */
     public long order() {
         return order;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeUuid(out, failedNodeId);
-        out.writeLong(order);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        failedNodeId = U.readUuid(in);
-        order = in.readLong();
     }
 
     /** {@inheritDoc} */

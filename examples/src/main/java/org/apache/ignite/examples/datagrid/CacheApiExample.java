@@ -18,8 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 
 import javax.cache.processor.*;
@@ -49,12 +47,7 @@ public class CacheApiExample {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
-
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // Demonstrate atomic map operations.
                 atomicMapOperations(cache);
             }

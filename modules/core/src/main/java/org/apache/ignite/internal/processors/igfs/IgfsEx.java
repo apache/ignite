@@ -53,8 +53,10 @@ public interface IgfsEx extends IgniteFileSystem {
 
     /**
      * Stops IGFS cleaning all used resources.
+     *
+     * @param cancel Cancellation flag.
      */
-    public void stop();
+    public void stop(boolean cancel);
 
     /**
      * @return IGFS context.

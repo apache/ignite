@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -39,7 +38,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Added node. */
-    private TcpDiscoveryNode node;
+    private final TcpDiscoveryNode node;
 
     /** Pending messages from previous node. */
     private Collection<TcpDiscoveryAbstractMessage> msgs;
@@ -55,20 +54,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Discovery data from new node. */
-    private Map<Integer, Object> newNodeDiscoData;
+    private Map<Integer, byte[]> newNodeDiscoData;
 
     /** Discovery data from old nodes. */
-    private Map<UUID, Map<Integer, Object>> oldNodesDiscoData;
+    private Map<UUID, Map<Integer, byte[]>> oldNodesDiscoData;
 
     /** Start time of the first grid node. */
-    private long gridStartTime;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryNodeAddedMessage() {
-        // No-op.
-    }
+    private final long gridStartTime;
 
     /**
      * Constructor.
@@ -78,8 +70,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      * @param newNodeDiscoData New Node discovery data.
      * @param gridStartTime Start time of the first grid node.
      */
-    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId, TcpDiscoveryNode node,
-        Map<Integer, Object> newNodeDiscoData,
+    public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId,
+        TcpDiscoveryNode node,
+        Map<Integer, byte[]> newNodeDiscoData,
         long gridStartTime)
     {
         super(creatorNodeId);
@@ -171,21 +164,22 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /**
      * @return Discovery data from new node.
      */
-    public Map<Integer, Object> newNodeDiscoveryData() {
+    public Map<Integer, byte[]> newNodeDiscoveryData() {
         return newNodeDiscoData;
     }
 
     /**
      * @return Discovery data from old nodes.
      */
-    public Map<UUID, Map<Integer, Object>> oldNodesDiscoveryData() {
+    public Map<UUID, Map<Integer, byte[]>> oldNodesDiscoveryData() {
         return oldNodesDiscoData;
     }
 
     /**
+     * @param nodeId Node ID.
      * @param discoData Discovery data to add.
      */
-    public void addDiscoveryData(UUID nodeId, Map<Integer, Object> discoData) {
+    public void addDiscoveryData(UUID nodeId, Map<Integer, byte[]> discoData) {
         // Old nodes disco data may be null if message
         // makes more than 1 pass due to stopping of the nodes in topology.
         if (oldNodesDiscoData != null)
@@ -205,54 +199,6 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      */
     public long gridStartTime() {
         return gridStartTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(node);
-        U.writeCollection(out, msgs);
-        U.writeGridUuid(out, discardMsgId);
-        U.writeCollection(out, top);
-        U.writeMap(out, topHist);
-        out.writeLong(gridStartTime);
-        U.writeMap(out, newNodeDiscoData);
-
-        out.writeInt(oldNodesDiscoData != null ? oldNodesDiscoData.size() : -1);
-
-        if (oldNodesDiscoData != null) {
-            for (Map.Entry<UUID, Map<Integer, Object>> entry : oldNodesDiscoData.entrySet()) {
-                U.writeUuid(out, entry.getKey());
-
-                U.writeMap(out, entry.getValue());
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        node = (TcpDiscoveryNode)in.readObject();
-        msgs = U.readCollection(in);
-        discardMsgId = U.readGridUuid(in);
-        top = U.readCollection(in);
-        topHist = U.readTreeMap(in);
-        gridStartTime = in.readLong();
-        newNodeDiscoData = U.readMap(in);
-
-        int oldNodesDiscoDataSize = in.readInt();
-
-        if (oldNodesDiscoDataSize >= 0) {
-            oldNodesDiscoData = new LinkedHashMap<>(oldNodesDiscoDataSize);
-
-            for (int i = 0; i < oldNodesDiscoDataSize; i++) {
-                UUID nodeId = U.readUuid(in);
-
-                oldNodesDiscoData.put(nodeId, U.<Integer, Object>readMap(in));
-            }
-        }
     }
 
     /** {@inheritDoc} */

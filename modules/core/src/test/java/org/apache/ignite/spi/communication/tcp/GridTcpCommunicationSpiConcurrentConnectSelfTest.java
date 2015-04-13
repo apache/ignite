@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
@@ -317,7 +318,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         for (int i = 0; i < SPI_CNT; i++) {
             CommunicationSpi<Message> spi = createSpi();
 
-            GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 
