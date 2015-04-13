@@ -337,6 +337,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_JCACHE_DEFAULT_ISOLATED = "IGNITE_CACHE_CLIENT";
 
     /**
+     * Property controlling maximum number of SQL result rows which can be fetched into a merge table.
+     * If there are less rows than this threshold then multiple passes throw a table will be possible,
+     * otherwise only one pass (e.g. only result streaming is possible).
+     */
+    public static final String IGNITE_SQL_MERGE_TABLE_MAX_SIZE = "IGNITE_SQL_MERGE_TABLE_MAX_SIZE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

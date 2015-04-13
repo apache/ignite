@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -130,12 +129,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws IgniteCheckedException If test failed.
+     * 
+     * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
+     * This comment should be removed if test passed stably.
      */
     public void testPessimisticReadCommitted() throws Throwable {
-        // TODO:  GG-7437.
-        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
-            return;
-
         checkTransaction(PESSIMISTIC, READ_COMMITTED);
     }
 
@@ -226,6 +224,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
     /**
      * @throws Exception If check failed.
+     * 
+     * Note: test was disabled for REPPLICATED cache case because IGNITE-601.
+     * This comment should be removed if test passed stably.
      */
     public void testLock() throws Exception {
         int idx = 0;
@@ -236,10 +237,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
             ", key=" + KEY + ']');
 
         IgniteCache<Integer, String> cache = jcache(idx);
-
-        // TODO:  GG-7437.
-        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
-            return;
 
         cache.put(KEY, VALUE);
 

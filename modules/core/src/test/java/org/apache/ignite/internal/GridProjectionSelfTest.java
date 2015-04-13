@@ -20,6 +20,8 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -153,6 +155,74 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testForPredicate() throws Exception {
+        IgnitePredicate<ClusterNode> evenP = new IgnitePredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return node.order() % 2 == 0;
+            }
+        };
+
+        IgnitePredicate<ClusterNode> oddP = new IgnitePredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return node.order() % 2 == 1;
+            }
+        };
+
+        ClusterGroup remotes = ignite.cluster().forRemotes();
+
+        ClusterGroup evenYoungest = remotes.forPredicate(evenP).forYoungest();
+        ClusterGroup evenOldest = remotes.forPredicate(evenP).forOldest();
+
+        ClusterGroup oddYoungest = remotes.forPredicate(oddP).forYoungest();
+        ClusterGroup oddOldest = remotes.forPredicate(oddP).forOldest();
+
+        int clusterSize = ignite.cluster().nodes().size();
+
+        assertEquals(grid(gridMaxOrder(clusterSize, true)).localNode().id(), evenYoungest.node().id());
+        assertEquals(grid(1).localNode().id(), evenOldest.node().id());
+
+        assertEquals(grid(gridMaxOrder(clusterSize, false)).localNode().id(), oddYoungest.node().id());
+        assertEquals(grid(2).localNode().id(), oddOldest.node().id());
+
+        try (Ignite g4 = startGrid(NODES_CNT);
+            Ignite g5 = startGrid(NODES_CNT + 1))
+        {
+            clusterSize = g4.cluster().nodes().size();
+
+            assertEquals(grid(gridMaxOrder(clusterSize, true)).localNode().id(), evenYoungest.node().id());
+            assertEquals(grid(1).localNode().id(), evenOldest.node().id());
+
+            assertEquals(grid(gridMaxOrder(clusterSize, false)).localNode().id(), oddYoungest.node().id());
+            assertEquals(grid(2).localNode().id(), oddOldest.node().id());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAgeClusterGroupSerialization() throws Exception {
+        Marshaller marshaller = getConfiguration().getMarshaller();
+
+        ClusterGroup grp = ignite.cluster().forYoungest();
+        ClusterNode node = grp.node();
+
+        byte[] arr = marshaller.marshal(grp);
+
+        ClusterGroup obj = marshaller.unmarshal(arr, null);
+
+        assertEquals(node.id(), obj.node().id());
+
+        try (Ignite ignore = startGrid()) {
+            obj = marshaller.unmarshal(arr, null);
+
+            assertEquals(grp.node().id(), obj.node().id());
+            assertFalse(node.id().equals(obj.node().id()));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientServer() throws Exception {
         ClusterGroup srv = ignite.cluster().forServers();
 
@@ -165,5 +235,17 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
         assertEquals(2, srv.nodes().size());
         assertTrue(cli.nodes().contains(ignite(2).cluster().localNode()));
         assertTrue(cli.nodes().contains(ignite(3).cluster().localNode()));
+    }
+
+    /**
+     * @param cnt Count.
+     * @param even Even.
+     */
+    private static int gridMaxOrder(int cnt, boolean even) {
+        assert cnt > 2;
+
+        cnt = cnt - (cnt % 2);
+
+        return even ? cnt - 1 : cnt - 2;
     }
 }

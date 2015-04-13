@@ -17,46 +17,45 @@
 
 package org.apache.ignite.plugin.security;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Security subject representing authenticated node or client with a set of permissions.
+ * Common security exception for the grid.
  */
-public interface GridSecuritySubject extends Serializable {
-    /**
-     * Gets subject ID.
-     *
-     * @return Subject ID.
-     */
-    public UUID id();
+public class SecurityException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Gets subject type, either node or client.
+     * Constructs security grid exception with given message and cause.
      *
-     * @return Subject type.
+     * @param msg Exception message.
+     * @param cause Exception cause.
      */
-    public GridSecuritySubjectType type();
+    public SecurityException(
+        String msg,
+        @Nullable Throwable cause
+    ) {
+        super(msg, cause);
+    }
 
     /**
-     * Login provided via subject security credentials.
+     * Creates new security grid exception given throwable as a cause and
+     * source of error message.
      *
-     * @return Login object.
+     * @param cause Non-null throwable cause.
      */
-    public Object login();
+    public SecurityException(Throwable cause) {
+        this(cause.getMessage(), cause);
+    }
 
     /**
-     * Gets subject connection address. Usually {@link InetSocketAddress} representing connection IP and port.
+     * Constructs security grid exception with given message.
      *
-     * @return Subject connection address.
+     * @param msg Exception message.
      */
-    public InetSocketAddress address();
-
-    /**
-     * Authorized permission set for the subject.
-     *
-     * @return Authorized permission set for the subject.
-     */
-    public GridSecurityPermissionSet permissions();
+    public SecurityException(String msg) {
+        super(msg);
+    }
 }

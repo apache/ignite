@@ -60,7 +60,7 @@ import javax.management.*;
 import java.lang.management.*;
 import java.util.*;
 
-import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
+import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.*;
 
 /**
  * This class defines grid runtime configuration. This configuration is passed to
@@ -158,7 +158,7 @@ public class IgniteConfiguration {
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
     /** Default segmentation policy. */
-    public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
+    public static final SegmentationPolicy DFLT_SEG_PLC = STOP;
 
     /** Default value for wait for segment on startup flag. */
     public static final boolean DFLT_WAIT_FOR_SEG_ON_START = true;
@@ -269,10 +269,10 @@ public class IgniteConfiguration {
     private DiscoverySpi discoSpi;
 
     /** Segmentation policy. */
-    private GridSegmentationPolicy segPlc = DFLT_SEG_PLC;
+    private SegmentationPolicy segPlc = DFLT_SEG_PLC;
 
     /** Segmentation resolvers. */
-    private GridSegmentationResolver[] segResolvers;
+    private SegmentationResolver[] segResolvers;
 
     /** Segmentation resolve attempts count. */
     private int segResolveAttempts = DFLT_SEG_RESOLVE_ATTEMPTS;
@@ -1154,7 +1154,7 @@ public class IgniteConfiguration {
      *
      * @return Segmentation policy.
      */
-    public GridSegmentationPolicy getSegmentationPolicy() {
+    public SegmentationPolicy getSegmentationPolicy() {
         return segPlc;
     }
 
@@ -1163,7 +1163,7 @@ public class IgniteConfiguration {
      *
      * @param segPlc Segmentation policy.
      */
-    public void setSegmentationPolicy(GridSegmentationPolicy segPlc) {
+    public void setSegmentationPolicy(SegmentationPolicy segPlc) {
         this.segPlc = segPlc;
     }
 
@@ -1247,7 +1247,7 @@ public class IgniteConfiguration {
      *
      * @return Segmentation resolvers.
      */
-    public GridSegmentationResolver[] getSegmentationResolvers() {
+    public SegmentationResolver[] getSegmentationResolvers() {
         return segResolvers;
     }
 
@@ -1256,7 +1256,7 @@ public class IgniteConfiguration {
      *
      * @param segResolvers Segmentation resolvers.
      */
-    public void setSegmentationResolvers(GridSegmentationResolver... segResolvers) {
+    public void setSegmentationResolvers(SegmentationResolver... segResolvers) {
         this.segResolvers = segResolvers;
     }
 

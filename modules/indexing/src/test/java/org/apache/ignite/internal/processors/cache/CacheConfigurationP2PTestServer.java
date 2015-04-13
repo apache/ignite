@@ -15,30 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.security;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+
+import java.util.*;
 
 /**
- * Basic implementation for {@link GridSecurityCredentialsProvider}. Use it
- * when custom logic for storing security credentials is not required and it
- * is OK to specify credentials directly in configuration.
+ *
  */
-public class GridSecurityCredentialsBasicProvider implements GridSecurityCredentialsProvider {
-    /** */
-    private GridSecurityCredentials cred;
-
+public class CacheConfigurationP2PTestServer {
     /**
-     * Constructs security credentials provider based on security credentials passed in.
-     *
-     * @param cred Security credentials.
+     * @param args Arguments.
+     * @throws Exception If failed.
      */
-    public GridSecurityCredentialsBasicProvider(GridSecurityCredentials cred) {
-        this.cred = cred;
-    }
+    public static void main(String[] args) throws Exception {
+        System.out.println("Starting test server node.");
 
-    /** {@inheritDoc} */
-    @Override public GridSecurityCredentials credentials() throws IgniteCheckedException {
-        return cred;
+        IgniteConfiguration cfg = CacheConfigurationP2PTest.createConfiguration();
+
+        U.setWorkDirectory(null, U.getIgniteHome());
+
+        try (Ignite ignite = Ignition.start(cfg)) {
+            System.out.println(CacheConfigurationP2PTest.NODE_START_MSG);
+
+            U.sleep(Long.MAX_VALUE);
+        }
     }
 }
