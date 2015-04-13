@@ -1178,6 +1178,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
 
                 if (lsnr != null) {
+                    UUID nodeId = msg.creatorNodeId();
+
                     TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 
                     if (node != null && node.visible()) {
