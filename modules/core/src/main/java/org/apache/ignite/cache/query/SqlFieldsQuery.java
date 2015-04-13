@@ -28,7 +28,7 @@ import java.util.*;
  * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
  * the whole key and value objects back.
  * <h1 class="header">Collocated Flag</h1>
- * Collocation flag si used for optimization purposes. Whenever Ignite executes
+ * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
  * If you know in advance that the elements of your query selection are collocated
  * together on the same node, usually based on some <b>affinity-key</b>, Ignite
@@ -121,16 +121,16 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Checks if this query colocated.
+     * Checks if this query is collocated.
      *
-     * @return {@code true} If the query is colocated.
+     * @return {@code true} If the query is collocated.
      */
     public boolean isCollocated() {
         return collocated;
     }
 
     /**
-     * Sets flag defining if this query colocated.
+     * Sets flag defining if this query is collocated.
      *
      * @param collocated Flag value.
      * @return {@code this} For chaining.
