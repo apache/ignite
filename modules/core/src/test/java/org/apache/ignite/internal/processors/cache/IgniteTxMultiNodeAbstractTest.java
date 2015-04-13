@@ -294,15 +294,15 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             }
 
             while (true) {
-                CacheQuery<Map.Entry<String, Integer>> qry =
-                    ((IgniteKernal)ignite).<String, Integer>getCache(null).queries()
-                        .createSqlQuery(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
+
+                SqlQuery<String, Integer> qry =
+                    new SqlQuery<>(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
 
                 if (DEBUG)
                     ignite.log().info("Before executing query [retry=" + retry + ", locId=" + locId +
                         ", txId=" + tx.xid() + ']');
 
-                Map.Entry<String, Integer> entry = qry.execute().next();
+                Cache.Entry<String, Integer> entry = F.first(cache.query(qry).getAll());
 
                 if (entry == null) {
                     ignite.log().info("*** Queue is empty.");
