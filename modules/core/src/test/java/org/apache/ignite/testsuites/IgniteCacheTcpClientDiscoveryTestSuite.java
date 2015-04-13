@@ -32,8 +32,14 @@ public class IgniteCacheTcpClientDiscoveryTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache + TcpClientDiscovery SPI test suite.");
 
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearCache.class));
-        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientOnlyCache.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearPartitionedTransactional.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearReplicatedTransactional.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientPartitionedTransactional.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedAtomic.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientReplicatedTransactional.class));
         suite.addTest(new TestSuite(GridCacheTcpClientDiscoveryMultiThreadedTest.class));
 
         return suite;

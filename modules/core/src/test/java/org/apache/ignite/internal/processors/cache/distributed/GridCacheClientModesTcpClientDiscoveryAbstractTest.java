@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -24,9 +25,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import java.net.*;
 import java.util.*;
 
+import static org.apache.ignite.cache.CacheMode.*;
+
 /**
  * Tests {@link TcpClientDiscoverySpi}.
  */
+@SuppressWarnings("RedundantMethodOverride")
 public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends GridCacheClientModesAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean isClientStartedLast() {
@@ -59,15 +63,126 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
     }
 
     /** */
-    public static class CaseNearCache extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
-        // No-op.
+    public static class CaseNearReplicatedAtomic extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return REPLICATED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.ATOMIC;
+        }
     }
 
     /** */
-    public static class CaseClientOnlyCache extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+    public static class CaseNearReplicatedTransactional extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return REPLICATED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.TRANSACTIONAL;
+        }
+    }
+
+    /** */
+    public static class CaseNearPartitionedAtomic extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return PARTITIONED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.ATOMIC;
+        }
+    }
+
+    /** */
+    public static class CaseNearPartitionedTransactional extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return PARTITIONED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.TRANSACTIONAL;
+        }
+    }
+
+    /** */
+    public static class CaseClientReplicatedAtomic extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
         /** {@inheritDoc} */
         @Override protected NearCacheConfiguration nearConfiguration() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return REPLICATED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.ATOMIC;
+        }
+    }
+
+    /** */
+    public static class CaseClientReplicatedTransactional extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected NearCacheConfiguration nearConfiguration() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return REPLICATED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.TRANSACTIONAL;
+        }
+    }
+
+    /** */
+    public static class CaseClientPartitionedAtomic extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected NearCacheConfiguration nearConfiguration() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return PARTITIONED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.ATOMIC;
+        }
+    }
+
+    /** */
+    public static class CaseClientPartitionedTransactional extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected NearCacheConfiguration nearConfiguration() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheMode cacheMode() {
+            return PARTITIONED;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected CacheAtomicityMode atomicityMode() {
+            return CacheAtomicityMode.TRANSACTIONAL;
         }
     }
 }
