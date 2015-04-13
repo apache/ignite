@@ -165,7 +165,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                             idx++;
                         }
 
-                        cache.putAll(putMap, null);
+                        cache.putAll(putMap);
 
                         retVal = true;
                     }

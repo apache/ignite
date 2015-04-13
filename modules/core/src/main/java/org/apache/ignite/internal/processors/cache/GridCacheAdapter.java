@@ -924,7 +924,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet() {
-        return entrySet((CacheEntryPredicate[])null);
+        return entrySet((CacheEntryPredicate[]) null);
     }
 
     /** {@inheritDoc} */
@@ -939,17 +939,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<K> keySet() {
-        return keySet((CacheEntryPredicate[])null);
+        return keySet((CacheEntryPredicate[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        return primaryKeySet((CacheEntryPredicate[])null);
+        return primaryKeySet((CacheEntryPredicate[]) null);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<V> values() {
-        return values((CacheEntryPredicate[])null);
+        return values((CacheEntryPredicate[]) null);
     }
 
     /**
@@ -1271,7 +1271,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
             taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+            @Override
+            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
@@ -1478,16 +1479,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evict(K key) {
-        return evict(key, (CacheEntryPredicate[])null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void evictAll(Collection<? extends K> keys) {
-        evictAll(keys, (CacheEntryPredicate[])null);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws IgniteCheckedException {
         A.notNull(key, "key");
 
@@ -1639,15 +1630,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return getAllAsync(keys,
-                true,
-                entry,
-                !skipTx,
-                subjId,
-                taskName,
-                deserializePortable,
-                forcePrimary,
-                skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
-                skipVals);
+            true,
+            entry,
+            !skipTx,
+            subjId,
+            taskName,
+            deserializePortable,
+            forcePrimary,
+            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals);
     }
 
     /**
@@ -2658,16 +2649,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable final Map<? extends K, ? extends V> m) throws IgniteCheckedException {
-        putAll(m, CU.empty0());
-    }
-
-    /**
-     * @param m Map to put.
-     * @param filter Filter.
-     * @throws IgniteCheckedException If put operation failed.
-     */
-    public void putAll(@Nullable final Map<? extends K, ? extends V> m,
-        final CacheEntryPredicate[] filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2682,11 +2663,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         syncOp(new SyncInOp(m.size() == 1) {
             @Override public void inOp(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                tx.putAllAsync(ctx, m, false, null, -1, filter).get();
+                tx.putAllAsync(ctx, m, false, null, -1, CU.empty0()).get();
             }
 
             @Override public String toString() {
-                return "putAll [map=" + m + ", filter=" + Arrays.toString(filter) + ']';
+                return "putAll [map=" + m + ']';
             }
         });
 
@@ -2696,16 +2677,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m) {
-        return putAllAsync(m, CU.empty0());
-    }
-
-    /**
-     * @param m Map to put.
-     * @param filter Filter.
-     * @return Put future.
-     */
-    public IgniteInternalFuture<?> putAllAsync(final Map<? extends K, ? extends V> m,
-        @Nullable final CacheEntryPredicate... filter) {
         if (F.isEmpty(m))
             return new GridFinishedFuture<Object>();
 
@@ -2716,11 +2687,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return asyncOp(new AsyncInOp(m.keySet()) {
             @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
-                return tx.putAllAsync(ctx, m, false, null, -1, filter).chain(RET2NULL);
+                return tx.putAllAsync(ctx, m, false, null, -1, CU.empty0()).chain(RET2NULL);
             }
 
             @Override public String toString() {
-                return "putAllAsync [map=" + m + ", filter=" + Arrays.toString(filter) + ']';
+                return "putAllAsync [map=" + m + ']';
             }
         });
     }
@@ -2843,27 +2814,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(final K key)
-        throws IgniteCheckedException {
-        boolean statsEnabled = ctx.config().isStatisticsEnabled();
-
-        long start = statsEnabled ? System.nanoTime() : 0L;
-
-        boolean rmv = removex(key, CU.empty0());
-
-        if (statsEnabled && rmv)
-            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-
-        return rmv;
-    }
-
-    /**
-     * @param key Key to remove.
-     * @param filter Optional filter.
-     * @return Previous value.
-     * @throws IgniteCheckedException If failed.
-     */
-     public boolean removex(final K key, @Nullable final CacheEntryPredicate... filter) throws IgniteCheckedException {
+    @Override public boolean removex(final K key) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2875,11 +2826,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         boolean rmv = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                return tx.removeAllAsync(ctx, Collections.singletonList(key), null, false, filter).get().success();
+                return tx.removeAllAsync(ctx, Collections.singletonList(key), null, false, CU.empty0()).get().success();
             }
 
             @Override public String toString() {
-                return "removex [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
+                return "removex [key=" + key + ']';
             }
         });
 
@@ -4416,26 +4367,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return clearLocally(ctx.versions().next(), key, filter);
     }
 
-    /**
-     * @param key Key.
-     * @param filter Filters to evaluate.
-     * @return {@code True} if evicted.
-     */
-    public boolean evict(K key, @Nullable CacheEntryPredicate... filter) {
+    /** {@inheritDoc} */
+    @Override public boolean evict(K key) {
         A.notNull(key, "key");
 
         if (keyCheck)
             validateCacheKey(key);
 
-        return evictx(key, ctx.versions().next(), filter);
+        return evictx(key, ctx.versions().next(), CU.empty0());
     }
 
-    /**
-     * @param keys Keys.
-     * @param filter Filters to evaluate.
-     */
-    public void evictAll(Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate... filter) {
+    /** {@inheritDoc} */
+    @Override public void evictAll(Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
         if (F.isEmpty(keys))
@@ -4446,7 +4389,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        if (!ctx.evicts().evictSyncOrNearSync() && F.isEmptyOrNulls(filter) && ctx.isSwapOrOffheapEnabled()) {
+        if (!ctx.evicts().evictSyncOrNearSync() && ctx.isSwapOrOffheapEnabled()) {
             try {
                 ctx.evicts().batchEvict(keys, obsoleteVer);
             }
@@ -4456,7 +4399,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
         else {
             for (K k : keys)
-                evictx(k, obsoleteVer, filter);
+                evictx(k, obsoleteVer, CU.empty0());
         }
     }
 

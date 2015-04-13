@@ -387,17 +387,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evict(K key, @Nullable CacheEntryPredicate[] filter) {
+    @Override public boolean evict(K key) {
         // Use unary 'and' to make sure that both sides execute.
-        return super.evict(key, filter) & dht().evict(key, filter);
+        return super.evict(key) & dht().evict(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void evictAll(Collection<? extends K> keys,
-        @Nullable CacheEntryPredicate[] filter) {
-        super.evictAll(keys, filter);
+    @Override public void evictAll(Collection<? extends K> keys) {
+        super.evictAll(keys);
 
-        dht().evictAll(keys, filter);
+        dht().evictAll(keys);
     }
 
     /** {@inheritDoc} */

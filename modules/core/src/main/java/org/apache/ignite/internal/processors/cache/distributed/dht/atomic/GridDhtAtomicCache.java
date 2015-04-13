@@ -439,14 +439,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        putAllAsync(m, filter).get();
+    @Override public void putAll(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
+        putAllAsync(m).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
-        @Nullable CacheEntryPredicate[] filter) {
+    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m) {
         return updateAllAsync0(m,
             null,
             null,
@@ -454,7 +452,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             false,
             false,
-            filter,
+            CU.empty0(),
             true).chain(RET2NULL);
     }
 
@@ -505,8 +503,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return removexAsync(key, filter).get();
+    @Override public boolean removex(K key) throws IgniteCheckedException {
+        return removexAsync(key, CU.empty0()).get();
     }
 
     /** {@inheritDoc} */
