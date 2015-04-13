@@ -106,7 +106,6 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         client = true;
 
         for (int n = 0; n < 3; n++) {
-
             startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
 
             checkTopology(gridCount());
@@ -121,8 +120,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
             IgniteInternalFuture<?> f = multithreadedAsync(
                     new Callable<Object>() {
-                        @Override
-                        public Object call() throws Exception {
+                        @Override public Object call() throws Exception {
                             int clientIdx = srvNodesCnt + threadsCnt.getAndIncrement();
 
                             Ignite node = grid(clientIdx);
