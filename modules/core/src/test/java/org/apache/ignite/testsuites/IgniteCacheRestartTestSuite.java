@@ -40,8 +40,9 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
         // TODO: uncomment when fix GG-1969
 //        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
 
-        // The rest.
         suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
+
+        suite.addTestSuite(GridCacheAtomicPutAllFailoverSelfTest.class);
 //        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class); TODO IGNITE-157
 
         return suite;
