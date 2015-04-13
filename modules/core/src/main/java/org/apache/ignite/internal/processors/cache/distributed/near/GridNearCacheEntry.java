@@ -628,12 +628,20 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /**
      * @param nodeId Primary node ID.
+     * @param topVer Topology version.
      */
     private void primaryNode(UUID nodeId, AffinityTopologyVersion topVer) {
         assert Thread.holdsLock(this);
         assert nodeId != null;
 
-        ClusterNode primary = cctx.affinity().primary(part, topVer);
+        ClusterNode primary = null;
+
+        try {
+            primary = cctx.affinity().primary(part, topVer);
+        }
+        catch (IllegalStateException ignore) {
+            // Do not have affinity history.
+        }
 
         if (primary == null || !nodeId.equals(primary.id())) {
             this.topVer = -1L;
