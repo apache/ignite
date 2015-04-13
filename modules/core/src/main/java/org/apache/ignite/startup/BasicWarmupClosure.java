@@ -468,7 +468,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.put(key, key);
+            cache.getAndPut(key, key);
         }
     }
 
@@ -485,7 +485,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.putx(key, key);
+            cache.put(key, key);
         }
     }
 
@@ -536,7 +536,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.putIfAbsent(key, key);
+            cache.getAndPutIfAbsent(key, key);
         }
     }
 

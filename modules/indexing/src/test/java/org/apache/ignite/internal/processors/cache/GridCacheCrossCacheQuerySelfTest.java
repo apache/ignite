@@ -305,7 +305,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             DimStore v = new DimStore(id, "Store" + id);
 
-            dimCache.put(id, v);
+            dimCache.getAndPut(id, v);
 
             dimStores.add(v);
         }
@@ -315,7 +315,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             DimProduct v = new DimProduct(id, "Product" + id);
 
-            dimCache.put(id, v);
+            dimCache.getAndPut(id, v);
 
             dimProds.add(v);
         }
@@ -340,7 +340,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             DimStore store = dimStores.get(i % dimStores.size());
             DimProduct prod = dimProds.get(i % dimProds.size());
 
-            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
+            factCache.getAndPut(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
         }
     }
 

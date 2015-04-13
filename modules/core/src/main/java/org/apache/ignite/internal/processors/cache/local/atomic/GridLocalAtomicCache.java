@@ -100,7 +100,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V put(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public V getAndPut(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         return (V)updateAllInternal(UPDATE,
@@ -115,7 +115,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public boolean put(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         return (Boolean)updateAllInternal(UPDATE,
@@ -131,7 +131,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -144,7 +144,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -157,56 +157,56 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V putIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        return getAndPut(key, val, ctx.noValArray());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
+        return getAndPutAsync(key, val, ctx.noValArray());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
         return put(key, val, ctx.noValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
         return putAsync(key, val, ctx.noValArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException {
-        return putx(key, val, ctx.noValArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val) {
-        return putxAsync(key, val, ctx.noValArray());
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
-        return put(key, val, ctx.hasValArray());
+        return getAndPut(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
-        return putAsync(key, val, ctx.hasValArray());
+        return getAndPutAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) throws IgniteCheckedException {
-        return putx(key, val, ctx.hasValArray());
+        return put(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
-        return putxAsync(key, val, ctx.hasValArray());
+        return putAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
         A.notNull(oldVal, "oldVal");
 
-        return putx(key, newVal, ctx.equalsValArray(oldVal));
+        return put(key, newVal, ctx.equalsValArray(oldVal));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
-        return putxAsync(key, newVal, ctx.equalsValArray(oldVal));
+        return putAsync(key, newVal, ctx.equalsValArray(oldVal));
     }
 
     /** {@inheritDoc} */

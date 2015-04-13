@@ -96,7 +96,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         int cnt = 10;
 
         for (int i = 0; i < cnt; i++)
-            cache.put(i, new ObjectValue("test" + i, i));
+            cache.getAndPut(i, new ObjectValue("test" + i, i));
 
         for (int i = 0; i < cnt; i++) {
             assertNotNull(localPeek(cache, i));

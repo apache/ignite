@@ -88,7 +88,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
             @Override public Object call() throws Exception {
                 for (int i = 1; i < keyCnt; i++) {
-                    c.put(String.valueOf(i), i);
+                    c.getAndPut(String.valueOf(i), i);
 
                     startLatch.countDown();
 

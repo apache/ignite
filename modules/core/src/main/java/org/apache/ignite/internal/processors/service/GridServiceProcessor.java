@@ -333,7 +333,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     ctx.cache().context().deploy().ignoreOwnership(true);
 
                 try {
-                    GridServiceDeployment dep = (GridServiceDeployment)cache.putIfAbsent(key,
+                    GridServiceDeployment dep = (GridServiceDeployment)cache.getAndPutIfAbsent(key,
                         new GridServiceDeployment(ctx.localNodeId(), cfg));
 
                     if (dep != null) {
@@ -713,7 +713,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 assigns.assigns(cnts);
 
-                cache.put(key, assigns);
+                cache.getAndPut(key, assigns);
 
                 tx.commit();
 

@@ -290,18 +290,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V put(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return putAsync0(key, val, filter).get();
+    @Override public V getAndPut(K key, V val, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        return getAndPutAsync0(key, val, filter).get();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        return putxAsync(key, val, filter).get();
+    @Override public boolean put(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        return putAsync(key, val, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -317,7 +317,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> putxAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -347,27 +347,27 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V putIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        return getAndPutIfAbsentAsync(key, val).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
+        return getAndPutAsync(key, val, ctx.noValArray());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
         return putIfAbsentAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
         return putAsync(key, val, ctx.noValArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException {
-        return putxIfAbsentAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val) {
-        A.notNull(key, "key", val, "val");
-
-        return putxAsync(key, val, ctx.noValArray());
     }
 
     /** {@inheritDoc} */
@@ -379,7 +379,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
-        return putAsync(key, val, ctx.hasValArray());
+        return getAndPutAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
@@ -391,7 +391,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
-        return putxAsync(key, val, ctx.hasValArray());
+        return putAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
@@ -403,7 +403,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        return putxAsync(key, newVal, ctx.equalsValArray(oldVal));
+        return putAsync(key, newVal, ctx.equalsValArray(oldVal));
     }
 
     /** {@inheritDoc} */

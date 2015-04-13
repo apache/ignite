@@ -347,7 +347,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 // Force root ID always exist in cache.
                 if (info == null && ROOT_ID.equals(fileId))
-                    id2InfoPrj.putxIfAbsent(ROOT_ID, info = new IgfsFileInfo());
+                    id2InfoPrj.putIfAbsent(ROOT_ID, info = new IgfsFileInfo());
 
                 return info;
             }
@@ -381,7 +381,7 @@ public class IgfsMetaManager extends IgfsManager {
                 if (fileIds.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
                     IgfsFileInfo info = new IgfsFileInfo();
 
-                    id2InfoPrj.putxIfAbsent(ROOT_ID, info);
+                    id2InfoPrj.putIfAbsent(ROOT_ID, info);
 
                     map = new GridLeanMap<>(map);
 
@@ -422,7 +422,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     IgfsFileInfo newInfo = lockInfo(oldInfo);
 
-                    boolean put = metaCache.putx(fileId, newInfo);
+                    boolean put = metaCache.put(fileId, newInfo);
 
                     assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
 
@@ -509,7 +509,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
 
-                    boolean put = metaCache.putx(fileId, newInfo);
+                    boolean put = metaCache.put(fileId, newInfo);
 
                     assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
 
@@ -565,7 +565,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (keys.contains(ROOT_ID) && !map.containsKey(ROOT_ID)) {
             IgfsFileInfo info = new IgfsFileInfo();
 
-            id2InfoPrj.putxIfAbsent(ROOT_ID, info);
+            id2InfoPrj.putIfAbsent(ROOT_ID, info);
 
             map = new GridLeanMap<>(map);
 
@@ -758,7 +758,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         IgniteUuid fileId = newFileInfo.id();
 
-        if (!id2InfoPrj.putxIfAbsent(fileId, newFileInfo))
+        if (!id2InfoPrj.putIfAbsent(fileId, newFileInfo))
             throw fsException("Failed to add file details into cache: " + newFileInfo);
 
         assert metaCache.get(parentId) != null;
@@ -1073,7 +1073,7 @@ public class IgfsMetaManager extends IgfsManager {
 
             // Ensure trash directory existence.
             if (id2InfoPrj.get(TRASH_ID) == null)
-                id2InfoPrj.put(TRASH_ID, new IgfsFileInfo(TRASH_ID));
+                id2InfoPrj.getAndPut(TRASH_ID, new IgfsFileInfo(TRASH_ID));
 
             Map<String, IgfsListingEntry> rootListing = rootInfo.listing();
 
@@ -1095,7 +1095,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 IgfsFileInfo newInfo = new IgfsFileInfo(transferListing);
 
-                id2InfoPrj.put(newInfo.id(), newInfo);
+                id2InfoPrj.getAndPut(newInfo.id(), newInfo);
 
                 // Add new info to trash listing.
                 id2InfoPrj.invoke(TRASH_ID, new UpdateListing(newInfo.id().toString(),
@@ -1113,7 +1113,7 @@ public class IgfsMetaManager extends IgfsManager {
         else {
             // Ensure trash directory existence.
             if (id2InfoPrj.get(TRASH_ID) == null)
-                id2InfoPrj.put(TRASH_ID, new IgfsFileInfo(TRASH_ID));
+                id2InfoPrj.getAndPut(TRASH_ID, new IgfsFileInfo(TRASH_ID));
 
             moveNonTx(id, name, parentId, id.toString(), TRASH_ID);
 
@@ -1190,7 +1190,7 @@ public class IgfsMetaManager extends IgfsManager {
                         }
 
                         // Update parent listing.
-                        id2InfoPrj.putx(parentId, new IgfsFileInfo(newListing, parentInfo));
+                        id2InfoPrj.put(parentId, new IgfsFileInfo(newListing, parentInfo));
                     }
 
                     tx.commit();
@@ -1364,7 +1364,7 @@ public class IgfsMetaManager extends IgfsManager {
 
             IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, tmp);
 
-            id2InfoPrj.putx(fileId, newInfo);
+            id2InfoPrj.put(fileId, newInfo);
 
             if (parentId != null) {
                 IgfsListingEntry entry = new IgfsListingEntry(newInfo);
@@ -1533,7 +1533,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    Object prev = val != null ? metaCache.put(sampling, val) : metaCache.getAndRemove(sampling);
+                    Object prev = val != null ? metaCache.getAndPut(sampling, val) : metaCache.getAndRemove(sampling);
 
                     tx.commit();
 
@@ -1676,7 +1676,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 IgfsFileInfo oldInfo = info(oldId);
 
                                 id2InfoPrj.remove(oldId); // Remove the old one.
-                                id2InfoPrj.putx(newInfo.id(), newInfo); // Put the new one.
+                                id2InfoPrj.put(newInfo.id(), newInfo); // Put the new one.
 
                                 id2InfoPrj.invoke(parentInfo.id(),
                                     new UpdateListing(path.name(), parentInfo.listing().get(path.name()), true));
@@ -1798,7 +1798,7 @@ public class IgfsMetaManager extends IgfsManager {
                             // Set lock and return.
                             info = lockInfo(info);
 
-                            metaCache.putx(info.id(), info);
+                            metaCache.put(info.id(), info);
 
                             return new IgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(), info, out);
                         }
@@ -2570,7 +2570,7 @@ public class IgfsMetaManager extends IgfsManager {
         V oldVal = cache.get(key);
         V newVal = c.apply(oldVal);
 
-        return newVal == null ? cache.remove(key) : cache.putx(key, newVal);
+        return newVal == null ? cache.remove(key) : cache.put(key, newVal);
     }
 
     /**
@@ -2636,7 +2636,7 @@ public class IgfsMetaManager extends IgfsManager {
                         accessTime == -1 ? fileInfo.accessTime() : accessTime,
                         modificationTime == -1 ? fileInfo.modificationTime() : modificationTime);
 
-                    id2InfoPrj.putx(fileId, updated);
+                    id2InfoPrj.put(fileId, updated);
 
                     id2InfoPrj.invoke(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime,
                         modificationTime));

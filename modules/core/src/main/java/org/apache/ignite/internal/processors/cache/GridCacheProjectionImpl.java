@@ -310,19 +310,19 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V put(K key, V val)
+    @Override public V getAndPut(K key, V val)
         throws IgniteCheckedException {
-        return putAsync(key, val).get();
+        return getAndPutAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putAsync(K key, V val) {
-        return cache.putAsync(key, val);
+    @Override public IgniteInternalFuture<V> getAndPutAsync(K key, V val) {
+        return cache.getAndPutAsync(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val) throws IgniteCheckedException {
-        return cache.putx(key, val);
+    @Override public boolean put(K key, V val) throws IgniteCheckedException {
+        return cache.put(key, val);
     }
 
     /** {@inheritDoc} */
@@ -378,28 +378,28 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val) {
-        return cache.putxAsync(key, val);
+    @Override public IgniteInternalFuture<Boolean> putAsync(K key, V val) {
+        return cache.putAsync(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public V putIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        return getAndPutIfAbsentAsync(key, val).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
+        return cache.getAndPutIfAbsentAsync(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
         return putIfAbsentAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
         return cache.putIfAbsentAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException {
-        return putxIfAbsentAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val) {
-        return cache.putxIfAbsentAsync(key, val);
     }
 
     /** {@inheritDoc} */
@@ -431,7 +431,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
         CacheEntryPredicate fltr = cctx.equalsValue(oldVal);
 
-        return cache.putxAsync(key, newVal, fltr);
+        return cache.putAsync(key, newVal, fltr);
     }
 
     /** {@inheritDoc} */

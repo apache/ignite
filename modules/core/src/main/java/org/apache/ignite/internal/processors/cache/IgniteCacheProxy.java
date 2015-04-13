@@ -265,12 +265,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.putIfAbsentAsync(key, val));
+                    setFuture(delegate.getAndPutIfAbsentAsync(key, val));
 
                     return null;
                 }
                 else
-                    return delegate.putIfAbsent(key, val);
+                    return delegate.getAndPutIfAbsent(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -776,9 +776,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync())
-                    setFuture(delegate.putxAsync(key, val));
+                    setFuture(delegate.putAsync(key, val));
                 else
-                    delegate.putx(key, val);
+                    delegate.put(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -796,12 +796,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.putAsync(key, val));
+                    setFuture(delegate.getAndPutAsync(key, val));
 
                     return null;
                 }
                 else
-                    return delegate.put(key, val);
+                    return delegate.getAndPut(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -839,12 +839,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.putxIfAbsentAsync(key, val));
+                    setFuture(delegate.putIfAbsentAsync(key, val));
 
                     return false;
                 }
                 else
-                    return delegate.putxIfAbsent(key, val);
+                    return delegate.putIfAbsent(key, val);
             }
             finally {
                 gate.leave(prev);

@@ -129,7 +129,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         final int ENTRY_CNT = 500;
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            cache.put(new Key(i), new Person("p-" + i, i));
+            cache.getAndPut(new Key(i), new Person("p-" + i, i));
 
         try {
             CacheQuery<Map.Entry<Key, Person>> qry = cache.queries().createScanQuery(
@@ -221,7 +221,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         final int ENTRY_CNT = 500;
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            cache.put(String.valueOf(i), (long) i);
+            cache.getAndPut(String.valueOf(i), (long) i);
 
         try {
             CacheQuery<Map.Entry<String, Long>> qry = cache.queries().createScanQuery(
@@ -277,7 +277,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         final int ENTRY_CNT = 100;
 
         for (int i = 0; i < ENTRY_CNT; i++)
-            cache.put(i, new byte[i]);
+            cache.getAndPut(i, new byte[i]);
 
         try {
             CacheQuery<Map.Entry<Integer, byte[]>> qry = cache.queries().createScanQuery(

@@ -207,7 +207,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     }
 
                     // Update global counter.
-                    dsView.putx(key, seqVal);
+                    dsView.put(key, seqVal);
 
                     // Only one thread can be in the transaction scope and create sequence.
                     seq = new GridCacheAtomicSequenceImpl(name,
@@ -311,7 +311,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (val == null) {
                         val = new GridCacheAtomicLongValue(initVal);
 
-                        dsView.putx(key, val);
+                        dsView.put(key, val);
                     }
 
                     a = new GridCacheAtomicLongImpl(name, key, atomicLongView, dsCacheCtx);
@@ -516,7 +516,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (val == null) {
                         val = new GridCacheAtomicReferenceValue(initVal);
 
-                        dsView.putx(key, val);
+                        dsView.put(key, val);
                     }
 
                     ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, dsCacheCtx);
@@ -617,7 +617,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (val == null) {
                         val = new GridCacheAtomicStampedValue(initVal, initStamp);
 
-                        dsView.putx(key, val);
+                        dsView.put(key, val);
                     }
 
                     stmp = new GridCacheAtomicStampedImpl(name, key, atomicStampedView, dsCacheCtx);
@@ -924,7 +924,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     if (val == null) {
                         val = new GridCacheCountDownLatchValue(cnt, autoDel);
 
-                        dsView.putx(key, val);
+                        dsView.put(key, val);
                     }
 
                     latch = new GridCacheCountDownLatchImpl(name, val.get(), val.initialCount(),

@@ -60,7 +60,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         if (idx != null) {
                             checkRemoved(idx);
 
-                            cache.put(itemKey(idx), item);
+                            cache.getAndPut(itemKey(idx), item);
 
                             retVal = true;
                         }

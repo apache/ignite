@@ -139,7 +139,7 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     protected void putFromLoad(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);

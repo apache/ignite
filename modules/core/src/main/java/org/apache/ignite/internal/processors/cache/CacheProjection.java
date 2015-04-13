@@ -412,7 +412,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    @Nullable public V put(K key, V val)
+    @Nullable public V getAndPut(K key, V val)
         throws IgniteCheckedException;
 
     /**
@@ -442,7 +442,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the put operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<V> putAsync(K key, V val);
+    public IgniteInternalFuture<V> getAndPutAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will
@@ -468,7 +468,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    public boolean putx(K key, V val)
+    public boolean put(K key, V val)
         throws IgniteCheckedException;
 
     /**
@@ -494,7 +494,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      return {@code true} if filter is not specified.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<Boolean> putxAsync(K key, V val);
+    public IgniteInternalFuture<Boolean> putAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -505,7 +505,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putxIfAbsent(Object, Object)} should
+     * If the returned value is not needed, method {@link #putIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -521,7 +521,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    @Nullable public V putIfAbsent(K key, V val) throws IgniteCheckedException;
+    @Nullable public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if cache had no previous mapping for it. If cache
@@ -532,7 +532,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #putxIfAbsentAsync(Object, Object)} should
+     * If the returned value is not needed, method {@link #putIfAbsentAsync(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -548,13 +548,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *   regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val);
+    public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #putIfAbsent(Object, Object)} method, it does not return previous
+     * Unlike {@link #getAndPutIfAbsent(Object, Object)} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
@@ -570,13 +570,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If put operation failed.
      */
-    public boolean putxIfAbsent(K key, V val) throws IgniteCheckedException;
+    public boolean putIfAbsent(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if cache had no previous mapping for it.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #putIfAbsent(Object, Object)} method, it does not return previous
+     * Unlike {@link #getAndPutIfAbsent(Object, Object)} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
@@ -591,7 +591,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for this put operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val);
+    public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if there is a previous mapping for it.

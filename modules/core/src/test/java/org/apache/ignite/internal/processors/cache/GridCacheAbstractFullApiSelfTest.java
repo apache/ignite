@@ -3398,9 +3398,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         String k2 = keys.get(1);
         String k3 = keys.get(2);
 
-        cache.put(k1, 1);
-        cache.put(k2, 2);
-        cache.put(k3, 3);
+        cache.getAndPut(k1, 1);
+        cache.getAndPut(k2, 2);
+        cache.getAndPut(k3, 3);
 
         final AtomicInteger swapEvts = new AtomicInteger(0);
         final AtomicInteger unswapEvts = new AtomicInteger(0);
@@ -3498,9 +3498,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.clear();
 
         // Check with multiple arguments.
-        cache.put(k1, 1);
-        cache.put(k2, 2);
-        cache.put(k3, 3);
+        cache.getAndPut(k1, 1);
+        cache.getAndPut(k2, 2);
+        cache.getAndPut(k3, 3);
 
         swapEvts.set(0);
         unswapEvts.set(0);
