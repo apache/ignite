@@ -24,7 +24,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
@@ -43,7 +42,6 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -707,7 +705,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         try {
             startGrids(GRID_CNT);
 
-            GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache(null);
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
 
             // Store counter.
             cache.getAndPut(RMVD_CNTR_KEY, 0);
@@ -723,22 +721,13 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int j = 0; j < GRID_CNT; j++)
                     assertEquals(i, grid(j).cache(null).get(String.valueOf(i)));
 
-            CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0");
+            SqlQuery<String, Integer> qry = new SqlQuery<>(Integer.class, "_val >= 0");
 
-            // Load all results.
-            qry.keepAll(true);
-            qry.includeBackups(false);
+            List<Cache.Entry<String, Integer>> entries =
+                new ArrayList<>(cache.query(qry).getAll());
 
-            // NOTE: for replicated cache includeBackups(false) is not enough since
-            // all nodes are considered primary, so we have to deduplicate result set.
-            if (cache.configuration().getCacheMode() == REPLICATED)
-                qry.enableDedup(true);
-
-            List<Map.Entry<String, Integer>> entries =
-                new ArrayList<>(qry.execute().get());
-
-            Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
-                @Override public int compare(Map.Entry<String, Integer> o1, Map.Entry<String, Integer> o2) {
+            Collections.sort(entries, new Comparator<Cache.Entry<String, Integer>>() {
+                @Override public int compare(Cache.Entry<String, Integer> o1, Cache.Entry<String, Integer> o2) {
                     return o1.getValue().compareTo(o2.getValue());
                 }
             });
@@ -747,7 +736,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             int val = 0;
 
-            for (Map.Entry<String, Integer> e : entries) {
+            for (Cache.Entry<String, Integer> e : entries) {
                 assertEquals(val, e.getValue().intValue());
 
                 val++;
