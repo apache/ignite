@@ -553,7 +553,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         /** {@inheritDoc} */
         @Override protected void operation(int key) throws Exception {
-            cache.replace(key, key, key);
+            cache.getAndReplace(key, key, key);
         }
     }
 }

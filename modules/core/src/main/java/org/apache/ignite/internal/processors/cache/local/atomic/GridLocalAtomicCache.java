@@ -178,40 +178,40 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V replace(K key, V val) throws IgniteCheckedException {
+    @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
         return put(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
         return putAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(K key, V val) throws IgniteCheckedException {
+    @Override public boolean replace(K key, V val) throws IgniteCheckedException {
         return putx(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replacexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
         return putxAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
         A.notNull(oldVal, "oldVal");
 
         return putx(key, newVal, ctx.equalsValArray(oldVal));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
         return putxAsync(key, newVal, ctx.equalsValArray(oldVal));
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
+    @Override public GridCacheReturn replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         return (GridCacheReturn)updateAllInternal(UPDATE,
@@ -251,7 +251,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn> replaceAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         return updateAllAsync0(F.asMap(key, newVal),

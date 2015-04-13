@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -32,7 +31,6 @@ import javax.cache.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
-import java.util.concurrent.*;
 
 /**
  * This interface provides a rich API for working with distributed caches. It includes the following
@@ -603,7 +601,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #replacex(Object, Object)} should
+     * If the returned value is not needed, method {@link #replace(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -619,7 +617,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
      */
-    @Nullable public V replace(K key, V val) throws IgniteCheckedException;
+    @Nullable public V getAndReplace(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if there is a previous mapping for it. If cache
@@ -629,7 +627,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, <code>CacheStore#load(Transaction, Object)</code> method will be used.
      * <p>
-     * If the returned value is not needed, method {@link #replacex(Object, Object)} should
+     * If the returned value is not needed, method {@link #replace(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
@@ -644,13 +642,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<V> replaceAsync(K key, V val);
+    public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if only if there is a previous mapping for it.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #replace(Object, Object)} method, it does not return previous
+     * Unlike {@link #getAndReplace(Object, Object)} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
@@ -666,13 +664,13 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
      */
-    public boolean replacex(K key, V val) throws IgniteCheckedException;
+    public boolean replace(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if there is a previous mapping for it.
      * <p>
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
-     * Unlike {@link #replaceAsync(Object, Object)} method, it does not return previous
+     * Unlike {@link #getAndReplaceAsync(Object, Object)} method, it does not return previous
      * value and, therefore, does not have any overhead associated with returning of a value. It
      * should always be used whenever return value is not required.
      * <p>
@@ -687,7 +685,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<Boolean> replacexAsync(K key, V val);
+    public IgniteInternalFuture<Boolean> replaceAsync(K key, V val);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -708,7 +706,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
      */
-    public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException;
+    public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
@@ -728,7 +726,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the replace operation.
      * @throws NullPointerException If either key or value are {@code null}.
      */
-    public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pairs in cache. If filters are provided, then entries will

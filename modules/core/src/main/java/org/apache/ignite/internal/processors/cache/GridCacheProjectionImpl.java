@@ -403,32 +403,32 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V replace(K key, V val) throws IgniteCheckedException {
+    @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
+        return getAndReplaceAsync(key, val).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
+        return cache.getAndReplaceAsync(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean replace(K key, V val) throws IgniteCheckedException {
         return replaceAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
         return cache.replaceAsync(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(K key, V val) throws IgniteCheckedException {
-        return replacexAsync(key, val).get();
+    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return getAndReplaceAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replacexAsync(K key, V val) {
-        return cache.replacexAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replaceAsync(key, oldVal, newVal).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
         CacheEntryPredicate fltr = cctx.equalsValue(oldVal);
 
         return cache.putxAsync(key, newVal, fltr);
@@ -586,15 +586,15 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn> replaceAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
-        return cache.replacexAsync(key, oldVal, newVal);
+        return cache.replaceAsync(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replacexAsync(key, oldVal, newVal).get();
+    @Override public GridCacheReturn replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return replaceAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */

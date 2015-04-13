@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -1492,7 +1491,7 @@ public class IgfsMetaManager extends IgfsManager {
                         throw fsException("Failed to update file info (file types differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
-                    boolean b = metaCache.replace(fileId, oldInfo, newInfo);
+                    boolean b = metaCache.getAndReplace(fileId, oldInfo, newInfo);
 
                     assert b : "Inconsistent transaction state [oldInfo=" + oldInfo + ", newInfo=" + newInfo +
                         ", c=" + c + ']';

@@ -931,12 +931,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.replaceAsync(key, oldVal, newVal));
+                    setFuture(delegate.getAndReplaceAsync(key, oldVal, newVal));
 
                     return false;
                 }
                 else
-                    return delegate.replace(key, oldVal, newVal);
+                    return delegate.getAndReplace(key, oldVal, newVal);
             }
             finally {
                 gate.leave(prev);
@@ -954,12 +954,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.replacexAsync(key, val));
+                    setFuture(delegate.replaceAsync(key, val));
 
                     return false;
                 }
                 else
-                    return delegate.replacex(key, val);
+                    return delegate.replace(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -977,12 +977,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.replaceAsync(key, val));
+                    setFuture(delegate.getAndReplaceAsync(key, val));
 
                     return null;
                 }
                 else
-                    return delegate.replace(key, val);
+                    return delegate.getAndReplace(key, val);
             }
             finally {
                 gate.leave(prev);

@@ -371,36 +371,36 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V replace(K key, V val) throws IgniteCheckedException {
-        return replaceAsync(key, val).get();
+    @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
+        return getAndReplaceAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
         return putAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replacex(K key, V val) throws IgniteCheckedException {
-        return replacexAsync(key, val).get();
+    @Override public boolean replace(K key, V val) throws IgniteCheckedException {
+        return replaceAsync(key, val).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replacexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
         return putxAsync(key, val, ctx.hasValArray());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replaceAsync(key, oldVal, newVal).get();
+    @Override public boolean getAndReplace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return getAndReplaceAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> getAndReplaceAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         return putxAsync(key, newVal, ctx.equalsValArray(oldVal));
@@ -412,8 +412,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replacexAsync(key, oldVal, newVal).get();
+    @Override public GridCacheReturn replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        return replaceAsync(key, oldVal, newVal).get();
     }
 
     /** {@inheritDoc} */
@@ -426,7 +426,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn> replaceAsync(K key, V oldVal, V newVal) {
         return updateAllAsync0(F.asMap(key, newVal),
             null,
             null,
