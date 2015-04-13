@@ -78,18 +78,6 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.createSqlQuery(cls, clause);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
