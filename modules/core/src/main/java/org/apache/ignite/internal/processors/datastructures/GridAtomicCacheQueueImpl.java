@@ -161,7 +161,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             while (true) {
                 try {
-                    cache.putAll(putMap, null);
+                    cache.putAll(putMap);
 
                     break;
                 }

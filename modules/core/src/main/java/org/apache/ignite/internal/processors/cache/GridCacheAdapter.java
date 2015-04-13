@@ -2658,16 +2658,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable final Map<? extends K, ? extends V> m) throws IgniteCheckedException {
-        putAll(m, CU.empty0());
-    }
-
-    /**
-     * @param m Map to put.
-     * @param filter Filter.
-     * @throws IgniteCheckedException If put operation failed.
-     */
-    public void putAll(@Nullable final Map<? extends K, ? extends V> m,
-        final CacheEntryPredicate[] filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2682,11 +2672,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         syncOp(new SyncInOp(m.size() == 1) {
             @Override public void inOp(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                tx.putAllAsync(ctx, m, false, null, -1, filter).get();
+                tx.putAllAsync(ctx, m, false, null, -1, CU.empty0()).get();
             }
 
             @Override public String toString() {
-                return "putAll [map=" + m + ", filter=" + Arrays.toString(filter) + ']';
+                return "putAll [map=" + m + ']';
             }
         });
 

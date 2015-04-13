@@ -439,9 +439,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        putAllAsync(m, filter).get();
+    @Override public void putAll(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
+        putAllAsync(m, CU.empty0()).get();
     }
 
     /** {@inheritDoc} */

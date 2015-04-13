@@ -482,9 +482,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m, CacheEntryPredicate[] filter)
+    @Override public void putAll(Map<? extends K, ? extends V> m)
         throws IgniteCheckedException {
-        dht.putAll(m, filter);
+        dht.putAll(m);
     }
 
     /** {@inheritDoc} */

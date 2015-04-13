@@ -263,8 +263,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m,
-        CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public void putAll(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
         updateAllInternal(UPDATE,
             m.keySet(),
             m.values(),
@@ -272,7 +271,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             expiryPerCall(),
             false,
             false,
-            filter,
+            CU.empty0(),
             ctx.writeThrough());
     }
 
