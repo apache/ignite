@@ -17,117 +17,61 @@
 
 package org.apache.ignite.internal.multijvm;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Multi JVM tests. 
  */
 public class MultiJvmTest extends GridCommonAbstractTest {
-    /**
-     * Runs given class as separate java process.
-     *
-     * @param runnerCls Runner class
-     * @param b
-     * @throws Exception If failed.
-     */
-    protected void runJavaProcess(Class<?> runnerCls, boolean wait) throws Exception {
-        Process ps = GridJavaProcess.exec(
-            runnerCls,
-            null,
-            null,
-            null,
-            null,
-            Collections.<String>emptyList(),
-            System.getProperty("surefire.test.class.path")
-        ).getProcess();
-
-        readStreams(ps);
-
-        int code = 0;
-        
-        if (wait)
-            code = ps.waitFor();
-
-        assertEquals("Returned code have to be 0.", 0, code);
+    /** Proces name to process map. */
+    private final Map<String, GridJavaProcess> nodes = new HashMap<>();
+    
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest(); 
     }
 
-    /**
-     * Read information from process streams.
-     *
-     * @param proc Process.
-     * @throws IOException If an I/O error occurs.
-     */
-    private void readStreams(final Process proc) throws IOException {
-        Thread reader = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    BufferedReader stdOut = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-
-                    String s;
-
-                    while ((s = stdOut.readLine()) != null)
-                        System.out.println("OUT>>>>>> " + s);
-
-                    BufferedReader errOut = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-
-                    while ((s = errOut.readLine()) != null)
-                        System.out.println("ERR>>>>>> " + s);
-                }
-                catch (IOException e) {
-                    // No-op.
-                }
-            }
-        });
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (GridJavaProcess process : nodes.values())
+            process.kill();
         
-        reader.setDaemon(true);
+        nodes.clear();
         
-        reader.start();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMultiNode() throws Exception {
-        runJavaProcess(IgniteNodeRunner.class, false);
-        
-        Ignition.stopAll(true);
+        super.afterTest(); 
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testRunProcess() throws Exception {
-        runIgniteProcess("node1", "modules/spring/src/test/java/org/apache/ignite/internal/multijvm/example-cache.xml");
-        
-        Thread.sleep(20_000);
+        runIgniteProcess("JvmNode1", "modules/spring/src/test/java/org/apache/ignite/internal/multijvm/example-cache.xml");
+
+        Thread.sleep(10_000);
     }
 
-    private void runIgniteProcess(String nodeName, String cfg) throws Exception {
-        GridJavaProcess.exec(
+    private GridJavaProcess runIgniteProcess(final String nodeName, String cfg) throws Exception {
+        GridJavaProcess ps = GridJavaProcess.exec(
             IgniteNodeRunner.class,
             cfg, // Params.
             log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
                 @Override public void apply(String s) {
-                    log.info(s);
+                    log.info("[" + nodeName + "] " + s);
                 }
             },
-//            Optional closure to be called when process termination is detected.
-            new GridAbsClosure() {
-                @Override public void apply() {
-                    Ignition.stopAll(true);
-                }
-            },
+            null,
             Collections.<String>emptyList(), // JVM Args.
             System.getProperty("surefire.test.class.path")
         );
+        
+        nodes.put(nodeName, ps);
+        
+        return ps;
     }
 }

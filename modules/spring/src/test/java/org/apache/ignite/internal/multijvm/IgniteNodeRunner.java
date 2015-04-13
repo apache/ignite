@@ -18,20 +18,22 @@
 package org.apache.ignite.internal.multijvm;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Run ignite node. 
  */
 public class IgniteNodeRunner {
     public static void main(String[] args) throws Exception {
-        System.out.println("args=" + args);
-        System.out.println("args == null =" + args == null);
-        System.out.println("args.len =" + args.length);
-        System.out.println("args[0] =" + args[0]);
+        X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
         assert args != null;
         assert args.length == 1;
-        
+
+        X.println("Starting Ignite Node...");
+
         String cfg = args[0];
 
         Ignition.start(cfg);
