@@ -49,8 +49,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
         super.beforeTestsStarted();
 
-        if (!clientOnly())
-            grid(nearOnlyGridName).createNearCache(null, new NearCacheConfiguration());
+        if (nearEnabled())
+            grid(nearOnlyGridName).createNearCache(null, nearConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -76,28 +76,20 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
         cfg.setWriteThrough(false);
-        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         cfg.setBackups(1);
 
+        if (cfg.getCacheMode() == REPLICATED)
+            cfg.setAffinity(null);
+        else
+            cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        gridCnt.set(0);
     }
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
-
-    /**
-     * @return If {@code true} then uses CLIENT_ONLY mode, otherwise NEAR_ONLY.
-     */
-    protected abstract boolean clientOnly();
 
     /**
      * @return boolean {@code True} if client's grid must be started last, {@code false} if it must be started first.

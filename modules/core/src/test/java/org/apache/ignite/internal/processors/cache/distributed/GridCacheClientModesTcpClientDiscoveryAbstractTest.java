@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+
 import java.net.*;
 import java.util.*;
 
@@ -39,7 +40,7 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
         if (cfg.isClientMode() != null && cfg.isClientMode()) {
             TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
 
-            ArrayList<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
+            Collection<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
 
             for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses())
                 addrs.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
@@ -55,5 +56,18 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
         cfg.setLocalHost("127.0.0.1");
 
         return cfg;
+    }
+
+    /** */
+    public static class CaseNearCache extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+
+    }
+
+    /** */
+    public static class CaseClientOnlyCache extends GridCacheClientModesTcpClientDiscoveryAbstractTest {
+        /** {@inheritDoc} */
+        @Override protected NearCacheConfiguration nearConfiguration() {
+            return null;
+        }
     }
 }

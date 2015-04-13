@@ -32,8 +32,8 @@ public class IgniteCacheTcpClientDiscoveryTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache + TcpClientDiscovery SPI test suite.");
 
-        suite.addTest(new TestSuite(GridCacheClientOnlyTcpClientDiscoveryTest.class));
-        suite.addTest(new TestSuite(GridCacheNearOnlyTcpClientDiscoveryTest.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseNearCache.class));
+        suite.addTest(new TestSuite(GridCacheClientModesTcpClientDiscoveryAbstractTest.CaseClientOnlyCache.class));
         suite.addTest(new TestSuite(GridCacheTcpClientDiscoveryMultiThreadedTest.class));
 
         return suite;
