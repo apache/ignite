@@ -70,7 +70,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         // Filling configuration for client nodes
         if (client) {
             TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
-            ArrayList<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
+            Collection<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
 
             for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses())
                 addrs.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
