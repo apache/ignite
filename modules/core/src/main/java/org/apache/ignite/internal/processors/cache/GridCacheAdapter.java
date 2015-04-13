@@ -2788,16 +2788,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void removeAll(final Collection<? extends K> keys) throws IgniteCheckedException {
-        removeAll(keys, CU.empty0());
-    }
-
-    /**
-     * @param keys Keys to remove.
-     * @param filter Filter.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void removeAll(final Collection<? extends K> keys,
-        final CacheEntryPredicate... filter) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2812,11 +2802,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         syncOp(new SyncInOp(keys.size() == 1) {
             @Override public void inOp(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                tx.removeAllAsync(ctx, keys, null, false, filter).get();
+                tx.removeAllAsync(ctx, keys, null, false, CU.empty0()).get();
             }
 
             @Override public String toString() {
-                return "removeAll [keys=" + keys + ", filter=" + Arrays.toString(filter) + ']';
+                return "removeAll [keys=" + keys + ']';
             }
         });
 
@@ -2826,16 +2816,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable final Collection<? extends K> keys) {
-        return removeAllAsync(keys, CU.empty0());
-    }
-
-    /**
-     * @param keys Keys to remove.
-     * @param filter Filter.
-     * @return Remove future.
-     */
-    public IgniteInternalFuture<?> removeAllAsync(@Nullable final Collection<? extends K> keys,
-        final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2848,11 +2828,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteInternalFuture<Object> fut = asyncOp(new AsyncInOp(keys) {
             @Override public IgniteInternalFuture<?> inOp(IgniteTxLocalAdapter tx) {
-                return tx.removeAllAsync(ctx, keys, null, false, filter).chain(RET2NULL);
+                return tx.removeAllAsync(ctx, keys, null, false, CU.empty0()).chain(RET2NULL);
             }
 
             @Override public String toString() {
-                return "removeAllAsync [keys=" + keys + ", filter=" + Arrays.toString(filter) + ']';
+                return "removeAllAsync [keys=" + keys + ']';
             }
         });
 

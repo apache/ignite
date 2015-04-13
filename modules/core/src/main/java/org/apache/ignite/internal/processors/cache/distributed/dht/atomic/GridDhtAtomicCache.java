@@ -493,17 +493,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(Collection<? extends K> keys,
-        CacheEntryPredicate... filter) throws IgniteCheckedException {
-        removeAllAsync(keys, filter).get();
+    @Override public void removeAll(Collection<? extends K> keys) throws IgniteCheckedException {
+        removeAllAsync(keys).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
+    @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        return removeAllAsync0(keys, null, false, false, filter).chain(RET2NULL);
+        return removeAllAsync0(keys, null, false, false, CU.empty0()).chain(RET2NULL);
     }
 
     /** {@inheritDoc} */
@@ -533,7 +531,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> localRemoveAll(CacheEntryPredicate filter) {
-        return removeAllAsync(keySet(filter), null);
+        return removeAllAsync(keySet(filter));
     }
 
     /** {@inheritDoc} */

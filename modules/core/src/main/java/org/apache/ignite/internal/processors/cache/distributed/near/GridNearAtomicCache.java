@@ -558,15 +558,14 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(Collection<? extends K> keys, CacheEntryPredicate... filter)
+    @Override public void removeAll(Collection<? extends K> keys)
         throws IgniteCheckedException {
-        dht.removeAll(keys, filter);
+        dht.removeAll(keys);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
-        return dht.removeAllAsync(keys, filter);
+    @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys) {
+        return dht.removeAllAsync(keys);
     }
 
     /** {@inheritDoc} */
