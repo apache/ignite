@@ -36,16 +36,6 @@ import java.util.*;
  */
 public interface CacheQueries<K, V> {
     /**
-     * Creates user's SQL query, queried class, and query clause which is generally
-     * a where clause. For more information refer to {@link CacheQuery} documentation.
-     *
-     * @param clsName Query class name.
-     * @param clause Query clause.
-     * @return Created query.
-     */
-    public CacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause);
-
-    /**
      * Creates user's SQL fields query for given clause. For more information refer to
      * {@link CacheQuery} documentation.
      *

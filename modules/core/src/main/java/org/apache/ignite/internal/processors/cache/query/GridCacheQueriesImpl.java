@@ -63,20 +63,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
-        A.notNull("clsName", clsName);
-        A.notNull("clause", clause);
-
-        return new GridCacheQueryAdapter<>(ctx,
-            SQL,
-            clsName,
-            clause,
-            null,
-            false,
-            prj != null && prj.isKeepPortable());
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         A.notNull(qry, "qry");
 
