@@ -86,11 +86,13 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         return c;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // Set salvage timeout system property.
         salvageTimeoutOld = System.setProperty(IGNITE_TX_SALVAGE_TIMEOUT, SALVAGE_TIMEOUT.toString());
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         // Restore salvage timeout system property to its initial state.
         if (salvageTimeoutOld != null)
@@ -99,11 +101,13 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
             System.clearProperty(IGNITE_TX_SALVAGE_TIMEOUT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // Start the grid.
         startGridsMultiThreaded(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // Shutwodn the gird.
         stopAllGrids();

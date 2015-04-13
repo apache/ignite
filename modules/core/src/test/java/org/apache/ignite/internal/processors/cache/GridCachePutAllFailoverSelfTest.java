@@ -40,6 +40,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -595,6 +597,13 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         return ret;
     }
 
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -626,7 +635,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
             cacheCfg.setName("partitioned");
-            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+            cacheCfg.setAtomicityMode(atomicityMode());
+            cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setStartSize(4500000);
 
             cacheCfg.setBackups(backups);
