@@ -2933,7 +2933,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key) {
         A.notNull(key, "key");
 
-        return removexAsync0(key, CU.empty0());
+        return removexAsync(key, CU.empty0());
     }
 
     /**
@@ -2941,7 +2941,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> removexAsync0(final K key, @Nullable final CacheEntryPredicate... filter) {
+    public IgniteInternalFuture<Boolean> removexAsync(final K key, @Nullable final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;

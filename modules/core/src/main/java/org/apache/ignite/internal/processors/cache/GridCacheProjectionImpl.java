@@ -582,7 +582,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key) {
-        return cache.removexAsync0(key);
+        return cache.removexAsync(key);
     }
 
     /** {@inheritDoc} */

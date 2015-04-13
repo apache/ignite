@@ -508,12 +508,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key, @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException {
-        return removexAsync0(key, filter).get();
+        return removexAsync(key, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> removexAsync0(K key, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, false, false, filter);
@@ -528,7 +528,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
-        return removexAsync0(key, ctx.equalsValArray(val));
+        return removexAsync(key, ctx.equalsValArray(val));
     }
 
     /** {@inheritDoc} */
