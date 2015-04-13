@@ -56,9 +56,10 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-        int count = gridCnt.incrementAndGet();
 
-        if ((count == gridCount() && isClientStartedLast()) || (count == 1 && !isClientStartedLast())) {
+        int cnt = gridCnt.incrementAndGet();
+
+        if ((cnt == gridCount() && isClientStartedLast()) || (cnt == 1 && !isClientStartedLast())) {
             cfg.setClientMode(true);
 
             nearOnlyGridName = gridName;
@@ -99,7 +100,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     protected abstract boolean clientOnly();
 
     /**
-     * @return boolean {@code true} if client's grid must be started last, {@code false} if it must be started first.
+     * @return boolean {@code True} if client's grid must be started last, {@code false} if it must be started first.
      */
     protected boolean isClientStartedLast() {
         return false;

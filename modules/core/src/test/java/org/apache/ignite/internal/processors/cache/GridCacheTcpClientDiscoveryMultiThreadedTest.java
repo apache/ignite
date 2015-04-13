@@ -1,16 +1,24 @@
 /*
- *  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -23,21 +31,21 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests TcpClientDiscovery SPI with multiple client nodes that interact with a cache concurrently.
+ * Tests {@link TcpClientDiscoverySpi} with multiple client nodes that interact with a cache concurrently.
  */
 public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstractSelfTest {
     /** Server nodes count. */
-    private volatile static int serverNodesCount;
+    private static int srvNodesCnt;
 
     /** Client nodes count. */
-    private volatile static int clientNodesCount;
+    private static int clientNodesCnt;
 
     /** Client node or not. */
-    private volatile static boolean client;
+    private static boolean client;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return serverNodesCount + clientNodesCount;
+        return srvNodesCnt + clientNodesCnt;
     }
     
     /** {@inheritDoc} */
@@ -51,19 +59,23 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Filling configuration for client nodes
         if (client) {
             TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
-            ArrayList<String> addresses = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
+            ArrayList<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
 
-            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses()) {
-                addresses.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
-            }
+            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses())
+                addrs.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
 
-            clientFinder.setAddresses(addresses);
+            clientFinder.setAddresses(addrs);
 
             TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
             discoverySpi.setIpFinder(clientFinder);
@@ -78,20 +90,6 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setCacheStoreFactory(null);
-        cfg.setReadThrough(false);
-        cfg.setWriteThrough(false);
-        cfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        cfg.setBackups(1);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
@@ -100,103 +98,86 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     public void testCacheConcurrentlyWithMultipleClientNodes() throws Exception {
-        try {
-            serverNodesCount = 3;
-            clientNodesCount = 4;
+        srvNodesCnt = 3;
+        clientNodesCnt = 4;
 
-            startServerNodes();
+        startServerNodes();
 
-            client = true;
-            startGridsMultiThreaded(serverNodesCount, clientNodesCount);
+        client = true;
 
-            checkTopology(gridCount());
-            awaitPartitionMapExchange();
+        startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
 
-            // Explicitly create near cache for even client nodes
-            final boolean[] nearCacheNode = new boolean[clientNodesCount];
-            for (int i = serverNodesCount; i < gridCount(); i++) {
-                if (i % 2 == 0) {
-                    grid(i).createNearCache(null, new NearCacheConfiguration<>());
-                    nearCacheNode[i - serverNodesCount] = true;
+        checkTopology(gridCount());
+
+        awaitPartitionMapExchange();
+
+        // Explicitly create near cache for even client nodes
+        for (int i = srvNodesCnt; i < gridCount(); i++)
+            grid(i).createNearCache(null, new NearCacheConfiguration<>());
+
+        final AtomicInteger threadsCnt = new AtomicInteger();
+
+        IgniteInternalFuture<?> f = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int clientIdx = srvNodesCnt + threadsCnt.getAndIncrement();
+
+                    Ignite node = grid(clientIdx);
+
+                    assert node.configuration().isClientMode();
+
+                    IgniteCache<Integer, Integer> cache = node.cache(null);
+
+                    boolean isNearCacheNode = clientIdx % 2 == 0;
+
+                    for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++)
+                        cache.put(i, i);
+
+                    for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
+                        assertEquals(i, (int)cache.get(i));
+
+                        if (isNearCacheNode)
+                            assertEquals(i, (int)cache.localPeek(i, CachePeekMode.ONHEAP));
+                    }
+
+                    stopGrid(clientIdx);
+
+                    return null;
                 }
-            }
+            },
+            clientNodesCnt
+        );
 
-            super.beforeTest();
-
-            final AtomicInteger threadsCnt = new AtomicInteger();
-
-            IgniteInternalFuture<?> f = multithreadedAsync(
-                    new Callable<Object>() {
-                        @Override
-                        public Object call() throws Exception {
-                            int clientIdx = serverNodesCount + threadsCnt.getAndIncrement();
-                            Ignite node = grid(clientIdx);
-
-                            assert node.configuration().isClientMode();
-
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
-                            boolean isNearCacheNode = nearCacheNode[clientIdx - serverNodesCount];
-
-                            for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++)
-                                cache.put(i, i);
-
-
-                            for (int i = 100 * clientIdx; i < 100 * (clientIdx + 1); i++) {
-                                assertEquals(i, (int) cache.get(i));
-
-                                if (isNearCacheNode)
-                                    assertEquals(i, (int) cache.localPeek(i, CachePeekMode.ONHEAP));
-                            }
-
-                            stopGrid(clientIdx);
-
-                            return null;
-                        }
-                    },
-                    clientNodesCount
-            );
-
-            f.get();
-
-        }
-        finally {
-            afterTestsStopped();
-        }
+        f.get();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheWithServerNodesRestart() throws Exception {
-        try {
-            serverNodesCount = 3;
-            clientNodesCount = 1;
+        srvNodesCnt = 3;
+        clientNodesCnt = 1;
 
-            startServerNodes();
+        startServerNodes();
 
-            client = true;
-            Ignite client = startGrid(serverNodesCount);
+        client = true;
 
-            checkTopology(gridCount());
-            awaitPartitionMapExchange();
-            super.beforeTest();
+        Ignite client = startGrid(srvNodesCnt);
 
-            IgniteCache<Integer, Integer> cache = client.cache(null);
+        checkTopology(gridCount());
 
-            performSimpleOperationsOnCache(cache);
+        IgniteCache<Integer, Integer> cache = client.cache(null);
 
-            // Restart server nodes, client node should reconnect automatically.
-            stopServerNodes();
-            startServerNodes();
-            checkTopology(gridCount());
-            awaitPartitionMapExchange();
-            super.beforeTest();
+        performSimpleOperationsOnCache(cache);
 
-            performSimpleOperationsOnCache(cache);
-        }
-        finally {
-            afterTestsStopped();
-        }
+        // Restart server nodes, client node should reconnect automatically.
+        stopServerNodes();
+
+        startServerNodes();
+
+        checkTopology(gridCount());
+
+        performSimpleOperationsOnCache(cache);
     }
 
     /**
@@ -204,15 +185,16 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
      */
     private void startServerNodes() throws Exception {
         client = false;
-        for (int i = 0; i < serverNodesCount; i++)
+
+        for (int i = 0; i < srvNodesCnt; i++)
             startGrid(i);
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     private void stopServerNodes() throws Exception {
-        for (int i = 0; i < serverNodesCount; i++)
+        for (int i = 0; i < srvNodesCnt; i++)
             stopGrid(i);
     }
 

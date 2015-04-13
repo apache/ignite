@@ -24,7 +24,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Tests TcpClientDiscovery SPI in client modes.
+ * Tests {@link TcpClientDiscoverySpi}.
  */
 public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends GridCacheClientModesAbstractSelfTest {
     /** {@inheritDoc} */
@@ -38,17 +38,16 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
 
         if (cfg.isClientMode() != null && cfg.isClientMode()) {
             TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
-            ArrayList<String> addresses = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
 
-            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses()) {
-                addresses.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
-            }
+            ArrayList<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
 
-            clientFinder.setAddresses(addresses);
+            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses())
+                addrs.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
+
+            clientFinder.setAddresses(addrs);
 
             TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
             discoverySpi.setIpFinder(clientFinder);
-
 
             cfg.setDiscoverySpi(discoverySpi);
         }
