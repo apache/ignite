@@ -15,29 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.multijvm;
+package org.apache.ignite.internal.multijvm;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.io.*;
+import org.apache.ignite.*;
 
 /**
  * Run ignite node. 
  */
 public class IgniteNodeRunner {
-    public static void main(String[] args) throws IOException, InterruptedException {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-        
-        cfg.setGridName("TestGrid");
+    public static void main(String[] args) throws Exception {
+        System.out.println("args=" + args);
+        System.out.println("args == null =" + args == null);
+        System.out.println("args.len =" + args.length);
+        System.out.println("args[0] =" + args[0]);
 
-        G.start(cfg);
+        assert args != null;
+        assert args.length == 1;
         
-        new File(U.getIgniteHome() + "/testFile1.txt").createNewFile();
+        String cfg = args[0];
 
-        Thread.sleep(5 * 1000);
-        
-        new File(U.getIgniteHome() + "/testFile2.txt").createNewFile();
+        Ignition.start(cfg);
     }
 }

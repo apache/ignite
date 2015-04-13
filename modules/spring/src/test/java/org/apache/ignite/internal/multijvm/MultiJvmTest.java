@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.multijvm;
+package org.apache.ignite.internal.multijvm;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -95,14 +97,37 @@ public class MultiJvmTest extends GridCommonAbstractTest {
     public void testMultiNode() throws Exception {
         runJavaProcess(IgniteNodeRunner.class, false);
         
-        log.info(">>>>> grids=" + Ignition.allGrids());
-
-        Thread.sleep(15 * 1000);
-
-        log.info(">>>>> grids=" + Ignition.allGrids());
-        
         Ignition.stopAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRunProcess() throws Exception {
+        runIgniteProcess("node1", "modules/spring/src/test/java/org/apache/ignite/internal/multijvm/example-cache.xml");
         
-        log.info(">>>>> grids=" + Ignition.allGrids());
+        Thread.sleep(20_000);
+    }
+
+    private void runIgniteProcess(String nodeName, String cfg) throws Exception {
+        GridJavaProcess.exec(
+            IgniteNodeRunner.class,
+            cfg, // Params.
+            log,
+            // Optional closure to be called each time wrapped process prints line to system.out or system.err.
+            new IgniteInClosure<String>() {
+                @Override public void apply(String s) {
+                    log.info(s);
+                }
+            },
+//            Optional closure to be called when process termination is detected.
+            new GridAbsClosure() {
+                @Override public void apply() {
+                    Ignition.stopAll(true);
+                }
+            },
+            Collections.<String>emptyList(), // JVM Args.
+            System.getProperty("surefire.test.class.path")
+        );
     }
 }
