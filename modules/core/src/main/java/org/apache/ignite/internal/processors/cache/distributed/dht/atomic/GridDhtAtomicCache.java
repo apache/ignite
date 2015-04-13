@@ -295,8 +295,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val,
-        CacheEntryPredicate[] filter, boolean enableStat) throws IgniteCheckedException {
+    @Override public boolean putx(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
         return putxAsync(key, val, filter).get();
     }
 

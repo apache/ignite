@@ -2043,22 +2043,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public boolean putx(final K key, final V val) throws IgniteCheckedException {
-        return putx(key, val, CU.empty0(), true);
+        return putx(key, val, CU.empty0());
     }
 
     /**
      * @param key Key.
      * @param val Value.
      * @param filter Filter.
-     * @param enableStat Write statistics.
      * @return {@code True} if optional filter passed and value was stored in cache,
      *      {@code false} otherwise. Note that this method will return {@code true} if filter is not
      *      specified.
      * @throws IgniteCheckedException If put operation failed.
      */
-    public boolean putx(final K key, final V val, final CacheEntryPredicate[] filter, boolean enableStat)
+    public boolean putx(final K key, final V val, final CacheEntryPredicate[] filter)
         throws IgniteCheckedException {
-        boolean statsEnabled = ctx.config().isStatisticsEnabled() && enableStat;
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
