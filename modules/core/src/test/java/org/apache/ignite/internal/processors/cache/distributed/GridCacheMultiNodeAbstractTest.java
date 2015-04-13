@@ -121,6 +121,10 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         removeListeners(ignite3);
 
         lsnrs.clear();
+        
+        cache1.clear();
+        cache2.clear();
+        cache3.clear();
     }
 
     /**
@@ -289,7 +293,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, lsnr);
         addListener(ignite3, lsnr);
 
-        cache1Async.getAndPut(2, "val1");
+        cache1Async.getAndPut(1, "val1");
 
         IgniteFuture<String> f1 = cache1Async.future();
 
@@ -297,7 +301,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
         IgniteFuture<String> f2 = cache2Async.future();
 
-        cache3Async.getAndPut(2, "val3");
+        cache3Async.getAndPut(3, "val3");
 
         IgniteFuture<String> f3 = cache3Async.future();
 
