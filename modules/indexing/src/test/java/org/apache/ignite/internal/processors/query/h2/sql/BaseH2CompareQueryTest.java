@@ -19,13 +19,17 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.testframework.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Base set of queries to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
@@ -157,6 +161,22 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         compareQueryRes0("select _key, _val, id, personId, productId, organizationId from \"part\".Purchase");
 
         compareQueryRes0(rCache, "select _key, _val, id, name, price from \"repl\".Product");
+    }
+
+    /**
+     *
+     */
+    public void testSelectStar() {
+        assertEquals(1, pCache.query(new SqlQuery<AffinityKey<?>,Person>(
+            Person.class, "\t\r\n  select  \n*\t from Person limit 1")).getAll().size());
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                pCache.query(new SqlQuery(Person.class, "SELECT firstName from PERSON"));
+
+                return null;
+            }
+        }, CacheException.class, null);
     }
 
     /**

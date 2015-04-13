@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.jsr166.*;
 
 import java.lang.reflect.*;
@@ -45,7 +46,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
-import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
+import static org.apache.ignite.plugin.security.SecuritySubjectType.*;
 
 /**
  * Rest processor implementation.
@@ -175,7 +176,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 authorize(req, subjCtx);
             }
-            catch (GridSecurityException e) {
+            catch (SecurityException e) {
                 assert subjCtx != null;
 
                 GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
@@ -464,21 +465,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
 
-        GridSecurityCredentials cred;
+        SecurityCredentials cred;
 
-        if (req.credentials() instanceof GridSecurityCredentials)
-            cred = (GridSecurityCredentials)req.credentials();
+        if (req.credentials() instanceof SecurityCredentials)
+            cred = (SecurityCredentials)req.credentials();
         else if (req.credentials() instanceof String) {
             String credStr = (String)req.credentials();
 
             int idx = credStr.indexOf(':');
 
             cred = idx >= 0 && idx < credStr.length() ?
-                new GridSecurityCredentials(credStr.substring(0, idx), credStr.substring(idx + 1)) :
-                new GridSecurityCredentials(credStr, null);
+                new SecurityCredentials(credStr.substring(0, idx), credStr.substring(idx + 1)) :
+                new SecurityCredentials(credStr, null);
         }
         else {
-            cred = new GridSecurityCredentials();
+            cred = new SecurityCredentials();
 
             cred.setUserObject(req.credentials());
         }
@@ -514,16 +515,16 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * @param req REST request.
      * @param sCtx Security context.
-     * @throws GridSecurityException If authorization failed.
+     * @throws SecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, SecurityContext sCtx) throws GridSecurityException {
-        GridSecurityPermission perm = null;
+    private void authorize(GridRestRequest req, SecurityContext sCtx) throws SecurityException {
+        SecurityPermission perm = null;
         String name = null;
 
         switch (req.command()) {
             case CACHE_GET:
             case CACHE_GET_ALL:
-                perm = GridSecurityPermission.CACHE_READ;
+                perm = SecurityPermission.CACHE_READ;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
@@ -531,7 +532,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_QUERY_EXECUTE:
             case CACHE_QUERY_FETCH:
             case CACHE_QUERY_REBUILD_INDEXES:
-                perm = GridSecurityPermission.CACHE_READ;
+                perm = SecurityPermission.CACHE_READ;
                 name = ((GridRestCacheQueryRequest)req).cacheName();
 
                 break;
@@ -543,21 +544,21 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_CAS:
             case CACHE_APPEND:
             case CACHE_PREPEND:
-                perm = GridSecurityPermission.CACHE_PUT;
+                perm = SecurityPermission.CACHE_PUT;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
 
             case CACHE_REMOVE:
             case CACHE_REMOVE_ALL:
-                perm = GridSecurityPermission.CACHE_REMOVE;
+                perm = SecurityPermission.CACHE_REMOVE;
                 name = ((GridRestCacheRequest)req).cacheName();
 
                 break;
 
             case EXE:
             case RESULT:
-                perm = GridSecurityPermission.TASK_EXECUTE;
+                perm = SecurityPermission.TASK_EXECUTE;
                 name = ((GridRestTaskRequest)req).taskName();
 
                 break;

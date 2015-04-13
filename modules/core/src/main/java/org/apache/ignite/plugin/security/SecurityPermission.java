@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
  * Supported security permissions within grid. Permissions
  * are specified on per-cache or per-task level.
  */
-public enum GridSecurityPermission {
+public enum SecurityPermission {
     /** Cache {@code read} permission. */
     CACHE_READ,
 
@@ -55,7 +55,7 @@ public enum GridSecurityPermission {
     ADMIN_CACHE;
 
     /** Enumerated values. */
-    private static final GridSecurityPermission[] VALS = values();
+    private static final SecurityPermission[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -63,7 +63,7 @@ public enum GridSecurityPermission {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridSecurityPermission fromOrdinal(int ord) {
+    @Nullable public static SecurityPermission fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

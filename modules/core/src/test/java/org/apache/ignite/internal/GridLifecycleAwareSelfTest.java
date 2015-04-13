@@ -56,7 +56,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestSegmentationResolver extends TestLifecycleAware implements GridSegmentationResolver {
+    private static class TestSegmentationResolver extends TestLifecycleAware implements SegmentationResolver {
         /**
          */
         TestSegmentationResolver() {

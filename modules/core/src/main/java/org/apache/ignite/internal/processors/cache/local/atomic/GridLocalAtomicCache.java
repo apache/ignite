@@ -519,7 +519,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean deserializePortable,
         boolean skipVals
     ) throws IgniteCheckedException {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return Collections.emptyMap();
@@ -853,9 +853,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             validateCacheKeys(keys);
 
         if (op == DELETE)
-            ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+            ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
         else
-            ctx.checkSecurity(GridSecurityPermission.CACHE_PUT);
+            ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 

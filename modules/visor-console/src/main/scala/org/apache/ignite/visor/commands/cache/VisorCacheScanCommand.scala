@@ -17,16 +17,13 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.internal.visor.query.VisorQueryTask.VisorQueryArg
-import org.apache.ignite.internal.visor.query.{VisorQueryNextPageTask, VisorQueryResult, VisorQueryTask}
-
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
-
 import org.apache.ignite.visor.commands._
-import org.apache.ignite.visor.visor
-import visor._
+import org.apache.ignite.visor.visor._
+
+import org.apache.ignite.internal.visor.query._
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 
@@ -163,7 +160,7 @@ class VisorCacheScanCommand {
                     .withName("visor-cscan-task")
                     .withNoFailover()
                     .execute(classOf[VisorQueryTask],
-                        toTaskArgument(nid, new VisorQueryArg(proj, cacheName, "SCAN", pageSize)))
+                        toTaskArgument(nid, new VisorQueryArg(null, cacheName, "SCAN", pageSize)))
                     match {
                     case x if x.get1() != null =>
                         error(x.get1())

@@ -146,7 +146,7 @@ public class VisorCacheConfiguration implements Serializable {
         writerFactory = compactClass(ccfg.getCacheWriterFactory());
         expiryPlcFactory = compactClass(ccfg.getExpiryPolicyFactory());
         sys = ignite.context().cache().systemCache(ccfg.getName());
-        
+
         affinityCfg = VisorCacheAffinityConfiguration.from(ccfg);
         rebalanceCfg = VisorCacheRebalanceConfiguration.from(ccfg);
         evictCfg = VisorCacheEvictionConfiguration.from(ccfg);

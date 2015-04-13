@@ -25,23 +25,23 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Security credentials used for client or node authentication. Security credentials
- * are provided by {@link GridSecurityCredentialsProvider} which is specified on
- * client or node startup in configuration.
+ * Security credentials used for node authentication. Security credentials
+ * are provided by {@link SecurityCredentialsProvider} which is specified on
+ * node startup in configuration.
  * <p>
- * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
+ * Getting credentials through {@link SecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
  * environment, possibly in encrypted format. Ignite comes with
- * {@link GridSecurityCredentialsBasicProvider} which simply provides
+ * {@link SecurityCredentialsBasicProvider} which simply provides
  * the passed in {@code login} and {@code password} when encryption or custom logic is not required.
  * <p>
  * In addition to {@code login} and {@code password}, security credentials allow for
  * specifying {@link #setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
-public class GridSecurityCredentials implements Externalizable {
+public class SecurityCredentials implements Externalizable {
     /** */
-    private static final long serialVersionUID = -2655741071578326256L;
+    private static final long serialVersionUID = 0L;
 
     /** Login. */
     private Object login;
@@ -57,7 +57,7 @@ public class GridSecurityCredentials implements Externalizable {
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridSecurityCredentials() {
+    public SecurityCredentials() {
         // No-op.
     }
 
@@ -67,7 +67,10 @@ public class GridSecurityCredentials implements Externalizable {
      * @param login Login.
      * @param password Password.
      */
-    public GridSecurityCredentials(String login, String password) {
+    public SecurityCredentials(
+        String login,
+        String password
+    ) {
         this.login = login;
         this.password = password;
     }
@@ -80,7 +83,11 @@ public class GridSecurityCredentials implements Externalizable {
      * @param password Password.
      * @param userObj User object.
      */
-    public GridSecurityCredentials(String login, String password, @Nullable Object userObj) {
+    public SecurityCredentials(
+        String login,
+        String password,
+        @Nullable Object userObj
+    ) {
         this.login = login;
         this.password = password;
         this.userObj = userObj;
@@ -159,10 +166,10 @@ public class GridSecurityCredentials implements Externalizable {
         if (this == o)
             return true;
 
-        if (!(o instanceof GridSecurityCredentials))
+        if (!(o instanceof SecurityCredentials))
             return false;
 
-        GridSecurityCredentials that = (GridSecurityCredentials)o;
+        SecurityCredentials that = (SecurityCredentials)o;
 
         return F.eq(login, that.login) && F.eq(password, that.password) && F.eq(userObj, that.userObj);
     }
@@ -179,6 +186,6 @@ public class GridSecurityCredentials implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSecurityCredentials.class, this);
+        return S.toString(SecurityCredentials.class, this);
     }
 }

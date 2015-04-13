@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.task;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -419,7 +418,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         else
             taskClsName = taskCls != null ? taskCls.getName() : taskName;
 
-        ctx.security().authorize(taskClsName, GridSecurityPermission.TASK_EXECUTE, null);
+        ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE, null);
 
         // Get values from thread-local context.
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
@@ -1153,12 +1152,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg) {
-            if (!(msg instanceof GridTaskMessage)) {
-                U.warn(log, "Received message of unknown type: " + msg);
-
-                return;
-            }
-
             if (msg instanceof GridJobExecuteResponse)
                 processJobExecuteResponse(nodeId, (GridJobExecuteResponse)msg);
             else if (jobResOnly)

@@ -1136,7 +1136,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
 
-        cacheCtx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        cacheCtx.checkSecurity(SecurityPermission.CACHE_READ);
 
         groupLockSanityCheck(cacheCtx, keys);
 
@@ -2524,7 +2524,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     ) {
         assert filter == null || invokeMap == null;
 
-        cacheCtx.checkSecurity(GridSecurityPermission.CACHE_PUT);
+        cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
 
         if (retval)
             needReturnValue(true);
@@ -2744,7 +2744,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable GridCacheEntryEx cached,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter) {
-        cacheCtx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
+        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         if (retval)
             needReturnValue(true);
