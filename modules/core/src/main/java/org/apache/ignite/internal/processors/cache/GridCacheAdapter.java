@@ -2402,8 +2402,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         @Nullable final CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
-        System.out.println("---------- GridCacheAdapter.putxAsync");
-
         if (keyCheck)
             validateCacheKey(key);
 

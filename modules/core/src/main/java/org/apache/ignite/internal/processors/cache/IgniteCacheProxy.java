@@ -774,7 +774,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
-            System.out.println("------- CACHE PROJECTION " + prj.getClass() + " DELEGATE " + delegate.getClass());
             try {
                 if (isAsync())
                     setFuture(delegate.putxAsync(key, val));

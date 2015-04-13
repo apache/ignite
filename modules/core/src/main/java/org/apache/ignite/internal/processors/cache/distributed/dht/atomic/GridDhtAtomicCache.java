@@ -341,8 +341,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
-        System.out.println("---------- GridDhtAtomicCache.putxAsync");
-
         return updateAllAsync0(F0.asMap(key, val),
             null,
             null,
