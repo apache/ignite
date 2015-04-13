@@ -378,7 +378,16 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(Serializable evt) {
-        sockRdr.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt));
+        try {
+            byte[] msgBytes;
+
+            msgBytes = marsh.marshal(evt);
+
+            sockRdr.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt, msgBytes));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
+        }
     }
 
     /**
