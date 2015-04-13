@@ -102,9 +102,6 @@
         <fileSet>
             <directory>assembly/libs</directory>
             <outputDirectory>/libs</outputDirectory>
-            <excludes>
-                <exclude>README.txt</exclude>
-            </excludes>
         </fileSet>
     </fileSets>
 </assembly>
