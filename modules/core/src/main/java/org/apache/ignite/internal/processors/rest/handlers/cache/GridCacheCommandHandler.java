@@ -781,7 +781,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
-            return c.removexAsync(key);
+            return c.removeAsync(key);
         }
     }
 
@@ -834,7 +834,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
-            return exp == null && val == null ? c.removexAsync(key) :
+            return exp == null && val == null ? c.removeAsync(key) :
                 exp == null ? c.putxIfAbsentAsync(key, val) :
                     val == null ? c.removeAsync(key, exp) :
                         c.getAndReplaceAsync(key, exp, val);

@@ -225,7 +225,7 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
             TxContext ctx = txCtx.get();
 
             if (ctx != null)
-                cache.removex(key);
+                cache.remove(key);
 
             success = true;
         }

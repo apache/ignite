@@ -164,7 +164,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         }
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
-                assertTrue(cache.removex(new Key(i)));
+                assertTrue(cache.remove(new Key(i)));
         }
     }
 
@@ -255,7 +255,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         }
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
-                assertTrue(cache.removex(String.valueOf(i)));
+                assertTrue(cache.remove(String.valueOf(i)));
         }
     }
 
@@ -311,7 +311,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         }
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
-                assertTrue(cache.removex(i));
+                assertTrue(cache.remove(i));
         }
     }
 

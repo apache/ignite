@@ -287,7 +287,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public V remove(K key) throws IgniteCheckedException {
+    @Override public V getAndRemove(K key) throws IgniteCheckedException {
         return (V)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
@@ -301,7 +301,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync(K key) {
+    @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
         return removeAllAsync0(Collections.singletonList(key), true, false, CU.empty0());
     }
 
@@ -326,7 +326,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public boolean removex(K key) throws IgniteCheckedException {
+    @Override public boolean remove(K key) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -351,7 +351,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(K key, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), false, false, filter);
@@ -374,7 +374,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        return removexAsync(key, ctx.equalsValArray(val));
+        return removeAsync(key, ctx.equalsValArray(val));
     }
 
     /** {@inheritDoc} */

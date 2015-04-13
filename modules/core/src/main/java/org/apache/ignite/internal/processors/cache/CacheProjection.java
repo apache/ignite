@@ -1025,7 +1025,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException If key is {@code null}.
      * @throws IgniteCheckedException If remove operation failed.
      */
-    @Nullable public V remove(K key)
+    @Nullable public V getAndRemove(K key)
         throws IgniteCheckedException;
 
     /**
@@ -1050,7 +1050,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the remove operation.
      * @throws NullPointerException if the key is {@code null}.
      */
-    public IgniteInternalFuture<V> removeAsync(K key);
+    public IgniteInternalFuture<V> getAndRemoveAsync(K key);
 
     /**
      * Removes given key mapping from cache.
@@ -1070,7 +1070,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException if the key is {@code null}.
      * @throws IgniteCheckedException If remove failed.
      */
-    public boolean removex(K key) throws IgniteCheckedException;
+    public boolean remove(K key) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache.
@@ -1090,7 +1090,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      Note that if filter is not specified, this method will return {@code true}.
      * @throws NullPointerException if the key is {@code null}.
      */
-    public IgniteInternalFuture<Boolean> removexAsync(K key);
+    public IgniteInternalFuture<Boolean> removeAsync(K key);
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.

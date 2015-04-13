@@ -610,7 +610,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             currIter.remove();
 
             try {
-                GridNearCacheAdapter.this.remove(currEntry.getKey());
+                GridNearCacheAdapter.this.getAndRemove(currEntry.getKey());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

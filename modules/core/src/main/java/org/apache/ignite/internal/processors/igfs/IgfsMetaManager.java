@@ -1174,7 +1174,7 @@ public class IgfsMetaManager extends IgfsManager {
                             if (entryInfo != null) {
                                 // Delete only files or empty folders.
                                 if (entryInfo.isFile() || entryInfo.isDirectory() && entryInfo.listing().isEmpty()) {
-                                    id2InfoPrj.remove(entryId);
+                                    id2InfoPrj.getAndRemove(entryId);
 
                                     newListing.remove(entry.getKey());
 
@@ -1242,7 +1242,7 @@ public class IgfsMetaManager extends IgfsManager {
                         if (listingEntry != null)
                             id2InfoPrj.invoke(parentId, new UpdateListing(name, listingEntry, true));
 
-                        id2InfoPrj.remove(id);
+                        id2InfoPrj.getAndRemove(id);
 
                         res = true;
                     }
@@ -1533,7 +1533,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
-                    Object prev = val != null ? metaCache.put(sampling, val) : metaCache.remove(sampling);
+                    Object prev = val != null ? metaCache.put(sampling, val) : metaCache.getAndRemove(sampling);
 
                     tx.commit();
 
@@ -1675,7 +1675,7 @@ public class IgfsMetaManager extends IgfsManager {
                             if (oldId != null) {
                                 IgfsFileInfo oldInfo = info(oldId);
 
-                                id2InfoPrj.removex(oldId); // Remove the old one.
+                                id2InfoPrj.remove(oldId); // Remove the old one.
                                 id2InfoPrj.putx(newInfo.id(), newInfo); // Put the new one.
 
                                 id2InfoPrj.invoke(parentInfo.id(),
@@ -2570,7 +2570,7 @@ public class IgfsMetaManager extends IgfsManager {
         V oldVal = cache.get(key);
         V newVal = c.apply(oldVal);
 
-        return newVal == null ? cache.removex(key) : cache.putx(key, newVal);
+        return newVal == null ? cache.remove(key) : cache.putx(key, newVal);
     }
 
     /**

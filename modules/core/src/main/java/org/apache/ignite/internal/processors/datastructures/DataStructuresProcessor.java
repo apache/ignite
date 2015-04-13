@@ -978,7 +978,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                     "with non-zero count: " + val.get());
                         }
 
-                        dsView.removex(key);
+                        dsView.remove(key);
 
                         tx.commit();
                     } else
@@ -1013,7 +1013,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         R val = cast(dsView.get(key), cls);
 
                         if (val != null) {
-                            dsView.removex(key);
+                            dsView.remove(key);
 
                             tx.commit();
                         }
@@ -1162,7 +1162,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
         return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
-                return (T)cache.remove(key);
+                return (T)cache.getAndRemove(key);
             }
         });
     }

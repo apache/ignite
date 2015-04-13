@@ -408,7 +408,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 else {
                     GridServiceDeploymentKey key = new GridServiceDeploymentKey(name);
 
-                    if (cache.remove(key) == null) {
+                    if (cache.getAndRemove(key) == null) {
                         // Remove future from local map if service was not deployed.
                         undepFuts.remove(name);
 
@@ -957,7 +957,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             // Remove assignment on primary node in case of undeploy.
                             if (cache.cache().affinity().isPrimary(ctx.discovery().localNode(), key)) {
                                 try {
-                                    cache.remove(key);
+                                    cache.getAndRemove(key);
                                 }
                                 catch (IgniteCheckedException ex) {
                                     log.error("Failed to remove assignments for undeployed service: " + name, ex);
@@ -1095,7 +1095,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     if (log.isDebugEnabled())
                                         log.debug("Removed zombie assignments: " + e.getValue());
 
-                                    cache.remove(e.getKey());
+                                    cache.getAndRemove(e.getKey());
                                 }
                             }
                             catch (IgniteCheckedException ex) {

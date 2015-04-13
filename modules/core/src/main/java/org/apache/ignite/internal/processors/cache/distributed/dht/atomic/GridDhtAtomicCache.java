@@ -478,13 +478,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V remove(K key) throws IgniteCheckedException {
-        return removeAsync(key).get();
+    @Override public V getAndRemove(K key) throws IgniteCheckedException {
+        return getAndRemoveAsync(key).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<V> removeAsync(K key) {
+    @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, true, false, CU.empty0());
@@ -503,13 +503,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key) throws IgniteCheckedException {
-        return removexAsync(key, CU.empty0()).get();
+    @Override public boolean remove(K key) throws IgniteCheckedException {
+        return removeAsync(key, CU.empty0()).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable CacheEntryPredicate... filter) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(K key, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, false, false, filter);
@@ -524,7 +524,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
         A.notNull(key, "key", val, "val");
 
-        return removexAsync(key, ctx.equalsValArray(val));
+        return removeAsync(key, ctx.equalsValArray(val));
     }
 
     /** {@inheritDoc} */

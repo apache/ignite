@@ -130,7 +130,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected void remove(Object key) throws CacheException {
         try {
-            cache.removex(key);
+            cache.remove(key);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);

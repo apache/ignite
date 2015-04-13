@@ -262,7 +262,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             assert wasEmpty;
         }
         finally {
-            ((IgniteKernal)grid(0)).getCache(null).removex(new GridCacheInternalKeyImpl("LONG"));
+            ((IgniteKernal)grid(0)).getCache(null).remove(new GridCacheInternalKeyImpl("LONG"));
         }
     }
 

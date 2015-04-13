@@ -555,18 +555,18 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public V remove(K key) throws IgniteCheckedException {
+    @Override public V getAndRemove(K key) throws IgniteCheckedException {
+        return getAndRemoveAsync(key).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
+        return cache.getAndRemoveAsync(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean remove(K key) throws IgniteCheckedException {
         return removeAsync(key).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(K key) {
-        return cache.removeAsync(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removex(K key) throws IgniteCheckedException {
-        return removexAsync(key).get();
     }
 
     /** {@inheritDoc} */
@@ -581,8 +581,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key) {
-        return cache.removexAsync(key);
+    @Override public IgniteInternalFuture<Boolean> removeAsync(K key) {
+        return cache.removeAsync(key);
     }
 
     /** {@inheritDoc} */

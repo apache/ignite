@@ -2697,7 +2697,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(final K key) throws IgniteCheckedException {
+    @Nullable @Override public V getAndRemove(final K key) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2729,7 +2729,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(final K key) {
+    @Override public IgniteInternalFuture<V> getAndRemoveAsync(final K key) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2814,7 +2814,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(final K key) throws IgniteCheckedException {
+    @Override public boolean remove(final K key) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2841,10 +2841,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(K key) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(K key) {
         A.notNull(key, "key");
 
-        return removexAsync(key, CU.empty0());
+        return removeAsync(key, CU.empty0());
     }
 
     /**
@@ -2852,7 +2852,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> removexAsync(final K key, @Nullable final CacheEntryPredicate... filter) {
+    public IgniteInternalFuture<Boolean> removeAsync(final K key, @Nullable final CacheEntryPredicate... filter) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -3770,7 +3770,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 GridCacheProjectionImpl<K, V>  prev = ctx.gate().enter(prj);
 
                 try {
-                    removex(item.getKey());
+                    GridCacheAdapter.this.remove(item.getKey());
                 }
                 catch (IgniteCheckedException e) {
                     throw CU.convertToCacheException(e);

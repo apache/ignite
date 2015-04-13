@@ -100,7 +100,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
         checkPoints(res, "B", "C", "D");
 
         // Remove B.
-        cache.remove(1);
+        cache.getAndRemove(1);
 
         res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))")).get();
 
