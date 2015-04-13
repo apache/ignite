@@ -34,6 +34,8 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Restart Test Suite");
 
+        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
+
         // TODO: GG-7419: Enable when fixed.
         // suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
         // suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
@@ -42,8 +44,6 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
         suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
         // suite.addTestSuite(GridCachePutAllFailoverSelfTest.class); TODO IGNITE-157
