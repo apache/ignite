@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity.fair;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.util.concurrent.*;
+import java.util.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- *
  */
-public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    public IgniteFairAffinityDynamicCacheSelfTest(){
-        super(false);
-    }
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -47,11 +43,22 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
+        disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
+
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setCacheMode(PARTITIONED);
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setSwapEnabled(false);
+        cacheCfg.setBackups(1);
+        cacheCfg.setIndexedTypes(
+            Integer.class, Integer.class
+        );
+
+        cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
     }
@@ -67,31 +74,31 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws Exception If failed.
      */
-    public void testStartStopCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+    public void testLargeResult() {
+        // Fill cache.
+        IgniteCache<Integer,Integer> c = ignite(0).cache(null);
 
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setBackups(1);
-        cacheCfg.setName("test");
-        cacheCfg.setAffinity(new FairAffinityFunction());
+        for (int i = 0; i < 50_000; i++)  // default max merge table size is 10000
+            c.put(i, i);
 
-        final IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg);
+        try(QueryCursor<List<?>> res = c.query(
+            new SqlFieldsQuery("select _val from Integer where _key between ? and ?")
+                .setArgs(10_000, 40_000))){
 
-        for (int i = 0; i < 10_000; i++)
-            cache.put(i, i);
+            int cnt = 0;
 
-        IgniteInternalFuture<Object> destFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                ignite(0).destroyCache(cache.getName());
+            for (List<?> row : res) {
+                cnt++;
 
-                return null;
+                int val = (Integer)row.get(0);
+
+                assertTrue(val >= 10_000 && val <= 40_000);
             }
-        });
 
-        destFut.get(2000L);
+            assertEquals(30_001, cnt); // Streaming of a large result works well.
+        }
+
+        // Currently we have no ways to do multiple passes through a merge table.
     }
 }

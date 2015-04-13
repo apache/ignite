@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 
+import javax.cache.*;
 import java.math.*;
 import java.net.*;
 import java.util.*;
@@ -40,10 +38,10 @@ public class VisorQueryUtils {
     public static final String SCAN_QRY_NAME = "VISOR_SCAN_QUERY";
 
     /** Columns for SCAN queries. */
-    public static final VisorQueryField[] SCAN_COL_NAMES = new VisorQueryField[] {
-        new VisorQueryField("", "Key Class"), new VisorQueryField("", "Key"),
-        new VisorQueryField("", "Value Class"), new VisorQueryField("", "Value")
-    };
+    public static final Collection<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
+        new VisorQueryField(null, null, "Key Class", ""), new VisorQueryField(null, null, "Key", ""),
+        new VisorQueryField(null, null, "Value Class", ""), new VisorQueryField(null, null, "Value", "")
+    );
 
     /**
      * @param o - Object.
@@ -86,7 +84,7 @@ public class VisorQueryUtils {
 
         StringBuilder sb = new StringBuilder();
 
-        Boolean first = true;
+        boolean first = true;
 
         for (Object v : arr) {
             if (first)
@@ -114,32 +112,27 @@ public class VisorQueryUtils {
     /**
      * Fetch rows from SCAN query future.
      *
-     * @param fut Query future to fetch rows from.
-     * @param savedNext Last processed element from future.
+     * @param cur Query future to fetch rows from.
      * @param pageSize Number of rows to fetch.
-     * @return Fetched rows and last processed element.
+     * @return Fetched rows.
      */
-    public static IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
-        CacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize)
-        throws IgniteCheckedException {
+    public static List<Object[]> fetchScanQueryRows(VisorQueryCursor<Cache.Entry<Object, Object>> cur, int pageSize) {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        Map.Entry<Object, Object> next = savedNext != null ? savedNext : fut.next();
+        while (cur.hasNext() && cnt < pageSize) {
+            Cache.Entry<Object, Object> next = cur.next();
 
-        while (next != null && cnt < pageSize) {
             Object k = next.getKey();
             Object v = next.getValue();
 
             rows.add(new Object[] {typeOf(k), valueOf(k), typeOf(v), valueOf(v)});
 
             cnt++;
-
-            next = fut.next();
         }
 
-        return new IgniteBiTuple<>(rows, next);
+        return rows;
     }
 
     /**
@@ -148,7 +141,7 @@ public class VisorQueryUtils {
      * @param obj Object instance to check.
      * @return {@code true} if it is one of known types.
      */
-    private static Boolean isKnownType(Object obj) {
+    private static boolean isKnownType(Object obj) {
         return obj instanceof String ||
             obj instanceof Boolean ||
             obj instanceof Byte ||
@@ -165,23 +158,23 @@ public class VisorQueryUtils {
     /**
      * Collects rows from sql query future, first time creates meta and column names arrays.
      *
-     * @param fut Query future to fetch rows from.
-     * @param savedNext Last processed element from future.
+     * @param cur Query cursor to fetch rows from.
      * @param pageSize Number of rows to fetch.
-     * @return Fetched rows and last processed element.
+     * @return Fetched rows.
      */
-    public static IgniteBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(CacheQueryFuture<List<?>> fut,
-        List<?> savedNext, int pageSize) throws IgniteCheckedException {
+    public static List<Object[]> fetchSqlQueryRows(VisorQueryCursor<List<?>> cur, int pageSize) {
         List<Object[]> rows = new ArrayList<>();
 
         int cnt = 0;
 
-        List<?> next = savedNext != null ? savedNext : fut.next();
+        while (cur.hasNext() && cnt < pageSize) {
+            List<?> next = cur.next();
 
-        while (next != null && cnt < pageSize) {
-            Object[] row = new Object[next.size()];
+            int sz = next.size();
 
-            for (int i = 0; i < next.size(); i++) {
+            Object[] row = new Object[sz];
+
+            for (int i = 0; i < sz; i++) {
                 Object o = next.get(i);
 
                 if (o == null)
@@ -195,10 +188,8 @@ public class VisorQueryUtils {
             rows.add(row);
 
             cnt++;
-
-            next = fut.next();
         }
 
-        return new IgniteBiTuple<List<Object[]>, List<?>>(rows, next);
+        return rows;
     }
 }

@@ -15,29 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.affinity.fair;
+package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
+import org.apache.ignite.startup.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
 
 /**
  *
  */
-public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTest {
+public class IgniteWarmupClosureSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public IgniteFairAffinityDynamicCacheSelfTest(){
+    public IgniteWarmupClosureSelfTest(){
         super(false);
     }
 
@@ -53,12 +48,24 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
 
         cfg.setDiscoverySpi(disco);
 
-        return cfg;
-    }
+        BasicWarmupClosure warmupClosure = new BasicWarmupClosure();
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(3);
+        warmupClosure.setGridCount(2);
+        warmupClosure.setIterationCount(10);
+        warmupClosure.setKeyRange(10);
+
+        cfg.setWarmupClosure(warmupClosure);
+
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        cacheCfg.setBackups(1);
+        cacheCfg.setName("test");
+
+        cfg.setCacheConfiguration(cacheCfg);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -69,29 +76,7 @@ public class IgniteFairAffinityDynamicCacheSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testStartStopCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
-
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setBackups(1);
-        cacheCfg.setName("test");
-        cacheCfg.setAffinity(new FairAffinityFunction());
-
-        final IgniteCache<Integer, Integer> cache = ignite(0).createCache(cacheCfg);
-
-        for (int i = 0; i < 10_000; i++)
-            cache.put(i, i);
-
-        IgniteInternalFuture<Object> destFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                ignite(0).destroyCache(cache.getName());
-
-                return null;
-            }
-        });
-
-        destFut.get(2000L);
+    public void testWarmupClosure() throws Exception {
+        startGrid(1);
     }
 }
