@@ -207,11 +207,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
-                if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
-
-                    return true;
-                }
+                if (f.node().id().equals(nodeId))
+                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
             }
 
         return false;
@@ -382,7 +379,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onResult((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         fut.onResult(e);
                 }
@@ -556,6 +553,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         /** Topology version on which this future was mapped. */
         private AffinityTopologyVersion topVer;
 
+        /** {@code True} if remapped after node left. */
+        private boolean remapped;
+
         /**
          * @param node Node.
          * @param keys Keys.
@@ -603,7 +603,12 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
          * @param e Failure exception.
          */
         @SuppressWarnings("UnusedParameters")
-        void onResult(ClusterTopologyCheckedException e) {
+        synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (remapped)
+                return;
+
+            remapped = true;
+
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
