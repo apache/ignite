@@ -220,6 +220,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             }
         }
         catch (Exception e) {
+            err.set(e);
+
             log.error("Unexpected exception: " + e, e);
 
             throw e;
