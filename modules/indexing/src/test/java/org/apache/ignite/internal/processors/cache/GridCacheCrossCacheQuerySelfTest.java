@@ -117,9 +117,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void _testTwoStep() throws Exception {
         String cache = "partitioned";
 
-        GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
-                .<Integer, FactPurchase>getCache(cache).queries();
+        CacheQueries<Integer, FactPurchase> qx =
+            ((IgniteKernal)ignite).<Integer, FactPurchase>getCache(cache).queries();
 
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
@@ -137,9 +136,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoStepGroupAndAggregates() throws Exception {
-        GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
-                .<Integer, FactPurchase>getCache("partitioned").queries();
+        CacheQueries<Integer, FactPurchase> qx =
+            ((IgniteKernal)ignite).<Integer, FactPurchase>getCache("partitioned").queries();
 
         Set<Integer> set1 = new HashSet<>();
 

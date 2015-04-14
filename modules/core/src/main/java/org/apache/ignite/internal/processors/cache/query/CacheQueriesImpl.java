@@ -31,9 +31,9 @@ import java.util.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * {@link GridCacheQueriesEx} implementation.
+ * {@link CacheQueries} implementation.
  */
-public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
+public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheQueriesImpl() {
+    public CacheQueriesImpl() {
         // No-op.
     }
 
@@ -54,7 +54,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
      * @param ctx Context.
      * @param prj Projection.
      */
-    public GridCacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
+    public CacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
         assert ctx != null;
 
         this.ctx = ctx;

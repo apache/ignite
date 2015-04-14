@@ -53,7 +53,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     private GridCacheContext<K, V> cctx;
 
     /** Queries impl. */
-    private GridCacheQueriesEx<K, V> qry;
+    private CacheQueries<K, V> qry;
 
     /** Skip store. */
     @GridToStringInclude
@@ -101,7 +101,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         cache = cctx.cache();
 
-        qry = new GridCacheQueriesImpl<>(cctx, this);
+        qry = new CacheQueriesImpl<>(cctx, this);
 
         this.keepPortable = keepPortable;
 
@@ -138,7 +138,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueriesEx<K, V> queries() {
+    @Override public CacheQueries<K, V> queries() {
         return qry;
     }
 
@@ -754,7 +754,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
         cache = cctx.cache();
 
-        qry = new GridCacheQueriesImpl<>(cctx, this);
+        qry = new CacheQueriesImpl<>(cctx, this);
 
         keepPortable = in.readBoolean();
     }

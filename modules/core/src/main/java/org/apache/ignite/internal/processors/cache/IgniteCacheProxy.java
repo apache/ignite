@@ -335,7 +335,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             fut = qry.execute();
         }
         else if (filter instanceof SpiQuery) {
-            qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
+            qry = delegate.queries().createSpiQuery();
 
             if (grp != null)
                 qry.projection(grp);

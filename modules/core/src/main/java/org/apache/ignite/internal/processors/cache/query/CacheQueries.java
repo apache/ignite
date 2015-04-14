@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Extended queries interface.
  */
-public interface GridCacheQueriesEx<K, V> {
+public interface CacheQueries<K, V> {
     /**
      * Creates user's SQL fields query for given clause. For more information refer to
      * {@link CacheQuery} documentation.

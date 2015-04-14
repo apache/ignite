@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -30,7 +29,7 @@ import java.util.*;
 /**
  * Per-projection queries object returned to user.
  */
-public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
+public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,12 +40,12 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     private GridCacheProjectionImpl<K, V> prj;
 
     /** */
-    private GridCacheQueriesEx<K, V> delegate;
+    private CacheQueries<K, V> delegate;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheQueriesProxy() {
+    public CacheQueriesProxy() {
         // No-op.
     }
 
@@ -57,8 +56,8 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
      * @param prj Optional cache projection.
      * @param delegate Delegate object.
      */
-    public GridCacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj,
-        GridCacheQueriesEx<K, V> delegate) {
+    public CacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj,
+        CacheQueries<K, V> delegate) {
         assert cctx != null;
         assert delegate != null;
 
@@ -194,7 +193,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         prj = (GridCacheProjectionImpl<K, V>)in.readObject();
-        delegate = (GridCacheQueriesEx<K, V>)in.readObject();
+        delegate = (CacheQueries<K, V>)in.readObject();
 
         gate = prj.context().gate();
     }

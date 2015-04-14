@@ -66,7 +66,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     private GridCacheProjectionImpl<K, V> prj;
 
     /** Cache queries. */
-    private GridCacheQueriesEx<K, V> qry;
+    private CacheQueries<K, V> qry;
 
     /** Affinity. */
     private Affinity<K> aff;
@@ -95,7 +95,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
+        qry = new CacheQueriesProxy<>(ctx, prj, delegate.queries());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -143,7 +143,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueriesEx<K, V> queries() {
+    @Override public CacheQueries<K, V> queries() {
         return qry;
     }
 
@@ -1577,7 +1577,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
+        qry = new CacheQueriesProxy<>(ctx, prj, delegate.queries());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
