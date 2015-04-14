@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -97,7 +98,7 @@ public final class IgfsImpl implements IgfsEx {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
-    private final ConcurrentHashMap8<IgfsPath, IgfsFileWorker> workerMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
 
     /** Delete futures. */
     private final ConcurrentHashMap8<IgniteUuid, GridFutureAdapter<Object>> delFuts = new ConcurrentHashMap8<>();
@@ -119,6 +120,9 @@ public final class IgfsImpl implements IgfsEx {
 
     /** Eviction policy (if set). */
     private IgfsPerBlockLruEvictionPolicy evictPlc;
+
+    /** Pool for threads working in DUAL mode. */
+    private final IgniteThreadPoolExecutor dualPool;
 
     /**
      * Creates IGFS instance with given context.
@@ -214,6 +218,9 @@ public final class IgfsImpl implements IgfsEx {
 
         igfsCtx.kernalContext().io().addMessageListener(topic, delMsgLsnr);
         igfsCtx.kernalContext().event().addLocalEventListener(delDiscoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
+            new LinkedBlockingQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
     }
 
     /**
@@ -227,34 +234,25 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override public void stop(boolean cancel) {
         busyLock.block();
 
         // Clear interrupted flag temporarily.
         boolean interrupted = Thread.interrupted();
 
-        // Force all workers to finish their batches.
-        for (IgfsFileWorker w : workerMap.values())
-            w.cancel();
+        if (secondaryFs != null) {
+            // Force all workers to finish their batches.
+            for (IgfsFileWorkerBatch batch : workerMap.values())
+                batch.cancel();
 
-        // Wait for all writers to finish their execution.
-        for (IgfsFileWorker w : workerMap.values()) {
-            try {
-                w.join();
-            }
-            catch (InterruptedException e) {
-                U.error(log, e.getMessage(), e);
-            }
+            if (secondaryFs instanceof AutoCloseable)
+                U.closeQuiet((AutoCloseable)secondaryFs);
         }
-
-        workerMap.clear();
-
-        if (secondaryFs instanceof AutoCloseable)
-            U.closeQuiet((AutoCloseable)secondaryFs);
 
         igfsCtx.kernalContext().io().removeMessageListener(topic, delMsgLsnr);
         igfsCtx.kernalContext().event().removeLocalEventListener(delDiscoLsnr);
 
+        // Restore interrupted flag.
         if (interrupted)
             Thread.currentThread().interrupt();
     }
@@ -273,33 +271,29 @@ public final class IgfsImpl implements IgfsEx {
 
         if (enterBusy()) {
             try {
-                IgfsFileWorkerBatch batch = new IgfsFileWorkerBatch(path, out);
-
-                while (true) {
-                    IgfsFileWorker worker = workerMap.get(path);
-
-                    if (worker != null) {
-                        if (worker.addBatch(batch)) // Added batch to active worker.
-                            break;
-                        else
-                            workerMap.remove(path, worker); // Worker is stopping. Remove it from map.
+                // Create new batch.
+                IgfsFileWorkerBatch batch = new IgfsFileWorkerBatch(path, out) {
+                    @Override protected void onDone() {
+                        workerMap.remove(path, this);
                     }
+                };
+
+                // Submit it to the thread pool immediately.
+                assert dualPool != null;
+
+                dualPool.submit(batch);
+
+                // Spin in case another batch is currently running.
+                while (true) {
+                    IgfsFileWorkerBatch prevBatch = workerMap.putIfAbsent(path, batch);
+
+                    if (prevBatch == null)
+                        break;
                     else {
-                        worker = new IgfsFileWorker("igfs-file-worker-" + path) {
-                            @Override protected void onFinish() {
-                                workerMap.remove(path, this);
-                            }
-                        };
+                        assert prevBatch.finishing() :
+                            "File lock should prevent stream creation on a not-closed-yet file.";
 
-                        boolean b = worker.addBatch(batch);
-
-                        assert b;
-
-                        if (workerMap.putIfAbsent(path, worker) == null) {
-                            worker.start();
-
-                            break;
-                        }
+                        prevBatch.await();
                     }
                 }
 
@@ -333,7 +327,7 @@ public final class IgfsImpl implements IgfsEx {
     void await(IgfsPath... paths) {
         assert paths != null;
 
-        for (Map.Entry<IgfsPath, IgfsFileWorker> workerEntry : workerMap.entrySet()) {
+        for (Map.Entry<IgfsPath, IgfsFileWorkerBatch> workerEntry : workerMap.entrySet()) {
             IgfsPath workerPath = workerEntry.getKey();
 
             boolean await = false;
@@ -347,11 +341,21 @@ public final class IgfsImpl implements IgfsEx {
             }
 
             if (await) {
-                IgfsFileWorkerBatch batch = workerEntry.getValue().currentBatch();
+                IgfsFileWorkerBatch batch = workerEntry.getValue();
 
                 if (batch != null) {
                     try {
-                        batch.awaitIfFinished();
+                        // We wait only on files which had been closed, but their async writes are still in progress.
+                        // This check is racy if several threads are modifying file system concurrently, but we are ok
+                        // with that. The sole purpose of this waiting is to ensure happens-before semantics for a
+                        // single thread. E.g., we have thread A working with Hadoop file system in another process.
+                        // This file system communicates with a node and actual processing occurs in threads B and C
+                        // of the current process. What we need to ensure is that if thread A called "close" then
+                        // subsequent operations of this thread "see" this close and wait for async writes to finish.
+                        // And as we do not on which paths thread A performed writes earlier, we have to wait for all
+                        // batches on current path and all it's known children.
+                        if (batch.finishing())
+                            batch.await();
                     }
                     catch (IgniteCheckedException ignore) {
                         // No-op.
@@ -402,7 +406,8 @@ public final class IgfsImpl implements IgfsEx {
     @SuppressWarnings("ConstantConditions")
     @Override public IgfsStatus globalSpace() {
         return safeOp(new Callable<IgfsStatus>() {
-            @Override public IgfsStatus call() throws Exception {
+            @Override
+            public IgfsStatus call() throws Exception {
                 IgniteBiTuple<Long, Long> space = igfsCtx.kernalContext().grid().compute().execute(
                     new IgfsGlobalSpaceTask(name()), null);
 
@@ -910,7 +915,8 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         return safeOp(new Callable<Collection<IgfsFile>>() {
-            @Override public Collection<IgfsFile> call() throws Exception {
+            @Override
+            public Collection<IgfsFile> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("List directory details: " + path);
 
@@ -952,8 +958,7 @@ public final class IgfsImpl implements IgfsEx {
                             files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
                         }
                     }
-                }
-                else if (mode == PRIMARY) {
+                } else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
                     throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
@@ -987,7 +992,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
         return safeOp(new Callable<IgfsInputStreamAdapter>() {
-            @Override public IgfsInputStreamAdapter call() throws Exception {
+            @Override
+            public IgfsInputStreamAdapter call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
@@ -1074,7 +1080,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         return safeOp(new Callable<IgfsOutputStream>() {
-            @Override public IgfsOutputStream call() throws Exception {
+            @Override
+            public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
@@ -1089,7 +1096,7 @@ public final class IgfsImpl implements IgfsEx {
                     await(path);
 
                     IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props, overwrite, bufSize, (short)replication, groupBlockSize(), affKey);
+                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
                     batch = newBatch(path, desc.out());
 
@@ -1177,7 +1184,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
         return safeOp(new Callable<IgfsOutputStream>() {
-            @Override public IgfsOutputStream call() throws Exception {
+            @Override
+            public IgfsOutputStream call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Open file for appending [path=" + path + ", bufSize=" + bufSize + ", create=" + create +
                         ", props=" + props + ']');
@@ -1299,7 +1307,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(len >= 0, "len >= 0");
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
-            @Override public Collection<IgfsBlockLocation> call() throws Exception {
+            @Override
+            public Collection<IgfsBlockLocation> call() throws Exception {
                 if (log.isDebugEnabled())
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
@@ -1332,7 +1341,8 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public IgfsMetrics metrics() {
         return safeOp(new Callable<IgfsMetrics>() {
-            @Override public IgfsMetrics call() throws Exception {
+            @Override
+            public IgfsMetrics call() throws Exception {
                 IgfsPathSummary sum = new IgfsPathSummary();
 
                 summary0(ROOT_ID, sum);
@@ -1342,8 +1352,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (secondaryFs != null) {
                     try {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
-                    }
-                    catch (IgniteException e) {
+                    } catch (IgniteException e) {
                         LT.warn(log, e, "Failed to get secondary file system consumed space size.");
 
                         secondarySpaceSize = -1;
@@ -2095,5 +2104,36 @@ public final class IgfsImpl implements IgfsEx {
         }
         else
             throw new IllegalStateException("Failed to perform IGFS action because grid is stopping.");
+    }
+
+    /**
+     * IGFS thread factory.
+     */
+    @SuppressWarnings("NullableProblems")
+    private static class IgfsThreadFactory implements ThreadFactory {
+        /** IGFS name. */
+        private final String name;
+
+        /** Counter. */
+        private final AtomicLong ctr = new AtomicLong();
+
+        /**
+         * Constructor.
+         *
+         * @param name IGFS name.
+         */
+        private IgfsThreadFactory(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Thread newThread(Runnable r) {
+            Thread t = new Thread(r);
+
+            t.setName("igfs-<" + name + ">-batch-worker-thread-" + ctr.incrementAndGet());
+            t.setDaemon(true);
+
+            return t;
+        }
     }
 }

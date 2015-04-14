@@ -562,20 +562,20 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /**
-     * TODO: GG-7952, enable when fixed.
-     *
+     * TODO: IGNITE-584.
+     *  
      * @throws Exception If failed.
      */
-    public void _testNodeJoinsAndLeaves() throws Exception {
+    public void testNodeJoinsAndLeaves() throws Exception {
         testNodeJoinsAndLeaves(false);
     }
 
     /**
-     * TODO: GG-7952, enable when fixed.
+     * TODO: IGNITE-584.
      *
      * @throws Exception If failed.
      */
-    public void _testNodeJoinsAndLeavesCollocated() throws Exception {
+    public void testNodeJoinsAndLeavesCollocated() throws Exception {
         testNodeJoinsAndLeaves(true);
     }
 

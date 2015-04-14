@@ -778,8 +778,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         assert res.size() == (cacheMode() == REPLICATED ? 200 * gridCount() : 200);
     }
 
+    // TODO: IGNITE-588.
     /** @throws Exception If failed. */
-    public void _testNoPrimitives() throws Exception { // TODO
+    public void testNoPrimitives() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-588");
+        
         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)grid(0)).internalCache(CACHE_NO_PRIMITIVES);
 
         cache.put("key", "val");
@@ -797,8 +800,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.removeAll();
     }
 
+    // TODO: IGNITE-588.
     /** @throws Exception If failed. */
-    public void _testComplexKeys() throws Exception { // TODO
+    public void testComplexKeys() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-588");
+        
         GridCacheAdapter<PersonKey, Person> cache = ((IgniteKernal)grid(0)).internalCache(CACHE_COMPLEX_KEYS);
 
         UUID id = UUID.randomUUID();

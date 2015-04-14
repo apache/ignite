@@ -15,34 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.security;
+package org.apache.ignite.tests.p2p.startcache;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.query.annotations.*;
+
+import java.io.*;
+import java.util.*;
 
 /**
- * Supported security subject types. Subject type can be retrieved form {@link GridSecuritySubject#type()} method.
+ * Organization class.
  */
-public enum GridSecuritySubjectType {
-    /**
-     * Subject type for a remote {@link org.apache.ignite.cluster.ClusterNode}.
-     */
-    REMOTE_NODE,
+class Organization1 implements Serializable {
+    /** Organization ID (indexed). */
+    @QuerySqlField(index = true)
+    private UUID id;
+
+    /** Organization name (indexed). */
+    @QuerySqlField(index = true)
+    private String name;
 
     /**
-     * Subject type for remote client.
-     */
-    REMOTE_CLIENT;
-
-    /** Enumerated values. */
-    private static final GridSecuritySubjectType[] VALS = values();
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Create organization.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @param name Organization name.
      */
-    @Nullable public static GridSecuritySubjectType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    Organization1(String name) {
+        id = UUID.randomUUID();
+
+        this.name = name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Organization1 [id=" + id + ", name=" + name + ']';
     }
 }
