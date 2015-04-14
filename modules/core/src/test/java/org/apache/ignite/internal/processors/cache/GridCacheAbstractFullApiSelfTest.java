@@ -4426,8 +4426,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertTrue(map.size() == 0);
 
         if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
+            /*checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
                 TransactionIsolation.READ_COMMITTED);
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
+                TransactionIsolation.REPEATABLE_READ);
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
+                TransactionIsolation.SERIALIZABLE);*/
+
+            //checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
+            //    TransactionIsolation.READ_COMMITTED);
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
+               TransactionIsolation.REPEATABLE_READ);
+            //checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
+            //    TransactionIsolation.SERIALIZABLE);
         }
     }
 
@@ -4472,6 +4483,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
     }
 
+    /**
+     * @param cache Cache instance.
+     * @param cacheSkipStore Cache skip store projection.
+     * @param data Data set.
+     * @param keys Keys list.
+     * @param txConcurrency Concurrency mode.
+     * @param txIsolation Isolation mode.
+     *
+     * @throws Exception If failed.
+     */
     private void checkSkipStoreWithTransaction(IgniteCache<String, Integer> cache,
         IgniteCache<String, Integer> cacheSkipStore,
         Map<String, Integer> data,
@@ -4480,10 +4501,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         TransactionIsolation txIsolation) throws  Exception {
 
         cache.removeAll(data.keySet());
-
-        assertTrue(cache.size(CachePeekMode.ALL) == 0);
-        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
-        assertTrue(map.size() == 0);
+        checkEmpty(cache, cacheSkipStore);
 
         IgniteTransactions txs = grid(0).transactions();
 
@@ -4522,6 +4540,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         tx.commit();
 
+        assertTrue(map.size() == 0);
+
         // cache putAll(..)/removeAll(..) check
         tx = txs.txStart(txConcurrency, txIsolation);
 
@@ -4542,6 +4562,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         tx.commit();
+
+        assertTrue(map.size() == 0);
 
         // putAll(..) from both cacheSkipStore and cache
         tx = txs.txStart(txConcurrency, txIsolation);
@@ -4590,6 +4612,45 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNull(cache.get(key));
             assertFalse(map.containsKey(key));
         }
+
+        // Check that read-through is disabled when cacheSkipStore is used
+        for (int i = 0; i < keys.size(); i++)
+            putToStore(keys.get(i), i);
+
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(map.size() != 0);
+
+        tx = txs.txStart(txConcurrency, txIsolation);
+
+        //assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+
+            if (txIsolation == READ_COMMITTED) {
+                assertNotNull(cache.get(key));
+                assertNotNull(cacheSkipStore.get(key));
+            }
+        }
+
+        tx.commit();
+
+        cache.removeAll(data.keySet());
+        checkEmpty(cache, cacheSkipStore);
+    }
+
+    /**
+     * @param cache Cache instance.
+     * @param cacheSkipStore Cache skip store projection.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkEmpty(IgniteCache<String, Integer> cache, IgniteCache<String, Integer> cacheSkipStore)
+        throws Exception {
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+        assertTrue(map.size() == 0);
     }
 
     /**

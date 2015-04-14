@@ -882,7 +882,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         key,
                                         retval && dhtVer == null,
                                         dhtVer, // Include DHT version to match remote DHT entry.
-                                        cctx);
+                                        cctx,
+                                        entry.context().skipStore());
                                 }
 
                                 if (cand.reentry())

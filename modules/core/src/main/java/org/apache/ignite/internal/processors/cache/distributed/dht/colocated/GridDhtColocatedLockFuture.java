@@ -746,7 +746,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                     key,
                                     retval,
                                     dhtVer, // Include DHT version to match remote DHT entry.
-                                    cctx);
+                                    cctx,
+                                    entry.context().skipStore());
                             }
 
                             explicit = inTx() && cand == null;

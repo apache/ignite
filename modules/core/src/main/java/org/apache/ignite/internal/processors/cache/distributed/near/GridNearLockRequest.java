@@ -287,12 +287,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         KeyCacheObject key,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
-        GridCacheContext ctx
+        GridCacheContext ctx,
+        boolean skipStore
     ) throws IgniteCheckedException {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, retVal, (Collection<GridCacheMvccCandidate>)null, ctx, false); //TODO: revisit
+        addKeyBytes(key, retVal, (Collection<GridCacheMvccCandidate>)null, ctx, skipStore);
     }
 
     /**
