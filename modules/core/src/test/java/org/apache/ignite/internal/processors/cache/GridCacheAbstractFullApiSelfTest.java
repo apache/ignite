@@ -4377,9 +4377,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertTrue(map.containsKey(key));
         }
 
-        //cache.removeAll(); //TODO: doesn't work in transactional mode
-        cache.removeAll(data.keySet());
-
+        cache.removeAll();
+        
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
@@ -4446,6 +4445,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteTransactions txs = grid(0).transactions();
 
+        // Several put check
         Transaction tx = txs.txStart(txConcurrency, txIsolation);
 
         for (int i = 0; i < keys.size(); i++)
@@ -4459,6 +4459,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         tx.commit();
 
+        // cacheSkipStore putAll(..)/removeAll(..) check
         tx = txs.txStart(txConcurrency, txIsolation);
 
         cacheSkipStore.putAll(data);
@@ -4466,6 +4467,56 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key: keys) {
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        cacheSkipStore.removeAll(data.keySet());
+
+        for (String key: keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        tx.commit();
+
+        // putAll(..) from both cacheSkipStore and cache
+        tx = txs.txStart(txConcurrency, txIsolation);
+
+        Map<String, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < keys.size() / 2; i++)
+            map.put(keys.get(i), i);
+
+        cacheSkipStore.putAll(map);
+
+        map.clear();
+        for (int i = keys.size() / 2; i < keys.size(); i++)
+            map.put(keys.get(i), i);
+
+        cache.putAll(map);
+
+        for (int i = 0; i < keys.size() / 2; i++) {
+            String key = keys.get(i);
+
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        for (int i = keys.size() / 2; i < keys.size(); i++) {
+            String key = keys.get(i);
+
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cache.removeAll();
+
+        for (String key: keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
             assertFalse(map.containsKey(key));
         }
 
