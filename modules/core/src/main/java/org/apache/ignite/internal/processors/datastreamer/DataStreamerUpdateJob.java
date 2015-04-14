@@ -100,10 +100,12 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
 //        if (ignoreDepOwnership)
 //            cache.context().deploy().ignoreOwnership(true);
 
-        IgniteCacheProxy cache = ctx.cache().jcache(cacheName);
+        IgniteCacheProxyLockFree cache = ctx.cache().jcache(cacheName).lockFree();
+
+        cache.context().awaitStarted();
 
         if (skipStore)
-            cache = (IgniteCacheProxy<?, ?>)cache.withSkipStore();
+            cache = (IgniteCacheProxyLockFree<?, ?>)cache.withSkipStore();
 
         if (ignoreDepOwnership)
             cache.context().deploy().ignoreOwnership(true);
