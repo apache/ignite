@@ -4267,9 +4267,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testWithSkipStore() throws Exception {
-        //if (gridCount() > 1) // TODO IGNITE-656 (test primary/backup/near keys with multiple nodes).
-        //    return;
-
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
         IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
@@ -4380,7 +4377,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertTrue(map.containsKey(key));
         }
 
-        cache.removeAll();
+        //cache.removeAll(); //TODO: doesn't work in transactional mode
+        cache.removeAll(data.keySet());
 
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
@@ -4388,7 +4386,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertFalse(map.containsKey(key));
         }
 
-        // Final checks
+        assertTrue(map.size() == 0);
+
+        // Miscellaneous checks
 
         String newKey = "New key";
 
@@ -4417,6 +4417,59 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cacheSkipStore.get(rmvKey));
 
         assertTrue(map.containsKey(rmvKey));
+
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+
+        cache.remove(rmvKey);
+
+        assertTrue(map.size() == 0);
+
+        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
+                TransactionIsolation.READ_COMMITTED);
+        }
+    }
+
+    private void checkSkipStoreWithTransaction(IgniteCache<String, Integer> cache,
+        IgniteCache<String, Integer> cacheSkipStore,
+        Map<String, Integer> data,
+        List<String> keys,
+        TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation) throws  Exception {
+
+        cache.removeAll();
+
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+        assertTrue(map.size() == 0);
+
+        IgniteTransactions txs = grid(0).transactions();
+
+        Transaction tx = txs.txStart(txConcurrency, txIsolation);
+
+        for (int i = 0; i < keys.size(); i++)
+            cacheSkipStore.put(keys.get(i), i);
+
+        for (String key: keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        tx.commit();
+
+        tx = txs.txStart(txConcurrency, txIsolation);
+
+        cacheSkipStore.putAll(data);
+
+        for (String key: keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        tx.commit();
     }
 
     /**

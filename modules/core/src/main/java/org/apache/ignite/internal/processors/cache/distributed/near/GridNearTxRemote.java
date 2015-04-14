@@ -326,6 +326,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param key Key to add to read set.
      * @param val Value.
      * @param drVer Data center replication version.
+     * @param skipStore Skip store flag.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if entry has been enlisted.
      */
@@ -334,7 +335,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         IgniteTxKey key,
         GridCacheOperation op,
         CacheObject val,
-        @Nullable GridCacheVersion drVer
+        @Nullable GridCacheVersion drVer,
+        boolean skipStore
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -366,7 +368,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         -1L,
                         cached,
-                        drVer);
+                        drVer,
+                        skipStore);
 
                     writeMap.put(key, txEntry);
 

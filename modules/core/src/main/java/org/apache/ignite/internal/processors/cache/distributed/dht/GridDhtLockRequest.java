@@ -217,16 +217,18 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
      * @param ctx Context.
+     * @param skipStore Skip store for the key.
      * @throws IgniteCheckedException If failed.
      */
     public void addDhtKey(
         KeyCacheObject key,
         boolean invalidateEntry,
-        GridCacheContext ctx
+        GridCacheContext ctx,
+        boolean skipStore
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, null, ctx);
+        addKeyBytes(key, false, null, ctx, skipStore);
     }
 
     /**

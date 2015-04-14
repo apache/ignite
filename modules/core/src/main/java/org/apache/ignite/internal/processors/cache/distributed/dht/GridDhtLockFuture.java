@@ -867,7 +867,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             req.addDhtKey(
                                 e.key(),
                                 invalidateRdr,
-                                cctx);
+                                cctx,
+                                e.context().skipStore());
 
                             if (needVal) {
                                 // Mark last added key as needed to be preloaded.

@@ -88,6 +88,12 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private boolean partLock;
 
     /**
+     * Arrays with flags. Each flag corresponds to key from keys list.
+     * Bit 1 in a flag holds skipStore value.
+     */
+    private byte[] flags;
+
+    /**
      * Empty constructor.
      */
     public GridDistributedLockRequest() {
@@ -149,6 +155,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.partLock = partLock;
 
         retVals = new boolean[keyCnt];
+        flags = new byte[keyCnt];
     }
 
     /**
@@ -218,6 +225,12 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param idx Key index.
+     * @return Skip store flag.
+     */
+    public boolean skipStore(int idx) { return (flags[idx] & 0x1) == 1; }
+
+    /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.
      */
     public TransactionIsolation isolation() {
@@ -238,13 +251,15 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param retVal Flag indicating whether value should be returned.
      * @param cands Candidates.
      * @param ctx Context.
+     * @param skipStore Skip store for the key.
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
         KeyCacheObject key,
         boolean retVal,
         @Nullable Collection<GridCacheMvccCandidate> cands,
-        GridCacheContext ctx
+        GridCacheContext ctx,
+        boolean skipStore
     ) throws IgniteCheckedException {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
@@ -254,6 +269,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         candidatesByIndex(idx, cands);
 
         retVals[idx] = retVal;
+
+        flags[idx] = skipStore ? (byte)(flags[idx] | 0x1) : (byte)(flags[idx] & 0xFE);
 
         idx++;
     }
@@ -334,84 +351,90 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeByteArray("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("grpLockKey", grpLockKey))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("isInTx", isInTx))
+                if (!writer.writeMessage("grpLockKey", grpLockKey))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeBoolean("isInvalidate", isInvalidate))
+                if (!writer.writeBoolean("isInTx", isInTx))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeBoolean("isRead", isRead))
+                if (!writer.writeBoolean("isInvalidate", isInvalidate))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
+                if (!writer.writeBoolean("isRead", isRead))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeBoolean("partLock", partLock))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeBooleanArray("retVals", retVals))
+                if (!writer.writeBoolean("partLock", partLock))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeLong("threadId", threadId))
+                if (!writer.writeBooleanArray("retVals", retVals))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
             case 21:
+                if (!writer.writeLong("timeout", timeout))
+                    return false;
+
+                writer.incrementState();
+
+            case 22:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -434,7 +457,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         switch (reader.state()) {
             case 8:
-                futId = reader.readIgniteUuid("futId");
+                flags = reader.readByteArray("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -442,7 +465,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 9:
-                grpLockKey = reader.readMessage("grpLockKey");
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -450,7 +473,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 10:
-                isInTx = reader.readBoolean("isInTx");
+                grpLockKey = reader.readMessage("grpLockKey");
 
                 if (!reader.isLastRead())
                     return false;
@@ -458,7 +481,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 11:
-                isInvalidate = reader.readBoolean("isInvalidate");
+                isInTx = reader.readBoolean("isInTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -466,7 +489,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 12:
-                isRead = reader.readBoolean("isRead");
+                isInvalidate = reader.readBoolean("isInvalidate");
 
                 if (!reader.isLastRead())
                     return false;
@@ -474,6 +497,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 13:
+                isRead = reader.readBoolean("isRead");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
                 byte isolationOrd;
 
                 isolationOrd = reader.readByte("isolation");
@@ -485,7 +516,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 14:
+            case 15:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -493,7 +524,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 15:
+            case 16:
                 nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
@@ -501,7 +532,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 16:
+            case 17:
                 nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
@@ -509,7 +540,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 17:
+            case 18:
                 partLock = reader.readBoolean("partLock");
 
                 if (!reader.isLastRead())
@@ -517,7 +548,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 18:
+            case 19:
                 retVals = reader.readBooleanArray("retVals");
 
                 if (!reader.isLastRead())
@@ -525,7 +556,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 19:
+            case 20:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -533,7 +564,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 20:
+            case 21:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -541,7 +572,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 21:
+            case 22:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -561,7 +592,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 23;
     }
 
     /** {@inheritDoc} */

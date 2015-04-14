@@ -311,7 +311,12 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                             "(transaction has been completed): " + req.version());
                                 }
 
-                                tx.addEntry(ctx, txKey, GridCacheOperation.NOOP, /*Value.*/null, /*dr version*/null);
+                                tx.addEntry(ctx,
+                                    txKey,
+                                    GridCacheOperation.NOOP,
+                                    null /*Value.*/,
+                                    null /*dr version*/,
+                                    req.skipStore(i));
                             }
 
                             // Add remote candidate before reordering.

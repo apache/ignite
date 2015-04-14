@@ -292,7 +292,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, retVal, (Collection<GridCacheMvccCandidate>)null, ctx);
+        addKeyBytes(key, retVal, (Collection<GridCacheMvccCandidate>)null, ctx, false); //TODO: revisit
     }
 
     /**
