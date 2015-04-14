@@ -32,6 +32,9 @@ import java.util.*;
  * Puts all the passed data into partitioned cache in small chunks.
  */
 class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> {
+    /** */
+    private static final boolean DEBUG_DATA = false;
+
     /** Number of entries per put. */
     private static final int TX_BOUND = 30;
 
@@ -73,7 +76,10 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                 private Ignite ignite;
 
                 @Override public Object execute() {
-                    log.info("Going to put data: " + data);
+                    if (DEBUG_DATA)
+                        log.info("Going to put data: " + data);
+                    else
+                        log.info("Going to put data [size=" + data.size() + ']');
 
                     IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
@@ -91,7 +97,10 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                         putMap.put(val, val);
 
                         if (++cnt == TX_BOUND) {
-                            log.info("Putting keys to cache: " + putMap.keySet());
+                            if (DEBUG_DATA)
+                                log.info("Putting keys to cache: " + putMap.keySet());
+                            else
+                                log.info("Putting keys to cache [size=" + putMap.size() + ']');
 
                             cache.putAll(putMap);
 
@@ -104,11 +113,17 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                     assert cnt < TX_BOUND;
                     assert putMap.size() == (data.size() % TX_BOUND) : "putMap.size() = " + putMap.size();
 
-                    log.info("Putting keys to cache: " + putMap.keySet());
+                    if (DEBUG_DATA)
+                        log.info("Putting keys to cache: " + putMap.keySet());
+                    else
+                        log.info("Putting keys to cache [size=" + putMap.size() + ']');
 
                     cache.putAll(putMap);
 
-                    log.info("Finished putting data: " + data);
+                    if (DEBUG_DATA)
+                        log.info("Finished putting data: " + data);
+                    else
+                        log.info("Finished putting data [size=" + data.size() + ']');
 
                     return data;
                 }
