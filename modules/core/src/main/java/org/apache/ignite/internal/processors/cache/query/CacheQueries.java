@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Extended queries interface.
+ * Internal queries interface.
  */
 public interface CacheQueries<K, V> {
     /**

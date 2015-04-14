@@ -190,8 +190,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 int totalCnt = F.reduce(qry.execute().get(), new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
                     private int cnt;
 
-                    @Override
-                    public boolean collect(Map.Entry<Object, MyValue> e) {
+                    @Override public boolean collect(Map.Entry<Object, MyValue> e) {
                         if (!quiet && grid.log().isInfoEnabled())
                             grid.log().info("Collecting entry: " + e);
 
@@ -201,10 +200,10 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = ((IgniteKernal) grid).getCache("one").get(key);
+                            Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
 
                             assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 +
-                                ", missedKey=" + key + ", cache=" + ((IgniteKernal) grid).getCache("one").values() + ']', v2);
+                                ", missedKey=" + key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
                             assertEquals(v1, v2);
                         }
                         catch (IgniteCheckedException e1) {
@@ -218,8 +217,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                         return true;
                     }
 
-                    @Override
-                    public Integer reduce() {
+                    @Override public Integer reduce() {
                         return cnt;
                     }
                 });
