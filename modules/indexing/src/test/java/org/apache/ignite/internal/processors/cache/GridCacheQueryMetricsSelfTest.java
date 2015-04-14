@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -65,32 +62,39 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<String, Integer> cacheCfg1 = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(CACHE_MODE);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setIndexedTypes(String.class, Integer.class);
+        cacheCfg1.setName("A");
+        cacheCfg1.setCacheMode(CACHE_MODE);
+        cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg1.setIndexedTypes(String.class, Integer.class);
 
-        cfg.setCacheConfiguration(cacheCfg);
+        CacheConfiguration<String, Integer> cacheCfg2 = defaultCacheConfiguration();
+
+        cacheCfg2.setName("B");
+        cacheCfg2.setCacheMode(CACHE_MODE);
+        cacheCfg2.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg2.setIndexedTypes(String.class, Integer.class);
+
+        cfg.setCacheConfiguration(cacheCfg1, cacheCfg2);
 
         return cfg;
     }
 
     /**
-     * JUnit.
+     * Test metrics for SQL queries.
      *
      * @throws Exception In case of error.
      */
-    public void testAccumulativeMetrics() throws Exception {
-        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
-
-        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
-            .projection(grid(0).cluster());
+    public void testSqlFieldsQueryMetrics() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).context().cache().jcache("A");
 
         // Execute query.
-        qry.execute().get();
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from Integer");
 
-        QueryMetrics m = cache.queries().metrics();
+        cache.query(qry).getAll();
+
+        QueryMetrics m = cache.queryMetrics();
 
         assert m != null;
 
@@ -103,9 +107,9 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(m.minimumTime() >= 0);
 
         // Execute again with the same parameters.
-        qry.execute().get();
+        cache.query(qry).getAll();
 
-        m = cache.queries().metrics();
+        m = cache.queryMetrics();
 
         assert m != null;
 
@@ -119,20 +123,21 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * JUnit.
+     * Test metrics for Scan queries.
      *
      * @throws Exception In case of error.
      */
-    public void testSingleQueryMetrics() throws Exception {
-        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
+    public void testScanQueryMetrics() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).context().cache().jcache("A");
 
-        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
-            .projection(grid(0).cluster());
+        // Execute query.
+        ScanQuery<String, Integer> qry = new ScanQuery<>();
 
-        // Execute.
-        qry.execute().get();
+        cache.query(qry).getAll();
 
-        QueryMetrics m = qry.metrics();
+        QueryMetrics m = cache.queryMetrics();
+
+        assert m != null;
 
         info("Metrics: " + m);
 
@@ -142,10 +147,53 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(m.maximumTime() >= 0);
         assertTrue(m.minimumTime() >= 0);
 
-        // Execute.
-        qry.execute().get();
+        // Execute again with the same parameters.
+        cache.query(qry).getAll();
 
-        m = qry.metrics();
+        m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(2, m.executions());
+        assertEquals(0, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+    }
+
+    /**
+     * Test metrics for SQL cross cache queries.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testSqlCrossCacheQueryMetrics() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).context().cache().jcache("A");
+
+        // Execute query.
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from \"B\".Integer");
+
+        cache.query(qry).getAll();
+
+        QueryMetrics m = cache.queryMetrics();
+
+        assert m != null;
+
+        info("Metrics: " + m);
+
+        assertEquals(1, m.executions());
+        assertEquals(0, m.fails());
+        assertTrue(m.averageTime() >= 0);
+        assertTrue(m.maximumTime() >= 0);
+        assertTrue(m.minimumTime() >= 0);
+
+        // Execute again with the same parameters.
+        cache.query(qry).getAll();
+
+        m = cache.queryMetrics();
+
+        assert m != null;
 
         info("Metrics: " + m);
 
