@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
@@ -28,6 +30,7 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -171,16 +174,17 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                IgniteCache<Object, MyValue> c2 = grid(j).cache("two");
+                GridCacheAdapter<Object, MyValue> c2 = ((IgniteKernal)grid(j)).internalCache("two");
 
-                ScanQuery<Object, MyValue> qry = new ScanQuery<>(null);
+                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
-                final Ignite grid = grid(j);
+                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
+                    @IgniteInstanceResource
+                    private Ignite grid;
 
-                int totalCnt = F.reduce(c2.query(qry).getAll(), new IgniteReducer<Cache.Entry<Object, MyValue>, Integer>() {
                     private int cnt;
 
-                    @Override public boolean collect(Cache.Entry<Object, MyValue> e) {
+                    @Override public boolean collect(Map.Entry<Object, MyValue> e) {
                         Object key = e.getKey();
 
                         assertNotNull(e.getValue());
@@ -206,7 +210,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
                     @Override public Integer reduce() {
                         return cnt;
                     }
-                });
+                }).get());
 
                 info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
 

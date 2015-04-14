@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.cache.reducefields;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -160,40 +161,35 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testNoDataInCache() throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery("select age from Person where orgId = 999");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0))
+            .getCache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
 
-        Collection<List<?>> res = grid(0).cache(null).query(qry).getAll();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
-        IgniteBiTuple<Integer, Integer> redRes = F.reduce(res, new AverageRemoteReducer());
-
-        assertEquals("Result", 0, F.reduce(Collections.singleton(redRes), new AverageLocalReducer()).intValue());
+        assertEquals("Result", 0, F.reduce(res, new AverageLocalReducer()).intValue());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAverageQuery() throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select age from Person");
 
-        Collection<List<?>> res = grid(0).cache(null).query(qry).getAll();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
-        IgniteBiTuple<Integer, Integer> redRes = F.reduce(res, new AverageRemoteReducer());
-
-        assertEquals("Average", 33, F.reduce(Collections.singleton(redRes), new AverageLocalReducer()).intValue());
+        assertEquals("Average", 33, F.reduce(res, new AverageLocalReducer()).intValue());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAverageQueryWithArguments() throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery("select age from Person where orgId = ?");
-        qry.setArgs(1);
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
+            "select age from Person where orgId = ?");
 
-        Collection<List<?>> res = grid(0).cache(null).query(qry).getAll();
+        Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
 
-        IgniteBiTuple<Integer, Integer> redRes = F.reduce(res, new AverageRemoteReducer());
-
-        assertEquals("Average", 30, F.reduce(Collections.singleton(redRes), new AverageLocalReducer()).intValue());
+        assertEquals("Average", 30, F.reduce(res, new AverageLocalReducer()).intValue());
     }
 
 //    /**

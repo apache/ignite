@@ -177,7 +177,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                final Ignite grid = grid(j);
                 GridCacheAdapter<Object, MyValue> c2 = ((IgniteKernal)grid(j)).internalCache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
@@ -187,13 +186,18 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                 qry = qry.projection(grid(j).cluster());
 
-                int totalCnt = F.reduce(qry.execute().get(), new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
+                int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
+                    @IgniteInstanceResource
+                    private Ignite grid;
+
+                    @LoggerResource
+                    private IgniteLogger log0;
+
                     private int cnt;
 
-                    @Override
-                    public boolean collect(Map.Entry<Object, MyValue> e) {
-                        if (!quiet && grid.log().isInfoEnabled())
-                            grid.log().info("Collecting entry: " + e);
+                    @Override public boolean collect(Map.Entry<Object, MyValue> e) {
+                        if (!quiet && log0.isInfoEnabled())
+                            log0.info("Collecting entry: " + e);
 
                         Object key = e.getKey();
 
@@ -201,10 +205,10 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                         try {
                             Object v1 = e.getValue();
-                            Object v2 = ((IgniteKernal) grid).getCache("one").get(key);
+                            Object v2 = ((IgniteKernal)grid).getCache("one").get(key);
 
                             assertNotNull("Cache c1 misses value for key [i=" + j0 + ", j=" + i0 +
-                                ", missedKey=" + key + ", cache=" + ((IgniteKernal) grid).getCache("one").values() + ']', v2);
+                                ", missedKey=" + key + ", cache=" + ((IgniteKernal)grid).getCache("one").values() + ']', v2);
                             assertEquals(v1, v2);
                         }
                         catch (IgniteCheckedException e1) {
@@ -218,11 +222,10 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                         return true;
                     }
 
-                    @Override
-                    public Integer reduce() {
+                    @Override public Integer reduce() {
                         return cnt;
                     }
-                });
+                }).get());
 
                 info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
 

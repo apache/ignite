@@ -723,8 +723,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             SqlQuery<String, Integer> qry = new SqlQuery<>(Integer.class, "_val >= 0");
 
-            List<Cache.Entry<String, Integer>> entries =
-                new ArrayList<>(cache.query(qry).getAll());
+            List<Cache.Entry<String, Integer>> entries = new ArrayList<>(cache.query(qry).getAll());
 
             Collections.sort(entries, new Comparator<Cache.Entry<String, Integer>>() {
                 @Override public int compare(Cache.Entry<String, Integer> o1, Cache.Entry<String, Integer> o2) {

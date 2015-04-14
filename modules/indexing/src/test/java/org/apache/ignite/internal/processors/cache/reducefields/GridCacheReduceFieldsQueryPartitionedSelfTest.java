@@ -39,4 +39,21 @@ public class GridCacheReduceFieldsQueryPartitionedSelfTest extends GridCacheAbst
     @Override protected int gridCount() {
         return 3;
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncludeBackups() throws Exception {
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select age from Person");
+
+        qry.includeBackups(true);
+
+        int sum = 0;
+
+        for (IgniteBiTuple<Integer, Integer> tuple : qry.execute(new AverageRemoteReducer()).get())
+            sum += tuple.get1();
+
+        // One backup, so sum is two times greater
+        assertEquals("Sum", 200, sum);
+    }
 }
