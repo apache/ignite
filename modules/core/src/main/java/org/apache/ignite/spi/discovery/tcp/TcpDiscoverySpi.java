@@ -1088,6 +1088,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @Override public boolean pingNode(UUID nodeId) {
         assert nodeId != null;
 
+        if (log.isDebugEnabled())
+            log.debug("Ping node. NodeId: [" + nodeId + "].");
+
         if (nodeId == getLocalNodeId())
             return true;
 
@@ -2272,8 +2275,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (log.isDebugEnabled())
                 log.debug("Status check sender has been started.");
 
-            // Only 1 heartbeat missing is acceptable. 1 sec is added to avoid false alarm.
-            long checkTimeout = (long)maxMissedHbs * hbFreq + 1000;
+            // Only 1 heartbeat missing is acceptable. Add 50 ms to avoid false alarm.
+            long checkTimeout = (long)maxMissedHbs * hbFreq + 50;
 
             long lastSent = 0;
 
@@ -2697,8 +2700,18 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 final boolean sameHost = U.sameMacs(locNode, next);
 
+                List<InetSocketAddress> localNodeAddresses = U.arrayList(locNode.socketAddresses());
+
                 addr: for (InetSocketAddress addr : getNodeAddresses(next, sameHost)) {
                     long ackTimeout0 = ackTimeout;
+
+                    if (localNodeAddresses.contains(addr)){
+                        if (log.isDebugEnabled())
+                            log.debug("Skip to send message to the local node (probably remote node has the same " +
+                                "loopback address that local node): " + addr);
+
+                        continue;
+                    }
 
                     for (int i = 0; i < reconCnt; i++) {
                         if (sock == null) {
@@ -2790,7 +2803,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 errs.add(e);
 
                                 if (log.isDebugEnabled())
-                                    log.debug("Failed to connect to next node [msg=" + msg + ", err=" + e + ']');
+                                    U.error(log, "Failed to connect to next node [msg=" + msg
+                                        + ", err=" + e.getMessage() + ']', e);
 
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
