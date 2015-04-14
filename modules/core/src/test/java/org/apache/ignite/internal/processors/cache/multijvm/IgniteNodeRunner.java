@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
@@ -84,7 +85,7 @@ public class IgniteNodeRunner {
 
         cfg.setDiscoverySpi(disco);
 
-//        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
 //        if (offHeapValues())
 //            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
