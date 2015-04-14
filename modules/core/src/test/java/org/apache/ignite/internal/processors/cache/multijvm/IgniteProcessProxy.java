@@ -132,9 +132,8 @@ public class IgniteProcessProxy implements IgniteEx {
         // TODO cfg.
         try(Ignite ignite = Ignition.start(IgniteNodeRunner.configuration(null))) {
             // TODO
-//            ClusterGroup grp = ignite.cluster().forNodeId(id);
-            ClusterGroup grp = ignite.cluster().forRemotes();
-            
+            ClusterGroup grp = ignite.cluster().forNodeId(id);
+
             return ignite.compute(grp).apply(new C1<Set<String>, IgniteClusterEx>() {
                 @Override public IgniteClusterEx apply(Set<String> objects) {
                     X.println(">>>>> Cluster 1");

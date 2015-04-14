@@ -71,8 +71,7 @@ public class IgniteNodeRunner {
     public static IgniteConfiguration configuration(String[] args) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        // TODO uncomment
-//        cfg.setNodeId(UUID.fromString(args[0]));
+        cfg.setNodeId((args != null && args.length >= 1) ? UUID.fromString(args[0]) : null);
         //-------
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
