@@ -22,6 +22,11 @@ import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
 
+import jline.TerminalSupport
+import jline.console.ConsoleReader
+import jline.console.completer.Completer
+import jline.internal.Configuration
+
 import javax.swing.ImageIcon
 import java._
 import java.awt.Image
@@ -49,10 +54,6 @@ import org.apache.ignite.visor.commands.top.VisorTopologyCommand
 import org.apache.ignite.visor.commands.vvm.VisorVvmCommand
 import org.apache.ignite.visor.visor
 import org.apache.ignite.visor.visor._
-
-import scala.tools.jline.console.ConsoleReader
-import scala.tools.jline.console.completer.Completer
-import scala.tools.jline.internal.Configuration
 
 /**
  * Command line Visor.
@@ -142,7 +143,16 @@ object VisorConsole extends App {
         case None => new FileInputStream(FileDescriptor.in)
     }
 
-    private val reader = new ConsoleReader(inputStream, System.out, null, null)
+    // Workaround for IDEA terminal.
+    val term = try {
+        Class.forName("com.intellij.rt.execution.application.AppMain")
+
+        new TerminalSupport(true) {}
+    } catch {
+        case ignored: ClassNotFoundException => null
+    }
+
+    private val reader = new ConsoleReader(inputStream, System.out, term)
 
     reader.addCompleter(new VisorCommandCompleter(visor.commands))
     reader.addCompleter(new VisorFileNameCompleter())
