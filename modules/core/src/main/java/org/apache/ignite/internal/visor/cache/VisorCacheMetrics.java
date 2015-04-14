@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -173,19 +174,21 @@ public class VisorCacheMetrics implements Serializable {
 
     /**
      * @param ignite Ignite.
-     * @param c Cache.
+     * @param cacheName Cache name.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(IgniteEx ignite, GridCache c) {
+    public static VisorCacheMetrics from(IgniteEx ignite, String cacheName) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
-
-        CacheMetrics m = c.metrics();
 
         GridCacheProcessor cacheProcessor = ignite.context().cache();
 
-        cm.name = c.name();
-        cm.mode = cacheProcessor.cacheMode(c.name());
-        cm.sys = cacheProcessor.systemCache(c.name());
+        IgniteCache<Object, Object> c = cacheProcessor.jcache(cacheName);
+
+        cm.name = cacheName;
+        cm.mode = cacheProcessor.cacheMode(cacheName);
+        cm.sys = cacheProcessor.systemCache(cacheName);
+
+        CacheMetrics m = c.metrics();
 
         cm.size = m.getSize();
         cm.keySize = m.getKeySize();
@@ -216,7 +219,7 @@ public class VisorCacheMetrics implements Serializable {
         cm.commitsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxCommitTime());
         cm.rollbacksPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxRollbackTime());
 
-        cm.qryMetrics = VisorCacheQueryMetrics.from(c.queries().metrics());
+        cm.qryMetrics = VisorCacheQueryMetrics.from(c.queryMetrics());
 
         cm.dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         cm.txThreadMapSize = m.getTxThreadMapSize();

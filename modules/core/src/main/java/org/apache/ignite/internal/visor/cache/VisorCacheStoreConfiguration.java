@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
@@ -72,10 +71,10 @@ public class VisorCacheStoreConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache store configuration properties.
      */
-    public static VisorCacheStoreConfiguration from(Ignite ignite, CacheConfiguration ccfg) {
+    public static VisorCacheStoreConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
         VisorCacheStoreConfiguration cfg = new VisorCacheStoreConfiguration();
 
-        GridCacheAdapter<Object, Object> c = ((IgniteKernal)ignite).internalCache(ccfg.getName());
+        IgniteCacheProxy<Object, Object> c = ignite.context().cache().jcache(ccfg.getName());
 
         CacheStore store = c != null && c.context().started() ? c.context().store().configuredStore() : null;
 
