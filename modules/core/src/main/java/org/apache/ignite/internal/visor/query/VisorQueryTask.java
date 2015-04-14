@@ -44,9 +44,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTupl
         ClusterNode node;
 
         if (taskArg.localCacheNodeId() == null) {
-            ClusterGroup prj = (ignite.cluster().localNode().isDaemon())
-                ? ignite.cluster().forRemotes()
-                : ignite.cluster().forDataNodes(cacheName);
+            ClusterGroup prj = ignite.cluster().forDataNodes(cacheName);
 
             if (prj.nodes().isEmpty())
                 throw new IgniteException("No data nodes for cache: " + escapeName(cacheName));
