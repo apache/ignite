@@ -47,7 +47,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     @Override protected int gridCount() {
         return srvNodesCnt + clientNodesCnt;
     }
-    
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
