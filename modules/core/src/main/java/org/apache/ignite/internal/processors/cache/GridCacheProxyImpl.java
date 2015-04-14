@@ -66,7 +66,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     private GridCacheProjectionImpl<K, V> prj;
 
     /** Cache queries. */
-    private CacheQueries<K, V> qry;
+    private GridCacheQueriesEx<K, V> qry;
 
     /** Affinity. */
     private Affinity<K> aff;
@@ -143,7 +143,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
+    @Override public GridCacheQueriesEx<K, V> queries() {
         return qry;
     }
 

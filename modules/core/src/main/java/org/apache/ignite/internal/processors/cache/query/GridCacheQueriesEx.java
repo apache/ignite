@@ -19,14 +19,49 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
  * Extended queries interface.
  */
-public interface GridCacheQueriesEx<K, V> extends CacheQueries<K, V> {
+public interface GridCacheQueriesEx<K, V> {
+    /**
+     * Creates user's SQL fields query for given clause. For more information refer to
+     * {@link CacheQuery} documentation.
+     *
+     * @param qry Query.
+     * @return Created query.
+     */
+    public CacheQuery<List<?>> createSqlFieldsQuery(String qry);
+
+    /**
+     * Creates user's full text query, queried class, and query clause.
+     * For more information refer to {@link CacheQuery} documentation.
+     *
+     * @param clsName Query class name.
+     * @param search Search clause.
+     * @return Created query.
+     */
+    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search);
+
+    /**
+     * Creates user's predicate based scan query.
+     *
+     * @param filter Scan filter.
+     * @return Created query.
+     */
+    public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
+
+    /**
+     * Accumulated metrics for all queries executed for this cache.
+     *
+     * @return Cache query metrics.
+     */
+    public QueryMetrics metrics();
+
     /**
      * Gets SQL metadata.
      *

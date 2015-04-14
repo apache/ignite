@@ -31,7 +31,7 @@ import java.util.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * {@link CacheQueries} implementation.
+ * {@link GridCacheQueriesEx} implementation.
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     /** */

@@ -53,7 +53,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     private GridCacheContext<K, V> cctx;
 
     /** Queries impl. */
-    private CacheQueries<K, V> qry;
+    private GridCacheQueriesEx<K, V> qry;
 
     /** Skip store. */
     @GridToStringInclude
@@ -138,7 +138,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
+    @Override public GridCacheQueriesEx<K, V> queries() {
         return qry;
     }
 

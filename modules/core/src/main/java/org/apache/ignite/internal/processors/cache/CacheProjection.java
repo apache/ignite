@@ -205,7 +205,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
      * @return Queries facade responsible for creating various SQL, TEXT, or SCAN queries.
      */
-    public CacheQueries<K, V> queries();
+    public GridCacheQueriesEx<K, V> queries();
 
     /**
      * @param skipStore Skip store flag.

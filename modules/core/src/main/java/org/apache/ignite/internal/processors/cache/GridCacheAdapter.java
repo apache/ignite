@@ -170,7 +170,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     protected IgniteLogger log;
 
     /** Queries impl. */
-    private CacheQueries<K, V> qry;
+    private GridCacheQueriesEx<K, V> qry;
 
     /** Affinity impl. */
     private Affinity<K> aff;
@@ -356,7 +356,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     public abstract GridCachePreloader<K, V> preloader();
 
     /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
+    @Override public GridCacheQueriesEx<K, V> queries() {
         return qry;
     }
 
