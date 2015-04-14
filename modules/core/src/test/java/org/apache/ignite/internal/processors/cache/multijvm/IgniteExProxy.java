@@ -45,12 +45,14 @@ public class IgniteExProxy implements IgniteEx {
     
     private final GridJavaProcess proc;
     private final IgniteConfiguration cfg;
+    private final Ignite locJvmGrid;
     private final IgniteLogger log;
     private final UUID id = UUID.randomUUID();
 
-    public IgniteExProxy(final IgniteConfiguration cfg, final IgniteLogger log) throws Exception {
+    public IgniteExProxy(final IgniteConfiguration cfg, final Ignite locJvmGrid) throws Exception {
         this.cfg = cfg;
-        this.log = log;
+        this.locJvmGrid = locJvmGrid;
+        this.log = locJvmGrid.log();
 
         String cfgAsString = IgniteNodeRunner.asParams(id, cfg);
         
@@ -127,7 +129,7 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     @Override public IgniteClusterEx cluster() {
-        return (IgniteClusterEx)Ignition.ignite().cluster();
+        return (IgniteClusterEx)locJvmGrid.cluster();
     }
 
     @Nullable @Override public String latestVersion() {
@@ -235,11 +237,9 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
-        Ignite ignite = Ignition.ignite();
-        
-        ClusterGroup grp = ignite.cluster().forNodeId(id);
+        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
-        return ignite.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
+        return locJvmGrid.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
             @Override public IgniteCache<K,V> apply(Set<String> objects) {
                 X.println(">>>>> Cache");
                 

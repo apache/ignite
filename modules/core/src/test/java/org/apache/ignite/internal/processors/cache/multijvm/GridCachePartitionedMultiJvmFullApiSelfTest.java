@@ -29,6 +29,9 @@ import java.util.*;
  * TODO: Add class description.
  */
 public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
+    /** Local ignite. */
+    private Ignite locIgnite;
+    
     /** Proces name to process map. */
     private final Map<String, IgniteExProxy> ignites = new HashMap<>();
 
@@ -43,6 +46,8 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
             ignite.getProcess().kill();
 
         ignites.clear();
+        
+        locIgnite = null;
 
         super.afterTestsStopped();
     }
@@ -73,15 +78,18 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (gridName.endsWith("0"))
-            return super.startGrid(gridName, ctx);
+        if (gridName.endsWith("0")) {
+            locIgnite = super.startGrid(gridName, ctx);
+            
+            return locIgnite;
+        }
 
         startingGrid.set(gridName);
 
         try {
             IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-            IgniteExProxy proxy = new IgniteExProxy(cfg, log);
+            IgniteExProxy proxy = new IgniteExProxy(cfg, locIgnite);
 
             ignites.put(gridName, proxy);
 
