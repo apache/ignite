@@ -260,19 +260,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (!isNodeStopping()) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
-                            if (recoveryData != null) {
-                                if (recoveryData.nodeAlive(getSpiContext().node(id))) {
-                                    if (!recoveryData.messagesFutures().isEmpty()) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Session was closed but there are unacknowledged messages, " +
-                                                "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
+                            if (!getSpiContext().tryFailNode(id)) {
+                                if (recoveryData != null) {
+                                    if (recoveryData.nodeAlive(getSpiContext().node(id))) {
+                                        if (!recoveryData.messagesFutures().isEmpty()) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Session was closed but there are unacknowledged messages, " +
+                                                    "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
 
-                                        recoveryWorker.addReconnectRequest(recoveryData);
+                                            recoveryWorker.addReconnectRequest(recoveryData);
+                                        }
                                     }
+                                    else
+                                        recoveryData.onNodeLeft();
                                 }
-                                else
-                                    recoveryData.onNodeLeft();
                             }
+                            else
+                                recoveryData.onNodeLeft();
                         }
                     }
 
@@ -2051,6 +2055,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         else if (log.isDebugEnabled())
             log.debug("Received communication message without any registered listeners (will ignore, " +
                 "is node stopping?) [senderNodeId=" + sndId + ", msg=" + msg + ']');
+    }
+
+    /**
+     * Stops service threads to simulate node failure.
+     *
+     * FOR TEST PURPOSES ONLY!!!
+     */
+    void simulateNodeFailure() {
+        if (nioSrvr != null)
+            nioSrvr.stop();
+
+        U.interrupt(idleClientWorker);
+        U.interrupt(clientFlushWorker);
+        U.interrupt(sockTimeoutWorker);
+        U.interrupt(recoveryWorker);
+
+        U.join(idleClientWorker, log);
+        U.join(clientFlushWorker, log);
+        U.join(sockTimeoutWorker, log);
+        U.join(recoveryWorker, log);
+
+        for (GridCommunicationClient client : clients.values())
+            client.forceClose();
     }
 
     /**
