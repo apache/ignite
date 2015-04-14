@@ -40,16 +40,6 @@ public class MultiJvmTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
     }
 
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRunProcess() throws Exception {
-        runIgniteProcess("JvmNode1", "modules/spring/src/test/java/org/apache/ignite/internal/multijvm/example-cache.xml");
-
-        Thread.sleep(10_000);
-    }
-
     protected GridJavaProcess runIgniteProcess(final String nodeName, String cfg) throws Exception {
         GridJavaProcess ps = GridJavaProcess.exec(
             IgniteNodeRunner.class,
@@ -71,7 +61,7 @@ public class MultiJvmTest extends GridCommonAbstractTest {
         return ps;
     }
 
-    protected void executeTaskAndWaitForFinish(String nodeName, Class<? extends IgniteNodeRunner.Task> taskCls,
+    protected void executeTask(String nodeName, Class<? extends IgniteNodeRunner.Task> taskCls,
         Object... args) throws Exception {
         GridJavaProcess proc = nodes.get(nodeName);
 

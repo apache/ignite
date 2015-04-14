@@ -16,7 +16,8 @@ public class CachePartitionedMultyJvmSelfTest extends MultiJvmTest{
     private static final String IGNITE_NODE_1 = "IGNITE_NODE_1";
     private static final String IGNITE_NODE_2 = "IGNITE_NODE_2";
     private static final String IGNITE_NODE_3 = "IGNITE_NODE_3";
-    private static final String CFG = "modules/spring/src/test/java/org/apache/ignite/internal/multijvm/example-cache.xml";
+    private static final String CFG = "modules/spring/src/test/java/org/apache/ignite/internal/multijvm/" +
+        "example-cache.xml";
 
     @Override protected void beforeTestsStarted() throws Exception {
         runIgniteProcess(IGNITE_NODE_1, CFG);
@@ -28,12 +29,12 @@ public class CachePartitionedMultyJvmSelfTest extends MultiJvmTest{
      * @throws Exception If test fails.
      */
     public void testMultiJvmPut() throws Exception {
-        executeTaskAndWaitForFinish(IGNITE_NODE_1, PutInCache.class, 1);
+        executeTask(IGNITE_NODE_1, PutInCache.class, 1);
         
-        executeTaskAndWaitForFinish(IGNITE_NODE_1, CheckInCache.class, 1);
+        executeTask(IGNITE_NODE_1, CheckInCache.class, 1);
 
-        executeTaskAndWaitForFinish(IGNITE_NODE_2, CheckInCache.class, 1);
+        executeTask(IGNITE_NODE_2, CheckInCache.class, 1);
         
-        executeTaskAndWaitForFinish(IGNITE_NODE_3, CheckInCache.class, 1);
+        executeTask(IGNITE_NODE_3, CheckInCache.class, 1);
     }
 }

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.multijvm.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -157,7 +158,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 super.beforeTestsStarted();
 
                 for (Map.Entry<String, CacheConfiguration[]> entry : cacheCfgMap.entrySet()) {
-                    Ignite ignite = IgnitionEx.grid(entry.getKey());
+                    Ignite ignite;
+                    
+                    if (isMultiJvm())
+                        ignite = IgniteProcessProxy.grid(entry.getKey());
+                    else 
+                        ignite = IgnitionEx.grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())
                         ignite.createCache(cfg);
@@ -186,8 +192,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cacheCfgMap = null;
         }
 
-        for (int i = 0; i < gridCount(); i++)
-            info("Grid " + i + ": " + grid(i).localNode().id());
+//        for (int i = 0; i < gridCount(); i++)
+//            info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    protected boolean isMultiJvm() {
+        return false;
     }
 
     /** {@inheritDoc} */
