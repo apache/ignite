@@ -161,7 +161,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     Ignite ignite;
                     
                     if (isMultiJvm())
-                        ignite = IgniteProcessProxy.grid(entry.getKey());
+                        ignite = IgniteExProxy.grid(entry.getKey());
                     else 
                         ignite = IgnitionEx.grid(entry.getKey());
 

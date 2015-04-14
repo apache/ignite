@@ -22,8 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 
 import java.util.*;
 
@@ -31,36 +29,17 @@ import java.util.*;
  * TODO: Add class description.
  */
 public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** VM ip finder for TCP discovery. */
-    public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder(){{
-        setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-    }};
-
     /** Proces name to process map. */
-    private final Map<String, IgniteProcessProxy> ignites = new HashMap<>();
+    private final Map<String, IgniteExProxy> ignites = new HashMap<>();
 
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-//        IgniteConfiguration cfg = super.getConfiguration(gridName);
-//
-//        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return IgniteNodeRunner.configuration(null); // TODO: change.
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
     }
 
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        return super.cacheConfiguration(gridName); // TODO: CODE: implement.
-    }
-
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    protected boolean isMultiJvm() {
-        return true;
-    }
-
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (IgniteProcessProxy ignite : ignites.values())
+        for (IgniteExProxy ignite : ignites.values())
             ignite.getProcess().kill();
 
         ignites.clear();
@@ -69,16 +48,43 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration rmtCfg = IgniteNodeRunner.configuration(null);
+        
+        rmtCfg.setGridName(gridName);
+
+        return rmtCfg; // TODO: change.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        return super.cacheConfiguration(gridName); // TODO: CODE: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    protected boolean isMultiJvm() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        if (gridName.endsWith("0"))
+            return super.startGrid(gridName, ctx);
+
         startingGrid.set(gridName);
 
         try {
             IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-            IgniteProcessProxy proxy = new IgniteProcessProxy(cfg, log);
-            
+            IgniteExProxy proxy = new IgniteExProxy(cfg, log);
+
             ignites.put(gridName, proxy);
-            
+
             return proxy;
         }
         finally {
@@ -86,9 +92,13 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteEx grid(int idx) {
+        if (idx == 0)
+            return super.grid(idx);
+
         String name = getTestGridName(idx);
-        
+
         return ignites.get(name);
     }
 

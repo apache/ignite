@@ -40,15 +40,15 @@ import java.util.concurrent.*;
  * @author @java.author
  * @version @java.version
  */
-public class IgniteProcessProxy implements IgniteEx {
-    private static final Map<String, IgniteProcessProxy> gridProxies = new HashMap<>();
+public class IgniteExProxy implements IgniteEx {
+    private static final Map<String, IgniteExProxy> gridProxies = new HashMap<>();
     
     private final GridJavaProcess proc;
     private final IgniteConfiguration cfg;
     private final IgniteLogger log;
-    private final UUID id = UUID.randomUUID();// TODO send.
+    private final UUID id = UUID.randomUUID();
 
-    public IgniteProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log) throws Exception {
+    public IgniteExProxy(final IgniteConfiguration cfg, final IgniteLogger log) throws Exception {
         this.cfg = cfg;
         this.log = log;
 
@@ -127,26 +127,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     @Override public IgniteClusterEx cluster() {
-//        Ignition.setClientMode(true);
-        
-        // TODO cfg.
-        try(Ignite ignite = Ignition.start(IgniteNodeRunner.configuration(null))) {
-            // TODO
-            ClusterGroup grp = ignite.cluster().forNodeId(id);
-
-            return ignite.compute(grp).apply(new C1<Set<String>, IgniteClusterEx>() {
-                @Override public IgniteClusterEx apply(Set<String> objects) {
-                    X.println(">>>>> Cluster 1");
-                    Ignite ignite1 = Ignition.ignite();
-                    X.println(">>>>> Cluster 2");
-                    IgniteCluster cluster = ignite1.cluster();
-                    X.println(">>>>> Cluster 3");
-                    IgniteClusterEx cluster1 = (IgniteClusterEx)cluster;
-                    X.println(">>>>> Cluster 4");
-                    return cluster1;
-                }
-            }, Collections.<String>emptySet());
-        }
+        return (IgniteClusterEx)Ignition.ignite().cluster();
     }
 
     @Nullable @Override public String latestVersion() {
@@ -253,16 +234,18 @@ public class IgniteProcessProxy implements IgniteEx {
         // TODO: CODE: implement.
     }
 
-    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
-        Ignition.setClientMode(true);
+    @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
+        Ignite ignite = Ignition.ignite();
         
-        try(Ignite ignite = Ignition.start(cfg)) {
-            return ignite.compute(ignite.cluster().forNodeId(id)).apply(new C1<Set<?>, IgniteCache<K,V>>() {
-                @Override public IgniteCache<K, V> apply(Set<?> objects) {
-                    return Ignition.ignite().cache(null);
-                }
-            }, Collections.emptySet());
-        }      
+        ClusterGroup grp = ignite.cluster().forNodeId(id);
+
+        return ignite.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
+            @Override public IgniteCache<K,V> apply(Set<String> objects) {
+                X.println(">>>>> Cache");
+                
+                return Ignition.ignite().cache(name);
+            }
+        }, Collections.<String>emptySet());
     }
 
     @Override public IgniteTransactions transactions() {

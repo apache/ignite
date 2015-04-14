@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -590,7 +591,10 @@ public abstract class GridAbstractTest extends TestCase {
             boolean topOk = true;
 
             for (int i = 0; i < cnt; i++) {
-                if (cnt != grid(i).cluster().nodes().size()) {
+                IgniteEx grid = grid(i);
+                IgniteClusterEx cluster = grid.cluster();
+                Collection<ClusterNode> nodes = cluster.nodes();
+                if (cnt != nodes.size()) {
                     U.warn(log, "Grid size is incorrect (will re-run check in 1000 ms) " +
                         "[name=" + grid(i).name() + ", size=" + grid(i).cluster().nodes().size() + ']');
 

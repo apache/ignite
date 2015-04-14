@@ -71,25 +71,17 @@ public class IgniteNodeRunner {
     public static IgniteConfiguration configuration(String[] args) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        cfg.setLocalHost("127.0.0.1");
+
         cfg.setNodeId((args != null && args.length >= 1) ? UUID.fromString(args[0]) : null);
         //-------
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-//        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
-
-//        if (isDebug())
-//            disco.setAckTimeout(Integer.MAX_VALUE);
 
         cfg.setDiscoverySpi(disco);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
-
-//        if (offHeapValues())
-//            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-
-//        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return cfg;
     }
