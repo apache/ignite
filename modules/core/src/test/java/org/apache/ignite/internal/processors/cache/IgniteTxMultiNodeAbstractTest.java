@@ -292,7 +292,6 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             }
 
             while (true) {
-
                 SqlQuery<String, Integer> qry =
                     new SqlQuery<>(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
 

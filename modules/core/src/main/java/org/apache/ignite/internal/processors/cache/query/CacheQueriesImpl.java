@@ -25,7 +25,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
@@ -42,13 +41,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
 
     /** */
     private GridCacheProjectionImpl<K, V> prj;
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public CacheQueriesImpl() {
-        // No-op.
-    }
 
     /**
      * @param ctx Context.

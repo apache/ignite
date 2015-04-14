@@ -430,6 +430,17 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+            return (CacheQueryFuture<T>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryMetrics metrics() {
+        return metrics.copy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics() {
+        metrics = new GridCacheQueryMetricsAdapter();
     }
 
     /**

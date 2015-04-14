@@ -18,11 +18,6 @@
 package org.apache.ignite.internal.processors.cache.reducefields;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
