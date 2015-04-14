@@ -20,12 +20,14 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.commons.collections.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.*;
 
@@ -67,13 +69,18 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     }
 
     /** {@inheritDoc} */
+    @Override protected CacheMemoryMode collectionMemoryMode() {
+        return ONHEAP_TIERED;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected TestCollectionConfiguration collectionConfiguration() {
-        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected CollectionConfiguration collectionConfiguration() {
+        CollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(backups);
 

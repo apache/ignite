@@ -402,8 +402,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
 
-        assertEquals(2, near.localSize());
-        assertEquals(2, near.localSize());
+        assertEquals(2, near.localSize(CachePeekMode.ALL));
+        assertEquals(2, near.localSize(CachePeekMode.ALL));
     }
 
     /** @throws Exception If failed. */
@@ -446,8 +446,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         assertEquals("3", localPeek(dht(primaryIgnite), 3));
 
-        assertEquals(1, near.localSize());
-        assertEquals(1, near.localSize());
+        assertEquals(1, near.localSize(CachePeekMode.ALL));
+        assertEquals(1, near.localSize(CachePeekMode.ALL));
 
         assertEquals(1, dht(primaryIgnite).size());
 
@@ -485,8 +485,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
 
-        assertEquals(2, near.localSize());
-        assertEquals(2, near.localSize());
+        assertEquals(2, near.localSize(CachePeekMode.ALL));
+        assertEquals(2, near.localSize(CachePeekMode.ALL));
     }
 
     /**
@@ -529,8 +529,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
 
-        assertEquals(2, near.localSize());
-        assertEquals(2, near.localSize());
+        assertEquals(2, near.localSize(CachePeekMode.ALL));
+        assertEquals(2, near.localSize(CachePeekMode.ALL));
     }
 
     /** @throws Exception If failed. */
@@ -547,8 +547,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("1", near.getAndPutIfAbsent(key, "2"));
 
         assertEquals("1", near.localPeek(key, CachePeekMode.ONHEAP));
-        assertEquals(1, near.localSize());
-        assertEquals(1, near.localSize());
+        assertEquals(1, near.localSize(CachePeekMode.ALL));
+        assertEquals(1, near.localSize(CachePeekMode.ALL));
 
         assertEquals("1", near.getAndReplace(key, "2"));
         assertEquals("2", near.localPeek(key, CachePeekMode.ONHEAP));
@@ -556,12 +556,12 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertTrue(near.replace(key, "2"));
 
         assertEquals("2", near.localPeek(key, CachePeekMode.ONHEAP));
-        assertEquals(1, near.localSize());
-        assertEquals(1, near.localSize());
+        assertEquals(1, near.localSize(CachePeekMode.ALL));
+        assertEquals(1, near.localSize(CachePeekMode.ALL));
 
         assertTrue(near.remove(key, "2"));
 
-        assertEquals(0, near.localSize());
+        assertEquals(0, near.localSize(CachePeekMode.ALL));
     }
 
     /** @throws Exception If failed. */

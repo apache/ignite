@@ -60,7 +60,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
-import javax.cache.processor.*;
 import javax.management.*;
 import java.io.*;
 import java.util.*;
@@ -575,7 +574,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheConfiguration<?, ?> cfg = new CacheConfiguration(cfgs[i]);
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
             // Initialize defaults.
             initialize(cfg, cacheObjCtx);
@@ -668,12 +667,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             CacheConfiguration locCcfg = desc.cacheConfiguration();
-            
+
             CachePluginManager pluginMgr = new CachePluginManager(ctx, locCcfg);
 
             cache2PluginMgr.put(locCcfg.getName(), pluginMgr);
         }
-        
+
         if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes()) {
                 checkTransactionConfiguration(n);
@@ -689,7 +688,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (rmtCfg != null) {
                         CacheConfiguration locCfg = desc.cacheConfiguration();
-                        
+
                         checkCache(locCfg, rmtCfg, n);
 
                         // Check plugin cache configurations.
@@ -716,12 +715,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             IgnitePredicate filter = ccfg.getNodeFilter();
 
             if (filter.apply(locNode)) {
-                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+                CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
                 CachePluginManager pluginMgr = cache2PluginMgr.get(ccfg.getName());
-                
+
                 assert pluginMgr != null : " Map=" + cache2PluginMgr;
-                
+
                 GridCacheContext ctx = createCache(ccfg, pluginMgr, desc.cacheType(), cacheObjCtx);
 
                 ctx.dynamicDeploymentId(desc.deploymentId());
@@ -1090,7 +1089,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
-        
+
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
@@ -1365,7 +1364,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     ) throws IgniteCheckedException {
         for (DynamicCacheChangeRequest req : reqs) {
             assert req.start() : req;
-            assert req.cacheType() != null : req.cacheType();
+            assert req.cacheType() != null : req;
 
             prepareCacheStart(
                 req.startCacheConfiguration(),
@@ -1433,7 +1432,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.setNearConfiguration(nearCfg);
             }
 
-            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, ccfg.getName(), ccfg);
+            CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
             GridCacheContext cacheCtx = createCache(ccfg, null, cacheType, cacheObjCtx);
 
@@ -1588,7 +1587,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
+    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
         // Collect dynamically started caches to a single object.
         Collection<DynamicCacheChangeRequest> reqs =
             new ArrayList<>(registeredCaches.size() + registeredTemplates.size());
@@ -1627,7 +1626,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         if (data instanceof DynamicCacheChangeBatch) {
             DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)data;
 
@@ -1711,81 +1710,102 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> dynamicStartCache(String cacheName) {
+    public IgniteInternalFuture<?> createFromTemplate(String cacheName) {
+        CacheConfiguration cfg = createConfigFromTemplate(cacheName);
+
+        return dynamicStartCache(cfg, cacheName, null, true);
+    }
+
+    /**
+     * Dynamically starts cache using template configuration.
+     *
+     * @param cacheName Cache name.
+     * @return Future that will be completed when cache is deployed.
+     */
+    public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName) {
         try {
             if (publicJCache(cacheName, false) != null) // Cache with given name already started.
                 return new GridFinishedFuture<>();
 
-            CacheConfiguration cfgTemplate = null;
-
-            CacheConfiguration dfltCacheCfg = null;
-
-            List<CacheConfiguration> wildcardNameCfgs = null;
-
-            for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
-                assert desc.template();
-
-                CacheConfiguration cfg = desc.cacheConfiguration();
-
-                assert cfg != null;
-
-                if (F.eq(cacheName, cfg.getName())) {
-                    cfgTemplate = cfg;
-
-                    break;
-                }
-
-                if (cfg.getName() != null ) {
-                    if (cfg.getName().endsWith("*")) {
-                        if (cfg.getName().length() > 1) {
-                            if (wildcardNameCfgs == null)
-                                wildcardNameCfgs = new ArrayList<>();
-
-                            wildcardNameCfgs.add(cfg);
-                        }
-                        else
-                            dfltCacheCfg = cfg; // Template with name '*'.
-                    }
-                }
-                else if (dfltCacheCfg == null)
-                    dfltCacheCfg = cfg;
-            }
-
-            if (cfgTemplate == null && cacheName != null && wildcardNameCfgs != null) {
-                Collections.sort(wildcardNameCfgs, new Comparator<CacheConfiguration>() {
-                    @Override public int compare(CacheConfiguration cfg1, CacheConfiguration cfg2) {
-                        Integer len1 = cfg1.getName() != null ? cfg1.getName().length() : 0;
-                        Integer len2 = cfg2.getName() != null ? cfg2.getName().length() : 0;
-
-                        return len2.compareTo(len1);
-                    }
-                });
-
-                for (CacheConfiguration cfg : wildcardNameCfgs) {
-                    if (cacheName.startsWith(cfg.getName().substring(0, cfg.getName().length() - 1))) {
-                        cfgTemplate = cfg;
-
-                        break;
-                    }
-                }
-            }
-
-            if (cfgTemplate == null)
-                cfgTemplate = dfltCacheCfg;
-
-            if (cfgTemplate == null)
-                throw new IllegalArgumentException("Failed to start cache " +
-                    "(there is no matching template configuration) : " + cacheName);
-
-            CacheConfiguration cfg = new CacheConfiguration(cfgTemplate);
-
-            cfg.setName(cacheName);
+            CacheConfiguration cfg = createConfigFromTemplate(cacheName);
 
             return dynamicStartCache(cfg, cacheName, null, false);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
         }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration createConfigFromTemplate(String cacheName) {
+        CacheConfiguration cfgTemplate = null;
+
+        CacheConfiguration dfltCacheCfg = null;
+
+        List<CacheConfiguration> wildcardNameCfgs = null;
+
+        for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
+            assert desc.template();
+
+            CacheConfiguration cfg = desc.cacheConfiguration();
+
+            assert cfg != null;
+
+            if (F.eq(cacheName, cfg.getName())) {
+                cfgTemplate = cfg;
+
+                break;
+            }
+
+            if (cfg.getName() != null ) {
+                if (cfg.getName().endsWith("*")) {
+                    if (cfg.getName().length() > 1) {
+                        if (wildcardNameCfgs == null)
+                            wildcardNameCfgs = new ArrayList<>();
+
+                        wildcardNameCfgs.add(cfg);
+                    }
+                    else
+                        dfltCacheCfg = cfg; // Template with name '*'.
+                }
+            }
+            else if (dfltCacheCfg == null)
+                dfltCacheCfg = cfg;
+        }
+
+        if (cfgTemplate == null && cacheName != null && wildcardNameCfgs != null) {
+            Collections.sort(wildcardNameCfgs, new Comparator<CacheConfiguration>() {
+                @Override public int compare(CacheConfiguration cfg1, CacheConfiguration cfg2) {
+                    Integer len1 = cfg1.getName() != null ? cfg1.getName().length() : 0;
+                    Integer len2 = cfg2.getName() != null ? cfg2.getName().length() : 0;
+
+                    return len2.compareTo(len1);
+                }
+            });
+
+            for (CacheConfiguration cfg : wildcardNameCfgs) {
+                if (cacheName.startsWith(cfg.getName().substring(0, cfg.getName().length() - 1))) {
+                    cfgTemplate = cfg;
+
+                    break;
+                }
+            }
+        }
+
+        if (cfgTemplate == null)
+            cfgTemplate = dfltCacheCfg;
+
+        if (cfgTemplate == null)
+            cfgTemplate = new CacheConfiguration();
+
+        CacheConfiguration cfg = new CacheConfiguration(cfgTemplate);
+
+        cfg.setName(cacheName);
+
+        return cfg;
     }
 
     /**
@@ -1804,6 +1824,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable NearCacheConfiguration nearCfg,
         boolean failIfExists
     ) {
+        return dynamicStartCache(ccfg, cacheName, nearCfg, CacheType.USER, failIfExists);
+    }
+
+    /**
+     * Dynamically starts cache.
+     *
+     * @param ccfg Cache configuration.
+     * @param cacheName Cache name.
+     * @param nearCfg Near cache configuration.
+     * @param failIfExists Fail if exists flag.
+     * @return Future that will be completed when cache is deployed.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public IgniteInternalFuture<?> dynamicStartCache(
+        @Nullable CacheConfiguration ccfg,
+        String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        CacheType cacheType,
+        boolean failIfExists
+    ) {
         assert ccfg != null || nearCfg != null;
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
@@ -1816,7 +1856,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (desc != null && !desc.cancelled()) {
                 if (failIfExists)
                     return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
-                            "(a cache with the same name is already started): " + cacheName));
+                        "(a cache with the same name is already started): " + cacheName));
                 else {
                     CacheConfiguration descCfg = desc.cacheConfiguration();
 
@@ -1828,7 +1868,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 return new GridFinishedFuture<>();
                             else
                                 return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near " +
-                                        "cache (local node is an affinity node for cache): " + cacheName));
+                                    "cache (local node is an affinity node for cache): " + cacheName));
                         }
                         else
                             // If local node has near cache, return success.
@@ -1848,7 +1888,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     CacheConfiguration cfg = new CacheConfiguration(ccfg);
 
-                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(null, cfg.getName(), cfg);
+                    CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
                     initialize(cfg, cacheObjCtx);
 
@@ -1884,7 +1924,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
 
-        req.cacheType(CacheType.USER);
+        req.cacheType(cacheType);
 
         return F.first(initiateCacheChanges(F.asList(req)));
     }
@@ -2117,33 +2157,35 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            CacheConfiguration cfg = desc.cacheConfiguration();
+        if (!node.isClient()) {
+            for (DynamicCacheDescriptor desc : registeredCaches.values()) {
+                CacheConfiguration cfg = desc.cacheConfiguration();
 
-            if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
-                RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
+                if (cfg.getAffinity() instanceof RendezvousAffinityFunction) {
+                    RendezvousAffinityFunction aff = (RendezvousAffinityFunction)cfg.getAffinity();
 
-                AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
+                    AffinityNodeHashResolver hashIdRslvr = aff.getHashIdResolver();
 
-                assert hashIdRslvr != null;
+                    assert hashIdRslvr != null;
 
-                Object nodeHashObj = hashIdRslvr.resolve(node);
+                    Object nodeHashObj = hashIdRslvr.resolve(node);
 
-                for (ClusterNode topNode : ctx.discovery().allNodes()) {
-                    Object topNodeHashObj = hashIdRslvr.resolve(topNode);
+                    for (ClusterNode topNode : ctx.discovery().allNodes()) {
+                        Object topNodeHashObj = hashIdRslvr.resolve(topNode);
 
-                    if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
-                        String errMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
-                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
-                            ", existingNodeId=" + topNode.id() + ']';
+                        if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
+                            String errMsg = "Failed to add node to topology because it has the same hash code for " +
+                                "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
+                                ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() +
+                                ", existingNodeId=" + topNode.id() + ']';
 
-                        String sndMsg = "Failed to add node to topology because it has the same hash code for " +
-                            "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
-                            ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
-                            topNode.id() + ']';
+                            String sndMsg = "Failed to add node to topology because it has the same hash code for " +
+                                "partitioned affinity as one of existing nodes [cacheName=" + U.maskName(cfg.getName()) +
+                                ", hashIdResolverClass=" + hashIdRslvr.getClass().getName() + ", existingNodeId=" +
+                                topNode.id() + ']';
 
-                        return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                            return new IgniteNodeValidationResult(topNode.id(), errMsg, sndMsg);
+                        }
                     }
                 }
             }
@@ -2495,8 +2537,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable private <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted)
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @Nullable public <K, V> IgniteCache<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted)
         throws IgniteCheckedException
     {
         if (log.isDebugEnabled())
@@ -2544,6 +2586,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return cache;
+    }
+
+    /**
+     * Get configuration for the given cache.
+     *
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    public CacheConfiguration cacheConfiguration(String name) {
+        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(name));
+
+        if (desc == null || desc.cancelled())
+            throw new IllegalStateException("Cache doesn't exist: " + name);
+        else
+            return desc.cacheConfiguration();
     }
 
     /**

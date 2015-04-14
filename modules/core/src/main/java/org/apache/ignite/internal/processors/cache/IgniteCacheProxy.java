@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -140,6 +141,31 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public CacheMetrics metrics(ClusterGroup grp) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            List<CacheMetrics> metrics = new ArrayList<>(grp.nodes().size());
+
+            for (ClusterNode node : grp.nodes()) {
+                Map<Integer, CacheMetrics> nodeCacheMetrics = ((TcpDiscoveryNode)node).cacheMetrics();
+
+                if (nodeCacheMetrics != null) {
+                    CacheMetrics e = nodeCacheMetrics.get(context().cacheId());
+
+                    if (e != null)
+                        metrics.add(e);
+                }
+            }
+
+            return new CacheMetricsSnapshot(ctx.cache().metrics(), metrics);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -239,12 +265,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.putIfAbsentAsync(key, val));
+                    setFuture(delegate.getAndPutIfAbsentAsync(key, val));
 
                     return null;
                 }
                 else
-                    return delegate.putIfAbsent(key, val);
+                    return delegate.getAndPutIfAbsent(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -750,9 +776,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync())
-                    setFuture(delegate.putxAsync(key, val));
+                    setFuture(delegate.putAsync(key, val));
                 else
-                    delegate.putx(key, val);
+                    delegate.put(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -770,12 +796,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.putAsync(key, val));
+                    setFuture(delegate.getAndPutAsync(key, val));
 
                     return null;
                 }
                 else
-                    return delegate.put(key, val);
+                    return delegate.getAndPut(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -813,12 +839,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.putxIfAbsentAsync(key, val));
+                    setFuture(delegate.putIfAbsentAsync(key, val));
 
                     return false;
                 }
                 else
-                    return delegate.putxIfAbsent(key, val);
+                    return delegate.putIfAbsent(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -836,12 +862,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.removexAsync(key));
+                    setFuture(delegate.removeAsync(key));
 
                     return false;
                 }
                 else
-                    return delegate.removex(key);
+                    return delegate.remove(key);
             }
             finally {
                 gate.leave(prev);
@@ -882,12 +908,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.removeAsync(key));
+                    setFuture(delegate.getAndRemoveAsync(key));
 
                     return null;
                 }
                 else
-                    return delegate.remove(key);
+                    return delegate.getAndRemove(key);
             }
             finally {
                 gate.leave(prev);
@@ -928,12 +954,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.replacexAsync(key, val));
+                    setFuture(delegate.replaceAsync(key, val));
 
                     return false;
                 }
                 else
-                    return delegate.replacex(key, val);
+                    return delegate.replace(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -951,12 +977,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             try {
                 if (isAsync()) {
-                    setFuture(delegate.replaceAsync(key, val));
+                    setFuture(delegate.getAndReplaceAsync(key, val));
 
                     return null;
                 }
                 else
-                    return delegate.replace(key, val);
+                    return delegate.getAndReplace(key, val);
             }
             finally {
                 gate.leave(prev);

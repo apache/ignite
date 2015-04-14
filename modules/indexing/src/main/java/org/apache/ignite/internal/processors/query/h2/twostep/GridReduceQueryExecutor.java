@@ -47,7 +47,7 @@ import org.h2.value.*;
 import org.jsr166.*;
 
 import javax.cache.*;
-import java.lang.reflect.Constructor;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -484,7 +484,7 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
             Query prepare = (Query)ses.prepare(qry.query(), false);
 
-            List<Parameter> parsedParams = prepare.getParameters();
+            List<org.h2.expression.Parameter> parsedParams = prepare.getParameters();
 
             for (int i = Math.min(parsedParams.size(), qry.parameters().length); --i >= 0; ) {
                 Object val = qry.parameters()[i];

@@ -161,7 +161,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *
      * @return Iterator over keys.
      * @throws IgniteCheckedException If failed.
-     * @see #promote(Object)
      */
     public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException;
 

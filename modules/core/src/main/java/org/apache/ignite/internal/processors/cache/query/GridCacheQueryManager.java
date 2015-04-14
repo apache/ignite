@@ -900,7 +900,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
-                heapIt.close();
+                try {
+                    heapIt.close();
+                }
+                finally {
+                    if (keyValFilter instanceof CacheQueryCloseableScanBiPredicate)
+                        ((CacheQueryCloseableScanBiPredicate)keyValFilter).onClose();
+                }
             }
         };
     }

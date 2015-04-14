@@ -330,9 +330,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected final Ignite startGridsMultiThreaded(int cnt) throws Exception {
+        return startGridsMultiThreaded(cnt, true);
+    }
+
+    /**
+     * @param cnt Count.
+     * @param awaitPartitionMapExchange If we need to await partition map exchange.
+     * @return Ignite.
+     * @throws Exception If failed.
+     */
+    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartitionMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        awaitPartitionMapExchange();
+        if (awaitPartitionMapExchange)
+            awaitPartitionMapExchange();
 
         return g;
     }
@@ -773,7 +784,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache for key.
      */
     protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
-        return primaryNode(key, null).cache(null);
+        return primaryNode(key, cacheName).cache(cacheName);
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> backupCache(Integer key, String cacheName) {
+        return backupNode(key, cacheName).cache(cacheName);
     }
 
     /**
@@ -795,6 +815,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertNotNull("There are no cache affinity nodes", node);
 
         return grid(node);
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Ignite instance which has primary cache for given key.
+     */
+    protected Ignite backupNode(Object key, String cacheName) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Ignite ignite = allGrids.get(0);
+
+        Affinity<Object> aff = ignite.affinity(cacheName);
+
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes +']', nodes.size() > 1);
+
+        Iterator<ClusterNode> it = nodes.iterator();
+
+        it.next(); // Skip primary.
+
+        return grid(it.next());
     }
 
     /**

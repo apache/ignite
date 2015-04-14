@@ -77,14 +77,14 @@ public class IgniteCacheSystemTransactionsSelfTest extends GridCacheAbstractSelf
 
             GridCacheAdapter<Object, Object> utilityCache = ignite.context().cache().utilityCache();
 
-            utilityCache.putIfAbsent("2", "2");
+            utilityCache.getAndPutIfAbsent("2", "2");
 
             try (IgniteInternalTx itx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 assertEquals(null, utilityCache.get("1"));
                 assertEquals("2", utilityCache.get("2"));
                 assertEquals(null, utilityCache.get("3"));
 
-                utilityCache.put("3", "3");
+                utilityCache.getAndPut("3", "3");
 
                 itx.commit();
             }

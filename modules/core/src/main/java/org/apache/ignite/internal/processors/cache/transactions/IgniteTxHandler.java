@@ -268,6 +268,7 @@ public class IgniteTxHandler {
                 req.implicitSingle(),
                 req.implicitSingle(),
                 req.system(),
+                req.explicitLock(),
                 req.policy(),
                 req.concurrency(),
                 req.isolation(),
@@ -292,6 +293,9 @@ public class IgniteTxHandler {
         }
 
         if (tx != null) {
+            if (req.explicitLock())
+                tx.explicitLock(req.explicitLock());
+
             tx.transactionNodes(req.transactionNodes());
 
             if (req.onePhaseCommit()) {
@@ -538,6 +542,7 @@ public class IgniteTxHandler {
                             true,
                             false, /* we don't know, so assume false. */
                             req.system(),
+                            req.explicitLock(),
                             req.policy(),
                             PESSIMISTIC,
                             READ_COMMITTED,
@@ -555,6 +560,10 @@ public class IgniteTxHandler {
                         throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + req);
 
                     tx.topologyVersion(req.topologyVersion());
+                }
+                else {
+                    if (req.explicitLock())
+                        tx.explicitLock(req.explicitLock());
                 }
 
                 tx.storeEnabled(req.storeEnabled());
@@ -580,20 +589,44 @@ public class IgniteTxHandler {
                 return commitFut;
             }
             else {
-                assert tx != null : "Transaction is null for near rollback request [nodeId=" +
+                assert tx != null || req.explicitLock() : "Transaction is null for near rollback request [nodeId=" +
                     nodeId + ", req=" + req + "]";
 
-                tx.syncRollback(req.syncRollback());
+                if (tx != null) {
+                    tx.syncRollback(req.syncRollback());
 
-                tx.nearFinishFutureId(req.futureId());
-                tx.nearFinishMiniId(req.miniId());
+                    tx.nearFinishFutureId(req.futureId());
+                    tx.nearFinishMiniId(req.miniId());
 
-                IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
+                    IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
-                // Only for error logging.
-                rollbackFut.listen(CU.errorLogger(log));
+                    // Only for error logging.
+                    rollbackFut.listen(CU.errorLogger(log));
 
-                return rollbackFut;
+                    return rollbackFut;
+                }
+                else {
+                    // Always send finish response.
+                    GridCacheMessage res = new GridNearTxFinishResponse(req.version(), req.threadId(),
+                        req.futureId(), req.miniId(), null);
+
+                    try {
+                        ctx.io().send(nodeId, res, req.policy());
+                    }
+                    catch (Throwable e) {
+                        // Double-check.
+                        if (ctx.discovery().node(nodeId) == null) {
+                            if (log.isDebugEnabled())
+                                log.debug("Node left while sending finish response [nodeId=" + nodeId + ", res=" + res +
+                                    ']');
+                        }
+                        else
+                            U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", " +
+                                "res=" + res + ']', e);
+                    }
+
+                    return null;
+                }
             }
         }
         catch (Throwable e) {
@@ -757,15 +790,36 @@ public class IgniteTxHandler {
         if (nearTx != null)
             finish(nodeId, nearTx, req);
 
-        if (dhtTx != null && !dhtTx.done()) {
-            dhtTx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
-                    sendReply(nodeId, req);
-                }
-            });
+        if (req.replyRequired()) {
+            IgniteInternalFuture completeFut;
+
+            IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ? null : dhtTx.done() ? null : dhtTx.finishFuture();
+            IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ? null : nearTx.done() ? null : nearTx.finishFuture();
+
+            if (dhtFin != null && nearFin != null) {
+                GridCompoundFuture fut = new GridCompoundFuture();
+
+                fut.add(dhtFin);
+                fut.add(nearFin);
+
+                fut.markInitialized();
+
+                completeFut = fut;
+            }
+            else
+                completeFut = dhtFin != null ? dhtFin : nearFin;
+
+            if (completeFut != null) {
+                completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                    @Override
+                    public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
+                        sendReply(nodeId, req);
+                    }
+                });
+            }
+            else
+                sendReply(nodeId, req);
         }
-        else
-            sendReply(nodeId, req);
     }
 
     /**
@@ -874,21 +928,19 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req) {
-        if (req.replyRequired()) {
-            GridCacheMessage res = new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
+        GridCacheMessage res = new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
 
-            try {
-                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+        try {
+            ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+        }
+        catch (Throwable e) {
+            // Double-check.
+            if (ctx.discovery().node(nodeId) == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Node left while sending finish response [nodeId=" + nodeId + ", res=" + res + ']');
             }
-            catch (Throwable e) {
-                // Double-check.
-                if (ctx.discovery().node(nodeId) == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Node left while sending finish response [nodeId=" + nodeId + ", res=" + res + ']');
-                }
-                else
-                    U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
-            }
+            else
+                U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
         }
     }
 
@@ -939,6 +991,16 @@ public class IgniteTxHandler {
                 if (tx == null || !ctx.tm().onStarted(tx)) {
                     if (log.isDebugEnabled())
                         log.debug("Attempt to start a completed transaction (will ignore): " + tx);
+
+                    return null;
+                }
+
+                if (ctx.discovery().node(nodeId) == null) {
+                    tx.state(ROLLING_BACK);
+
+                    tx.state(ROLLED_BACK);
+
+                    ctx.tm().uncommitTx(tx);
 
                     return null;
                 }

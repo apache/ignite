@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -155,7 +155,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -357,8 +357,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter
+        long accessTtl
     ) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
@@ -371,7 +370,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.empty0());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -387,18 +386,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        try {
-            return new CacheEntryImpl<>(key, localPeek(key, CachePeekModes.ONHEAP_ONLY, null));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -415,9 +403,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
-
-                if (!ctx.isAll(entry, filter))
-                    break; // While.
 
                 GridCacheMvccCandidate lock =
                     ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), cacheKey, null);
@@ -484,9 +469,20 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 assert !n.isLocal();
 
-                if (!F.isEmpty(req.keys()))
-                    // We don't wait for reply to this message.
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                if (!F.isEmpty(req.keys())) {
+                    try {
+                        // We don't wait for reply to this message.
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                                ", n=" + n + ", e=" + e + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                    }
+                }
             }
         }
         catch (IgniteCheckedException ex) {
@@ -567,8 +563,18 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);
 
-                    // We don't wait for reply to this message.
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                    try {
+                        // We don't wait for reply to this message.
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                                ", n=" + n + ", e=" + e + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                    }
                 }
             }
         }

@@ -65,6 +65,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private long dhtThreadId;
 
     /** */
+    protected boolean explicitLock;
+
+    /** */
     private boolean needsCompletedVers;
 
     /** Versions of pending locks for entries of this tx. */
@@ -96,6 +99,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
+        boolean explicitLock,
         GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
@@ -112,6 +116,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             storeEnabled, txSize, grpLockKey, partLock, subjId, taskNameHash);
 
         assert cctx != null;
+
+        this.explicitLock = explicitLock;
 
         threadId = Thread.currentThread().getId();
         dhtThreadId = threadId;
@@ -179,6 +185,20 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return Explicit lock flag.
+     */
+    public boolean explicitLock() {
+        return explicitLock;
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    public void explicitLock(boolean explicitLock) {
+        this.explicitLock = explicitLock;
+    }
+
+    /**
      * @return DHT thread ID.
      */
     long dhtThreadId() {
@@ -227,8 +247,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             if (nearEntryMap == null)
                                 nearEntryMap = new GridLeanMap<>();
 
-                            cacheCtx.dhtMap(nearNodeId(), topologyVersion(),
-                                (GridDhtCacheEntry)e.cached(), log, dhtEntryMap, nearEntryMap);
+                            cacheCtx.dhtMap(
+                                (GridDhtCacheEntry)e.cached(),
+                                e.explicitVersion(),
+                                log,
+                                dhtEntryMap,
+                                nearEntryMap);
                         }
 
                         break;
@@ -835,6 +859,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),
-            "dhtNodes", dhtMap.keySet(), "super", super.toString());
+            "dhtNodes", dhtMap.keySet(), "explicitLock", explicitLock, "super", super.toString());
     }
 }

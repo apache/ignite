@@ -145,14 +145,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
             int line = 0;
 
             try (GridReversedLinesFileReader reader = new GridReversedLinesFileReader(f, 4096, charset)) {
-                Collection<String> lastLines = new LinkedList<String>() {
-                    @Override public boolean add(String s) {
-                        if (size() >= HALF)
-                            removeFirst();
-
-                        return super.add(s);
-                    }
-                };
+                Deque<String> lastLines = new LinkedList<>();
 
                 String s;
                 int lastFoundLine = 0, foundCnt = 0;
@@ -194,6 +187,9 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
                             foundCnt++;
                         }
                     }
+
+                    if (lastLines.size() >= HALF)
+                        lastLines.removeFirst();
 
                     lastLines.add(s);
                 }

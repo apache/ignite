@@ -559,8 +559,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter) {
+        long accessTtl) {
         return lockAllAsyncInternal(
             keys,
             timeout,
@@ -570,7 +569,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             retval,
             isolation,
             accessTtl,
-            filter);
+            CU.empty0());
     }
 
     /**
@@ -795,6 +794,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.implicitTx(),
                                     req.implicitSingleTx(),
                                     ctx.systemTx(),
+                                    false,
                                     ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
@@ -1165,13 +1165,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 while (true) {
                     GridDistributedCacheEntry entry = peekExx(key);
 
-                    boolean created = false;
-
-                    if (entry == null) {
-                        entry = entryExx(key);
-
-                        created = true;
-                    }
+                    if (entry == null)
+                        // Nothing to unlock.
+                        break;
 
                     try {
                         entry.doneRemote(
@@ -1194,9 +1190,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 log.debug("Received unlock request for unknown candidate " +
                                     "(added to cancelled locks set): " + req);
                         }
-
-                        if (created && entry.markObsolete(req.version()))
-                            removeEntry(entry);
 
                         ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
 

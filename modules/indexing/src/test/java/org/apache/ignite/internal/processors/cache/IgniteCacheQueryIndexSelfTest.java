@@ -27,6 +27,7 @@ import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 
 /**
  * Tests for cache query index.
@@ -94,7 +95,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         assert map.entrySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert map.keySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert map.values().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
-        assert cache.localSize() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.localSize();
+        assert cache.localSize(ALL) == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.localSize();
     }
 
     /**

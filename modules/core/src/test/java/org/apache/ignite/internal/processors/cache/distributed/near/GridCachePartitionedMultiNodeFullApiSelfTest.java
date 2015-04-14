@@ -321,15 +321,15 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(Integer.valueOf(1), cache2.get(keys.get(1)));
 
         assertEquals(0, cache0.localSize(NEAR));
-        assertEquals(5, cache0.localSize() - cache0.localSize(NEAR));
+        assertEquals(5, cache0.localSize(CachePeekMode.ALL) - cache0.localSize(NEAR));
 
         IgniteCache<String, Integer> cache1 = jcache(1);
 
         assertEquals(0, cache1.localSize(NEAR));
-        assertEquals(5, cache1.localSize() - cache1.localSize(NEAR));
+        assertEquals(5, cache1.localSize(CachePeekMode.ALL) - cache1.localSize(NEAR));
 
         assertEquals(nearEnabled() ? 2 : 0, cache2.localSize(NEAR));
-        assertEquals(0, cache2.localSize() - cache2.localSize(NEAR));
+        assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
     }
 
     /**

@@ -21,13 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Pluggable ignite component.
- *
- * @author @java.author
- * @version @java.version
  */
 public interface PluginProvider<C extends PluginConfiguration> {
     /**
@@ -51,6 +49,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
+     * @param ctx Plugin context.
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
@@ -103,7 +102,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Discovery data object or {@code null} if there is nothing
      *      to send for this component.
      */
-    @Nullable public Object provideDiscoveryData(UUID nodeId);
+    @Nullable public Serializable provideDiscoveryData(UUID nodeId);
 
     /**
      * Receives plugin discovery data object from remote nodes (called
@@ -114,7 +113,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param data Discovery data object or {@code null} if nothing was
      *      sent for this component.
      */
-    public void receiveDiscoveryData(UUID nodeId, Object data);
+    public void receiveDiscoveryData(UUID nodeId, Serializable data);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator

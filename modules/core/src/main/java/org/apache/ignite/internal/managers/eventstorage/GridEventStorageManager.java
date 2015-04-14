@@ -303,7 +303,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void enableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(null, GridSecurityPermission.EVENTS_ENABLE, null);
+        ctx.security().authorize(null, SecurityPermission.EVENTS_ENABLE, null);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -346,7 +346,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(null, GridSecurityPermission.EVENTS_DISABLE, null);
+        ctx.security().authorize(null, SecurityPermission.EVENTS_DISABLE, null);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;

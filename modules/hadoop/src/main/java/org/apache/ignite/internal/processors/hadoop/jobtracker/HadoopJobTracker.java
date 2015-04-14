@@ -275,7 +275,7 @@ public class HadoopJobTracker extends HadoopComponent {
             perfCntr.onJobPrepare(jobPrepare);
             perfCntr.onJobStart(jobStart);
 
-            if (jobMetaCache().putIfAbsent(jobId, meta) != null)
+            if (jobMetaCache().getAndPutIfAbsent(jobId, meta) != null)
                 throw new IgniteCheckedException("Failed to submit job. Job with the same ID already exists: " + jobId);
 
             return completeFut;

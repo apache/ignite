@@ -453,7 +453,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         restReq.command(cmd);
 
         if (params.containsKey("ignite.login") || params.containsKey("ignite.password")) {
-            GridSecurityCredentials cred = new GridSecurityCredentials(
+            SecurityCredentials cred = new SecurityCredentials(
                 (String)params.get("ignite.login"), (String)params.get("ignite.password"));
 
             restReq.credentials(cred);

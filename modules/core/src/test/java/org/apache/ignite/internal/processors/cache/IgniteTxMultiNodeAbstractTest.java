@@ -710,11 +710,11 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache(null);
 
             // Store counter.
-            cache.put(RMVD_CNTR_KEY, 0);
+            cache.getAndPut(RMVD_CNTR_KEY, 0);
 
             // Store values.
             for (int i = 1; i <= GRID_CNT * RETRIES; i++)
-                cache.put(String.valueOf(i), i);
+                cache.getAndPut(String.valueOf(i), i);
 
             for (int j = 0; j < GRID_CNT; j++)
                 assertEquals(0, grid(j).cache(null).get(RMVD_CNTR_KEY));
