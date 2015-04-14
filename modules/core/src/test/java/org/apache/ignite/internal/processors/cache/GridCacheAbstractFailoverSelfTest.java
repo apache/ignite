@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -317,8 +318,15 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @param cache Cache.
      * @param expSize Minimum expected cache size.
+     * @throws Exception If failed.
      */
-    private void check(IgniteCache<String,Integer> cache, int expSize) {
+    private void check(final IgniteCache<String, Integer> cache, final int expSize) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache.size() >= expSize;
+            }
+        }, 5000);
+
         int size = cache.size();
 
         assertTrue("Key set size is lesser then the expected size [size=" + size + ", expSize=" + expSize + ']',
