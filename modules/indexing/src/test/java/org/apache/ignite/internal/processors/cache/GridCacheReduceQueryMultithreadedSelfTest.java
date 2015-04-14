@@ -101,15 +101,14 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         }, 1);
 
         // Create query.
-        final CacheQuery<Map.Entry<String, Integer>> sumQry =
-            c.queries().createSqlQuery(Integer.class, "_val > 0").timeout(TEST_TIMEOUT);
+        final CacheQuery<List<?>> sumQry = c.queries().createSqlFieldsQuery("select _val from Integer").timeout(TEST_TIMEOUT);
 
-        final R1<Map.Entry<String, Integer>, Integer> rmtRdc = new R1<Map.Entry<String, Integer>, Integer>() {
+        final R1<List<?>, Integer> rmtRdc = new R1<List<?>, Integer>() {
             /** */
             private AtomicInteger sum = new AtomicInteger();
 
-            @Override public boolean collect(Map.Entry<String, Integer> e) {
-                sum.addAndGet(e.getValue());
+            @Override public boolean collect(List<?> e) {
+                sum.addAndGet((Integer)e.get(0));
 
                 return true;
             }
