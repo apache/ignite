@@ -96,7 +96,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /**
      * @return Lock free instance.
      */
-    public IgniteCacheProxyLockFree<K,V> lockFree() {
+    public IgniteCacheProxyLockFree<K, V> lockFree() {
         return delegate;
     }
 
@@ -885,8 +885,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(delegate);
-
-        out.writeObject(prj);
     }
 
     /** {@inheritDoc} */
@@ -894,7 +892,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         delegate = (IgniteCacheProxyLockFree<K, V>)in.readObject();
 
-        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
+        prj = (GridCacheProjectionImpl<K, V>)delegate.delegate();
 
         gate = delegate.context().gate();
     }
