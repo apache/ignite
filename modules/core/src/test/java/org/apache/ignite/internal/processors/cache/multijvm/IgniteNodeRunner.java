@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -28,11 +27,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 
+import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Run ignite node. 
@@ -44,6 +40,8 @@ public class IgniteNodeRunner {
     }};
 
     public static final char DELIM = ' ';
+    
+    public static final String CACHE_CONFIGURATION_TMP_FILE = "/tmp/cacheConfiguration.tmp";
 
     public static void main(String[] args) throws Exception {
         try {
@@ -53,7 +51,7 @@ public class IgniteNodeRunner {
 
             IgniteConfiguration cfg = configuration(args);
 
-//            cfg.setCacheConfiguration(cacheConfiguration());
+            cfg.setCacheConfiguration(cacheConfiguration());
 
             Ignite ignite = Ignition.start(cfg);
         }
@@ -68,7 +66,7 @@ public class IgniteNodeRunner {
         return id.toString() + DELIM + cfg.getGridName();
     }
 
-    public static IgniteConfiguration configuration(String[] args) {
+    public static IgniteConfiguration configuration(String[] args) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
@@ -86,29 +84,26 @@ public class IgniteNodeRunner {
         return cfg;
     }
 
-    // TODO implement.
-    private static CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+    public static void storeToFile(CacheConfiguration cc) throws IOException {
+        // TODO use actual config.
+        cc = new CacheConfiguration();
+        
+        File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
 
-        cfg.setStartSize(1024);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(new NearCacheConfiguration());
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setEvictionPolicy(null);
+        ccfgTmpFile.createNewFile();
+//        if (!ccfgTmpFile.createNewFile())
+//            throw new IgniteSpiException("File was not created.");
+        
+        try(ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ccfgTmpFile))) {
+            out.writeObject(cc);
+        }
+    }
 
-//        if (offHeapValues()) {
-//            ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
-//            ccfg.setOffHeapMaxMemory(0);
-//        }
-
-        cfg.setEvictSynchronized(false);
-
-//        cfg.setAtomicityMode(atomicityMode());
-        cfg.setSwapEnabled(true);
-
-        cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-
-        return cfg;
+    public static CacheConfiguration cacheConfiguration() throws Exception {
+        File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
+        
+        try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(ccfgTmpFile))) {
+            return (CacheConfiguration)in.readObject();
+        }
     }
 }

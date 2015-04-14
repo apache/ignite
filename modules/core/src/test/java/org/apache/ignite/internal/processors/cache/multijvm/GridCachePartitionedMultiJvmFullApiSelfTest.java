@@ -52,13 +52,20 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         super.afterTestsStopped();
     }
 
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest(); // TODO: CODE: implement.
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration rmtCfg = IgniteNodeRunner.configuration(null);
+        IgniteConfiguration cfg = IgniteNodeRunner.configuration(null);
         
-        rmtCfg.setGridName(gridName);
+        cfg.setGridName(gridName);
 
-        return rmtCfg; // TODO: change.
+//        cfg.setCacheConfiguration(super.getConfiguration(gridName).getCacheConfiguration());
+        cfg.setCacheConfiguration(new CacheConfiguration());
+
+        return cfg; // TODO: change.
     }
 
     /** {@inheritDoc} */
@@ -89,7 +96,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         try {
             IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-            IgniteExProxy proxy = new IgniteExProxy(cfg, locIgnite);
+            IgniteExProxy proxy = new IgniteExProxy(cfg, log, locIgnite);
 
             ignites.put(gridName, proxy);
 
@@ -127,23 +134,27 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteEx grid0 = grid(0);
+//        IgniteEx grid0 = grid(0);
+//kill -9 16067
+//        IgniteCache<Object, Object> c0 = grid0.cache(null);
+//
+//        IgniteEx grid1 = grid(1);
+//
+//        IgniteCache<Object, Object> c1 = grid1.cache(null);
+//
+//        c0.putAll(putMap);
+//
+//        atomicClockModeDelay(c0);
+//
+//        c1.removeAll(putMap.keySet());
+//
+//        for (int i = 0; i < size; i++) {
+//            assertNull(c0.get(i));
+//            assertNull(c1.get(i));
+//        }
         
-        IgniteCache<Object, Object> c0 = grid0.cache(null);
-        
-        IgniteEx grid1 = grid(1);
-        
-        IgniteCache<Object, Object> c1 = grid1.cache(null);
+        for (IgniteExProxy ignite : ignites.values())
+            ignite.getProcess().kill();
 
-        c0.putAll(putMap);
-
-        atomicClockModeDelay(c0);
-
-        c1.removeAll(putMap.keySet());
-
-        for (int i = 0; i < size; i++) {
-            assertNull(c0.get(i));
-            assertNull(c1.get(i));
-        }
     }
 }

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
@@ -49,12 +50,22 @@ public class IgniteExProxy implements IgniteEx {
     private final IgniteLogger log;
     private final UUID id = UUID.randomUUID();
 
-    public IgniteExProxy(final IgniteConfiguration cfg, final Ignite locJvmGrid) throws Exception {
+    public IgniteExProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = locJvmGrid.log();
+        this.log = log;
 
         String cfgAsString = IgniteNodeRunner.asParams(id, cfg);
+        IgniteNodeRunner.storeToFile(cfg.getCacheConfiguration()[0]);
+
+        List<String> jvmArgs = U.jvmArgs();
+        
+        List<String> filteredJvmArgs = new ArrayList<>();
+
+        for (String arg : jvmArgs) {
+            if(!arg.toLowerCase().startsWith("-agentlib"))
+                filteredJvmArgs.add(arg);
+        }
         
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
@@ -67,7 +78,7 @@ public class IgniteExProxy implements IgniteEx {
                 }
             },
             null,
-            Collections.<String>emptyList(), // JVM Args.
+            filteredJvmArgs, // JVM Args.
             System.getProperty("surefire.test.class.path")
         );
         
@@ -242,7 +253,7 @@ public class IgniteExProxy implements IgniteEx {
         return locJvmGrid.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
             @Override public IgniteCache<K,V> apply(Set<String> objects) {
                 X.println(">>>>> Cache");
-                
+
                 return Ignition.ignite().cache(name);
             }
         }, Collections.<String>emptySet());
