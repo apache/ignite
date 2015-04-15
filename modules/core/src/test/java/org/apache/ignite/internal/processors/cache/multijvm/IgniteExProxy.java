@@ -26,7 +26,6 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -250,13 +249,27 @@ public class IgniteExProxy implements IgniteEx {
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
         ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
-        return locJvmGrid.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
-            @Override public IgniteCache<K,V> apply(Set<String> objects) {
-                X.println(">>>>> Cache");
-
-                return Ignition.ignite().cache(name);
+        locJvmGrid.compute().broadcast(new IgniteRunnable() {
+            @Override public void run() {
+                System.out.println(">>>>> trololo");
             }
-        }, Collections.<String>emptySet());
+        });
+        
+//        locJvmGrid.compute(grp).run(new IgniteRunnable() {
+//            @Override public void run() {
+//                X.println(">>>>> trololo");
+//            }
+//        });
+
+//        return locJvmGrid.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
+//            @Override public IgniteCache<K,V> apply(Set<String> objects) {
+//                X.println(">>>>> Cache");
+//
+//                return Ignition.ignite().cache(name);
+//            }
+//        }, Collections.<String>emptySet());
+//
+        return null;
     }
 
     @Override public IgniteTransactions transactions() {

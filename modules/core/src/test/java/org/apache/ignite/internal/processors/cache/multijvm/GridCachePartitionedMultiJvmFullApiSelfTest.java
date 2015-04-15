@@ -134,24 +134,24 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-//        IgniteEx grid0 = grid(0);
-//kill -9 16067
-//        IgniteCache<Object, Object> c0 = grid0.cache(null);
-//
-//        IgniteEx grid1 = grid(1);
-//
-//        IgniteCache<Object, Object> c1 = grid1.cache(null);
-//
-//        c0.putAll(putMap);
-//
-//        atomicClockModeDelay(c0);
-//
-//        c1.removeAll(putMap.keySet());
-//
-//        for (int i = 0; i < size; i++) {
-//            assertNull(c0.get(i));
-//            assertNull(c1.get(i));
-//        }
+        IgniteEx grid0 = grid(0);
+        
+        IgniteCache<Object, Object> c0 = grid0.cache(null);
+
+        IgniteEx grid1 = grid(1);
+
+        IgniteCache<Object, Object> c1 = grid1.cache(null);
+
+        c0.putAll(putMap);
+
+        atomicClockModeDelay(c0);
+
+        c1.removeAll(putMap.keySet());
+
+        for (int i = 0; i < size; i++) {
+            assertNull(c0.get(i));
+            assertNull(c1.get(i));
+        }
         
         for (IgniteExProxy ignite : ignites.values())
             ignite.getProcess().kill();
