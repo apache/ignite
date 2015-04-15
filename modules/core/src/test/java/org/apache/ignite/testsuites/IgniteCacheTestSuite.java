@@ -341,6 +341,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Cache metrics.
         suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
 
+        // Topology validator.
+        suite.addTest(IgniteTopologyValidatorTestSuit.suite());
+
         // Eviction.
         suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
 
