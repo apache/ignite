@@ -100,5 +100,55 @@
                 </fileSets>
             </sources>
         </moduleSet>
+
+        <moduleSet>
+            <includeSubModules>true</includeSubModules>
+            <excludes>
+                <exclude>org.apache.ignite:ignite-core</exclude>
+                <exclude>org.apache.ignite:ignite-clients</exclude>
+                <exclude>org.apache.ignite:ignite-spring</exclude>
+                <exclude>org.apache.ignite:ignite-tools</exclude>
+                <exclude>org.apache.ignite:ignite-extdata-p2p</exclude>
+                <exclude>org.apache.ignite:ignite-extdata-uri</exclude>
+                <exclude>org.apache.ignite:ignite-examples</exclude>
+                <exclude>org.apache.ignite:ignite-indexing</exclude>
+                <exclude>org.apache.ignite:ignite-visor-console</exclude>
+                <exclude>org.apache.ignite:ignite-visor-plugins</exclude>
+                <exclude>org.apache.ignite:ignite-visor-trial</exclude>
+                <exclude>org.apache.ignite:ignite-hadoop</exclude>
+                <exclude>org.apache.ignite:ignite-schema-import</exclude>
+                <exclude>org.apache.ignite:ignite-codegen</exclude>
+            </excludes>
+            <sources>
+                <includeModuleDirectory>true</includeModuleDirectory>
+                <outputDirectoryMapping>optional/${module.artifactId}</outputDirectoryMapping>
+                <fileSets>
+                    <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>README.txt</include>
+                            <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
+                    <fileSet>
+                        <directory>target/libs</directory>
+                        <outputDirectory>/</outputDirectory>
+                    </fileSet>
+                    <fileSet>
+                        <directory>target</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>*.jar</include>
+                        </includes>
+                        <excludes>
+                            <exclude>*-tests.jar</exclude>
+                            <exclude>*-javadoc.jar</exclude>
+                            <exclude>*-sources.jar</exclude>
+                        </excludes>
+                    </fileSet>
+                </fileSets>
+            </sources>
+        </moduleSet>
     </moduleSets>
 </assembly>

@@ -77,7 +77,6 @@
                         <directory>${basedir}</directory>
                         <outputDirectory>/</outputDirectory>
                         <includes>
-                            <include>README.txt</include>
                             <include>licenses/**</include>
                         </includes>
                     </fileSet>

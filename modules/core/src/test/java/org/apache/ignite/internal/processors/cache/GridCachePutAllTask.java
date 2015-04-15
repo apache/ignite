@@ -26,6 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -91,6 +92,8 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
                     int cnt = 0;
 
+                    final int RETRIES = 5;
+
                     while (it.hasNext()) {
                         Integer val = it.next();
 
@@ -102,7 +105,19 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                             else
                                 log.info("Putting keys to cache [size=" + putMap.size() + ']');
 
-                            cache.putAll(putMap);
+                            for (int i = 0; i < RETRIES; i++) {
+                                try {
+                                    cache.putAll(putMap);
+
+                                    break;
+                                }
+                                catch (CacheException e) {
+                                    if (i < RETRIES - 1)
+                                        log.info("Put error, will retry: " + e);
+                                    else
+                                        throw new IgniteException(e);
+                                }
+                            }
 
                             cnt = 0;
 
@@ -118,7 +133,19 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                     else
                         log.info("Putting keys to cache [size=" + putMap.size() + ']');
 
-                    cache.putAll(putMap);
+                    for (int i = 0; i < RETRIES; i++) {
+                        try {
+                            cache.putAll(putMap);
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            if (i < RETRIES - 1)
+                                log.info("Put error, will retry: " + e);
+                            else
+                                throw new IgniteException(e);
+                        }
+                    }
 
                     if (DEBUG_DATA)
                         log.info("Finished putting data: " + data);
