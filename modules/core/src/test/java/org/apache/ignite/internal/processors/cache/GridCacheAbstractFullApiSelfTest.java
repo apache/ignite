@@ -4623,7 +4623,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         tx = txs.txStart(txConcurrency, txIsolation);
 
-        //assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+        assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
 
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
