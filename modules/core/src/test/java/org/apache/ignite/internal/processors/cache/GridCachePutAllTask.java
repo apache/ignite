@@ -91,6 +91,8 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
                     int cnt = 0;
 
+                    final int RETRIES = 5;
+
                     while (it.hasNext()) {
                         Integer val = it.next();
 
@@ -102,7 +104,19 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                             else
                                 log.info("Putting keys to cache [size=" + putMap.size() + ']');
 
-                            cache.putAll(putMap);
+                            for (int i = 0; i < RETRIES; i++) {
+                                try {
+                                    cache.putAll(putMap);
+
+                                    break;
+                                }
+                                catch (IgniteException e) {
+                                    if (i < RETRIES - 1)
+                                        log.info("Put error, will retry: " + e);
+                                    else
+                                        throw e;
+                                }
+                            }
 
                             cnt = 0;
 
@@ -118,7 +132,19 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                     else
                         log.info("Putting keys to cache [size=" + putMap.size() + ']');
 
-                    cache.putAll(putMap);
+                    for (int i = 0; i < RETRIES; i++) {
+                        try {
+                            cache.putAll(putMap);
+
+                            break;
+                        }
+                        catch (IgniteException e) {
+                            if (i < RETRIES - 1)
+                                log.info("Put error, will retry: " + e);
+                            else
+                                throw e;
+                        }
+                    }
 
                     if (DEBUG_DATA)
                         log.info("Finished putting data: " + data);
