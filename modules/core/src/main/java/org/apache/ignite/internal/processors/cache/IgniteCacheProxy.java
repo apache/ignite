@@ -41,8 +41,7 @@ import java.util.concurrent.locks.*;
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
-    implements IgniteCache<K, V>, Externalizable {
+public class IgniteCacheProxy<K, V> implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -75,8 +74,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         @Nullable GridCacheProjectionImpl<K, V> prj,
         boolean async
     ) {
-        super(async);
-
         assert ctx != null;
 
         gate = ctx.gate();
@@ -141,6 +138,24 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             gate.leave(prev);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAsync() {
+        if (isAsync())
+            return this;
+
+        return new IgniteCacheProxy<>(context(), delegate(), prj, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAsync() {
+        return lockFreeCache.isAsync();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> IgniteFuture<R> future() {
+        return lockFreeCache.future();
     }
 
     /** {@inheritDoc} */
@@ -792,11 +807,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         finally {
             gate.leave(prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteCache<K, V> createAsyncInstance() {
-        return lockFreeCache.createAsyncInstance();
     }
 
     /**
