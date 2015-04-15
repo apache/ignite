@@ -892,7 +892,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         lockFreeCache = (IgniteCacheProxyLockFree<K, V>)in.readObject();
 
-        prj = (GridCacheProjectionImpl<K, V>) lockFreeCache.delegate();
+        prj = lockFreeCache.projection();
 
         gate = lockFreeCache.context().gate();
     }

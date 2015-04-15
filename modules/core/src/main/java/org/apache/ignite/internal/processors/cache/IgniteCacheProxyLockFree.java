@@ -116,6 +116,10 @@ public class IgniteCacheProxyLockFree <K, V> extends AsyncSupportAdapter<IgniteC
         return ctx;
     }
 
+    public GridCacheProjectionImpl<K,V> projection() {
+        return prj;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         return ctx.cache().metrics();
