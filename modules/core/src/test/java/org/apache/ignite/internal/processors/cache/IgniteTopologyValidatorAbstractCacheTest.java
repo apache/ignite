@@ -30,6 +30,9 @@ import java.util.*;
  * Topology validator test
  */
 public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
+    /** key-value used at test */
+    protected static String KEY_VALUE = "1";
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -51,13 +54,15 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     }
 
     /**
-     * Puts before validator passed.
+     * Puts before topology is valid.
      */
     protected void putBefore(Transaction tx) {
         try {
-            jcache().put("1", "1");
+            jcache().put(KEY_VALUE, KEY_VALUE);
+
             if (tx != null)
                 tx.commit();
+
             assert false : "topology validation broken";
         }
         catch (IgniteException | CacheException ex) {
@@ -66,13 +71,18 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     }
 
     /**
-     * Puts when validator passed.
+     * Puts when topology is valid.
      */
     protected void putAfter(Transaction tx) {
         try {
-            jcache().put("1", "1");
+            assert jcache().get(KEY_VALUE) == null;
+
+            jcache().put(KEY_VALUE, KEY_VALUE);
+
             if (tx != null)
                 tx.commit();
+
+            assert jcache().get(KEY_VALUE).equals(KEY_VALUE);
         }
         catch (IgniteException | CacheException ex) {
             assert false : "topology validation broken";

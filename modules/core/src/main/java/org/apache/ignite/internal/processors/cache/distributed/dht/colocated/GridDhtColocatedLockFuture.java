@@ -554,6 +554,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (cctx.topology().stopping()) {
                 onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
                     cctx.name()));
+
                 return;
             }
 
@@ -563,6 +564,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 if (!fut.isCacheTopologyValid(cctx))   {
                     onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
                         cctx.name()));
+
                     return;
                 }
 

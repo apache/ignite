@@ -839,7 +839,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         Map<Integer, Boolean> m = new HashMap<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (!CU.isSystemCache(cacheCtx.name()) && (cacheCtx.config().getTopologyValidator() != null))
+            if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name()))
                 m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
         }
 

@@ -55,7 +55,7 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
             putAfter(tx);
         }
 
-        jcache().remove("1");
+        jcache().remove(KEY_VALUE);
 
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             putAfter(tx);
