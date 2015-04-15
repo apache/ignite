@@ -626,7 +626,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cfg.setUserAttributes(ImmutableMap.of("segment", "master"));
 
             // For sure.
-            failoverSpi.setMaximumFailoverAttempts(50);
+            failoverSpi.setMaximumFailoverAttempts(100);
 
             cfg.setFailoverSpi(failoverSpi);
         }
