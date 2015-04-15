@@ -33,9 +33,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  * <p>
  * This example uses {@link CacheJdbcPersonStore} as a persistent store.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
- * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
