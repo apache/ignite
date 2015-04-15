@@ -1168,7 +1168,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rdcQryExec.start(ctx, this);
         }
 
-//        registerMBean(gridName, this, GridH2IndexingSpiMBean.class); TODO
+        // TODO https://issues.apache.org/jira/browse/IGNITE-751
+        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**

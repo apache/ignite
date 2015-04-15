@@ -144,4 +144,11 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param evt Event.
      */
     public void sendCustomEvent(Serializable evt);
+
+    /**
+     * Initiates failure of provided node.
+     *
+     * @param nodeId Node ID.
+     */
+    public void failNode(UUID nodeId);
 }

@@ -1358,6 +1358,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @return Whether node is failed.
+     */
+    public boolean tryFailNode(UUID nodeId) {
+        if (!getSpi().pingNode(nodeId)) {
+            getSpi().failNode(nodeId);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.
