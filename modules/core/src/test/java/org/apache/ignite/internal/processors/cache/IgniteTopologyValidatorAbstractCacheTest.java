@@ -18,41 +18,21 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-
-public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest implements Serializable {
+/**
+ * Topology validator test
+ */
+public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -70,22 +50,42 @@ public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest im
         return iCfg;
     }
 
+    /**
+     * Puts before validator passed.
+     */
+    protected void putBefore(Transaction tx) {
+        try {
+            jcache().put("1", "1");
+            if (tx != null)
+                tx.commit();
+            assert false : "topology validation broken";
+        }
+        catch (IgniteException | CacheException ex) {
+            assert ex.getCause() instanceof IgniteCheckedException && ex.getCause().getMessage().contains("cache topology is not valid");
+        }
+    }
+
+    /**
+     * Puts when validator passed.
+     */
+    protected void putAfter(Transaction tx) {
+        try {
+            jcache().put("1", "1");
+            if (tx != null)
+                tx.commit();
+        }
+        catch (IgniteException | CacheException ex) {
+            assert false : "topology validation broken";
+        }
+    }
+
     /** topology validator test */
     public void testTopologyValidator() throws Exception {
 
-        try {
-            jcache().put("1", "1");
-            assert false : "topology validation broken";
-        }catch (CacheException ex){
-            //No-op
-        }
+        putBefore(null);
 
-        startGrid(2);
+        startGrid(1);
 
-        try {
-            jcache().put("1", "1");
-        }catch (CacheException ex){
-            assert false : "topology validation broken";
-        }
+        putAfter(null);
     }
 }

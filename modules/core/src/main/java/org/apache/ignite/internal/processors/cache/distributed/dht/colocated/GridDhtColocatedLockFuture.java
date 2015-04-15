@@ -554,7 +554,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (cctx.topology().stopping()) {
                 onDone(new IgniteCheckedException("Failed to perform cache operation (cache is stopped): " +
                     cctx.name()));
-
                 return;
             }
 
