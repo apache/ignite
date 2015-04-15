@@ -697,6 +697,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
             U.warn(log, ">>> " + fut);
+
+        U.warn(log, "Pending atomic cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().atomicFutures())
+            U.warn(log, ">>> " + fut);
     }
 
     /**
