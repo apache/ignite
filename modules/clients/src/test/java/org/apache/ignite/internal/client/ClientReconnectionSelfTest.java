@@ -183,6 +183,8 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIdleConnection() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-590");
+
         int srvsCnt = 4; // TODO: IGNITE-590 it may be wrong value. Need to investigate after IGNITE-590 will be fixed.
         
         for (int i = 0; i < srvsCnt; i++)

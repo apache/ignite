@@ -32,11 +32,12 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <ignite.site>scp://localhost:/home</ignite.site>
+        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}-incubating</ignite.zip.pattern>
     </properties>
 
     <scm>
@@ -319,15 +320,15 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <zip destfile="${basedir}/target/ignite-${ignite.edition}-${project.version}-incubating.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}-incubating" filemode="755">
+                                        <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="ignite-${ignite.edition}-${project.version}-incubating">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -364,23 +365,6 @@
                             </execution>
 
                             <execution>
-                                <id>dependencies-optional</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml
-                                        </descriptor>
-                                    </descriptors>
-                                    <outputDirectory>${basedir}/target/release-package/libs</outputDirectory>
-                                    <finalName>optional</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>release</id>
                                 <phase>prepare-package</phase>
                                 <goals>
@@ -408,7 +392,6 @@
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
 
@@ -425,7 +408,6 @@
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
 
@@ -442,10 +424,17 @@
                                     <outputDirectory>target/release-package</outputDirectory>
                                     <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -545,10 +534,11 @@
                                               tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false"/>
                                         <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1"
                                               tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false"/>
-                                        <copy file="${basedir}/target/ignite-fabric-${project.version}-incubating.zip"
-                                              toDir="${basedir}/target/site" failonerror="false"/>
-                                        <copy file="${basedir}/target/ignite-hadoop-${project.version}-incubating.zip"
-                                              toDir="${basedir}/target/site" failonerror="false"/>
+                                        <copy todir="${basedir}/target/site">
+                                            <fileset dir="${basedir}/target/bin">
+                                                <include name="**/*"/>
+                                            </fileset>
+                                        </copy>
                                         <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
                                     </target>
                                 </configuration>
