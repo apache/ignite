@@ -4287,11 +4287,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean affinityNode() {
-        return ctx.affinityNode();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
         return igfsDataCache;
     }

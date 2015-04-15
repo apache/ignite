@@ -215,9 +215,4 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * @return Future that will be completed when rebalancing is finished.
      */
     public IgniteInternalFuture<?> forceRepartition();
-
-    /**
-     * @return {@code True} if local node is affinity node.
-     */
-    public boolean affinityNode();
 }
