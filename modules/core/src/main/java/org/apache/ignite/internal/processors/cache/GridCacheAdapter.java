@@ -3603,7 +3603,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
+    @Nullable public Cache.Entry<K, V> randomEntry() {
         GridCacheMapEntry e = map.randomEntry();
 
         return e == null || e.obsolete() ? null : e.<K, V>wrapLazyValue();

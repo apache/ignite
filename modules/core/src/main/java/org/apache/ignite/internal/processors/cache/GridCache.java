@@ -179,22 +179,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
     public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
 
     /**
-     * Gets a random entry out of cache. In the worst cache scenario this method
-     * has complexity of <pre>O(S * N/64)</pre> where {@code N} is the size of internal hash
-     * table and {@code S} is the number of hash table buckets to sample, which is {@code 5}
-     * by default. However, if the table is pretty dense, with density factor of {@code N/64},
-     * which is true for near fully populated caches, this method will generally perform significantly
-     * faster with complexity of O(S) where {@code S = 5}.
-     * <p>
-     * Note that this method is not available on {@link CacheProjection} API since it is
-     * impossible (or very hard) to deterministically return a number value when pre-filtering
-     * and post-filtering is involved (e.g. projection level predicate filters).
-     *
-     * @return Random entry, or {@code null} if cache is empty.
-     */
-    @Nullable public Cache.Entry<K, V> randomEntry();
-
-    /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
      * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
