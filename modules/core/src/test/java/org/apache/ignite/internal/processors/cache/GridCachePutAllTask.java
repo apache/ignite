@@ -115,7 +115,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                                     if (i < RETRIES - 1)
                                         log.info("Put error, will retry: " + e);
                                     else
-                                        throw e;
+                                        throw new IgniteException(e);
                                 }
                             }
 
@@ -143,7 +143,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                             if (i < RETRIES - 1)
                                 log.info("Put error, will retry: " + e);
                             else
-                                throw e;
+                                throw new IgniteException(e);
                         }
                     }
 
