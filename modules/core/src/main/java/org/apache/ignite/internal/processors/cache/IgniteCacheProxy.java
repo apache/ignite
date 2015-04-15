@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -334,7 +335,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             fut = qry.execute();
         }
         else if (filter instanceof SpiQuery) {
-            qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
+            qry = delegate.queries().createSpiQuery();
 
             if (grp != null)
                 qry.projection(grp);
@@ -451,6 +452,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
+            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
             validate(qry);
 
             if (qry instanceof ContinuousQuery)

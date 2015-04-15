@@ -107,7 +107,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
 
                 assert cache != null;
 
-                Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
+                Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
 
                 Map<String, Map<String, Map<String, String>>> schemasMap = U.newHashMap(metas.size());
 
