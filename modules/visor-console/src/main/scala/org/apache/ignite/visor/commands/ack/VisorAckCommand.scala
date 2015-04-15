@@ -105,12 +105,7 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try {
-                val nodeIds = ignite.cluster().nodes().map(_.id())
-
-                ignite.compute(ignite.cluster().forNodeIds(nodeIds))
-                    .withName("visor-ack")
-                    .withNoFailover()
-                    .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))
+                executeAll(classOf[VisorAckTask], msg)
             }
             catch {
                 case _: ClusterGroupEmptyException => scold("Topology is empty.")

@@ -499,11 +499,11 @@ class VisorCacheCommand {
 
             val nids = prj.nodes().map(_.id())
 
-            val caches: JavaCollection[String] = new JavaList[String]()
+            val caches: JavaCollection[String] = new JavaList[String](1)
             name.foreach(caches.add)
 
-            ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches))).toList
+            executeMulti(nids, classOf[VisorCacheMetricsCollectorTask],
+                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches)).toList
         }
         catch {
             case e: IgniteException => Nil
