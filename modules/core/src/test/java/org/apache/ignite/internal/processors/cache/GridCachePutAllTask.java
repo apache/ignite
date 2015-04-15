@@ -26,6 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -110,7 +111,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
                                     break;
                                 }
-                                catch (IgniteException e) {
+                                catch (CacheException e) {
                                     if (i < RETRIES - 1)
                                         log.info("Put error, will retry: " + e);
                                     else
@@ -138,7 +139,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
                             break;
                         }
-                        catch (IgniteException e) {
+                        catch (CacheException e) {
                             if (i < RETRIES - 1)
                                 log.info("Put error, will retry: " + e);
                             else
