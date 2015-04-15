@@ -827,7 +827,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             GridCacheProjectionImpl<K1, V1> prj0 = new GridCacheProjectionImpl<>(
-                (CacheProjection<K1, V1>)(prj != null ? prj : lockFreeCache),
+                (CacheProjection<K1, V1>)(prj != null ? prj : lockFreeCache.delegate()),
                 (GridCacheContext<K1, V1>)context(),
                 prj != null && prj.skipStore(),
                 prj != null ? prj.subjectId() : null,
