@@ -40,7 +40,7 @@ Specify gpg profile at settings.xml. It will be used to sign sources and artifac
    </properties>
 </profile>
 
-Configure access to people.apache.org/~<username>. In necessary upload sources to site.
+Configure access to people.apache.org/~<username>. It necessary upload sources to site.
 See https://blogs.apache.org/infra/entry/committer_shell_access_to_people for details.
 Specify ignite-site server at settings.xml.
 
