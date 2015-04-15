@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -246,8 +247,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 cache.put("key" + i, i);
         }
         catch (CacheException e) {
-            // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class) && !(e instanceof CachePartialUpdateException))
                 throw e;
         }
     }
@@ -297,8 +297,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 cache.remove("key" + i);
         }
         catch (CacheException e) {
-            // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class) && !(e instanceof CachePartialUpdateException))
                 throw e;
         }
     }
