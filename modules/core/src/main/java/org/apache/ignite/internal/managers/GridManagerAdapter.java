@@ -536,6 +536,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.io().messageFactory();
                     }
 
+                    @Override public boolean tryFailNode(UUID nodeId) {
+                        return ctx.discovery().tryFailNode(nodeId);
+                    }
+
                     /**
                      * @param e Exception to handle.
                      * @return GridSpiException Converted exception.
