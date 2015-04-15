@@ -316,7 +316,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     GridCacheOperation.NOOP,
                                     null /*Value.*/,
                                     null /*dr version*/,
-                                    req.skipStore(i));
+                                    req.skipStore());
                             }
 
                             // Add remote candidate before reordering.

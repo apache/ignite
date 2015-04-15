@@ -868,7 +868,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             inTx() && tx.partitionLock(),
                                             inTx() ? tx.subjectId() : null,
                                             inTx() ? tx.taskNameHash() : 0,
-                                            read ? accessTtl : -1L);
+                                            read ? accessTtl : -1L,
+                                            cctx.skipStore());
 
                                         mapping.request(req);
                                     }
@@ -882,8 +883,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         key,
                                         retval && dhtVer == null,
                                         dhtVer, // Include DHT version to match remote DHT entry.
-                                        cctx,
-                                        entry.context().skipStore());
+                                        cctx);
                                 }
 
                                 if (cand.reentry())

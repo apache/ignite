@@ -732,7 +732,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
-                                        read ? accessTtl : -1L);
+                                        read ? accessTtl : -1L,
+                                        cctx.skipStore());
 
                                     mapping.request(req);
                                 }
@@ -746,8 +747,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                     key,
                                     retval,
                                     dhtVer, // Include DHT version to match remote DHT entry.
-                                    cctx,
-                                    entry.context().skipStore());
+                                    cctx);
                             }
 
                             explicit = inTx() && cand == null;

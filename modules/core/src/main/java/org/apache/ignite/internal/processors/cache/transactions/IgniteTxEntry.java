@@ -422,7 +422,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      *
      * @param skipStore Skip store flag.
      */
-    private void skipStore(boolean skipStore){
+    public void skipStore(boolean skipStore){
         flags = skipStore ? (byte)(flags | 0x1) : (byte)(flags & 0xFE);
     }
 

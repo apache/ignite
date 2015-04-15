@@ -88,10 +88,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private boolean partLock;
 
     /**
-     * Arrays with flags. Each flag corresponds to key from keys list.
-     * Bit 1 in a flag holds skipStore value.
+     * Additional flags.
+     * Bit 1 - for skipStore flag value.
      */
-    private byte[] flags;
+    private byte flags;
 
     /**
      * Empty constructor.
@@ -116,6 +116,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction request and whole partition is
      *      locked.
+     * @param skipStore Skip store flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -132,7 +133,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int keyCnt,
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
-        boolean partLock
+        boolean partLock,
+        boolean skipStore
     ) {
         super(lockVer, keyCnt);
 
@@ -155,7 +157,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.partLock = partLock;
 
         retVals = new boolean[keyCnt];
-        flags = new byte[keyCnt];
+
+        skipStore(skipStore);
     }
 
     /**
@@ -225,10 +228,18 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param idx Key index.
+     * Sets skip store flag value.
+     *
+     * @param skipStore Skip store flag.
+     */
+    private void skipStore(boolean skipStore){
+        flags = skipStore ? (byte)(flags | 0x1) : (byte)(flags & 0xFE);
+    }
+
+    /**
      * @return Skip store flag.
      */
-    public boolean skipStore(int idx) { return (flags[idx] & 0x1) == 1; }
+    public boolean skipStore() { return (flags & 0x1) == 1; };
 
     /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.
@@ -251,15 +262,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param retVal Flag indicating whether value should be returned.
      * @param cands Candidates.
      * @param ctx Context.
-     * @param skipStore Skip store for the key.
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
         KeyCacheObject key,
         boolean retVal,
         @Nullable Collection<GridCacheMvccCandidate> cands,
-        GridCacheContext ctx,
-        boolean skipStore
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
@@ -269,8 +278,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         candidatesByIndex(idx, cands);
 
         retVals[idx] = retVal;
-
-        flags[idx] = skipStore ? (byte)(flags[idx] | 0x1) : (byte)(flags[idx] & 0xFE);
 
         idx++;
     }
@@ -351,7 +358,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeByteArray("flags", flags))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
@@ -457,7 +464,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         switch (reader.state()) {
             case 8:
-                flags = reader.readByteArray("flags");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;

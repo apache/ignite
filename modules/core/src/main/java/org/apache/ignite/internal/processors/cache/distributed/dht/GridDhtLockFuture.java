@@ -830,7 +830,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
                         inTx() ? tx.taskNameHash() : 0,
-                        read ? accessTtl : -1L);
+                        read ? accessTtl : -1L,
+                        cctx.skipStore());
 
                     try {
                         for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext();) {
@@ -867,8 +868,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             req.addDhtKey(
                                 e.key(),
                                 invalidateRdr,
-                                cctx,
-                                e.context().skipStore());
+                                cctx);
 
                             if (needVal) {
                                 // Mark last added key as needed to be preloaded.
@@ -957,7 +957,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
-                if (!entry.hasValue())
+                if (!entry.hasValue() && !tx.entry(entry.txKey()).skipStore())
                     loadMap.put(entry.key(), entry);
             }
 

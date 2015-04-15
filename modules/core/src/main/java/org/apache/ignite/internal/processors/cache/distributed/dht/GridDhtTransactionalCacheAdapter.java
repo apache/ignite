@@ -221,7 +221,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 null,
                                 req.accessTtl(),
-                                req.skipStore(i));
+                                req.skipStore());
 
                             if (req.groupLock())
                                 tx.groupLockKey(txKey);
@@ -841,7 +841,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.messageId(),
                                 req.txRead(),
                                 req.needReturnValue(),
-                                req.accessTtl());
+                                req.accessTtl(),
+                                req.skipStore());
 
                             final GridDhtTxLocal t = tx;
 

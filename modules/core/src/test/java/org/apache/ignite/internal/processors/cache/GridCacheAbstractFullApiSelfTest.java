@@ -4426,19 +4426,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertTrue(map.size() == 0);
 
         if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
-            /*checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
                 TransactionIsolation.READ_COMMITTED);
             checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
                 TransactionIsolation.REPEATABLE_READ);
             checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
-                TransactionIsolation.SERIALIZABLE);*/
+                TransactionIsolation.SERIALIZABLE);
 
-            //checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
-            //    TransactionIsolation.READ_COMMITTED);
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
+                TransactionIsolation.READ_COMMITTED);
             checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
                TransactionIsolation.REPEATABLE_READ);
-            //checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
-            //    TransactionIsolation.SERIALIZABLE);
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
+                TransactionIsolation.SERIALIZABLE);
         }
     }
 

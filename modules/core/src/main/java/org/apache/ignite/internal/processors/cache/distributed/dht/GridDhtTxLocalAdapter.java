@@ -530,6 +530,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param msgId Message ID.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
+     * @param skipStore Skip store flag.
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -540,7 +541,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long msgId,
         final boolean read,
         final boolean needRetVal,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore
     ) {
         try {
             checkValid();
@@ -592,6 +594,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         -1L,
                         -1L,
                         null);
+
+                    txEntry.skipStore(skipStore);
 
                     if (read)
                         txEntry.ttl(accessTtl);

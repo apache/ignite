@@ -106,6 +106,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
+     * @param skipStore Skip store flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -128,7 +129,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore
     ) {
         super(cacheId,
             nodeId,
@@ -144,7 +146,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             dhtCnt == 0 ? nearCnt : dhtCnt,
             txSize,
             grpLockKey,
-            partLock);
+            partLock,
+            skipStore);
 
         this.topVer = topVer;
 
@@ -217,18 +220,16 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
      * @param ctx Context.
-     * @param skipStore Skip store for the key.
      * @throws IgniteCheckedException If failed.
      */
     public void addDhtKey(
         KeyCacheObject key,
         boolean invalidateEntry,
-        GridCacheContext ctx,
-        boolean skipStore
+        GridCacheContext ctx
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, null, ctx, skipStore);
+        addKeyBytes(key, false, null, ctx);
     }
 
     /**
