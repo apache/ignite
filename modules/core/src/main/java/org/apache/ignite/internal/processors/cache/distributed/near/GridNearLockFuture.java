@@ -289,8 +289,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @Nullable private GridCacheMvccCandidate addEntry(
-        AffinityTopologyVersion topVer, 
-        GridNearCacheEntry entry, 
+        AffinityTopologyVersion topVer,
+        GridNearCacheEntry entry,
         UUID dhtNodeId
     ) throws GridCacheEntryRemovedException {
         // Check if lock acquisition is timed out.
@@ -693,6 +693,12 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (!fut.isCacheTopologyValid(cctx))   {
+                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                        cctx.name()));
+                    return;
+                }
+
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
                 if (tx != null)
@@ -1145,7 +1151,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @throws IgniteCheckedException If mapping for key failed.
      */
     private GridNearLockMapping map(
-        KeyCacheObject key, 
+        KeyCacheObject key,
         @Nullable GridNearLockMapping mapping,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {

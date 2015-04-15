@@ -341,6 +341,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             }
 
             if (topFut.isDone()) {
+                for (GridCacheContext ctx : cctx.cacheContexts()){
+                    if (!topFut.isCacheTopologyValid(ctx)) {
+                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                            ctx.name()));
+                        return;
+                    }
+            }
+
                 tx.topologyVersion(topFut.topologyVersion());
 
                 prepare0();

@@ -146,7 +146,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Dynamic cache change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
 
-    private Map<String, Boolean> cacheValidRes = new ConcurrentHashMap8<>();
+    private volatile Map<Integer, Boolean> cacheValidRes;
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -831,10 +831,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
+        Map<Integer, Boolean> m = new HashMap<>();
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!CU.isSystemCache(cacheCtx.name()) && (cacheCtx.config().getTopologyValidator() != null))
-                cacheValidRes.put(cacheCtx.name(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+                m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
         }
+
+        cacheValidRes = m;
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
@@ -861,6 +865,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         return dummy;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCacheTopologyValid(GridCacheContext cctx) {
+        return cacheValidRes.containsKey(cctx.cacheId()) ? cacheValidRes.get(cctx.cacheId()) : true;
     }
 
     /**

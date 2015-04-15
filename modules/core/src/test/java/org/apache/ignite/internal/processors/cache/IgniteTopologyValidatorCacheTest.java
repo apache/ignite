@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 
+import javax.cache.*;
 import java.io.Serializable;
 import java.util.*;
 
@@ -60,7 +62,7 @@ public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest im
         for (CacheConfiguration cCfg : iCfg.getCacheConfiguration()) {
             cCfg.setTopologyValidator(new TopologyValidator() {
                 @Override public boolean validate(Collection<ClusterNode> nodes) {
-                    return nodes.size() >= 3;
+                    return nodes.size() >= 2;
                 }
             });
         }
@@ -70,8 +72,20 @@ public class IgniteTopologyValidatorCacheTest extends IgniteCacheAbstractTest im
 
     /** topology validator test */
     public void testTopologyValidator() throws Exception {
-        startGrid();
 
-        jcache().getName();
+        try {
+            jcache().put("1", "1");
+            assert false : "topology validation broken";
+        }catch (CacheException ex){
+            //No-op
+        }
+
+        startGrid(2);
+
+        try {
+            jcache().put("1", "1");
+        }catch (CacheException ex){
+            assert false : "topology validation broken";
+        }
     }
 }
