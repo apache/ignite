@@ -1375,6 +1375,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
             IgniteCacheProxyLockFree<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxyLockFree<KeyCacheObject, CacheObject>)cache;
 
+            try {
+                proxy.context().awaitStarted();
+            }
+            catch (IgniteCheckedException e) {
+                U.convertException(e);
+            }
+
             GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
 
             if (internalCache.isNear())
