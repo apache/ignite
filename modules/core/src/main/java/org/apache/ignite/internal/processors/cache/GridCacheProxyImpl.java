@@ -158,42 +158,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(@Nullable TransactionSynchronization syncs) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            cache.txSynchronize(syncs);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txUnsynchronize(@Nullable TransactionSynchronization syncs) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            cache.txUnsynchronize(syncs);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<TransactionSynchronization> txSynchronizations() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return cache.txSynchronizations();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 

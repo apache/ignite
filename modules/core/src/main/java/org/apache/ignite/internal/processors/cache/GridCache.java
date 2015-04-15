@@ -66,32 +66,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
     public CacheConfiguration configuration();
 
     /**
-     * Registers transactions synchronizations for all transactions started by this cache.
-     * Use it whenever you need to get notifications on transaction lifecycle and possibly change
-     * its course. It is also particularly useful when integrating cache transactions
-     * with some other in-house transactions.
-     *
-     * @param syncs Transaction synchronizations to register.
-     */
-    public void txSynchronize(@Nullable TransactionSynchronization syncs);
-
-    /**
-     * Removes transaction synchronizations.
-     *
-     * @param syncs Transactions synchronizations to remove.
-     * @see #txSynchronize(TransactionSynchronization)
-     */
-    public void txUnsynchronize(@Nullable TransactionSynchronization syncs);
-
-    /**
-     * Gets registered transaction synchronizations.
-     *
-     * @return Registered transaction synchronizations.
-     * @see #txSynchronize(TransactionSynchronization)
-     */
-    public Collection<TransactionSynchronization> txSynchronizations();
-
-    /**
      * Gets affinity service to provide information about data partitioning
      * and distribution.
      *

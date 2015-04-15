@@ -3310,21 +3310,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(TransactionSynchronization syncs) {
-        ctx.tm().addSynchronizations(syncs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txUnsynchronize(TransactionSynchronization syncs) {
-        ctx.tm().removeSynchronizations(syncs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<TransactionSynchronization> txSynchronizations() {
-        return ctx.tm().synchronizations();
-    }
-
-    /** {@inheritDoc} */
     @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args)
         throws IgniteCheckedException {
         final boolean replicate = ctx.isDrEnabled();
