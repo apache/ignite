@@ -1862,7 +1862,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     }
                 }
 
-                if (!skipVals && misses != null && readThrough && ctx.readThrough()) {
+                if (!skipVals && misses != null && readThrough && ctx.readThrough() && !ctx.skipStore()) {
                     final Map<KeyCacheObject, GridCacheVersion> loadKeys = misses;
 
                     final IgniteTxLocalAdapter tx0 = tx;
