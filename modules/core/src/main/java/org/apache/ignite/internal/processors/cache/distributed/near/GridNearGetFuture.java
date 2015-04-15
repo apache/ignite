@@ -203,15 +203,20 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
+        boolean found = false;
+
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
-                if (f.node().id().equals(nodeId))
+                if (f.node().id().equals(nodeId)) {
+                    found = true;
+
                     f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                }
             }
 
-        return false;
+        return found;
     }
 
     /**
