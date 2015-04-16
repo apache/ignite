@@ -4387,13 +4387,8 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
                 CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
     }
 
-    /**
-     * @param key Key.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Cached value.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public V get(K key, boolean deserializePortable)
+    /** {@inheritDoc} */
+    @Override @Nullable public V get(K key, boolean deserializePortable)
         throws IgniteCheckedException {
         Map<K, V> map = getAllAsync(F.asList(key), deserializePortable).get();
 
@@ -4402,12 +4397,8 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
         return map.get(key);
     }
 
-    /**
-     * @param key Key.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Read operation future.
-     */
-    public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable) {
+    /** {@inheritDoc} */
+    @Override public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable) {
         try {
             checkJta();
         }
@@ -4427,24 +4418,15 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
             });
     }
 
-    /**
-     * @param keys Keys.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Map of cached values.
-     * @throws IgniteCheckedException If read failed.
-     */
-    public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable) throws IgniteCheckedException {
         checkJta();
 
         return getAllAsync(keys, deserializePortable).get();
     }
 
-    /**
-     * @param keys Keys.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Read future.
-     */
-    public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
         boolean deserializePortable) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 

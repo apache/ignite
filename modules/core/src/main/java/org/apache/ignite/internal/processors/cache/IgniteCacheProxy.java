@@ -621,14 +621,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheProjectionContext prev = gate.enter(prjCtx);
 
+            boolean deserializePortables = prjCtx == null ? false : prjCtx.deserializePortables();
+
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAsync(key));
+                    setFuture(delegate.getAsync(key, deserializePortables));
 
                     return null;
                 }
                 else
-                    return delegate.get(key);
+                    return delegate.get(key, deserializePortables);
             }
             finally {
                 gate.leave(prev);
@@ -644,14 +646,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheProjectionContext prev = gate.enter(prjCtx);
 
+            boolean deserializePortables = prjCtx == null ? false : prjCtx.deserializePortables();
+
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAllAsync(keys));
+                    setFuture(delegate.getAllAsync(keys, deserializePortables));
 
                     return null;
                 }
                 else
-                    return delegate.getAll(keys);
+                    return delegate.getAll(keys, deserializePortables);
             }
             finally {
                 gate.leave(prev);
@@ -1410,7 +1414,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheProjectionContext prev = gate.enter(prjCtx);
 
         try {
-            CacheProjectionContext prj0 = new CacheProjectionContext(
+            CacheProjectionContext prj = new CacheProjectionContext(
                 prjCtx != null ? prjCtx.skipStore() : false,
                 prjCtx != null ? prjCtx.subjectId() : null,
                 true,
@@ -1418,7 +1422,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (GridCacheAdapter<K1, V1>)delegate,
-                prj0,
+                prj,
                 isAsync());
         }
         finally {

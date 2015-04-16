@@ -308,11 +308,35 @@ public class GridCacheProxyImpl<K, V> implements InternalCache<K, V>, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V get(K key, boolean deserializePortable) throws IgniteCheckedException {
+        CacheProjectionContext prev = gate.enter(prj);
+
+        try {
+            return delegate.get(key, deserializePortable && prj.deserializePortables());
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAsync(K key) {
         CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAsync(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<V> getAsync(K key, boolean deserializePortable) {
+        CacheProjectionContext prev = gate.enter(prj);
+
+        try {
+            return delegate.getAsync(key, deserializePortable && prj.deserializePortables());
         }
         finally {
             gate.leave(prev);
@@ -428,11 +452,37 @@ public class GridCacheProxyImpl<K, V> implements InternalCache<K, V>, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Override public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable)
+        throws IgniteCheckedException {
+        CacheProjectionContext prev = gate.enter(prj);
+
+        try {
+            return delegate.getAll(keys, deserializePortable && prj.deserializePortables());
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAllAsync(keys);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
+        boolean deserializePortable) {
+        CacheProjectionContext prev = gate.enter(prj);
+
+        try {
+            return delegate.getAllAsync(keys, deserializePortable && prj.deserializePortables());
         }
         finally {
             gate.leave(prev);
