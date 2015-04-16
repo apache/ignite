@@ -110,9 +110,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         this.delegate = delegate;
         this.prjCtx = prjCtx;
 
-        if (prjCtx != null && prjCtx.isKeepPortable())
-            delegate.setQueryKeepPortable();
-
         gate = ctx.gate();
 
         legacyProxy = new GridCacheProxyImpl<>(ctx, delegate, prjCtx);

@@ -208,18 +208,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean skipStore();
 
     /**
-     * Set keep portable flag for queries.
-     */
-    public void setQueryKeepPortable();
-
-    /**
-     * Returns queries facade responsible for creating various SQL, TEXT, or SCAN queries.
-
-     * @return Queries facade responsible for creating various SQL, TEXT, or SCAN queries.
-     */
-    public CacheQueries<K, V> queries();
-
-    /**
      * @param skipStore Skip store flag.
      * @return New projection based on this one, but with skip store flag enabled.
      */

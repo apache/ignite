@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -65,9 +64,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     @GridToStringExclude
     private CacheOperationContext prj;
 
-    /** Cache queries. */
-    private CacheQueries<K, V> qry;
-
     /** Affinity. */
     private Affinity<K> aff;
 
@@ -95,7 +91,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new CacheQueriesImpl<>(ctx, prj != null ? prj.isKeepPortable() : false);
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -140,16 +135,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         finally {
             gate.leave(prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setQueryKeepPortable() {
-        qry = new CacheQueriesImpl<>(ctx, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
-        return qry;
     }
 
     /** {@inheritDoc} */
@@ -1575,7 +1560,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new CacheQueriesImpl<>(ctx, prj != null ? prj.isKeepPortable() : false);
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 

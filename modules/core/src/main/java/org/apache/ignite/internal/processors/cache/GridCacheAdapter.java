@@ -168,9 +168,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Logger. */
     protected IgniteLogger log;
 
-    /** Queries impl. */
-    private CacheQueries<K, V> qry;
-
     /** Affinity impl. */
     private Affinity<K> aff;
 
@@ -274,13 +271,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         init();
 
-        qry = new CacheQueriesImpl<>(ctx, false);
         aff = new GridCacheAffinityImpl<>(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setQueryKeepPortable() {
-        qry = new CacheQueriesImpl<>(ctx, true);
     }
 
     /**
@@ -358,11 +349,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Preloader.
      */
     public abstract GridCachePreloader<K, V> preloader();
-
-    /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
-        return qry;
-    }
 
     /** {@inheritDoc} */
     @Override public Affinity<K> affinity() {
