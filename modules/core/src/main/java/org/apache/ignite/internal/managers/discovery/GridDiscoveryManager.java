@@ -738,11 +738,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Object locMode = locNode.attribute(ATTR_DEPLOYMENT_MODE);
 
+        int locJvmMajVer = nodeJavaMajorVer(locNode);
+
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
         boolean warned = false;
 
         for (ClusterNode n : nodes) {
+            int rmtJvmMajVer = nodeJavaMajorVer(n);
+
+            if (locJvmMajVer != rmtJvmMajVer)
+                throw new IgniteCheckedException("Local node's java major version = " + locJvmMajVer +
+                    " is different from remote node's one = " + rmtJvmMajVer);
+
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
@@ -783,6 +791,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug("Finished node attributes consistency check.");
     }
 
+    private int nodeJavaMajorVer(ClusterNode node) throws IgniteCheckedException {
+        try {
+            return Integer.parseInt(node.<String>attribute("java.version").split(".")[1]);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to get java major version with reason: " + e.getMessage());
+        }
+    }
     /**
      * @param nodes Nodes.
      * @return Total CPUs.
