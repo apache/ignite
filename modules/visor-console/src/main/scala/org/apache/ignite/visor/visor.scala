@@ -19,7 +19,7 @@ package org.apache.ignite.visor
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
@@ -29,19 +29,16 @@ import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
-import org.apache.ignite.logger.NullLogger
-import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
-import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang._
+import org.apache.ignite.logger.NullLogger
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.VisorConsole.consoleReader
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+
 import org.jetbrains.annotations.Nullable
 
 import java.io._
@@ -50,11 +47,17 @@ import java.text._
 import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
+import org.apache.ignite.internal.visor.cache._
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node._
+import org.apache.ignite.internal.visor.util.VisorEventMapper
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
+import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
+
 import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 
 /**
  * Holder for command help information.
@@ -1848,23 +1851,59 @@ object visor extends VisorTag {
         ignite.compute(grp).withNoFailover().execute(task, toTaskArgument(grp.nodes().map(_.id()), arg))
     }
 
+    /**
+     * Execute task on node.
+     *
+     * @param nid Node id.
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
     def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
         execute(ignite.cluster.forNodeId(nid), task, arg)
 
+    /**
+     * Execute task on random node.
+     *
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forRandom(), task, arg)
+
+    /**
+     * Execute task on specified nodes.
+     *
+     * @param nids Node ids.
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
     def executeMulti[A, R, J](nids: Iterable[UUID], task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
         execute(ignite.cluster.forNodeIds(nids), task, arg)
 
-    def executeLocal[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
-        execute(ignite.cluster.forLocal(), task, arg)
-
-    def executeRemotes[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+    /**
+     * Execute task on all nodes.
+     *
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    def executeMulti[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
         execute(ignite.cluster.forRemotes(), task, arg)
-
-    def executeAll[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
-        execute(ignite.cluster, task, arg)
-
-    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
-        execute(ignite.cluster.forRandom(), task, arg)
 
     /**
      * Gets configuration from specified node.
@@ -2393,6 +2432,12 @@ object visor extends VisorTag {
         println("<visor>: Log stopped: " + logFile.getAbsolutePath)
     }
 
+    /** Unique Visor key to get events last order. */
+    final val EVT_LAST_ORDER_KEY = UUID.randomUUID().toString
+
+    /** Unique Visor key to get events throttle counter. */
+    final val EVT_THROTTLE_CNTR_KEY = UUID.randomUUID().toString
+
     /**
      * Starts logging. If logging is already started - no-op.
      *
@@ -2477,16 +2522,14 @@ object visor extends VisorTag {
             )
 
             override def run() {
-                val g = ignite
-
-                if (g != null) {
+                if (ignite != null) {
                     try {
                         // Discovery events collected only locally.
-                        val loc = executeLocal(classOf[VisorNodeEventsCollectorTask],
-                            VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY)).toSeq
+                        val loc = collectEvents(ignite, EVT_LAST_ORDER_KEY, EVT_THROTTLE_CNTR_KEY,
+                            LOG_EVTS ++ EVTS_DISCOVERY, new VisorEventMapper).toSeq
 
                         val evts = if (!rmtLogDisabled)
-                            loc ++ executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                            loc ++ executeMulti(classOf[VisorNodeEventsCollectorTask],
                                 VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS)).toSeq
                         else
                             loc

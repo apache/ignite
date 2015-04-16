@@ -21,16 +21,16 @@ import org.apache.ignite._
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.lang.IgniteUuid
-
-import java.util.UUID
-
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
+
+import java.util.UUID
+
+import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -613,7 +613,7 @@ class VisorTasksCommand {
     private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
-                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                val evts = executeMulti(classOf[VisorNodeEventsCollectorTask],
                     VisorNodeEventsCollectorTaskArg.createTasksArg(p, taskName, null))
 
                 val (tLst, eLst) = mkData(evts)
@@ -817,7 +817,7 @@ class VisorTasksCommand {
             try {
                 val prj = ignite.cluster.forRemotes()
 
-                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                val evts = executeMulti(classOf[VisorNodeEventsCollectorTask],
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null))
 
                 val (tLst, eLst) = mkData(evts)
@@ -988,7 +988,7 @@ class VisorTasksCommand {
             }
 
             try {
-                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                val evts = executeMulti(classOf[VisorNodeEventsCollectorTask],
                     VisorNodeEventsCollectorTaskArg.createTasksArg(null, null, uuid))
 
                 val (tLst, eLst) = mkData(evts)
@@ -1100,7 +1100,7 @@ class VisorTasksCommand {
     private def nodes(f: Long) {
         breakable {
             try {
-                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                val evts = executeMulti(classOf[VisorNodeEventsCollectorTask],
                     VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null))
 
                 val eLst = mkData(evts)._2
@@ -1210,7 +1210,7 @@ class VisorTasksCommand {
     private def hosts(f: Long) {
         breakable {
             try {
-                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                val evts = executeMulti(classOf[VisorNodeEventsCollectorTask],
                     VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null))
 
                 val eLst = mkData(evts)._2
