@@ -187,7 +187,7 @@ class VisorCacheScanCommand {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = executeOne(n.id(), classOf[VisorQueryNextPageTask],
+                        res = executeOne(fullRes.responseNodeId(), classOf[VisorQueryNextPageTask],
                             new IgniteBiTuple[String, Integer](fullRes.queryId(), pageSize))
 
                         render()
