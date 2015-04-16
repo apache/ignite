@@ -35,7 +35,6 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -180,7 +179,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 

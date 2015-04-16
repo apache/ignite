@@ -267,7 +267,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(null, prj);
 
@@ -748,7 +748,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
 
         UUID subjId = ctx.subjectIdPerCall(null, prj);
 
@@ -809,7 +809,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
 
         UUID subjId = ctx.subjectIdPerCall(null, prj);
 

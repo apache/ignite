@@ -37,7 +37,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
     private GridCacheGateway<K, V> gate;
 
     /** */
-    private GridCacheProjectionImpl<K, V> prj;
+    private CacheProjectionContext<K, V> prj;
 
     /** */
     private CacheQueries<K, V> delegate;
@@ -56,7 +56,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
      * @param prj Optional cache projection.
      * @param delegate Delegate object.
      */
-    public CacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable GridCacheProjectionImpl<K, V> prj,
+    public CacheQueriesProxy(GridCacheContext<K, V> cctx, @Nullable CacheProjectionContext<K, V> prj,
         CacheQueries<K, V> delegate) {
         assert cctx != null;
         assert delegate != null;
@@ -78,7 +78,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.createSqlFieldsQuery(qry);
@@ -90,7 +90,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.createFullTextQuery(clsName, search);
@@ -102,7 +102,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.createScanQuery(filter);
@@ -114,7 +114,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public <R> CacheQuery<R> createSpiQuery() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.createSpiQuery();
@@ -126,7 +126,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.execute(space, qry);
@@ -138,7 +138,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.executeTwoStepQuery(space, sqlQry, params);
@@ -150,7 +150,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public QueryMetrics metrics() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.metrics();
@@ -162,7 +162,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.sqlMetadata();
@@ -174,7 +174,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheProjectionContext<K, V> prev = gate.enter(prj);
 
         try {
             return delegate.createSqlFieldsQuery(qry, incMeta);
@@ -192,7 +192,7 @@ public class CacheQueriesProxy<K, V> implements CacheQueries<K, V>, Externalizab
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        prj = (GridCacheProjectionImpl<K, V>)in.readObject();
+        prj = (CacheProjectionContext<K, V>)in.readObject();
         delegate = (CacheQueries<K, V>)in.readObject();
 
         gate = prj.context().gate();

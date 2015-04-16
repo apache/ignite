@@ -126,7 +126,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 

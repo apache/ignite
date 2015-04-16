@@ -40,13 +40,13 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     private GridCacheContext<K, V> ctx;
 
     /** */
-    private GridCacheProjectionImpl<K, V> prj;
+    private CacheProjectionContext<K, V> prj;
 
     /**
      * @param ctx Context.
      * @param prj Projection.
      */
-    public CacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
+    public CacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable CacheProjectionContext<K, V> prj) {
         assert ctx != null;
 
         this.ctx = ctx;

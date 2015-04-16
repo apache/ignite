@@ -40,9 +40,9 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
- * Cache projection.
+ * Cache projection context.
  */
-public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V>, Externalizable {
+public class CacheProjectionContext<K, V> implements GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,7 +71,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridCacheProjectionImpl() {
+    public CacheProjectionContext() {
         // No-op.
     }
 
@@ -83,7 +83,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
      * @param keepPortable Keep portable flag.
      * @param expiryPlc Expiry policy.
      */
-    public GridCacheProjectionImpl(
+    public CacheProjectionContext(
         CacheProjection<K, V> parent,
         GridCacheContext<K, V> cctx,
         boolean skipStore,
@@ -146,14 +146,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
         A.notNull(subjId, "subjId");
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+        CacheProjectionContext<K, V> prj = new CacheProjectionContext<>(this,
             cctx,
             skipStore,
             subjId,
             keepPortable,
             expiryPlc);
 
-        return new GridCacheProxyImpl<>(cctx, prj, prj);
+        return new GridCacheProxyImpl<>(cctx, cache, prj);
     }
 
     /**
@@ -168,21 +168,21 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
         if (this.skipStore == skipStore)
-            return new GridCacheProxyImpl<>(cctx, this, this);
+            return new GridCacheProxyImpl<>(cctx, cache, this);
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
+        CacheProjectionContext<K, V> prj = new CacheProjectionContext<>(this,
             cctx,
             skipStore,
             subjId,
             keepPortable,
             expiryPlc);
 
-        return new GridCacheProxyImpl<>(cctx, prj, prj);
+        return new GridCacheProxyImpl<>(cctx, cache, prj);
     }
 
     /** {@inheritDoc} */
     @Override public <K1, V1> CacheProjection<K1, V1> keepPortable() {
-        GridCacheProjectionImpl<K1, V1> prj = new GridCacheProjectionImpl<>(
+        CacheProjectionContext<K1, V1> prj = new CacheProjectionContext<>(
             (CacheProjection<K1, V1>)this,
             (GridCacheContext<K1, V1>)cctx,
             skipStore,
@@ -190,7 +190,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
             true,
             expiryPlc);
 
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, prj, prj);
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, (GridCacheAdapter<K1, V1>)cache, prj);
     }
 
     /** {@inheritDoc} */
@@ -727,7 +727,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        return new GridCacheProjectionImpl<>(
+        return new CacheProjectionContext<>(
             this,
             cctx,
             skipStore,
@@ -761,6 +761,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheProjectionImpl.class, this);
+        return S.toString(CacheProjectionContext.class, this);
     }
 }
