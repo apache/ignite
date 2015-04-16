@@ -107,6 +107,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(BaseH2CompareQueryTest.class);
         suite.addTestSuite(H2CompareBigQueryTest.class);
 
+        suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
+
         return suite;
     }
 }
