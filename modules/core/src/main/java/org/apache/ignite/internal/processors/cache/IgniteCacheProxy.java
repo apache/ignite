@@ -76,10 +76,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** */
     @GridToStringExclude
-    private GridCacheProxyImpl<K, V> legacyProxy;
-
-    /** */
-    @GridToStringExclude
     private CacheManager cacheMgr;
 
     /**
@@ -111,8 +107,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         this.prjCtx = prjCtx;
 
         gate = ctx.gate();
-
-        legacyProxy = new GridCacheProxyImpl<>(ctx, delegate, prjCtx);
     }
 
     /**
@@ -1338,8 +1332,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return (T)this;
         else if (clazz.isAssignableFrom(IgniteEx.class))
             return (T)ctx.grid();
-        else if (clazz.isAssignableFrom(legacyProxy.getClass()))
-            return (T)legacyProxy;
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
     }
@@ -1475,14 +1467,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private <R> void setFuture(IgniteInternalFuture<R> fut) {
         curFut.set(new IgniteFutureImpl<>(fut));
-    }
-
-    /**
-     * @return Legacy proxy.
-     */
-    @NotNull
-    public GridCacheProxyImpl<K, V> legacyProxy() {
-        return legacyProxy;
     }
 
     /** {@inheritDoc} */
