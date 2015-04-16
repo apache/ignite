@@ -800,7 +800,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     private int nodeJavaMajorVer(ClusterNode node) throws IgniteCheckedException {
         try {
-            return Integer.parseInt(node.<String>attribute("java.version").split(".")[1]);
+            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get java major version with reason: " + e.getMessage());
