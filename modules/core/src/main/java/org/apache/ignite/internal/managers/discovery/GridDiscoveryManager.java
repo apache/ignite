@@ -791,6 +791,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug("Finished node attributes consistency check.");
     }
 
+    /**
+     * Gets Java major version running on the node.
+     *
+     * @param node Cluster node.
+     * @return Java major version.
+     * @throws IgniteCheckedException If failed to get the version.
+     */
     private int nodeJavaMajorVer(ClusterNode node) throws IgniteCheckedException {
         try {
             return Integer.parseInt(node.<String>attribute("java.version").split(".")[1]);
@@ -799,6 +806,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             throw new IgniteCheckedException("Failed to get java major version with reason: " + e.getMessage());
         }
     }
+
     /**
      * @param nodes Nodes.
      * @return Total CPUs.
