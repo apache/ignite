@@ -86,13 +86,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private GridNearAtomicCache<K, V> near;
 
-    /** */
-    private final GridDisconnectListener disconnectLsnr = new GridDisconnectListener() {
-        @Override public void onNodeDisconnected(UUID nodeId) {
-            scheduleAtomicFutureRecheck();
-        }
-    };
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -224,16 +217,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
-
-        ctx.io().addDisconnectListener(disconnectLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
         for (DeferredResponseBuffer buf : pendingResponses.values())
             buf.finish();
-
-        ctx.io().removeDisconnectListener(disconnectLsnr);
     }
 
     /**
