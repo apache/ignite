@@ -19,7 +19,7 @@ package org.apache.ignite.visor
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
 import org.apache.ignite.logger.NullLogger
-import org.apache.ignite.internal.visor.VisorTaskArgument
+import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.node._
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
@@ -1831,17 +1831,40 @@ object visor extends VisorTag {
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid, false)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void]
-        = new VisorTaskArgument(new JavaHashSet(nids), false)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] =
+        new VisorTaskArgument(new JavaHashSet(nids), false)
 
     /** Convert to task argument. */
     def toTaskArgument[A](nid: UUID, arg: A): VisorTaskArgument[A] = new VisorTaskArgument(nid, arg, false)
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A]
-        = new VisorTaskArgument(new JavaHashSet(nids), arg, false)
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] =
+        new VisorTaskArgument(new JavaHashSet(nids), arg, false)
 
-    def compute(nid: UUID): IgniteCompute = ignite.compute(ignite.cluster.forNodeId(nid)).withNoFailover()
+    private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) = {
+        if (grp.nodes().isEmpty)
+            throw new ClusterGroupEmptyException("Topology is empty.")
+
+        ignite.compute(grp).withNoFailover().execute(task, toTaskArgument(grp.nodes().map(_.id()), arg))
+    }
+
+    def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forNodeId(nid), task, arg)
+
+    def executeMulti[A, R, J](nids: Iterable[UUID], task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forNodeIds(nids), task, arg)
+
+    def executeLocal[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forLocal(), task, arg)
+
+    def executeRemotes[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forRemotes(), task, arg)
+
+    def executeAll[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster, task, arg)
+
+    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forRandom(), task, arg)
 
     /**
      * Gets configuration from specified node.
@@ -1850,7 +1873,7 @@ object visor extends VisorTag {
      * @return Grid configuration.
      */
     def nodeConfiguration(nid: UUID): VisorGridConfiguration =
-        compute(nid).execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(nid))
+        executeOne(nid, classOf[VisorNodeConfigurationCollectorTask], null)
 
     /**
      * Gets caches configurations from specified node.
@@ -1859,8 +1882,8 @@ object visor extends VisorTag {
      * @return Collection of cache configurations.
      */
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
-        compute(nid).execute(classOf[VisorCacheConfigurationCollectorTask],
-            toTaskArgument(nid, null.asInstanceOf[JavaCollection[IgniteUuid]])).values()
+        executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
+            null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
 
     /**
      * Asks user to select a node from the list.
@@ -2459,17 +2482,12 @@ object visor extends VisorTag {
                 if (g != null) {
                     try {
                         // Discovery events collected only locally.
-                        val loc = g.compute(g.cluster.forLocal()).withName("visor-log-collector").withNoFailover().
-                            execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(g.localNode().id(),
-                            VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
+                        val loc = executeLocal(classOf[VisorNodeEventsCollectorTask],
+                            VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY)).toSeq
 
-                        val evts = if (!rmtLogDisabled) {
-                            val prj = g.cluster.forRemotes()
-
-                            loc ++ g.compute(prj).withName("visor-log-collector").withNoFailover().
-                                execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes().map(_.id()),
-                                    VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS))).toSeq
-                        }
+                        val evts = if (!rmtLogDisabled)
+                            loc ++ executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                                VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS)).toSeq
                         else
                             loc
 

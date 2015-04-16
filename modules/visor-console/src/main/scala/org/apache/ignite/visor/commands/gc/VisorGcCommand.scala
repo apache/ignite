@@ -141,24 +141,19 @@ class VisorGcCommand {
 
                 t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
-                val prj = ignite.cluster.forRemotes()
-
-                val nids = prj.nodes().map(_.id())
-
                 val NULL: Void = null
 
-                ignite.compute(prj).withNoFailover().execute(classOf[VisorNodeGcTask],
-                    toTaskArgument(nids, NULL)).foreach {
-                        case (nid, stat) =>
-                            val roundHb = stat.get1() / (1024L * 1024L)
-                            val roundHa = stat.get2() / (1024L * 1024L)
+                executeRemotes(classOf[VisorNodeGcTask], NULL).foreach {
+                    case (nid, stat) =>
+                        val roundHb = stat.get1() / (1024L * 1024L)
+                        val roundHa = stat.get2() / (1024L * 1024L)
 
-                            val sign = if (roundHa > roundHb) "+" else ""
+                        val sign = if (roundHa > roundHb) "+" else ""
 
-                            val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
+                        val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
 
-                            t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
-                    }
+                        t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
+                }
 
                 println("Garbage collector procedure results:")
 

@@ -100,27 +100,17 @@ class VisorCacheClearCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) ignite.cluster.forNode(node.get) else ignite.cluster.forCacheNodes(cacheName)
+        val prj = node.fold(ignite.cluster.forRandom())(ignite.cluster.forNode(_))
 
-        if (prj.nodes().isEmpty) {
-            val msg =
-                if (cacheName == null)
-                    "Can't find nodes with default cache."
-                else
-                    "Can't find nodes with specified cache: " + cacheName
-
-            scold(msg).^^
-        }
+        if (prj.nodes().isEmpty)
+            scold(node.fold("Topology is empty.")(n => "Can't find node with specified id: " + n.id())).^^
 
         val t = VisorTextTable()
 
         t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
 
         prj.nodes().headOption.foreach(node => {
-            val res = ignite.compute(ignite.cluster.forNode(node))
-                .withName("visor-cclear-task")
-                .withNoFailover()
-                .execute(classOf[VisorCacheClearTask], toTaskArgument(node.id(), cacheName))
+            val res = executeOne(node.id(), classOf[VisorCacheClearTask], cacheName)
 
             t += (nodeId8(node.id()), res.get1(), res.get2())
         })
