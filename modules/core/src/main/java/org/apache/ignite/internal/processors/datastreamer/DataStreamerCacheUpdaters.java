@@ -39,8 +39,8 @@ public class DataStreamerCacheUpdaters {
     private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
     /**
-     * Updates cache using independent {@link org.apache.ignite.internal.processors.cache.GridCache#put(Object, Object, CacheEntryPredicate[])} and
-     * {@link org.apache.ignite.internal.processors.cache.GridCache#remove(Object, CacheEntryPredicate[])} operations. Thus it is safe from deadlocks but performance
+     * Updates cache using independent {@link GridCache#put(Object, Object)} and
+     * {@link GridCache#remove(Object)} operations. Thus it is safe from deadlocks but performance
      * is not the best.
      *
      * @return Single updater.
@@ -50,8 +50,8 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link org.apache.ignite.internal.processors.cache.GridCache#putAll(Map, CacheEntryPredicate[])} and
-     * {@link org.apache.ignite.internal.processors.cache.GridCache#removeAll(Collection, CacheEntryPredicate[])}. Can cause deadlocks if the same keys are getting
+     * Updates cache using batched methods {@link GridCache#putAll(Map)} and
+     * {@link GridCache#removeAll(Collection)}. Can cause deadlocks if the same keys are getting
      * updated concurrently. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched updater.
@@ -61,8 +61,8 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link org.apache.ignite.internal.processors.cache.GridCache#putAll(Map, CacheEntryPredicate[])} and
-     * {@link org.apache.ignite.internal.processors.cache.GridCache#removeAll(Collection, CacheEntryPredicate[])}. Keys are sorted in natural order and if all updates
+     * Updates cache using batched methods {@link GridCache#putAll(Map)} and
+     * {@link GridCache#removeAll(Collection)}. Keys are sorted in natural order and if all updates
      * use the same rule deadlock can not happen. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched sorted updater.
