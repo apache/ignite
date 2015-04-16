@@ -61,11 +61,4 @@ public interface CacheQueries<K, V> {
      * @return Created query.
      */
     public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
-
-    /**
-     * Creates SPI query.
-     *
-     * @return Query.
-     */
-    public <R> CacheQuery<R> createSpiQuery();
 }

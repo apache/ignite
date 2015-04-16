@@ -2898,4 +2898,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return size;
         }
     }
+
+    /**
+     * Query for {@link IndexingSpi}.
+     *
+     * @return Query.
+     */
+     public <R> CacheQuery<R> createSpiQuery(boolean keepPortable) {
+        return new GridCacheQueryAdapter<>(cctx,
+                SPI,
+                null,
+                null,
+                null,
+                false,
+                keepPortable);
+    }
 }

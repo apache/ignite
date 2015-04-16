@@ -87,21 +87,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             keepPortable);
     }
 
-    /**
-     * Query for {@link IndexingSpi}.
-     *
-     * @return Query.
-     */
-    @Override public <R> CacheQuery<R> createSpiQuery() {
-        return new GridCacheQueryAdapter<>(ctx,
-            SPI,
-            null,
-            null,
-            null,
-            false,
-            keepPortable);
-    }
-
     /** {@inheritDoc} */
     @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
