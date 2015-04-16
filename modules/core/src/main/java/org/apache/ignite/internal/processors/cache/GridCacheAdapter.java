@@ -274,8 +274,13 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
 
         init();
 
-        qry = new CacheQueriesImpl<>(ctx, null);
+        qry = new CacheQueriesImpl<>(ctx, false);
         aff = new GridCacheAffinityImpl<>(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setQueryKeepPortable() {
+        qry = new CacheQueriesImpl<>(ctx, true);
     }
 
     /**

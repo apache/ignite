@@ -40,17 +40,17 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     private GridCacheContext<K, V> ctx;
 
     /** */
-    private CacheProjectionContext prj;
+    private boolean keepPortable;
 
     /**
      * @param ctx Context.
-     * @param prj Projection.
+     * @param keepPortable Projection.
      */
-    public CacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable CacheProjectionContext prj) {
+    public CacheQueriesImpl(GridCacheContext<K, V> ctx, boolean keepPortable) {
         assert ctx != null;
 
         this.ctx = ctx;
-        this.prj = prj;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -63,7 +63,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             qry,
             null,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +77,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             search,
             null,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             null,
             (IgniteBiPredicate<Object, Object>)filter,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /**
@@ -104,7 +104,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             null,
             null,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -137,6 +137,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             qry,
             null,
             incMeta,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 }

@@ -95,7 +95,7 @@ public class GridCacheProxyImpl<K, V> implements InternalCache<K, V>, Externaliz
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new CacheQueriesProxy<>(ctx, prj, delegate.queries());
+        qry = new CacheQueriesProxy<>(ctx, prj, new CacheQueriesImpl<>(ctx, prj != null ? prj.isKeepPortable() : false));
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -140,6 +140,11 @@ public class GridCacheProxyImpl<K, V> implements InternalCache<K, V>, Externaliz
         finally {
             gate.leave(prev);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setQueryKeepPortable() {
+        qry = new CacheQueriesProxy<>(ctx, prj, new CacheQueriesImpl<>(ctx, true));
     }
 
     /** {@inheritDoc} */

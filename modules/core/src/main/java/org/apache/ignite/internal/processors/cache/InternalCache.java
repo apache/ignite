@@ -208,6 +208,11 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean skipStore();
 
     /**
+     * Set keep portable flag for queries.
+     */
+    public void setQueryKeepPortable();
+
+    /**
      * Returns queries facade responsible for creating various SQL, TEXT, or SCAN queries.
 
      * @return Queries facade responsible for creating various SQL, TEXT, or SCAN queries.
