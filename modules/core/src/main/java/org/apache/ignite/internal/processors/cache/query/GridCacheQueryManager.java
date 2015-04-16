@@ -2902,6 +2902,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Query for {@link IndexingSpi}.
      *
+     * @param keepPortable Keep portable flag.
      * @return Query.
      */
     public <R> CacheQuery<R> createSpiQuery(boolean keepPortable) {
@@ -2918,6 +2919,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Creates user's predicate based scan query.
      *
      * @param filter Scan filter.
+     * @param keepPortable Keep portable flag.
      * @return Created query.
      */
     @SuppressWarnings("unchecked")
@@ -2929,6 +2931,70 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 null,
                 (IgniteBiPredicate<Object, Object>)filter,
                 false,
+                keepPortable);
+    }
+
+    /**
+     * Creates user's full text query, queried class, and query clause.
+     * For more information refer to {@link CacheQuery} documentation.
+     *
+     * @param clsName Query class name.
+     * @param search Search clause.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+                                                           String search, boolean keepPortable) {
+        A.notNull("clsName", clsName);
+        A.notNull("search", search);
+
+        return new GridCacheQueryAdapter<>(cctx,
+                TEXT,
+                clsName,
+                search,
+                null,
+                false,
+                keepPortable);
+    }
+
+
+    /**
+     * Creates user's SQL fields query for given clause. For more information refer to
+     * {@link CacheQuery} documentation.
+     *
+     * @param qry Query.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+     public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepPortable) {
+        A.notNull(qry, "qry");
+
+        return new GridCacheQueryAdapter<>(cctx,
+                SQL_FIELDS,
+                null,
+                qry,
+                null,
+                false,
+                keepPortable);
+    }
+
+    /**
+     * Creates SQL fields query which will include results metadata if needed.
+     *
+     * @param qry SQL query.
+     * @param incMeta Whether to include results metadata.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta, boolean keepPortable) {
+        assert qry != null;
+
+        return new GridCacheQueryAdapter<>(cctx,
+                SQL_FIELDS,
+                null,
+                qry,
+                null,
+                incMeta,
                 keepPortable);
     }
 }

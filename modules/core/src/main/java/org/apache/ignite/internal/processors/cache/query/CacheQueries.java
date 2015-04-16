@@ -26,31 +26,4 @@ import java.util.*;
  * Internal queries interface.
  */
 public interface CacheQueries<K, V> {
-    /**
-     * Creates user's SQL fields query for given clause. For more information refer to
-     * {@link CacheQuery} documentation.
-     *
-     * @param qry Query.
-     * @return Created query.
-     */
-    public CacheQuery<List<?>> createSqlFieldsQuery(String qry);
-
-    /**
-     * Creates user's full text query, queried class, and query clause.
-     * For more information refer to {@link CacheQuery} documentation.
-     *
-     * @param clsName Query class name.
-     * @param search Search clause.
-     * @return Created query.
-     */
-    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search);
-
-    /**
-     * Creates SQL fields query which will include results metadata if needed.
-     *
-     * @param qry SQL query.
-     * @param incMeta Whether to include results metadata.
-     * @return Created query.
-     */
-    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
 }

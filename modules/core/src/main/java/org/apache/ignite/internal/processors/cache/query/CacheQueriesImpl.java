@@ -47,44 +47,4 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
         this.ctx = ctx;
         this.keepPortable = keepPortable;
     }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry) {
-        A.notNull(qry, "qry");
-
-        return new GridCacheQueryAdapter<>(ctx,
-            SQL_FIELDS,
-            null,
-            qry,
-            null,
-            false,
-            keepPortable);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
-        A.notNull("clsName", clsName);
-        A.notNull("search", search);
-
-        return new GridCacheQueryAdapter<>(ctx,
-            TEXT,
-            clsName,
-            search,
-            null,
-            false,
-            keepPortable);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
-        assert qry != null;
-
-        return new GridCacheQueryAdapter<>(ctx,
-            SQL_FIELDS,
-            null,
-            qry,
-            null,
-            incMeta,
-            keepPortable);
-    }
 }
