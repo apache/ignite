@@ -76,18 +76,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
-        return new GridCacheQueryAdapter<>(ctx,
-            SCAN,
-            null,
-            null,
-            (IgniteBiPredicate<Object, Object>)filter,
-            false,
-            keepPortable);
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
 

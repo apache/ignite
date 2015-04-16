@@ -46,14 +46,6 @@ public interface CacheQueries<K, V> {
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search);
 
     /**
-     * Creates user's predicate based scan query.
-     *
-     * @param filter Scan filter.
-     * @return Created query.
-     */
-    public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
-
-    /**
      * Creates SQL fields query which will include results metadata if needed.
      *
      * @param qry SQL query.

@@ -2904,12 +2904,30 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @return Query.
      */
-     public <R> CacheQuery<R> createSpiQuery(boolean keepPortable) {
+    public <R> CacheQuery<R> createSpiQuery(boolean keepPortable) {
         return new GridCacheQueryAdapter<>(cctx,
                 SPI,
                 null,
                 null,
                 null,
+                false,
+                keepPortable);
+    }
+
+    /**
+     * Creates user's predicate based scan query.
+     *
+     * @param filter Scan filter.
+     * @return Created query.
+     */
+    @SuppressWarnings("unchecked")
+    public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
+                                                       boolean keepPortable) {
+        return new GridCacheQueryAdapter<>(cctx,
+                SCAN,
+                null,
+                null,
+                (IgniteBiPredicate<Object, Object>)filter,
                 false,
                 keepPortable);
     }

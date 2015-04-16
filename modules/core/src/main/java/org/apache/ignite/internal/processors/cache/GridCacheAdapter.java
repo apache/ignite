@@ -3682,7 +3682,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
+        CacheQueryFuture<Map.Entry<K, V>> fut = ctx0.queries().createScanQuery(null, false)
             .keepAll(false)
             .execute();
 
