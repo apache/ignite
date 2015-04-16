@@ -4290,7 +4290,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNotNull(cache.get(key));
         }
 
-        cache.removeAll();
+        cache.removeAll(new HashSet<>(keys));
 
         for (String key : keys)
             assertNull(cache.get(key));
@@ -4370,7 +4370,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertTrue(map.containsKey(key));
         }
 
-        cacheSkipStore.removeAll();
+        cacheSkipStore.removeAll(data.keySet());
 
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
@@ -4446,7 +4446,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testWithSkipStoreRemoveAll() throws Exception {
-        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL ||
+           (atomicityMode() == CacheAtomicityMode.ATOMIC && nearEnabled()))
             fail("https://issues.apache.org/jira/browse/IGNITE-373");
 
         IgniteCache<String, Integer> cache = grid(0).cache(null);
