@@ -100,20 +100,23 @@ class VisorCacheClearCommand {
             case Some(name) => name
         }
 
-        val prj = projectionForNode(node)
+        val n = projectionForNode(node).node()
 
-        if (prj.nodes().isEmpty)
+        if (n == null)
             scold(messageNodeNotFound(node)).^^
 
         val t = VisorTextTable()
 
         t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
 
-        prj.nodes().headOption.foreach(node => {
-            val res = executeOne(node.id(), classOf[VisorCacheClearTask], cacheName)
+        try {
+            val res = executeOne(n.id(), classOf[VisorCacheClearTask], cacheName)
 
-            t += (nodeId8(node.id()), res.get1(), res.get2())
-        })
+            t += (nodeId8(n.id()), res.get1(), res.get2())
+        }
+        catch {
+            case e: Throwable =>  scold(e.getMessage).^^
+        }
 
         println("Cleared cache with name: " + escapeName(cacheName))
 

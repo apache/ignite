@@ -28,9 +28,7 @@ import org.apache.ignite.visor.commands.VisorTextTable
 import org.apache.ignite.visor.visor
 import visor._
 
-import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -87,7 +85,7 @@ class VisorCacheSwapCommand {
      *
      * @param argLst Command arguments.
      */
-    def swap(argLst: ArgList, node: Option[ClusterNode]) = breakable {
+    def swap(argLst: ArgList, node: Option[ClusterNode]) {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {
@@ -95,40 +93,39 @@ class VisorCacheSwapCommand {
 
             case Some(s) if s.startsWith("@") =>
                 warn("Can't find cache variable with specified name: " + s,
-                    "Type 'cache' to see available cache variables."
-                )
+                    "Type 'cache' to see available cache variables.")
 
-                break()
+                return
 
             case Some(name) => name
         }
 
+        val n = projectionForNode(node).node()
 
-        val prj = projectionForNode(node)
+        if (n != null) {
+            try {
+                val r = executeOne(n.id(), classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).get(cacheName)
 
-        if (prj.nodes().isEmpty) {
-            val msg =
-                if (cacheName == null)
-                    "Can't find nodes with default cache."
+                if (r != null) {
+                    val t = VisorTextTable()
+
+                    t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
+
+                    t += (nodeId8(n.id()), r.get1() - r.get2(), r.get1(), r.get2())
+
+                    println("Swapped entries in cache: " + escapeName(cacheName))
+
+                    t.render()
+                }
                 else
-                    "Can't find nodes with specified cache: " + cacheName
-
-            scold(messageNodeNotFound(node, Some(msg))).^^
+                    scold("Can't find nodes for cache: " + escapeName(cacheName))
+            }
+            catch {
+                case e: Exception => scold(e.getMessage)
+            }
         }
-
-        val t = VisorTextTable()
-
-        t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
-
-        val nid = prj.node().id()
-
-        val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).get(cacheName)
-
-        t += (nodeId8(nid), r.get1() - r.get2(), r.get1(), r.get2())
-
-        println("Swapped entries in cache: " + escapeName(cacheName))
-
-        t.render()
+        else
+            scold(messageNodeNotFound(node, Some("Can't find nodes for cache: " + escapeName(cacheName))))
     }
 }
 
