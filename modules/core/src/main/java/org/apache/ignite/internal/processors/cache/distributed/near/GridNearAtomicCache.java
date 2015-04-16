@@ -372,7 +372,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 

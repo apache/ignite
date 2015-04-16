@@ -2583,7 +2583,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
-            CacheProjectionContext<K, V> prj = cacheCtx.projectionPerCall();
+            CacheProjectionContext prj = cacheCtx.projectionPerCall();
 
             final IgniteInternalFuture<Set<KeyCacheObject>> loadFut = enlistWrite(
                 cacheCtx,
@@ -2794,7 +2794,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             ExpiryPolicy plc;
 
             if (!F.isEmpty(filter)) {
-                CacheProjectionContext<K, V> prj = cacheCtx.projectionPerCall();
+                CacheProjectionContext prj = cacheCtx.projectionPerCall();
 
                 plc = prj != null ? prj.expiry() : null;
             }

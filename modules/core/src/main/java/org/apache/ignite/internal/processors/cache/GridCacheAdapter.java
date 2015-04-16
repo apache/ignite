@@ -372,13 +372,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
-        CacheProjectionContext<K, V> prj = new CacheProjectionContext<>(this,
-            ctx,
-            false,
-            subjId,
-            false,
-            null);
+    @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
+        CacheProjectionContext prj = new CacheProjectionContext(false, subjId, false, null);
 
         return new GridCacheProxyImpl<>(ctx, this, prj);
     }
@@ -389,42 +384,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
-        if (!skipStore)
-            return this;
-
-        CacheProjectionContext<K, V> prj = new CacheProjectionContext<>(this,
-            ctx,
-            false,
-            null,
-            false,
-            null);
+    @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
+        CacheProjectionContext prj = new CacheProjectionContext(true, null, false, null);
 
         return new GridCacheProxyImpl<>(ctx, this, prj);
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> keepPortable() {
-        CacheProjectionContext<K1, V1> prj = keepPortable0();
+    @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
+        CacheProjectionContext prj = new CacheProjectionContext(false, null, true, null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, prj);
     }
 
-    /**
-     * Internal routine to get "keep-portable" projection.
-     *
-     * @return Projection with "keep-portable" flag.
-     */
-    public <K1, V1> CacheProjectionContext<K1, V1> keepPortable0() {
-        return new CacheProjectionContext<>(
-            (CacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)ctx,
-            false,
-            null,
-            true,
-            null
-        );
-    }
 
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
@@ -432,14 +404,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        return new CacheProjectionContext<>(
-            this,
-            ctx,
-            false,
-            null,
-            false,
-            plc);
+    @Override public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        CacheProjectionContext prj = new CacheProjectionContext(false, null, false, plc);
+
+        return new GridCacheProxyImpl<>(ctx, this, prj);
     }
 
     /** {@inheritDoc} */
@@ -1625,7 +1593,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         boolean deserializePortable,
         boolean skipVals
     ) {
-        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext prj = ctx.projectionPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
@@ -3315,7 +3283,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final boolean replicate = ctx.isDrEnabled();
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext prj = ctx.projectionPerCall();
 
         ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
 
@@ -3438,7 +3406,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (!ctx.store().configured())
             return new GridFinishedFuture<>();
 
-        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext prj = ctx.projectionPerCall();
 
         ExpiryPolicy plc = prj != null ? prj.expiry() : null;
 
@@ -3578,7 +3546,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         ctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
+        CacheProjectionContext prj = ctx.projectionPerCall();
 
         ExpiryPolicy plc = prj != null ? prj.expiry() : null;
 
@@ -3740,7 +3708,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy();
 
-        final CacheProjectionContext<K, V> prj = ctx.projectionPerCall();
+        final CacheProjectionContext prj = ctx.projectionPerCall();
 
         CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
             .keepAll(false)
@@ -3752,7 +3720,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
-                CacheProjectionContext<K, V> prev = ctx.gate().enter(prj);
+                CacheProjectionContext prev = ctx.gate().enter(prj);
 
                 try {
                     GridCacheAdapter.this.remove(item.getKey());

@@ -40,7 +40,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param subjId Client ID.
      * @return Internal projection.
      */
-    GridCacheProjectionEx<K, V> forSubjectId(UUID subjId);
+    GridCacheProxyImpl<K, V> forSubjectId(UUID subjId);
     /**
      * Store DR data.
      *
@@ -234,7 +234,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param plc {@link ExpiryPolicy} to associate with this projection.
      * @return New projection based on this one, but with the specified expiry policy.
      */
-    public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc);
+    public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
      * @param key Key.

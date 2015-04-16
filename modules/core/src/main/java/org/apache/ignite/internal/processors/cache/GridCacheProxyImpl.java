@@ -63,7 +63,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** Projection. */
     @GridToStringExclude
-    private CacheProjectionContext<K, V> prj;
+    private CacheProjectionContext prj;
 
     /** Cache queries. */
     private CacheQueries<K, V> qry;
@@ -84,7 +84,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
      * @param prj Optional projection which will be passed to gateway.
      */
     public GridCacheProxyImpl(GridCacheContext<K, V> ctx, GridCacheAdapter<K, V> delegate,
-        @Nullable CacheProjectionContext<K, V> prj) {
+        @Nullable CacheProjectionContext prj) {
         assert ctx != null;
         assert delegate != null;
 
@@ -116,7 +116,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /**
      * @return Gateway projection.
      */
-    public CacheProjectionContext<K, V> gateProjection() {
+    public CacheProjectionContext gateProjection() {
         return prj;
     }
 
@@ -132,10 +132,10 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean skipStore() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
-            return delegate.skipStore();
+            return prj.skipStore();
         }
         finally {
             gate.leave(prev);
@@ -159,7 +159,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.metrics();
@@ -171,7 +171,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.mxBean();
@@ -183,7 +183,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long overflowSize() throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.overflowSize();
@@ -195,7 +195,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(IgniteBiPredicate<K, V> p, @Nullable Object[] args) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             cache.localLoadCache(p, args);
@@ -207,7 +207,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> localLoadCacheAsync(IgniteBiPredicate<K, V> p, @Nullable Object[] args) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.localLoadCacheAsync(p, args);
@@ -218,16 +218,16 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
-        return delegate.forSubjectId(subjId);
+    @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
+        return new GridCacheProxyImpl<>(ctx, delegate, prj.forSubjectId(subjId));
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+    @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
-            return delegate.setSkipStore(skipStore);
+            return new GridCacheProxyImpl<>(ctx, delegate, prj.setSkipStore(skipStore));
         }
         finally {
             gate.leave(prev);
@@ -235,8 +235,11 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> keepPortable() {
-        return delegate.keepPortable();
+    @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
+        if (prj.isKeepPortable())
+            return (GridCacheProxyImpl<K1, V1>)this;
+        
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)delegate, prj.keepPortable());
     }
 
     /** {@inheritDoc} */
@@ -246,7 +249,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.containsKey(key);
@@ -258,7 +261,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean containsKeys(Collection<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.containsKeys(keys);
@@ -270,7 +273,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.containsKeyAsync(key);
@@ -282,7 +285,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.containsKeysAsync(keys);
@@ -294,7 +297,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.get(key);
@@ -306,7 +309,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAsync(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAsync(key);
@@ -318,7 +321,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public V getForcePrimary(K key) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getForcePrimary(key);
@@ -330,7 +333,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getForcePrimaryAsync(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getForcePrimaryAsync(key);
@@ -342,7 +345,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAllOutTx(keys);
@@ -354,7 +357,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.isIgfsDataCache();
@@ -366,7 +369,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceUsed() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.igfsDataSpaceUsed();
@@ -378,7 +381,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceMax() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.igfsDataSpaceMax();
@@ -390,7 +393,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean isMongoDataCache() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.isMongoDataCache();
@@ -402,7 +405,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean isMongoMetaCache() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.isMongoMetaCache();
@@ -414,7 +417,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAll(keys);
@@ -426,7 +429,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAllAsync(keys);
@@ -439,7 +442,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Nullable @Override public V getAndPut(K key, V val)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndPut(key, val);
@@ -451,7 +454,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAndPutAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndPutAsync(key, val);
@@ -464,7 +467,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public boolean put(K key, V val)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.put(key, val);
@@ -476,7 +479,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.putAllConflict(drMap);
@@ -489,7 +492,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.putAllConflictAsync(drMap);
@@ -503,7 +506,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.invoke(key, entryProcessor, args);
@@ -517,7 +520,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public <T> IgniteInternalFuture<EntryProcessorResult<T>> invokeAsync(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.invokeAsync(key, entryProcessor, args);
@@ -531,7 +534,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.invokeAll(keys, entryProcessor, args);
@@ -546,7 +549,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
         Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.invokeAllAsync(keys, entryProcessor, args);
@@ -560,7 +563,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.invokeAll(map, args);
@@ -574,7 +577,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.invokeAllAsync(map, args);
@@ -586,7 +589,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.putAsync(key, val);
@@ -598,7 +601,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndPutIfAbsent(key, val);
@@ -610,7 +613,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndPutIfAbsentAsync(key, val);
@@ -622,7 +625,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.putIfAbsent(key, val);
@@ -634,7 +637,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.putIfAbsentAsync(key, val);
@@ -646,7 +649,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Nullable @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndReplace(key, val);
@@ -658,7 +661,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndReplaceAsync(key, val);
@@ -670,7 +673,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.replace(key, val);
@@ -682,7 +685,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.replaceAsync(key, val);
@@ -694,7 +697,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.replace(key, oldVal, newVal);
@@ -706,7 +709,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.replaceAsync(key, oldVal, newVal);
@@ -718,7 +721,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable Map<? extends K, ? extends V> m) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.putAll(m);
@@ -730,7 +733,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.putAllAsync(m);
@@ -742,7 +745,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Set<K> keySet() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.keySet();
@@ -754,7 +757,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.primaryKeySet();
@@ -766,7 +769,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Collection<V> values() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.values();
@@ -778,7 +781,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.entrySet();
@@ -790,7 +793,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.entrySet(part);
@@ -802,7 +805,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.entrySetx(filter);
@@ -814,7 +817,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalTx txStartEx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.txStartEx(concurrency, isolation);
@@ -826,7 +829,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.txStart(concurrency, isolation);
@@ -840,7 +843,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
         long timeout, int txSize) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.txStart(concurrency, isolation, timeout, txSize);
@@ -852,7 +855,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Transaction tx() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.tx();
@@ -868,7 +871,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
         @Nullable IgniteCacheExpiryPolicy plc)
         throws IgniteCheckedException
     {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.localPeek(key, peekModes, plc);
@@ -880,7 +883,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.localEntries(peekModes);
@@ -892,7 +895,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean evict(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.evict(key);
@@ -904,7 +907,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void evictAll(@Nullable Collection<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.evictAll(keys);
@@ -916,7 +919,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void clearLocally() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.clearLocally();
@@ -928,7 +931,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.clear();
@@ -940,7 +943,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.clearAsync();
@@ -952,7 +955,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.clearAsync(key);
@@ -964,7 +967,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.clearAsync(keys);
@@ -976,7 +979,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean clearLocally(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.clearLocally(key);
@@ -988,7 +991,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void clearLocallyAll(Set<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.clearLocallyAll(keys);
@@ -1000,7 +1003,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void clear(K key) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.clear(key);
@@ -1012,7 +1015,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.clearAll(keys);
@@ -1025,7 +1028,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Nullable @Override public V getAndRemove(K key)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndRemove(key);
@@ -1037,7 +1040,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.getAndRemoveAsync(key);
@@ -1050,7 +1053,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public boolean remove(K key)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.remove(key);
@@ -1063,7 +1066,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.removeAllConflict(drMap);
@@ -1077,7 +1080,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap)
         throws IgniteCheckedException
     {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removeAllConflictAsync(drMap);
@@ -1089,7 +1092,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removeAsync(key);
@@ -1101,7 +1104,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.replacexAsync(key, oldVal, newVal);
@@ -1113,7 +1116,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.replacex(key, oldVal, newVal);
@@ -1125,7 +1128,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public GridCacheReturn removex(K key, V val) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removex(key, val);
@@ -1137,7 +1140,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removexAsync(key, val);
@@ -1149,7 +1152,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V val) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.remove(key, val);
@@ -1161,7 +1164,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removeAsync(key, val);
@@ -1173,7 +1176,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.removeAll(keys);
@@ -1185,7 +1188,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removeAllAsync(keys);
@@ -1198,7 +1201,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public void removeAll()
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.removeAll();
@@ -1210,7 +1213,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.removeAllAsync();
@@ -1223,7 +1226,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     /** {@inheritDoc} */
     @Override public boolean lock(K key, long timeout)
         throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.lock(key, timeout);
@@ -1235,7 +1238,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.lockAsync(key, timeout);
@@ -1247,7 +1250,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.lockAll(keys, timeout);
@@ -1259,7 +1262,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.lockAllAsync(keys, timeout);
@@ -1271,7 +1274,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void unlock(K key) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.unlock(key);
@@ -1283,7 +1286,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.unlockAll(keys);
@@ -1295,7 +1298,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean isLocked(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.isLocked(key);
@@ -1307,7 +1310,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public boolean isLockedByThread(K key) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.isLockedByThread(key);
@@ -1319,7 +1322,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public int size() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.size();
@@ -1331,7 +1334,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.size(peekModes);
@@ -1343,7 +1346,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.sizeAsync(peekModes);
@@ -1355,7 +1358,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.localSize(peekModes);
@@ -1367,7 +1370,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public int nearSize() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.nearSize();
@@ -1379,7 +1382,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.primarySize();
@@ -1391,7 +1394,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             delegate.promoteAll(keys);
@@ -1403,7 +1406,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.swapIterator();
@@ -1415,7 +1418,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.offHeapIterator();
@@ -1427,7 +1430,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.offHeapEntriesCount();
@@ -1439,7 +1442,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.offHeapAllocatedSize();
@@ -1451,7 +1454,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long swapSize() throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.swapSize();
@@ -1463,7 +1466,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public long swapKeys() throws IgniteCheckedException {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.swapKeys();
@@ -1475,7 +1478,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return delegate.iterator();
@@ -1487,7 +1490,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> forceRepartition() {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
             return cache.forceRepartition();
@@ -1509,7 +1512,7 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridCacheContext<K, V>)in.readObject();
         delegate = (GridCacheAdapter<K, V>)in.readObject();
-        prj = (CacheProjectionContext<K, V>)in.readObject();
+        prj = (CacheProjectionContext)in.readObject();
 
         gate = ctx.gate();
         cache = ctx.cache();
@@ -1523,17 +1526,17 @@ public class GridCacheProxyImpl<K, V> implements GridCache<K, V>, GridCacheProje
 
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
-        return delegate.expiry();
+        return prj.expiry();
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        CacheProjectionContext<K, V> prev = gate.enter(prj);
+    @Override public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        CacheProjectionContext prev = gate.enter(prj);
 
         try {
-            GridCacheProjectionEx<K, V> prj0 = prj != null ? prj.withExpiryPolicy(plc) : delegate.withExpiryPolicy(plc);
+            CacheProjectionContext prj0 = prj.withExpiryPolicy(plc);
 
-            return new GridCacheProxyImpl<>(ctx, delegate, (CacheProjectionContext<K, V>)prj0);
+            return new GridCacheProxyImpl<>(ctx, delegate, prj0);
         }
         finally {
             gate.leave(prev);

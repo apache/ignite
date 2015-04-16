@@ -1963,7 +1963,7 @@ public class GridCacheConcurrentMap {
         private GridCacheContext<K, V> ctx;
 
         /** */
-        private CacheProjectionContext<K, V> prjPerCall;
+        private CacheProjectionContext prjPerCall;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -1982,7 +1982,7 @@ public class GridCacheConcurrentMap {
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
             GridCacheContext<K, V> ctx,
-            CacheProjectionContext<K, V> prjPerCall) {
+            CacheProjectionContext prjPerCall) {
             it = new Iterator0<>(map, false, filter, -1, -1);
 
             this.ctx = ctx;
@@ -1996,7 +1996,7 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public Cache.Entry<K, V> next() {
-            CacheProjectionContext<K, V> oldPrj = ctx.projectionPerCall();
+            CacheProjectionContext oldPrj = ctx.projectionPerCall();
 
             ctx.projectionPerCall(prjPerCall);
 
@@ -2025,7 +2025,7 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             it = (Iterator0<K, V>)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
-            prjPerCall = (CacheProjectionContext<K, V>)in.readObject();
+            prjPerCall = (CacheProjectionContext)in.readObject();
         }
     }
 

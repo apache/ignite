@@ -17,43 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.expiry.*;
-import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Cache projection context.
  */
-public class CacheProjectionContext<K, V> implements GridCacheProjectionEx<K, V>, Externalizable {
+public class CacheProjectionContext implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Base cache. */
-    private GridCacheAdapter<K, V> cache;
-
-    /** Cache context. */
-    private GridCacheContext<K, V> cctx;
-
-    /** Queries impl. */
-    private CacheQueries<K, V> qry;
 
     /** Skip store. */
     @GridToStringInclude
@@ -76,45 +53,24 @@ public class CacheProjectionContext<K, V> implements GridCacheProjectionEx<K, V>
     }
 
     /**
-     * @param parent Parent projection.
-     * @param cctx Cache context.
      * @param skipStore Skip store flag.
      * @param subjId Subject ID.
      * @param keepPortable Keep portable flag.
      * @param expiryPlc Expiry policy.
      */
     public CacheProjectionContext(
-        CacheProjection<K, V> parent,
-        GridCacheContext<K, V> cctx,
         boolean skipStore,
         @Nullable UUID subjId,
         boolean keepPortable,
         @Nullable ExpiryPolicy expiryPlc) {
-        assert parent != null;
-        assert cctx != null;
-
-        this.cctx = cctx;
 
         this.skipStore = skipStore;
 
         this.subjId = subjId;
 
-        cache = cctx.cache();
-
-        qry = new CacheQueriesImpl<>(cctx, this);
-
         this.keepPortable = keepPortable;
 
         this.expiryPlc = expiryPlc;
-    }
-
-    /**
-     * Gets cache context.
-     *
-     * @return Cache context.
-     */
-    @Override public GridCacheContext<K, V> context() {
-        return cctx;
     }
 
     /**
@@ -132,28 +88,12 @@ public class CacheProjectionContext<K, V> implements GridCacheProjectionEx<K, V>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public <K1, V1> GridCache<K1, V1> cache() {
-        return (GridCache<K1, V1>)cctx.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
-        return qry;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
-        A.notNull(subjId, "subjId");
-
-        CacheProjectionContext<K, V> prj = new CacheProjectionContext<>(this,
-            cctx,
+    public CacheProjectionContext keepPortable() {
+        return new CacheProjectionContext(
             skipStore,
             subjId,
-            keepPortable,
+            true,
             expiryPlc);
-
-        return new GridCacheProxyImpl<>(cctx, cache, prj);
     }
 
     /**
@@ -166,597 +106,42 @@ public class CacheProjectionContext<K, V> implements GridCacheProjectionEx<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
-        if (this.skipStore == skipStore)
-            return new GridCacheProxyImpl<>(cctx, cache, this);
+    public CacheProjectionContext forSubjectId(UUID subjId) {
+        A.notNull(subjId, "subjId");
 
-        CacheProjectionContext<K, V> prj = new CacheProjectionContext<>(this,
-            cctx,
+        return new CacheProjectionContext(
             skipStore,
             subjId,
             keepPortable,
             expiryPlc);
-
-        return new GridCacheProxyImpl<>(cctx, cache, prj);
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> keepPortable() {
-        CacheProjectionContext<K1, V1> prj = new CacheProjectionContext<>(
-            (CacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)cctx,
-            skipStore,
-            subjId,
-            true,
-            expiryPlc);
-
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)cctx, (GridCacheAdapter<K1, V1>)cache, prj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() {
-        return keySet().size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return cache.localSize(peekModes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return cache.size(peekModes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
-        return cache.sizeAsync(peekModes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int nearSize() {
-        return cctx.config().getCacheMode() == PARTITIONED && isNearEnabled(cctx) ?
-             cctx.near().nearKeySet(null).size() : 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int primarySize() {
-        return primaryKeySet().size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        return cache.isEmpty() || size() == 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean containsKey(K key) {
-        return cache.containsKey(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
-        return cache.containsKeyAsync(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean containsKeys(Collection<? extends K> keys) {
-        return cache.containsKeys(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
-        return cache.containsKeysAsync(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V get(K key) throws IgniteCheckedException {
-        return cache.get(key, deserializePortables());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAsync(K key) {
-        return cache.getAsync(key, deserializePortables());
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getForcePrimary(K key) throws IgniteCheckedException {
-        return cache.getForcePrimary(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getForcePrimaryAsync(K key) {
-        return cache.getForcePrimaryAsync(key);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws IgniteCheckedException {
-        return cache.getAllOutTx(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return cache.isIgfsDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        return cache.igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceMax() {
-        return cache.igfsDataSpaceMax();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return cache.isMongoDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return cache.isMongoMetaCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        return cache.getAll(keys, deserializePortables());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.getAllAsync(keys, deserializePortables());
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getAndPut(K key, V val)
-        throws IgniteCheckedException {
-        return getAndPutAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAndPutAsync(K key, V val) {
-        return cache.getAndPutAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean put(K key, V val) throws IgniteCheckedException {
-        return cache.put(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException {
-        cache.putAllConflict(drMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
-        throws IgniteCheckedException {
-        return cache.putAllConflictAsync(drMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> EntryProcessorResult<T> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
-        throws IgniteCheckedException {
-        return cache.invoke(key, entryProcessor, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException {
-        return cache.invokeAll(keys, entryProcessor, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<EntryProcessorResult<T>> invokeAsync(K key,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) {
-        return cache.invokeAsync(key, entryProcessor, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) {
-        return cache.invokeAllAsync(keys, entryProcessor, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
-        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
-        Object... args) throws IgniteCheckedException {
-        return cache.invokeAll(map, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
-        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
-        Object... args) {
-        return cache.invokeAllAsync(map, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putAsync(K key, V val) {
-        return cache.putAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getAndPutIfAbsent(K key, V val) throws IgniteCheckedException {
-        return getAndPutIfAbsentAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAndPutIfAbsentAsync(K key, V val) {
-        return cache.getAndPutIfAbsentAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putIfAbsent(K key, V val) throws IgniteCheckedException {
-        return putIfAbsentAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
-        return cache.putIfAbsentAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
-        return getAndReplaceAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAndReplaceAsync(K key, V val) {
-        return cache.getAndReplaceAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(K key, V val) throws IgniteCheckedException {
-        return replaceAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V val) {
-        return cache.replaceAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replaceAsync(key, oldVal, newVal).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
-        CacheEntryPredicate fltr = cctx.equalsValue(oldVal);
-
-        return cache.putAsync(key, newVal, fltr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void putAll(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
-        putAllAsync(m).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m) {
-        return cache.putAllAsync(m);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<K> keySet() {
-        return cache.keySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<K> primaryKeySet() {
-        return cache.primaryKeySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<V> values() {
-        return cache.values();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet() {
-        return cache.entrySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        return cache.entrySetx(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
-        // TODO pass entry filter.
-        return cache.entrySet(part);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean skipStore() {
+    public boolean skipStore() {
         return skipStore;
     }
 
     /** {@inheritDoc} */
-    @Override public String name() {
-        return cache.name();
+    public CacheProjectionContext setSkipStore(boolean skipStore) {
+        return new CacheProjectionContext(
+            skipStore,
+            subjId,
+            keepPortable,
+            expiryPlc);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V localPeek(K key,
-        CachePeekMode[] peekModes,
-        @Nullable IgniteCacheExpiryPolicy plc)
-        throws IgniteCheckedException
-    {
-        return cache.localPeek(key, peekModes, plc);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return cache.localEntries(peekModes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean evict(K key) {
-        return cache.evict(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void evictAll(@Nullable Collection<? extends K> keys) {
-        cache.evictAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clearLocally() {
-        cache.clearLocally();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clearLocallyAll(Set<? extends K> keys) {
-        cache.clearLocallyAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear() throws IgniteCheckedException {
-        cache.clear();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clear(K key) throws IgniteCheckedException {
-        cache.clear(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void clearAll(Set<? extends K> keys) throws IgniteCheckedException {
-        cache.clearAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(K key) {
-        return cache.clearAsync(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync(Set<? extends K> keys) {
-        return cache.clearAsync(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> clearAsync() {
-        return cache.clearAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clearLocally(K key) {
-        return cache.clearLocally0(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getAndRemove(K key) throws IgniteCheckedException {
-        return getAndRemoveAsync(key).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
-        return cache.getAndRemoveAsync(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean remove(K key) throws IgniteCheckedException {
-        return removeAsync(key).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException {
-        cache.removeAllConflict(drMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap)
-        throws IgniteCheckedException {
-        return cache.removeAllConflictAsync(drMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removeAsync(K key) {
-        return cache.removeAsync(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal) {
-        A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
-
-        return cache.replacexAsync(key, oldVal, newVal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        return replacexAsync(key, oldVal, newVal).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheReturn removex(K key, V val) throws IgniteCheckedException {
-        return removexAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val) {
-        return cache.removexAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean remove(K key, V val) throws IgniteCheckedException {
-        return removeAsync(key, val).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
-        return cache.removeAsync(key, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        cache.removeAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.removeAllAsync(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeAll()
-        throws IgniteCheckedException {
-        removeAllAsync().get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync() {
-        return cache.removeAllAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean lock(K key, long timeout) throws IgniteCheckedException {
-        return cache.lock(key, timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout) {
-        return cache.lockAsync(key, timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout) throws IgniteCheckedException {
-        return cache.lockAll(keys, timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout) {
-        return cache.lockAllAsync(keys, timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlock(K key) throws IgniteCheckedException {
-        cache.unlock(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        cache.unlockAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLocked(K key) {
-        return cache.isLocked(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLockedByThread(K key) {
-        return cache.isLockedByThread(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        cache.promoteAll(keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalTx txStartEx(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        return cache.txStartEx(concurrency, isolation);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation) {
-        return cache.txStart(concurrency, isolation);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
-        long timeout, int txSize) {
-        return cache.txStart(concurrency, isolation, timeout, txSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Transaction tx() {
-        return cache.tx();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        return cache.entrySet().iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public ExpiryPolicy expiry() {
+    @Nullable public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
     /** {@inheritDoc} */
-    @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
-        throws IgniteCheckedException {
-        cache.localLoadCache(p, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
-        return cache.localLoadCacheAsync(p, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        return new CacheProjectionContext<>(
-            this,
-            cctx,
+    public CacheProjectionContext withExpiryPolicy(ExpiryPolicy plc) {
+        return new CacheProjectionContext(
             skipStore,
             subjId,
             true,
             plc);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(cctx);
-
-        out.writeBoolean(skipStore);
-
-        out.writeBoolean(keepPortable);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cctx = (GridCacheContext<K, V>)in.readObject();
-
-        skipStore = in.readBoolean();
-
-        cache = cctx.cache();
-
-        qry = new CacheQueriesImpl<>(cctx, this);
-
-        keepPortable = in.readBoolean();
     }
 
     /** {@inheritDoc} */

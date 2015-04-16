@@ -211,7 +211,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param skipStore Skip store flag.
      * @return New projection based on this one, but with skip store flag enabled.
      */
-    public CacheProjection<K, V> setSkipStore(boolean skipStore);
+    public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore);
 
     /**
      * Creates projection that will operate with portable objects.
@@ -250,7 +250,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return Projection for portable objects.
      */
-    public <K1, V1> CacheProjection<K1, V1> keepPortable();
+    public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.
