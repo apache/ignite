@@ -52,10 +52,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     /** Gateway. */
     private GridCacheGateway<K, V> gate;
 
-    /** Cache. */
-    @GridToStringInclude
-    private GridCacheAdapter<K, V> cache;
-
     /** Delegate object. */
     @GridToStringExclude
     private IgniteInternalCache<K, V> delegate;
@@ -89,7 +85,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         this.prj = prj;
 
         gate = ctx.gate();
-        cache = ctx.cache();
 
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
@@ -117,12 +112,12 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cache.name();
+        return delegate.name();
     }
 
     /** {@inheritDoc} */
     @Override public <K1, V1> IgniteInternalCache<K1, V1> cache() {
-        return cache.cache();
+        return delegate.cache();
     }
 
     /** {@inheritDoc} */
@@ -144,7 +139,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration configuration() {
-        return cache.configuration();
+        return delegate.configuration();
     }
 
     /** {@inheritDoc} */
@@ -152,7 +147,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.metrics();
+            return delegate.metrics();
         }
         finally {
             gate.leave(prev);
@@ -164,7 +159,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.mxBean();
+            return delegate.mxBean();
         }
         finally {
             gate.leave(prev);
@@ -176,7 +171,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.overflowSize();
+            return delegate.overflowSize();
         }
         finally {
             gate.leave(prev);
@@ -188,7 +183,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            cache.localLoadCache(p, args);
+            delegate.localLoadCache(p, args);
         }
         finally {
             gate.leave(prev);
@@ -200,7 +195,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.localLoadCacheAsync(p, args);
+            return delegate.localLoadCacheAsync(p, args);
         }
         finally {
             gate.leave(prev);
@@ -1449,7 +1444,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.swapIterator();
+            return delegate.swapIterator();
         }
         finally {
             gate.leave(prev);
@@ -1461,7 +1456,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.offHeapIterator();
+            return delegate.offHeapIterator();
         }
         finally {
             gate.leave(prev);
@@ -1473,7 +1468,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.offHeapEntriesCount();
+            return delegate.offHeapEntriesCount();
         }
         finally {
             gate.leave(prev);
@@ -1485,7 +1480,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.offHeapAllocatedSize();
+            return delegate.offHeapAllocatedSize();
         }
         finally {
             gate.leave(prev);
@@ -1497,7 +1492,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.swapSize();
+            return delegate.swapSize();
         }
         finally {
             gate.leave(prev);
@@ -1509,7 +1504,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.swapKeys();
+            return delegate.swapKeys();
         }
         finally {
             gate.leave(prev);
@@ -1533,7 +1528,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return cache.forceRepartition();
+            return delegate.forceRepartition();
         }
         finally {
             gate.leave(prev);
@@ -1555,10 +1550,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         prj = (CacheOperationContext)in.readObject();
 
         gate = ctx.gate();
-        cache = ctx.cache();
-
-        gate = ctx.gate();
-        cache = ctx.cache();
 
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
