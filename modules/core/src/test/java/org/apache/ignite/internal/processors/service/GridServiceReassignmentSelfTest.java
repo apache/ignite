@@ -152,7 +152,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
     private boolean checkServices(int total, int maxPerNode, int gridIdx, boolean lastTry) throws Exception {
         IgniteEx grid = grid(gridIdx);
 
-        GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> cache = grid.utilityCache();
+        IgniteInternalCache<GridServiceAssignmentsKey, GridServiceAssignments> cache = grid.utilityCache();
 
         GridServiceAssignments assignments = cache.get(new GridServiceAssignmentsKey("testService"));
 

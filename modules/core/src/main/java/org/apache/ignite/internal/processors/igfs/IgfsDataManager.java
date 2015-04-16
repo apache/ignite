@@ -65,10 +65,10 @@ public class IgfsDataManager extends IgfsManager {
     private IgfsEx igfs;
 
     /** Data cache projection. */
-    private GridCacheProjectionEx<IgfsBlockKey, byte[]> dataCachePrj;
+    private IgniteInternalCache<IgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
-    private GridCache<Object, Object> dataCache;
+    private IgniteInternalCache<Object, Object> dataCache;
 
     /** */
     private CountDownLatch dataCacheStartLatch;

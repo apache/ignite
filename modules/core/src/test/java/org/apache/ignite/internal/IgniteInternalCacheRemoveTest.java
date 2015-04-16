@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 /**
  *
  */
-public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
+public class IgniteInternalCacheRemoveTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;

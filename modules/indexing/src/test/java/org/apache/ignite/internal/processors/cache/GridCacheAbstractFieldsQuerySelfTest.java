@@ -182,7 +182,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         try {
             Collection<GridCacheSqlMetadata> metas =
-                ((IgniteKernal)grid(0)).getCache(null).queries().sqlMetadata();
+                ((IgniteKernal)grid(0)).getCache(null).context().queries().sqlMetadata();
 
             assert metas != null;
             assertEquals("Invalid meta: " + metas, 3, metas.size());
@@ -786,7 +786,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         cache.getAndPut("key", "val");
 
-        Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
         assertEquals(1, metas.size());
 
@@ -813,7 +813,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         cache.getAndPut(key, val);
 
-        Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
         assertEquals(1, metas.size());
 

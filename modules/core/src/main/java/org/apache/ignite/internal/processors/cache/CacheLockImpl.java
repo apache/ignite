@@ -35,10 +35,10 @@ class CacheLockImpl<K, V> implements Lock {
     private final GridCacheGateway<K, V> gate;
 
     /** */
-    private final GridCacheProjectionEx<K, V> delegate;
+    private final IgniteInternalCache<K, V> delegate;
 
     /** Projection. */
-    private final GridCacheProjectionImpl<K, V> prj;
+    private final CacheOperationContext prj;
 
     /** */
     private final Collection<? extends K> keys;
@@ -55,7 +55,7 @@ class CacheLockImpl<K, V> implements Lock {
      * @param prj Projection.
      * @param keys Keys.
      */
-    CacheLockImpl(GridCacheGateway<K, V> gate, GridCacheProjectionEx<K, V> delegate, GridCacheProjectionImpl<K, V> prj,
+    CacheLockImpl(GridCacheGateway<K, V> gate, IgniteInternalCache<K, V> delegate, CacheOperationContext prj,
         Collection<? extends K> keys) {
         this.gate = gate;
         this.delegate = delegate;
@@ -65,7 +65,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void lock() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             delegate.lockAll(keys, 0);
@@ -98,7 +98,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             boolean res = delegate.lockAll(keys, -1);
@@ -124,7 +124,7 @@ class CacheLockImpl<K, V> implements Lock {
         if (time <= 0)
             return tryLock();
 
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             IgniteInternalFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
@@ -167,7 +167,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void unlock() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             if (lockedThread != Thread.currentThread()) {

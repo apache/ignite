@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -56,21 +54,6 @@ public interface CacheQueries<K, V> {
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Accumulated metrics for all queries executed for this cache.
-     *
-     * @return Cache query metrics.
-     */
-    public QueryMetrics metrics();
-
-    /**
-     * Gets SQL metadata.
-     *
-     * @return SQL metadata.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException;
-
-    /**
      * Creates SQL fields query which will include results metadata if needed.
      *
      * @param qry SQL query.
@@ -85,19 +68,4 @@ public interface CacheQueries<K, V> {
      * @return Query.
      */
     public <R> CacheQuery<R> createSpiQuery();
-
-    /**
-     * @param space Space name.
-     * @param qry Query.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry);
-
-    /**
-     * @param space Space.
-     * @param sqlQry Query.
-     * @param params Parameters.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object... params);
 }

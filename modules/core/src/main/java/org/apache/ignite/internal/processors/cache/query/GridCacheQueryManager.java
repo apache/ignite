@@ -759,12 +759,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
-        CacheProjection<K, V> prj0 = cctx.cache();
+        IgniteInternalCache<K, V> prj0 = cctx.cache();
 
         if (qry.keepPortable())
             prj0 = prj0.keepPortable();
 
-        final CacheProjection<K, V> prj = prj0;
+        final IgniteInternalCache<K, V> prj = prj0;
 
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
@@ -1916,13 +1916,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final GridKernalContext ctx = ((IgniteKernal) ignite).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
-                new C1<GridCache<?, ?>, String>() {
-                    @Override public String apply(GridCache<?, ?> c) {
+                new C1<IgniteInternalCache<?, ?>, String>() {
+                    @Override public String apply(IgniteInternalCache<?, ?> c) {
                         return c.name();
                     }
                 },
-                new P1<GridCache<?, ?>>() {
-                    @Override public boolean apply(GridCache<?, ?> c) {
+                new P1<IgniteInternalCache<?, ?>>() {
+                    @Override public boolean apply(IgniteInternalCache<?, ?> c) {
                         return !CU.MARSH_CACHE_NAME.equals(c.name()) && !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
                             !CU.ATOMICS_CACHE_NAME.equals(c.name());
                     }

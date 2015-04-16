@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -34,23 +32,20 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  */
 public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private GridCacheContext<K, V> ctx;
 
     /** */
-    private GridCacheProjectionImpl<K, V> prj;
+    private boolean keepPortable;
 
     /**
      * @param ctx Context.
-     * @param prj Projection.
+     * @param keepPortable Keep portable flag.
      */
-    public CacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
+    public CacheQueriesImpl(GridCacheContext<K, V> ctx, boolean keepPortable) {
         assert ctx != null;
 
         this.ctx = ctx;
-        this.prj = prj;
+        this.keepPortable = keepPortable;
     }
 
     /** {@inheritDoc} */
@@ -63,7 +58,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             qry,
             null,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +72,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             search,
             null,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +84,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             null,
             (IgniteBiPredicate<Object, Object>)filter,
             false,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 
     /**
@@ -104,27 +99,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             null,
             null,
             false,
-            prj != null && prj.isKeepPortable());
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry) {
-        return ctx.kernalContext().query().queryTwoStep(space, qry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
-        return ctx.kernalContext().query().queryTwoStep(ctx, new SqlFieldsQuery(sqlQry).setArgs(params));
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryMetrics metrics() {
-        return ctx.queries().metrics();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
-        return ctx.queries().sqlMetadata();
+            keepPortable);
     }
 
     /** {@inheritDoc} */
@@ -137,6 +112,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             qry,
             null,
             incMeta,
-            prj != null && prj.isKeepPortable());
+            keepPortable);
     }
 }

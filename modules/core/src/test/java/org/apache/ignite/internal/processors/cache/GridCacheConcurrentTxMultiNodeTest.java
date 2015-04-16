@@ -675,7 +675,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param terminalId Terminal ID.
          */
         private void put(Object o, String cacheKey, String terminalId) {
-//            GridCache<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
 //
 //            AffinityKey<String> affinityKey = new AffinityKey<>(cacheKey, terminalId);
 //

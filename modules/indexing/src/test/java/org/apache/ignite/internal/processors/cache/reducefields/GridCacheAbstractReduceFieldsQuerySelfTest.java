@@ -231,7 +231,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //            }
 //        };
 //
-//        CacheProjection<AffinityKey<String>, Person> cachePrj =
+//        InternalCache<AffinityKey<String>, Person> cachePrj =
 //            grid(0).<AffinityKey<String>, Person>cache(null).projection(p);
 //
 //        GridCacheReduceFieldsQuery<AffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =
