@@ -69,7 +69,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** Delegate. */
     @GridToStringInclude
-    private GridCacheAdapter<K, V> delegate;
+    private CacheProjection<K, V> delegate;
 
     /** Projection. */
     private CacheProjectionContext prjCtx;
@@ -97,7 +97,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     public IgniteCacheProxy(
         GridCacheContext<K, V> ctx,
-        GridCacheAdapter<K, V> delegate,
+        CacheProjection<K, V> delegate,
         CacheProjectionContext prjCtx,
         boolean async
     ) {
@@ -1491,7 +1491,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridCacheContext<K, V>)in.readObject();
 
-        delegate = (GridCacheAdapter<K, V>)in.readObject();
+        delegate = (CacheProjection<K, V>)in.readObject();
 
         prjCtx = (CacheProjectionContext)in.readObject();
 
