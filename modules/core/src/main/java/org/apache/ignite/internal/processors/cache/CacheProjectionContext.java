@@ -87,7 +87,11 @@ public class CacheProjectionContext implements Serializable {
         return !keepPortable;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * See {@link InternalCache#keepPortable()}.
+     *
+     * @return New instance of CacheProjectionContext with keep portable flag.
+     */
     public CacheProjectionContext keepPortable() {
         return new CacheProjectionContext(
             skipStore,
@@ -105,7 +109,11 @@ public class CacheProjectionContext implements Serializable {
         return subjId;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * See {@link InternalCache#forSubjectId(UUID)}.
+     *
+     * @return New instance of CacheProjectionContext with specific subject id.
+     */
     public CacheProjectionContext forSubjectId(UUID subjId) {
         A.notNull(subjId, "subjId");
 
@@ -116,12 +124,18 @@ public class CacheProjectionContext implements Serializable {
             expiryPlc);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Skip store.
+     */
     public boolean skipStore() {
         return skipStore;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * See {@link InternalCache#setSkipStore(boolean)}.
+     *
+     * @return New instance of CacheProjectionContext with skip store flag.
+     */
     public CacheProjectionContext setSkipStore(boolean skipStore) {
         return new CacheProjectionContext(
             skipStore,
@@ -130,12 +144,19 @@ public class CacheProjectionContext implements Serializable {
             expiryPlc);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return {@link ExpiryPolicy} associated with this projection.
+     */
     @Nullable public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * See {@link InternalCache#withExpiryPolicy(ExpiryPolicy)}.
+     *
+     * @param plc {@link ExpiryPolicy} to associate with this projection.
+     * @return New instance of CacheProjectionContext with skip store flag.
+     */
     public CacheProjectionContext withExpiryPolicy(ExpiryPolicy plc) {
         return new CacheProjectionContext(
             skipStore,
