@@ -64,7 +64,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private GridCacheInternalKey key;
 
     /** Sequence projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
+    private InternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context. */
     private volatile GridCacheContext ctx;
@@ -113,7 +113,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     public GridCacheAtomicSequenceImpl(String name,
         GridCacheInternalKey key,
-        CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
+        InternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
         GridCacheContext ctx,
         int batchSize,
         long locVal,

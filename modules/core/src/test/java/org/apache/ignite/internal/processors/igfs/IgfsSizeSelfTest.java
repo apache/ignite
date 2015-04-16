@@ -309,7 +309,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
-            CacheProjection cache = (CacheProjection)g.cachex(DATA_CACHE_NAME).cache();
+            InternalCache cache = (InternalCache)g.cachex(DATA_CACHE_NAME).cache();
 
             assert cache.isIgfsDataCache();
         }

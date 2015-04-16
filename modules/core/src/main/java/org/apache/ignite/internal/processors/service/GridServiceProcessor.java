@@ -81,7 +81,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private ThreadLocal<String> svcName = new ThreadLocal<>();
 
     /** Service cache. */
-    private CacheProjection<Object, Object> cache;
+    private InternalCache<Object, Object> cache;
 
     /** Topology listener. */
     private GridLocalEventListener topLsnr = new TopologyListener();

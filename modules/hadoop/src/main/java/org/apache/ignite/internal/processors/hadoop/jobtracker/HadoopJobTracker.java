@@ -57,10 +57,10 @@ public class HadoopJobTracker extends HadoopComponent {
     private final GridMutex mux = new GridMutex();
 
     /** */
-    private volatile CacheProjection<HadoopJobId, HadoopJobMetadata> jobMetaPrj;
+    private volatile InternalCache<HadoopJobId, HadoopJobMetadata> jobMetaPrj;
 
     /** Projection with expiry policy for finished job updates. */
-    private volatile CacheProjection<HadoopJobId, HadoopJobMetadata> finishedJobMetaPrj;
+    private volatile InternalCache<HadoopJobId, HadoopJobMetadata> finishedJobMetaPrj;
 
     /** Map-reduce execution planner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -107,8 +107,8 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job meta projection.
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    private CacheProjection<HadoopJobId, HadoopJobMetadata> jobMetaCache() {
-        CacheProjection<HadoopJobId, HadoopJobMetadata> prj = jobMetaPrj;
+    private InternalCache<HadoopJobId, HadoopJobMetadata> jobMetaCache() {
+        InternalCache<HadoopJobId, HadoopJobMetadata> prj = jobMetaPrj;
 
         if (prj == null) {
             synchronized (mux) {
@@ -149,8 +149,8 @@ public class HadoopJobTracker extends HadoopComponent {
     /**
      * @return Projection with expiry policy for finished job updates.
      */
-    private CacheProjection<HadoopJobId, HadoopJobMetadata> finishedJobMetaCache() {
-        CacheProjection<HadoopJobId, HadoopJobMetadata> prj = finishedJobMetaPrj;
+    private InternalCache<HadoopJobId, HadoopJobMetadata> finishedJobMetaCache() {
+        InternalCache<HadoopJobId, HadoopJobMetadata> prj = finishedJobMetaPrj;
 
         if (prj == null) {
             jobMetaCache();
@@ -470,7 +470,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 case COMMIT:
                 case ABORT: {
-                    CacheProjection<HadoopJobId, HadoopJobMetadata> cache = finishedJobMetaCache();
+                    InternalCache<HadoopJobId, HadoopJobMetadata> cache = finishedJobMetaCache();
 
                     cache.invokeAsync(info.jobId(), new UpdatePhaseProcessor(incrCntrs, PHASE_COMPLETE)).
                         listen(failsLog);

@@ -43,7 +43,7 @@ import java.util.*;
 /**
  * Cache proxy.
  */
-public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, Externalizable {
+public class GridCacheProxyImpl<K, V> implements InternalCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,7 +59,7 @@ public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, External
 
     /** Delegate object. */
     @GridToStringExclude
-    private CacheProjection<K, V> delegate;
+    private InternalCache<K, V> delegate;
 
     /** Projection. */
     @GridToStringExclude
@@ -83,7 +83,7 @@ public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, External
      * @param delegate Delegate object.
      * @param prj Optional projection which will be passed to gateway.
      */
-    public GridCacheProxyImpl(GridCacheContext<K, V> ctx, CacheProjection<K, V> delegate,
+    public GridCacheProxyImpl(GridCacheContext<K, V> ctx, InternalCache<K, V> delegate,
         @Nullable CacheProjectionContext prj) {
         assert ctx != null;
         assert delegate != null;
@@ -109,7 +109,7 @@ public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, External
     /**
      * @return Proxy delegate.
      */
-    public CacheProjection<K, V> delegate() {
+    public InternalCache<K, V> delegate() {
         return delegate;
     }
 
@@ -126,7 +126,7 @@ public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, External
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> cache() {
+    @Override public <K1, V1> InternalCache<K1, V1> cache() {
         return cache.cache();
     }
 

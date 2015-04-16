@@ -71,7 +71,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, Externalizable {
+public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -366,8 +366,8 @@ public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, E
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> CacheProjection<K1, V1> cache() {
-        return (CacheProjection<K1, V1>)this;
+    @Override public <K1, V1> InternalCache<K1, V1> cache() {
+        return (InternalCache<K1, V1>)this;
     }
 
     /** {@inheritDoc} */
@@ -3220,7 +3220,7 @@ public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, E
 
             // Delegate to near if dht.
             if (e.isDht() && CU.isNearEnabled(ctx)) {
-                CacheProjection<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+                InternalCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
 
                 return near.isLockedByThread(key) || e.lockedByThread();
             }
@@ -5055,7 +5055,7 @@ public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, E
 
         /** {@inheritDoc} */
         @Override public Integer applyx(Object o) throws IgniteCheckedException {
-            CacheProjection<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            InternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             assert cache != null : cacheName;
 
@@ -5092,7 +5092,7 @@ public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, E
     }
 
     /**
-     * Internal callable which performs {@link CacheProjection#size()} or {@link CacheProjection#primarySize()}
+     * Internal callable which performs {@link InternalCache#size()} or {@link InternalCache#primarySize()}
      * operation on a cache with the given name.
      */
     @GridInternal
@@ -5128,7 +5128,7 @@ public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, E
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            CacheProjection<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            InternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }

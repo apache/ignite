@@ -56,7 +56,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
 
     /** Queue header view.  */
-    private CacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
+    private InternalCache<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
 
     /** Query notifying about queue update. */
     private UUID queueQryId;
@@ -376,7 +376,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         if (set == null)
             return;
 
-        CacheProjection cache = cctx.cache();
+        InternalCache cache = cctx.cache();
 
         final int BATCH_SIZE = 100;
 
@@ -503,7 +503,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Previous value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(final CacheProjection cache, final Object key, final T val)
+    @Nullable private <T> T retryPutIfAbsent(final InternalCache cache, final Object key, final T val)
         throws IgniteCheckedException {
         return DataStructuresProcessor.retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
@@ -518,7 +518,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final CacheProjection cache, final Collection<GridCacheSetItemKey> keys)
+    private void retryRemoveAll(final InternalCache cache, final Collection<GridCacheSetItemKey> keys)
         throws IgniteCheckedException {
         DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {

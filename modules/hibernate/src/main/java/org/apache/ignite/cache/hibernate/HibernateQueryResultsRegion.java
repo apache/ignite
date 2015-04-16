@@ -65,7 +65,7 @@ public class HibernateQueryResultsRegion extends HibernateGeneralDataRegion impl
      * @param cache Region cache.
      */
     public HibernateQueryResultsRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, CacheProjection<Object, Object> cache) {
+        Ignite ignite, InternalCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
 }

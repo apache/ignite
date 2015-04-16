@@ -59,7 +59,7 @@ public class VisorCacheRebalanceTask extends VisorOneNodeTask<Set<String>, Void>
             try {
                 Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-                for (CacheProjection c : ignite.cachesx()) {
+                for (InternalCache c : ignite.cachesx()) {
                     if (cacheNames.contains(c.name()))
                         futs.add(c.forceRepartition());
                 }

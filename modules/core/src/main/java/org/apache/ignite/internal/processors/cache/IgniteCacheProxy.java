@@ -69,7 +69,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** Delegate. */
     @GridToStringInclude
-    private CacheProjection<K, V> delegate;
+    private InternalCache<K, V> delegate;
 
     /** Projection. */
     private CacheProjectionContext prjCtx;
@@ -97,7 +97,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     public IgniteCacheProxy(
         GridCacheContext<K, V> ctx,
-        CacheProjection<K, V> delegate,
+        InternalCache<K, V> delegate,
         CacheProjectionContext prjCtx,
         boolean async
     ) {
@@ -1319,7 +1319,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /**
      *
      */
-    public CacheProjection delegate() {
+    public InternalCache delegate() {
         return delegate;
     }
 
@@ -1395,7 +1395,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in portable format), you should acquire following projection to avoid deserialization:
      * <pre>
-     * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     * InternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);
@@ -1491,7 +1491,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridCacheContext<K, V>)in.readObject();
 
-        delegate = (CacheProjection<K, V>)in.readObject();
+        delegate = (InternalCache<K, V>)in.readObject();
 
         prjCtx = (CacheProjectionContext)in.readObject();
 

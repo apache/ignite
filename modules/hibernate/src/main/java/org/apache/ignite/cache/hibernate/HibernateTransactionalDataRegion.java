@@ -43,7 +43,7 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
      * @param dataDesc Region data description.
      */
     public HibernateTransactionalDataRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, CacheProjection<Object, Object> cache, CacheDataDescription dataDesc) {
+        Ignite ignite, InternalCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache);
 
         this.dataDesc = dataDesc;

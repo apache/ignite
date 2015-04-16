@@ -39,8 +39,8 @@ public class DataStreamerCacheUpdaters {
     private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
     /**
-     * Updates cache using independent {@link CacheProjection#getAndPut(Object, Object)}and
-     * {@link CacheProjection#getAndRemove(Object)} operations. Thus it is safe from deadlocks but performance
+     * Updates cache using independent {@link org.apache.ignite.internal.processors.cache.InternalCache#getAndPut(Object, Object)}and
+     * {@link org.apache.ignite.internal.processors.cache.InternalCache#getAndRemove(Object)} operations. Thus it is safe from deadlocks but performance
      * is not the best.
      *
      * @return Single updater.
@@ -50,8 +50,8 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link CacheProjection#putAll(java.util.Map)}and
-     * {@link CacheProjection#removeAll()}. Can cause deadlocks if the same keys are getting
+     * Updates cache using batched methods {@link org.apache.ignite.internal.processors.cache.InternalCache#putAll(java.util.Map)}and
+     * {@link org.apache.ignite.internal.processors.cache.InternalCache#removeAll()}. Can cause deadlocks if the same keys are getting
      * updated concurrently. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched updater.
@@ -61,8 +61,8 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link CacheProjection#putAll(Map)} and
-     * {@link CacheProjection#removeAll(Collection)}. Keys are sorted in natural order and if all updates
+     * Updates cache using batched methods {@link org.apache.ignite.internal.processors.cache.InternalCache#putAll(Map)} and
+     * {@link org.apache.ignite.internal.processors.cache.InternalCache#removeAll(Collection)}. Keys are sorted in natural order and if all updates
      * use the same rule deadlock can not happen. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched sorted updater.

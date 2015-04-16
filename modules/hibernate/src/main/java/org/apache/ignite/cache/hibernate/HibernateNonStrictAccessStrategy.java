@@ -64,7 +64,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
      * @param cache Cache.
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected HibernateNonStrictAccessStrategy(Ignite ignite, CacheProjection<Object, Object> cache, ThreadLocal writeCtx) {
+    protected HibernateNonStrictAccessStrategy(Ignite ignite, InternalCache<Object, Object> cache, ThreadLocal writeCtx) {
         super(ignite, cache);
 
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;
@@ -209,7 +209,7 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
          * @param cache Cache.
          * @throws IgniteCheckedException If failed.
          */
-        void updateCache(CacheProjection<Object, Object> cache) throws IgniteCheckedException {
+        void updateCache(InternalCache<Object, Object> cache) throws IgniteCheckedException {
             if (!F.isEmpty(rmvs))
                 cache.removeAll(rmvs);
 
