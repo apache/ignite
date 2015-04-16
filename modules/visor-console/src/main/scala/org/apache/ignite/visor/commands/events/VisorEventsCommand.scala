@@ -283,8 +283,8 @@ class VisorEventsCommand {
             }
 
             val evts = try
-                ignite.compute(ignite.cluster.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
-                    toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
+                executeOne(nid, classOf[VisorNodeEventsCollectorTask],
+                    VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter))
             catch {
                 case e: IgniteException =>
                     scold(e.getMessage)

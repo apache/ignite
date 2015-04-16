@@ -21,6 +21,8 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import java.util.UUID
+
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
@@ -143,7 +145,7 @@ class VisorDiscoveryCommand {
                     return
                 }
 
-                val oldest = ignite.cluster.nodes().maxBy(_.metrics().getUpTime)
+                val node = ignite.cluster.forOldest().node()
 
                 val cntOpt = argValue("c", argLst)
 
@@ -157,11 +159,11 @@ class VisorDiscoveryCommand {
                             return
                     }
 
-                println("Oldest alive node in grid: " + nodeId8Addr(oldest.id))
+                println("Oldest alive node in grid: " + nodeId8Addr(node.id()))
 
                 val evts =
                     try
-                        events(oldest, tm, hasArgFlag("r", argLst))
+                        events(node, tm, hasArgFlag("r", argLst))
                     catch {
                         case e: Throwable =>
                             scold(e.getMessage)
@@ -217,8 +219,8 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        var evts = ignite.compute(ignite.cluster.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
-            toTaskArgument(node.id(), VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
+        var evts = executeOne(node.id(), classOf[VisorNodeEventsCollectorTask],
+            VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame)).toSeq
 
         val nodeStartTime = node.metrics().getStartTime
 

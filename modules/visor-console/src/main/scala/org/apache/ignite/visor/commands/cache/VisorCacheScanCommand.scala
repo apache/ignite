@@ -136,31 +136,17 @@ class VisorCacheScanCommand {
             case Some(name) => name
         }
 
-        val cachePrj = node match {
-            case Some(n) => ignite.cluster.forNode(n).forCacheNodes(cacheName)
-            case _ => ignite.cluster.forCacheNodes(cacheName)
-        }
+        val n = node.fold(ignite.cluster.forRandom())(ignite.cluster.forNode(_)).node()
 
-        if (cachePrj.nodes().isEmpty) {
-            warn("Can't find nodes with specified cache: " + cacheName,
-                "Type 'cache' to see available cache names."
-            )
+        if (n == null) {
+            scold(node.fold("Topology is empty.")(n => "Can't find node with specified id: " + n.id())).^^
 
             return
         }
 
-        val qryPrj = cachePrj.forRandom()
-        val proj = new java.util.HashSet(cachePrj.nodes().map(_.id()))
-
-        val nid = qryPrj.node().id()
-
         val fullRes =
             try
-                ignite.compute(qryPrj)
-                    .withName("visor-cscan-task")
-                    .withNoFailover()
-                    .execute(classOf[VisorQueryTask],
-                        toTaskArgument(nid, new VisorQueryArg(null, cacheName, "SCAN", pageSize)))
+                executeOne(n.id(), classOf[VisorQueryTask], new VisorQueryArg(null, cacheName, "SCAN", pageSize))
                     match {
                     case x if x.get1() != null =>
                         error(x.get1())
@@ -201,11 +187,8 @@ class VisorCacheScanCommand {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = ignite.compute(qryPrj)
-                            .withName("visor-cscan-fetch-task")
-                            .withNoFailover()
-                            .execute(classOf[VisorQueryNextPageTask],
-                                toTaskArgument(nid, new IgniteBiTuple[String, Integer](fullRes.queryId(), pageSize)))
+                        res = executeOne(n.id(), classOf[VisorQueryNextPageTask],
+                            new IgniteBiTuple[String, Integer](fullRes.queryId(), pageSize))
 
                         render()
                     }

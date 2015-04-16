@@ -103,7 +103,8 @@ class VisorCacheSwapCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) ignite.cluster.forNode(node.get) else ignite.cluster.forCacheNodes(cacheName)
+
+        val prj = node.fold(ignite.cluster.forRandom())(ignite.cluster.forNode(_))
 
         if (prj.nodes().isEmpty) {
             val msg =
@@ -119,17 +120,11 @@ class VisorCacheSwapCommand {
 
         t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-        val cacheSet = Collections.singleton(cacheName)
+        val nid = prj.node().id()
 
-        prj.nodes().foreach(node => {
-            val r = ignite.compute(ignite.cluster.forNode(node))
-                .withName("visor-cswap-task")
-                .withNoFailover()
-                .execute(classOf[VisorCacheSwapBackupsTask], toTaskArgument(node.id(), cacheSet))
-                .get(cacheName)
+        val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).get(cacheName)
 
-            t += (nodeId8(node.id()), r.get1() - r.get2(), r.get1(), r.get2())
-        })
+        t += (nodeId8(nid), r.get1() - r.get2(), r.get1(), r.get2())
 
         println("Swapped entries in cache: " + escapeName(cacheName))
 

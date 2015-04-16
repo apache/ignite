@@ -19,7 +19,7 @@ package org.apache.ignite.visor
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
@@ -1831,18 +1831,22 @@ object visor extends VisorTag {
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid, false)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void]
-        = new VisorTaskArgument(new JavaHashSet(nids), false)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] =
+        new VisorTaskArgument(new JavaHashSet(nids), false)
 
     /** Convert to task argument. */
     def toTaskArgument[A](nid: UUID, arg: A): VisorTaskArgument[A] = new VisorTaskArgument(nid, arg, false)
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A]
-        = new VisorTaskArgument(new JavaHashSet(nids), arg, false)
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] =
+        new VisorTaskArgument(new JavaHashSet(nids), arg, false)
 
-    private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+    private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) = {
+        if (grp.nodes().isEmpty)
+            throw new ClusterGroupEmptyException("Topology is empty.")
+
         ignite.compute(grp).withNoFailover().execute(task, toTaskArgument(grp.nodes().map(_.id()), arg))
+    }
 
     def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
         execute(ignite.cluster.forNodeId(nid), task, arg)
@@ -1858,6 +1862,9 @@ object visor extends VisorTag {
 
     def executeAll[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
         execute(ignite.cluster, task, arg)
+
+    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+        execute(ignite.cluster.forRandom(), task, arg)
 
     /**
      * Gets configuration from specified node.

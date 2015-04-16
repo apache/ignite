@@ -92,30 +92,10 @@ class VisorCacheStopCommand {
             case Some(name) => name
         }
 
-        val cachePrj = node match {
-            case Some(n) => ignite.cluster.forNode(n).forCacheNodes(cacheName)
-            case _ => ignite.cluster.forCacheNodes(cacheName)
-        }
-
-        if (cachePrj.nodes().isEmpty) {
-            warn("Can't find nodes with specified cache: " + escapeName(cacheName),
-                "Type 'cache' to see available cache names."
-            )
-
-            return
-        }
-
         ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [n]: ", "n") match {
             case "y" | "Y" =>
-                val stopPrj = cachePrj.forRandom()
-
-                val nid = stopPrj.node().id()
-
                 try {
-                    ignite.compute(stopPrj)
-                        .withName("visor-cstop-task")
-                        .withNoFailover()
-                        .execute(classOf[VisorCacheStopTask], toTaskArgument(nid, cacheName))
+                    executeRandom(classOf[VisorCacheStopTask], cacheName)
 
                     println("Visor successfully stop cache: " + escapeName(cacheName))
                 }

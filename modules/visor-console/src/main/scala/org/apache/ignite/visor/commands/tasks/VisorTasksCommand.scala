@@ -613,10 +613,8 @@ class VisorTasksCommand {
     private def list(p: Long, taskName: String, reverse: Boolean, all: Boolean) {
         breakable {
             try {
-                val prj = ignite.cluster.forRemotes()
-
-                val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask],
-                    toTaskArgument(prj.nodes.map(_.id()), VisorNodeEventsCollectorTaskArg.createTasksArg(p, taskName, null)))
+                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(p, taskName, null))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -819,8 +817,8 @@ class VisorTasksCommand {
             try {
                 val prj = ignite.cluster.forRemotes()
 
-                val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null)))
+                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(null, taskName, null))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -990,10 +988,8 @@ class VisorTasksCommand {
             }
 
             try {
-                val prj = ignite.cluster.forRemotes()
-
-                val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorNodeEventsCollectorTaskArg.createTasksArg(null, null, uuid)))
+                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(null, null, uuid))
 
                 val (tLst, eLst) = mkData(evts)
 
@@ -1104,10 +1100,8 @@ class VisorTasksCommand {
     private def nodes(f: Long) {
         breakable {
             try {
-                val prj = ignite.cluster.forRemotes()
-
-                val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
+                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null))
 
                 val eLst = mkData(evts)._2
 
@@ -1216,10 +1210,8 @@ class VisorTasksCommand {
     private def hosts(f: Long) {
         breakable {
             try {
-                val prj = ignite.cluster.forRemotes()
-
-                val evts = ignite.compute(prj).execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes.map(_.id()),
-                    VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null)))
+                val evts = executeRemotes(classOf[VisorNodeEventsCollectorTask],
+                    VisorNodeEventsCollectorTaskArg.createTasksArg(f, null, null))
 
                 val eLst = mkData(evts)._2
 
