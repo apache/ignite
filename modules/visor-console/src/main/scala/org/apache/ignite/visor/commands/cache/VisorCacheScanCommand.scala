@@ -136,10 +136,10 @@ class VisorCacheScanCommand {
             case Some(name) => name
         }
 
-        val n = node.fold(ignite.cluster.forRandom())(ignite.cluster.forNode(_)).node()
+        val n = projectionForNode(node).node()
 
         if (n == null) {
-            scold(node.fold("Topology is empty.")(n => "Can't find node with specified id: " + n.id())).^^
+            scold(messageNodeNotFound(node)).^^
 
             return
         }

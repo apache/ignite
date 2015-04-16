@@ -104,7 +104,7 @@ class VisorCacheSwapCommand {
         }
 
 
-        val prj = node.fold(ignite.cluster.forRandom())(ignite.cluster.forNode(_))
+        val prj = projectionForNode(node)
 
         if (prj.nodes().isEmpty) {
             val msg =
@@ -113,7 +113,7 @@ class VisorCacheSwapCommand {
                 else
                     "Can't find nodes with specified cache: " + cacheName
 
-            scold(msg).^^
+            scold(messageNodeNotFound(node, Some(msg))).^^
         }
 
         val t = VisorTextTable()

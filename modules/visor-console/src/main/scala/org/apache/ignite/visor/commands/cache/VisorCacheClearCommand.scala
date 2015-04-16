@@ -100,10 +100,10 @@ class VisorCacheClearCommand {
             case Some(name) => name
         }
 
-        val prj = node.fold(ignite.cluster.forRandom())(ignite.cluster.forNode(_))
+        val prj = projectionForNode(node)
 
         if (prj.nodes().isEmpty)
-            scold(node.fold("Topology is empty.")(n => "Can't find node with specified id: " + n.id())).^^
+            scold(messageNodeNotFound(node)).^^
 
         val t = VisorTextTable()
 

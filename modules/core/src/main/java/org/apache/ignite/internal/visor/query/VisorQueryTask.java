@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
@@ -39,17 +40,19 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTupl
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
         VisorTaskArgument<VisorQueryArg> arg) {
-        String cacheName = taskArg.cacheName();
+        String cache = taskArg.cacheName();
 
         ClusterNode node;
 
-        if (taskArg.localCacheNodeId() == null) {
-            ClusterGroup prj = (ignite.cluster().localNode().isDaemon())
-                ? ignite.cluster().forRemotes()
-                : ignite.cluster().forDataNodes(cacheName);
+        UUID nid = taskArg.nodeId();
+
+        IgniteClusterEx cluster = ignite.cluster();
+
+        if (nid == null) {
+            ClusterGroup prj = cluster.localNode().isDaemon() ? cluster.forRemotes() : cluster.forDataNodes(cache);
 
             if (prj.nodes().isEmpty())
-                throw new IgniteException("No data nodes for cache: " + escapeName(cacheName));
+                throw new IgniteException("No data nodes for cache: " + escapeName(cache));
 
             // First try to take local node to avoid network hop.
             node = prj.node(ignite.localNode().id());
@@ -59,10 +62,10 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTupl
                 node = prj.forRandom().node();
         }
         else {
-            node = ignite.cluster().node(taskArg.localCacheNodeId());
+            node = cluster.node(nid);
 
             if (node == null)
-                throw new IgniteException("No data node for local cache: " + escapeName(cacheName));
+                throw new IgniteException("Node not found: " + nid);
         }
 
         assert node != null;

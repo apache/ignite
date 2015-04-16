@@ -255,6 +255,25 @@ object visor extends VisorTag {
         }
     }
 
+    /**
+     * @param node Optional node.
+     * @return Projection with specified node or projection with random node if specified node is `None`.
+     */
+    def projectionForNode(node: Option[ClusterNode]): ClusterGroup = node match {
+        case Some(n) => ignite.cluster.forNode(n)
+        case None => ignite.cluster.forRandom()
+    }
+
+    /**
+     * @param node Node.
+     * @param msg Optional message.
+     * @return Message about why node was not found.
+     */
+    def messageNodeNotFound(node: Option[ClusterNode], msg: Option[String] = None): String = node match {
+        case Some(n) => msg.getOrElse("Can't find node with specified id: " + n.id())
+        case None => "Topology is empty."
+    }
+
     Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run() {
             try

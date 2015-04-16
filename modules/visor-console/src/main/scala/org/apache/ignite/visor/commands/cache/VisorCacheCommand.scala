@@ -495,7 +495,7 @@ class VisorCacheCommand {
         assert(node != null)
 
         try {
-            val prj = node.fold(ignite.cluster.forRemotes())(ignite.cluster.forNode(_))
+            val prj = projectionForNode(node)
 
             val nids = prj.nodes().map(_.id())
 
