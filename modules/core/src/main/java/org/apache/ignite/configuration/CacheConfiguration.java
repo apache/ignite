@@ -1203,7 +1203,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Default value is {@code 0} which means that repartitioning and rebalancing will start
      * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
-     * will only be started manually by calling {@link GridCache#forceRepartition()} method or
+     * will only be started manually by calling {@link CacheProjection#forceRepartition()} method or
      * from management console.
      *
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to

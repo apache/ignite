@@ -539,7 +539,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+        CacheProjection<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(

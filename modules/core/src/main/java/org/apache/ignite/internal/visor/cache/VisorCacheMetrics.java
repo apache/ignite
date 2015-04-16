@@ -176,7 +176,7 @@ public class VisorCacheMetrics implements Serializable {
      * @param c Cache.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(IgniteEx ignite, GridCache c) {
+    public static VisorCacheMetrics from(IgniteEx ignite, CacheProjection c) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
 
         CacheMetrics m = c.metrics();

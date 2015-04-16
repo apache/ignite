@@ -123,7 +123,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert utilityCache != null;
 
         if (atomicCfg != null) {
-            GridCache atomicsCache = ctx.cache().atomicsCache();
+            CacheProjection atomicsCache = ctx.cache().atomicsCache();
 
             assert atomicsCache != null;
 
@@ -1159,7 +1159,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
+    @Nullable private <T> T retryRemove(final CacheProjection cache, final Object key) throws IgniteCheckedException {
         return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.getAndRemove(key);

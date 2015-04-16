@@ -83,7 +83,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** Internal metadata cache. */
-    private volatile GridCache<GridTaskNameHashKey, String> tasksMetaCache;
+    private volatile CacheProjection<GridTaskNameHashKey, String> tasksMetaCache;
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -198,7 +198,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @return Task metadata cache.
      */
-    private GridCache<GridTaskNameHashKey, String> taskMetaCache() {
+    private CacheProjection<GridTaskNameHashKey, String> taskMetaCache() {
         assert ctx.security().enabled();
 
         if (tasksMetaCache == null)
@@ -708,7 +708,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         GridTaskNameHashKey key = new GridTaskNameHashKey(nameHash);
 
-        GridCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
+        CacheProjection<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
 
         String existingName = tasksMetaCache.get(key);
 

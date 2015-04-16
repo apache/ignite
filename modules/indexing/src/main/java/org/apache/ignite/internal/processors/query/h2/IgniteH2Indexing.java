@@ -1927,7 +1927,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            GridCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
+            CacheProjection<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
             GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
 

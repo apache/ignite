@@ -1916,13 +1916,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final GridKernalContext ctx = ((IgniteKernal) ignite).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
-                new C1<GridCache<?, ?>, String>() {
-                    @Override public String apply(GridCache<?, ?> c) {
+                new C1<CacheProjection<?, ?>, String>() {
+                    @Override public String apply(CacheProjection<?, ?> c) {
                         return c.name();
                     }
                 },
-                new P1<GridCache<?, ?>>() {
-                    @Override public boolean apply(GridCache<?, ?> c) {
+                new P1<CacheProjection<?, ?>>() {
+                    @Override public boolean apply(CacheProjection<?, ?> c) {
                         return !CU.MARSH_CACHE_NAME.equals(c.name()) && !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
                             !CU.ATOMICS_CACHE_NAME.equals(c.name());
                     }

@@ -951,18 +951,18 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+        @Nullable @Override public <K, V> CacheProjection<K, V> cachex(@Nullable String name) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridCache<K, V> cachex() {
+        @Nullable @Override public <K, V> CacheProjection<K, V> cachex() {
             return null;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p) {
+        @Override public Collection<CacheProjection<?, ?>> cachesx(@Nullable IgnitePredicate<? super CacheProjection<?, ?>>... p) {
             return null;
         }
 

@@ -21,9 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -193,7 +195,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Base cache for this projection.
      */
     @SuppressWarnings({"ClassReferencesSubclass"})
-    public <K1, V1> GridCache<K1, V1> cache();
+    public <K1, V1> CacheProjection<K1, V1> cache();
 
     /**
      * @return Skip store.
@@ -1320,7 +1322,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link GridCache} projection. It is essentially the
+     * all cache entries and has O(1) complexity on base {@link CacheProjection} projection. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
@@ -1383,4 +1385,120 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If promote failed.
      */
     public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+
+    /**
+     * Gets configuration bean for this cache.
+     *
+     * @return Configuration bean for this cache.
+     */
+    public CacheConfiguration configuration();
+
+    /**
+     * Gets affinity service to provide information about data partitioning
+     * and distribution.
+     *
+     * @return Cache data affinity service.
+     */
+    public Affinity<K> affinity();
+
+    /**
+     * Gets metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics();
+
+    /**
+     * Gets metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetricsMXBean mxBean();
+
+    /**
+     * Gets size (in bytes) of all entries swapped to disk.
+     *
+     * @return Size (in bytes) of all entries swapped to disk.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public long overflowSize() throws IgniteCheckedException;
+
+    /**
+     * Gets number of cache entries stored in off-heap memory.
+     *
+     * @return Number of cache entries stored in off-heap memory.
+     */
+    public long offHeapEntriesCount();
+
+    /**
+     * Gets memory size allocated in off-heap.
+     *
+     * @return Allocated memory size.
+     */
+    public long offHeapAllocatedSize();
+
+    /**
+     * Gets size in bytes for swap space.
+     *
+     * @return Size in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapSize() throws IgniteCheckedException;
+
+    /**
+     * Gets number of swap entries (keys).
+     *
+     * @return Number of entries stored in swap.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapKeys() throws IgniteCheckedException;
+
+    /**
+     * Gets iterator over keys and values belonging to this cache swap space on local node. This
+     * iterator is thread-safe, which means that cache (and therefore its swap space)
+     * may be modified concurrently with iteration over swap.
+     * <p>
+     * Returned iterator supports {@code remove} operation which delegates to
+     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> method.
+     *
+     * @return Iterator over keys.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException;
+
+    /**
+     * Gets iterator over keys and values belonging to this cache off-heap memory on local node. This
+     * iterator is thread-safe, which means that cache (and therefore its off-heap memory)
+     * may be modified concurrently with iteration over off-heap. To achieve better performance
+     * the keys and values deserialized on demand, whenever accessed.
+     * <p>
+     * Returned iterator supports {@code remove} operation which delegates to
+     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])}</code> method.
+     *
+     * @return Iterator over keys.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
+
+    /**
+     * Forces this cache node to re-balance its partitions. This method is usually used when
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
+     * When many nodes are started or stopped almost concurrently, it is more efficient to delay
+     * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+     * happens.
+     * <p>
+     * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
+     * usually make sure that new nodes get placed on the same place of consistent hash ring as
+     * the left nodes, and that nodes are restarted before
+     * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
+     * on the same place in consistent hash ring, use
+     * {@link org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)} to make sure that
+     * a node maps to the same hash ID if re-started.
+     * <p>
+     * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceDelay()} for more information on how to configure
+     * rebalance re-partition delay.
+     * <p>
+     * @return Future that will be completed when rebalancing is finished.
+     */
+    public IgniteInternalFuture<?> forceRepartition();
 }

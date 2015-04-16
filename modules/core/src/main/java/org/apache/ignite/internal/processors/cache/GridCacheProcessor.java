@@ -2429,7 +2429,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Default cache.
      */
-    public <K, V> GridCache<K, V> cache() {
+    public <K, V> CacheProjection<K, V> cache() {
         return cache(null);
     }
 
@@ -2440,7 +2440,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    public <K, V> CacheProjection<K, V> cache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
@@ -2452,9 +2452,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return All configured cache instances.
      */
-    public Collection<GridCache<?, ?>> caches() {
-        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>, GridCache<?, ?>>() {
-            @Override public GridCache<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
+    public Collection<CacheProjection<?, ?>> caches() {
+        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>, CacheProjection<?, ?>>() {
+            @Override public CacheProjection<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
                 return entries.legacyProxy();
             }
         });
@@ -2488,7 +2488,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @return Utility cache for atomic data structures.
      */
-    public <K, V> GridCache<K, V> atomicsCache() {
+    public <K, V> CacheProjection<K, V> atomicsCache() {
         return cache(CU.ATOMICS_CACHE_NAME);
     }
 
@@ -2499,7 +2499,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCache<K, V> publicCache(@Nullable String name) {
+    public <K, V> CacheProjection<K, V> publicCache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
 

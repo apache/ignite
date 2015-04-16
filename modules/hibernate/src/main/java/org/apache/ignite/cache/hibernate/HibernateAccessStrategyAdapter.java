@@ -83,7 +83,7 @@ import java.io.*;
  */
 public abstract class HibernateAccessStrategyAdapter {
     /** */
-    protected final GridCache<Object, Object> cache;
+    protected final CacheProjection<Object, Object> cache;
 
     /** Grid. */
     protected final Ignite ignite;
@@ -95,7 +95,7 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param ignite Grid.
      * @param cache Cache.
      */
-    protected HibernateAccessStrategyAdapter(Ignite ignite, GridCache<Object, Object> cache) {
+    protected HibernateAccessStrategyAdapter(Ignite ignite, CacheProjection<Object, Object> cache) {
         this.cache = cache;
         this.ignite = ignite;
 
@@ -342,7 +342,7 @@ public abstract class HibernateAccessStrategyAdapter {
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+            CacheProjection<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
             assert cache != null;
 

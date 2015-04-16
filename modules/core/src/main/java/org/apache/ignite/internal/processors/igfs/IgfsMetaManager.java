@@ -55,7 +55,7 @@ public class IgfsMetaManager extends IgfsManager {
     private FileSystemConfiguration cfg;
 
     /** Metadata cache. */
-    private GridCache<Object, Object> metaCache;
+    private CacheProjection<Object, Object> metaCache;
 
     /** */
     private CountDownLatch metaCacheStartLatch;

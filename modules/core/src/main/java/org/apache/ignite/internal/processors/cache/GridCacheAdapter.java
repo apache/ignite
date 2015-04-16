@@ -71,7 +71,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
+public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -367,8 +367,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> GridCache<K1, V1> cache() {
-        return (GridCache<K1, V1>)this;
+    @Override public <K1, V1> CacheProjection<K1, V1> cache() {
+        return (CacheProjection<K1, V1>)this;
     }
 
     /** {@inheritDoc} */
@@ -3221,7 +3221,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             // Delegate to near if dht.
             if (e.isDht() && CU.isNearEnabled(ctx)) {
-                GridCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+                CacheProjection<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
 
                 return near.isLockedByThread(key) || e.lockedByThread();
             }
@@ -5056,7 +5056,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer applyx(Object o) throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            CacheProjection<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             assert cache != null : cacheName;
 
@@ -5129,7 +5129,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            CacheProjection<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }
