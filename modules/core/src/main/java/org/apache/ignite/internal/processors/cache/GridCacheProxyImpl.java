@@ -95,7 +95,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new CacheQueriesProxy<>(ctx, prj, new CacheQueriesImpl<>(ctx, prj != null ? prj.isKeepPortable() : false));
+        qry = new CacheQueriesImpl<>(ctx, prj != null ? prj.isKeepPortable() : false);
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -144,7 +144,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Override public void setQueryKeepPortable() {
-        qry = new CacheQueriesProxy<>(ctx, prj, new CacheQueriesImpl<>(ctx, true));
+        qry = new CacheQueriesImpl<>(ctx, true);
     }
 
     /** {@inheritDoc} */
@@ -1575,7 +1575,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         gate = ctx.gate();
         cache = ctx.cache();
 
-        qry = new CacheQueriesProxy<>(ctx, prj, delegate.queries());
+        qry = new CacheQueriesImpl<>(ctx, prj != null ? prj.isKeepPortable() : false);
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
