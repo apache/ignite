@@ -35,7 +35,7 @@ class CacheLockImpl<K, V> implements Lock {
     private final GridCacheGateway<K, V> gate;
 
     /** */
-    private final InternalCache<K, V> delegate;
+    private final IgniteInternalCache<K, V> delegate;
 
     /** Projection. */
     private final CacheProjectionContext prj;
@@ -55,7 +55,7 @@ class CacheLockImpl<K, V> implements Lock {
      * @param prj Projection.
      * @param keys Keys.
      */
-    CacheLockImpl(GridCacheGateway<K, V> gate, InternalCache<K, V> delegate, CacheProjectionContext prj,
+    CacheLockImpl(GridCacheGateway<K, V> gate, IgniteInternalCache<K, V> delegate, CacheProjectionContext prj,
         Collection<? extends K> keys) {
         this.gate = gate;
         this.delegate = delegate;

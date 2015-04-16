@@ -71,7 +71,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Externalizable {
+public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -371,8 +371,8 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> InternalCache<K1, V1> cache() {
-        return (InternalCache<K1, V1>)this;
+    @Override public <K1, V1> IgniteInternalCache<K1, V1> cache() {
+        return (IgniteInternalCache<K1, V1>)this;
     }
 
     /** {@inheritDoc} */
@@ -3225,7 +3225,7 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
 
             // Delegate to near if dht.
             if (e.isDht() && CU.isNearEnabled(ctx)) {
-                InternalCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+                IgniteInternalCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
 
                 return near.isLockedByThread(key) || e.lockedByThread();
             }
@@ -5042,7 +5042,7 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
 
         /** {@inheritDoc} */
         @Override public Integer applyx(Object o) throws IgniteCheckedException {
-            InternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            IgniteInternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             assert cache != null : cacheName;
 
@@ -5079,7 +5079,7 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
     }
 
     /**
-     * Internal callable which performs {@link InternalCache#size()} or {@link InternalCache#primarySize()}
+     * Internal callable which performs {@link IgniteInternalCache#size()} or {@link IgniteInternalCache#primarySize()}
      * operation on a cache with the given name.
      */
     @GridInternal
@@ -5115,7 +5115,7 @@ public abstract class GridCacheAdapter<K, V> implements InternalCache<K, V>, Ext
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            InternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            IgniteInternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }

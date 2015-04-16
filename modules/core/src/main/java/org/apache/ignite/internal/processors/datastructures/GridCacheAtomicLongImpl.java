@@ -60,7 +60,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private GridCacheInternalKey key;
 
     /** Atomic long projection. */
-    private InternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -201,7 +201,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      * @param ctx CacheContext.
      */
     public GridCacheAtomicLongImpl(String name, GridCacheInternalKey key,
-        InternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
         assert ctx != null;

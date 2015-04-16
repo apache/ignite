@@ -67,25 +67,25 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private static final long RETRY_DELAY = 1;
 
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
-    private InternalCache<GridCacheInternal, GridCacheInternal> dsView;
+    private IgniteInternalCache<GridCacheInternal, GridCacheInternal> dsView;
 
     /** Internal storage of all dataStructures items (sequence, atomic long etc.). */
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
     /** Cache contains only {@code GridCacheAtomicValue}. */
-    private InternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
 
     /** Cache contains only {@code GridCacheCountDownLatchValue}. */
-    private InternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> cntDownLatchView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> cntDownLatchView;
 
     /** Cache contains only {@code GridCacheAtomicReferenceValue}. */
-    private InternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
 
     /** Cache contains only {@code GridCacheAtomicStampedValue}. */
-    private InternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue> atomicStampedView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue> atomicStampedView;
 
     /** Cache contains only entry {@code GridCacheSequenceValue}.  */
-    private InternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context for atomic data structures. */
     private GridCacheContext dsCacheCtx;
@@ -94,10 +94,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private final AtomicConfiguration atomicCfg;
 
     /** */
-    private InternalCache<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
+    private IgniteInternalCache<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
 
     /** */
-    private InternalCache<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
+    private IgniteInternalCache<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
 
     /**
      * @param ctx Context.
@@ -116,14 +116,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        utilityCache = (InternalCache)ctx.cache().utilityCache();
+        utilityCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
-        utilityDataCache = (InternalCache)ctx.cache().utilityCache();
+        utilityDataCache = (IgniteInternalCache)ctx.cache().utilityCache();
 
         assert utilityCache != null;
 
         if (atomicCfg != null) {
-            InternalCache atomicsCache = ctx.cache().atomicsCache();
+            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
 
             assert atomicsCache != null;
 
@@ -1159,7 +1159,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final InternalCache cache, final Object key) throws IgniteCheckedException {
+    @Nullable private <T> T retryRemove(final IgniteInternalCache cache, final Object key) throws IgniteCheckedException {
         return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.getAndRemove(key);

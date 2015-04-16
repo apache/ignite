@@ -946,23 +946,23 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public <K extends GridCacheUtilityKey, V> InternalCache<K, V> utilityCache() {
+        @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> InternalCache<K, V> cachex(@Nullable String name) {
+        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> InternalCache<K, V> cachex() {
+        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
             return null;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Collection<InternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super InternalCache<?, ?>>... p) {
+        @Override public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
             return null;
         }
 

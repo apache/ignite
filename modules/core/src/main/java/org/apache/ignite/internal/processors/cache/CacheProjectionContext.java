@@ -80,7 +80,7 @@ public class CacheProjectionContext implements Serializable {
     }
 
     /**
-     * See {@link InternalCache#keepPortable()}.
+     * See {@link IgniteInternalCache#keepPortable()}.
      *
      * @return New instance of CacheProjectionContext with keep portable flag.
      */
@@ -102,7 +102,7 @@ public class CacheProjectionContext implements Serializable {
     }
 
     /**
-     * See {@link InternalCache#forSubjectId(UUID)}.
+     * See {@link IgniteInternalCache#forSubjectId(UUID)}.
      *
      * @return New instance of CacheProjectionContext with specific subject id.
      */
@@ -122,7 +122,7 @@ public class CacheProjectionContext implements Serializable {
     }
 
     /**
-     * See {@link InternalCache#setSkipStore(boolean)}.
+     * See {@link IgniteInternalCache#setSkipStore(boolean)}.
      *
      * @return New instance of CacheProjectionContext with skip store flag.
      */
@@ -142,7 +142,7 @@ public class CacheProjectionContext implements Serializable {
     }
 
     /**
-     * See {@link InternalCache#withExpiryPolicy(ExpiryPolicy)}.
+     * See {@link IgniteInternalCache#withExpiryPolicy(ExpiryPolicy)}.
      *
      * @param plc {@link ExpiryPolicy} to associate with this projection.
      * @return New instance of CacheProjectionContext with skip store flag.

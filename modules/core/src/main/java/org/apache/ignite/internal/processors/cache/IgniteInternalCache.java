@@ -164,7 +164,7 @@ import java.util.Date;
  * that class definitions are present in the classpath). By default, cache works with deserialized form
  * (example shows the case when {@link Integer} is used as a key for a portable object):
  * <pre>
- * InternalCache<Integer, Value> prj = Ignition.grid().cache(null);
+ * IgniteInternalCache<Integer, Value> prj = Ignition.grid().cache(null);
  *
  * // Value will be serialized and stored in cache in portable format.
  * prj.put(1, new Value());
@@ -177,14 +177,14 @@ import java.util.Date;
  * needed for performance reasons. To work with portable format directly you should create special projection
  * using {@link #keepPortable()} method:
  * <pre>
- * InternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepPortable();
+ * IgniteInternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepPortable();
  *
  * // Value is not deserialized and returned in portable format.
  * GridPortableObject po = prj.get(1);
  * </pre>
  * See {@link #keepPortable()} method JavaDoc for more details.
  */
-public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
+public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Gets name of this cache ({@code null} for default cache).
      *
@@ -200,7 +200,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Base cache for this projection.
      */
     @SuppressWarnings({"ClassReferencesSubclass"})
-    public <K1, V1> InternalCache<K1, V1> cache();
+    public <K1, V1> IgniteInternalCache<K1, V1> cache();
 
     /**
      * @return Skip store.
@@ -250,7 +250,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * (which will be stored in portable format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * InternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
+     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);
@@ -990,7 +990,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears key on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link InternalCache#clearLocally(Object)} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocally(Object)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -1003,7 +1003,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears keys on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link InternalCache#clearLocallyAll(Set)} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocallyAll(Set)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -1016,7 +1016,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link InternalCache#clearLocally()} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocally()} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -1363,7 +1363,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link InternalCache} projection. It is essentially the
+     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache} projection. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
