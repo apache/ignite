@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -54,13 +53,6 @@ public interface CacheQueries<K, V> {
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter);
-
-    /**
-     * Accumulated metrics for all queries executed for this cache.
-     *
-     * @return Cache query metrics.
-     */
-    public QueryMetrics metrics();
 
     /**
      * Creates SQL fields query which will include results metadata if needed.

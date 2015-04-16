@@ -114,11 +114,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryMetrics metrics() {
-        return ctx.queries().metrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
 

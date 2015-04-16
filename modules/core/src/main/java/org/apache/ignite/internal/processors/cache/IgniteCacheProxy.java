@@ -532,7 +532,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheOperationContext prev = gate.enter(prjCtx);
 
         try {
-            return delegate.queries().metrics();
+            return delegate.context().queries().metrics();
         }
         finally {
             gate.leave(prev);
