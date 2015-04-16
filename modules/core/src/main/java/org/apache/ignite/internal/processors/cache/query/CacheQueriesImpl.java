@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -117,11 +116,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     /** {@inheritDoc} */
     @Override public QueryMetrics metrics() {
         return ctx.queries().metrics();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
-        return ctx.queries().sqlMetadata();
     }
 
     /** {@inheritDoc} */

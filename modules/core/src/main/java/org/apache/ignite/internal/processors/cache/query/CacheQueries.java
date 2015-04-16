@@ -63,14 +63,6 @@ public interface CacheQueries<K, V> {
     public QueryMetrics metrics();
 
     /**
-     * Gets SQL metadata.
-     *
-     * @return SQL metadata.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException;
-
-    /**
      * Creates SQL fields query which will include results metadata if needed.
      *
      * @param qry SQL query.
