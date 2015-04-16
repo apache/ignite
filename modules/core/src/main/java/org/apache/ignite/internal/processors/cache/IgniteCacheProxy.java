@@ -677,14 +677,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheProjectionContext prev = gate.enter(prjCtx);
 
+            boolean deserializePortables = prjCtx == null ? false : prjCtx.deserializePortables();
+
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAllAsync(keys));
+                    setFuture(delegate.getAllAsync(keys, deserializePortables));
 
                     return null;
                 }
                 else
-                    return delegate.getAll(keys);
+                    return delegate.getAll(keys, deserializePortables);
             }
             finally {
                 gate.leave(prev);

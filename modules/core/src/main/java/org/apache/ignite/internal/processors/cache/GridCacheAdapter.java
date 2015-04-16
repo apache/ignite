@@ -1494,44 +1494,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        A.notNull(keys, "keys");
-
-        boolean statsEnabled = ctx.config().isStatisticsEnabled();
-
-        long start = statsEnabled ? System.nanoTime() : 0L;
-
-        Map<K, V> map = getAll(keys, true);
-
-        if (ctx.config().getInterceptor() != null)
-            map = interceptGet(keys, map);
-
-        if (statsEnabled)
-            metrics0().addGetTimeNanos(System.nanoTime() - start);
-
-        return map;
+        return getAll(keys, true);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
-        A.notNull(keys, "keys");
-
-        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
-
-        final long start = statsEnabled ? System.nanoTime() : 0L;
-
-        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys, true);
-
-        if (ctx.config().getInterceptor() != null)
-            return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
-                @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
-                    return interceptGet(keys, f.get());
-                }
-            });
-
-        if (statsEnabled)
-            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
-
-        return fut;
+        return getAllAsync(keys, true);
     }
 
     /**
@@ -4395,11 +4363,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override @Nullable public V get(K key, boolean deserializePortable)
         throws IgniteCheckedException {
+        A.notNull(key, "key");
+
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         Map<K, V> map = getAllAsync(F.asList(key), deserializePortable).get();
 
         assert map.isEmpty() || map.size() == 1 : map.size();
 
-        return map.get(key);
+        V val = map.get(key);
+
+        if (ctx.config().getInterceptor() != null)
+            val = (V)ctx.config().getInterceptor().onGet(key, val);
+
+        if (statsEnabled)
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -4426,16 +4408,35 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable) throws IgniteCheckedException {
         checkJta();
+        A.notNull(keys, "keys");
 
-        return getAllAsync(keys, deserializePortable).get();
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        Map<K, V> map = getAllAsync(keys, deserializePortable).get();
+
+        if (ctx.config().getInterceptor() != null)
+            map = interceptGet(keys, map);
+
+        if (statsEnabled)
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
+
+        return map;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
         boolean deserializePortable) {
+        A.notNull(keys, "keys");
+
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(keys,
+        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys,
             !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             null,
@@ -4443,6 +4444,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializePortable,
             false);
+
+        if (ctx.config().getInterceptor() != null)
+            return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
+                @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
+                    return interceptGet(keys, f.get());
+                }
+            });
+
+        if (statsEnabled)
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+        return fut;
     }
 
     /**
