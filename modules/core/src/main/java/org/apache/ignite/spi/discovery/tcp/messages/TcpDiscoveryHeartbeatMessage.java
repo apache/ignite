@@ -58,13 +58,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     private final Map<UUID, Map<Integer, CacheMetrics>> cacheMetrics = new HashMap<>();
 
     /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryHeartbeatMessage() {
-        // No-op.
-    }
-
-    /**
      * Constructor.
      *
      * @param creatorNodeId Creator node.
