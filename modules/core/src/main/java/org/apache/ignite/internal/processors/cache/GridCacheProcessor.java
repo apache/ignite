@@ -736,7 +736,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 startCache(cache);
 
                 jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache,
-                    new CacheProjectionContext(false, null, false, null), false));
+                    new CacheOperationContext(false, null, false, null), false));
             }
         }
 
@@ -1519,7 +1519,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 String masked = maskNull(cacheCtx.name());
 
                 jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache,
-                    new CacheProjectionContext(false, null, false, null), false));
+                    new CacheOperationContext(false, null, false, null), false));
             }
         }
 

@@ -1791,7 +1791,7 @@ public class GridCacheConcurrentMap {
         private GridCacheContext<K, V> ctx;
 
         /** */
-        private CacheProjectionContext prjPerCall;
+        private CacheOperationContext opCtxPerCall;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -1812,7 +1812,7 @@ public class GridCacheConcurrentMap {
 
             ctx = map.ctx;
 
-            prjPerCall = ctx.projectionPerCall();
+            opCtxPerCall = ctx.operationContextPerCall();
         }
 
         /** {@inheritDoc} */
@@ -1824,7 +1824,7 @@ public class GridCacheConcurrentMap {
          * @return Entry iterator.
          */
         Iterator<Cache.Entry<K, V>> entryIterator() {
-            return new EntryIterator<>(map, filter, ctx, prjPerCall);
+            return new EntryIterator<>(map, filter, ctx, opCtxPerCall);
         }
 
         /**
@@ -1963,7 +1963,7 @@ public class GridCacheConcurrentMap {
         private GridCacheContext<K, V> ctx;
 
         /** */
-        private CacheProjectionContext prjPerCall;
+        private CacheOperationContext prjPerCall;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -1982,7 +1982,7 @@ public class GridCacheConcurrentMap {
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
             GridCacheContext<K, V> ctx,
-            CacheProjectionContext prjPerCall) {
+            CacheOperationContext prjPerCall) {
             it = new Iterator0<>(map, false, filter, -1, -1);
 
             this.ctx = ctx;
@@ -1996,15 +1996,15 @@ public class GridCacheConcurrentMap {
 
         /** {@inheritDoc} */
         @Override public Cache.Entry<K, V> next() {
-            CacheProjectionContext oldPrj = ctx.projectionPerCall();
+            CacheOperationContext old = ctx.operationContextPerCall();
 
-            ctx.projectionPerCall(prjPerCall);
+            ctx.operationContextPerCall(prjPerCall);
 
             try {
                 return it.next().wrapLazyValue();
             }
             finally {
-                ctx.projectionPerCall(oldPrj);
+                ctx.operationContextPerCall(old);
             }
         }
 
@@ -2025,7 +2025,7 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             it = (Iterator0<K, V>)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
-            prjPerCall = (CacheProjectionContext)in.readObject();
+            prjPerCall = (CacheOperationContext)in.readObject();
         }
     }
 

@@ -38,7 +38,7 @@ class CacheLockImpl<K, V> implements Lock {
     private final IgniteInternalCache<K, V> delegate;
 
     /** Projection. */
-    private final CacheProjectionContext prj;
+    private final CacheOperationContext prj;
 
     /** */
     private final Collection<? extends K> keys;
@@ -55,7 +55,7 @@ class CacheLockImpl<K, V> implements Lock {
      * @param prj Projection.
      * @param keys Keys.
      */
-    CacheLockImpl(GridCacheGateway<K, V> gate, IgniteInternalCache<K, V> delegate, CacheProjectionContext prj,
+    CacheLockImpl(GridCacheGateway<K, V> gate, IgniteInternalCache<K, V> delegate, CacheOperationContext prj,
         Collection<? extends K> keys) {
         this.gate = gate;
         this.delegate = delegate;
@@ -65,7 +65,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void lock() {
-        CacheProjectionContext prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             delegate.lockAll(keys, 0);
@@ -98,7 +98,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
-        CacheProjectionContext prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             boolean res = delegate.lockAll(keys, -1);
@@ -124,7 +124,7 @@ class CacheLockImpl<K, V> implements Lock {
         if (time <= 0)
             return tryLock();
 
-        CacheProjectionContext prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             IgniteInternalFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
@@ -167,7 +167,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void unlock() {
-        CacheProjectionContext prev = gate.enter(prj);
+        CacheOperationContext prev = gate.enter(prj);
 
         try {
             if (lockedThread != Thread.currentThread()) {

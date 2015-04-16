@@ -26,9 +26,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Cache projection context.
+ * Cache operation context.
  */
-public class CacheProjectionContext implements Serializable {
+public class CacheOperationContext implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +51,7 @@ public class CacheProjectionContext implements Serializable {
      * @param keepPortable Keep portable flag.
      * @param expiryPlc Expiry policy.
      */
-    public CacheProjectionContext(
+    public CacheOperationContext(
         boolean skipStore,
         @Nullable UUID subjId,
         boolean keepPortable,
@@ -82,10 +82,10 @@ public class CacheProjectionContext implements Serializable {
     /**
      * See {@link IgniteInternalCache#keepPortable()}.
      *
-     * @return New instance of CacheProjectionContext with keep portable flag.
+     * @return New instance of CacheOperationContext with keep portable flag.
      */
-    public CacheProjectionContext keepPortable() {
-        return new CacheProjectionContext(
+    public CacheOperationContext keepPortable() {
+        return new CacheOperationContext(
             skipStore,
             subjId,
             true,
@@ -104,10 +104,10 @@ public class CacheProjectionContext implements Serializable {
     /**
      * See {@link IgniteInternalCache#forSubjectId(UUID)}.
      *
-     * @return New instance of CacheProjectionContext with specific subject id.
+     * @return New instance of CacheOperationContext with specific subject id.
      */
-    public CacheProjectionContext forSubjectId(UUID subjId) {
-        return new CacheProjectionContext(
+    public CacheOperationContext forSubjectId(UUID subjId) {
+        return new CacheOperationContext(
             skipStore,
             subjId,
             keepPortable,
@@ -124,10 +124,10 @@ public class CacheProjectionContext implements Serializable {
     /**
      * See {@link IgniteInternalCache#setSkipStore(boolean)}.
      *
-     * @return New instance of CacheProjectionContext with skip store flag.
+     * @return New instance of CacheOperationContext with skip store flag.
      */
-    public CacheProjectionContext setSkipStore(boolean skipStore) {
-        return new CacheProjectionContext(
+    public CacheOperationContext setSkipStore(boolean skipStore) {
+        return new CacheOperationContext(
             skipStore,
             subjId,
             keepPortable,
@@ -145,10 +145,10 @@ public class CacheProjectionContext implements Serializable {
      * See {@link IgniteInternalCache#withExpiryPolicy(ExpiryPolicy)}.
      *
      * @param plc {@link ExpiryPolicy} to associate with this projection.
-     * @return New instance of CacheProjectionContext with skip store flag.
+     * @return New instance of CacheOperationContext with skip store flag.
      */
-    public CacheProjectionContext withExpiryPolicy(ExpiryPolicy plc) {
-        return new CacheProjectionContext(
+    public CacheOperationContext withExpiryPolicy(ExpiryPolicy plc) {
+        return new CacheOperationContext(
             skipStore,
             subjId,
             true,
@@ -157,6 +157,6 @@ public class CacheProjectionContext implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheProjectionContext.class, this);
+        return S.toString(CacheOperationContext.class, this);
     }
 }

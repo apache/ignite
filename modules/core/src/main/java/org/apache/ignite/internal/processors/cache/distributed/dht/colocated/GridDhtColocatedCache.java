@@ -179,9 +179,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        CacheProjectionContext prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(
             ctx.cacheKeysView(keys),
@@ -192,7 +192,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals);
     }
 

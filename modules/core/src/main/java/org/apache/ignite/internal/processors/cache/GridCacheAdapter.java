@@ -377,7 +377,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        CacheProjectionContext prj = new CacheProjectionContext(false, subjId, false, null);
+        CacheOperationContext prj = new CacheOperationContext(false, subjId, false, null);
 
         return new GridCacheProxyImpl<>(ctx, this, prj);
     }
@@ -389,14 +389,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
-        CacheProjectionContext prj = new CacheProjectionContext(true, null, false, null);
+        CacheOperationContext prj = new CacheOperationContext(true, null, false, null);
 
         return new GridCacheProxyImpl<>(ctx, this, prj);
     }
 
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
-        CacheProjectionContext prj = new CacheProjectionContext(false, null, true, null);
+        CacheOperationContext prj = new CacheOperationContext(false, null, true, null);
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, prj);
     }
@@ -409,7 +409,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        CacheProjectionContext prj = new CacheProjectionContext(false, null, false, plc);
+        CacheOperationContext prj = new CacheOperationContext(false, null, false, plc);
 
         return new GridCacheProxyImpl<>(ctx, this, prj);
     }
@@ -1565,9 +1565,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean deserializePortable,
         boolean skipVals
     ) {
-        CacheProjectionContext prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return getAllAsync(keys,
             true,
@@ -1577,7 +1577,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializePortable,
             forcePrimary,
-            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals);
     }
 
@@ -3255,9 +3255,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean replicate = ctx.isDrEnabled();
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        CacheProjectionContext prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc0 = opCtx != null ? opCtx.expiry() : null;
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
@@ -3378,9 +3378,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx.store().configured())
             return new GridFinishedFuture<>();
 
-        CacheProjectionContext prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
 
         if (replaceExisting) {
             if (ctx.store().isLocal()) {
@@ -3518,9 +3518,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        CacheProjectionContext prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
 
         return ctx.kernalContext().closure().callAsync(BROADCAST,
             Arrays.asList(new LoadCacheClosure<>(ctx.name(), p, args, plc)),
@@ -3680,7 +3680,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy();
 
-        final CacheProjectionContext prj = ctx.projectionPerCall();
+        final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
             .keepAll(false)
@@ -3692,7 +3692,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
-                CacheProjectionContext prev = ctx.gate().enter(prj);
+                CacheOperationContext prev = ctx.gate().enter(opCtx);
 
                 try {
                     GridCacheAdapter.this.remove(item.getKey());

@@ -106,7 +106,7 @@ public class GridCacheGateway<K, V> {
      * @param prj Projection to guard.
      * @return Previous projection set on this thread.
      */
-    @Nullable public CacheProjectionContext enter(@Nullable CacheProjectionContext prj) {
+    @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext prj) {
         try {
             ctx.itHolder().checkWeakQueue();
 
@@ -140,10 +140,10 @@ public class GridCacheGateway<K, V> {
         // deadlocks during kernal stop.
         try {
             // Set thread local projection per call.
-            CacheProjectionContext prev = ctx.projectionPerCall();
+            CacheOperationContext prev = ctx.operationContextPerCall();
 
             if (prev != null || prj != null)
-                ctx.projectionPerCall(prj);
+                ctx.operationContextPerCall(prj);
 
             return prev;
         }
@@ -157,7 +157,7 @@ public class GridCacheGateway<K, V> {
     /**
      * @param prev Previous.
      */
-    public void leave(CacheProjectionContext prev) {
+    public void leave(CacheOperationContext prev) {
         try {
             ctx.tm().resetContext();
             ctx.mvcc().contextReset();
@@ -166,7 +166,7 @@ public class GridCacheGateway<K, V> {
             CU.unwindEvicts(ctx);
 
             // Return back previous thread local projection per call.
-            ctx.projectionPerCall(prev);
+            ctx.operationContextPerCall(prev);
         }
         finally {
             rwLock.readUnlock();
