@@ -65,7 +65,7 @@ public class IgfsDataManager extends IgfsManager {
     private IgfsEx igfs;
 
     /** Data cache projection. */
-    private GridCacheProjectionEx<IgfsBlockKey, byte[]> dataCachePrj;
+    private CacheProjection<IgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
     private CacheProjection<Object, Object> dataCache;

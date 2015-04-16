@@ -1319,7 +1319,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /**
      *
      */
-    public GridCacheProjectionEx delegate() {
+    public CacheProjection delegate() {
         return delegate;
     }
 

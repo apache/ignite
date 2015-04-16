@@ -43,7 +43,7 @@ import java.util.*;
 /**
  * Cache proxy.
  */
-public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, GridCacheProjectionEx<K, V>, Externalizable {
+public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -109,7 +109,7 @@ public class GridCacheProxyImpl<K, V> implements CacheProjection<K, V>, GridCach
     /**
      * @return Proxy delegate.
      */
-    public GridCacheProjectionEx<K, V> delegate() {
+    public CacheProjection<K, V> delegate() {
         return delegate;
     }
 

@@ -36,7 +36,7 @@ public interface IgniteEx extends Ignite {
      *
      * @return Utility cache.
      */
-    public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache();
+    public <K extends GridCacheUtilityKey, V> CacheProjection<K, V> utilityCache();
 
     /**
      * Gets the cache instance for the given name if one is configured or

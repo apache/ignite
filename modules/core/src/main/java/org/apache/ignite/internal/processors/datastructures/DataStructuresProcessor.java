@@ -94,10 +94,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private final AtomicConfiguration atomicCfg;
 
     /** */
-    private GridCacheProjectionEx<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
+    private CacheProjection<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
 
     /** */
-    private GridCacheProjectionEx<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
+    private CacheProjection<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
 
     /**
      * @param ctx Context.
@@ -116,9 +116,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        utilityCache = (GridCacheProjectionEx)ctx.cache().utilityCache();
+        utilityCache = (CacheProjection)ctx.cache().utilityCache();
 
-        utilityDataCache = (GridCacheProjectionEx)ctx.cache().utilityCache();
+        utilityDataCache = (CacheProjection)ctx.cache().utilityCache();
 
         assert utilityCache != null;
 

@@ -204,11 +204,11 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
          *
          * @return Instance of a Cache proxy.
          */
-        @Override protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
-            final GridCacheProjectionEx<Object, Object> cache = super.localCache(cacheName);
+        @Override protected CacheProjection<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
+            final CacheProjection<Object, Object> cache = super.localCache(cacheName);
 
-            return (GridCacheProjectionEx<Object, Object>)Proxy.newProxyInstance(getClass().getClassLoader(),
-                new Class[] {GridCacheProjectionEx.class},
+            return (CacheProjection<Object, Object>)Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[] {CacheProjection.class},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {

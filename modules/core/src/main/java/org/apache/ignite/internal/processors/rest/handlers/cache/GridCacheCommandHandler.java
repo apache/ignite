@@ -522,8 +522,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
-        GridCacheProjectionEx<Object, Object> cache = (GridCacheProjectionEx<Object, Object>)ctx.cache().cache(cacheName);
+    protected CacheProjection<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
+        CacheProjection<Object, Object> cache = (CacheProjection<Object, Object>)ctx.cache().cache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(
@@ -538,14 +538,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
+    private static CacheProjection<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
         CacheProjection<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(
                 "Failed to find cache for given cache name (null for default cache): " + cacheName);
 
-        return (GridCacheProjectionEx<Object, Object>)cache;
+        return (CacheProjection<Object, Object>)cache;
     }
 
     /**
@@ -871,7 +871,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = ((CacheProjection<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.putAsync(key, val);
@@ -908,7 +908,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = ((CacheProjection<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.putIfAbsentAsync(key, val);
@@ -945,7 +945,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = ((CacheProjection<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.replaceAsync(key, val);

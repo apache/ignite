@@ -61,7 +61,7 @@ public class IgfsMetaManager extends IgfsManager {
     private CountDownLatch metaCacheStartLatch;
 
     /** File ID to file info projection. */
-    private GridCacheProjectionEx<IgniteUuid, IgfsFileInfo> id2InfoPrj;
+    private CacheProjection<IgniteUuid, IgfsFileInfo> id2InfoPrj;
 
     /** Predefined key for sampling mode value. */
     private GridCacheInternal sampling;
@@ -119,7 +119,7 @@ public class IgfsMetaManager extends IgfsManager {
                 }
             });
 
-        id2InfoPrj = (GridCacheProjectionEx<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
+        id2InfoPrj = (CacheProjection<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
 
         locNode = igfsCtx.kernalContext().discovery().localNode();
 

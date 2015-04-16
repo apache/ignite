@@ -71,8 +71,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>,
-    GridCacheProjectionEx<K, V>, Externalizable {
+public abstract class GridCacheAdapter<K, V> implements CacheProjection<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
