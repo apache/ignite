@@ -908,7 +908,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((InternalCache<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.putIfAbsentAsync(key, val);
@@ -945,7 +945,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((InternalCache<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.replaceAsync(key, val);

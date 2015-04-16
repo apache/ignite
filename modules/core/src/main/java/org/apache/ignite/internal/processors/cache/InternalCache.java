@@ -1737,8 +1737,7 @@ public interface InternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @return {@link javax.cache.expiry.ExpiryPolicy} associated with this projection.
      */
-    public @Nullable
-    ExpiryPolicy expiry();
+    @Nullable public ExpiryPolicy expiry();
 
     /**
      * @param plc {@link ExpiryPolicy} to associate with this projection.

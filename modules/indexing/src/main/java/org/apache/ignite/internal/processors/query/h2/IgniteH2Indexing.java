@@ -1929,7 +1929,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
             InternalCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
-            GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+            GridCacheContext cctx = cache.context();
 
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();

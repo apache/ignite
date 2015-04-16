@@ -34,9 +34,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  */
 public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private GridCacheContext<K, V> ctx;
 
     /** */
@@ -44,7 +41,7 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
 
     /**
      * @param ctx Context.
-     * @param keepPortable Projection.
+     * @param keepPortable Keep portable flag.
      */
     public CacheQueriesImpl(GridCacheContext<K, V> ctx, boolean keepPortable) {
         assert ctx != null;

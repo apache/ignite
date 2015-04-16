@@ -34,23 +34,16 @@ public class CacheProjectionContext implements Serializable {
 
     /** Skip store. */
     @GridToStringInclude
-    private boolean skipStore;
+    private final boolean skipStore;
 
     /** Client ID which operates over this projection, if any, */
-    private UUID subjId;
+    private final UUID subjId;
 
     /** */
-    private boolean keepPortable;
+    private final boolean keepPortable;
 
     /** */
-    private ExpiryPolicy expiryPlc;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public CacheProjectionContext() {
-        // No-op.
-    }
+    private final ExpiryPolicy expiryPlc;
 
     /**
      * @param skipStore Skip store flag.
@@ -63,7 +56,6 @@ public class CacheProjectionContext implements Serializable {
         @Nullable UUID subjId,
         boolean keepPortable,
         @Nullable ExpiryPolicy expiryPlc) {
-
         this.skipStore = skipStore;
 
         this.subjId = subjId;
