@@ -1718,8 +1718,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> EntryProcessorResult<T> invoke(K key,
-                                                        EntryProcessor<K, V, T> entryProcessor,
-                                                        Object... args) throws IgniteCheckedException;
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
 
     /**
      * @param key Key.
@@ -1728,8 +1728,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      */
     public <T> IgniteInternalFuture<EntryProcessorResult<T>> invokeAsync(K key,
-                                                                         EntryProcessor<K, V, T> entryProcessor,
-                                                                         Object... args);
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
 
     /**
      * @param keys Keys.
@@ -1739,8 +1739,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If failed.
      */
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-                                                         EntryProcessor<K, V, T> entryProcessor,
-                                                         Object... args) throws IgniteCheckedException;
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
 
     /**
      * @param keys Keys.
@@ -1749,8 +1749,8 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      */
     public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
-                                                                                    EntryProcessor<K, V, T> entryProcessor,
-                                                                                    Object... args);
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
 
     /**
      * @param map Map containing keys and entry processors to be applied to values.
