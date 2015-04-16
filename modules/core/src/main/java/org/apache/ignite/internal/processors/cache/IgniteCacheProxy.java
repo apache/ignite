@@ -98,7 +98,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     public IgniteCacheProxy(
         GridCacheContext<K, V> ctx,
         GridCacheAdapter<K, V> delegate,
-        @Nullable CacheProjectionContext prjCtx,
+        CacheProjectionContext prjCtx,
         boolean async
     ) {
         super(async);
