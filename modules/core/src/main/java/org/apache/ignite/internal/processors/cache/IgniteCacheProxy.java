@@ -81,7 +81,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @GridToStringExclude
     private CacheManager cacheMgr;
 
-    /** */
+    /** If {@code false} does not acquire read lock on gateway enter. */
     @GridToStringExclude
     private boolean lock;
 
@@ -104,7 +104,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         @Nullable GridCacheProjectionImpl<K, V> prj,
         boolean async
     ) {
-        this(ctx, delegate, prj, async, false);
+        this(ctx, delegate, prj, async, true);
     }
 
     /**
@@ -112,12 +112,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param delegate Delegate.
      * @param prj Projection.
      * @param async Async support flag.
+     * @param lock If {@code false} does not acquire read lock on gateway enter.
      */
-    public IgniteCacheProxy(
+    private IgniteCacheProxy(
         GridCacheContext<K, V> ctx,
         GridCacheProjectionEx<K, V> delegate,
         @Nullable GridCacheProjectionImpl<K, V> prj,
-        boolean async, boolean lock
+        boolean async,
+        boolean lock
     ) {
         super(async);
 
@@ -136,10 +138,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * Gets cache proxy which does not acquire read lock on gateway enter, should be
+     * used only if grid read lock is externally acquired.
+     *
      * @return Ignite cache proxy with simple gate.
      */
     public IgniteCacheProxy<K, V> cacheNoGate() {
-        return new IgniteCacheProxy<>(ctx, delegate, prj, isAsync(), true);
+        return new IgniteCacheProxy<>(ctx, delegate, prj, isAsync(), false);
     }
 
     /**
@@ -234,7 +239,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             GridCacheProjectionEx<K, V> prj0 = prj != null ? prj.withExpiryPolicy(plc) : delegate.withExpiryPolicy(plc);
 
-            return new IgniteCacheProxy<>(ctx, prj0, (GridCacheProjectionImpl<K, V>)prj0, isAsync());
+            return new IgniteCacheProxy<>(ctx,
+                prj0,
+                (GridCacheProjectionImpl<K, V>)prj0,
+                isAsync(),
+                lock);
         }
         finally {
             onLeave(prev);
@@ -779,8 +788,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             if (completionLsnr != null) {
                 fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override
-                    public void apply(IgniteInternalFuture<?> fut) {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
                         try {
                             fut.get();
 
@@ -1343,7 +1351,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     *
+     * @return Proxy delegate.
      */
     public GridCacheProjectionEx delegate() {
         return delegate;
@@ -1406,7 +1414,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<K, V> createAsyncInstance() {
-        return new IgniteCacheProxy<>(ctx, delegate, prj, true);
+        return new IgniteCacheProxy<>(ctx, delegate, prj, true, lock);
     }
 
     /**
@@ -1447,7 +1455,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 prj0,
                 prj0,
-                isAsync());
+                isAsync(),
+                lock);
         }
         finally {
             onLeave(prev);
@@ -1477,7 +1486,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return new IgniteCacheProxy<>(ctx,
                 prj0,
                 prj0,
-                isAsync());
+                isAsync(),
+                lock);
         }
         finally {
             onLeave(prev);
@@ -1505,6 +1515,49 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @NotNull
     public GridCacheProxyImpl<K, V> legacyProxy() {
         return legacyProxy;
+    }
+
+    /**
+     * @param prj Projection to guard.
+     * @return Previous projection set on this thread.
+     */
+    private GridCacheProjectionImpl<K, V> onEnter(GridCacheProjectionImpl<K, V> prj) {
+        if (lock)
+            return gate.enter(prj);
+        else
+            return gate.enterNoLock(prj);
+    }
+
+    /**
+     * On enter.
+     *
+     * @return {@code True} if enter successful.
+     */
+    private boolean onEnterIfNoClose() {
+        if (lock)
+            return gate.enterIfNotClosed();
+        else
+            return gate.enterIfNotClosedNoLock();
+    }
+
+    /**
+     * @param prj Projection to guard..
+     */
+    private void onLeave(GridCacheProjectionImpl<K, V> prj) {
+        if (lock)
+            gate.leave(prj);
+        else
+            gate.leaveNoLock(prj);
+    }
+
+    /**
+     * On leave.
+     */
+    private void onLeave() {
+        if (lock)
+            gate.leave();
+        else
+            gate.leaveNoLock();
     }
 
     /** {@inheritDoc} */
@@ -1539,94 +1592,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         return new IgniteFutureImpl<>(ctx.preloader().syncFuture());
     }
 
-    /**
-     * @param prj Projection to guard.
-     * @return Previous projection set on this thread.
-     */
-    private GridCacheProjectionImpl<K, V> onEnter(GridCacheProjectionImpl<K, V> prj) {
-        if (lock)
-            return gate.enter(prj);
-        else
-            return gate.enterNoLock(prj);
-    }
-
-    /**
-     * On enter.
-     */
-    private boolean onEnterIfNoClose() {
-        if (lock)
-            return gate.enterIfNotClosed();
-        else
-            return gate.enterIfNotClosedNoLock();
-    }
-
-    /**
-     * @param prj Projection to guard..
-     */
-    private void onLeave(GridCacheProjectionImpl<K, V> prj) {
-        if (lock)
-            gate.leave(prj);
-        else
-            gate.leaveNoLock(prj);
-    }
-
-    /**
-     * On leave.
-     */
-    private void onLeave() {
-        if (lock)
-            gate.leave();
-        else
-            gate.leaveNoLock();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
-    }
-
-    /**
-     * Closeable iterator.
-     */
-    private abstract static class ClIter<X, Y> extends GridCloseableIteratorAdapter<Y> {
-        /** */
-        private X cur;
-
-        /** */
-        private CacheQueryFuture<X> fut;
-
-        /**
-         * @param fut Future.
-         */
-        protected ClIter(CacheQueryFuture<X> fut) {
-            this.fut = fut;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Y onNext() throws IgniteCheckedException {
-            if (!onHasNext())
-                throw new NoSuchElementException();
-
-            X e = cur;
-
-            cur = null;
-
-            return convert(e);
-        }
-
-        /**
-         * @param x X.
-         */
-        protected abstract Y convert(X x);
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            return cur != null || (cur = fut.next()) != null;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onClose() throws IgniteCheckedException {
-            fut.cancel();
-        }
     }
 }

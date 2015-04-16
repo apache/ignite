@@ -66,10 +66,10 @@ public class GridCacheGateway<K, V> {
     /**
      * Enter a cache call.
      *
-     * @return {@code true} if enter successful, {@code false} if the cache or the node was stopped.
+     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotClosed() {
-        enterIfNotClosedNoLock();
+        onEnter();
 
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
@@ -87,17 +87,16 @@ public class GridCacheGateway<K, V> {
     /**
      * Enter a cache call without lock.
      *
-     * @return {@code true} if enter successful, {@code false} if the cache or the node was stopped.
+     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotClosedNoLock() {
-        if (ctx.deploymentEnabled())
-            ctx.deploy().onEnter();
+        onEnter();
 
         return !stopped;
     }
 
     /**
-     * Leave a cache call entered by {@link #enter()} method.
+     * Leave a cache call entered by {@link #enterNoLock} method.
      */
     public void leaveNoLock() {
         ctx.tm().resetContext();
@@ -125,6 +124,22 @@ public class GridCacheGateway<K, V> {
      * @return Previous projection set on this thread.
      */
     @Nullable public GridCacheProjectionImpl<K, V> enter(@Nullable GridCacheProjectionImpl<K, V> prj) {
+        try {
+            GridCacheAdapter<K, V> cache = ctx.cache();
+
+            GridCachePreloader<K, V> preldr = cache != null ? cache.preloader() : null;
+
+            if (preldr == null)
+                throw new IllegalStateException("Grid is in invalid state to perform this operation. " +
+                    "It either not started yet or has already being or have stopped [gridName=" + ctx.gridName() + ']');
+
+            preldr.startFuture().get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to wait for cache preloader start [cacheName=" +
+                ctx.name() + "]", e);
+        }
+
         onEnter();
 
         rwLock.readLock();
@@ -132,7 +147,7 @@ public class GridCacheGateway<K, V> {
         if (stopped) {
             rwLock.readUnlock();
 
-            throw new IllegalStateException("Dynamic cache has been stopped: " + ctx.name());
+            throw new IllegalStateException("Cache has been stopped: " + ctx.name());
         }
 
         // Must unlock in case of unexpected errors to avoid
@@ -155,35 +170,9 @@ public class GridCacheGateway<K, V> {
         onEnter();
 
         if (stopped)
-            throw new IllegalStateException("Dynamic cache has been stopped: " + ctx.name());
+            throw new IllegalStateException("Cache has been stopped: " + ctx.name());
 
         return setProjectionPerCall(prj);
-    }
-
-    /**
-     * On enter.
-     */
-    private void onEnter() {
-        try {
-            ctx.itHolder().checkWeakQueue();
-
-            GridCacheAdapter<K, V> cache = ctx.cache();
-
-            GridCachePreloader<K, V> preldr = cache != null ? cache.preloader() : null;
-
-            if (preldr == null)
-                throw new IllegalStateException("Grid is in invalid state to perform this operation. " +
-                    "It either not started yet or has already being or have stopped [gridName=" + ctx.gridName() + ']');
-
-            preldr.startFuture().get();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to wait for cache preloader start [cacheName=" +
-                ctx.name() + "]", e);
-        }
-
-        if (ctx.deploymentEnabled())
-            ctx.deploy().onEnter();
     }
 
     /**
@@ -225,6 +214,16 @@ public class GridCacheGateway<K, V> {
 
         // Return back previous thread local projection per call.
         ctx.projectionPerCall(prev);
+    }
+
+    /**
+     *
+     */
+    private void onEnter() {
+        ctx.itHolder().checkWeakQueue();
+
+        if (ctx.deploymentEnabled())
+            ctx.deploy().onEnter();
     }
 
     /**
