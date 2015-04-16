@@ -957,7 +957,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
-                if (!entry.hasValue() && !tx.entry(entry.txKey()).skipStore())
+                IgniteTxEntry txEntry = tx != null ? tx.entry(entry.txKey()) : null;
+
+                if (!entry.hasValue() && (txEntry == null || !txEntry.skipStore()))
                     loadMap.put(entry.key(), entry);
             }
 
