@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -69,19 +68,4 @@ public interface CacheQueries<K, V> {
      * @return Query.
      */
     public <R> CacheQuery<R> createSpiQuery();
-
-    /**
-     * @param space Space name.
-     * @param qry Query.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry);
-
-    /**
-     * @param space Space.
-     * @param sqlQry Query.
-     * @param params Parameters.
-     * @return Cursor.
-     */
-    public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object... params);
 }

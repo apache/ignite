@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -101,16 +100,6 @@ public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
             null,
             false,
             keepPortable);
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry) {
-        return ctx.kernalContext().query().queryTwoStep(space, qry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
-        return ctx.kernalContext().query().queryTwoStep(ctx, new SqlFieldsQuery(sqlQry).setArgs(params));
     }
 
     /** {@inheritDoc} */
