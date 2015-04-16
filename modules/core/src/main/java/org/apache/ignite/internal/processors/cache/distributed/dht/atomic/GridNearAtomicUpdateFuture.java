@@ -271,15 +271,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /** {@inheritDoc} */
-    @Override public void checkTimeout(long timeout) {
-        long mapTime0 = mapTime;
-
-        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
-            onDone(new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
-                "(consider increasing networkTimeout configuration property)."));
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean trackable() {
         return true;
     }
