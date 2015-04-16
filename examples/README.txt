@@ -26,7 +26,7 @@ Remote nodes for examples should always be started with special configuration fi
 class loading: `examples/config/example-ignite.xml`. To run a remote node in IDE use `ExampleNodeStartup` class.
 
 
-Javay7 vs Java8
+Java7 vs Java8
 ===============
 Some examples (not all) which can benefit from Java8 Lambda support were re-written with Java8 lambdas.
 For full set of examples, look at both Java7 and Java8 packages.
