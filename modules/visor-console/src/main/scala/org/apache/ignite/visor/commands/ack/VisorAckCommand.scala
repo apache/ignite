@@ -18,15 +18,14 @@
 package org.apache.ignite.visor.commands.ack
 
 import org.apache.ignite.cluster.ClusterGroupEmptyException
-import org.apache.ignite.internal.visor.misc.VisorAckTask
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.VisorConsoleCommand
+import org.apache.ignite.visor.visor._
 
 import java.util.{HashSet => JavaHashSet}
 
-import org.apache.ignite.visor.commands.VisorConsoleCommand
-import org.apache.ignite.visor.visor._
-import org.apache.ignite.visor.{VisorTag, visor}
+import org.apache.ignite.internal.visor.misc.VisorAckTask
 
-import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
 /**
@@ -105,7 +104,7 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try {
-                executeAll(classOf[VisorAckTask], msg)
+                executeMulti(classOf[VisorAckTask], msg)
             }
             catch {
                 case _: ClusterGroupEmptyException => scold("Topology is empty.")

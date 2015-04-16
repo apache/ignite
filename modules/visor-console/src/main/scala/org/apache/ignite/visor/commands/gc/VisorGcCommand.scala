@@ -18,14 +18,14 @@
 package org.apache.ignite.visor.commands.gc
 
 import org.apache.ignite._
-
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 
 import java.util.UUID
+
+import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -143,7 +143,7 @@ class VisorGcCommand {
 
                 val NULL: Void = null
 
-                executeRemotes(classOf[VisorNodeGcTask], NULL).foreach {
+                executeMulti(classOf[VisorNodeGcTask], NULL).foreach {
                     case (nid, stat) =>
                         val roundHb = stat.get1() / (1024L * 1024L)
                         val roundHa = stat.get2() / (1024L * 1024L)
