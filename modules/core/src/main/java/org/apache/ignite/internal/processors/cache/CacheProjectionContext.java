@@ -115,8 +115,6 @@ public class CacheProjectionContext implements Serializable {
      * @return New instance of CacheProjectionContext with specific subject id.
      */
     public CacheProjectionContext forSubjectId(UUID subjId) {
-        A.notNull(subjId, "subjId");
-
         return new CacheProjectionContext(
             skipStore,
             subjId,
