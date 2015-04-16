@@ -187,7 +187,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
             long start = System.currentTimeMillis();
 
             for (int i = 0; i < max; i++) {
-                cache.put(i, i);
+                cache.getAndPut(i, i);
 
                 if (i % 100000 == 0) {
                     long cur = System.currentTimeMillis();
@@ -224,7 +224,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
                         int val = keyGen.addAndGet(reserveSize); // Reserve keys.
 
                         for (int i = val - reserveSize; i < val; i++) {
-                            c.put(i, i);
+                            c.getAndPut(i, i);
 
                             if (i % 500000 == 0) {
                                 long dur = System.currentTimeMillis() - start;

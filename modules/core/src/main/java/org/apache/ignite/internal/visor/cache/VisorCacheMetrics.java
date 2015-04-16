@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.cache.CacheMetrics}.
+ * Data transfer object for {@link CacheMetrics}.
  */
 public class VisorCacheMetrics implements Serializable {
     /** */
@@ -32,6 +33,15 @@ public class VisorCacheMetrics implements Serializable {
 
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Cache name. */
+    private String name;
+
+    /** Cache mode. */
+    private CacheMode mode;
+
+    /** Cache system state. */
+    private boolean sys;
 
     /** Number of non-{@code null} values in the cache. */
     private int size;
@@ -147,7 +157,14 @@ public class VisorCacheMetrics implements Serializable {
     /** Number of cached rolled back DHT transaction IDs. */
     private int txDhtRolledbackVersionsSize;
 
-    /** Calculate rate of metric per second. */
+    /**
+     * Calculate rate of metric per second.
+     *
+     * @param metric Metric value.
+     * @param time Metric finish time.
+     * @param createTime Metric start time.
+     * @return Metric per second.
+     */
     private static int perSecond(int metric, long time, long createTime) {
         long seconds = (time - createTime) / 1000;
 
@@ -155,13 +172,20 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
+     * @param ignite Ignite.
      * @param c Cache.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(GridCache c) {
+    public static VisorCacheMetrics from(IgniteEx ignite, GridCache c) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
 
         CacheMetrics m = c.metrics();
+
+        GridCacheProcessor cacheProcessor = ignite.context().cache();
+
+        cm.name = c.name();
+        cm.mode = cacheProcessor.cacheMode(c.name());
+        cm.sys = cacheProcessor.systemCache(c.name());
 
         cm.size = m.getSize();
         cm.keySize = m.getKeySize();
@@ -211,6 +235,27 @@ public class VisorCacheMetrics implements Serializable {
         cm.txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
 
         return cm;
+    }
+
+    /**
+     * @return Cache name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    public CacheMode mode() {
+        return mode;
+    }
+
+    /**
+     * @return Cache system state.
+     */
+    public boolean system() {
+        return sys;
     }
 
     /**
@@ -396,7 +441,7 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * Committed transaction queue size.
+     * @return Committed transaction queue size.
      */
     public int txCommitQueueSize() {
         return txCommitQueueSize;

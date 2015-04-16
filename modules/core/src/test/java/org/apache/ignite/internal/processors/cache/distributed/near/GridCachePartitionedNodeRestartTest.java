@@ -38,6 +38,7 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
+        cc.setAtomicityMode(atomicityMode());
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_ASYNC);
         cc.setNearConfiguration(null);

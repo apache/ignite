@@ -116,7 +116,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
 
     /** */
-    protected GridAbstractTest() {
+    protected GridAbstractTest() throws IgniteCheckedException {
         this(false);
 
         log = getTestCounters().getTestResources().getLogger().getLogger(getClass());
@@ -172,7 +172,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Test resources.
      */
-    protected IgniteTestResources getTestResources() {
+    protected IgniteTestResources getTestResources() throws IgniteCheckedException {
         return getTestCounters().getTestResources();
     }
 
@@ -215,7 +215,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cats Additional categories.
      */
     @SuppressWarnings({"deprecation"})
-    protected void resetLog4j(Level log4jLevel, boolean logToFile, String cat, String... cats) {
+    protected void resetLog4j(Level log4jLevel, boolean logToFile, String cat, String... cats)
+        throws IgniteCheckedException {
         for (String c : F.concat(false, cat, F.asList(cats)))
             Logger.getLogger(c).setLevel(log4jLevel);
 
@@ -381,7 +382,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Test kernal context.
      */
-    protected GridTestKernalContext newContext() {
+    protected GridTestKernalContext newContext() throws IgniteCheckedException {
         return new GridTestKernalContext(log());
     }
 
@@ -620,8 +621,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid(int idx) throws Exception {
-        return startGrid(getTestGridName(idx));
+    protected IgniteEx startGrid(int idx) throws Exception {
+        return (IgniteEx)startGrid(getTestGridName(idx));
     }
 
     /**
@@ -672,8 +673,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cfg Configuration.
      * @return Optimized configuration (by modifying passed in one).
      */
-    protected IgniteConfiguration optimize(IgniteConfiguration cfg) {
-        // TODO: GG-4048: propose another way to avoid network overhead in tests.
+    protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
             if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
                 cfg.setLocalHost("127.0.0.1");
@@ -1055,7 +1056,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Ignite home.
      */
-    protected String home() {
+    protected String home() throws IgniteCheckedException {
         return getTestResources().getIgniteHome();
     }
 
@@ -1250,7 +1251,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return First test flag.
      */
-    protected boolean isFirstTest() {
+    protected boolean isFirstTest() throws IgniteCheckedException {
         TestCounters cntrs = getTestCounters();
 
         return cntrs.getStarted() == 1 && cntrs.getStopped() == 0;
@@ -1259,7 +1260,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Last test flag.
      */
-    protected boolean isLastTest() {
+    protected boolean isLastTest() throws IgniteCheckedException {
         TestCounters cntrs = getTestCounters();
 
         return cntrs.getStopped() == cntrs.getNumberOfTests();
@@ -1268,7 +1269,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Test counters.
      */
-    protected synchronized TestCounters getTestCounters() {
+    protected synchronized TestCounters getTestCounters() throws IgniteCheckedException {
         TestCounters tc = tests.get(getClass());
 
         if (tc == null)
@@ -1461,7 +1462,14 @@ public abstract class GridAbstractTest extends TestCase {
         private boolean reset;
 
         /** */
-        private IgniteTestResources rsrcs = new IgniteTestResources();
+        private IgniteTestResources rsrcs;
+
+        /**
+         * @throws IgniteCheckedException In case of error.
+         */
+        public TestCounters() throws IgniteCheckedException {
+            rsrcs = new IgniteTestResources();
+        }
 
         /**
          * @return Reset flag.

@@ -65,6 +65,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private long dhtThreadId;
 
     /** */
+    protected boolean explicitLock;
+
+    /** */
     private boolean needsCompletedVers;
 
     /** Versions of pending locks for entries of this tx. */
@@ -96,6 +99,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
+        boolean explicitLock,
         GridIoPolicy plc,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
@@ -112,6 +116,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             storeEnabled, txSize, grpLockKey, partLock, subjId, taskNameHash);
 
         assert cctx != null;
+
+        this.explicitLock = explicitLock;
 
         threadId = Thread.currentThread().getId();
         dhtThreadId = threadId;
@@ -179,6 +185,20 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return Explicit lock flag.
+     */
+    public boolean explicitLock() {
+        return explicitLock;
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    public void explicitLock(boolean explicitLock) {
+        this.explicitLock = explicitLock;
+    }
+
+    /**
      * @return DHT thread ID.
      */
     long dhtThreadId() {
@@ -227,8 +247,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             if (nearEntryMap == null)
                                 nearEntryMap = new GridLeanMap<>();
 
-                            cacheCtx.dhtMap(nearNodeId(), topologyVersion(),
-                                (GridDhtCacheEntry)e.cached(), log, dhtEntryMap, nearEntryMap);
+                            cacheCtx.dhtMap(
+                                (GridDhtCacheEntry)e.cached(),
+                                e.explicitVersion(),
+                                log,
+                                dhtEntryMap,
+                                nearEntryMap);
                         }
 
                         break;
@@ -444,46 +468,53 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
         try {
-            IgniteTxEntry entry = txMap.get(e.txKey());
+            IgniteTxEntry existing = txMap.get(e.txKey());
 
-            if (entry != null) {
-                entry.op(e.op()); // Absolutely must set operation, as default is DELETE.
-                entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
-                entry.entryProcessors(e.entryProcessors());
-                entry.ttl(e.ttl());
-                entry.filters(e.filters());
-                entry.expiry(e.expiry());
+            if (existing != null) {
+                // Must keep NOOP operation if received READ because it means that the lock was sent to a backup node.
+                if (e.op() == READ) {
+                    if (existing.op() != NOOP)
+                        existing.op(e.op());
+                }
+                else
+                    existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
 
-                entry.conflictExpireTime(e.conflictExpireTime());
-                entry.conflictVersion(e.conflictVersion());
+                existing.value(e.value(), e.hasWriteValue(), e.hasReadValue());
+                existing.entryProcessors(e.entryProcessors());
+                existing.ttl(e.ttl());
+                existing.filters(e.filters());
+                existing.expiry(e.expiry());
+
+                existing.conflictExpireTime(e.conflictExpireTime());
+                existing.conflictVersion(e.conflictVersion());
             }
             else {
-                entry = e;
+                existing = e;
 
                 addActiveCache(dhtCache.context());
 
-                GridDhtCacheEntry cached = dhtCache.entryExx(entry.key(), topologyVersion());
+                GridDhtCacheEntry cached = dhtCache.entryExx(existing.key(), topologyVersion());
 
-                entry.cached(cached);
+                existing.cached(cached);
 
-                GridCacheVersion explicit = entry.explicitVersion();
+                GridCacheVersion explicit = existing.explicitVersion();
 
                 if (explicit != null) {
                     GridCacheVersion dhtVer = cctx.mvcc().mappedVersion(explicit);
 
                     if (dhtVer == null)
-                        throw new IgniteCheckedException("Failed to find dht mapping for explicit entry version: " + entry);
+                        throw new IgniteCheckedException("Failed to find dht mapping for explicit entry version: " + existing);
 
-                    entry.explicitVersion(dhtVer);
+                    existing.explicitVersion(dhtVer);
                 }
 
-                txMap.put(entry.txKey(), entry);
+                txMap.put(existing.txKey(), existing);
 
                 if (log.isDebugEnabled())
-                    log.debug("Added entry to transaction: " + entry);
+                    log.debug("Added entry to transaction: " + existing);
             }
 
-            return addReader(msgId, dhtCache.entryExx(entry.key()), entry, topologyVersion());
+            return addReader(msgId, dhtCache.entryExx(existing.key()), existing, topologyVersion());
         }
         catch (GridDhtInvalidPartitionException ex) {
             addInvalidPartition(cacheCtx, ex.partition());
@@ -828,6 +859,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),
-            "dhtNodes", dhtMap.keySet(), "super", super.toString());
+            "dhtNodes", dhtMap.keySet(), "explicitLock", explicitLock, "super", super.toString());
     }
 }

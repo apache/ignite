@@ -786,7 +786,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Collection<GridQueryFieldMetadata> meta;
 
         try {
-            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs());
+            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
 
             meta = meta(stmt.getMetaData());
         }
@@ -831,11 +831,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String generateQuery(String qry, TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
+        final String qry0 = qry;
+
         String t = tbl.fullTableName();
 
         String from = " ";
 
-        String upper = qry.trim().toUpperCase();
+        qry = qry.trim();
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            if (!qry.startsWith("*"))
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
+                    "use SqlFieldsQuery instead: " + qry0);
+
+            qry = qry.substring(1).trim();
+            upper = qry.toUpperCase();
+        }
 
         if (!upper.startsWith("FROM"))
             from = " FROM " + t +
@@ -1154,7 +1168,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rdcQryExec.start(ctx, this);
         }
 
-//        registerMBean(gridName, this, GridH2IndexingSpiMBean.class); TODO
+        // TODO https://issues.apache.org/jira/browse/IGNITE-751
+        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**
@@ -1241,12 +1256,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(),
             ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
             new GridUnsafeMemory(0) : null, ccfg)) != null)
-            throw new IgniteCheckedException("Cache already registered: " + ccfg.getName());
+            throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
 
         createSchema(schema);
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
 
+    /** {@inheritDoc} */
     @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
         String schema = schema(ccfg.getName());
 
@@ -1257,7 +1273,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 dropSchema(schema);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to drop schema on cache stop (will ignore): " + ccfg.getName(), e);
+                U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
             }
         }
     }

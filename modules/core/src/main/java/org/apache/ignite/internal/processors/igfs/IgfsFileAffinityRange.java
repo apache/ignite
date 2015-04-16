@@ -56,9 +56,6 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
     /** Range end offset (endOff + 1 divisible by block size). */
     private long endOff;
 
-    /** Transient flag indicating no further writes should be made to this range. */
-    private boolean done;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -219,20 +216,6 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
     }
 
     /**
-     * Marks this range as done.
-     */
-    public void markDone() {
-        done = true;
-    }
-
-    /**
-     * @return Done flag.
-     */
-    public boolean done() {
-        return done;
-    }
-
-    /**
      * Checks if range regions are equal.
      *
      * @param other Other range to check against.
@@ -281,7 +264,8 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeBoolean("done", done))
+                // The field 'done' was removed, but its writing preserved for compatibility reasons.
+                if (!writer.writeBoolean("done", false))
                     return false;
 
                 writer.incrementState();
@@ -326,7 +310,8 @@ public class IgfsFileAffinityRange implements Message, Externalizable {
                 reader.incrementState();
 
             case 1:
-                done = reader.readBoolean("done");
+                // field 'done' was removed, but reading preserved for compatibility reasons.
+                reader.readBoolean("done");
 
                 if (!reader.isLastRead())
                     return false;

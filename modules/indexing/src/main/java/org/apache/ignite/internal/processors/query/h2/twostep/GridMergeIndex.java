@@ -30,15 +30,17 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.IgniteSystemProperties.*;
+
 /**
  * Merge index.
  */
 public abstract class GridMergeIndex extends BaseIndex {
     /** */
-    private static final int MAX_FETCH_SIZE = 100000; // TODO configure
+    private static final int MAX_FETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_MAX_SIZE, 10_000);
 
     /** All rows number. */
-    private final AtomicInteger rowsCnt = new AtomicInteger(0);
+    private final AtomicInteger expectedRowsCnt = new AtomicInteger(0);
 
     /** Remaining rows per source node ID. */
     private final ConcurrentMap<UUID, Counter> remainingRows = new ConcurrentHashMap8<>();
@@ -50,6 +52,9 @@ public abstract class GridMergeIndex extends BaseIndex {
      * Will be r/w from query execution thread only, does not need to be threadsafe.
      */
     private ArrayList<Row> fetched = new ArrayList<>();
+
+    /** */
+    private int fetchedCnt;
 
     /**
      * @param tbl Table.
@@ -71,7 +76,7 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session session) {
-        return rowsCnt.get();
+        return expectedRowsCnt.get();
     }
 
     /** {@inheritDoc} */
@@ -111,7 +116,7 @@ public abstract class GridMergeIndex extends BaseIndex {
             assert !cnt.initialized : "Counter is already initialized.";
 
             cnt.addAndGet(allRows);
-            rowsCnt.addAndGet(allRows);
+            expectedRowsCnt.addAndGet(allRows);
 
             // We need this separate flag to handle case when the first source contains only one page
             // and it will signal that all remaining counters are zero and fetch is finished.
@@ -164,7 +169,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @return {@code true} If we have fetched all the remote rows.
      */
     public boolean fetchedAll() {
-        return fetched.size() == rowsCnt.get();
+        return fetchedCnt == expectedRowsCnt.get();
     }
 
     /**
@@ -307,6 +312,8 @@ public abstract class GridMergeIndex extends BaseIndex {
                     else
                         fetched.add(cur);
                 }
+
+                fetchedCnt++;
 
                 return true;
             }

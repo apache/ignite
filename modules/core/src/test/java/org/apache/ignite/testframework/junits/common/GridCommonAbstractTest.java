@@ -52,6 +52,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
  * Super class for all common tests.
  */
 public abstract class GridCommonAbstractTest extends GridAbstractTest {
+    /**Cache peek modes array that consist of only ONHEAP mode. */
+    protected static final CachePeekMode[] ONHEAP_PEEK_MODES = new CachePeekMode[] {CachePeekMode.ONHEAP};
+
     /**
      * @param startGrid If {@code true}, then grid node will be auto-started.
      */
@@ -327,9 +330,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected final Ignite startGridsMultiThreaded(int cnt) throws Exception {
+        return startGridsMultiThreaded(cnt, true);
+    }
+
+    /**
+     * @param cnt Count.
+     * @param awaitPartitionMapExchange If we need to await partition map exchange.
+     * @return Ignite.
+     * @throws Exception If failed.
+     */
+    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartitionMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        awaitPartitionMapExchange();
+        if (awaitPartitionMapExchange)
+            awaitPartitionMapExchange();
 
         return g;
     }
@@ -552,6 +566,45 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param key Key.
+     */
+    protected <K, V> V dhtPeek(K key) throws IgniteCheckedException {
+        return localPeek(this.<K, V>dht(), key);
+    }
+
+    /**
+     * @param idx Index.
+     * @param key Key.
+     */
+    protected <K, V> V dhtPeek(int idx, K key) throws IgniteCheckedException {
+        return localPeek(this.<K, V>dht(idx), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    protected <K, V> V nearPeek(IgniteCache<K, V> cache, K key) throws IgniteCheckedException {
+        return localPeek(near(cache), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    protected static <K, V> V dhtPeek(IgniteCache<K, V> cache, K key) throws IgniteCheckedException {
+        return localPeek(dht(cache), key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
+        return cache.localPeek(key, ONHEAP_PEEK_MODES, null);
+    }
+
+    /**
      * @param comp Compute.
      * @param task Task.
      * @param arg Task argument.
@@ -731,7 +784,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache for key.
      */
     protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
-        return primaryNode(key, null).cache(null);
+        return primaryNode(key, cacheName).cache(cacheName);
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> backupCache(Integer key, String cacheName) {
+        return backupNode(key, cacheName).cache(cacheName);
     }
 
     /**
@@ -756,6 +818,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Ignite instance which has primary cache for given key.
+     */
+    protected Ignite backupNode(Object key, String cacheName) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Ignite ignite = allGrids.get(0);
+
+        Affinity<Object> aff = ignite.affinity(cacheName);
+
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes +']', nodes.size() > 1);
+
+        Iterator<ClusterNode> it = nodes.iterator();
+
+        it.next(); // Skip primary.
+
+        return grid(it.next());
+    }
+
+    /**
      * In ATOMIC cache with CLOCK mode if key is updated from different nodes at same time
      * only one update wins others are ignored (can happen in test event when updates are executed from
      * different nodes sequentially), this delay is used to avoid lost updates.
@@ -769,6 +856,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (ccfg.getCacheMode() != LOCAL &&
             ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
-            U.sleep(100);
+            U.sleep(50);
     }
 }

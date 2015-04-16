@@ -19,9 +19,10 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 
 /**
- * Test suite that contains all tests for {@link GridCacheWriteBehindStore}.
+ * Test suite that contains all tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class IgniteCacheWriteBehindTestSuite extends TestSuite {
     /**

@@ -174,7 +174,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         for (int i = 0; i < gridCount(); i++) {
             GridContinuousProcessor proc = grid(i).context().continuous();
 
-            assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
+            assertEquals(String.valueOf(i), 3, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStartAck")).size());
@@ -909,7 +909,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
 
-                assertEquals(CONTINUOUS, qe.queryType());
+                assertEquals(CONTINUOUS.name(), qe.queryType());
                 assertNull(qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());
@@ -933,7 +933,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
                 CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                assertEquals(CONTINUOUS, qe.queryType());
+                assertEquals(CONTINUOUS.name(), qe.queryType());
                 assertNull(qe.cacheName());
 
                 assertEquals(grid(0).localNode().id(), qe.subjectId());

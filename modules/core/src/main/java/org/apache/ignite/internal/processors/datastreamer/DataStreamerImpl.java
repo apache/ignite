@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -43,6 +44,7 @@ import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
@@ -179,12 +181,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (log == null)
             log = U.logger(ctx, logRef, DataStreamerImpl.class);
 
-        ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
+        CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-        if (node == null)
-            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
-
-        this.cacheObjCtx = ctx.cacheObjects().contextForCache(node, cacheName, null);
+        this.cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
         this.cacheName = cacheName;
         this.flushQ = flushQ;
 
@@ -1390,6 +1389,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 GridCacheVersion ver = cctx.versions().next(topVer);
 
+                long ttl = CU.TTL_ETERNAL;
+                long expiryTime = CU.EXPIRE_TIME_ETERNAL;
+
+                ExpiryPolicy plc = cctx.expiry();
+
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
@@ -1398,10 +1402,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         entry.unswap(false);
 
+                        if (plc != null) {
+                            ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                            if (ttl == CU.TTL_ZERO)
+                                continue;
+                            else if (ttl == CU.TTL_NOT_CHANGED)
+                                ttl = 0;
+
+                            expiryTime = CU.toExpireTime(ttl);
+                        }
+
                         entry.initialValue(e.getValue(),
                             ver,
-                            CU.TTL_ETERNAL,
-                            CU.EXPIRE_TIME_ETERNAL,
+                            ttl,
+                            expiryTime,
                             false,
                             topVer,
                             GridDrType.DR_LOAD);

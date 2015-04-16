@@ -56,7 +56,8 @@ The following Ignite benchmark properties can be defined in the benchmark config
 * `-b <num>` or `--backups <num>` - Number of backups for every key
 * `-cfg <path>` or `--Config <path>` - Path to Ignite configuration file
 * `-sm <mode>` or `-syncMode <mode>` - Synchronization mode (defined in `CacheWriteSynchronizationMode`)
-* `-dm <mode>` or `--distroMode <mode>` - Distribution mode (defined in `CacheDistributionMode`)
+* `-cl` or `--client` - Client flag
+* `-nc` or `--nearCache` - Near cache flag
 * `-wom <mode>` or `--writeOrderMode <mode>` - Write order mode for ATOMIC caches (defined in `CacheAtomicWriteOrderMode`)
 * `-txc <value>` or `--txConcurrency <value>` - Cache transaction concurrency control, either `OPTIMISTIC` or `PESSIMISTIC` (defined in `CacheTxConcurrency`)
 * `-txi <value>` or `--txIsolation <value>` - Cache transaction isolation (defined in `CacheTxIsolation`)

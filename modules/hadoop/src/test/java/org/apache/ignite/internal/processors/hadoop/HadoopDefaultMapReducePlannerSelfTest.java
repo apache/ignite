@@ -675,7 +675,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() {
+        @Override public void stop(boolean cancel) {
             // No-op.
         }
 
@@ -974,11 +974,6 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         /** {@inheritDoc} */
         @Override public boolean allEventsUserRecordable(int[] types) {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> compatibleVersions() {
-            return null;
         }
 
         /** {@inheritDoc} */

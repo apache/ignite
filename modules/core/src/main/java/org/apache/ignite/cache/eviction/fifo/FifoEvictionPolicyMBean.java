@@ -41,6 +41,22 @@ public interface FifoEvictionPolicyMBean {
     public void setMaxSize(int max);
 
     /**
+     * Gets batch size.
+     *
+     * @return batch size.
+     */
+    @MXBeanDescription("Batch size.")
+    public int getBatchSize();
+
+    /**
+     * Sets batch size.
+     *
+     * @param batchSize Batch size.
+     */
+    @MXBeanDescription("Set batch size.")
+    public void setBatchSize(int batchSize);
+
+    /**
      * Gets current queue size.
      *
      * @return Current queue size.

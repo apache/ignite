@@ -22,6 +22,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
@@ -87,6 +88,15 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public Entry<K, V> randomEntry();
 
+    /**
+     * Returns cache with the specified expired policy set. This policy will be used for each operation
+     * invoked on the returned cache.
+     * <p>
+     * This method does not modify existing cache instance.
+     *
+     * @param plc Expire policy to use.
+     * @return Cache instance with the specified expiry policy set.
+     */
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
@@ -260,7 +270,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
     /**
-     * Gets the number of all entries cached across all nodes.
+     * Gets the number of all entries cached across all nodes. By default, if {@code peekModes} value isn't defined,
+     * only size of primary copies across all nodes will be returned. This behavior is identical to calling
+     * this method with {@link CachePeekMode#PRIMARY} peek mode.
      * <p>
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
      *
@@ -271,7 +283,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
-     * Gets the number of all entries cached on this node.
+     * Gets the number of all entries cached on this node. By default, if {@code peekModes} value isn't defined,
+     * only size of primary copies will be returned. This behavior is identical to calling this method with
+     * {@link CachePeekMode#PRIMARY} peek mode.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size on this node.
@@ -512,6 +526,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
+
+    /**
+     * Gets snapshot metrics for caches in cluster group.
+     *
+     * @param grp Cluster group.
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics(ClusterGroup grp);
 
     /**
      * Gets MxBean for this cache.

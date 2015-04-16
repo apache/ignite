@@ -86,7 +86,7 @@ public class HibernateRegion implements Region {
 
     /** {@inheritDoc} */
     @Override public Map toMap() {
-        return cache.toMap();
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

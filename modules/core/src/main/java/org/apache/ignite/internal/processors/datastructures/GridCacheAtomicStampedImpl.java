@@ -264,7 +264,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
                     stmp.set(val, stamp);
 
-                    atomicView.putx(key, stmp);
+                    atomicView.put(key, stmp);
 
                     tx.commit();
 
@@ -308,7 +308,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                     else {
                         stmp.set(newValClos.apply(stmp.value()), newStampClos.apply(stmp.stamp()));
 
-                        atomicView.put(key, stmp);
+                        atomicView.getAndPut(key, stmp);
 
                         tx.commit();
 

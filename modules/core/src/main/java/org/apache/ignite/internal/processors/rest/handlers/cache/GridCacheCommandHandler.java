@@ -412,7 +412,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Object newVal = appendOrPrepend(curVal, val, !prepend);
 
                     // Put new value asynchronously.
-                    cache.putx(key, newVal);
+                    cache.put(key, newVal);
 
                     tx.commit();
                 }
@@ -781,7 +781,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
-            return c.removexAsync(key);
+            return c.removeAsync(key);
         }
     }
 
@@ -834,8 +834,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
-            return exp == null && val == null ? c.removexAsync(key) :
-                exp == null ? c.putxIfAbsentAsync(key, val) :
+            return exp == null && val == null ? c.removeAsync(key) :
+                exp == null ? c.putIfAbsentAsync(key, val) :
                     val == null ? c.removeAsync(key, exp) :
                         c.replaceAsync(key, exp, val);
         }
@@ -874,7 +874,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
-            return c.putxAsync(key, val);
+            return c.putAsync(key, val);
         }
     }
 
@@ -911,7 +911,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
-            return c.putxIfAbsentAsync(key, val);
+            return c.putIfAbsentAsync(key, val);
         }
     }
 
@@ -948,7 +948,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
-            return c.replacexAsync(key, val);
+            return c.replaceAsync(key, val);
         }
     }
 

@@ -203,18 +203,20 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
+        boolean found = false;
+
         for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    found = true;
 
-                    return true;
+                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
                 }
             }
 
-        return false;
+        return found;
     }
 
     /**
@@ -382,7 +384,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onResult((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft((ClusterTopologyCheckedException) e);
                     else
                         fut.onResult(e);
                 }
@@ -668,6 +670,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /** Topology version on which this future was mapped. */
         private AffinityTopologyVersion topVer;
 
+        /** {@code True} if remapped after node left. */
+        private boolean remapped;
+
         /**
          * @param node Node.
          * @param keys Keys.
@@ -721,7 +726,12 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /**
          * @param e Topology exception.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        synchronized void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (remapped)
+                return;
+
+            remapped = true;
+
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 

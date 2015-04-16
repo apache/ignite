@@ -38,11 +38,13 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -66,7 +69,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  * Cache context.
@@ -126,7 +128,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheTtlManager ttlMgr;
 
     /** Store manager. */
-    private GridCacheStoreManager storeMgr;
+    private CacheStoreManager storeMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
@@ -136,6 +138,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
+
+    /** Cache plugin manager. */
+    private CachePluginManager pluginMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -161,8 +166,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
-    /** System cache flag. */
-    private boolean sys;
+    /** Cache type. */
+    private CacheType cacheType;
 
     /** IO policy. */
     private GridIoPolicy plc;
@@ -202,6 +207,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ctx Kernal context.
      * @param sharedCtx Cache shared context.
      * @param cacheCfg Cache configuration.
+     * @param cacheType Cache type.
+     * @param affNode {@code True} if local node is affinity node.
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
@@ -213,12 +220,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttlMgr TTL manager.
      * @param drMgr Data center replication manager.
      * @param jtaMgr JTA manager.
+     * @param rslvrMgr Conflict resolution manager.
+     * @param pluginMgr Cache plugin manager.
      */
     @SuppressWarnings({"unchecked"})
     public GridCacheContext(
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
         CacheConfiguration cacheCfg,
+        CacheType cacheType,
         boolean affNode,
 
         /*
@@ -228,7 +238,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         GridCacheSwapManager swapMgr,
-        GridCacheStoreManager storeMgr,
+        CacheStoreManager storeMgr,
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
@@ -237,7 +247,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         CacheJtaManagerAdapter jtaMgr,
-        CacheConflictResolutionManager<K, V> rslvrMgr
+        CacheConflictResolutionManager<K, V> rslvrMgr,
+        CachePluginManager pluginMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -253,10 +264,12 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert dataStructuresMgr != null;
         assert ttlMgr != null;
         assert rslvrMgr != null;
+        assert pluginMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
         this.cacheCfg = cacheCfg;
+        this.cacheType = cacheType;
         this.affNode = affNode;
 
         /*
@@ -275,6 +288,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.drMgr = add(drMgr);
         this.jtaMgr = add(jtaMgr);
         this.rslvrMgr = add(rslvrMgr);
+        this.pluginMgr = add(pluginMgr);
 
         log = ctx.log(getClass());
 
@@ -288,9 +302,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         cacheId = CU.cacheId(cacheName);
 
-        sys = ctx.cache().systemCache(cacheName);
-
-        plc = CU.isMarshallerCache(cacheName) ? MARSH_CACHE_POOL : sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+        plc = cacheType.ioPolicy();
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
@@ -425,10 +437,17 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return System cache flag.
+     * @return {@code True} if should use system transactions which are isolated from user transactions.
      */
-    public boolean system() {
-        return sys;
+    public boolean systemTx() {
+        return cacheType == CacheType.UTILITY;
+    }
+
+    /**
+     * @return {@code True} if cache created by user.
+     */
+    public boolean userCache() {
+        return cacheType.userCache();
     }
 
     /**
@@ -651,9 +670,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param op Operation to check.
-     * @throws GridSecurityException If security check failed.
+     * @throws SecurityException If security check failed.
      */
-    public void checkSecurity(GridSecurityPermission op) throws GridSecurityException {
+    public void checkSecurity(SecurityPermission op) throws SecurityException {
         if (CU.isSystemCache(name()))
             return;
 
@@ -874,7 +893,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *      are set to {@code true} or the store is local.
      */
     public boolean writeToStoreFromDht() {
-        return store().isLocalStore() || cacheCfg.isWriteBehindEnabled();
+        return store().isLocal() || cacheCfg.isWriteBehindEnabled();
     }
 
     /**
@@ -943,7 +962,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Store manager.
      */
-    public GridCacheStoreManager store() {
+    public CacheStoreManager store() {
         return storeMgr;
     }
 
@@ -994,6 +1013,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheJtaManagerAdapter jta() {
         return jtaMgr;
+    }
+
+    /**
+     * @return Cache plugin manager.
+     */
+    public CachePluginManager plugin() {
+        return pluginMgr;
     }
 
     /**
@@ -1400,6 +1426,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         UUID nearNodeId,
         AffinityTopologyVersion topVer,
         GridDhtCacheEntry entry,
+        GridCacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1415,6 +1442,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         boolean ret = map(entry, dhtRemoteNodes, dhtMap);
 
+        Collection<ClusterNode> nearRemoteNodes = null;
+
         if (nearMap != null) {
             Collection<UUID> readers = entry.readers();
 
@@ -1429,11 +1458,62 @@ public class GridCacheContext<K, V> implements Externalizable {
             else if (log.isDebugEnabled())
                 log.debug("Entry has no near readers: " + entry);
 
-            if (nearNodes != null && !nearNodes.isEmpty())
-                ret |= map(entry, F.view(nearNodes, F.notIn(dhtNodes)), nearMap);
+            if (nearNodes != null && !nearNodes.isEmpty()) {
+                nearRemoteNodes = F.view(nearNodes, F.notIn(dhtNodes));
+
+                ret |= map(entry, nearRemoteNodes, nearMap);
+            }
+        }
+
+        if (explicitLockVer != null) {
+            Collection<ClusterNode> dhtNodeIds = new ArrayList<>(dhtRemoteNodes);
+            Collection<ClusterNode> nearNodeIds = F.isEmpty(nearRemoteNodes) ? null : new ArrayList<>(nearRemoteNodes);
+
+            if (!F.isEmpty(nearNodeIds))
+                U.dumpStack("Added near mapped nodes: " + entry + ", " + nearNodeIds);
+
+            entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
 
         return ret;
+    }
+
+    /**
+     * @param entry Entry.
+     * @param log Log.
+     * @param dhtMap Dht mappings.
+     * @param nearMap Near mappings.
+     * @return {@code True} if mapped.
+     * @throws GridCacheEntryRemovedException If reader for entry is removed.
+     */
+    public boolean dhtMap(
+        GridDhtCacheEntry entry,
+        GridCacheVersion explicitLockVer,
+        IgniteLogger log,
+        Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
+        Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
+    ) throws GridCacheEntryRemovedException {
+        assert explicitLockVer != null;
+
+        GridCacheMvccCandidate cand = entry.candidate(explicitLockVer);
+
+        if (cand != null) {
+            Collection<ClusterNode> dhtNodes = cand.mappedDhtNodes();
+
+            if (log.isDebugEnabled())
+                log.debug("Mapping explicit lock to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+
+            Collection<ClusterNode> nearNodes = cand.mappedNearNodes();
+
+            boolean ret = map(entry, dhtNodes, dhtMap);
+
+            if (nearNodes != null && !nearNodes.isEmpty())
+                ret |= map(entry, nearNodes, nearMap);
+
+            return ret;
+        }
+
+        return false;
     }
 
     /**

@@ -147,6 +147,25 @@ object VisorConsole extends App {
     reader.addCompleter(new VisorCommandCompleter(visor.commands))
     reader.addCompleter(new VisorFileNameCompleter())
 
+    private def isHelp(arg: String): Boolean = {
+        val s = arg.trim.toLowerCase
+
+        "?" == s || s.endsWith("help")
+    }
+
+    if (args.length > 0 && isHelp(args(0))) {
+        println("Usage:")
+        println("    ignitevisorcmd [?]|[{-v}{-np}]|[{-b=<batch commands file path>} {-e=command1;command2}]")
+        println("    Where:")
+        println("        ?, /help, -help - show this message.")
+        println("        -v              - verbose mode (quiet by default).")
+        println("        -np             - no pause on exit (pause by default)")
+        println("        -b              - batch mode with file)")
+        println("        -e              - batch mode with commands)")
+
+        System.exit(0)
+    }
+
     welcomeMessage()
 
     private var ok = true

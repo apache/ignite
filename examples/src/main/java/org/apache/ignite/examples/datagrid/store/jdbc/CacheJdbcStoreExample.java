@@ -33,13 +33,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  * <p>
  * This example uses {@link CacheJdbcPersonStore} as a persistent store.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
- * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheJdbcStoreExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = CacheJdbcStoreExample.class.getSimpleName();
+
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
@@ -63,7 +63,7 @@ public class CacheJdbcStoreExample {
             System.out.println();
             System.out.println(">>> Cache store example started.");
 
-            CacheConfiguration<Long, Person> cacheCfg = new CacheConfiguration<>();
+            CacheConfiguration<Long, Person> cacheCfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Set atomicity as transaction, since we are showing transactions in example.
             cacheCfg.setAtomicityMode(TRANSACTIONAL);

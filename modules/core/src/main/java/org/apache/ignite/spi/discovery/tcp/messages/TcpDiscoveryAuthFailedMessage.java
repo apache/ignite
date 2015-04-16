@@ -31,14 +31,7 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     private static final long serialVersionUID = 0L;
 
     /** Coordinator address. */
-    private InetAddress addr;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryAuthFailedMessage() {
-        // No-op.
-    }
+    private transient InetAddress addr;
 
     /**
      * Constructor.
@@ -59,16 +52,20 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
         return addr;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
+    /**
+     * Serialize this message.
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
 
         U.writeByteArray(out, addr.getAddress());
     }
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
+    /**
+     * Deserialize this message.
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
 
         addr = InetAddress.getByAddress(U.readByteArray(in));
     }

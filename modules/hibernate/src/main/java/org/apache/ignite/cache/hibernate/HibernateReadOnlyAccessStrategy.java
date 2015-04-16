@@ -70,7 +70,7 @@ public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdap
     /** {@inheritDoc} */
     @Override protected boolean afterInsert(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             return true;
         }

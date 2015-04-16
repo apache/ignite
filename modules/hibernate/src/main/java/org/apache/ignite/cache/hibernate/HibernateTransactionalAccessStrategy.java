@@ -76,7 +76,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected void putFromLoad(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -96,7 +96,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected boolean update(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             return true;
         }
@@ -113,7 +113,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected boolean insert(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             return true;
         }
@@ -130,7 +130,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected void remove(Object key) throws CacheException {
         try {
-            cache.removex(key);
+            cache.remove(key);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);

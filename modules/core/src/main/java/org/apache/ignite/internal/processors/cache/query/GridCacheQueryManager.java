@@ -91,6 +91,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** Event listener. */
     private GridLocalEventListener lsnr;
 
+    /** */
+    private boolean enabled;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         qryProc = cctx.kernalContext().query();
@@ -135,6 +138,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         };
 
         cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        enabled = GridQueryProcessor.isEnabled(cctx.config());
+    }
+
+    /**
+     * @return {@code True} if indexing is enabled for cache.
+     */
+    public boolean enabled() {
+        return enabled;
     }
 
     /** {@inheritDoc} */
@@ -334,8 +346,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         throws IgniteCheckedException {
         assert key != null;
         assert val != null || valBytes != null;
+        assert enabled();
 
-        if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
+        if (key instanceof GridCacheInternal)
             return; // No-op.
 
         if (!enterBusy())
@@ -356,6 +369,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param key Key.
+     * @param val Value.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
@@ -497,7 +511,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL,
+                            CacheQueryType.SQL.name(),
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -519,7 +533,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SCAN,
+                            CacheQueryType.SCAN.name(),
                             cctx.namex(),
                             null,
                             null,
@@ -540,7 +554,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.FULL_TEXT,
+                            CacheQueryType.FULL_TEXT.name(),
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -614,7 +628,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SQL_FIELDS,
+                    CacheQueryType.SQL_FIELDS.name(),
                     cctx.namex(),
                     null,
                     qry.clause(),
@@ -646,7 +660,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SPI,
+                    CacheQueryType.SPI.name(),
                     cctx.namex(),
                     null,
                     null,
@@ -886,7 +900,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
-                heapIt.close();
+                try {
+                    heapIt.close();
+                }
+                finally {
+                    if (keyValFilter instanceof CacheQueryCloseableScanBiPredicate)
+                        ((CacheQueryCloseableScanBiPredicate)keyValFilter).onClose();
+                }
             }
         };
     }
@@ -1105,7 +1125,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
-                            CacheQueryType.SQL_FIELDS,
+                            CacheQueryType.SQL_FIELDS.name(),
                             cctx.namex(),
                             null,
                             qry.clause(),
@@ -1304,7 +1324,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    CacheQueryType.SQL,
+                                    CacheQueryType.SQL.name(),
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1325,7 +1345,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    CacheQueryType.FULL_TEXT,
+                                    CacheQueryType.FULL_TEXT.name(),
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1346,7 +1366,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    CacheQueryType.SCAN,
+                                    CacheQueryType.SCAN.name(),
                                     cctx.namex(),
                                     null,
                                     null,

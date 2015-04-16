@@ -32,8 +32,13 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.0.1-RC1-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <ignite.site>scp://localhost:/home</ignite.site>
+        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}-incubating</ignite.zip.pattern>
+    </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
@@ -41,6 +46,13 @@
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+        <site>
+            <id>ignite-site</id>
+            <url>${ignite.site}/${project.artifactId}-${project.version}</url>
+        </site>
+    </distributionManagement>
 
     <modules>
         <module>modules/tools</module>
@@ -99,7 +111,7 @@
         </profile>
 
         <profile>
-            <id>clean-libs</id>
+            <id>dev-libs</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -124,6 +136,29 @@
                                             <directory>bin/include/schema-import</directory>
                                         </fileset>
                                     </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>dev-libs</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <target>
+                                        <copy todir="${basedir}/libs">
+                                            <fileset dir="${basedir}/target/release-package/libs" />
+                                        </copy>
+                                    </target>
                                 </configuration>
                             </execution>
                         </executions>
@@ -208,75 +243,75 @@
                                 <configuration>
                                     <target>
                                         <replaceregexp byline="true">
-                                            <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
-                                            <substitution expression='pushd "%~dp0"/..'/>
+                                            <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
+                                            <substitution expression="pushd &quot;%~dp0&quot;/.." />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.bat"/>
+                                                <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
-                                            <substitution expression=""/>
+                                            <regexp pattern="IGNITE_HOME_TMP=&quot;\$\(dirname &quot;\$\{IGNITE_HOME_TMP\}&quot;\)&quot;(\s*#.*)?" />
+                                            <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
+                                                <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?'/>
-                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
+                                            <regexp pattern="set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?" />
+                                            <substitution expression="set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.bat"/>
+                                                <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/bin"(\s*#.*)?'/>
-                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
+                                            <regexp pattern="SCRIPTS_HOME=&quot;\$\{IGNITE_HOME_TMP\}/bin&quot;(\s*#.*)?" />
+                                            <substitution expression="SCRIPTS_HOME=&quot;$${IGNITE_HOME_TMP}/bin&quot;" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
+                                                <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
-                                            <substitution expression=""/>
+                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/target-classpath.sh(\s*#.*)?" />
+                                            <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
+                                                <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
-                                            <substitution expression=""/>
+                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\target-classpath.bat&quot;(\s*&amp;::.*)?" />
+                                            <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.bat"/>
+                                                <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
-                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
+                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
+                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
+                                                <include name="**/*.sh" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='ENABLE_ASSERTIONS=.*'/>
-                                            <substitution expression="ENABLE_ASSERTIONS=0"/>
+                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
+                                            <substitution expression="ENABLE_ASSERTIONS=0" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.bat"/>
+                                                <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='-DIGNITE_UPDATE_NOTIFIER=false'/>
-                                            <substitution expression=""/>
+                                            <regexp pattern="-DIGNITE_UPDATE_NOTIFIER=false" />
+                                            <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
-                                                <include name="**/*.sh"/>
-                                                <include name="**/*.bat"/>
+                                                <include name="**/*.sh" />
+                                                <include name="**/*.bat" />
                                             </fileset>
                                         </replaceregexp>
 
@@ -285,15 +320,15 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <zip destfile="${basedir}/target/incubator-ignite-${project.version}-bin.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="incubator-ignite-${project.version}-bin" filemode="755">
+                                        <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package" prefix="incubator-ignite-${project.version}-bin">
+                                            <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -323,25 +358,8 @@
                                     <descriptors>
                                         <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
                                     </descriptors>
-                                    <outputDirectory>${basedir}</outputDirectory>
+                                    <outputDirectory>${basedir}/target/release-package</outputDirectory>
                                     <finalName>libs</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>dependencies-optional</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>${basedir}/assembly/dependencies-optional-${ignite.edition}.xml
-                                        </descriptor>
-                                    </descriptors>
-                                    <outputDirectory>${basedir}/libs</outputDirectory>
-                                    <finalName>optional</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
@@ -374,7 +392,6 @@
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
 
@@ -391,7 +408,6 @@
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
 
@@ -408,10 +424,17 @@
                                     <outputDirectory>target/release-package</outputDirectory>
                                     <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -452,6 +475,102 @@
             <modules>
                 <module>examples</module>
             </modules>
+        </profile>
+
+        <profile>
+            <id>deploy-ignite-site</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.ju-n.maven.plugins</groupId>
+                        <artifactId>checksum-maven-plugin</artifactId>
+                        <version>1.2</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>files</goal>
+                                </goals>
+                                <phase>install</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <failOnError>false</failOnError>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${basedir}/target</directory>
+                                    <includes>
+                                        <include>${project.artifactId}-${project.version}-source-release.zip</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                            <algorithms>
+                                <algorithm>MD5</algorithm>
+                                <algorithm>SHA-1</algorithm>
+                            </algorithms>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>site-generation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>install</phase>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <mkdir dir="${basedir}/target/site" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip"
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc"
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5"
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1"
+                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false"/>
+                                        <copy todir="${basedir}/target/site">
+                                            <fileset dir="${basedir}/target/bin">
+                                                <include name="**/*"/>
+                                            </fileset>
+                                        </copy>
+                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-site-plugin</artifactId>
+                        <version>3.4</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.wagon</groupId>
+                                <artifactId>wagon-ssh</artifactId>
+                                <version>2.8</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>deploy</goal>
+                                </goals>
+                                <phase>deploy</phase>
+                                <configuration>
+                                    <inputDirectory>${basedir}/target/site</inputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
