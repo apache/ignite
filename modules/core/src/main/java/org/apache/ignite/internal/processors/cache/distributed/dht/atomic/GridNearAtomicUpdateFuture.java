@@ -136,9 +136,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** Task name hash. */
     private final int taskNameHash;
 
-    /** Map time. */
-    private volatile long mapTime;
-
     /**
      * @param cctx Cache context.
      * @param cache Cache instance.
@@ -438,8 +435,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 return;
             }
-
-            mapTime = U.currentTimeMillis();
 
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);

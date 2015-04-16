@@ -86,9 +86,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** Future keys. */
     private Collection<KeyCacheObject> keys;
 
-    /** Future map time. */
-    private volatile long mapTime;
-
     /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
@@ -314,8 +311,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * Sends requests to remote nodes.
      */
     public void map() {
-        mapTime = U.currentTimeMillis();
-
         if (!mappings.isEmpty()) {
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {
