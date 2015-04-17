@@ -2329,7 +2329,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         req.nodeId(ctx.localNodeId());
 
-        updateAllAsyncInternal(nodeId, req, updateReplyClos);
+        if (req.classError() != null) {
+            GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+                nodeId,
+                req.futureVersion());
+
+            res.onError(req.classError());
+
+            sendNearUpdateReply(nodeId, res);
+        }
+        else {
+            updateAllAsyncInternal(nodeId, req, updateReplyClos);
+        }
     }
 
     /**
@@ -2364,6 +2375,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         // Always send update reply.
         GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion());
+
+        if (req.classError() != null) {
+            res.onError(req.classError());
+
+            try {
+                ctx.io().send(nodeId, res, ctx.ioPolicy());
+            }
+            catch (ClusterTopologyCheckedException ignored) {
+                U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
+                    req.nodeId());
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send DHT atomic update response (did node leave grid?) [nodeId=" + nodeId +
+                    ", req=" + req + ']', e);
+            }
+
+            return;
+        }
 
         Boolean replicate = ctx.isDrEnabled();
 
