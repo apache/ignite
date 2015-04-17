@@ -46,6 +46,19 @@ public class CacheOperationContext implements Serializable {
     private final ExpiryPolicy expiryPlc;
 
     /**
+     * Constructor with default values.
+     */
+    public CacheOperationContext() {
+        skipStore = false;
+
+        subjId = null;
+
+        keepPortable = false;
+
+        expiryPlc = null;
+    }
+
+    /**
      * @param skipStore Skip store flag.
      * @param subjId Subject ID.
      * @param keepPortable Keep portable flag.

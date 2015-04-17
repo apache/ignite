@@ -104,7 +104,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         this.ctx = ctx;
         this.delegate = delegate;
-        this.prjCtx = prjCtx;
+        this.prjCtx = prjCtx == null ? new CacheOperationContext() : prjCtx;
 
         gate = ctx.gate();
     }
