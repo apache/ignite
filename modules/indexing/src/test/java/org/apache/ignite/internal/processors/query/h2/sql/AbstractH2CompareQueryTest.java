@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -259,7 +260,14 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
             rs = st.executeQuery();
 
-            int colCnt = rs.getMetaData().getColumnCount();
+            ResultSetMetaData meta = rs.getMetaData();
+
+            int colCnt = meta.getColumnCount();
+
+            for (int i = 1; i <= colCnt; i++)
+                X.print(meta.getColumnLabel(i) + "  ");
+
+            X.println();
 
             while (rs.next()) {
                 List<Object> row = new ArrayList<>(colCnt);
@@ -302,18 +310,30 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
                 break;
             case RANDOM:
-                Map<List<?>, Integer> rowsWithCnt1 = extractUniqueRowsWithCounts(rs1);
-                Map<List<?>, Integer> rowsWithCnt2 = extractUniqueRowsWithCounts(rs2);
-                
+                TreeMap<String, Integer> rowsWithCnt1 = extractUniqueRowsWithCounts(rs1);
+                TreeMap<String, Integer> rowsWithCnt2 = extractUniqueRowsWithCounts(rs2);
+
                 assertEquals("Unique rows count has to be equal.", rowsWithCnt1.size(), rowsWithCnt2.size());
 
-                for (Map.Entry<List<?>, Integer> entry1 : rowsWithCnt1.entrySet()) {
-                    List<?> row = entry1.getKey();
-                    Integer cnt1 = entry1.getValue();
+                X.println("Result size: " + rowsWithCnt1.size());
 
-                    Integer cnt2 = rowsWithCnt2.get(row);
+                Iterator<Map.Entry<String,Integer>> iter1 = rowsWithCnt1.entrySet().iterator();
+                Iterator<Map.Entry<String,Integer>> iter2 = rowsWithCnt2.entrySet().iterator();
 
-                    assertEquals("Row has different occurance number.\nRow=" + row, cnt1, cnt2);
+                for (;;) {
+                    if (!iter1.hasNext()) {
+                        assertFalse(iter2.hasNext());
+
+                        break;
+                    }
+
+                    assertTrue(iter2.hasNext());
+
+                    Map.Entry<String,Integer> e1 = iter1.next();
+                    Map.Entry<String,Integer> e2 = iter2.next();
+
+                    assertEquals(e1.getKey(), e2.getKey());
+                    assertEquals(e1.getValue(), e2.getValue());
                 }
                 
                 break;
@@ -326,17 +346,20 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * @param rs Result set.
      * @return Map of unique rows at the result set to number of occuriances at the result set.
      */
-    private Map<List<?>, Integer> extractUniqueRowsWithCounts(Iterable<List<?>> rs) {
-        Map<List<?>, Integer> res = new HashMap<>();
+    private TreeMap<String, Integer> extractUniqueRowsWithCounts(Iterable<List<?>> rs) {
+        TreeMap<String, Integer> res = new TreeMap<>();
 
         for (List<?> row : rs) {
-            Integer cnt = res.get(row);
+            String rowStr = row.toString();
+
+            Integer cnt = res.get(rowStr);
             
             if (cnt == null)
                 cnt = 0;
             
-            res.put(row, cnt + 1);
+            res.put(rowStr, cnt + 1);
         }
+
         return res;
     }
     
