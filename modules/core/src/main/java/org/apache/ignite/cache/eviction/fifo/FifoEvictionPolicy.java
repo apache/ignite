@@ -203,11 +203,10 @@ public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, FifoEvict
                 if (entry == null)
                     break;
 
-                if (!entry.evict()) {
-                    entry.removeMeta();
+                Node<EvictableEntry<K, V>> meta = entry.removeMeta();
 
+                if (meta != null && !entry.evict())
                     touch(entry);
-                }
             }
         }
     }

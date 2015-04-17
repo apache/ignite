@@ -48,7 +48,7 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
     private final AtomicLong orderCnt = new AtomicLong();
 
     /** Backed sorted set. */
-    private final GridConcurrentSkipListSetEx<Holder<K, V>> set;
+    private final GridConcurrentSkipListSetEx<K, V> set;
 
     /**
      * Constructs sorted eviction policy with all defaults.
@@ -203,11 +203,8 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
 
                 EvictableEntry<K, V> entry = h.entry;
 
-                if (h.order > 0 && !entry.evict()) {
-                    entry.removeMeta();
-
+                if (h.order > 0 && entry.removeMeta(h) && !entry.evict())
                     touch(entry);
-                }
             }
         }
     }
@@ -319,7 +316,7 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
             EvictableEntry<K, V> e1 = h1.entry;
             EvictableEntry<K, V> e2 = h2.entry;
 
-            int cmp = ((Comparable<K>) e1.getKey()).compareTo(e2.getKey());
+            int cmp = ((Comparable<K>)e1.getKey()).compareTo(e2.getKey());
 
             return cmp == 0 ? Long.compare(abs(h1.order), abs(h2.order)) : cmp;
         }
@@ -334,7 +331,7 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
      *     <li>{@code #clone()}</li>
      * <ul/>
      */
-    private static class GridConcurrentSkipListSetEx<E> extends GridConcurrentSkipListSet<E> {
+    private static class GridConcurrentSkipListSetEx<K, V> extends GridConcurrentSkipListSet<Holder<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -344,7 +341,7 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
         /**
          * @param comp Comparator.
          */
-        public GridConcurrentSkipListSetEx(Comparator<? super E> comp) {
+        public GridConcurrentSkipListSetEx(Comparator<? super Holder<K, V>> comp) {
             super(comp);
         }
 
@@ -356,11 +353,12 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
         }
 
         /** {@inheritDoc} */
-        @Override public boolean add(E e) {
+        @Override public boolean add(Holder<K, V> e) {
             boolean res = super.add(e);
 
-            if (res)
-                size.increment();
+            assert res;
+
+            size.increment();
 
             return res;
         }
@@ -376,24 +374,13 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public E pollFirst() {
-            E e = super.pollFirst();
+        @Nullable @Override public Holder<K, V> pollFirst() {
+            Holder<K, V> e = super.pollFirst();
 
             if (e != null)
                 size.decrement();
 
             return e;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridConcurrentSkipListSetEx<E> clone() {
-            GridConcurrentSkipListSetEx<E> clone = (GridConcurrentSkipListSetEx<E>)super.clone();
-
-            clone.size = new LongAdder8();
-
-            clone.size.add(size.intValue());
-
-            return clone;
         }
     }
 }
