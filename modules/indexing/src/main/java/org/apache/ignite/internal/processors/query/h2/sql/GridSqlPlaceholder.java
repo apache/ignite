@@ -15,28 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.internal.processors.affinity.*;
-
-import java.util.*;
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * Update future for atomic cache.
+ * Placeholder.
  */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return {@code True} if partition exchange should wait for this future to complete.
-     */
-    public boolean waitForPartitionExchange();
+public class GridSqlPlaceholder extends GridSqlElement {
+    /** */
+    public static final GridSqlPlaceholder EMPTY = new GridSqlPlaceholder("");
+
+    /** */
+    private final String sql;
 
     /**
-     * @return Future topology version.
+     * @param sql SQL.
      */
-    public AffinityTopologyVersion topologyVersion();
+    public GridSqlPlaceholder(String sql) {
+        this.sql = sql;
+    }
 
-    /**
-     * @return Future keys.
-     */
-    public Collection<?> keys();
+    /** {@inheritDoc} */
+    @Override public String getSQL() {
+        return sql;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSqlElement addChild(GridSqlElement expr) {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSqlElement child(int idx) {
+        throw new IllegalStateException();
+    }
 }

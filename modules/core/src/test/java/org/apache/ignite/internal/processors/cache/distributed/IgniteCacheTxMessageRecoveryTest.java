@@ -15,28 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.cache.*;
 
-import java.util.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * Update future for atomic cache.
+ *
  */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return {@code True} if partition exchange should wait for this future to complete.
-     */
-    public boolean waitForPartitionExchange();
-
-    /**
-     * @return Future topology version.
-     */
-    public AffinityTopologyVersion topologyVersion();
-
-    /**
-     * @return Future keys.
-     */
-    public Collection<?> keys();
+public class IgniteCacheTxMessageRecoveryTest extends IgniteCacheMessageRecoveryAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
 }

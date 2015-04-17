@@ -105,14 +105,14 @@ public class GridSqlFunction extends GridSqlElement {
         buff.append(Parser.quoteIdentifier(name));
 
         if (type == CASE) {
-            if (!children.isEmpty())
-                buff.append(" ").append(child().getSQL());
+            buff.append(' ').append(child().getSQL());
 
             for (int i = 1, len = children.size() - 1; i < len; i += 2) {
                 buff.append(" WHEN ").append(child(i).getSQL());
                 buff.append(" THEN ").append(child(i + 1).getSQL());
             }
-            if (children.size() % 2 == 0)
+
+            if ((children.size() & 1) == 0)
                 buff.append(" ELSE ").append(child(children.size() - 1).getSQL());
 
             return buff.append(" END").toString();
