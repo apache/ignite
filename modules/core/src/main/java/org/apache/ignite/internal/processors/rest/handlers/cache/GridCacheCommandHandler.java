@@ -523,7 +523,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     protected IgniteInternalCache<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
-        IgniteInternalCache<Object, Object> cache = (IgniteInternalCache<Object, Object>)ctx.cache().cache(cacheName);
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(

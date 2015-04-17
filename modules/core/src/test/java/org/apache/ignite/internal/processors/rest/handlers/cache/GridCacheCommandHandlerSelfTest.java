@@ -78,7 +78,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsSyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync");
+        GridRestCommandHandler hnd = new TestableCacheCommandHandler(grid().context(), "getAsync");
 
         GridRestCacheRequest req = new GridRestCacheRequest();
 

@@ -210,7 +210,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param skipStore Skip store flag.
      * @return New projection based on this one, but with skip store flag enabled.
      */
-    public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore);
+    public IgniteInternalCache<K, V> setSkipStore(boolean skipStore);
 
     /**
      * Creates projection that will operate with portable objects.
@@ -249,7 +249,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return Projection for portable objects.
      */
-    public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable();
+    public <K1, V1> IgniteInternalCache<K1, V1> keepPortable();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.
@@ -1505,7 +1505,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param subjId Client ID.
      * @return Internal projection.
      */
-    GridCacheProxyImpl<K, V> forSubjectId(UUID subjId);
+    IgniteInternalCache<K, V> forSubjectId(UUID subjId);
     /**
      * Store DR data.
      *
@@ -1699,7 +1699,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param plc {@link ExpiryPolicy} to associate with this projection.
      * @return New projection based on this one, but with the specified expiry policy.
      */
-    public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc);
+    public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
      * @param key Key.
