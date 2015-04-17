@@ -277,7 +277,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
-                    "ctx");
+                    GridCacheAdapter.class, "ctx");
                 Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
