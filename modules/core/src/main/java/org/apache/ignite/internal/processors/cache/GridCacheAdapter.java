@@ -275,7 +275,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         init();
 
-        qry = new GridCacheQueriesImpl<>(ctx, null);
+        qry = new CacheQueriesImpl<>(ctx, null);
         aff = new GridCacheAffinityImpl<>(ctx);
     }
 
