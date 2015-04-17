@@ -1444,7 +1444,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        V val = get(key, true);
+        V val = get(key, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             val = (V)ctx.config().getInterceptor().onGet(key, val);
@@ -1463,7 +1463,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<V> fut = getAsync(key, true);
+        IgniteInternalFuture<V> fut = getAsync(key, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             fut =  fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
@@ -1486,7 +1486,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Map<K, V> map = getAll(keys, true);
+        Map<K, V> map = getAll(keys, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             map = interceptGet(keys, map);
@@ -1505,7 +1505,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys, true);
+        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
