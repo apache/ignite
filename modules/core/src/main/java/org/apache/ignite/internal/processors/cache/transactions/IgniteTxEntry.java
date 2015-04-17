@@ -152,7 +152,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /**
      * Additional flags.
-     * Bit 1 - for skipStore flag value.
+     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
      */
     private byte flags;
 
@@ -423,13 +423,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param skipStore Skip store flag.
      */
     public void skipStore(boolean skipStore){
-        flags = skipStore ? (byte)(flags | 0x1) : (byte)(flags & 0xFE);
+        flags = skipStore ? (byte)(flags | GridCacheUtils.SKIP_STORE_FLAG_MASK) :
+                        (byte)(flags & ~GridCacheUtils.SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
-    public boolean skipStore() { return (flags & 0x1) == 1; };
+    public boolean skipStore() { return (flags & GridCacheUtils.SKIP_STORE_FLAG_MASK) == 1; };
 
     /**
      * @return Tx key.

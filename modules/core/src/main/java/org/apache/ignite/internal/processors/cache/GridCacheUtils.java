@@ -94,6 +94,9 @@ public class GridCacheUtils {
     /** Expire time: must be calculated based on TTL value. */
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
+    /** Skip store flag bit mask. */
+    public static final int SKIP_STORE_FLAG_MASK = 0x1;
+
     /** Per-thread generated UID store. */
     private static final ThreadLocal<UUID> UUIDS = new ThreadLocal<UUID>() {
         @Override protected UUID initialValue() {
