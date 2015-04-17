@@ -92,7 +92,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     /**
      * @return Cache context.
      */
-    @Override public GridCacheContext context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
@@ -101,13 +101,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
      */
     public IgniteInternalCache<K, V> delegate() {
         return delegate;
-    }
-
-    /**
-     * @return Gateway projection.
-     */
-    public CacheOperationContext gateProjection() {
-        return opCtx;
     }
 
     /** {@inheritDoc} */
