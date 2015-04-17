@@ -1294,7 +1294,7 @@ object visor extends VisorTag {
     def warn(errMsgs: Any*) {
         assert(errMsgs != null)
 
-        errMsgs foreach (msg => scala.Console.out.println("(wrn) <visor>: " + msg))
+        errMsgs foreach (msg => println("(wrn) <visor>: " + msg))
     }
 
     /**
