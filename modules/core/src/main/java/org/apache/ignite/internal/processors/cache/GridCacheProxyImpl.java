@@ -212,6 +212,9 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
+            if (prj.skipStore() == skipStore)
+                return this;
+
             return new GridCacheProxyImpl<>(ctx, delegate, prj.setSkipStore(skipStore));
         }
         finally {
