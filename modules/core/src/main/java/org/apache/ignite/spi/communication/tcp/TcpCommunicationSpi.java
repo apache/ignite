@@ -1023,11 +1023,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 GridDirectParser parser = new GridDirectParser(msgFactory, msgFormatter);
 
-                IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
-                    @Override public boolean apply(Message msg) {
-                        return msg instanceof RecoveryLastReceivedMessage;
-                    }
-                };
+                IgnitePredicate<Message> skipRecoveryPred = F.instanceOf(RecoveryLastReceivedMessage.class);
 
                 GridNioServer<Message> srvr =
                     GridNioServer.<Message>builder()
