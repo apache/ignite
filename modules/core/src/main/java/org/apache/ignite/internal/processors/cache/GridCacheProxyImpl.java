@@ -82,7 +82,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         this.ctx = ctx;
         this.delegate = delegate;
-        this.opCtx = opCtx;
+        this.opCtx = opCtx == null ? new CacheOperationContext() : opCtx;
 
         gate = ctx.gate();
 
