@@ -1738,10 +1738,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private static class ClientKey {
         /** */
-        private UUID nodeId;
+        private final UUID nodeId;
 
         /** */
-        private long order;
+        private final long order;
 
         /**
          * @param nodeId Node ID.
@@ -1768,11 +1768,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = nodeId.hashCode();
-
-            res = 31 * res + (int)(order ^ (order >>> 32));
-
-            return res;
+            return 31 * nodeId.hashCode() + (int)order;
         }
 
         /** {@inheritDoc} */
