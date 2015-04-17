@@ -36,13 +36,13 @@ public class CacheOperationContext implements Serializable {
     @GridToStringInclude
     private final boolean skipStore;
 
-    /** Client ID which operates over this projection, if any, */
+    /** Client ID which operates over this projection. */
     private final UUID subjId;
 
     /** Keep portable flag. */
     private final boolean keepPortable;
 
-    /** Expiricy policy. */
+    /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
     /**

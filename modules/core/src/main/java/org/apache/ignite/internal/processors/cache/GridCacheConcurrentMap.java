@@ -1963,7 +1963,7 @@ public class GridCacheConcurrentMap {
         private GridCacheContext<K, V> ctx;
 
         /** */
-        private CacheOperationContext prjPerCall;
+        private CacheOperationContext opCtxPerCall;
 
         /**
          * Empty constructor required for {@link Externalizable}.
@@ -1976,17 +1976,17 @@ public class GridCacheConcurrentMap {
          * @param map Cache map.
          * @param filter Entry filter.
          * @param ctx Cache context.
-         * @param prjPerCall Projection per call.
+         * @param opCtxPerCall Operation context per call.
          */
         EntryIterator(
             GridCacheConcurrentMap map,
             CacheEntryPredicate[] filter,
             GridCacheContext<K, V> ctx,
-            CacheOperationContext prjPerCall) {
+            CacheOperationContext opCtxPerCall) {
             it = new Iterator0<>(map, false, filter, -1, -1);
 
             this.ctx = ctx;
-            this.prjPerCall = prjPerCall;
+            this.opCtxPerCall = opCtxPerCall;
         }
 
         /** {@inheritDoc} */
@@ -1998,7 +1998,7 @@ public class GridCacheConcurrentMap {
         @Override public Cache.Entry<K, V> next() {
             CacheOperationContext old = ctx.operationContextPerCall();
 
-            ctx.operationContextPerCall(prjPerCall);
+            ctx.operationContextPerCall(opCtxPerCall);
 
             try {
                 return it.next().wrapLazyValue();
@@ -2017,7 +2017,7 @@ public class GridCacheConcurrentMap {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(it);
             out.writeObject(ctx);
-            out.writeObject(prjPerCall);
+            out.writeObject(opCtxPerCall);
         }
 
         /** {@inheritDoc} */
@@ -2025,7 +2025,7 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             it = (Iterator0<K, V>)in.readObject();
             ctx = (GridCacheContext<K, V>)in.readObject();
-            prjPerCall = (CacheOperationContext)in.readObject();
+            opCtxPerCall = (CacheOperationContext)in.readObject();
         }
     }
 

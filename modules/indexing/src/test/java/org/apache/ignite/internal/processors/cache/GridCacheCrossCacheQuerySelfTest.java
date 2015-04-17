@@ -206,8 +206,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         int top = 6;
 
         qry = new SqlFieldsQuery("select top 3 distinct productId " +
-            "from FactPurchase f " +
-            "order by productId desc ");
+            "from FactPurchase f order by productId desc ");
 
         for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
@@ -220,9 +219,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         top = 5;
 
         qry = new SqlFieldsQuery("select distinct productId " +
-            "from FactPurchase f " +
-            "order by productId desc " +
-            "limit 2 offset 1");
+            "from FactPurchase f order by productId desc limit 2 offset 1");
 
         for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);

@@ -659,7 +659,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
         CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
-                createSqlFieldsQuery("select * from String", false);
+            createSqlFieldsQuery("select * from String", false);
 
         Collection<List<?>> res = qry.execute().get();
 
@@ -867,7 +867,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         }
 
         Collection<List<?>> res = cache.context().queries().
-                createSqlFieldsQuery("select * from Person", false).execute().get();
+            createSqlFieldsQuery("select * from Person", false).execute().get();
 
         assertEquals(1, res.size());
 
@@ -911,7 +911,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      */
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
         CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(cacheName).context().queries().
-                createSqlFieldsQuery("select _key, _val from " + "Integer", false)
+            createSqlFieldsQuery("select _key, _val from " + "Integer", false)
             .projection(grid(0).cluster());
 
         q.pageSize(10);
@@ -944,7 +944,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     /** @throws Exception If failed. */
     public void testPaginationIteratorKeepAll() throws Exception {
         CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(null).context().queries().
-                createSqlFieldsQuery("select _key, _val from Integer", false);
+            createSqlFieldsQuery("select _key, _val from Integer", false);
 
         q.pageSize(10);
         q.keepAll(true);
@@ -1003,7 +1003,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      */
     private void testPaginationGet(@Nullable String cacheName) throws Exception {
         CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(cacheName).context().queries().
-                createSqlFieldsQuery("select _key, _val from " + "Integer", false);
+            createSqlFieldsQuery("select _key, _val from " + "Integer", false);
 
         q.pageSize(10);
         q.keepAll(true);

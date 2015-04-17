@@ -155,8 +155,8 @@ public class GridCacheContext<K, V> implements Externalizable {
     private ClusterNode locNode;
 
     /**
-     * Thread local projection. If it's set it means that method call was initiated
-     * by child projection of initial cache.
+     * Thread local operation context. If it's set it means that method call was initiated
+     * by child internal cache of initial cache.
      */
     private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocal<>();
 
@@ -1285,7 +1285,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public Runnable projectSafe(final Runnable r) {
         assert r != null;
 
-        // Have to get projection per call used by calling thread to use it in a new thread.
+        // Have to get operation context per call used by calling thread to use it in a new thread.
         final CacheOperationContext opCtx = operationContextPerCall();
 
         if (opCtx == null)
@@ -1320,7 +1320,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public <T> Callable<T> projectSafe(final Callable<T> r) {
         assert r != null;
 
-        // Have to get projection per call used by calling thread to use it in a new thread.
+        // Have to get operation context per call used by calling thread to use it in a new thread.
         final CacheOperationContext opCtx = operationContextPerCall();
 
         if (opCtx == null)

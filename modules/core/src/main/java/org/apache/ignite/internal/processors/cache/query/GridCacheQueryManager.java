@@ -2907,12 +2907,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public <R> CacheQuery<R> createSpiQuery(boolean keepPortable) {
         return new GridCacheQueryAdapter<>(cctx,
-                SPI,
-                null,
-                null,
-                null,
-                false,
-                keepPortable);
+            SPI,
+            null,
+            null,
+            null,
+            false,
+            keepPortable);
     }
 
     /**
@@ -2924,14 +2924,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings("unchecked")
     public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
-                                                       boolean keepPortable) {
+        boolean keepPortable) {
         return new GridCacheQueryAdapter<>(cctx,
-                SCAN,
-                null,
-                null,
-                (IgniteBiPredicate<Object, Object>)filter,
-                false,
-                keepPortable);
+            SCAN,
+            null,
+            null,
+            (IgniteBiPredicate<Object, Object>)filter,
+            false,
+            keepPortable);
     }
 
     /**
@@ -2944,17 +2944,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-                                                           String search, boolean keepPortable) {
+        String search, boolean keepPortable) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
         return new GridCacheQueryAdapter<>(cctx,
-                TEXT,
-                clsName,
-                search,
-                null,
-                false,
-                keepPortable);
+            TEXT,
+            clsName,
+            search,
+            null,
+            false,
+            keepPortable);
     }
 
     /**
@@ -2969,12 +2969,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         A.notNull(qry, "qry");
 
         return new GridCacheQueryAdapter<>(cctx,
-                SQL_FIELDS,
-                null,
-                qry,
-                null,
-                false,
-                keepPortable);
+            SQL_FIELDS,
+            null,
+            qry,
+            null,
+            false,
+            keepPortable);
     }
 
     /**
@@ -2989,11 +2989,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert qry != null;
 
         return new GridCacheQueryAdapter<>(cctx,
-                SQL_FIELDS,
-                null,
-                qry,
-                null,
-                incMeta,
-                keepPortable);
+            SQL_FIELDS,
+            null,
+            qry,
+            null,
+            incMeta,
+            keepPortable);
     }
 }

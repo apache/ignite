@@ -363,9 +363,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        CacheOperationContext prj = new CacheOperationContext(false, subjId, false, null);
+        CacheOperationContext opCtx = new CacheOperationContext(false, subjId, false, null);
 
-        return new GridCacheProxyImpl<>(ctx, this, prj);
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
@@ -375,16 +375,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
-        CacheOperationContext prj = new CacheOperationContext(true, null, false, null);
+        CacheOperationContext opCtx = new CacheOperationContext(true, null, false, null);
 
-        return new GridCacheProxyImpl<>(ctx, this, prj);
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
-        CacheOperationContext prj = new CacheOperationContext(false, null, true, null);
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, true, null);
 
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, prj);
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
 
 
@@ -395,9 +395,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        CacheOperationContext prj = new CacheOperationContext(false, null, false, plc);
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc);
 
-        return new GridCacheProxyImpl<>(ctx, this, prj);
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */

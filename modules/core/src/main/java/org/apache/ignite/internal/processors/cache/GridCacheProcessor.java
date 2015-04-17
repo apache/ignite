@@ -2451,7 +2451,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return All configured cache instances.
      */
     public Collection<IgniteInternalCache<?, ?>> caches() {
-        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>, IgniteInternalCache<?, ?>>() {
+        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>,
+            IgniteInternalCache<?, ?>>() {
             @Override public IgniteInternalCache<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
                 return entries.legacyProxy();
             }
@@ -2514,7 +2515,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (jcache == null)
             throw new IllegalArgumentException("Cache is not started: " + name);
 
-        return jcache.delegate();
+        return jcache.legacyProxy();
     }
 
     /**
