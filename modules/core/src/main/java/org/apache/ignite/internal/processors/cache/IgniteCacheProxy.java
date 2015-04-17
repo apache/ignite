@@ -617,16 +617,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext prev = gate.enter(prjCtx);
 
-            boolean deserializePortables = prjCtx == null ? false : !prjCtx.isKeepPortable();
-
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAsync(key, deserializePortables));
+                    setFuture(delegate.getAsync(key));
 
                     return null;
                 }
                 else
-                    return delegate.get(key, deserializePortables);
+                    return delegate.get(key);
             }
             finally {
                 gate.leave(prev);
@@ -642,16 +640,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext prev = gate.enter(prjCtx);
 
-            boolean deserializePortables = prjCtx == null ? false : !prjCtx.isKeepPortable();
-
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAllAsync(keys, deserializePortables));
+                    setFuture(delegate.getAllAsync(keys));
 
                     return null;
                 }
                 else
-                    return delegate.getAll(keys, deserializePortables);
+                    return delegate.getAll(keys);
             }
             finally {
                 gate.leave(prev);
@@ -670,16 +666,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext prev = gate.enter(prjCtx);
 
-            boolean deserializePortables = prjCtx == null ? false : !prjCtx.isKeepPortable();
-
             try {
                 if (isAsync()) {
-                    setFuture(delegate.getAllAsync(keys, deserializePortables));
+                    setFuture(delegate.getAllAsync(keys));
 
                     return null;
                 }
                 else
-                    return delegate.getAll(keys, deserializePortables);
+                    return delegate.getAll(keys);
             }
             finally {
                 gate.leave(prev);

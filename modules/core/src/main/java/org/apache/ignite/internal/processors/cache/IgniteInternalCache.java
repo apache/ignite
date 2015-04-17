@@ -322,14 +322,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     @Nullable public V get(K key) throws IgniteCheckedException;
 
     /**
-     * @param key Key.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Cached value.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public V get(K key, boolean deserializePortable) throws IgniteCheckedException ;
-
-    /**
      * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
      * its entry passed the optional filter provided. Filter check is atomic, and therefore the
      * returned value is guaranteed to be consistent with the filter. The return value of {@code null}
@@ -349,13 +341,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException if the key is {@code null}.
      */
     public IgniteInternalFuture<V> getAsync(K key);
-
-    /**
-     * @param key Key.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Read operation future.
-     */
-    public IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable);
 
     /**
      * Retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -379,14 +364,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
-     * @param keys Keys.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Map of cached values.
-     * @throws IgniteCheckedException If read failed.
-     */
-    public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable) throws IgniteCheckedException;
-
-    /**
      * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
      * its entry passed the optional filter provided. Filter check is atomic, and therefore the
      * returned value is guaranteed to be consistent with the filter. If requested key-value pair
@@ -405,14 +382,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the get operation.
      */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
-
-    /**
-     * @param keys Keys.
-     * @param deserializePortable Deserialize portable flag.
-     * @return Read future.
-     */
-    public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
-        boolean deserializePortable);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will

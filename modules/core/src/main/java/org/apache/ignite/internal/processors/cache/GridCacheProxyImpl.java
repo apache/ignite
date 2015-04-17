@@ -296,35 +296,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V get(K key, boolean deserializePortable) throws IgniteCheckedException {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.get(key, deserializePortable && !opCtx.isKeepPortable());
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> getAsync(K key) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             return delegate.getAsync(key);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> getAsync(K key, boolean deserializePortable) {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.getAsync(key, deserializePortable && !opCtx.isKeepPortable());
         }
         finally {
             gate.leave(prev);
@@ -440,37 +416,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable)
-        throws IgniteCheckedException {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.getAll(keys, deserializePortable && !opCtx.isKeepPortable());
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             return delegate.getAllAsync(keys);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
-        boolean deserializePortable) {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.getAllAsync(keys, deserializePortable && !opCtx.isKeepPortable());
         }
         finally {
             gate.leave(prev);
