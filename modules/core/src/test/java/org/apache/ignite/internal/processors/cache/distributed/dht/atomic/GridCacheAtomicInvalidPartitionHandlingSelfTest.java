@@ -173,13 +173,17 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
             final Set<Integer> keys = new LinkedHashSet<>();
 
-            for (int i = 0; i < range; i++) {
-                cache.put(i, 0);
+            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(null)) {
+                streamer.allowOverwrite(true);
 
-                keys.add(i);
+                for (int i = 0; i < range; i++) {
+                    streamer.addData(i, 0);
 
-                if (i > 0 && i % 10_000 == 0)
-                    System.err.println("Put: " + i);
+                    keys.add(i);
+
+                    if (i > 0 && i % 10_000 == 0)
+                        System.err.println("Put: " + i);
+                }
             }
 
             final Affinity<Integer> aff = grid(0).affinity(null);

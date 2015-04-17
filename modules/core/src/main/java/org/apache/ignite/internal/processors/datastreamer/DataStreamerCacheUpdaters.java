@@ -85,7 +85,7 @@ public class DataStreamerCacheUpdaters {
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
         if (rmvCol != null)
-            ((IgniteCacheProxy<K, V>)cache).removeAll(rmvCol);
+            cache.removeAll(rmvCol);
 
         if (putMap != null)
             cache.putAll(putMap);
