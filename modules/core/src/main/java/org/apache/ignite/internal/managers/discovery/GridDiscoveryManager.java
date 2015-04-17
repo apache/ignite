@@ -738,11 +738,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Object locMode = locNode.attribute(ATTR_DEPLOYMENT_MODE);
 
+        int locJvmMajVer = nodeJavaMajorVersion(locNode);
+
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
         boolean warned = false;
 
         for (ClusterNode n : nodes) {
+            int rmtJvmMajVer = nodeJavaMajorVersion(n);
+
+            if (locJvmMajVer != rmtJvmMajVer)
+                throw new IgniteCheckedException("Local node's java major version is different from remote node's one" +
+                    " [locJvmMajVer=" + locJvmMajVer + ", rmtJvmMajVer=" + rmtJvmMajVer + "]");
+
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
@@ -781,6 +789,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug("Finished node attributes consistency check.");
+    }
+
+    /**
+     * Gets Java major version running on the node.
+     *
+     * @param node Cluster node.
+     * @return Java major version.
+     * @throws IgniteCheckedException If failed to get the version.
+     */
+    private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
+        try {
+            // The format is identical for Oracle JDK, OpenJDK and IBM JDK.
+            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
+                node.<String>attribute("java.version") + "]", e);
+
+            return 0;
+        }
     }
 
     /**
