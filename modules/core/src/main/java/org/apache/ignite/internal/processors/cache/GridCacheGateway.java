@@ -120,10 +120,10 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
-     * @param prj Projection to guard.
-     * @return Previous projection set on this thread.
+     * @param opCtx Cache operation context to guard.
+     * @return Previous operation context set on this thread.
      */
-    @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext prj) {
+    @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext opCtx) {
         try {
             GridCacheAdapter<K, V> cache = ctx.cache();
 
@@ -153,7 +153,7 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
-            return setProjectionPerCall(prj);
+            return setOperationContextPerCall(opCtx);
         }
         catch (RuntimeException e) {
             rwLock.readUnlock();
@@ -163,29 +163,29 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
-     * @param prj Projection to guard.
-     * @return Previous projection set on this thread.
+     * @param opCtx Operation context to guard.
+     * @return Previous operation context set on this thread.
      */
-    @Nullable public GridCacheProjectionImpl<K, V> enterNoLock(@Nullable GridCacheProjectionImpl<K, V> prj) {
+    @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
         onEnter();
 
         if (stopped)
             throw new IllegalStateException("Cache has been stopped: " + ctx.name());
 
-        return setProjectionPerCall(prj);
+        return setOperationContextPerCall(opCtx);
     }
 
     /**
-     * Set thread local projection per call.
+     * Set thread local operation context per call.
      *
-     * @param prj Projection to guard.
-     * @return Previous projection set on this thread.
+     * @param opCtx Operation context to guard.
+     * @return Previous operation context set on this thread.
      */
-    private CacheOperationContext setProjectionPerCall(@Nullable CacheOperationContext prj) {
+    private CacheOperationContext setOperationContextPerCall(@Nullable CacheOperationContext opCtx) {
         CacheOperationContext prev = ctx.operationContextPerCall();
 
-        if (prev != null || prj != null)
-            ctx.operationContextPerCall(prj);
+        if (prev != null || opCtx != null)
+            ctx.operationContextPerCall(opCtx);
 
         return prev;
     }
@@ -212,7 +212,7 @@ public class GridCacheGateway<K, V> {
         // Unwind eviction notifications.
         CU.unwindEvicts(ctx);
 
-        // Return back previous thread local projection per call.
+        // Return back previous thread local operation context per call.
         ctx.operationContextPerCall(prev);
     }
 
