@@ -173,6 +173,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -914,6 +917,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        busyLock.block();
+
         // Stop receiving notifications.
         getSpi().setListener(null);
 
@@ -973,7 +978,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean pingNode(UUID nodeId) {
         assert nodeId != null;
 
-        return getSpi().pingNode(nodeId);
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            return getSpi().pingNode(nodeId);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
