@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
@@ -39,8 +38,8 @@ public class DataStreamerCacheUpdaters {
     private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
     /**
-     * Updates cache using independent {@link IgniteCache#getAndPut(Object, Object)}and
-     * {@link IgniteCache#getAndRemove(Object)} operations. Thus it is safe from deadlocks but performance
+     * Updates cache using independent {@link IgniteCache#put(Object, Object)}and
+     * {@link IgniteCache#remove(Object)} operations. Thus it is safe from deadlocks but performance
      * is not the best.
      *
      * @return Single updater.

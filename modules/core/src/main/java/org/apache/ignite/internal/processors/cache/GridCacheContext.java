@@ -156,7 +156,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * Thread local operation context. If it's set it means that method call was initiated
-     * by child internal cache of initial cache.
+     * by child cache of initial cache.
      */
     private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocal<>();
 

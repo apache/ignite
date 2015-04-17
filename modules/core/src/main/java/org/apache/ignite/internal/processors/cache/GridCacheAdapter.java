@@ -3545,7 +3545,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             nodes.nodes());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Random cache entry.
+     */
     @Nullable public Cache.Entry<K, V> randomEntry() {
         GridCacheMapEntry e = map.randomEntry();
 
