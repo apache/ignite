@@ -222,7 +222,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         if (opCtx != null && opCtx.isKeepPortable())
             return (GridCacheProxyImpl<K1, V1>)this;
         
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)delegate,
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, 
+            (GridCacheAdapter<K1, V1>)delegate,
             opCtx != null ? opCtx.keepPortable() : new CacheOperationContext(false, null, true, null));
     }
 

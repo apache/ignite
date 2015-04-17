@@ -76,7 +76,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** */
     @GridToStringExclude
-    private GridCacheProxyImpl<K, V> legacyProxy;
+    private GridCacheProxyImpl<K, V> internalProxy;
 
     /** */
     @GridToStringExclude
@@ -133,7 +133,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         gate = ctx.gate();
 
-        legacyProxy = new GridCacheProxyImpl<>(ctx, delegate, opCtx);
+        internalProxy = new GridCacheProxyImpl<>(ctx, delegate, opCtx);
 
         this.lock = lock;
     }
@@ -1507,11 +1507,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * @return Legacy proxy.
+     * @return Internal proxy.
      */
-    @NotNull
-    public GridCacheProxyImpl<K, V> legacyProxy() {
-        return legacyProxy;
+    public GridCacheProxyImpl<K, V> internalProxy() {
+        return internalProxy;
     }
 
     /**
