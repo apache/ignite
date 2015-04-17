@@ -297,7 +297,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return delegate.get(key, deserializePortable && prj.deserializePortables());
+            return delegate.get(key, deserializePortable && !prj.isKeepPortable());
         }
         finally {
             gate.leave(prev);
@@ -321,7 +321,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return delegate.getAsync(key, deserializePortable && prj.deserializePortables());
+            return delegate.getAsync(key, deserializePortable && !prj.isKeepPortable());
         }
         finally {
             gate.leave(prev);
@@ -442,7 +442,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return delegate.getAll(keys, deserializePortable && prj.deserializePortables());
+            return delegate.getAll(keys, deserializePortable && !prj.isKeepPortable());
         }
         finally {
             gate.leave(prev);
@@ -467,7 +467,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(prj);
 
         try {
-            return delegate.getAllAsync(keys, deserializePortable && prj.deserializePortables());
+            return delegate.getAllAsync(keys, deserializePortable && !prj.isKeepPortable());
         }
         finally {
             gate.leave(prev);

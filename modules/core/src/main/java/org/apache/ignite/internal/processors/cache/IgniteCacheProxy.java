@@ -617,7 +617,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext prev = gate.enter(prjCtx);
 
-            boolean deserializePortables = prjCtx == null ? false : prjCtx.deserializePortables();
+            boolean deserializePortables = prjCtx == null ? false : !prjCtx.isKeepPortable();
 
             try {
                 if (isAsync()) {
@@ -642,7 +642,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext prev = gate.enter(prjCtx);
 
-            boolean deserializePortables = prjCtx == null ? false : prjCtx.deserializePortables();
+            boolean deserializePortables = prjCtx == null ? false : !prjCtx.isKeepPortable();
 
             try {
                 if (isAsync()) {
@@ -670,7 +670,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             CacheOperationContext prev = gate.enter(prjCtx);
 
-            boolean deserializePortables = prjCtx == null ? false : prjCtx.deserializePortables();
+            boolean deserializePortables = prjCtx == null ? false : !prjCtx.isKeepPortable();
 
             try {
                 if (isAsync()) {

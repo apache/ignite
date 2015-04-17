@@ -73,13 +73,6 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * @return {@code True} if portables should be deserialized.
-     */
-    public boolean deserializePortables() {
-        return !keepPortable;
-    }
-
-    /**
      * See {@link IgniteInternalCache#keepPortable()}.
      *
      * @return New instance of CacheOperationContext with keep portable flag.

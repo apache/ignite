@@ -2941,7 +2941,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private boolean deserializePortables(GridCacheContext cacheCtx) {
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-        return opCtx == null || opCtx.deserializePortables();
+        return opCtx == null || !opCtx.isKeepPortable();
     }
 
     /**
