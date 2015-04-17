@@ -514,7 +514,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         try {
                             IgniteInternalCache<Object, V> cache = ctx.cache().cache(spaceName);
 
-                            GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+                            GridCacheContext cctx = cache.context();
 
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();
