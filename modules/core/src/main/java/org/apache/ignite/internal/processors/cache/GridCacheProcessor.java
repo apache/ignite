@@ -2444,7 +2444,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
-        return jcache == null ? null : jcache.delegate();
+        return jcache == null ? null : jcache.legacyProxy();
     }
 
     /**
@@ -2453,7 +2453,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public Collection<IgniteInternalCache<?, ?>> caches() {
         return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>, IgniteInternalCache<?, ?>>() {
             @Override public IgniteInternalCache<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
-                return entries.delegate();
+                return entries.legacyProxy();
             }
         });
     }
