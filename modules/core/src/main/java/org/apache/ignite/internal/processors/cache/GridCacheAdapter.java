@@ -4191,7 +4191,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> forceRepartition() {
+    @Override public IgniteInternalFuture<?> rebalance() {
         ctx.preloader().forcePreload();
 
         return ctx.preloader().syncFuture();

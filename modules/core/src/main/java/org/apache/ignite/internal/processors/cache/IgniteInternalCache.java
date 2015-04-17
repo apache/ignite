@@ -24,7 +24,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
@@ -1529,7 +1528,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <p>
      * @return Future that will be completed when rebalancing is finished.
      */
-    public IgniteInternalFuture<?> forceRepartition();
+    public IgniteInternalFuture<?> rebalance();
 
     /**
      * Creates projection for specified subject ID.

@@ -1527,11 +1527,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> forceRepartition() {
+    @Override public IgniteInternalFuture<?> rebalance() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.forceRepartition();
+            return delegate.rebalance();
         }
         finally {
             gate.leave(prev);
