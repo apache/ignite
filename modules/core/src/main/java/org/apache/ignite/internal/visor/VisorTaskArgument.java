@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.visor;
 
-import org.apache.ignite.cluster.*;
-
 import java.io.*;
 import java.util.*;
 

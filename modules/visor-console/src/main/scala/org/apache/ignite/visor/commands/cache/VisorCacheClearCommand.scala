@@ -26,9 +26,7 @@ import org.apache.ignite.visor.commands.VisorTextTable
 import org.apache.ignite.visor.visor
 import visor._
 
-import scala.collection.JavaConversions._
 import scala.language.reflectiveCalls
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -85,7 +83,7 @@ class VisorCacheClearCommand {
      *
      * @param argLst Command arguments.
      */
-    def clear(argLst: ArgList, node: Option[ClusterNode]) = breakable {
+    def clear(argLst: ArgList, node: Option[ClusterNode]) {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {
@@ -95,32 +93,35 @@ class VisorCacheClearCommand {
                 warn("Can't find cache variable with specified name: " + s,
                     "Type 'cache' to see available cache variables.")
 
-                break()
+                return
 
             case Some(name) => name
         }
 
-        val n = projectionForNode(node).node()
+        val grp = groupForDataNode(node, cacheName)
 
-        if (n == null)
-            scold(messageNodeNotFound(node)).^^
+        if (grp.nodes().isEmpty)
+            scold("Can't find nodes with specified cache: " + escapeName(cacheName))
+        else {
+            try {
+                val t = VisorTextTable()
 
-        val t = VisorTextTable()
+                t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
 
-        t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
+                val nid = grp.forRandom().node().id()
 
-        try {
-            val res = executeOne(n.id(), classOf[VisorCacheClearTask], cacheName)
+                val res = executeOne(nid, classOf[VisorCacheClearTask], cacheName)
 
-            t += (nodeId8(n.id()), res.get1(), res.get2())
+                t += (nodeId8(nid), res.get1(), res.get2())
+
+                println("Cleared cache with name: " + escapeName(cacheName))
+
+                t.render()
+            }
+            catch {
+                case e: Throwable =>  scold(e.getMessage)
+            }
         }
-        catch {
-            case e: Throwable =>  scold(e.getMessage).^^
-        }
-
-        println("Cleared cache with name: " + escapeName(cacheName))
-
-        t.render()
     }
 }
 

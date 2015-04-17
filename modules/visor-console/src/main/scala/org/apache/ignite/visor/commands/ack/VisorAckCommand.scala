@@ -22,8 +22,6 @@ import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.VisorConsoleCommand
 import org.apache.ignite.visor.visor._
 
-import java.util.{HashSet => JavaHashSet}
-
 import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import scala.language.implicitConversions

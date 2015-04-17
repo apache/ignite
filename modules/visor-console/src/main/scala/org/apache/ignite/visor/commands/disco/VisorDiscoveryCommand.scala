@@ -21,8 +21,6 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import java.util.UUID
-
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg

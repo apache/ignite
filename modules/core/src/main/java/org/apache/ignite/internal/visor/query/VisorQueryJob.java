@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -33,7 +32,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.*;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
 /**
  * Job for execute SCAN or SQL query and get first page of results.
@@ -62,40 +60,10 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         return cacheProcessor.jcache(cacheName);
     }
 
-    /**
-     * @return Query task class name.
-     */
-    protected Class<? extends VisorQueryTask> task() {
-        return VisorQueryTask.class;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg) {
         try {
-            String cacheName = arg.cacheName();
-
             UUID nid = ignite.localNode().id();
-
-            // If node was not specified then we need to check if this node could be used for query
-            // or we need to send task to appropriate node.
-            if (arg.nodeId() == null) {
-                ClusterGroup prj = ignite.cluster().forDataNodes(cacheName);
-
-                if (prj.node() == null)
-                    throw new IgniteException("No data nodes for cache: " + escapeName(cacheName));
-
-                // Current node does not fit.
-                if (prj.node(nid) == null) {
-                    Collection<ClusterNode> prjNodes = prj.nodes();
-
-                    Collection<UUID> nids = new ArrayList<>(prjNodes.size());
-
-                    for (ClusterNode node : prjNodes)
-                        nids.add(node.id());
-
-                    return ignite.compute(prj).withNoFailover().execute(task(), new VisorTaskArgument<>(nids, arg, false));
-                }
-            }
 
             boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
@@ -126,8 +94,8 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 else
                     cur.close();
 
-                return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
-                    SCAN_COL_NAMES, rows, hasNext, duration));
+                return new IgniteBiTuple<>(null, new VisorQueryResultEx(nid, qryId, SCAN_COL_NAMES, rows, hasNext,
+                    duration));
             }
             else {
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
@@ -163,8 +131,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                     else
                         cur.close();
 
-                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
-                        names, rows, hasNext, duration));
+                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(nid, qryId, names, rows, hasNext, duration));
                 }
             }
         }

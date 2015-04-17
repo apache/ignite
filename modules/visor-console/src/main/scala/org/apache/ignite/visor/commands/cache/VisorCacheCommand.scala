@@ -495,7 +495,7 @@ class VisorCacheCommand {
         assert(node != null)
 
         try {
-            val prj = projectionForNode(node)
+            val prj = groupForNode(node)
 
             val nids = prj.nodes().map(_.id())
 

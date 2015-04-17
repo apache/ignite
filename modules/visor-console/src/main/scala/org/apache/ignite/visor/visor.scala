@@ -260,11 +260,21 @@ object visor extends VisorTag {
 
     /**
      * @param node Optional node.
-     * @return Projection with specified node or projection with random node if specified node is `None`.
+     * @return Cluster group with specified node or projection with random node if specified node is `None`.
      */
-    def projectionForNode(node: Option[ClusterNode]): ClusterGroup = node match {
+    def groupForNode(node: Option[ClusterNode]): ClusterGroup = node match {
         case Some(n) => ignite.cluster.forNode(n)
         case None => ignite.cluster.forRandom()
+    }
+
+    /**
+     * @param node Optional node.
+     * @param cacheName Cache name to take cluster group for.
+     * @return Cluster group with data nodes for specified cache or cluster group for specified node.
+     */
+    def groupForDataNode(node: Option[ClusterNode], cacheName: String): ClusterGroup = node match {
+        case Some(n) => ignite.cluster.forNode(n)
+        case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
     }
 
     /**
@@ -1863,7 +1873,7 @@ object visor extends VisorTag {
     def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] =
         new VisorTaskArgument(new JavaHashSet(nids), arg, false)
 
-    private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) = {
+    private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R = {
         if (grp.nodes().isEmpty)
             throw new ClusterGroupEmptyException("Topology is empty.")
 
@@ -1881,8 +1891,22 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
-    def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+    def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forNodeId(nid), task, arg)
+
+    /**
+     * Execute task on random node from specified cluster group.
+     *
+     * @param grp Cluster group to take rundom node from
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    def executeRandom[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
+        execute(grp.forRandom(), task, arg)
 
     /**
      * Execute task on random node.
@@ -1894,7 +1918,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
-    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forRandom(), task, arg)
 
     /**
@@ -1908,7 +1932,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
-    def executeMulti[A, R, J](nids: Iterable[UUID], task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+    def executeMulti[A, R, J](nids: Iterable[UUID], task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forNodeIds(nids), task, arg)
 
     /**
@@ -1921,7 +1945,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
-    def executeMulti[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A) =
+    def executeMulti[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forRemotes(), task, arg)
 
     /**

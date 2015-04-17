@@ -136,17 +136,19 @@ class VisorCacheScanCommand {
             case Some(name) => name
         }
 
-        val n = projectionForNode(node).node()
+        val grp = groupForDataNode(node, cacheName)
 
-        if (n == null) {
-            scold(messageNodeNotFound(node)).^^
+        if (grp.nodes().isEmpty) {
+            scold(messageNodeNotFound(node))
 
             return
         }
 
-        val fullRes =
+        val nid = grp.forRandom().node().id()
+
+        val firstPage =
             try
-                executeOne(n.id(), classOf[VisorQueryTask], new VisorQueryArg(null, cacheName, "SCAN", pageSize))
+                executeOne(nid, classOf[VisorQueryTask], new VisorQueryArg(cacheName, "SCAN", pageSize))
                     match {
                     case x if x.get1() != null =>
                         error(x.get1())
@@ -161,13 +163,13 @@ class VisorCacheScanCommand {
                     return
             }
 
-        var res: VisorQueryResult = fullRes
-
-        if (res.rows.isEmpty) {
+        if (firstPage.rows.isEmpty) {
             println("Cache: " + escapeName(cacheName) + " is empty")
 
             return
         }
+
+        var nextPage: VisorQueryResult = firstPage
 
         def render() {
             println("Entries in cache: " + escapeName(cacheName))
@@ -176,19 +178,19 @@ class VisorCacheScanCommand {
 
             t #= ("Key Class", "Key", "Value Class", "Value")
 
-            res.rows.foreach(r => t += (r(0), r(1), r(2), r(3)))
+            nextPage.rows.foreach(r => t += (r(0), r(1), r(2), r(3)))
 
             t.render()
         }
 
         render()
 
-        while (res.hasMore) {
+        while (nextPage.hasMore) {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = executeOne(fullRes.responseNodeId(), classOf[VisorQueryNextPageTask],
-                            new IgniteBiTuple[String, Integer](fullRes.queryId(), pageSize))
+                        nextPage = executeOne(firstPage.responseNodeId(), classOf[VisorQueryNextPageTask],
+                            new IgniteBiTuple[String, Integer](firstPage.queryId(), pageSize))
 
                         render()
                     }

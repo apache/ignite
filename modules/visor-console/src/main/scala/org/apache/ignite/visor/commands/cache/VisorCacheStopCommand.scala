@@ -92,16 +92,24 @@ class VisorCacheStopCommand {
             case Some(name) => name
         }
 
+        val grp = groupForDataNode(node, cacheName)
+
+        if (grp.nodes().isEmpty) {
+            warn("Can't find nodes with specified cache: " + escapeName(cacheName),
+                "Type 'cache' to see available cache names.")
+
+            return
+        }
+
         ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [n]: ", "n") match {
             case "y" | "Y" =>
                 try {
-                    executeRandom(classOf[VisorCacheStopTask], cacheName)
+                    executeRandom(grp, classOf[VisorCacheStopTask], cacheName)
 
                     println("Visor successfully stop cache: " + escapeName(cacheName))
                 }
                 catch {
-                    case e: Exception =>
-                        error(e)
+                    case e: Exception => error(e)
                 }
 
             case "n" | "N" =>

@@ -100,18 +100,22 @@ class VisorCacheSwapCommand {
             case Some(name) => name
         }
 
-        val n = projectionForNode(node).node()
+        val grp = groupForDataNode(node, cacheName)
 
-        if (n != null) {
+        if (grp.nodes().isEmpty)
+            scold(messageNodeNotFound(node, Some("Can't find nodes for cache: " + escapeName(cacheName))))
+        else
             try {
-                val r = executeOne(n.id(), classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).get(cacheName)
+                val nid = grp.forRandom().node().id()
+
+                val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).get(cacheName)
 
                 if (r != null) {
                     val t = VisorTextTable()
 
                     t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-                    t += (nodeId8(n.id()), r.get1() - r.get2(), r.get1(), r.get2())
+                    t += (nodeId8(nid), r.get1() - r.get2(), r.get1(), r.get2())
 
                     println("Swapped entries in cache: " + escapeName(cacheName))
 
@@ -123,9 +127,6 @@ class VisorCacheSwapCommand {
             catch {
                 case e: Exception => scold(e.getMessage)
             }
-        }
-        else
-            scold(messageNodeNotFound(node, Some("Can't find nodes for cache: " + escapeName(cacheName))))
     }
 }
 
