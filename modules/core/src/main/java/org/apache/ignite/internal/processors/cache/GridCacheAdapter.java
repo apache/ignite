@@ -2102,7 +2102,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        return asyncOp(new AsyncOp<V>(key) {
+        return asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, entry, ttl, filter)
                     .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
@@ -2254,7 +2254,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        IgniteInternalFuture<?> fut = asyncOp(new AsyncInOp(key) {
+        IgniteInternalFuture<?> fut = asyncOp(new AsyncInOp() {
             @Override public IgniteInternalFuture<GridCacheReturn> inOp(IgniteTxLocalAdapter tx) {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
                     Collections.singletonMap(key, (EntryProcessor<K, V, Object>) entryProcessor);
@@ -2407,7 +2407,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        return asyncOp(new AsyncOp<Boolean>(key) {
+        return asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, entry, ttl, filter).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
@@ -2466,7 +2466,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>(key) {
+        IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.noValArray())
                     .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>) RET2VAL);
@@ -2525,7 +2525,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.noValArray()).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
@@ -2575,7 +2575,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>(key) {
+        IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, null, -1, ctx.hasValArray()).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, V>)RET2VAL);
@@ -2621,7 +2621,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        return asyncOp(new AsyncOp<Boolean>(key) {
+        return asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.hasValArray()).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
@@ -2675,7 +2675,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(newVal);
 
-        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled()) {
@@ -2818,7 +2818,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>(key) {
+        IgniteInternalFuture<V> fut = asyncOp(new AsyncOp<V>() {
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
                 // TODO should we invoke interceptor here?
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter)
@@ -2956,7 +2956,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).chain(
                     (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
@@ -3073,7 +3073,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        return asyncOp(new AsyncOp<GridCacheReturn>(key) {
+        return asyncOp(new AsyncOp<GridCacheReturn>() {
             @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx) {
                 // Register before hiding in the filter.
                 try {
@@ -3109,7 +3109,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        return asyncOp(new AsyncOp<GridCacheReturn>(key) {
+        return asyncOp(new AsyncOp<GridCacheReturn>() {
             @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx) {
                 // Register before hiding in the filter.
                 try {
@@ -3183,7 +3183,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         validateCacheValue(val);
 
-        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>(key) {
+        IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 // Register before hiding in the filter.
                 if (ctx.deploymentEnabled()) {
@@ -5083,15 +5083,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /** Flag to indicate only-one-key operation. */
         private final boolean single;
 
-        /** Keys. */
-        private final Collection<?> keys;
-
         /**
-         * @param key Key.
+         *
          */
-        protected AsyncOp(K key) {
-            keys = Arrays.asList(key);
-
+        protected AsyncOp() {
             single = true;
         }
 
@@ -5099,8 +5094,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param keys Keys involved.
          */
         protected AsyncOp(Collection<?> keys) {
-            this.keys = keys;
-
             single = keys.size() == 1;
         }
 
@@ -5123,10 +5116,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     private abstract class AsyncInOp extends AsyncOp<Object> {
         /**
-         * @param key Key.
+         *
          */
-        protected AsyncInOp(K key) {
-            super(key);
+        protected AsyncInOp() {
+            super();
         }
 
         /**
