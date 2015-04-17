@@ -66,11 +66,10 @@ public class GridCacheGateway<K, V> {
     /**
      * Enter a cache call.
      *
-     * @return {@code true} if enter successful, {@code false} if the cache or the node was stopped.
+     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotClosed() {
-        if (ctx.deploymentEnabled())
-            ctx.deploy().onEnter();
+        onEnter();
 
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
@@ -86,16 +85,34 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
+     * Enter a cache call without lock.
+     *
+     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
+     */
+    public boolean enterIfNotClosedNoLock() {
+        onEnter();
+
+        return !stopped;
+    }
+
+    /**
+     * Leave a cache call entered by {@link #enterNoLock} method.
+     */
+    public void leaveNoLock() {
+        ctx.tm().resetContext();
+        ctx.mvcc().contextReset();
+
+        // Unwind eviction notifications.
+        if (!ctx.shared().closed(ctx))
+            CU.unwindEvicts(ctx);
+    }
+
+    /**
      * Leave a cache call entered by {@link #enter()} method.
      */
     public void leave() {
         try {
-            ctx.tm().resetContext();
-            ctx.mvcc().contextReset();
-
-            // Unwind eviction notifications.
-            if (!ctx.shared().closed(ctx))
-                CU.unwindEvicts(ctx);
+           leaveNoLock();
         }
         finally {
             rwLock.readUnlock();
@@ -108,8 +125,6 @@ public class GridCacheGateway<K, V> {
      */
     @Nullable public GridCacheProjectionImpl<K, V> enter(@Nullable GridCacheProjectionImpl<K, V> prj) {
         try {
-            ctx.itHolder().checkWeakQueue();
-
             GridCacheAdapter<K, V> cache = ctx.cache();
 
             GridCachePreloader<K, V> preldr = cache != null ? cache.preloader() : null;
@@ -125,27 +140,20 @@ public class GridCacheGateway<K, V> {
                 ctx.name() + "]", e);
         }
 
-        if (ctx.deploymentEnabled())
-            ctx.deploy().onEnter();
+        onEnter();
 
         rwLock.readLock();
 
         if (stopped) {
             rwLock.readUnlock();
 
-            throw new IllegalStateException("Dynamic cache has been stopped: " + ctx.name());
+            throw new IllegalStateException("Cache has been stopped: " + ctx.name());
         }
 
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
-            // Set thread local projection per call.
-            GridCacheProjectionImpl<K, V> prev = ctx.projectionPerCall();
-
-            if (prev != null || prj != null)
-                ctx.projectionPerCall(prj);
-
-            return prev;
+            return setProjectionPerCall(prj);
         }
         catch (RuntimeException e) {
             rwLock.readUnlock();
@@ -155,22 +163,67 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
+     * @param prj Projection to guard.
+     * @return Previous projection set on this thread.
+     */
+    @Nullable public GridCacheProjectionImpl<K, V> enterNoLock(@Nullable GridCacheProjectionImpl<K, V> prj) {
+        onEnter();
+
+        if (stopped)
+            throw new IllegalStateException("Cache has been stopped: " + ctx.name());
+
+        return setProjectionPerCall(prj);
+    }
+
+    /**
+     * Set thread local projection per call.
+     *
+     * @param prj Projection to guard.
+     * @return Previous projection set on this thread.
+     */
+    private GridCacheProjectionImpl<K, V> setProjectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
+        GridCacheProjectionImpl<K, V> prev = ctx.projectionPerCall();
+
+        if (prev != null || prj != null)
+            ctx.projectionPerCall(prj);
+
+        return prev;
+    }
+
+    /**
      * @param prev Previous.
      */
     public void leave(GridCacheProjectionImpl<K, V> prev) {
         try {
-            ctx.tm().resetContext();
-            ctx.mvcc().contextReset();
-
-            // Unwind eviction notifications.
-            CU.unwindEvicts(ctx);
-
-            // Return back previous thread local projection per call.
-            ctx.projectionPerCall(prev);
+            leaveNoLock(prev);
         }
         finally {
             rwLock.readUnlock();
         }
+    }
+
+    /**
+     * @param prev Previous.
+     */
+    public void leaveNoLock(GridCacheProjectionImpl<K, V> prev) {
+        ctx.tm().resetContext();
+        ctx.mvcc().contextReset();
+
+        // Unwind eviction notifications.
+        CU.unwindEvicts(ctx);
+
+        // Return back previous thread local projection per call.
+        ctx.projectionPerCall(prev);
+    }
+
+    /**
+     *
+     */
+    private void onEnter() {
+        ctx.itHolder().checkWeakQueue();
+
+        if (ctx.deploymentEnabled())
+            ctx.deploy().onEnter();
     }
 
     /**

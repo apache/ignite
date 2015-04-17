@@ -86,9 +86,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** Future keys. */
     private Collection<KeyCacheObject> keys;
 
-    /** Future map time. */
-    private volatile long mapTime;
-
     /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
@@ -153,20 +150,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void checkTimeout(long timeout) {
-        long mapTime0 = mapTime;
-
-        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
-            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
-                "(consider increasing networkTimeout configuration property).");
-
-            updateRes.addFailedKeys(keys, ex);
-
-            onDone(ex);
-        }
     }
 
     /** {@inheritDoc} */
@@ -328,8 +311,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * Sends requests to remote nodes.
      */
     public void map() {
-        mapTime = U.currentTimeMillis();
-
         if (!mappings.isEmpty()) {
             for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {

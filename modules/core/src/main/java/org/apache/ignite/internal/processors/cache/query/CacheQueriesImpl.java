@@ -19,14 +19,12 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
@@ -34,7 +32,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * {@link CacheQueries} implementation.
  */
-public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
+public class CacheQueriesImpl<K, V> implements CacheQueries<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,49 +43,14 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     private GridCacheProjectionImpl<K, V> prj;
 
     /**
-     * Required by {@link Externalizable}.
-     */
-    public GridCacheQueriesImpl() {
-        // No-op.
-    }
-
-    /**
      * @param ctx Context.
      * @param prj Projection.
      */
-    public GridCacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
+    public CacheQueriesImpl(GridCacheContext<K, V> ctx, @Nullable GridCacheProjectionImpl<K, V> prj) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.prj = prj;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
-        A.notNull(cls, "cls");
-        A.notNull(clause, "clause");
-
-        return new GridCacheQueryAdapter<>(ctx,
-            SQL,
-            ctx.kernalContext().query().typeName(U.box(cls)),
-            clause,
-            null,
-            false,
-            prj != null && prj.isKeepPortable());
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
-        A.notNull("clsName", clsName);
-        A.notNull("clause", clause);
-
-        return new GridCacheQueryAdapter<>(ctx,
-            SQL,
-            clsName,
-            clause,
-            null,
-            false,
-            prj != null && prj.isKeepPortable());
     }
 
     /** {@inheritDoc} */
@@ -98,20 +61,6 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
             SQL_FIELDS,
             null,
             qry,
-            null,
-            false,
-            prj != null && prj.isKeepPortable());
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
-        A.notNull(cls, "cls");
-        A.notNull(search, "search");
-
-        return new GridCacheQueryAdapter<>(ctx,
-            TEXT,
-            ctx.kernalContext().query().typeName(U.box(cls)),
-            search,
             null,
             false,
             prj != null && prj.isKeepPortable());
@@ -169,32 +118,8 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
-        A.notNull(cls, "cls");
-
-        return ctx.queries().rebuildIndexes(cls);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexes(String typeName) {
-        A.notNull("typeName", typeName);
-
-        return ctx.queries().rebuildIndexes(typeName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildAllIndexes() {
-        return ctx.queries().rebuildAllIndexes();
-    }
-
-    /** {@inheritDoc} */
     @Override public QueryMetrics metrics() {
         return ctx.queries().metrics();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        ctx.queries().resetMetrics();
     }
 
     /** {@inheritDoc} */

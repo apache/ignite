@@ -21,23 +21,32 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
+import java.util.*;
+
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Tests for cache query metrics.
+ * Tests for cache query results serialization.
  */
-public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
+public class GridCacheQuerySerializationSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 2;
 
     /** */
-    private static final CacheMode CACHE_MODE = REPLICATED;
+    private static final String CACHE_NAME = "A";
+
+    /** */
+    private static final CacheMode CACHE_MODE = PARTITIONED;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -64,9 +73,10 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
+        cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setIndexedTypes(String.class, Integer.class);
+        cacheCfg.setIndexedTypes(Integer.class, GridCacheQueryTestValue.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -74,79 +84,61 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * JUnit.
-     *
-     * @throws Exception In case of error.
+     * @return Test value.
      */
-    public void testAccumulativeMetrics() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).cache(null);
+    private GridCacheQueryTestValue value(String f1, int f2, long f3) {
+        GridCacheQueryTestValue val = new GridCacheQueryTestValue();
 
-        SqlQuery<String, Integer> qry = new SqlQuery(Integer.class, "_val >= 0");
+        val.setField1(f1);
+        val.setField2(f2);
+        val.setField3(f3);
 
-        cache.query(qry).getAll();
-
-        QueryMetrics m = cache.queryMetrics();
-
-        assert m != null;
-
-        info("Metrics: " + m);
-
-        assertEquals(1, m.executions());
-        assertEquals(0, m.fails());
-        assertTrue(m.averageTime() >= 0);
-        assertTrue(m.maximumTime() >= 0);
-        assertTrue(m.minimumTime() >= 0);
-
-        // Execute again with the same parameters.
-        cache.query(qry).getAll();
-
-        m = cache.queryMetrics();
-
-        assert m != null;
-
-        info("Metrics: " + m);
-
-        assertEquals(2, m.executions());
-        assertEquals(0, m.fails());
-        assertTrue(m.averageTime() >= 0);
-        assertTrue(m.maximumTime() >= 0);
-        assertTrue(m.minimumTime() >= 0);
+        return val;
     }
 
     /**
-     * JUnit.
+     * Test that query result could be returned from remote node.
      *
      * @throws Exception In case of error.
      */
-    public void testSingleQueryMetrics() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).cache(null);
+    public void testSerialization() throws Exception {
+        IgniteEx g0 = grid(0);
 
-        SqlQuery<String, Integer> qry = new SqlQuery(Integer.class, "_val >= 0");
+        IgniteCache<Integer, GridCacheQueryTestValue> c0 = g0.cache(CACHE_NAME);
+        c0.put(1, value("A", 1, 1));
+        c0.put(2, value("B", 2, 2));
 
-        // Execute.
-        cache.query(qry).getAll();
+        IgniteEx g1 = grid(1);
+        IgniteCache<Integer, GridCacheQueryTestValue> c1 = g1.cache(CACHE_NAME);
+        c1.put(3, value("C", 3, 3));
+        c1.put(4, value("D", 4, 4));
 
-        QueryMetrics m = cache.queryMetrics();
+        List<Cache.Entry<Integer, GridCacheQueryTestValue>> qryRes =
+            g0.compute(g0.cluster().forNode(g1.localNode())).withNoFailover().call(new QueryCallable());
 
-        info("Metrics: " + m);
+        assert !qryRes.isEmpty();
 
-        assertEquals(1, m.executions());
-        assertEquals(0, m.fails());
-        assertTrue(m.averageTime() >= 0);
-        assertTrue(m.maximumTime() >= 0);
-        assertTrue(m.minimumTime() >= 0);
+        info(">>>> Query result:");
 
-        // Execute.
-        cache.query(qry).getAll();
+        for (Cache.Entry<Integer, GridCacheQueryTestValue> entry : qryRes)
+            info(">>>>>>>" + entry.getKey() + " " + entry.getValue().getField1());
+    }
 
-        m = cache.queryMetrics();
+    /** */
+    private static class QueryCallable implements IgniteCallable<List<Cache.Entry<Integer, GridCacheQueryTestValue>>> {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
-        info("Metrics: " + m);
+        /** {@inheritDoc} */
+        @Override public List<Cache.Entry<Integer, GridCacheQueryTestValue>> call() throws Exception {
+            IgniteCache<Integer, GridCacheQueryTestValue> c = ignite.cache(CACHE_NAME);
 
-        assertEquals(2, m.executions());
-        assertEquals(0, m.fails());
-        assertTrue(m.averageTime() >= 0);
-        assertTrue(m.maximumTime() >= 0);
-        assertTrue(m.minimumTime() >= 0);
+            String sqlStr = "FROM GridCacheQueryTestValue WHERE fieldname = ?";
+            SqlQuery<Integer, GridCacheQueryTestValue> sql = new SqlQuery<>(GridCacheQueryTestValue.class, sqlStr);
+            sql.setArgs("C");
+
+            return c.query(sql.setSql(sqlStr)).getAll();
+        }
     }
 }
