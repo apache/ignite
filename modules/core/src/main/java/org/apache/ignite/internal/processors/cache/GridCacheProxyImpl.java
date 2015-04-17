@@ -82,7 +82,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         this.ctx = ctx;
         this.delegate = delegate;
-        this.opCtx = opCtx == null ? new CacheOperationContext() : opCtx;
+        this.opCtx = opCtx;
 
         gate = ctx.gate();
 
@@ -118,7 +118,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return opCtx.skipStore();
+            return opCtx != null ? opCtx.skipStore() : false;
         }
         finally {
             gate.leave(prev);
@@ -197,7 +197,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
-        return new GridCacheProxyImpl<>(ctx, delegate, opCtx.forSubjectId(subjId));
+        return new GridCacheProxyImpl<>(ctx, delegate,
+            opCtx != null ? opCtx.forSubjectId(subjId) : new CacheOperationContext(false, subjId, false, null));
     }
 
     /** {@inheritDoc} */
@@ -205,10 +206,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            if (opCtx.skipStore() == skipStore)
+            if (opCtx != null && opCtx.skipStore() == skipStore)
                 return this;
 
-            return new GridCacheProxyImpl<>(ctx, delegate, opCtx.setSkipStore(skipStore));
+            return new GridCacheProxyImpl<>(ctx, delegate,
+                opCtx != null ? opCtx.setSkipStore(skipStore) : new CacheOperationContext(true, null, false, null));
         }
         finally {
             gate.leave(prev);
@@ -217,10 +219,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
-        if (opCtx.isKeepPortable())
+        if (opCtx != null && opCtx.isKeepPortable())
             return (GridCacheProxyImpl<K1, V1>)this;
         
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)delegate, opCtx.keepPortable());
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)delegate,
+            opCtx != null ? opCtx.keepPortable() : new CacheOperationContext(false, null, true, null));
     }
 
     /** {@inheritDoc} */
@@ -1502,7 +1505,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
-        return opCtx.expiry();
+        return opCtx != null ? opCtx.expiry() : null;
     }
 
     /** {@inheritDoc} */
@@ -1510,9 +1513,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            CacheOperationContext prj0 = opCtx.withExpiryPolicy(plc);
-
-            return new GridCacheProxyImpl<>(ctx, delegate, prj0);
+            return new GridCacheProxyImpl<>(ctx, delegate,
+                opCtx != null ? opCtx.withExpiryPolicy(plc) : new CacheOperationContext(false, null, false, plc));
         }
         finally {
             gate.leave(prev);

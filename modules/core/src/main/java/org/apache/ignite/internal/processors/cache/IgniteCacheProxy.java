@@ -129,7 +129,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         this.ctx = ctx;
         this.delegate = delegate;
-        this.opCtx = opCtx == null ? new CacheOperationContext() : opCtx;
+        this.opCtx = opCtx;
 
         gate = ctx.gate();
 
@@ -238,7 +238,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheOperationContext prev = onEnter(opCtx);
 
         try {
-            CacheOperationContext prj0 = opCtx.withExpiryPolicy(plc);
+            CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
+                new CacheOperationContext(false, null, false, plc);
 
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
@@ -347,10 +348,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
+        boolean isKeepPortable = opCtx != null ? opCtx.isKeepPortable() : false;
+
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
 
-            qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, opCtx.isKeepPortable());
+            qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, isKeepPortable);
 
             if (grp != null)
                 qry.projection(grp);
@@ -360,7 +363,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         else if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
 
-            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), opCtx.isKeepPortable());
+            qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepPortable);
 
             if (grp != null)
                 qry.projection(grp);
@@ -368,7 +371,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             fut = qry.execute();
         }
         else if (filter instanceof SpiQuery) {
-            qry = ctx.queries().createSpiQuery(opCtx.isKeepPortable());
+            qry = ctx.queries().createSpiQuery(isKeepPortable);
 
             if (grp != null)
                 qry.projection(grp);
@@ -1442,7 +1445,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             CacheOperationContext opCtx0 =
-                new CacheOperationContext(opCtx.skipStore(), opCtx.subjectId(), true, opCtx.expiry());
+                new CacheOperationContext(
+                    opCtx != null ? opCtx.skipStore() : false,
+                    opCtx != null ? opCtx.subjectId() : null,
+                    true,
+                    opCtx != null ? opCtx.expiry() : null);
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (GridCacheAdapter<K1, V1>)delegate,
@@ -1468,7 +1475,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return this;
 
             CacheOperationContext opCtx0 =
-                new CacheOperationContext(true, opCtx.subjectId(), opCtx.isKeepPortable(), opCtx.expiry());
+                new CacheOperationContext(true,
+                    opCtx != null ? opCtx.subjectId() : null,
+                    opCtx != null ? opCtx.isKeepPortable() : false,
+                    opCtx != null ? opCtx.expiry() : null);
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
