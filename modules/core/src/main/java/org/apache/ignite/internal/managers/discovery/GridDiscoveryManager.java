@@ -912,7 +912,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (!locJoinEvt.isDone())
-            locJoinEvt.onDone(new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
+            locJoinEvt.onDone(
+                new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
