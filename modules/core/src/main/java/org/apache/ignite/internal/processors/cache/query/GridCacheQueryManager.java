@@ -2957,7 +2957,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 keepPortable);
     }
 
-
     /**
      * Creates user's SQL fields query for given clause. For more information refer to
      * {@link CacheQuery} documentation.

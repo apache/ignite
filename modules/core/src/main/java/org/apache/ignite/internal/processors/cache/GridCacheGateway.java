@@ -165,7 +165,7 @@ public class GridCacheGateway<K, V> {
             // Unwind eviction notifications.
             CU.unwindEvicts(ctx);
 
-            // Return back previous thread local projection per call.
+            // Return back previous thread local operation context per call.
             ctx.operationContextPerCall(prev);
         }
         finally {

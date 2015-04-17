@@ -4400,7 +4400,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable) {
         try {
-         checkJta();
+            checkJta();
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -4447,7 +4447,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializePortable,
             false);
-                }
+    }
 
     /**
      * @param entry Entry.

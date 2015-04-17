@@ -545,7 +545,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             throw new IgniteCheckedException(
                 "Failed to find cache for given cache name (null for default cache): " + cacheName);
 
-        return (IgniteInternalCache<Object, Object>)cache;
+        return cache;
     }
 
     /**
@@ -871,7 +871,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((IgniteInternalCache<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.putAsync(key, val);

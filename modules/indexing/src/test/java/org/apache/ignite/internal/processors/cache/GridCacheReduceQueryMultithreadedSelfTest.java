@@ -102,7 +102,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
 
         // Create query.
         final CacheQuery<List<?>> sumQry = c.context().queries().
-                createSqlFieldsQuery("select _val from Integer", false).timeout(TEST_TIMEOUT);
+            createSqlFieldsQuery("select _val from Integer", false).timeout(TEST_TIMEOUT);
 
         final R1<List<?>, Integer> rmtRdc = new R1<List<?>, Integer>() {
             /** */

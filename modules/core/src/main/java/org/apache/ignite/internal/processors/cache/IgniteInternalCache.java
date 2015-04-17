@@ -208,7 +208,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * @param skipStore Skip store flag.
-     * @return New projection based on this one, but with skip store flag enabled.
+     * @return New internal cache instance based on this one, but with skip store flag enabled.
      */
     public IgniteInternalCache<K, V> setSkipStore(boolean skipStore);
 
@@ -247,7 +247,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * (<code>org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()</code> returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
-     * @return Projection for portable objects.
+     * @return New internal cache instance for portable objects.
      */
     public <K1, V1> IgniteInternalCache<K1, V1> keepPortable();
 
@@ -1319,7 +1319,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache} projection. It is essentially the
+     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache}. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.

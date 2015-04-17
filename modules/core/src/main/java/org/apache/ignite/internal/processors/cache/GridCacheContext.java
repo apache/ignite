@@ -158,7 +158,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Thread local projection. If it's set it means that method call was initiated
      * by child projection of initial cache.
      */
-    private ThreadLocal<CacheOperationContext> prjPerCall = new ThreadLocal<>();
+    private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocal<>();
 
     /** Cache name. */
     private String cacheName;
@@ -1207,18 +1207,18 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())
-            dht().near().context().prjPerCall.set(opCtx);
+            dht().near().context().opCtxPerCall.set(opCtx);
         else
-            prjPerCall.set(opCtx);
+            opCtxPerCall.set(opCtx);
     }
 
     /**
-     * Gets thread local projection.
+     * Gets thread local cache operation context.
      *
      * @return Operation context per call.
      */
     public CacheOperationContext operationContextPerCall() {
-        return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+        return nearContext() ? dht().near().context().opCtxPerCall.get() : opCtxPerCall.get();
     }
 
     /**
@@ -1258,9 +1258,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (nearContext())
             return dht().near().context().skipStore();
 
-        CacheOperationContext prj = prjPerCall.get();
+        CacheOperationContext opCtx = opCtxPerCall.get();
 
-        return (prj != null && prj.skipStore());
+        return (opCtx != null && opCtx.skipStore());
     }
 
 

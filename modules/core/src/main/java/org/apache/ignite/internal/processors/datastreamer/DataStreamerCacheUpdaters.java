@@ -50,7 +50,7 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link IgniteCache#putAll(java.util.Map)}and
+     * Updates cache using batched methods {@link IgniteCache#putAll(Map)}and
      * {@link IgniteCache#removeAll()}. Can cause deadlocks if the same keys are getting
      * updated concurrently. Performance is generally better than in {@link #individual()}.
      *

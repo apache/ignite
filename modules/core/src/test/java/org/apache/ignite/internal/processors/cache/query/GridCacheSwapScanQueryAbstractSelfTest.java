@@ -139,8 +139,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
                         return key.id % 2 == 0;
                     }
-                }, false
-            );
+                }, false);
 
             Collection<Map.Entry<Key, Person>> res = qry.execute().get();
 
@@ -186,8 +185,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
                             return key.id % 2 == 0;
                         }
-                    }, false
-                );
+                    }, false);
 
                 for (int i = 0; i < 250; i++) {
                     Collection<Map.Entry<Key, Person>> res = qry.execute().get();
@@ -231,8 +229,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
                         return val % 2 == 0;
                     }
-                }, false
-            );
+                }, false);
 
             Collection<Map.Entry<String, Long>> res = qry.execute().get();
 
@@ -287,8 +284,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
                         return key % 2 == 0;
                     }
-                }, false
-            );
+                }, false);
 
             Collection<Map.Entry<Integer, byte[]>> res = qry.execute().get();
 

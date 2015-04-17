@@ -51,7 +51,7 @@ public interface IgniteEx extends Ignite {
 
     /**
      * Gets default cache instance if one is configured or <tt>null</tt> otherwise returning even non-public caches.
-     * The {@link org.apache.ignite.internal.processors.cache.IgniteInternalCache#name()} method on default instance returns <tt>null</tt>.
+     * The {@link IgniteInternalCache#name()} method on default instance returns <tt>null</tt>.
      *
      * @param <K> Key type.
      * @param <V> Value type.

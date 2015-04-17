@@ -119,7 +119,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param ctx Cache context.
      */
     public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
-                    GridCacheAtomicStampedValue<T, S>> atomicView, GridCacheContext ctx) {
+            GridCacheAtomicStampedValue<T, S>> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
         assert ctx != null;

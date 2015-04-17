@@ -39,10 +39,10 @@ public class CacheOperationContext implements Serializable {
     /** Client ID which operates over this projection, if any, */
     private final UUID subjId;
 
-    /** */
+    /** Keep portable flag. */
     private final boolean keepPortable;
 
-    /** */
+    /** Expiricy policy. */
     private final ExpiryPolicy expiryPlc;
 
     /**
@@ -110,6 +110,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * See {@link IgniteInternalCache#forSubjectId(UUID)}.
      *
+     * @param subjId Subject id.
      * @return New instance of CacheOperationContext with specific subject id.
      */
     public CacheOperationContext forSubjectId(UUID subjId) {
@@ -130,6 +131,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * See {@link IgniteInternalCache#setSkipStore(boolean)}.
      *
+     * @param skipStore Skip store flag.
      * @return New instance of CacheOperationContext with skip store flag.
      */
     public CacheOperationContext setSkipStore(boolean skipStore) {
