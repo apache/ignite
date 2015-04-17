@@ -41,7 +41,6 @@ import java.io.*;
 import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
-import java.nio.channels.spi.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -1341,7 +1340,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = locPort; port < locPort + locPortRange; port++) {
             try {
-                MessageFactory messageFactory = new MessageFactory() {
+                MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
 
                     @Nullable @Override public Message create(byte type) {
@@ -1354,7 +1353,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                MessageFormatter messageFormatter = new MessageFormatter() {
+                MessageFormatter msgFormatter = new MessageFormatter() {
                     private MessageFormatter impl;
 
                     @Override public MessageWriter writer() {
@@ -1376,7 +1375,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                GridDirectParser parser = new GridDirectParser(messageFactory, messageFormatter);
+                GridDirectParser parser = new GridDirectParser(msgFactory, msgFormatter);
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
@@ -1403,7 +1402,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .writeTimeout(sockWriteTimeout)
                         .filters(new GridNioCodecFilter(parser, log, true),
                             new GridConnectionBytesVerifyFilter(log))
-                        .messageFormatter(messageFormatter)
+                        .messageFormatter(msgFormatter)
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .build();
 
@@ -1934,7 +1933,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(getLocalNodeId(),
+                        Message msg = new HandshakeMessage(getLocalNodeId(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -2542,7 +2541,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (obj instanceof GridCommunicationClient)
                     ((GridCommunicationClient)obj).forceClose();
                 else
-                    U.closeQuiet((AbstractInterruptibleChannel)obj);
+                    U.closeQuiet((AutoCloseable)obj);
 
                 return true;
             }
