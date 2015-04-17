@@ -3670,12 +3670,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return JCache Iterator.
      */
-    private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy() {
+    private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy(final CacheOperationContext opCtx) {
         return F.iterator(iterator(),
             new IgniteClosure<Cache.Entry<K, V>, Cache.Entry<K, V>>() {
-                private IgniteCacheExpiryPolicy expiryPlc = ctx.cache().expiryPolicy(ctx.expiry());
+                private IgniteCacheExpiryPolicy expiryPlc = ctx.cache().expiryPolicy(opCtx.expiry());
 
                 @Override public Cache.Entry<K, V> apply(Cache.Entry<K, V> lazyEntry) {
+                    CacheOperationContext prev = ctx.gate().enter(opCtx);
                     try {
                         V val = localPeek(lazyEntry.getKey(), CachePeekModes.ONHEAP_ONLY, expiryPlc);
 
@@ -3683,6 +3684,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                     catch (IgniteCheckedException e) {
                         throw CU.convertToCacheException(e);
+                    }
+                    finally {
+                        ctx.gate().leave(prev);
                     }
                 }
             }, false
@@ -3695,12 +3699,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public Iterator<Cache.Entry<K, V>> igniteIterator() {
         GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
 
-        if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
-            return localIteratorHonorExpirePolicy();
-
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        CacheQueryFuture<Map.Entry<K, V>> fut = ctx0.queries().createScanQuery(null, false)
+        if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
+            return localIteratorHonorExpirePolicy(opCtx);
+
+        CacheQueryFuture<Map.Entry<K, V>> fut = ctx0.queries().createScanQuery(null, ctx.keepPortable())
             .keepAll(false)
             .execute();
 
