@@ -162,7 +162,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     public void testCacheWithServerNodesRestart() throws Exception {
-        srvNodesCnt = 3;
+        srvNodesCnt = 1;
         clientNodesCnt = 1;
 
         startServerNodes();
