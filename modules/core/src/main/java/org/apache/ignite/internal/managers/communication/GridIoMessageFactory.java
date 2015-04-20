@@ -595,6 +595,11 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 112:
+                msg = new TcpClientMessageWrapper();
+
+                break;
+
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

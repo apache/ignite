@@ -34,6 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -149,6 +150,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Node attribute that is mapped to node's external addresses (value is <tt>comm.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "comm.tcp.ext-addrs";
+
+    /** Node attribute means that all messages should be send through router node
+     * (value is <tt>comm.tcp.connect.throw.router</tt>).
+     * @see org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi
+     */
+    public static final String ATTR_CONNECT_TO_ROUTER_ONLY = "comm.tcp.connect.through.router";
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
@@ -321,6 +328,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Local node ID message. */
     private NodeIdMessage nodeIdMsg;
+
+    /** All messages shoult be sent through router node, not a directly. */
+    private boolean connectToRouterOnly;
 
     /** Received messages count. */
     private final LongAdder8 rcvdMsgsCnt = new LongAdder8();
@@ -864,11 +874,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
-            return F.asMap(
+            Map<String, Object> res = F.asMap(
                 createSpiAttributeName(ATTR_ADDRS), addrs.get1(),
                 createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2(),
                 createSpiAttributeName(ATTR_PORT), boundTcpPort,
                 createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+
+            if (connectToRouterOnly)
+                res.put(createSpiAttributeName(ATTR_CONNECT_TO_ROUTER_ONLY), connectToRouterOnly);
+
+            return res;
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
@@ -1180,6 +1195,41 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (node.id().equals(locNodeId))
             notifyListener(locNodeId, msg, NOOP);
         else {
+            ClusterNode locNode = getSpiContext().localNode();
+
+            if (connectToRouterOnly) {
+                if (locNode instanceof TcpDiscoveryNode) {
+                    UUID routerNodeId = ((TcpDiscoveryNode)locNode).clientRouterNodeId();
+
+                    if (routerNodeId != null && !routerNodeId.equals(node.id())) {
+                        ClusterNode routerNode = getSpiContext().node(routerNodeId);
+
+                        if (routerNode != null) {
+                            sendMessage(routerNode, new TcpClientMessageWrapper(msg, locNodeId, node.id()));
+
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (Boolean.TRUE.equals(node.<Boolean>attribute(ATTR_CONNECT_TO_ROUTER_ONLY))) {
+                UUID routerNodeId = ((TcpDiscoveryNode)node).clientRouterNodeId();
+
+                if (routerNodeId != null) {
+                    ClusterNode routerNode = getSpiContext().node(routerNodeId);
+
+                    if (routerNode != null) {
+                        if (msg instanceof TcpClientMessageWrapper)
+                            sendMessage(routerNode, msg);
+                        else
+                            sendMessage(routerNode, new TcpClientMessageWrapper(msg, locNodeId, node.id()));
+
+                        return;
+                    }
+                }
+            }
+
             GridCommunicationClient client = null;
 
             try {
@@ -1190,7 +1240,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     UUID nodeId = null;
 
-                    if (!client.async() && !getSpiContext().localNode().version().equals(node.version()))
+                    if (!client.async() && !locNode.version().equals(node.version()))
                         nodeId = node.id();
 
                     retry = client.sendMessage(nodeId, msg);
@@ -1726,6 +1776,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private void onException(String msg, Exception e) {
         getExceptionRegistry().onException(msg, e);
+    }
+
+    /**
+     * @return Use router.
+     */
+    public boolean useRouter() {
+        return connectToRouterOnly;
+    }
+
+    /**
+     * @param useRouter New use router.
+     */
+    public void useRouter(boolean useRouter) {
+        this.connectToRouterOnly = useRouter;
     }
 
     /** {@inheritDoc} */
@@ -2770,6 +2834,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
                 else
                     c = NOOP;
+
+                if (msg instanceof TcpClientMessageWrapper) {
+                    TcpClientMessageWrapper clientMsg = (TcpClientMessageWrapper)msg;
+
+                    if (getLocalNodeId().equals(clientMsg.destination()))
+                        notifyListener(clientMsg.sender(), clientMsg.message(), c);
+                    else {
+                        ClusterNode destNode = getSpiContext().node(clientMsg.destination());
+
+                        if (destNode != null)
+                            sendMessage(destNode, clientMsg);
+                    }
+
+                    return;
+                }
 
                 notifyListener(sndId, msg, c);
             }

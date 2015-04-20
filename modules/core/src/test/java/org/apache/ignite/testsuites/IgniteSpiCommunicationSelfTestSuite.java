@@ -45,6 +45,8 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
 
+        suite.addTest(new TestSuite(ClientTcpCommunicationSelfTest.class));
+
         return suite;
     }
 }
