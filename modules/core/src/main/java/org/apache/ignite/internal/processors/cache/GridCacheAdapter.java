@@ -3675,7 +3675,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy(final CacheOperationContext opCtx) {
         return F.iterator(iterator(),
             new IgniteClosure<Cache.Entry<K, V>, Cache.Entry<K, V>>() {
-                private IgniteCacheExpiryPolicy expiryPlc = ctx.cache().expiryPolicy(opCtx.expiry());
+                private IgniteCacheExpiryPolicy expiryPlc =
+                        ctx.cache().expiryPolicy(opCtx != null ? opCtx.expiry() : null);
 
                 @Override public Cache.Entry<K, V> apply(Cache.Entry<K, V> lazyEntry) {
                     CacheOperationContext prev = ctx.gate().enter(opCtx);
