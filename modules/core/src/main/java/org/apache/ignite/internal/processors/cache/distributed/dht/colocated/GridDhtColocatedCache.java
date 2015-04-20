@@ -362,6 +362,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         GridNearTxLocal txx = (GridNearTxLocal)tx;
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         GridDhtColocatedLockFuture<K, V> fut = new GridDhtColocatedLockFuture<>(ctx,
             keys,
             txx,
@@ -370,7 +372,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             timeout,
             accessTtl,
             CU.empty0(),
-            txx != null && txx.storeEnabled());
+            opCtx != null && opCtx.skipStore());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
