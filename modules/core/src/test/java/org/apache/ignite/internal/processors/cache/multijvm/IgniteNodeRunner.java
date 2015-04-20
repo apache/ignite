@@ -22,6 +22,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.testframework.junits.*;
@@ -34,11 +36,7 @@ import java.util.*;
  */
 public class IgniteNodeRunner {
     /** VM ip finder for TCP discovery. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder(){{
-        setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-    }};
-
-//    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
     public static final char DELIM = ' ';
     
@@ -74,22 +72,22 @@ public class IgniteNodeRunner {
         
         IgniteConfiguration cfg = GridAbstractTest.getConfiguration0(gridName, new IgniteTestResources(),
             GridCachePartitionedMultiJvmFullApiSelfTest.class, isDebug());
-////      ---------------
-//        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-//
+//      ---------------
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
 //        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-//
-//        disco.setIpFinder(ipFinder);
-//
-////        if (isDebug())
-////            disco.setAckTimeout(Integer.MAX_VALUE);
-//
-//        cfg.setDiscoverySpi(disco);
+
+        disco.setIpFinder(ipFinder);
+
+//        if (isDebug())
+//            disco.setAckTimeout(Integer.MAX_VALUE);
+
+        cfg.setDiscoverySpi(disco);
 //
 //        // TODO
 ////        cfg.setCacheConfiguration(cacheConfiguration());
 //
-//        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 ////        ----------------
 ////        if (offHeapValues())
 ////            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
@@ -97,10 +95,12 @@ public class IgniteNodeRunner {
 //        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 //
 ////        ---------------
-////        Special.
-//        cfg.setLocalHost("127.0.0.1");
-//
-//        cfg.setNodeId(nodeId);
+//        Special.
+        cfg.setLocalHost("127.0.0.1");
+
+        cfg.setIncludeProperties();
+
+        cfg.setNodeId(nodeId);
 
         return cfg;
     }

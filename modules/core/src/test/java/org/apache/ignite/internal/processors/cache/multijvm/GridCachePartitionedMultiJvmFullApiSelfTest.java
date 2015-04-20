@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 
 import java.util.*;
 
@@ -58,7 +59,11 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
+        
+        return cfg;
     }
 
     /** {@inheritDoc} */
