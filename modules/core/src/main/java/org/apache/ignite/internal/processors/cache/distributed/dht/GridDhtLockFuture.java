@@ -132,6 +132,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** Need return value flag. */
     private boolean needReturnValue;
 
+    /** Skip store flag. */
+    private final boolean skipStore;
+
     /**
      * @param cctx Cache context.
      * @param nearNodeId Near node ID.
@@ -144,6 +147,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param threadId Thread ID.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
+     * @param skipStore Skip store flag.
      */
     public GridDhtLockFuture(
         GridCacheContext<K, V> cctx,
@@ -157,7 +161,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridDhtTxLocalAdapter tx,
         long threadId,
         long accessTtl,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        boolean skipStore) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
@@ -174,6 +179,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         this.filter = filter;
         this.tx = tx;
         this.accessTtl = accessTtl;
+        this.skipStore = skipStore;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -831,7 +837,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.subjectId() : null,
                         inTx() ? tx.taskNameHash() : 0,
                         read ? accessTtl : -1L,
-                        cctx.skipStore());
+                        skipStore);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext();) {

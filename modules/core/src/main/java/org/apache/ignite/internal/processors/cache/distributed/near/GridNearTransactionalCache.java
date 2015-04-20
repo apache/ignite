@@ -421,6 +421,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         TransactionIsolation isolation,
         long accessTtl
     ) {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
             (GridNearTxLocal)tx,
@@ -428,7 +430,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             retval,
             timeout,
             accessTtl,
-            CU.empty0());
+            CU.empty0(),
+            opCtx != null && opCtx.skipStore());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);
