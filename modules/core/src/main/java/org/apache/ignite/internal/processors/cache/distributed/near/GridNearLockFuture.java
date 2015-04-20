@@ -693,7 +693,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                if (!fut.isCacheTopologyValid(cctx))   {
+                if (!fut.isCacheTopologyValid(cctx)) {
                     onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
                         cctx.name()));
 

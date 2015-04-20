@@ -27,11 +27,17 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Topology validator test
+ * Topology validator test.
  */
 public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
-    /** key-value used at test */
+    /** key-value used at test. */
     protected static String KEY_VALUE = "1";
+
+    /** cache name 1. */
+    protected static String CACHE_NAME_1 = "cache1";
+
+    /** cache name 2. */
+    protected static String CACHE_NAME_2 = "cache2";
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -42,60 +48,133 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(gridName);
 
+        CacheConfiguration cCfg0 = cacheConfiguration(gridName);
+
+        CacheConfiguration cCfg1 = cacheConfiguration(gridName);
+        cCfg1.setName(CACHE_NAME_1);
+
+        CacheConfiguration cCfg2 = cacheConfiguration(gridName);
+        cCfg2.setName(CACHE_NAME_2);
+
+        iCfg.setCacheConfiguration(cCfg0, cCfg1, cCfg2);
+
         for (CacheConfiguration cCfg : iCfg.getCacheConfiguration()) {
-            cCfg.setTopologyValidator(new TopologyValidator() {
-                @Override public boolean validate(Collection<ClusterNode> nodes) {
-                    return nodes.size() >= 2;
-                }
-            });
+            if (cCfg.getName() != null)
+                if (cCfg.getName().equals(CACHE_NAME_1))
+                    cCfg.setTopologyValidator(new TopologyValidator() {
+                        @Override public boolean validate(Collection<ClusterNode> nodes) {
+                            return nodes.size() == 2;
+                        }
+                    });
+                else if (cCfg.getName().equals(CACHE_NAME_2))
+                    cCfg.setTopologyValidator(new TopologyValidator() {
+                        @Override public boolean validate(Collection<ClusterNode> nodes) {
+                            return nodes.size() >= 2;
+                        }
+                    });
         }
 
         return iCfg;
     }
 
     /**
-     * Puts before topology is valid.
+     * Puts when topology is invalid.
+     *
+     * @param cacheName cache name.
      */
-    protected void putBefore(Transaction tx) {
+    protected void putInvalid(String cacheName) {
         try {
-            jcache().put(KEY_VALUE, KEY_VALUE);
+            assert grid(0).cache(cacheName).get(KEY_VALUE) == null;
 
-            if (tx != null)
-                tx.commit();
+            grid(0).cache(cacheName).put(KEY_VALUE, KEY_VALUE);
 
             assert false : "topology validation broken";
         }
         catch (IgniteException | CacheException ex) {
-            assert ex.getCause() instanceof IgniteCheckedException && ex.getCause().getMessage().contains("cache topology is not valid");
+            assert ex.getCause() instanceof IgniteCheckedException &&
+                ex.getCause().getMessage().contains("cache topology is not valid");
         }
     }
 
     /**
      * Puts when topology is valid.
+     *
+     * @param cacheName cache name.
      */
-    protected void putAfter(Transaction tx) {
+    protected void putValid(String cacheName) {
         try {
-            assert jcache().get(KEY_VALUE) == null;
+            assert grid(0).cache(cacheName).get(KEY_VALUE) == null;
 
-            jcache().put(KEY_VALUE, KEY_VALUE);
+            grid(0).cache(cacheName).put(KEY_VALUE, KEY_VALUE);
 
-            if (tx != null)
-                tx.commit();
-
-            assert jcache().get(KEY_VALUE).equals(KEY_VALUE);
+            assert grid(0).cache(cacheName).get(KEY_VALUE).equals(KEY_VALUE);
         }
         catch (IgniteException | CacheException ex) {
             assert false : "topology validation broken";
         }
     }
 
-    /** topology validator test */
+    /**
+     * Commits with error.
+     * @param tx transaction.
+     */
+    protected void commitFailed(Transaction tx) {
+        try {
+            tx.commit();
+        }
+        catch (IgniteException | CacheException ex) {
+            assert ex.getCause() instanceof IgniteCheckedException &&
+                ex.getCause().getMessage().contains("cache topology is not valid");
+        }
+    }
+
+    /**
+     * Removes key-value
+     *
+     * @param cacheName cache name.
+     */
+    public void remove(String cacheName) {
+        grid(0).cache(cacheName).remove(KEY_VALUE);
+    }
+
+    /**
+     * Asserts that cache doesn't contains key.
+     *
+     * @param cacheName
+     */
+    public void assertEmpty(String cacheName) {
+        assert grid(0).cache(cacheName).get(KEY_VALUE) == null;
+    }
+
+    /** topology validator test. */
     public void testTopologyValidator() throws Exception {
 
-        putBefore(null);
+        putValid(null);
+        remove(null);
+
+        putInvalid(CACHE_NAME_1);
+
+        putInvalid(CACHE_NAME_2);
 
         startGrid(1);
 
-        putAfter(null);
+        putValid(null);
+        remove(null);
+
+        putValid(CACHE_NAME_1);
+        remove(CACHE_NAME_1);
+
+        putValid(CACHE_NAME_2);
+        remove(CACHE_NAME_2);
+
+        startGrid(2);
+
+        putValid(null);
+        remove(null);
+
+        putInvalid(CACHE_NAME_1);
+
+        putValid(CACHE_NAME_2);
+        remove(CACHE_NAME_2);
     }
 }
