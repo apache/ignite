@@ -286,6 +286,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final ExpiryPolicy expiryPlc = skipVals ? null : prj != null ? prj.expiry() : null;
 
+        final boolean skipStore = prj != null && prj.skipStore();
+
         return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
             @Override public IgniteInternalFuture<Map<K, V>> apply() {
                 return getAllAsync0(ctx.cacheKeysView(keys),
@@ -296,7 +298,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     deserializePortable,
                     expiryPlc,
                     skipVals,
-                    prj != null && prj.skipStore());
+                    skipStore);
             }
         });
     }
