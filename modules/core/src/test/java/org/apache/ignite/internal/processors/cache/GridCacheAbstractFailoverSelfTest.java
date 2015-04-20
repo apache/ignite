@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -29,6 +31,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
@@ -167,12 +170,14 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         final int half = ENTRY_CNT / 2;
 
+        final AtomicReference<Exception> err = new AtomicReference<>();
+
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 info("Run topology change.");
 
                 try {
-                    for (int i = 0; i < TOP_CHANGE_CNT; i++) {
+                    for (int i = 0; i < TOP_CHANGE_CNT && err.get() == null; i++) {
                         info("Topology change " + i);
 
                         String name = UUID.randomUUID().toString();
@@ -180,8 +185,15 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                         try {
                             final Ignite g = startGrid(name);
 
-                            for (int k = half; k < ENTRY_CNT; k++)
-                                assertNotNull("Failed to get key: 'key" + k + "'", cache(g).get("key" + k));
+                            IgniteCache<String, Object> cache = g.<String, Object>cache(null).withAsync();
+
+                            for (int k = half; k < ENTRY_CNT; k++) {
+                                String key = "key" + k;
+
+                                cache.get(key);
+
+                                assertNotNull("Failed to get key: 'key" + k + "'", cache.future().get(30_000));
+                            }
                         }
                         finally {
                             G.stop(name, false);
@@ -189,9 +201,9 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                     }
                 }
                 catch (Exception e) {
-                    log.error("Unexpected exception in topology-change-thread: " + e, e);
+                    err.set(e);
 
-                    throw F.wrap(e);
+                    log.error("Unexpected exception in topology-change-thread: " + e, e);
                 }
             }
         }, TOP_CHANGE_THREAD_CNT, "topology-change-thread");
@@ -209,12 +221,19 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             }
         }
         catch (Exception e) {
+            err.set(e);
+
             log.error("Unexpected exception: " + e, e);
 
             throw e;
         }
 
         fut.get();
+
+        Exception err0 = err.get();
+
+        if (err0 != null)
+            throw err0;
     }
 
     /**
@@ -228,8 +247,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 cache.put("key" + i, i);
         }
         catch (CacheException e) {
-            // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class) && !(e instanceof CachePartialUpdateException))
                 throw e;
         }
     }
@@ -279,8 +297,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 cache.remove("key" + i);
         }
         catch (CacheException e) {
-            // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class) && !(e instanceof CachePartialUpdateException))
                 throw e;
         }
     }
@@ -317,8 +334,15 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @param cache Cache.
      * @param expSize Minimum expected cache size.
+     * @throws Exception If failed.
      */
-    private void check(IgniteCache<String,Integer> cache, int expSize) {
+    private void check(final IgniteCache<String, Integer> cache, final int expSize) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache.size() >= expSize;
+            }
+        }, 5000);
+
         int size = cache.size();
 
         assertTrue("Key set size is lesser then the expected size [size=" + size + ", expSize=" + expSize + ']',

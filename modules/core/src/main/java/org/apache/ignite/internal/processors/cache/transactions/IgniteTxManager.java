@@ -98,10 +98,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final GridBoundedConcurrentOrderedMap<GridCacheVersion, Boolean> completedVers =
         new GridBoundedConcurrentOrderedMap<>(Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
-    /** Transaction synchronizations. */
-    private final Collection<TransactionSynchronization> syncs =
-        new GridConcurrentHashSet<>();
-
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
 
@@ -566,8 +562,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             return false;
         }
-
-        onTxStateChange(null, ACTIVE, tx);
 
         if (log.isDebugEnabled())
             log.debug("Transaction started: " + tx);
@@ -1705,44 +1699,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 }
             }
         }
-    }
-
-    /**
-     * @param sync Transaction synchronizations to add.
-     */
-    public void addSynchronizations(TransactionSynchronization... sync) {
-        if (F.isEmpty(sync))
-            return;
-
-        F.copy(syncs, sync);
-    }
-
-    /**
-     * @param sync Transaction synchronizations to remove.
-     */
-    public void removeSynchronizations(TransactionSynchronization... sync) {
-        if (F.isEmpty(sync))
-            return;
-
-        F.lose(syncs, false, Arrays.asList(sync));
-    }
-
-    /**
-     * @return Registered transaction synchronizations
-     */
-    public Collection<TransactionSynchronization> synchronizations() {
-        return Collections.unmodifiableList(new LinkedList<>(syncs));
-    }
-
-    /**
-     * @param prevState Previous state.
-     * @param newState New state.
-     * @param tx Cache transaction.
-     */
-    public void onTxStateChange(@Nullable TransactionState prevState, TransactionState newState, IgniteInternalTx tx) {
-        // Notify synchronizations.
-        for (TransactionSynchronization s : syncs)
-            s.onStateChanged(prevState, newState, tx.proxy());
     }
 
     /**

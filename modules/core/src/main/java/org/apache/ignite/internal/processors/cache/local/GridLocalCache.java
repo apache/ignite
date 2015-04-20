@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -110,17 +111,15 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
-        long accessTtl,
-        CacheEntryPredicate[] filter) {
-        return lockAllAsync(keys, timeout, tx, filter);
+        long accessTtl) {
+        return lockAllAsync(keys, timeout, tx, CU.empty0());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        CacheEntryPredicate[] filter) {
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout) {
         IgniteTxLocalEx tx = ctx.tm().localTx();
 
-        return lockAllAsync(ctx.cacheKeysView(keys), timeout, tx, filter);
+        return lockAllAsync(ctx.cacheKeysView(keys), timeout, tx, CU.empty0());
     }
 
     /**
@@ -185,15 +184,14 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void unlockAll(
-        Collection<? extends K> keys,
-        CacheEntryPredicate[] filter
+        Collection<? extends K> keys
     ) throws IgniteCheckedException {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {
             GridLocalCacheEntry entry = peekExx(ctx.toCacheKeyObject(key));
 
-            if (entry != null && ctx.isAll(entry, filter)) {
+            if (entry != null && ctx.isAll(entry, CU.empty0())) {
                 entry.releaseLocal();
 
                 ctx.evicts().touch(entry, topVer);

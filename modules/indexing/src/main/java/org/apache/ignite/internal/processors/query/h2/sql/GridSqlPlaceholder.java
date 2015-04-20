@@ -15,13 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.*;
+package org.apache.ignite.internal.processors.query.h2.sql;
 
 /**
- * Cache proxy marker interface.
+ * Placeholder.
  */
-public interface GridCacheProxy<K, V> extends GridCache<K, V>, GridCacheProjectionEx<K, V> {
-    // No-op.
+public class GridSqlPlaceholder extends GridSqlElement {
+    /** */
+    public static final GridSqlPlaceholder EMPTY = new GridSqlPlaceholder("");
+
+    /** */
+    private final String sql;
+
+    /**
+     * @param sql SQL.
+     */
+    public GridSqlPlaceholder(String sql) {
+        this.sql = sql;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSQL() {
+        return sql;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSqlElement addChild(GridSqlElement expr) {
+        throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSqlElement child(int idx) {
+        throw new IllegalStateException();
+    }
 }

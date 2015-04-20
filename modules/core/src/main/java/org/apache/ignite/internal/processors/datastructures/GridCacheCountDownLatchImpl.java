@@ -61,7 +61,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     private GridCacheInternalKey key;
 
     /** Latch projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -107,7 +107,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         int initCnt,
         boolean autoDel,
         GridCacheInternalKey key,
-        CacheProjection<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView,
+        IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView,
         GridCacheContext ctx)
     {
         assert name != null;
@@ -382,7 +382,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
                 latchVal.set(retVal);
 
-                latchView.putx(key, latchVal);
+                latchView.put(key, latchVal);
 
                 tx.commit();
 

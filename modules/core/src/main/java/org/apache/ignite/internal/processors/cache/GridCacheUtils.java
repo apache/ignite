@@ -393,34 +393,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets closure which returns {@code Entry} given cache key.
-     * If current cache is DHT and key doesn't belong to current partition,
-     * {@code null} is returned.
-     *
-     * @param ctx Cache context.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
-     */
-    public static <K, V> IgniteClosure<K, Cache.Entry<K, V>> cacheKey2Entry(
-        final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, Cache.Entry<K, V>>() {
-            @Nullable @Override public Cache.Entry<K, V> apply(K k) {
-                try {
-                    return ctx.cache().entry(k);
-                }
-                catch (GridDhtInvalidPartitionException ignored) {
-                    return null;
-                }
-            }
-
-            @Override public String toString() {
-                return "Key-to-entry transformer.";
-            }
-        };
-    }
-
-    /**
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})
@@ -1187,7 +1159,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
         TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1623,8 +1595,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(CacheProjection<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);

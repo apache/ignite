@@ -1168,7 +1168,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rdcQryExec.start(ctx, this);
         }
 
-//        registerMBean(gridName, this, GridH2IndexingSpiMBean.class); TODO
+        // TODO https://issues.apache.org/jira/browse/IGNITE-751
+        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**
@@ -1926,9 +1927,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            GridCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
+            IgniteInternalCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
-            GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+            GridCacheContext cctx = cache.context();
 
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();

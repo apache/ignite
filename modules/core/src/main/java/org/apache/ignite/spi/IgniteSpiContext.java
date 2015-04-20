@@ -351,4 +351,10 @@ public interface IgniteSpiContext {
      * @return {@code True} if node started shutdown sequence.
      */
     public boolean isStopping();
+
+    /**
+     * @param nodeId Node ID.
+     * @return If node was failed.
+     */
+    public boolean tryFailNode(UUID nodeId);
 }

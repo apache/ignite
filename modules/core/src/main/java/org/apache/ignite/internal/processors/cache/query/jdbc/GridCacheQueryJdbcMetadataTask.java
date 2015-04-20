@@ -103,11 +103,11 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
             byte[] data;
 
             try {
-                GridCache<?, ?> cache = ((IgniteEx) ignite).cachex(cacheName);
+                IgniteInternalCache<?, ?> cache = ((IgniteEx) ignite).cachex(cacheName);
 
                 assert cache != null;
 
-                Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
+                Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
                 Map<String, Map<String, Map<String, String>>> schemasMap = U.newHashMap(metas.size());
 

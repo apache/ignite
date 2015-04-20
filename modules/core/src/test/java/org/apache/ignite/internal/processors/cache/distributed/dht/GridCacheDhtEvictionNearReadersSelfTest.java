@@ -228,7 +228,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         String val = "v1";
 
         // Put on primary node.
-        nearPrimary.put(key, val);
+        nearPrimary.getAndPut(key, val);
 
         GridDhtCacheEntry entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
         GridDhtCacheEntry entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);

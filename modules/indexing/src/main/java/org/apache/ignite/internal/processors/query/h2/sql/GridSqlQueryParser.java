@@ -522,10 +522,10 @@ public class GridSqlQueryParser {
                         if (f.getFunctionType() != Function.CASE)
                             throw new IllegalStateException("Function type with null arg: " + f.getFunctionType());
 
-                        continue;
+                        res.addChild(GridSqlPlaceholder.EMPTY);
                     }
-
-                    res.addChild(parseExpression(arg));
+                    else
+                        res.addChild(parseExpression(arg));
                 }
             }
 

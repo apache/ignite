@@ -126,9 +126,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
@@ -137,7 +137,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : prj != null ? prj.expiry() : null,
+            skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals);
     }
 
@@ -413,8 +413,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter
+        long accessTtl
     ) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
@@ -423,7 +422,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.empty0());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);
@@ -465,7 +464,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -484,7 +483,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                     GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                    if (entry == null || !ctx.isAll(entry, filter))
+                    if (entry == null)
                         break; // While.
 
                     try {
