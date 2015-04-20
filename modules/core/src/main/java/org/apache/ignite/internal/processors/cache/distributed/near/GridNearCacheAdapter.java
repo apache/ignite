@@ -197,7 +197,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             taskName,
             true,
             null,
-            skipVals);
+            skipVals,
+            /*skip store*/false);
     }
 
     /** {@inheritDoc} */
@@ -226,6 +227,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipStore Skip store flag.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
@@ -236,7 +238,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         String taskName,
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
-        boolean skipVal
+        boolean skipVal,
+        boolean skipStore
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -247,7 +250,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
-            !ctx.skipStore(),
+            !skipStore,
             reload,
             forcePrimary,
             txx,

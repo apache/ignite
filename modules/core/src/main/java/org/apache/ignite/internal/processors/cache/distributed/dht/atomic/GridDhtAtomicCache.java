@@ -295,7 +295,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     taskName,
                     deserializePortable,
                     expiryPlc,
-                    skipVals);
+                    skipVals,
+                    prj != null && prj.skipStore());
             }
         });
     }
@@ -890,6 +891,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param skipStore Skip store flag.
      * @return Get future.
      */
     private IgniteInternalFuture<Map<K, V>> getAllAsync0(@Nullable Collection<KeyCacheObject> keys,
@@ -899,7 +901,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
-        boolean skipVals) {
+        boolean skipVals,
+        boolean skipStore) {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
@@ -993,7 +996,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
             keys,
             topVer,
-            !ctx.skipStore(),
+            !skipStore,
             reload,
             forcePrimary,
             subjId,

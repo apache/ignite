@@ -384,7 +384,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             taskName,
             deserializePortable,
             skipVals ? null : prj != null ? prj.expiry() : null,
-            skipVals);
+            skipVals,
+            prj != null && prj.skipStore());
     }
 
     /** {@inheritDoc} */

@@ -528,8 +528,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean deserializePortable,
         boolean skipVals
     ) {
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
         return getAllAsync(keys,
-            true,
+            prj == null || !prj.skipStore(),
             null,
             /*don't check local tx. */false,
             subjId,

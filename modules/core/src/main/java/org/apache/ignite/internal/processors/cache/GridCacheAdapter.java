@@ -1315,8 +1315,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public V getForcePrimary(K key) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null, taskName, true, false)
-            .get().get(key);
+        return getAllAsync(F.asList(key), /*force primary*/true, /*skip tx*/false, null, null, taskName, true,
+            false).get().get(key);
     }
 
     /** {@inheritDoc} */
@@ -1705,7 +1705,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return getAllAsync(keys,
-                true,
+                prj == null || !prj.skipStore(),
                 entry,
                 !skipTx,
                 subjId,

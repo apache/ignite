@@ -1455,7 +1455,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             },
             loadMissing(
                 cacheCtx,
-                true,
+                !cacheCtx.skipStore(),
                 false,
                 missedMap.keySet(),
                 deserializePortable,
@@ -2275,7 +2275,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (missedForLoad != null) {
             IgniteInternalFuture<Boolean> fut = loadMissing(
                 cacheCtx,
-                /*read through*/cacheCtx.config().isLoadPreviousValue(),
+                /*read through*/cacheCtx.config().isLoadPreviousValue() && !cacheCtx.skipStore(),
                 /*async*/true,
                 missedForLoad,
                 deserializePortables(cacheCtx),

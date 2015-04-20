@@ -186,7 +186,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         return loadAsync(
             ctx.cacheKeysView(keys),
-            true,
+            prj == null || !prj.skipStore(),
             false,
             forcePrimary,
             topVer,
