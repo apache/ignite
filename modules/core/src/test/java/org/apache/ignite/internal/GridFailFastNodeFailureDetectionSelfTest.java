@@ -54,6 +54,11 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
