@@ -32,17 +32,29 @@ import static java.lang.Math.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
- * Cache eviction policy which will select the minimum cache entry for eviction if cache
- * size exceeds the {@link #getMaxSize()} parameter. Entries comparison based on {@link Comparator} instance if provided.
+ * Cache eviction policy which will select the minimum cache entry for eviction.
+ * <p>
+ * The eviction starts when the cache size becomes {@code batchSize} elements greater than the maximum size.
+ * {@code batchSize} elements will be evicted in this case. The default {@code batchSize} value is {@code 1}.
+ * <p>
+ * Entries comparison based on {@link Comparator} instance if provided.
  * Default {@code Comparator} behaviour is use cache entries keys for comparison that imposes a requirement for keys
  * to implement {@link Comparable} interface.
+ * <p>
+ * User defined comparator should implement {@link Serializable} interface.
  */
-public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedEvictionPolicyMBean, Serializable {
+public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedEvictionPolicyMBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Maximum size. */
     private volatile int max;
+
+    /** Batch size. */
+    private volatile int batchSize = 1;
+
+    /** Comparator. */
+    private Comparator<Holder<K, V>> comp;
 
     /** Order. */
     private final AtomicLong orderCnt = new AtomicLong();
@@ -67,26 +79,30 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
     }
 
     /**
-     * Constructs sorted eviction policy with default maximum size and given entry comparator.
-     *
-     * @param comp Entries comparator.
-     */
-    public SortedEvictionPolicy(Comparator<EvictableEntry<K, V>> comp) {
-        this(DFLT_CACHE_SIZE, comp);
-    }
-
-    /**
-     * Constructs sorted eviction policy with given maximum size and entries comparator.
+     * Constructs sorted eviction policy with given maximum size and given entry comparator.
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
      * @param comp Entries comparator.
      */
-    public SortedEvictionPolicy(int max, Comparator<EvictableEntry<K, V>> comp) {
+    public SortedEvictionPolicy(int max, @Nullable Comparator<EvictableEntry<K, V>> comp) {
+        this(max, 1, comp);
+    }
+
+    /**
+     * Constructs sorted eviction policy with given maximum size, eviction batch size and entries comparator.
+     *
+     * @param max Maximum allowed size of cache before entry will start getting evicted.
+     * @param batchSize Batch size.
+     * @param comp Entries comparator.
+     */
+    public SortedEvictionPolicy(int max, int batchSize, @Nullable Comparator<EvictableEntry<K, V>> comp) {
         A.ensure(max > 0, "max > 0");
+        A.ensure(batchSize > 0, "batchSize > 0");
 
         this.max = max;
-        this.set = new GridConcurrentSkipListSetEx<>(
-            comp == null ? new DefaultHolderComparator<K, V>() : new HolderComparator<>(comp));
+        this.batchSize = batchSize;
+        this.comp = comp == null ? new DefaultHolderComparator<K, V>() : new HolderComparator<>(comp);
+        this.set = new GridConcurrentSkipListSetEx<>(this.comp);
     }
 
     /**
@@ -107,6 +123,18 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
         A.ensure(max > 0, "max > 0");
 
         this.max = max;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getBatchSize() {
+        return batchSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBatchSize(int batchSize) {
+        A.ensure(batchSize > 0, "batchSize > 0");
+
+        this.batchSize = batchSize;
     }
 
     /** {@inheritDoc} */
@@ -192,9 +220,11 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
     private void shrink() {
         int max = this.max;
 
+        int batchSize = this.batchSize;
+
         int startSize = set.sizex();
 
-        if (startSize > max) {
+        if (startSize >= max + batchSize) {
             for (int i = max; i < startSize && set.sizex() > max; i++) {
                 Holder<K, V> h = set.pollFirst();
 
@@ -207,6 +237,21 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
                     touch(entry);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(max);
+        out.writeInt(batchSize);
+        out.writeObject(comp);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        max = in.readInt();
+        batchSize = in.readInt();
+        comp = (Comparator<Holder<K, V>>)in.readObject();
     }
 
     /**

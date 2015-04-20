@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Sorted eviction test.
  */
-public class GridSortedEvictionPolicySelfTest extends
+public class GridCacheSortedEvictionPolicySelfTest extends
     GridCacheEvictionAbstractTest<SortedEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
