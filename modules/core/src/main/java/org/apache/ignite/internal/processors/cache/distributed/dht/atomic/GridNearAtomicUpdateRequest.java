@@ -284,7 +284,9 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Skip write-through to a persistent storage.
      */
-    public boolean skipStore() {return skipStore;}
+    public boolean skipStore() {
+        return skipStore;
+    }
 
     /**
      * @param key Key to add.

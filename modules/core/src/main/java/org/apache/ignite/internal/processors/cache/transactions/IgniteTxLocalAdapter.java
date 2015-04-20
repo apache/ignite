@@ -1708,9 +1708,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             deserializePortable,
                                             false);
                                     }
-                                    else if (txEntry.skipStore()) {
+                                    else if (txEntry.skipStore())
                                         missed.remove(cacheKey);
-                                    }
 
                                     // Even though we bring the value back from lock acquisition,
                                     // we still need to recheck primary node for consistent values

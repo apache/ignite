@@ -32,6 +32,8 @@ import org.jetbrains.annotations.*;
 import java.nio.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+
 /**
  * Lock request message.
  */
@@ -233,14 +235,15 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param skipStore Skip store flag.
      */
     private void skipStore(boolean skipStore){
-        flags = skipStore ? (byte)(flags | GridCacheUtils.SKIP_STORE_FLAG_MASK) :
-                    (byte)(flags & ~GridCacheUtils.SKIP_STORE_FLAG_MASK);
+        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
-    public boolean skipStore() { return (flags & GridCacheUtils.SKIP_STORE_FLAG_MASK) == 1; };
+    public boolean skipStore() {
+        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+    }
 
     /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.

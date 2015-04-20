@@ -258,6 +258,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /**
          * @param cacheName Cache name.
          * @param topVer Topology version.
+         * @param skipStore Skip store flag.
          */
         private GlobalRemoveAllCallable(String cacheName, @NotNull AffinityTopologyVersion topVer, boolean skipStore) {
             this.cacheName = cacheName;

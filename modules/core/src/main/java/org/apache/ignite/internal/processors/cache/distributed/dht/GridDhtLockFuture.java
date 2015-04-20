@@ -963,10 +963,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
-                IgniteTxEntry txEntry = tx != null ? tx.entry(entry.txKey()) : null;
+                if (!entry.hasValue()) {
+                    IgniteTxEntry txEntry = tx != null ? tx.entry(entry.txKey()) : null;
 
-                if (!entry.hasValue() && (txEntry == null || !txEntry.skipStore()))
-                    loadMap.put(entry.key(), entry);
+                    if (txEntry == null || !txEntry.skipStore())
+                        loadMap.put(entry.key(), entry);
+                }
             }
 
             try {
