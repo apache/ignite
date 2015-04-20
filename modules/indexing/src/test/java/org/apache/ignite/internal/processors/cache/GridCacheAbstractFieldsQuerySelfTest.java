@@ -182,7 +182,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         try {
             Collection<GridCacheSqlMetadata> metas =
-                ((IgniteKernal)grid(0)).getCache(null).queries().sqlMetadata();
+                ((IgniteKernal)grid(0)).getCache(null).context().queries().sqlMetadata();
 
             assert metas != null;
             assertEquals("Invalid meta: " + metas, 3, metas.size());
@@ -269,8 +269,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecute() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select _KEY, name, age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
+            "select _KEY, name, age from Person", false);
 
         CacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -319,8 +319,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecuteWithArguments() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select _KEY, name, age from Person where age > ?");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
+            "select _KEY, name, age from Person where age > ?", false);
 
         CacheQueryFuture<List<?>> fut = qry.execute(30);
 
@@ -364,10 +364,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecuteWithMetaData() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
             "select p._KEY, p.name, p.age, o.name " +
                 "from Person p, Organization o where p.orgId = o.id",
-            true);
+            true, false);
 
         CacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -465,9 +465,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testSelectAllJoined() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
             "select * from Person p, Organization o where p.orgId = o.id",
-            true);
+            true, false);
 
         CacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -630,8 +630,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testEmptyResult() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select name from Person where age = 0", true);
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
+            "select name from Person where age = 0", true, false);
 
         CacheQueryFuture<List<?>> fut = qry.execute();
 
@@ -658,7 +658,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select * from String");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+            createSqlFieldsQuery("select * from String", false);
 
         Collection<List<?>> res = qry.execute().get();
 
@@ -675,8 +676,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testQueryIntegersWithJoin() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100", true)
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
+            "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100", true, false)
             .projection(grid(0).cluster());
 
         CacheQueryFuture<List<?>> fut = qry.execute();
@@ -743,7 +744,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testPagination() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select * from Integer");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+                createSqlFieldsQuery("select * from Integer", false);
 
         qry.pageSize(20);
 
@@ -786,13 +788,13 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         cache.getAndPut("key", "val");
 
-        Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
         assertEquals(1, metas.size());
 
         assert F.first(metas).types().isEmpty() : "Non empty types: " + F.first(metas).types();
 
-        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from String");
+        CacheQuery<List<?>> qry = cache.context().queries().createSqlFieldsQuery("select * from String", false);
 
         assert qry.execute().get().isEmpty();
 
@@ -813,7 +815,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         cache.getAndPut(key, val);
 
-        Collection<GridCacheSqlMetadata> metas = cache.queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
         assertEquals(1, metas.size());
 
@@ -864,7 +866,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             cnt++;
         }
 
-        Collection<List<?>> res = cache.queries().createSqlFieldsQuery("select * from Person").execute().get();
+        Collection<List<?>> res = cache.context().queries().
+            createSqlFieldsQuery("select * from Person", false).execute().get();
 
         assertEquals(1, res.size());
 
@@ -907,8 +910,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
-        CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
-            "Integer")
+        CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(cacheName).context().queries().
+            createSqlFieldsQuery("select _key, _val from " + "Integer", false)
             .projection(grid(0).cluster());
 
         q.pageSize(10);
@@ -940,8 +943,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testPaginationIteratorKeepAll() throws Exception {
-        CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select _key, _val from Integer");
+        CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+            createSqlFieldsQuery("select _key, _val from Integer", false);
 
         q.pageSize(10);
         q.keepAll(true);
@@ -999,8 +1002,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void testPaginationGet(@Nullable String cacheName) throws Exception {
-        CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
-            "Integer");
+        CacheQuery<List<?>> q = ((IgniteKernal)grid(0)).getCache(cacheName).context().queries().
+            createSqlFieldsQuery("select _key, _val from " + "Integer", false);
 
         q.pageSize(10);
         q.keepAll(true);

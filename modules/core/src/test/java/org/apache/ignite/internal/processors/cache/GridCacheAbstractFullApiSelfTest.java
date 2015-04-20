@@ -3407,7 +3407,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Collection<String> locKeys = new HashSet<>();
 
-        if (cache.affinityNode()) {
+        if (cache.context().affinityNode()) {
             locKeys.addAll(cache.primaryKeySet());
 
             info("Local keys (primary): " + locKeys);
