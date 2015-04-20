@@ -98,5 +98,10 @@
                 <exclude>src/test/**</exclude>
             </excludes>
         </fileSet>
+
+        <fileSet>
+            <directory>assembly/libs</directory>
+            <outputDirectory>/libs</outputDirectory>
+        </fileSet>
     </fileSets>
 </assembly>

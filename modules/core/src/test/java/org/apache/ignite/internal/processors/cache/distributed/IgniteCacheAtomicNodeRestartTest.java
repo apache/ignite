@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  *
  */
-public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
+public class IgniteCacheAtomicNodeRestartTest extends GridCachePartitionedNodeRestartTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testRemove() throws IgniteCheckedException {
-        jcache().put("key", 1);
-
-        assert jcache().remove("key", 1);
-        assert !jcache().remove("key", 1);
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

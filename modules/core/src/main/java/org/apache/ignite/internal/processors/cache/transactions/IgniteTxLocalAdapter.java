@@ -1614,9 +1614,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             final Map<KeyCacheObject, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
 
-            GridCacheProjectionImpl prj = cacheCtx.projectionPerCall();
+            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-            ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+            ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
 
             final Collection<KeyCacheObject> lockKeys = enlistRead(cacheCtx,
                 keys,
@@ -1646,8 +1646,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     true,
                     isolation,
                     isInvalidate(),
-                    accessTtl,
-                    CU.empty0());
+                    accessTtl);
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
                     @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
@@ -2587,13 +2586,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
-            GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
+            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
             final IgniteInternalFuture<Set<KeyCacheObject>> loadFut = enlistWrite(
                 cacheCtx,
                 keySet,
                 cached,
-                prj != null ? prj.expiry() : null,
+                opCtx != null ? opCtx.expiry() : null,
                 implicit,
                 map0,
                 invokeMap0,
@@ -2622,8 +2621,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     retval,
                     isolation,
                     isInvalidate(),
-                    -1L,
-                    CU.empty0());
+                    -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(GridCacheReturn ret)
@@ -2799,9 +2797,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             ExpiryPolicy plc;
 
             if (!F.isEmpty(filter)) {
-                GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
+                CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-                plc = prj != null ? prj.expiry() : null;
+                plc = opCtx != null ? opCtx.expiry() : null;
             }
             else
                 plc = null;
@@ -2844,8 +2842,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     retval,
                     isolation,
                     isInvalidate(),
-                    -1L,
-                    CU.empty0());
+                    -1L);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override protected GridCacheReturn postLock(GridCacheReturn ret)
@@ -2945,9 +2942,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @return {@code True} if portables should be deserialized, {@code false} otherwise.
      */
     private boolean deserializePortables(GridCacheContext cacheCtx) {
-        GridCacheProjectionImpl prj = cacheCtx.projectionPerCall();
+        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-        return prj == null || prj.deserializePortables();
+        return opCtx == null || !opCtx.isKeepPortable();
     }
 
     /**
@@ -3041,8 +3038,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     false,
                     isolation,
                     isInvalidate(),
-                    -1L,
-                    CU.empty0()) :
+                    -1L) :
                 new GridFinishedFuture<>();
         }
         catch (IgniteCheckedException e) {

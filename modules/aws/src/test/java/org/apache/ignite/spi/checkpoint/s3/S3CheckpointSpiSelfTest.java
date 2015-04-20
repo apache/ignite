@@ -48,7 +48,7 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
 
         spi.setAwsCredentials(cred);
 
-        spi.setBucketNameSuffix("test");
+        spi.setBucketNameSuffix("test-bucket");
 
         super.spiConfigure(spi);
     }

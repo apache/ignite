@@ -6,7 +6,7 @@ Without LGPL dependencies (default):
 With LGPL dependencies:
   mvn clean package -DskipTests -Prelease,lgpl
 
-Look for incubator-ignite-<version>-bin.zip in ./target directory.
+Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
@@ -17,9 +17,58 @@ mvn clean package -DskipTests -Dignite.edition=hadoop [-Dhadoop.version=X.X.X]
 
 Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
 
-Look for incubator-ignite-<version>-bin.zip in ./target directory.
+Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
+
+
+Ignite Release Instructions
+===========================
+Use people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
+Execute these commands at source root:
+
+gpg --list-sigs <keyname> >> KEYS
+gpg --armor --export <keyname> >> KEYS
+
+Specify gpg profile at settings.xml. It will be used to sign sources and artifacts.
+
+<profile>
+   <id>gpg</id>
+   <properties>
+      <gpg.keyname>keyname</gpg.keyname>
+      <gpg.passphrase>passphrase</gpg.passphrase>
+   </properties>
+</profile>
+
+Configure access to people.apache.org/~<username>. It necessary to upload sources to site.
+See https://blogs.apache.org/infra/entry/committer_shell_access_to_people for details.
+Specify ignite-site server at settings.xml.
+
+<server>
+   <id>ignite-site</id>
+   <username>username</username>
+   <privateKey>/home/username.ppk</privateKey>
+   <passphrase>passphrase</passphrase>
+</server>
+
+Ensure you have RELEASE (not SNAPSHOT) version at Ignite poms.
+Maven release plugin release:prepare goal can be used to make release tag.
+
+Deploy Ignite release to maven repository and site:
+
+mvn deploy -P apache-release,gpg,release,scala,lgpl,deploy-ignite-site -Dignite.edition=fabric -DskipTests -Dignite.site=scp://people.apache.org:/home/<username>/public_html -B
+
+You might need to allow connection to people.apache.org. Just do following at console:
+
+ssh people.apache.org
+
+and type "yes" + enter.
+
+In case you want to release both fabric and hadoop editions you have to build hadoop first, save /target/bin/*.zip, make "mvn clean" and
+restore them before deploy step.
+
+Start vote based on people.apache.org/~<username>/ignite-version.
+Close nexus staging when version accepted.
 
 
 JCache TCK compliance

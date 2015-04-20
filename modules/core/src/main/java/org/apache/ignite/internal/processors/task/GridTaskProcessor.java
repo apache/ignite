@@ -83,7 +83,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** Internal metadata cache. */
-    private volatile GridCache<GridTaskNameHashKey, String> tasksMetaCache;
+    private volatile IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache;
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -198,7 +198,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /**
      * @return Task metadata cache.
      */
-    private GridCache<GridTaskNameHashKey, String> taskMetaCache() {
+    private IgniteInternalCache<GridTaskNameHashKey, String> taskMetaCache() {
         assert ctx.security().enabled();
 
         if (tasksMetaCache == null)
@@ -708,12 +708,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         GridTaskNameHashKey key = new GridTaskNameHashKey(nameHash);
 
-        GridCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
+        IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
 
         String existingName = tasksMetaCache.get(key);
 
         if (existingName == null)
-            existingName = tasksMetaCache.putIfAbsent(key, taskName);
+            existingName = tasksMetaCache.getAndPutIfAbsent(key, taskName);
 
         if (existingName != null && !F.eq(existingName, taskName))
             throw new IgniteCheckedException("Task name hash collision for security-enabled node " +

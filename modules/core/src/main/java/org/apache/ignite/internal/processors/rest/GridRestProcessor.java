@@ -245,7 +245,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
         if (isRestEnabled()) {
             // Register handlers.
             addHandler(new GridCacheCommandHandler(ctx));
-            addHandler(new GridCacheQueryCommandHandler(ctx));
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
@@ -526,14 +525,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_GET_ALL:
                 perm = SecurityPermission.CACHE_READ;
                 name = ((GridRestCacheRequest)req).cacheName();
-
-                break;
-
-            case CACHE_QUERY_EXECUTE:
-            case CACHE_QUERY_FETCH:
-            case CACHE_QUERY_REBUILD_INDEXES:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((GridRestCacheQueryRequest)req).cacheName();
 
                 break;
 

@@ -67,6 +67,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 //        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class); TODO IGNITE-484
         suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
+        suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
+
 
         // Fields queries.
         suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
@@ -106,6 +108,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // Ignite cache and H2 comparison.
         suite.addTestSuite(BaseH2CompareQueryTest.class);
         suite.addTestSuite(H2CompareBigQueryTest.class);
+
+        suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
 
         return suite;
     }

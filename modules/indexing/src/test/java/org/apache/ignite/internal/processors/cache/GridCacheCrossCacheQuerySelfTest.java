@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -117,9 +118,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void _testTwoStep() throws Exception {
         String cache = "partitioned";
 
-        GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
-                .<Integer, FactPurchase>getCache(cache).queries();
+        GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
 
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
@@ -128,7 +127,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
 
-        Object cnt = qx.execute(cache, q).getAll().iterator().next().get(0);
+        Object cnt = qryProc.queryTwoStep(cache, q).getAll().iterator().next().get(0);
 
         assertEquals(10L, cnt);
     }
@@ -137,16 +136,19 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoStepGroupAndAggregates() throws Exception {
-        GridCacheQueriesEx<Integer, FactPurchase> qx =
-            (GridCacheQueriesEx<Integer, FactPurchase>)((IgniteKernal)ignite)
-                .<Integer, FactPurchase>getCache("partitioned").queries();
+        IgniteInternalCache<Integer, FactPurchase> cache =
+            ((IgniteKernal)ignite).getCache("partitioned");
+
+        GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
 
         Set<Integer> set1 = new HashSet<>();
 
         X.println("___ simple");
 
-        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select f.productId, p.name, f.price " +
-            "from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId ").getAll()) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("select f.productId, p.name, f.price " +
+            "from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId ");
+
+        for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
 
             set1.add((Integer)o.get(0));
@@ -158,8 +160,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         X.println("___ GROUP BY");
 
-        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase group by productId")
-            .getAll()) {
+        qry = new SqlFieldsQuery("select productId from FactPurchase group by productId");
+
+        for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(set0.add((Integer) o.get(0)));
@@ -171,12 +174,13 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         Set<String> names = new HashSet<>();
 
-        for (List<?> o : qx.executeTwoStepQuery("partitioned",
-            "select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
-                "count(nullif(f.price, 5)) " +
-                "from FactPurchase f, \"replicated\".DimProduct p " +
-                "where p.id = f.productId " +
-                "group by f.productId, p.name").getAll()) {
+        qry = new SqlFieldsQuery("select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
+            "count(nullif(f.price, 5)) " +
+            "from FactPurchase f, \"replicated\".DimProduct p " +
+            "where p.id = f.productId " +
+            "group by f.productId, p.name");
+
+        for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(names.add((String)o.get(0)));
@@ -185,12 +189,13 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         X.println("___ SUM HAVING");
 
-        for (List<?> o : qx.executeTwoStepQuery("partitioned",
-            "select p.name, sum(f.price) s " +
-                "from FactPurchase f, \"replicated\".DimProduct p " +
-                "where p.id = f.productId " +
-                "group by f.productId, p.name " +
-                "having s >= 15").getAll()) {
+        qry = new SqlFieldsQuery("select p.name, sum(f.price) s " +
+            "from FactPurchase f, \"replicated\".DimProduct p " +
+            "where p.id = f.productId " +
+            "group by f.productId, p.name " +
+            "having s >= 15");
+
+        for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(i(o, 1) >= 15);
@@ -200,10 +205,10 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         int top = 6;
 
-        for (List<?> o : qx.executeTwoStepQuery("partitioned",
-            "select top 3 distinct productId " +
-                "from FactPurchase f " +
-                "order by productId desc ").getAll()) {
+        qry = new SqlFieldsQuery("select top 3 distinct productId " +
+            "from FactPurchase f order by productId desc ");
+
+        for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
 
             assertEquals(top--, o.get(0));
@@ -213,11 +218,10 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         top = 5;
 
-        for (List<?> o : qx.executeTwoStepQuery("partitioned",
-            "select distinct productId " +
-                "from FactPurchase f " +
-                "order by productId desc " +
-                "limit 2 offset 1").getAll()) {
+        qry = new SqlFieldsQuery("select distinct productId " +
+            "from FactPurchase f order by productId desc limit 2 offset 1");
+
+        for (List<?> o : qryProc.queryTwoStep(cache.context(), qry).getAll()) {
             X.println("___ -> " + o);
 
             assertEquals(top--, o.get(0));
@@ -305,7 +309,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             DimStore v = new DimStore(id, "Store" + id);
 
-            dimCache.put(id, v);
+            dimCache.getAndPut(id, v);
 
             dimStores.add(v);
         }
@@ -315,7 +319,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
             DimProduct v = new DimProduct(id, "Product" + id);
 
-            dimCache.put(id, v);
+            dimCache.getAndPut(id, v);
 
             dimProds.add(v);
         }
@@ -340,7 +344,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             DimStore store = dimStores.get(i % dimStores.size());
             DimProduct prod = dimProds.get(i % dimProds.size());
 
-            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
+            factCache.getAndPut(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
         }
     }
 

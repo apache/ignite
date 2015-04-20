@@ -60,7 +60,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private GridCacheInternalKey key;
 
     /** Atomic long projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -90,7 +90,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                 val.set(retVal);
 
-                atomicView.putx(key, val);
+                atomicView.put(key, val);
 
                 tx.commit();
 
@@ -117,7 +117,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                 val.set(retVal + 1);
 
-                atomicView.putx(key, val);
+                atomicView.put(key, val);
 
                 tx.commit();
 
@@ -144,7 +144,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                 val.set(retVal);
 
-                atomicView.putx(key, val);
+                atomicView.put(key, val);
 
                 tx.commit();
 
@@ -171,7 +171,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                 val.set(retVal - 1);
 
-                atomicView.putx(key, val);
+                atomicView.put(key, val);
 
                 tx.commit();
 
@@ -201,7 +201,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      * @param ctx CacheContext.
      */
     public GridCacheAtomicLongImpl(String name, GridCacheInternalKey key,
-        CacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
         assert ctx != null;
@@ -390,7 +390,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                     val.set(retVal);
 
-                    atomicView.putx(key, val);
+                    atomicView.put(key, val);
 
                     tx.commit();
 
@@ -424,7 +424,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                     val.set(retVal + l);
 
-                    atomicView.putx(key, val);
+                    atomicView.put(key, val);
 
                     tx.commit();
 
@@ -458,7 +458,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
                     val.set(l);
 
-                    atomicView.putx(key, val);
+                    atomicView.put(key, val);
 
                     tx.commit();
 
@@ -495,7 +495,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                     if (retVal) {
                         val.set(newVal);
 
-                        atomicView.put(key, val);
+                        atomicView.getAndPut(key, val);
 
                         tx.commit();
                     }

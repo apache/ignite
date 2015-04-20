@@ -240,12 +240,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
 
     /**
-     * System property to manage ratio for communication buffer resize. Buffer size will either
-     * increase or decrease according to this ratio depending on system behavior. Default value is {@code 0.8}.
-     */
-    public static final String IGNITE_COMMUNICATION_BUF_RESIZE_RATIO = "IGNITE_COMMUNICATION_BUF_RESIZE_RATIO";
-
-    /**
      * Flag that will force Ignite to fill memory block with some recognisable pattern right before
      * this memory block is released. This will help to recognize cases when already released memory is accessed.
      */

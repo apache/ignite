@@ -79,7 +79,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < keyCnt; i++) {
-                        c.put(i, new H2TextValue(txt));
+                        c.getAndPut(i, new H2TextValue(txt));
 
                         if (i % logFreq == 0)
                             X.println("Stored values: " + i);
@@ -90,8 +90,8 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
             }, 1);
 
         // Create query.
-        final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.queries().createFullTextQuery(
-            H2TextValue.class, txt);
+        final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
+            H2TextValue.class.getName(), txt, false);
 
         qry.enableDedup(false);
         qry.includeBackups(false);

@@ -295,15 +295,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        return super.entry(key);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
-     */
     @Override public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch)
         throws GridDhtInvalidPartitionException {
         return super.entryEx(key, touch);
@@ -405,9 +396,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc0 = opCtx != null ? opCtx.expiry() : null;
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
@@ -528,10 +519,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean deserializePortable,
         boolean skipVals
     ) {
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         return getAllAsync(keys,
-            prj == null || !prj.skipStore(),
+            opCtx == null || !opCtx.skipStore(),
             null,
             /*don't check local tx. */false,
             subjId,
@@ -540,17 +531,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             forcePrimary,
             null,
             skipVals);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V reload(K key)
-        throws IgniteCheckedException {
-        try {
-            return super.reload(key);
-        }
-        catch (GridDhtInvalidPartitionException ignored) {
-            return null;
-        }
     }
 
     /**
@@ -814,8 +794,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         assert false;
     }
 
