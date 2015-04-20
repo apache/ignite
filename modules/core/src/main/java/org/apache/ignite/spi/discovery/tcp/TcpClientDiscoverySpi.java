@@ -336,11 +336,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.view(U.<TcpDiscoveryNode, ClusterNode>arrayList(rmtNodes.values(), new P1<TcpDiscoveryNode>() {
+        return U.arrayList(rmtNodes.values(), new P1<TcpDiscoveryNode>() {
             @Override public boolean apply(TcpDiscoveryNode node) {
                 return node.visible();
             }
-        }));
+        });
     }
 
     /** {@inheritDoc} */
