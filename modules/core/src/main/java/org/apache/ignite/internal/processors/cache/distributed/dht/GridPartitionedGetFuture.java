@@ -372,8 +372,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals,
-                    cctx.skipStore());
+                    skipVals);//,
+                   // cctx.skipStore());
 
                 add(fut); // Append new future.
 

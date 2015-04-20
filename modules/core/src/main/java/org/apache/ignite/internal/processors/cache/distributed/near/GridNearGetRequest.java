@@ -105,7 +105,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
-     * @param skipStore Skipe store flag. Used to skip read-through from a persistent storage.
      */
     public GridNearGetRequest(
         int cacheId,
@@ -119,8 +118,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         UUID subjId,
         int taskNameHash,
         long accessTtl,
-        boolean skipVals,
-        boolean skipStore
+        boolean skipVals
     ) {
         assert futId != null;
         assert miniId != null;
@@ -140,9 +138,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
         this.skipVals = skipVals;
-
-        if (readThrough)
-            this.readThrough = !skipStore;
     }
 
     /**

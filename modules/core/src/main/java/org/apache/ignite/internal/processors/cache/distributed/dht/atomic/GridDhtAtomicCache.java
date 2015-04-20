@@ -993,7 +993,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
             keys,
             topVer,
-            true,
+            !ctx.skipStore(),
             reload,
             forcePrimary,
             subjId,

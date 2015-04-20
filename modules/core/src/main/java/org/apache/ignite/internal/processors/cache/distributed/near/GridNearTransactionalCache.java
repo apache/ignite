@@ -159,7 +159,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
-            readThrough,
+            readThrough && !ctx.skipStore(),
             false,
             false,
             tx,
