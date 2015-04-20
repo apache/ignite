@@ -98,19 +98,20 @@ public class IgniteExProxy implements IgniteEx {
         return cfg;
     }
 
-    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache() {
+    @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
         return null; // TODO: CODE: implement.
     }
 
-    @Nullable @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         return null; // TODO: CODE: implement.
     }
 
-    @Nullable @Override public <K, V> GridCache<K, V> cachex() {
+    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
         return null; // TODO: CODE: implement.
     }
 
-    @Override public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p) {
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
+        @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
         return null; // TODO: CODE: implement.
     }
 

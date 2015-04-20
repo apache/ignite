@@ -58,14 +58,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = IgniteNodeRunner.configuration(null);
-        
-        cfg.setGridName(gridName);
-
-//        cfg.setCacheConfiguration(super.getConfiguration(gridName).getCacheConfiguration());
-        cfg.setCacheConfiguration(new CacheConfiguration());
-
-        return cfg; // TODO: change.
+        return super.getConfiguration(gridName);
     }
 
     /** {@inheritDoc} */
@@ -85,9 +78,13 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (gridName.endsWith("0")) {
+        if (
+            gridName.endsWith("0")
+//            ||
+//            gridName.endsWith("1")
+            ) {
             locIgnite = super.startGrid(gridName, ctx);
-            
+
             return locIgnite;
         }
 
@@ -109,7 +106,11 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected IgniteEx grid(int idx) {
-        if (idx == 0)
+        if (
+            idx == 0
+//            ||
+//            idx == 1
+            )
             return super.grid(idx);
 
         String name = getTestGridName(idx);
