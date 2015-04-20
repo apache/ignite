@@ -148,9 +148,13 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 // Send job to all data nodes.
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
-                if (!nodes.isEmpty())
+                if (!nodes.isEmpty()) {
+                    CacheOperationContext opCtx = ctx.operationContextPerCall();
+
                     ctx.closures().callAsyncNoFailover(BROADCAST,
-                        new GlobalRemoveAllCallable<>(name(), topVer, ctx.skipStore()), nodes, true).get();
+                        new GlobalRemoveAllCallable<>(name(), topVer, opCtx != null && opCtx.skipStore()), nodes,
+                        true).get();
+                }
             }
             while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) > 0);
         }
@@ -179,8 +183,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
             IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
-                    new GlobalRemoveAllCallable<>(name(), topVer, ctx.skipStore()), nodes, true);
+                    new GlobalRemoveAllCallable<>(name(), topVer, opCtx != null && opCtx.skipStore()), nodes, true);
 
             rmvFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
