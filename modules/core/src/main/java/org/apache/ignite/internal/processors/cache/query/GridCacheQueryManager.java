@@ -759,12 +759,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
-        CacheProjection<K, V> prj0 = cctx.cache();
+        IgniteInternalCache<K, V> prj0 = cctx.cache();
 
         if (qry.keepPortable())
             prj0 = prj0.keepPortable();
 
-        final CacheProjection<K, V> prj = prj0;
+        final IgniteInternalCache<K, V> prj = prj0;
 
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
@@ -1916,13 +1916,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final GridKernalContext ctx = ((IgniteKernal) ignite).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
-                new C1<GridCache<?, ?>, String>() {
-                    @Override public String apply(GridCache<?, ?> c) {
+                new C1<IgniteInternalCache<?, ?>, String>() {
+                    @Override public String apply(IgniteInternalCache<?, ?> c) {
                         return c.name();
                     }
                 },
-                new P1<GridCache<?, ?>>() {
-                    @Override public boolean apply(GridCache<?, ?> c) {
+                new P1<IgniteInternalCache<?, ?>>() {
+                    @Override public boolean apply(IgniteInternalCache<?, ?> c) {
                         return !CU.MARSH_CACHE_NAME.equals(c.name()) && !CU.UTILITY_CACHE_NAME.equals(c.name()) &&
                             !CU.ATOMICS_CACHE_NAME.equals(c.name());
                     }
@@ -2897,5 +2897,103 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public int size() {
             return size;
         }
+    }
+
+    /**
+     * Query for {@link IndexingSpi}.
+     *
+     * @param keepPortable Keep portable flag.
+     * @return Query.
+     */
+    public <R> CacheQuery<R> createSpiQuery(boolean keepPortable) {
+        return new GridCacheQueryAdapter<>(cctx,
+            SPI,
+            null,
+            null,
+            null,
+            false,
+            keepPortable);
+    }
+
+    /**
+     * Creates user's predicate based scan query.
+     *
+     * @param filter Scan filter.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+    @SuppressWarnings("unchecked")
+    public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter,
+        boolean keepPortable) {
+        return new GridCacheQueryAdapter<>(cctx,
+            SCAN,
+            null,
+            null,
+            (IgniteBiPredicate<Object, Object>)filter,
+            false,
+            keepPortable);
+    }
+
+    /**
+     * Creates user's full text query, queried class, and query clause.
+     * For more information refer to {@link CacheQuery} documentation.
+     *
+     * @param clsName Query class name.
+     * @param search Search clause.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+        String search, boolean keepPortable) {
+        A.notNull("clsName", clsName);
+        A.notNull("search", search);
+
+        return new GridCacheQueryAdapter<>(cctx,
+            TEXT,
+            clsName,
+            search,
+            null,
+            false,
+            keepPortable);
+    }
+
+    /**
+     * Creates user's SQL fields query for given clause. For more information refer to
+     * {@link CacheQuery} documentation.
+     *
+     * @param qry Query.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+     public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepPortable) {
+        A.notNull(qry, "qry");
+
+        return new GridCacheQueryAdapter<>(cctx,
+            SQL_FIELDS,
+            null,
+            qry,
+            null,
+            false,
+            keepPortable);
+    }
+
+    /**
+     * Creates SQL fields query which will include results metadata if needed.
+     *
+     * @param qry SQL query.
+     * @param incMeta Whether to include results metadata.
+     * @param keepPortable Keep portable flag.
+     * @return Created query.
+     */
+    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta, boolean keepPortable) {
+        assert qry != null;
+
+        return new GridCacheQueryAdapter<>(cctx,
+            SQL_FIELDS,
+            null,
+            qry,
+            null,
+            incMeta,
+            keepPortable);
     }
 }

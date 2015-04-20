@@ -15,13 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
- * Cache proxy marker interface.
+ *
  */
-public interface GridCacheProxy<K, V> extends GridCache<K, V>, GridCacheProjectionEx<K, V> {
-    // No-op.
+public class IgniteInternalCacheRemoveTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testRemove() throws IgniteCheckedException {
+        jcache().put("key", 1);
+
+        assert jcache().remove("key", 1);
+        assert !jcache().remove("key", 1);
+    }
 }

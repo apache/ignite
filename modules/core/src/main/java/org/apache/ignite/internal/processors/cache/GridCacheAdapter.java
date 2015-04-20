@@ -71,8 +71,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
-    GridCacheProjectionEx<K, V>, Externalizable {
+public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -168,9 +167,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** Logger. */
     protected IgniteLogger log;
-
-    /** Queries impl. */
-    private CacheQueries<K, V> qry;
 
     /** Affinity impl. */
     private Affinity<K> aff;
@@ -275,7 +271,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         init();
 
-        qry = new CacheQueriesImpl<>(ctx, null);
         aff = new GridCacheAffinityImpl<>(ctx);
     }
 
@@ -356,31 +351,21 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     public abstract GridCachePreloader<K, V> preloader();
 
     /** {@inheritDoc} */
-    @Override public CacheQueries<K, V> queries() {
-        return qry;
-    }
-
-    /** {@inheritDoc} */
     @Override public Affinity<K> affinity() {
         return aff;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> GridCache<K1, V1> cache() {
-        return (GridCache<K1, V1>)this;
+    @Override public <K1, V1> IgniteInternalCache<K1, V1> cache() {
+        return (IgniteInternalCache<K1, V1>)this;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> forSubjectId(UUID subjId) {
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-            ctx,
-            false,
-            subjId,
-            false,
-            null);
+    @Override public GridCacheProxyImpl<K, V> forSubjectId(UUID subjId) {
+        CacheOperationContext opCtx = new CacheOperationContext(false, subjId, false, null);
 
-        return new GridCacheProxyImpl<>(ctx, prj, prj);
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
@@ -389,42 +374,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProjection<K, V> setSkipStore(boolean skipStore) {
-        if (!skipStore)
-            return this;
+    @Override public GridCacheProxyImpl<K, V> setSkipStore(boolean skipStore) {
+        CacheOperationContext opCtx = new CacheOperationContext(true, null, false, null);
 
-        GridCacheProjectionImpl<K, V> prj = new GridCacheProjectionImpl<>(this,
-            ctx,
-            false,
-            null,
-            false,
-            null);
-
-        return new GridCacheProxyImpl<>(ctx, prj, prj);
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> CacheProjection<K1, V1> keepPortable() {
-        GridCacheProjectionImpl<K1, V1> prj = keepPortable0();
+    @Override public <K1, V1> GridCacheProxyImpl<K1, V1> keepPortable() {
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, true, null);
 
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, prj, prj);
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)this, opCtx);
     }
 
-    /**
-     * Internal routine to get "keep-portable" projection.
-     *
-     * @return Projection with "keep-portable" flag.
-     */
-    public <K1, V1> GridCacheProjectionImpl<K1, V1> keepPortable0() {
-        return new GridCacheProjectionImpl<>(
-            (CacheProjection<K1, V1>)this,
-            (GridCacheContext<K1, V1>)ctx,
-            false,
-            null,
-            true,
-            null
-        );
-    }
 
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
@@ -432,14 +394,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjectionEx<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        return new GridCacheProjectionImpl<>(
-            this,
-            ctx,
-            false,
-            null,
-            false,
-            plc);
+    @Override public GridCacheProxyImpl<K, V> withExpiryPolicy(ExpiryPolicy plc) {
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, plc);
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
     }
 
     /** {@inheritDoc} */
@@ -1486,7 +1444,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        V val = get(key, true);
+        V val = get(key, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             val = (V)ctx.config().getInterceptor().onGet(key, val);
@@ -1505,7 +1463,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<V> fut = getAsync(key, true);
+        IgniteInternalFuture<V> fut = getAsync(key, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             fut =  fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
@@ -1528,7 +1486,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Map<K, V> map = getAll(keys, true);
+        Map<K, V> map = getAll(keys, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             map = interceptGet(keys, map);
@@ -1547,7 +1505,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys, true);
+        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys, !ctx.keepPortable());
 
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
@@ -1625,9 +1583,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         boolean deserializePortable,
         boolean skipVals
     ) {
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return getAllAsync(keys,
             true,
@@ -1637,7 +1595,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             taskName,
             deserializePortable,
             forcePrimary,
-            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals);
     }
 
@@ -3253,7 +3211,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             // Delegate to near if dht.
             if (e.isDht() && CU.isNearEnabled(ctx)) {
-                GridCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+                IgniteInternalCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
 
                 return near.isLockedByThread(key) || e.lockedByThread();
             }
@@ -3310,29 +3268,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void txSynchronize(TransactionSynchronization syncs) {
-        ctx.tm().addSynchronizations(syncs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txUnsynchronize(TransactionSynchronization syncs) {
-        ctx.tm().removeSynchronizations(syncs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<TransactionSynchronization> txSynchronizations() {
-        return ctx.tm().synchronizations();
-    }
-
-    /** {@inheritDoc} */
     @Override public void localLoadCache(final IgniteBiPredicate<K, V> p, Object[] args)
         throws IgniteCheckedException {
         final boolean replicate = ctx.isDrEnabled();
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc0 = opCtx != null ? opCtx.expiry() : null;
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 
@@ -3453,9 +3396,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (!ctx.store().configured())
             return new GridFinishedFuture<>();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
 
         if (replaceExisting) {
             if (ctx.store().isLocal()) {
@@ -3593,17 +3536,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         ctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
 
         return ctx.kernalContext().closure().callAsync(BROADCAST,
             Arrays.asList(new LoadCacheClosure<>(ctx.name(), p, args, plc)),
             nodes.nodes());
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
+    /**
+     * @return Random cache entry.
+     */
+    @Nullable public Cache.Entry<K, V> randomEntry() {
         GridCacheMapEntry e = map.randomEntry();
 
         return e == null || e.obsolete() ? null : e.<K, V>wrapLazyValue();
@@ -3727,12 +3672,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * @return JCache Iterator.
      */
-    private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy() {
+    private Iterator<Cache.Entry<K, V>> localIteratorHonorExpirePolicy(final CacheOperationContext opCtx) {
         return F.iterator(iterator(),
             new IgniteClosure<Cache.Entry<K, V>, Cache.Entry<K, V>>() {
-                private IgniteCacheExpiryPolicy expiryPlc = ctx.cache().expiryPolicy(ctx.expiry());
+                private IgniteCacheExpiryPolicy expiryPlc =
+                        ctx.cache().expiryPolicy(opCtx != null ? opCtx.expiry() : null);
 
                 @Override public Cache.Entry<K, V> apply(Cache.Entry<K, V> lazyEntry) {
+                    CacheOperationContext prev = ctx.gate().enter(opCtx);
                     try {
                         V val = localPeek(lazyEntry.getKey(), CachePeekModes.ONHEAP_ONLY, expiryPlc);
 
@@ -3740,6 +3687,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     }
                     catch (IgniteCheckedException e) {
                         throw CU.convertToCacheException(e);
+                    }
+                    finally {
+                        ctx.gate().leave(prev);
                     }
                 }
             }, false
@@ -3752,12 +3702,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     public Iterator<Cache.Entry<K, V>> igniteIterator() {
         GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
 
+        final CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
-            return localIteratorHonorExpirePolicy();
+            return localIteratorHonorExpirePolicy(opCtx);
 
-        final GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
-
-        CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
+        CacheQueryFuture<Map.Entry<K, V>> fut = ctx0.queries().createScanQuery(null, ctx.keepPortable())
             .keepAll(false)
             .execute();
 
@@ -3767,7 +3717,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
-                GridCacheProjectionImpl<K, V>  prev = ctx.gate().enter(prj);
+                CacheOperationContext prev = ctx.gate().enter(opCtx);
 
                 try {
                     GridCacheAdapter.this.remove(item.getKey());
@@ -4280,15 +4230,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> forceRepartition() {
+    @Override public IgniteInternalFuture<?> rebalance() {
         ctx.preloader().forcePreload();
 
         return ctx.preloader().syncFuture();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean affinityNode() {
-        return ctx.affinityNode();
     }
 
     /** {@inheritDoc} */
@@ -5101,7 +5046,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer applyx(Object o) throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            IgniteInternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             assert cache != null : cacheName;
 
@@ -5138,7 +5083,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link CacheProjection#size()} or {@link CacheProjection#primarySize()}
+     * Internal callable which performs {@link IgniteInternalCache#size()} or {@link IgniteInternalCache#primarySize()}
      * operation on a cache with the given name.
      */
     @GridInternal
@@ -5174,7 +5119,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+            IgniteInternalCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }

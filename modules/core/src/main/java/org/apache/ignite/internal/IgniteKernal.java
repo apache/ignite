@@ -2222,7 +2222,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> GridCache<K, V> getCache(@Nullable String name) {
+    public <K, V> IgniteInternalCache<K, V> getCache(@Nullable String name) {
         guard();
 
         try {
@@ -2456,7 +2456,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache() {
+    @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
         guard();
 
         try {
@@ -2468,7 +2468,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         guard();
 
         try {
@@ -2480,7 +2480,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cachex() {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex() {
         guard();
 
         try {
@@ -2492,7 +2492,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> cachesx(IgnitePredicate<? super GridCache<?, ?>>[] p) {
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
         guard();
 
         try {
