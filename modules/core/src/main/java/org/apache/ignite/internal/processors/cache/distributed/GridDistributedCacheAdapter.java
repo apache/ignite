@@ -148,9 +148,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 // Send job to all data nodes.
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
-                if (!nodes.isEmpty())
+                if (!nodes.isEmpty()) {
                     ctx.closures().callAsyncNoFailover(BROADCAST,
                         new GlobalRemoveAllCallable<>(name(), topVer, ctx.skipStore()), nodes, true).get();
+                }
             }
             while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) > 0);
         }
@@ -252,6 +253,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /**
          * @param cacheName Cache name.
          * @param topVer Topology version.
+         * @param skipStore Skip store flag.
          */
         private GlobalRemoveAllCallable(String cacheName, @NotNull AffinityTopologyVersion topVer, boolean skipStore) {
             this.cacheName = cacheName;

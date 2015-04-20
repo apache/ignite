@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Transaction entry. Note that it is essential that this class does not override
@@ -423,14 +424,15 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param skipStore Skip store flag.
      */
     public void skipStore(boolean skipStore){
-        flags = skipStore ? (byte)(flags | GridCacheUtils.SKIP_STORE_FLAG_MASK) :
-                        (byte)(flags & ~GridCacheUtils.SKIP_STORE_FLAG_MASK);
+        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
     }
 
     /**
      * @return Skip store flag.
      */
-    public boolean skipStore() { return (flags & GridCacheUtils.SKIP_STORE_FLAG_MASK) == 1; };
+    public boolean skipStore() {
+        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+    }
 
     /**
      * @return Tx key.
