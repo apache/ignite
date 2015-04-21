@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -51,6 +52,14 @@ public class IgniteNodeRunner {
             IgniteConfiguration cfg = configuration(args);
 
             Ignite ignite = Ignition.start(cfg);
+            
+            Thread.sleep(2_000);
+
+            ignite.compute().broadcast(new IgniteRunnable() {
+                @Override public void run() {
+                    System.out.println(">>>>> [rmt] trololo");
+                }
+            });
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -102,7 +111,8 @@ public class IgniteNodeRunner {
 
         cfg.setNodeId(nodeId);
 
-        return cfg;
+//        return cfg;
+        return theSameConf(gridName);
     }
 
     private static boolean isDebug() {
@@ -131,5 +141,25 @@ public class IgniteNodeRunner {
 //            return (CacheConfiguration)in.readObject();
 //        }
         return new CacheConfiguration();
+    }
+
+    public static IgniteConfiguration theSameConf(String gridName) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        disco.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(disco);
+
+        cfg.setMarshaller(new OptimizedMarshaller(false));
+        
+        cfg.setCacheConfiguration(new CacheConfiguration());
+        
+        cfg.setGridName(gridName);
+
+        cfg.setLocalHost("127.0.0.1");
+
+        cfg.setIncludeProperties();
+
+        return cfg;
     }
 }

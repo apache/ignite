@@ -250,11 +250,11 @@ public class IgniteExProxy implements IgniteEx {
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
         ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
-//        locJvmGrid.compute().broadcast(new IgniteRunnable() {
-//            @Override public void run() {
-//                System.out.println(">>>>> trololo");
-//            }
-//        });
+        locJvmGrid.compute(grp).broadcast(new IgniteRunnable() {
+            @Override public void run() {
+                System.out.println(">>>>> trololo");
+            }
+        });
         
 //        locJvmGrid.compute(grp).run(new IgniteRunnable() {
 //            @Override public void run() {
@@ -328,7 +328,12 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     @Override public void close() throws IgniteException {
-        // TODO: CODE: implement.
+        try {
+            getProcess().kill();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override public <K> Affinity<K> affinity(String cacheName) {

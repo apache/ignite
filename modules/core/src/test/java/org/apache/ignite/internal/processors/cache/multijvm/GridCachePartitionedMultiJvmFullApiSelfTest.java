@@ -22,7 +22,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -66,11 +67,13 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+//        IgniteConfiguration cfg = super.getConfiguration(gridName);
+//
+//        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
+//
+//        return cfg;
         
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
-        
-        return cfg;
+        return IgniteNodeRunner.theSameConf(gridName);
     }
 
     /** {@inheritDoc} */
@@ -90,11 +93,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (
-            gridName.endsWith("0")
-//            ||
-//            gridName.endsWith("1")
-            ) {
+        if (!isMultiJvm() || gridName.endsWith("0")) {
             locIgnite = super.startGrid(gridName, ctx);
 
             return locIgnite;
@@ -118,11 +117,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected IgniteEx grid(int idx) {
-        if (
-            idx == 0
-//            ||
-//            idx == 1
-            )
+        if (!isMultiJvm() || idx == 0)
             return super.grid(idx);
 
         String name = getTestGridName(idx);
@@ -168,5 +163,79 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 //
 //        for (IgniteExProxy ignite : ignites.values())
 //            ignite.getProcess().kill();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBroadcast() throws Exception {
+        IgniteEx grid0 = grid(0);
+        IgniteEx grid1 = grid(1);
+
+        Thread.sleep(10_000);
+
+//        ClusterGroup grp = grid0.cluster().forNode(grid1.localNode());
+
+        grid0.compute().broadcast(new IgniteRunnable() {
+            @Override public void run() {
+                System.out.println(">>>>> trololo");
+            }
+        });
+        
+        Thread.sleep(10_000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSimpleBroadcast_worked() throws Exception {
+        Ignite rmt = null;
+
+        try(Ignite ignite = Ignition.start(IgniteNodeRunner.theSameConf("SomeLocGrid"))) {
+            Thread.sleep(5_000);
+
+            rmt = new IgniteExProxy(IgniteNodeRunner.theSameConf("remoteNode"), ignite.log(), ignite);
+
+            Thread.sleep(5_000);
+
+            ignite.compute().broadcast(new IgniteRunnable() {
+                @Override public void run() {
+                    System.out.println(">>>>> trololo");
+                }
+            });
+
+            Collection<String> res = ignite.compute().broadcast(new C1<Integer, String>() {
+                @Override public String apply(Integer integer) {
+                    return String.valueOf(integer + 12);
+                }
+            }, 100500);
+
+            System.out.println(">>>>> " + res);
+        }
+        finally {
+            rmt.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRmt2RmtBroadcast_worked() throws Exception {
+        Ignite rmt1 = null;
+        Ignite rmt2 = null;
+
+        try {
+            rmt1 = new IgniteExProxy(IgniteNodeRunner.theSameConf("remoteNode1"), log, null);
+
+            Thread.sleep(5_000);
+
+            rmt2 = new IgniteExProxy(IgniteNodeRunner.theSameConf("remoteNode2"), log, null);
+
+            Thread.sleep(5_000);
+        }
+        finally {
+            rmt1.close();
+            rmt2.close();
+        }
     }
 }
