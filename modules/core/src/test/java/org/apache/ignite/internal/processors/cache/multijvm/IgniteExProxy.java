@@ -38,12 +38,22 @@ import java.util.concurrent.*;
  * Ignite proxy for ignite instance at another JVM.
  */
 public class IgniteExProxy implements IgniteEx {
+    /** Grid proxies. */
     private static final Map<String, IgniteExProxy> gridProxies = new HashMap<>();
     
+    /** Jvm process with ignite instance. */
     private final GridJavaProcess proc;
+    
+    /** Configuration. */
     private final IgniteConfiguration cfg;
+    
+    /** Local jvm grid. */
     private final Ignite locJvmGrid;
+    
+    /** Logger. */
     private final IgniteLogger log;
+    
+    /** Grid id. */
     private final UUID id = UUID.randomUUID();
 
     /**
