@@ -37,10 +37,12 @@ import java.util.concurrent.locks.*;
 public class CacheProxy<K, V> implements IgniteCache<K, V> {
     private transient IgniteExProxy proxy;
     private final String cacheName;
+    private final UUID gridId;
 
     public CacheProxy(String name, IgniteExProxy proxy) {
         this.proxy = proxy;
         cacheName = name;
+        gridId = proxy.getId();
     }
 
     @Override public IgniteCache<K, V> withAsync() {
@@ -136,8 +138,26 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
     }
 
     @Override public V get(K key) {
-        return null; // TODO: CODE: implement.
+        ClusterGroup grp = proxy.localJvmGrid().cluster().forNodeId(proxy.getId());
+
+        IgniteCompute compute = proxy.localJvmGrid().compute(grp);
+
+        return compute.broadcast(new MyClos2<K, V>(gridId, cacheName), key).iterator().next();
     }
+    
+    public static class MyClos2<K, V> extends IgniteClosureX<K, V> {
+        private final UUID id;
+        private final String name;
+
+        public MyClos2(UUID id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        @Override public V applyx(K k) {
+            return (V)Ignition.ignite(id).cache(name).get(k);
+        }
+    } 
 
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         return null; // TODO: CODE: implement.
