@@ -164,7 +164,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
+        final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {

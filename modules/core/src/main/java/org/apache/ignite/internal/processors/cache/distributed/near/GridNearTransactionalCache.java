@@ -115,7 +115,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        boolean skipStore = opCtx != null && opCtx.skipStore();
+        final boolean skipStore = opCtx != null && opCtx.skipStore();
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
