@@ -1652,7 +1652,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     public <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(@Nullable final Collection<KeyCacheObject> keys,
-        boolean readThrough,
+        final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
         final String taskName,
