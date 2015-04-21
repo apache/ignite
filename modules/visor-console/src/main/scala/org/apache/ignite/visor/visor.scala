@@ -260,11 +260,11 @@ object visor extends VisorTag {
 
     /**
      * @param node Optional node.
-     * @return Cluster group with specified node or projection with random node if specified node is `None`.
+     * @return Cluster group with specified node or projection with all remote nodes.
      */
     def groupForNode(node: Option[ClusterNode]): ClusterGroup = node match {
         case Some(n) => ignite.cluster.forNode(n)
-        case None => ignite.cluster.forRandom()
+        case None => ignite.cluster.forRemotes()
     }
 
     /**

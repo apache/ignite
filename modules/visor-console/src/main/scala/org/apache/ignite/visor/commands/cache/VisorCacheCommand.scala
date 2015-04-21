@@ -328,7 +328,7 @@ class VisorCacheCommand {
                     sumT += (
                         mkCacheName(ad.name()),
                         ad.mode(),
-                        ad.nodes,
+                        ad.nodes.map(nid8),
                         (
                             "min: " + ad.minimumSize,
                             "avg: " + formatDouble(ad.averageSize),
