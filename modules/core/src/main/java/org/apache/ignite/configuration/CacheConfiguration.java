@@ -1408,20 +1408,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      *
-     * @return Copy on get flag.
+     * @return Copy on read flag.
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
     }
 
     /**
-     * Set copy on get flag.
+     * Sets copy on read flag.
      *
-     * @param cpOnGet Copy on get flag.
+     * @param cpOnRead Copy on get flag.
      * @see #isCopyOnRead
      */
-    public void setCopyOnRead(boolean cpOnGet) {
-        this.cpOnRead = cpOnGet;
+    public void setCopyOnRead(boolean cpOnRead) {
+        this.cpOnRead = cpOnRead;
     }
 
     /**
