@@ -54,7 +54,6 @@ public class IgniteExProxy implements IgniteEx {
         this.locJvmGrid = locJvmGrid;
         this.log = log;
 
-        String cfgAsString = IgniteNodeRunner.asParams(id, cfg);
         IgniteNodeRunner.storeToFile(cfg.getCacheConfiguration()[0]);
 
         List<String> jvmArgs = U.jvmArgs();
@@ -68,7 +67,7 @@ public class IgniteExProxy implements IgniteEx {
         
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
-            cfgAsString, // Params.
+            IgniteNodeRunner.asParams(id, cfg), // Params.
             log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
@@ -86,233 +85,292 @@ public class IgniteExProxy implements IgniteEx {
         gridProxies.put(cfg.getGridName(), this);
     }
 
+    /**
+     * @return Local JVM grid instance.
+     */
     public Ignite localJvmGrid() {
         return locJvmGrid;
     }
 
+    /** 
+     * @return Grid id.
+     */
     public UUID getId() {
         return id;
     }
 
+    /** {@inheritDoc} */
     @Override public String name() {
         return cfg.getGridName();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteLogger log() {
         return log;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteConfiguration configuration() {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
         @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean eventUserRecordable(int type) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean allEventsUserRecordable(int[] types) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isJmxRemoteEnabled() {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isRestartEnabled() {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Hadoop hadoop() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
         return (IgniteClusterEx)locJvmGrid.cluster();
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public String latestVersion() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public ClusterNode localNode() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public GridKernalContext context() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCompute compute(ClusterGroup grp) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteMessaging message() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteMessaging message(ClusterGroup grp) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteEvents events() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteEvents events(ClusterGroup grp) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteServices services() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteServices services(ClusterGroup grp) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
         NearCacheConfiguration<K, V> nearCfg) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
         return new CacheProxy(name, this);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Collection<IgniteFileSystem> fileSystems() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal,
         boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal, @Nullable S initStamp,
         boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> IgniteQueue<T> queue(String name, int cap,
         @Nullable CollectionConfiguration cfg) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         try {
             getProcess().kill();
@@ -322,6 +380,7 @@ public class IgniteExProxy implements IgniteEx {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
         return null; // TODO: CODE: implement.
     }

@@ -45,98 +45,121 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
         gridId = proxy.getId();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAsync() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isAsync() {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Entry<K, V> randomEntry() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Lock lock(K key) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Lock lockAll(Collection<? extends K> keys) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public QueryMetrics queryMetrics() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public V localPeek(K key, CachePeekMode... peekModes) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void localPromote(Set<? extends K> keys) throws CacheException {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
         return 0; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         return 0; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public V get(K key) {
         ClusterGroup grp = proxy.localJvmGrid().cluster().forNodeId(proxy.getId());
 
@@ -159,63 +182,78 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
         }
     } 
 
+    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void loadAll(Set<? extends K> keys, boolean replaceExistingValues, CompletionListener completionListener) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean containsKeys(Set<? extends K> keys) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void put(K key, V val) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public V getAndPut(K key, V val) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean remove(K key) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean remove(K key, V oldVal) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void removeAll(final Set<? extends K> keys) {
         ClusterGroup grp = proxy.localJvmGrid().cluster().forNodeId(proxy.getId());
 
@@ -252,95 +290,117 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void removeAll() {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void clear() {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void clear(K key) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void localClear(K key) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public String getName() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public void close() {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isClosed() {
         return false; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
         // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public Iterator<Entry<K, V>> iterator() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> rebalance() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetrics metrics(ClusterGroup grp) {
         return null; // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
         return null; // TODO: CODE: implement.
     }

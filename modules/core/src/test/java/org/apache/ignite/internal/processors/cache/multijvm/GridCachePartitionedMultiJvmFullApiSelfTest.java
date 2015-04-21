@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * TODO: Add class description.
@@ -32,13 +35,29 @@ import java.util.*;
 public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** Local ignite. */
     private Ignite locIgnite;
+
+    /** */
+    private CountDownLatch allNodesJoinLatch;
+    
+    /** */
+    private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
+        @Override public boolean apply(Event evt) {
+            allNodesJoinLatch.countDown();
+
+            return true;
+        }
+    };
     
     /** Proces name to process map. */
     private final Map<String, IgniteExProxy> ignites = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
+        
         super.beforeTestsStarted();
+
+        assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
     }
 
     /** {@inheritDoc} */
@@ -69,6 +88,12 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
+
+        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
+        
+        lsnrs.put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
+        
+        cfg.setLocalEventListeners(lsnrs);
 
         return cfg;
     }
@@ -101,7 +126,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         try {
             IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-            IgniteExProxy proxy = new IgniteExProxy(cfg, log, locIgnite);
+            IgniteExProxy proxy = new IgniteExProxy(cfg, log, grid(0));
 
             ignites.put(gridName, proxy);
 
@@ -152,6 +177,8 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         atomicClockModeDelay(c0);
 
         c1.removeAll(putMap.keySet());
+        
+        Thread.sleep(5_000);
 
         for (int i = 0; i < size; i++) {
             assertNull(c0.get(i));

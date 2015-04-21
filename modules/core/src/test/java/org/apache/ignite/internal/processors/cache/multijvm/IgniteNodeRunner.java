@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -38,11 +37,16 @@ import java.util.*;
 public class IgniteNodeRunner {
     /** VM ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-
-    public static final char DELIM = ' ';
     
-//    public static final String CACHE_CONFIGURATION_TMP_FILE = "/tmp/cacheConfiguration.tmp";
+    /** */
+    private static final String CACHE_CONFIGURATION_TMP_FILE = "/tmp/cacheConfiguration.tmp";
 
+    /**
+     * Starts {@link Ignite} instance accorging to given arguments.
+     *  
+     * @param args Arguments.
+     * @throws Exception If failed.
+     */
     public static void main(String[] args) throws Exception {
         try {
             X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
@@ -51,15 +55,7 @@ public class IgniteNodeRunner {
 
             IgniteConfiguration cfg = configuration(args);
 
-            Ignite ignite = Ignition.start(cfg);
-            
-            Thread.sleep(2_000);
-
-            ignite.compute().broadcast(new IgniteRunnable() {
-                @Override public void run() {
-                    System.out.println(">>>>> [rmt] trololo");
-                }
-            });
+            Ignition.start(cfg);
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -68,20 +64,31 @@ public class IgniteNodeRunner {
         }
     }
 
+    /** 
+     * @param id Grid id.
+     * @param cfg Configuration.
+     * @return Given paramethers as command line string arguments.
+     */
     public static String asParams(UUID id, IgniteConfiguration cfg) {
-        return id.toString() + DELIM + cfg.getGridName();
+        return id.toString() + ' ' + cfg.getGridName();
     }
 
+    /** 
+     * @param args Command line args.
+     * @return Ignite configuration.
+     * @throws Exception If failed.
+     */
     private static IgniteConfiguration configuration(String[] args) throws Exception {
-        // Pars args.
+        // Parse args.
         assert args != null && args.length >= 1;
 
         final UUID nodeId = UUID.fromString(args[0]);
-        final String gridName = "Node " + nodeId;
+        final String gridName = args[1];
         
+        // Configuration.
         IgniteConfiguration cfg = GridAbstractTest.getConfiguration0(gridName, new IgniteTestResources(),
-            GridCachePartitionedMultiJvmFullApiSelfTest.class, isDebug());
-//      ---------------
+            GridCachePartitionedMultiJvmFullApiSelfTest.class, false);
+        
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
 //        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
@@ -92,10 +99,9 @@ public class IgniteNodeRunner {
 //            disco.setAckTimeout(Integer.MAX_VALUE);
 
         cfg.setDiscoverySpi(disco);
-//
-//        // TODO
-////        cfg.setCacheConfiguration(cacheConfiguration());
-//
+
+//        cfg.setCacheConfiguration(cacheConfiguration());
+
         cfg.setMarshaller(new OptimizedMarshaller(false));
 ////        ----------------
 ////        if (offHeapValues())
@@ -114,31 +120,33 @@ public class IgniteNodeRunner {
         return cfg;
     }
 
-    private static boolean isDebug() {
-        return false;
-    }
-
+    /**
+     * Stors given cache configuration to the file.
+     *
+     * @param cc Cache configuration.
+     * @throws IOException If exception.
+     */
     public static void storeToFile(CacheConfiguration cc) throws IOException {
-        // TODO use actual config.
-        cc = new CacheConfiguration();
-        
-//        File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
-//
-//        ccfgTmpFile.createNewFile();
-//        if (!ccfgTmpFile.createNewFile())
-//            throw new IgniteSpiException("File was not created.");
-        
-//        try(ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ccfgTmpFile))) {
-//            out.writeObject(cc);
-//        }
+        File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
+
+        boolean created = ccfgTmpFile.createNewFile();
+
+        try(ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ccfgTmpFile))) {
+            out.writeObject(cc);
+        }
     }
 
+    /**
+     * Reads cache configuration from the file.
+     *  
+     * @return Cache configuration.
+     * @throws Exception If exception.
+     */
     private static CacheConfiguration cacheConfiguration() throws Exception {
-//        File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
-//        
-//        try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(ccfgTmpFile))) {
-//            return (CacheConfiguration)in.readObject();
-//        }
-        return new CacheConfiguration();
+        File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
+
+        try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(ccfgTmpFile))) {
+            return (CacheConfiguration)in.readObject();
+        }
     }
 }
