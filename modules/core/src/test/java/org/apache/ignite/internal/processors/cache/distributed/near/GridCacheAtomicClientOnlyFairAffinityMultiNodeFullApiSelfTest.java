@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
- * Multi-node tests for partitioned cache with {@link FairAffinityFunction}.
+ *
  */
-public class GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest
-    extends GridCachePartitionedMultiNodeFullApiSelfTest {
+public class GridCacheAtomicClientOnlyFairAffinityMultiNodeFullApiSelfTest
+    extends GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
