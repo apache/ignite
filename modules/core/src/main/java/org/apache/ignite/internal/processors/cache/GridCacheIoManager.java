@@ -302,12 +302,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+            U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
                 ",res=" + res + ']', e);
         }
     }
 
-    private void processFailedMessage(UUID nodeId, GridCacheMessage msg) {
+    private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException{
         GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
         switch (msg.directType()) {
@@ -322,6 +322,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             break;
+
             case 40: {
                 GridNearAtomicUpdateRequest req = (GridNearAtomicUpdateRequest)msg;
 
@@ -335,6 +336,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             break;
+
             case 49: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
@@ -349,6 +351,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             break;
+
+            default:
+                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
+                    + msg + "]");
         }
     }
 
