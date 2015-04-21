@@ -65,7 +65,6 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedCopyOnReadDisabledMultiNodeFullApiSelfTest.class);
@@ -90,6 +89,15 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearOnlyMultiNodeP2PDisabledFullApiSelfTest.class);
+
+        // Fair affinity. TODO IGNITE-781.
+        //suite.addTestSuite(GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest.class);
+        //suite.addTestSuite(GridCachePartitionedNearDisabledFairAffinityMultiNodeFullApiSelfTest.class);
+        //suite.addTestSuite(GridCacheAtomicFairAffinityMultiNodeFullApiSelfTest.class);
+        //suite.addTestSuite(GridCacheAtomicNearEnabledFairAffinityMultiNodeFullApiSelfTest.class);
+        //suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFairAffinityMultiNodeFullApiSelfTest.class);
+        //suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiNodeFullApiSelfTest.class);
+        //suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
         suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
