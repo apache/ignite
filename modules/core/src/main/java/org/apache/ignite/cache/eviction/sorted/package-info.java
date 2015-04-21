@@ -15,27 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
-
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-
 /**
- *
+ * Contains cache sorted eviction policy implementation.
  */
-public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testRemove() throws IgniteCheckedException {
-        jcache().put("key", 1);
-
-        assert jcache().remove("key", 1);
-        assert !jcache().remove("key", 1);
-    }
-}
+package org.apache.ignite.cache.eviction.sorted;

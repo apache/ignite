@@ -206,9 +206,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @return Random entry from cache.
      */
     @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
-        IgniteKernal g1 = (IgniteKernal)g;
-
-        return g1.<Integer, Object>internalCache().randomEntry();
+        return g.<Integer, Object>cache(null).randomEntry();
     }
 
     /**

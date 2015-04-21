@@ -162,7 +162,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      */
     public void testNoDataInCache() throws Exception {
         CacheQuery<List<?>> qry = ((IgniteKernal)grid(0))
-            .getCache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
+            .getCache(null).context().queries().createSqlFieldsQuery("select age from Person where orgId = 999", false);
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -173,7 +173,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQuery() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+            createSqlFieldsQuery("select age from Person", false);
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -184,8 +185,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQueryWithArguments() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select age from Person where orgId = ?");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().createSqlFieldsQuery(
+            "select age from Person where orgId = ?", false);
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
 
@@ -231,7 +232,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //            }
 //        };
 //
-//        CacheProjection<AffinityKey<String>, Person> cachePrj =
+//        InternalCache<AffinityKey<String>, Person> cachePrj =
 //            grid(0).<AffinityKey<String>, Person>cache(null).projection(p);
 //
 //        GridCacheReduceFieldsQuery<AffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =

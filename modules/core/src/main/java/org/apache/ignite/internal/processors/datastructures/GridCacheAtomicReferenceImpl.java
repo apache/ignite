@@ -60,7 +60,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private GridCacheInternalKey key;
 
     /** Atomic reference projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -94,7 +94,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      */
     public GridCacheAtomicReferenceImpl(String name,
         GridCacheInternalKey key,
-        CacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
         GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;

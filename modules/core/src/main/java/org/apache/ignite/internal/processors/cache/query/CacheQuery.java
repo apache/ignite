@@ -27,8 +27,6 @@ import org.jetbrains.annotations.*;
 /**
  * Main API for configuring and executing cache queries.
  * <p>
- * Cache queries are created from {@link CacheQueries} API via any of the available
- * {@code createXXXQuery(...)} methods.
  * <h1 class="header">SQL Queries</h1>
  * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
@@ -60,8 +58,7 @@ import org.jetbrains.annotations.*;
  * <h1 class="header">Scan Queries</h1>
  * Sometimes when it is known in advance that SQL query will cause a full data scan, or whenever data set
  * is relatively small, the full scan query may be used. This query will iterate over all cache
- * entries, skipping over entries that don't pass the optionally provided key-value filter
- * (see {@link CacheQueries#createScanQuery(org.apache.ignite.lang.IgniteBiPredicate)} method).
+ * entries, skipping over entries that don't pass the optionally provided key-value filter.
  * <h2 class="header">Limitations</h2>
  * Data in Ignite cache is usually distributed across several nodes,
  * so some queries may not work as expected. Keep in mind following limitations

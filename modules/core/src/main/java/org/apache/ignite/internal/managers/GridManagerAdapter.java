@@ -512,9 +512,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
                         Object key, @Nullable ClassLoader ldr) {
                         try {
-                            GridCache<Object, V> cache = ctx.cache().cache(spaceName);
+                            IgniteInternalCache<Object, V> cache = ctx.cache().cache(spaceName);
 
-                            GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+                            GridCacheContext cctx = cache.context();
 
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();

@@ -62,7 +62,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private GridCacheInternalKey key;
 
     /** Atomic stamped projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -118,7 +118,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param atomicView Atomic projection.
      * @param ctx Cache context.
      */
-    public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, CacheProjection<GridCacheInternalKey,
+    public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
             GridCacheAtomicStampedValue<T, S>> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
