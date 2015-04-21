@@ -23,6 +23,7 @@ import org.apache.ignite.schema.ui.*;
 import java.io.*;
 import java.text.*;
 import java.util.*;
+import java.util.regex.*;
 
 import static org.apache.ignite.schema.ui.MessageBox.Result.*;
 
@@ -38,6 +39,48 @@ public class CodeGenerator {
     private static final String TAB3 = TAB + TAB + TAB;
     /** */
     private static final String TAB4 = TAB + TAB + TAB + TAB;
+
+    /** Java key words. */
+    private static final Set<String> javaKeywords = new HashSet<>(Arrays.asList(
+        "abstract",     "assert",        "boolean",      "break",           "byte",
+        "case",         "catch",         "char",         "class",           "const",
+        "continue",     "default",       "do",           "double",          "else",
+        "enum",         "extends",       "false",        "final",           "finally",
+        "float",        "for",           "goto",         "if",              "implements",
+        "import",       "instanceof",    "int",          "interface",       "long",
+        "native",       "new",           "null",         "package",         "private",
+        "protected",    "public",        "return",       "short",           "static",
+        "strictfp",     "super",         "switch",       "synchronized",    "this",
+        "throw",        "throws",        "transient",    "true",            "try",
+        "void",         "volatile",      "while"
+    ));
+
+    /** Regexp to validate java identifier. */
+    private static final Pattern VALID_JAVA_IDENTIFIER =
+        Pattern.compile("\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*");
+
+    /**
+     * Checks if string is a valid java identifier.
+     *
+     * @param identifier String to check.
+     * @param msg Identifier type.
+     * @param type Checked type.
+     * @throws IllegalStateException If passed string is not valid java identifier.
+     */
+    private static void checkValidJavaIdentifier(String identifier, String msg, String type) throws IllegalStateException{
+        if (identifier.isEmpty())
+            throw new IllegalStateException(msg + " could not be empty!");
+
+        for (String part : identifier.split("\\.")) {
+            if (javaKeywords.contains(part))
+                throw new IllegalStateException(msg + " could not contains reserved keyword:" +
+                    " [type = " + type + ", identifier=" + identifier + ", keyword=" + part + "]");
+
+            if (!VALID_JAVA_IDENTIFIER.matcher(part).matches())
+                throw new IllegalStateException("Invalid " + msg.toLowerCase() + " name: " +
+                    " [type = " + type + ", identifier=" + identifier + ", illegal part=" + part + "]");
+        }
+    }
 
     /**
      * Add line to source code without indent.
@@ -211,6 +254,9 @@ public class CodeGenerator {
 
         File out = new File(pkgFolder, type + ".java");
 
+        checkValidJavaIdentifier(pkg, "Package", type);
+        checkValidJavaIdentifier(type, "Type", type);
+
         if (out.exists()) {
             MessageBox.Result choice = askOverwrite.confirm(out.getName());
 
@@ -234,6 +280,8 @@ public class CodeGenerator {
         // Generate fields declaration.
         for (PojoField field : fields) {
             String fldName = field.javaName();
+
+            checkValidJavaIdentifier(fldName, "Field", type);
 
             add1(src, "/** Value for " + fldName + ". */");
 
