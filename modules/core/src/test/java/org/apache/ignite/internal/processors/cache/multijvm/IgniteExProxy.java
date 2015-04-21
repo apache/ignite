@@ -35,10 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Ignite proxy for ignite instance at another JVM.
  */
 public class IgniteExProxy implements IgniteEx {
     private static final Map<String, IgniteExProxy> gridProxies = new HashMap<>();
@@ -49,6 +46,11 @@ public class IgniteExProxy implements IgniteEx {
     private final IgniteLogger log;
     private final UUID id = UUID.randomUUID();
 
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local jvm grid.
+     */
     public IgniteExProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
@@ -283,8 +285,7 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+    @Override  public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
         return null; // TODO: CODE: implement.
     }
 
@@ -325,8 +326,7 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) throws IgniteException {
+    @Override  public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
 
@@ -342,8 +342,7 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal, @Nullable S initStamp,
+    @Override  public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal, @Nullable S initStamp,
         boolean create) throws IgniteException {
         return null; // TODO: CODE: implement.
     }
