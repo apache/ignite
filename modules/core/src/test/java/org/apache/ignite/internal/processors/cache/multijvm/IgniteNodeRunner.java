@@ -111,8 +111,7 @@ public class IgniteNodeRunner {
 
         cfg.setNodeId(nodeId);
 
-//        return cfg;
-        return theSameConf(gridName);
+        return cfg;
     }
 
     private static boolean isDebug() {
@@ -141,25 +140,5 @@ public class IgniteNodeRunner {
 //            return (CacheConfiguration)in.readObject();
 //        }
         return new CacheConfiguration();
-    }
-
-    public static IgniteConfiguration theSameConf(String gridName) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-        
-        cfg.setCacheConfiguration(new CacheConfiguration());
-        
-        cfg.setGridName(gridName);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        cfg.setIncludeProperties();
-
-        return cfg;
     }
 }

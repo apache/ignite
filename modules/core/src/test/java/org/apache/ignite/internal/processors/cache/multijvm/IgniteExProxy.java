@@ -86,6 +86,14 @@ public class IgniteExProxy implements IgniteEx {
         gridProxies.put(cfg.getGridName(), this);
     }
 
+    public Ignite localJvmGrid() {
+        return locJvmGrid;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
     @Override public String name() {
         return cfg.getGridName();
     }
@@ -248,29 +256,7 @@ public class IgniteExProxy implements IgniteEx {
     }
 
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
-        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
-
-        locJvmGrid.compute(grp).broadcast(new IgniteRunnable() {
-            @Override public void run() {
-                System.out.println(">>>>> trololo");
-            }
-        });
-        
-//        locJvmGrid.compute(grp).run(new IgniteRunnable() {
-//            @Override public void run() {
-//                X.println(">>>>> trololo");
-//            }
-//        });
-
-//        return locJvmGrid.compute(grp).apply(new C1<Set<String>, IgniteCache<K,V>>() {
-//            @Override public IgniteCache<K,V> apply(Set<String> objects) {
-//                X.println(">>>>> Cache");
-//
-//                return Ignition.ignite().cache(name);
-//            }
-//        }, Collections.<String>emptySet());
-//
-        return null;
+        return new CacheProxy(name, this);
     }
 
     @Override public IgniteTransactions transactions() {
