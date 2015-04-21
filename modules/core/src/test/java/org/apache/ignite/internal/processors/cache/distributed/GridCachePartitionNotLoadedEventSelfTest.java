@@ -23,6 +23,9 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.eclipse.jetty.util.*;
 
@@ -33,11 +36,18 @@ import java.util.*;
  */
 public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private int backupCnt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        disco.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(disco);
 
         if (gridName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
