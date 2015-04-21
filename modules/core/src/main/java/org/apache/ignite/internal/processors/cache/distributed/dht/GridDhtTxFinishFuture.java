@@ -425,7 +425,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @param nearMapping nearMapping.
          */
         MiniFuture(GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
-            assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
+            assert dhtMapping == null || nearMapping == null || dhtMapping.node().equals(nearMapping.node());
 
             this.dhtMapping = dhtMapping;
             this.nearMapping = nearMapping;
