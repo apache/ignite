@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * Multi-node tests for replicated cache with {@link RendezvousAffinityFunction}.
+ *
  */
-public class GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest extends GridCacheReplicatedMultiNodeFullApiSelfTest {
+public class IgniteCacheTxFairAffinityNodeJoinTest extends IgniteCacheTxNodeJoinTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        cfg.setAffinity(new RendezvousAffinityFunction());
+        ccfg.setAffinity(new FairAffinityFunction(128));
 
-        return cfg;
+        return ccfg;
     }
 }
