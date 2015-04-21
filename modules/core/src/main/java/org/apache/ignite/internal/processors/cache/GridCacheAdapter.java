@@ -1891,7 +1891,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         else {
             return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
                 @Override public IgniteInternalFuture<Map<K1, V1>> op(IgniteTxLocalAdapter tx) {
-                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false, readThrough);
+                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false, !readThrough);
                 }
             });
         }
