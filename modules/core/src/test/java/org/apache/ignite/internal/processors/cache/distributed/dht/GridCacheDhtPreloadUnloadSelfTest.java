@@ -173,7 +173,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 // Nothing should be unloaded since nodes are backing up each other.
-                assertEquals(cnt, c.localSize());
+                assertEquals(cnt, c.localSize(CachePeekMode.ALL));
             }
         }
         finally {

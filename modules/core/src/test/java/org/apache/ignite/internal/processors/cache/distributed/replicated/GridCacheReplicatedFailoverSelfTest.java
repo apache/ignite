@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Failover tests for replicated cache.
  */
-public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverSelfTest {
+public class GridCacheReplicatedFailoverSelfTest extends GridCacheAbstractFailoverTxSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;

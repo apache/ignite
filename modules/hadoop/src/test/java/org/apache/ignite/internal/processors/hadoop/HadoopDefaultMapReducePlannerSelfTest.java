@@ -675,7 +675,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() {
+        @Override public void stop(boolean cancel) {
             // No-op.
         }
 
@@ -946,24 +946,23 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
-            Class<V> valCls) {
+        @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridCache<K, V> cachex() {
+        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
             return null;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p) {
+        @Override public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
             return null;
         }
 
@@ -975,11 +974,6 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         /** {@inheritDoc} */
         @Override public boolean allEventsUserRecordable(int[] types) {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<String> compatibleVersions() {
-            return null;
         }
 
         /** {@inheritDoc} */

@@ -54,15 +54,20 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     @LoggerResource
     private IgniteLogger log;
 
-    /** Ignite instance */
-    @IgniteInstanceResource
+    /** Ignite instance. */
     protected Ignite ignite;
+
+    /** Local node id. */
+    protected UUID nodeId;
+
+    /** Grid instance name. */
+    protected String gridName;
 
     /** SPI name. */
     private String name;
 
     /** Grid SPI context. */
-    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null);
+    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null, false);
 
     /** Discovery listener. */
     private GridLocalEventListener paramsLsnr;
@@ -105,7 +110,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        return ignite.configuration().getNodeId();
+        return nodeId;
     }
 
     /** {@inheritDoc} */
@@ -185,7 +190,20 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         ClusterNode locNode = spiCtx == null ? null : spiCtx.localNode();
 
         // Set dummy no-op context.
-        spiCtx = new GridDummySpiContext(locNode);
+        spiCtx = new GridDummySpiContext(locNode, true);
+    }
+
+    /**
+     * Inject ignite instance.
+     */
+    @IgniteInstanceResource
+    protected void injectResources(Ignite ignite){
+        this.ignite = ignite;
+
+        if (ignite != null) {
+            nodeId = ignite.configuration().getNodeId();
+            gridName = ignite.name();
+        }
     }
 
     /**
@@ -357,6 +375,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
+     * @return {@code True} if node is stopping.
+     */
+    protected final boolean isNodeStopping() {
+        return spiCtx.isStopping();
+    }
+
+    /**
      * @return {@code true} if this check is optional.
      */
     private boolean checkOptional() {
@@ -523,13 +548,18 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** */
         private final ClusterNode locNode;
 
+        /** */
+        private final boolean stopping;
+
         /**
          * Create temp SPI context.
          *
          * @param locNode Local node.
+         * @param stopping Node stopping flag.
          */
-        GridDummySpiContext(ClusterNode locNode) {
+        GridDummySpiContext(ClusterNode locNode, boolean stopping) {
             this.locNode = locNode;
+            this.stopping = stopping;
         }
 
         /** {@inheritDoc} */
@@ -659,17 +689,17 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+        @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
+        @Override public Collection<SecuritySubject> authenticatedSubjects() {
             return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
-        @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
+        @Override public SecuritySubject authenticatedSubject(UUID subjId) {
             return null;
         }
 
@@ -687,6 +717,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Override public MessageFactory messageFactory() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStopping() {
+            return stopping;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryFailNode(UUID nodeId) {
+            return false;
         }
     }
 }

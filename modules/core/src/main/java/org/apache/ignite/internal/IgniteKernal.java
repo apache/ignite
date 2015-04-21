@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
+import org.apache.ignite.internal.processors.nodevalidation.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -97,9 +98,6 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Compatible versions. */
-    private static final String COMPATIBLE_VERS = IgniteProperties.get("ignite.compatible.vers");
 
     /** Ignite site that is shown in log messages. */
     static final String SITE = "ignite.incubator.apache.org";
@@ -189,10 +187,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
 
-    /** */
-    @GridToStringExclude
-    private final Collection<String> compatibleVers;
-
     /** Stop guard. */
     @GridToStringExclude
     private final AtomicBoolean stopGuard = new AtomicBoolean();
@@ -213,13 +207,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     public IgniteKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         this.rsrcCtx = rsrcCtx;
-
-        String[] compatibleVers = COMPATIBLE_VERS.split(",");
-
-        for (int i = 0; i < compatibleVers.length; i++)
-            compatibleVers[i] = compatibleVers[i].trim();
-
-        this.compatibleVers = Collections.unmodifiableList(Arrays.asList(compatibleVers));
     }
 
     /** {@inheritDoc} */
@@ -451,8 +438,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override
-            public String apply(Map.Entry<String, ?> e) {
+            @Override public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -748,6 +734,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
+            startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
             startProcessor(new GridClockSyncProcessor(ctx));
             startProcessor(new GridAffinityProcessor(ctx));
             startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -760,7 +747,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
             startProcessor(new GridRestProcessor(ctx));
             startProcessor(new DataStreamProcessor(ctx));
-            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
@@ -1034,11 +1021,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.ensure(cfg.getNetworkTimeout() > 0, "cfg.getNetworkTimeout() > 0");
         A.ensure(cfg.getNetworkSendRetryDelay() > 0, "cfg.getNetworkSendRetryDelay() > 0");
         A.ensure(cfg.getNetworkSendRetryCount() > 0, "cfg.getNetworkSendRetryCount() > 0");
-
-        if (!F.isEmpty(cfg.getPluginConfigurations())) {
-            for (PluginConfiguration pluginCfg : cfg.getPluginConfigurations())
-                A.notNull(pluginCfg.providerClass(), "PluginConfiguration.providerClass()");
-        }
     }
 
     /**
@@ -1171,7 +1153,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
-        add(ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
         add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_GRID_NAME, gridName);
@@ -1671,6 +1652,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * @return {@code True} if node started shutdown sequence.
+     */
+    public boolean isStopping() {
+        return stopGuard.get();
+    }
+
+    /**
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
@@ -1870,7 +1858,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             try {
                 U.onGridStop();
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException ignored) {
                 // Preserve interrupt status.
                 Thread.currentThread().interrupt();
             }
@@ -1917,7 +1905,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      * @return Kernal context.
      */
-    public GridKernalContext context() {
+    @Override public GridKernalContext context() {
         return ctx;
     }
 
@@ -2033,10 +2021,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             SB sb = new SB();
 
             for (CacheConfiguration c : cacheCfgs) {
-                String name = c.getName();
-
-                if (name == null)
-                    name = "<default>";
+                String name = U.maskName(c.getName());
 
                 sb.a("'").a(name).a("', ");
             }
@@ -2237,7 +2222,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> GridCache<K, V> getCache(@Nullable String name) {
+    public <K, V> IgniteInternalCache<K, V> getCache(@Nullable String name) {
         guard();
 
         try {
@@ -2253,7 +2238,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            return ctx.cache().publicJCache(name);
+            return ctx.cache().publicJCache(name, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
         }
         finally {
             unguard();
@@ -2270,6 +2258,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
+        guard();
+
+        try {
+            ctx.cache().createFromTemplate(cacheName).get();
+
+            return ctx.cache().publicJCache(cacheName);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2402,6 +2407,40 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
+        guard();
+
+        try {
+            ctx.cache().getOrCreateFromTemplate(cacheName).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+
+        guard();
+
+        try {
+            ctx.cache().addCacheConfiguration(cacheCfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * @return Public caches.
      */
@@ -2417,12 +2456,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache(Class<K> keyCls,
-        Class<V> valCls) {
+    @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
         guard();
 
         try {
-            return ctx.cache().utilityCache(keyCls, valCls);
+            return ctx.cache().utilityCache();
         }
         finally {
             unguard();
@@ -2430,7 +2468,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         guard();
 
         try {
@@ -2442,7 +2480,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cachex() {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex() {
         guard();
 
         try {
@@ -2454,7 +2492,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> cachesx(IgnitePredicate<? super GridCache<?, ?>>[] p) {
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
         guard();
 
         try {
@@ -2562,11 +2600,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
         return scheduler;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<String> compatibleVersions() {
-        return compatibleVers;
     }
 
     /** {@inheritDoc} */
@@ -2742,6 +2775,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(ctx);
+
+        if (cls.equals(DiscoveryNodeValidationProcessor.class))
+            return (T)new OsDiscoveryNodeValidationProcessor(ctx);
 
         Class<T> implCls = null;
 

@@ -561,17 +561,6 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param mode Peek mode.
-     * @param filter Optional filter.
-     * @return Value.
-     * @throws GridCacheEntryRemovedException If entry has been removed.
-     */
-    @Nullable public CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate... filter)
-        throws GridCacheEntryRemovedException;
-
-    /**
-     * Peeks into entry without loading value or updating statistics.
-     *
      * @param heap Read from heap flag.
      * @param offheap Read from offheap flag.
      * @param swap Read from swap flag.
@@ -591,43 +580,19 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param modes Peek modes.
-     * @param filter Optional filter.
+     * @param heap Read from heap flag.
+     * @param offheap Read from offheap flag.
+     * @param swap Read from swap flag.
+     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(Collection<GridCachePeekMode> modes,
-        CacheEntryPredicate... filter) throws GridCacheEntryRemovedException;
-
-    /**
-     * @param failFast Fail-fast flag.
-     * @param mode Peek mode.
-     * @param filter Filter.
-     * @param tx Transaction to peek value at (if mode is TX value).
-     * @return Peeked value.
-     * @throws IgniteCheckedException In case of error.
-     * @throws GridCacheEntryRemovedException If removed.
-     * @throws GridCacheFilterFailedException If filter failed.
-     */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable public GridTuple<CacheObject> peek0(boolean failFast,
-        GridCachePeekMode mode,
-        @Nullable CacheEntryPredicate[] filter,
-        @Nullable IgniteInternalTx tx)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
-
-    /**
-     * This method overwrites current in-memory value with new value.
-     * <p>
-     * Note that this method is non-transactional and non-distributed and should almost
-     * never be used. It is meant to be used when fixing some heurisitic error state.
-     *
-     * @param val Value to set.
-     * @return Previous value.
-     * @throws IgniteCheckedException If poke operation failed.
-     * @throws GridCacheEntryRemovedException if entry was unexpectedly removed.
-     */
-    public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException;
+    @Nullable public CacheObject peek(boolean heap,
+        boolean offheap,
+        boolean swap,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
      * Sets new value if current version is <tt>0</tt>
@@ -901,12 +866,11 @@ public interface GridCacheEntryEx {
     /**
      * Unswap ignoring flags.
      *
-     * @param ignoreFlags Whether to ignore swap flags.
      * @param needVal If {@code false} then do not need to deserialize value during unswap.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException;
+    @Nullable public CacheObject unswap(boolean needVal) throws IgniteCheckedException;
 
     /**
      * Tests whether or not given metadata is set.

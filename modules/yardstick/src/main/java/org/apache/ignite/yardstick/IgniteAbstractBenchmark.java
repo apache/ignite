@@ -24,7 +24,6 @@ import org.yardstickframework.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 
@@ -45,13 +44,13 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
         jcommander(cfg.commandLineArguments(), args, "<ignite-driver>");
 
         if (Ignition.state() != IgniteState.STARTED) {
-            node = new IgniteNode(args.distributionMode() == CLIENT_ONLY);
+            node = new IgniteNode(args.isClientOnly() && !args.isNearCache());
 
             node.start(cfg);
         }
         else
             // Support for mixed benchmarks mode.
-            node = new IgniteNode(args.distributionMode() == CLIENT_ONLY, Ignition.ignite());
+            node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), Ignition.ignite());
 
         waitForNodes();
     }

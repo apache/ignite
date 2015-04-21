@@ -211,8 +211,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 undeploys.put(ctx.name(), queue = new ArrayList<>());
 
             queue.add(new CA() {
-                @Override
-                public void apply() {
+                @Override public void apply() {
                     onUndeploy0(ldr, ctx);
                 }
             });
@@ -256,7 +255,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             cacheCtx.near().dht().context().swap().onUndeploy(ldr) :
             cacheCtx.swap().onUndeploy(ldr);
 
-        if (!cacheCtx.system()) {
+        if (cacheCtx.userCache()) {
             U.quietAndWarn(log, "");
             U.quietAndWarn(
                 log,
@@ -310,7 +309,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         Object val0;
 
         try {
-            CacheObject v = entry.peek(GridCachePeekMode.GLOBAL, CU.empty0());
+            CacheObject v = entry.peek(true, false, false, null);
 
             key0 = key.value(cache.context().cacheObjectContext(), false);
 
@@ -321,7 +320,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         catch (GridCacheEntryRemovedException ignore) {
             return false;
         }
-        catch (IgniteException ignore) {
+        catch (IgniteCheckedException | IgniteException ignore) {
             // Peek can throw runtime exception if unmarshalling failed.
             return true;
         }

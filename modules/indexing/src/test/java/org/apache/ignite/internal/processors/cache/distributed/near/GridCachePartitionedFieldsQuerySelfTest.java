@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -56,6 +57,10 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
 
         cc.setNearConfiguration(nearConfiguration());
 
+        cc.setIndexedTypes(String.class, Organization.class,
+            Integer.class, Integer.class,
+            AffinityKey.class, Person.class);
+
         return cc;
     }
 
@@ -63,8 +68,8 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
      * @throws Exception If failed.
      */
     public void testIncludeBackups() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).queries().createSqlFieldsQuery(
-            "select _KEY, name, age from Person");
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).internalCache(null).context().queries().createSqlFieldsQuery(
+            "select _KEY, name, age from Person", false);
 
         qry.includeBackups(true);
 

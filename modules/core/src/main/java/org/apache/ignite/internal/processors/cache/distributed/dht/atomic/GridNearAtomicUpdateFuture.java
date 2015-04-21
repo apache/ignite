@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -136,9 +135,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Task name hash. */
     private final int taskNameHash;
-
-    /** Map time. */
-    private volatile long mapTime;
 
     /**
      * @param cctx Cache context.
@@ -269,15 +265,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void checkTimeout(long timeout) {
-        long mapTime0 = mapTime;
-
-        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
-            onDone(new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
-                "(consider increasing networkTimeout configuration property)."));
     }
 
     /** {@inheritDoc} */
@@ -449,8 +436,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 return;
             }
 
-            mapTime = U.currentTimeMillis();
-
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
         }
@@ -582,7 +567,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 syncMode,
                 op,
                 retval,
-                op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 expiryPlc,
                 invokeArgs,
                 filter,
@@ -705,7 +689,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             syncMode,
                             op,
                             retval,
-                            op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             expiryPlc,
                             invokeArgs,
                             filter,

@@ -257,7 +257,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
 
                     return true;
                 }
@@ -293,7 +293,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
                 if (hasFilters || retVal || txEntry.op() == GridCacheOperation.DELETE) {
-                    cached.unswap(true, retVal);
+                    cached.unswap(retVal);
 
                     CacheObject val = cached.innerGet(
                         tx,
@@ -856,13 +856,15 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (!F.isEmpty(nearWrites)) {
                         for (IgniteTxEntry entry : nearWrites) {
                             try {
-                                GridCacheMvccCandidate added = entry.cached().candidate(version());
+                                if (entry.explicitVersion() == null) {
+                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                assert added != null;
-                                assert added.dhtLocal();
+                                    assert added != null : "Missing candidate for cache entry:" + entry;
+                                    assert added.dhtLocal();
 
-                                if (added.ownerVersion() != null)
-                                    req.owned(entry.txKey(), added.ownerVersion());
+                                    if (added.ownerVersion() != null)
+                                        req.owned(entry.txKey(), added.ownerVersion());
+                                }
 
                                 break;
                             }
@@ -912,15 +914,17 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                         for (IgniteTxEntry entry : nearMapping.writes()) {
                             try {
-                                GridCacheMvccCandidate added = entry.cached().candidate(version());
+                                if (entry.explicitVersion() == null) {
+                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
+                                    assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
+                                        "[added=" + added + ", entry=" + entry + ']';
+                                    assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                        "[added=" + added + ", entry=" + entry + ']';
 
-                                if (added != null && added.ownerVersion() != null)
-                                    req.owned(entry.txKey(), added.ownerVersion());
+                                    if (added != null && added.ownerVersion() != null)
+                                        req.owned(entry.txKey(), added.ownerVersion());
+                                }
 
                                 break;
                             }
@@ -971,7 +975,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(entry);
 
-        if (expiry != null && entry.op() == READ) {
+        if (expiry != null && (entry.op() == READ || entry.op() == NOOP)) {
             entry.op(NOOP);
 
             entry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
@@ -1116,7 +1120,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             GridDistributedTxMapping dhtMapping,
             GridDistributedTxMapping nearMapping
         ) {
-            assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
+            assert dhtMapping == null || nearMapping == null || dhtMapping.node().equals(nearMapping.node());
 
             this.nodeId = nodeId;
             this.dhtMapping = dhtMapping;

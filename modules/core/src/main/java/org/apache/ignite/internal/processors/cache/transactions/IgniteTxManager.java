@@ -98,10 +98,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final GridBoundedConcurrentOrderedMap<GridCacheVersion, Boolean> completedVers =
         new GridBoundedConcurrentOrderedMap<>(Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
-    /** Transaction synchronizations. */
-    private final Collection<TransactionSynchronization> syncs =
-        new GridConcurrentHashSet<>();
-
     /** Transaction finish synchronizer. */
     private GridCacheTxFinishSync txFinishSync;
 
@@ -362,12 +358,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
-        boolean invalidate,
         boolean storeEnabled,
         int txSize,
         @Nullable IgniteTxKey grpLockKey,
         boolean partLock) {
-        assert sysCacheCtx == null || sysCacheCtx.system();
+        assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
         UUID subjId = null; // TODO GG-9141 how to get subj ID?
 
@@ -382,7 +377,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             concurrency,
             isolation,
             timeout,
-            invalidate,
             storeEnabled,
             txSize,
             grpLockKey,
@@ -394,6 +388,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param tx Created transaction.
      * @return Started transaction.
      */
@@ -417,7 +412,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // Do not add remote and dht local transactions as remote node may have the same thread ID
             // and overwrite local transaction.
             if (tx.local() && !tx.dht()) {
-                if (cacheCtx == null || !cacheCtx.system())
+                if (cacheCtx == null || !cacheCtx.systemTx())
                     threadMap.put(tx.threadId(), tx);
                 else
                     sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
@@ -568,8 +563,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             return false;
         }
 
-        onTxStateChange(null, ACTIVE, tx);
-
         if (log.isDebugEnabled())
             log.debug("Transaction started: " + tx);
 
@@ -694,12 +687,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cctx Cache context.
      * @param threadId Id of thread for transaction.
      * @return Transaction for thread with given ID.
      */
     @SuppressWarnings({"unchecked"})
     private <T> T tx(GridCacheContext cctx, long threadId) {
-        if (cctx == null || !cctx.system())
+        if (cctx == null || !cctx.systemTx())
             return (T)threadMap.get(threadId);
 
         TxThreadKey key = new TxThreadKey(threadId, cctx.cacheId());
@@ -1018,6 +1012,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Collection of active transactions.
+     */
+    public Collection<IgniteInternalTx> activeTransactions() {
+        return F.concat(false, idMap.values(), nearIdMap.values());
+    }
+
+    /**
      * @param xidVer Completed transaction version.
      * @param nearXidVer Optional near transaction ID.
      * @return If transaction was not already present in completed set.
@@ -1263,7 +1264,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             // 15. Update metrics.
             if (!tx.dht() && tx.local()) {
-                cctx.txMetrics().onTxCommit();
+                if (!tx.system())
+                    cctx.txMetrics().onTxCommit();
 
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -1337,7 +1339,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             // 11. Update metrics.
             if (!tx.dht() && tx.local()) {
-                cctx.txMetrics().onTxRollback();
+                if (!tx.system())
+                    cctx.txMetrics().onTxRollback();
 
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
@@ -1699,44 +1702,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param sync Transaction synchronizations to add.
-     */
-    public void addSynchronizations(TransactionSynchronization... sync) {
-        if (F.isEmpty(sync))
-            return;
-
-        F.copy(syncs, sync);
-    }
-
-    /**
-     * @param sync Transaction synchronizations to remove.
-     */
-    public void removeSynchronizations(TransactionSynchronization... sync) {
-        if (F.isEmpty(sync))
-            return;
-
-        F.lose(syncs, false, Arrays.asList(sync));
-    }
-
-    /**
-     * @return Registered transaction synchronizations
-     */
-    public Collection<TransactionSynchronization> synchronizations() {
-        return Collections.unmodifiableList(new LinkedList<>(syncs));
-    }
-
-    /**
-     * @param prevState Previous state.
-     * @param newState New state.
-     * @param tx Cache transaction.
-     */
-    public void onTxStateChange(@Nullable TransactionState prevState, TransactionState newState, IgniteInternalTx tx) {
-        // Notify synchronizations.
-        for (TransactionSynchronization s : syncs)
-            s.onStateChanged(prevState, newState, tx.proxy());
-    }
-
-    /**
      * @param tx Committing transaction.
      */
     public void txContext(IgniteInternalTx tx) {
@@ -2052,8 +2017,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          */
         private void commitIfPrepared(IgniteInternalTx tx) {
             assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
-            assert !F.isEmpty(tx.transactionNodes());
-            assert tx.nearXidVersion() != null;
+            assert !F.isEmpty(tx.transactionNodes()) : tx;
+            assert tx.nearXidVersion() != null : tx;
 
             GridCacheOptimisticCheckPreparedTxFuture fut = new GridCacheOptimisticCheckPreparedTxFuture<>(
                 cctx,

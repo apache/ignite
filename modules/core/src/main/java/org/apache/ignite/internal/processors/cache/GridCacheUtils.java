@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -55,7 +56,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Cache utility methods.
@@ -75,9 +75,6 @@ public class GridCacheUtils {
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
-
-    /** Peek flags. */
-    private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
 
     /** TTL: minimum positive value. */
     public static final long TTL_MINIMUM = 1L;
@@ -393,34 +390,6 @@ public class GridCacheUtils {
         assert swapSpaceName != null;
 
         return "gg-swap-cache-dflt".equals(swapSpaceName) ? null : swapSpaceName.substring("gg-swap-cache-".length());
-    }
-
-    /**
-     * Gets closure which returns {@code Entry} given cache key.
-     * If current cache is DHT and key doesn't belong to current partition,
-     * {@code null} is returned.
-     *
-     * @param ctx Cache context.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
-     */
-    public static <K, V> IgniteClosure<K, Cache.Entry<K, V>> cacheKey2Entry(
-        final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, Cache.Entry<K, V>>() {
-            @Nullable @Override public Cache.Entry<K, V> apply(K k) {
-                try {
-                    return ctx.cache().entry(k);
-                }
-                catch (GridDhtInvalidPartitionException ignored) {
-                    return null;
-                }
-            }
-
-            @Override public String toString() {
-                return "Key-to-entry transformer.";
-            }
-        };
     }
 
     /**
@@ -1025,13 +994,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Peek flags.
-     */
-    public static GridCachePeekMode[] peekFlags() {
-        return PEEK_FLAGS;
-    }
-
-    /**
      * @param log Logger.
      * @param excl Excludes.
      * @return Future listener that logs errors.
@@ -1197,7 +1159,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
         TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1633,8 +1595,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(CacheProjection<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
@@ -1682,10 +1644,9 @@ public class GridCacheUtils {
      *
      * @param cache Cache.
      * @param key Key.
-     * @return {@code True} if entry was invalidated.
      */
-    public static <K, V> boolean invalidate(CacheProjection<K, V> cache, K key) {
-        return cache.clearLocally(key);
+    public static <K, V> void invalidate(IgniteCache<K, V> cache, K key) {
+        cache.localClear(key);
     }
 
     /**
@@ -1827,5 +1788,43 @@ public class GridCacheUtils {
      */
     @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
         return cacheObj != null ? cacheObj.<T>value(ctx.cacheObjectContext(), cpy) : null;
+    }
+
+    /**
+     * @param cfg Cache configuration.
+     * @param cl Type of cache plugin configuration.
+     * @return Cache plugin configuration by type from cache configuration or <code>null</code>.
+     */
+    public static <C extends CachePluginConfiguration> C cachePluginConfiguration(
+        CacheConfiguration cfg, Class<C> cl) {
+        if (cfg.getPluginConfigurations() != null) {
+            for (CachePluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
+                if (pluginCfg.getClass() == cl)
+                    return (C)pluginCfg;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cfg Config.
+     * @param cls Class.
+     * @return Not <code>null</code> list.
+     */
+    public static <T extends CachePluginConfiguration> List<T> cachePluginConfigurations(IgniteConfiguration cfg,
+        Class<T> cls) {
+        List<T> res = new ArrayList<>();
+
+        if (cfg.getCacheConfiguration() != null) {
+            for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+                for (CachePluginConfiguration pluginCcfg : ccfg.getPluginConfigurations()) {
+                    if (cls == pluginCcfg.getClass())
+                        res.add((T)pluginCcfg);
+                }
+            }
+        }
+
+        return res;
     }
 }

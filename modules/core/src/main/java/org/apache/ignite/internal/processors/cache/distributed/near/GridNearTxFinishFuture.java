@@ -62,7 +62,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     private IgniteUuid futId;
 
     /** Transaction. */
-    @GridToStringExclude
+    @GridToStringInclude
     private GridNearTxLocal tx;
 
     /** Commit flag. */
@@ -85,11 +85,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal tx, boolean commit) {
         super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
 
-        assert cctx != null;
-
         this.cctx = cctx;
         this.tx = tx;
         this.commit = commit;
+
+        ignoreInterrupts(true);
 
         mappings = tx.mappings();
 
@@ -264,7 +264,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @return Synchronous flag.
      */
     private boolean isSync() {
-        return commit ? tx.syncCommit() : tx.syncRollback();
+        return tx.explicitLock() || (commit ? tx.syncCommit() : tx.syncRollback());
     }
 
     /**

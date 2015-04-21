@@ -52,7 +52,7 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(String cacheName) {
-            GridCache cache = ignite.cachex(cacheName);
+            IgniteInternalCache cache = ignite.cachex(cacheName);
 
             if (cache != null)
                 cache.mxBean().clear();

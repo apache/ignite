@@ -47,15 +47,43 @@ public class DynamicCacheDescriptor {
     /** Started flag. */
     private boolean started;
 
+    /** Cache type. */
+    private CacheType cacheType;
+
     /** */
     private volatile Map<UUID, CacheConfiguration> rmtCfgs;
 
+    /** Template configuration flag. */
+    private boolean template;
+
     /**
      * @param cacheCfg Cache configuration.
+     * @param cacheType Cache type.
+     * @param template {@code True} if this is template configuration.
+     * @param deploymentId Deployment ID.
      */
-    public DynamicCacheDescriptor(CacheConfiguration cacheCfg, IgniteUuid deploymentId) {
+    public DynamicCacheDescriptor(CacheConfiguration cacheCfg,
+        CacheType cacheType,
+        boolean template,
+        IgniteUuid deploymentId) {
         this.cacheCfg = cacheCfg;
+        this.cacheType = cacheType;
+        this.template = template;
         this.deploymentId = deploymentId;
+    }
+
+    /**
+     * @return {@code True} if this is template configuration.
+     */
+    public boolean template() {
+        return template;
+    }
+
+    /**
+     * @return Cache type.
+     */
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**
@@ -166,6 +194,6 @@ public class DynamicCacheDescriptor {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", cacheCfg.getName());
+        return S.toString(DynamicCacheDescriptor.class, this, "cacheName", U.maskName(cacheCfg.getName()));
     }
 }

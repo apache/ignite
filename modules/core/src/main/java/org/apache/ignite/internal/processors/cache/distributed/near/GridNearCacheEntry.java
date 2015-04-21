@@ -58,7 +58,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param hash Key hash value.
      * @param val Entry value.
      * @param next Next entry in the linked list.
-     * @param ttl Time to live.
      * @param hdrId Header id.
      */
     public GridNearCacheEntry(GridCacheContext ctx,
@@ -66,10 +65,9 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         int hash,
         CacheObject val,
         GridCacheMapEntry next,
-        long ttl,
         int hdrId)
     {
-        super(ctx, key, hash, val, next, ttl, hdrId);
+        super(ctx, key, hash, val, next, hdrId);
 
         part = ctx.affinity().partition(key);
     }
@@ -159,7 +157,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                 // Version does not change for load ops.
                                 update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
 
-                                if (cctx.deferredDelete()) {
+                                if (cctx.deferredDelete() && !isNew() && !isInternal()) {
                                     boolean deleted = val == null;
 
                                     if (deleted != deletedUnlocked()) {
@@ -198,6 +196,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param ver Version.
      * @param dhtVer DHT version.
      * @param primaryNodeId Primary node ID.
+     * @param topVer Topology version.
      * @return {@code True} if reset was done.
      * @throws GridCacheEntryRemovedException If obsolete.
      * @throws IgniteCheckedException If failed.
@@ -240,6 +239,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param expireTime Expire time.
      * @param ttl Time to live.
      * @param primaryNodeId Primary node ID.
+     * @param topVer Topology version.
      */
     public void updateOrEvict(GridCacheVersion dhtVer,
         @Nullable CacheObject val,
@@ -384,7 +384,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     if (!dhtVer.equals(dhtVersion())) {
                         update(val, expireTime, ttl, ver);
 
-                        if (cctx.deferredDelete()) {
+                        if (cctx.deferredDelete() && !isInternal()) {
                             boolean deleted = val == null;
 
                             if (deleted != deletedUnlocked()) {
@@ -499,7 +499,15 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 return null;
 
             // Local lock for near cache is a local lock.
-            cand = mvcc.addNearLocal(this, locId, dhtNodeId, threadId, ver, timeout, tx, implicitSingle);
+            cand = mvcc.addNearLocal(
+                this,
+                locId,
+                dhtNodeId,
+                threadId,
+                ver,
+                timeout,
+                tx,
+                implicitSingle);
 
             owner = mvcc.anyOwner();
 
@@ -622,12 +630,20 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /**
      * @param nodeId Primary node ID.
+     * @param topVer Topology version.
      */
     private void primaryNode(UUID nodeId, AffinityTopologyVersion topVer) {
         assert Thread.holdsLock(this);
         assert nodeId != null;
 
-        ClusterNode primary = cctx.affinity().primary(part, topVer);
+        ClusterNode primary = null;
+
+        try {
+            primary = cctx.affinity().primary(part, topVer);
+        }
+        catch (IllegalStateException ignore) {
+            // Do not have affinity history.
+        }
 
         if (primary == null || !nodeId.equals(primary.id())) {
             this.topVer = -1L;

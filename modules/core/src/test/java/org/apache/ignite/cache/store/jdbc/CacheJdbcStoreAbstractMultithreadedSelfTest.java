@@ -119,6 +119,13 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
         c.setDiscoverySpi(disco);
 
+        c.setCacheConfiguration(cacheConfiguration());
+
+        return c;
+    }
+
+    /** */
+    protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
@@ -164,9 +171,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
 
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cc;
     }
 
     /**

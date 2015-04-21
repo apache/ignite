@@ -172,7 +172,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.CONTINUOUS,
+                        CacheQueryType.CONTINUOUS.name(),
                         cacheName,
                         null,
                         null,
@@ -198,16 +198,11 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 boolean notify = true;
 
                 if (rmtFilter != null) {
-                    CacheFlag[] f = cctx.forceLocalRead();
-
                     try {
                         notify = rmtFilter.evaluate(evt);
                     }
                     catch (Exception e) {
                         U.error(cctx.logger(CacheContinuousQueryHandler.class), "CacheEntryEventFilter failed: " + e);
-                    }
-                    finally {
-                        cctx.forceFlags(f);
                     }
                 }
 
@@ -241,7 +236,7 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
                             EVT_CACHE_QUERY_OBJECT_READ,
-                            CacheQueryType.CONTINUOUS,
+                            CacheQueryType.CONTINUOUS.name(),
                             cacheName,
                             null,
                             null,

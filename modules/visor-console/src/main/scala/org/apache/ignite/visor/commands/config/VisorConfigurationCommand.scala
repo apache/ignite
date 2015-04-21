@@ -20,7 +20,6 @@ package org.apache.ignite.visor.commands.config
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
 
@@ -184,9 +183,7 @@ class VisorConfigurationCommand {
             assert(node != null)
 
             val cfg = try
-                ignite.compute(ignite.cluster.forNode(node))
-                    .withNoFailover()
-                    .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
+                nodeConfiguration(node.id())
             catch {
                 case e: IgniteException =>
                     scold(e.getMessage)
@@ -392,9 +389,13 @@ class VisorConfigurationCommand {
             } else
                 println("\nNo system properties defined.")
 
-            cfg.caches().foreach(cacheCfg => {
-                VisorCacheCommand.showCacheConfiguration("\nCache '" + escapeName(cacheCfg.name()) + "':", cacheCfg)
-            })
+            try
+                cacheConfigurations(node.id).foreach(cacheCfg =>
+                    VisorCacheCommand.showCacheConfiguration("\nCache '" + escapeName(cacheCfg.name()) + "':", cacheCfg))
+            catch {
+                case e: IgniteException =>
+                    scold(e.getMessage)
+            }
         }
     }
 

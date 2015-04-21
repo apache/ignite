@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
@@ -81,8 +82,13 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCachePrivateExecutionContextTest.class);
         suite.addTestSuite(IgniteCacheSharedExecutionContextTest.class);
 
+        // Warmup closure tests.
+        suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
+
         // Affinity tests.
         suite.addTestSuite(GridFairAffinityFunctionNodesSelfTest.class);
+        suite.addTestSuite(GridFairAffinityFunctionSelfTest.class);
+        suite.addTestSuite(IgniteFairAffinityDynamicCacheSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 
@@ -132,7 +138,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
         suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicTimeoutSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
+        suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
@@ -219,6 +226,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
         suite.addTest(new TestSuite(GridPartitionedBackupLoadSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedLoadCacheSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionNotLoadedEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtEvictionsDisabledSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionEventSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionEventSelfTest.class));
@@ -238,7 +246,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicExpiredEntriesPreloadSelfTest.class));
 
-        suite.addTest(new TestSuite(GridCacheReturnValueTransferSelfTest.class));
         suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
 
         // TODO: GG-7242, GG-7243: Enabled when fixed.
@@ -252,6 +259,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Value consistency tests.
         suite.addTestSuite(GridCacheValueConsistencyAtomicSelfTest.class);
+        suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest.class);
         suite.addTestSuite(GridCacheValueConsistencyTransactionalSelfTest.class);
@@ -405,15 +413,32 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
         suite.addTestSuite(IgniteCacheTxCopyOnReadDisabledTest.class);
 
-        // TODO: IGNITE-477.
-        // suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
+        suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
+        suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
         suite.addTestSuite(GridCacheMarshallingNodeJoinSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheJdbcBlobStoreNodeRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderNearEnabledStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledStoreValueTest.class);
+
+        suite.addTestSuite(IgniteCacheLockFailoverSelfTest.class);
+        suite.addTestSuite(IgniteCacheMultiTxLockSelfTest.class);
+
+        suite.addTestSuite(IgniteInternalCacheTypesTest.class);
 
         return suite;
     }

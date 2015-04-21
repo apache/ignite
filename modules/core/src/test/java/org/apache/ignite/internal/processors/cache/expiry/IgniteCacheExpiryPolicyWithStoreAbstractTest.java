@@ -197,9 +197,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
             if (e == null) {
                 if (primaryOnly)
-                    assertTrue("Not found " + key, !cache.affinity().isPrimary(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(null).isPrimary(grid.localNode(), key));
                 else
-                    assertTrue("Not found " + key, !cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(null).isPrimaryOrBackup(grid.localNode(), key));
             }
             else {
                 found = true;

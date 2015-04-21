@@ -57,18 +57,4 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
     public boolean clientExists() {
         return clientExists;
     }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeBoolean(clientExists);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        clientExists = in.readBoolean();
-    }
 }

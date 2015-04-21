@@ -31,7 +31,6 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -107,6 +106,8 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
 
+        cc.setNearConfiguration(nearCacheConfiguration());
+
         c.setCacheConfiguration(cc);
 
         return c;
@@ -115,8 +116,8 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     /**
      * @return Distribution mode.
      */
-    protected CacheDistributionMode mode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearCacheConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /**
@@ -125,22 +126,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testPutFromPrimary() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
-        int key = 0;
-
-        while (true) {
-            boolean found = false;
-
-            for (ClusterNode n : grid(0).cluster().nodes()) {
-                if (grid(0).affinity(null).isPrimary(n, key)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (found)
-                break;
-        }
+        int key = primaryKey(cache);
 
         assertNull(cache.getAndPut(key, "val"));
 
@@ -153,26 +139,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testPutFromBackup() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
-        int key = 0;
-
-        while (true) {
-            boolean found = false;
-
-            for (ClusterNode n : grid(0).cluster().nodes()) {
-                if (grid(0).affinity(null).isBackup(n, key)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (found)
-                break;
-        }
+        int key = backupKey(cache);
 
         assertNull(cache.getAndPut(key, "val"));
 
-        checkStoreUsage(1, 1, 0, 1);
+        checkStoreUsage(1, 1, 0, nearCacheConfiguration() == null ? 2 : 1);
     }
 
     /**
@@ -181,26 +152,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testPutFromNear() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
-        int key = 0;
-
-        while (true) {
-            boolean found = false;
-
-            for (ClusterNode n : grid(0).cluster().nodes()) {
-                if (!grid(0).affinity(null).isPrimaryOrBackup(n, key)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (found)
-                break;
-        }
+        int key = nearKey(cache);
 
         assertNull(cache.getAndPut(key, "val"));
 
-        checkStoreUsage(1, 1, 0, 1);
+        checkStoreUsage(1, 1, 0, nearCacheConfiguration() == null ? 2 : 1);
     }
 
     /**
@@ -209,22 +165,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testPutIfAbsentFromPrimary() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
-        int key = 0;
-
-        while (true) {
-            boolean found = false;
-
-            for (ClusterNode n : grid(0).cluster().nodes()) {
-                if (grid(0).affinity(null).isPrimary(n, key)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (found)
-                break;
-        }
+        int key = primaryKey(cache);
 
         assertTrue(cache.putIfAbsent(key, "val"));
 
@@ -237,26 +178,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testPutIfAbsentFromBackup() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
-        int key = 0;
-
-        while (true) {
-            boolean found = false;
-
-            for (ClusterNode n : grid(0).cluster().nodes()) {
-                if (grid(0).affinity(null).isBackup(n, key)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (found)
-                break;
-        }
+        int key = backupKey(cache);
 
         assertTrue(cache.putIfAbsent(key, "val"));
 
-        checkStoreUsage(1, 1, 0, 1);
+        checkStoreUsage(1, 1, 0, nearCacheConfiguration() == null ? 2 : 1);
     }
 
     /**
@@ -265,26 +191,11 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
     public void testPutIfAbsentFromNear() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
 
-        int key = 0;
-
-        while (true) {
-            boolean found = false;
-
-            for (ClusterNode n : grid(0).cluster().nodes()) {
-                if (!grid(0).affinity(null).isPrimaryOrBackup(n, key)) {
-                    found = true;
-
-                    break;
-                }
-            }
-
-            if (found)
-                break;
-        }
+        int key = nearKey(cache);
 
         assertTrue(cache.putIfAbsent(key, "val"));
 
-        checkStoreUsage(1, 1, 0, 1);
+        checkStoreUsage(1, 1, 0, nearCacheConfiguration() == null ? 2 : 1);
     }
 
     /**
@@ -308,7 +219,6 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      */
     public void testMultipleOperations() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
-        //GridCache<Integer, String> cache = cache(0);
 
         try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");

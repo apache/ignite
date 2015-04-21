@@ -83,7 +83,7 @@ import java.io.*;
  */
 public abstract class HibernateAccessStrategyAdapter {
     /** */
-    protected final GridCache<Object, Object> cache;
+    protected final IgniteInternalCache<Object, Object> cache;
 
     /** Grid. */
     protected final Ignite ignite;
@@ -95,7 +95,7 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param ignite Grid.
      * @param cache Cache.
      */
-    protected HibernateAccessStrategyAdapter(Ignite ignite, GridCache<Object, Object> cache) {
+    protected HibernateAccessStrategyAdapter(Ignite ignite, IgniteInternalCache<Object, Object> cache) {
         this.cache = cache;
         this.ignite = ignite;
 
@@ -139,7 +139,7 @@ public abstract class HibernateAccessStrategyAdapter {
      */
     protected void putFromLoad(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -283,9 +283,9 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param key Key.
      * @throws CacheException If failed.
      */
-    static void evict(Ignite ignite, CacheProjection<Object,Object> cache, Object key) throws CacheException {
+    static void evict(Ignite ignite, IgniteInternalCache<Object,Object> cache, Object key) throws CacheException {
         try {
-            ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
+            ignite.compute(ignite.cluster()).call(new ClearKeyCallable(key, cache.name()));
         }
         catch (IgniteException e) {
             throw new CacheException(e);
@@ -298,7 +298,7 @@ public abstract class HibernateAccessStrategyAdapter {
      * @param cache Cache.
      * @throws CacheException If failed.
      */
-    static void evictAll(CacheProjection<Object,Object> cache) throws CacheException {
+    static void evictAll(IgniteInternalCache<Object,Object> cache) throws CacheException {
         try {
             cache.clear();
         }
@@ -342,7 +342,7 @@ public abstract class HibernateAccessStrategyAdapter {
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+            IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
             assert cache != null;
 

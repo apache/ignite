@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -53,7 +54,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
     private static final boolean TEST_INFO = true;
 
     /** Number of test grids (nodes). Should not be less than 2. */
-    private static final int GRID_CNT = 2;
+    private static final int GRID_CNT = 3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -146,7 +147,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<Object, Object> c = ((IgniteKernal)grid(i)).getCache(null);
+            IgniteCache<Object, Object> c = grid(i).cache(null);
 
             assertEquals(0, c.size());
         }
@@ -175,7 +176,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<Object, Object> c = ((IgniteKernal)grid(i)).getCache(null);
+            IgniteCache<Object, Object> c = grid(i).cache(null);
 
             c.removeAll();
 
@@ -184,29 +185,15 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             // removeAll() removes mapping only when it presents at a primary node.
             // To remove all mappings used force remove by key.
             if (c.size() > 0) {
-                for (Object k : c.keySet()) {
-                    c.remove(k);
-                }
+                for (Cache.Entry<Object, Object> e : c.localEntries())
+                    c.remove(e.getKey());
             }
 
-            Iterator<Map.Entry<Object, Object>> it = c.swapIterator();
+            U.sleep(5000);
 
-            while (it.hasNext()) {
-                it.next();
-
-                it.remove();
-            }
-
-            it = c.offHeapIterator();
-
-            while (it.hasNext()) {
-                it.next();
-
-                it.remove();
-            }
-
-            assertEquals("Swap keys: " + c.swapKeys(), 0, c.swapKeys());
-            assertEquals(0, c.offHeapEntriesCount());
+            assertEquals("Swap keys: " + c.size(CachePeekMode.SWAP), 0, c.size(CachePeekMode.SWAP));
+            assertEquals(0, c.size(CachePeekMode.OFFHEAP));
+            assertEquals(0, c.size(CachePeekMode.PRIMARY));
             assertEquals(0, c.size());
         }
     }
@@ -226,7 +213,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         Set<UUID> nodes = new HashSet<>();
 
         for (Cache.Entry<Integer, Integer> entry : entries)
-            nodes.add(((IgniteKernal)g).getCache(null).affinity().mapKeyToPrimaryAndBackups(entry.getKey()).iterator().next().id());
+            nodes.add(g.affinity(null).mapKeyToPrimaryAndBackups(entry.getKey()).iterator().next().id());
 
         return nodes;
     }
@@ -238,7 +225,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapString() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -248,7 +235,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, String> c = g.cache(null);
         final IgniteCache<Integer, Long> cl = g.cache(null);
 
-        assertEquals(0, ((IgniteKernal)g).getCache(null).size());
+        assertEquals(0, g.cache(null).localSize());
         assertEquals(0, c.query(new SqlQuery(String.class, "1 = 1")).getAll().size());
         assertEquals(0, cl.query(new SqlQuery(Long.class, "1 = 1")).getAll().size());
 
@@ -289,15 +276,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            QueryCursor<Cache.Entry<Integer, String>> qry = c.query(
-                                new SqlQuery(String.class, "_val between ? and ?").setArgs(
-                                    String.valueOf(from), String.valueOf(from + 250)));
-
-                            Collection<Cache.Entry<Integer, String>> res = qry.getAll();
-
-                            for (Cache.Entry<Integer, String> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(String.class, "_val between ? and ?").setArgs(
+                                    String.valueOf(from), String.valueOf(from + 250))).getAll();
                     }
                 }
             }
@@ -317,7 +297,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapLong() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -327,7 +307,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, Long> c = g.cache(null);
         final IgniteCache<Integer, String> c1 = g.cache(null);
 
-        assertEquals(0, ((IgniteKernal)g).getCache(null).size());
+        assertEquals(0, g.cache(null).localSize());
         assertEquals(0, c1.query(new SqlQuery(String.class, "1 = 1")).getAll().size());
         assertEquals(0, c.query(new SqlQuery(Long.class, "1 = 1")).getAll().size());
 
@@ -370,12 +350,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, Long>> res = c.query(new SqlQuery(Long.class,
-                                "_val between ? and ?").setArgs(from, from + 250)).getAll();
-
-                            for (Cache.Entry<Integer, Long> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(Long.class, "_val between ? and ?").setArgs(from, from + 250)).getAll();
                     }
                 }
             }
@@ -395,7 +370,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedSwapUnswapLongString() throws Exception {
-        int threadCnt = 150;
+        int threadCnt = 50;
         final int keyCnt = 2000;
         final int valCnt = 10000;
 
@@ -447,13 +422,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, Object>> res = c.query(
-                                new SqlQuery(Object.class, "_val between ? and ?").setArgs(from, from + 250))
+                            c.query(new SqlQuery(Object.class, "_val between ? and ?").setArgs(from, from + 250))
                                 .getAll();
-
-                            for (Cache.Entry<Integer, Object> ignored : res) {
-                                //No-op.
-                            }
                     }
                 }
             }
@@ -480,7 +450,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         // Put test values into cache.
         final IgniteCache<Integer, TestValue> c = g.cache(null);
 
-        assertEquals(0, ((IgniteKernal)g).getCache(null).size());
+        assertEquals(0, g.cache(null).localSize());
         assertEquals(0, c.query(new SqlQuery(TestValue.class, "1 = 1")).getAll().size());
 
         Random rnd = new Random();
@@ -522,13 +492,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, TestValue>> res =
-                                c.query(new SqlQuery(TestValue.class, "TestValue.val between ? and ?").setArgs(
-                                    from, from + 250)).getAll();
-
-                            for (Cache.Entry<Integer, TestValue> ignored : res) {
-                                //No-op.
-                            }
+                            c.query(new SqlQuery(TestValue.class, "TestValue.val between ? and ?")
+                                .setArgs(from, from + 250)).getAll();
                     }
                 }
             }

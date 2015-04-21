@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -30,14 +29,7 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** Coordinator version. */
-    private String err;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryCheckFailedMessage() {
-        // No-op.
-    }
+    private final String err;
 
     /**
      * Constructor.
@@ -56,20 +48,6 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
      */
     public String error() {
         return err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        U.writeString(out, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        err = U.readString(in);
     }
 
     /** {@inheritDoc} */

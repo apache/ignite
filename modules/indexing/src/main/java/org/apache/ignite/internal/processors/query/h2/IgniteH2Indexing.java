@@ -296,15 +296,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             Collection<TableDescriptor> tbls = tables(schema(spaceName));
 
-            if (tbls.size() > 1) {
-                for (TableDescriptor tbl : tbls) {
-                    if (tbl != tblToUpdate && tbl.type().keyClass().equals(key.getClass())) {
-                        if (tbl.tbl.update(key, null, 0)) {
-                            if (tbl.luceneIdx != null)
-                                tbl.luceneIdx.remove(key);
+            for (TableDescriptor tbl : tbls) {
+                if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(key.getClass())) {
+                    if (tbl.tbl.update(key, null, 0, true)) {
+                        if (tbl.luceneIdx != null)
+                            tbl.luceneIdx.remove(key);
 
-                            return;
-                        }
+                        return;
                     }
                 }
             }
@@ -356,28 +354,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         long expirationTime) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
+        removeKey(spaceName, k, tbl);
+
         if (tbl == null)
             return; // Type was rejected.
-
-        removeKey(spaceName, k, tbl);
 
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, v, expirationTime);
+        tbl.tbl.update(k, v, expirationTime, false);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ']');
 
         for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().equals(key.getClass())) {
-                if (tbl.tbl.update(key, null, 0)) {
+            if (tbl.type().keyClass().isAssignableFrom(key.getClass())
+                && (val == null || tbl.type().valueClass().isAssignableFrom(val.getClass()))) {
+                if (tbl.tbl.update(key, val, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
@@ -395,7 +394,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return;
 
         for (TableDescriptor tbl : schema.tbls.values()) {
-            if (tbl.type().keyClass().equals(key.getClass())) {
+            if (tbl.type().keyClass().isAssignableFrom(key.getClass())) {
                 try {
                     if (tbl.tbl.onSwap(key))
                         return;
@@ -410,8 +409,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes)
         throws IgniteCheckedException {
+        assert val != null;
+
         for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().equals(key.getClass())) {
+            if (tbl.type().keyClass().isAssignableFrom(key.getClass())
+                && tbl.type().valueClass().isAssignableFrom(val.getClass())) {
                 try {
                     if (tbl.tbl.onUnswap(key, val))
                         return;
@@ -784,7 +786,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Collection<GridQueryFieldMetadata> meta;
 
         try {
-            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs());
+            twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
 
             meta = meta(stmt.getMetaData());
         }
@@ -829,11 +831,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private String generateQuery(String qry, TableDescriptor tbl) throws IgniteCheckedException {
         assert tbl != null;
 
+        final String qry0 = qry;
+
         String t = tbl.fullTableName();
 
         String from = " ";
 
-        String upper = qry.trim().toUpperCase();
+        qry = qry.trim();
+        String upper = qry.toUpperCase();
+
+        if (upper.startsWith("SELECT")) {
+            qry = qry.substring(6).trim();
+
+            if (!qry.startsWith("*"))
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
+                    "use SqlFieldsQuery instead: " + qry0);
+
+            qry = qry.substring(1).trim();
+            upper = qry.toUpperCase();
+        }
 
         if (!upper.startsWith("FROM"))
             from = " FROM " + t +
@@ -855,7 +871,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     @Override public boolean registerType(@Nullable String spaceName, GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
-        if (!validateTypeDescriptor(spaceName, type))
+        if (!validateTypeDescriptor(type))
             return false;
 
         String schemaName = schema(spaceName);
@@ -883,12 +899,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Validates properties described by query types.
      *
-     * @param spaceName Space name.
      * @param type Type descriptor.
      * @return True if type is valid.
      * @throws IgniteCheckedException If validation failed.
      */
-    private boolean validateTypeDescriptor(@Nullable String spaceName, GridQueryTypeDescriptor type)
+    private boolean validateTypeDescriptor(GridQueryTypeDescriptor type)
         throws IgniteCheckedException {
         assert type != null;
 
@@ -1153,7 +1168,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rdcQryExec.start(ctx, this);
         }
 
-//        registerMBean(gridName, this, GridH2IndexingSpiMBean.class); TODO
+        // TODO https://issues.apache.org/jira/browse/IGNITE-751
+        // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
     }
 
     /**
@@ -1240,12 +1256,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(),
             ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
             new GridUnsafeMemory(0) : null, ccfg)) != null)
-            throw new IgniteCheckedException("Cache already registered: " + ccfg.getName());
+            throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
 
         createSchema(schema);
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
 
+    /** {@inheritDoc} */
     @Override public void unregisterCache(CacheConfiguration<?, ?> ccfg) {
         String schema = schema(ccfg.getName());
 
@@ -1256,7 +1273,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 dropSchema(schema);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to drop schema on cache stop (will ignore): " + ccfg.getName(), e);
+                U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
             }
         }
     }
@@ -1890,26 +1907,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2AbstractKeyValueRow createRow(Object key, @Nullable Object val, long expirationTime)
+        @Override public GridH2Row createRow(Object key, @Nullable Object val, long expirationTime)
             throws IgniteCheckedException {
             try {
+                if (val == null) // Only can happen for remove operation, can create simple search row.
+                    return new GridH2Row(wrap(key, keyType), null);
+
                 return schema.offheap == null ?
                     new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
                     new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
             }
             catch (ClassCastException e) {
                 throw new IgniteCheckedException("Failed to convert key to SQL type. " +
-                    "Please make sure that you always store each value type with the same key type or disable " +
-                    "'defaultIndexFixedTyping' property.", e);
+                    "Please make sure that you always store each value type with the same key type " +
+                    "or configure key type as common super class for all actual keys for this value type.", e);
             }
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            GridCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
+            IgniteInternalCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
-            GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+            GridCacheContext cctx = cache.context();
 
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();

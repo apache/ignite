@@ -253,11 +253,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         if (plcEnabled && evictSync && !cctx.isNear()) {
             // Add dummy event to worker.
-            ClusterNode locNode = cctx.localNode();
-
-            DiscoveryEvent evt = new DiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
-
-            evt.topologySnapshot(locNode.order(), cctx.discovery().topology(locNode.order()));
+            DiscoveryEvent evt = cctx.discovery().localJoinEvent();
 
             backupWorker.addEvent(evt);
 
@@ -919,6 +915,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
+        Set<GridCacheEntryEx> notRemove = null;
+
         Collection<GridCacheBatchSwapEntry> swapped = new ArrayList<>(keys.size());
 
         boolean recordable = cctx.events().isRecordable(EVT_CACHE_ENTRY_EVICTED);
@@ -948,6 +946,13 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 locked.add(entry);
 
+                if (entry.obsolete()) {
+                    if (notRemove == null)
+                        notRemove = new HashSet<>();
+
+                    notRemove.add(entry);
+                }
+
                 if (obsoleteVer == null)
                     obsoleteVer = cctx.versions().next();
 
@@ -975,7 +980,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             // Remove entries and fire events outside the locks.
             for (GridCacheEntryEx entry : locked) {
-                if (entry.obsolete()) {
+                if (entry.obsolete() && (notRemove == null || !notRemove.contains(entry))) {
                     entry.onMarkedObsolete();
 
                     cache.removeEntry(entry);

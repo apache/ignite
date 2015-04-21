@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -31,13 +30,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
 
     /** */
     private long order;
-
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryHandshakeResponse() {
-        // No-op.
-    }
 
     /**
      * Constructor.
@@ -67,20 +59,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      */
     public void order(long order) {
         this.order = order;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeLong(order);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        order = in.readLong();
     }
 
     /** {@inheritDoc} */

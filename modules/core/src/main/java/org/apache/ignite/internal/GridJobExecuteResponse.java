@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse implements Message, GridTaskMessage {
+public class GridJobExecuteResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -123,7 +123,7 @@ public class GridJobExecuteResponse implements Message, GridTaskMessage {
     /**
      * @return Task session ID.
      */
-    @Override public IgniteUuid getSessionId() {
+    public IgniteUuid getSessionId() {
         return sesId;
     }
 

@@ -102,8 +102,8 @@ public class IgfsAsyncImpl extends AsyncSupportAdapter<IgniteFileSystem> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
-        igfs.stop();
+    @Override public void stop(boolean cancel) {
+        igfs.stop(cancel);
     }
 
     /** {@inheritDoc} */

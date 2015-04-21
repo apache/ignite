@@ -38,8 +38,6 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-
 /**
  * Shared context.
  */
@@ -432,14 +430,14 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code True} if cross-cache transaction can include this new cache.
      */
     public boolean txCompatible(IgniteInternalTx tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
-        if (cacheCtx.system() ^ tx.system())
+        if (cacheCtx.systemTx() ^ tx.system())
             return false;
 
         for (Integer cacheId : activeCacheIds) {
             GridCacheContext<K, V> activeCacheCtx = cacheContext(cacheId);
 
             // System transactions may sap only one cache.
-            if (cacheCtx.system()) {
+            if (cacheCtx.systemTx()) {
                 if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
                     return false;
             }
@@ -450,25 +448,6 @@ public class GridCacheSharedContext<K, V> {
         }
 
         return true;
-    }
-
-    /**
-     * @param flags Flags to turn on.
-     * @throws CacheFlagException If given flags are conflicting with given transaction.
-     */
-    public void checkTxFlags(@Nullable Collection<CacheFlag> flags) throws CacheFlagException {
-        IgniteInternalTx tx = tm().userTxx();
-
-        if (tx == null || F.isEmpty(flags))
-            return;
-
-        assert flags != null;
-
-        if (flags.contains(INVALIDATE) && !tx.isInvalidate())
-            throw new CacheFlagException(INVALIDATE);
-
-        if (flags.contains(SYNC_COMMIT) && !tx.syncCommit())
-            throw new CacheFlagException(SYNC_COMMIT);
     }
 
     /**

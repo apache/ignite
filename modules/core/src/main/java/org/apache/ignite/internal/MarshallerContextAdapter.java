@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jsr166.*;
@@ -80,7 +81,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClass(int id, Class cls) {
+    @Override public boolean registerClass(int id, Class cls) throws IgniteCheckedException {
         boolean registered = true;
 
         if (!map.containsKey(id)) {
@@ -94,7 +95,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException {
+    @Override public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException {
         String clsName = map.get(id);
 
         if (clsName == null) {
@@ -117,14 +118,16 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @param id Type ID.
      * @param clsName Class name.
      * @return Whether class name was registered.
+     * @throws IgniteCheckedException In case of error.
      */
-    protected abstract boolean registerClassName(int id, String clsName);
+    protected abstract boolean registerClassName(int id, String clsName) throws IgniteCheckedException;
 
     /**
      * Gets class name by type ID.
      *
      * @param id Type ID.
      * @return Class name.
+     * @throws IgniteCheckedException In case of error.
      */
-    protected abstract String className(int id);
+    protected abstract String className(int id) throws IgniteCheckedException;
 }

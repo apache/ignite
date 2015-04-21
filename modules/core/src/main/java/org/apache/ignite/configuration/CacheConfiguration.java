@@ -26,10 +26,9 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -61,12 +60,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     public static final long DFLT_REBALANCE_THROTTLE = 0;
-
-    /**
-     * Default time to live. The value is <tt>0</tt> which means that
-     * cached objects never expire based on time.
-     */
-    public static final long DFLT_TIME_TO_LIVE = 0;
 
     /** Default number of backups. */
     public static final int DFLT_BACKUPS = 0;
@@ -153,16 +146,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final boolean DFLT_READ_FROM_BACKUP = true;
 
     /** Filter that accepts only server nodes. */
-    public static final IgnitePredicate<ClusterNode> SERVER_NODES = new IgnitePredicate<ClusterNode>() {
-        @Override public boolean apply(ClusterNode n) {
-            Boolean attr = n.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
-
-            return attr != null && !attr;
-        }
-    };
+    public static final IgnitePredicate<ClusterNode> SERVER_NODES = new IgniteServerNodePredicate();
 
     /** Filter that accepts all nodes. */
-    public static final IgnitePredicate<ClusterNode> ALL_NODES = F.alwaysTrue();
+    public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
 
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
@@ -178,9 +165,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
-
-    /** Default time to live for cache entries. */
-    private long ttl = DFLT_TIME_TO_LIVE;
 
     /** Cache expiration policy. */
     private EvictionPolicy evictPlc;
@@ -326,6 +310,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
+    /** Cache plugin configurations. */
+    private CachePluginConfiguration[] pluginCfgs;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -401,7 +388,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeFactory = cc.getCacheStoreFactory();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
-        ttl = cc.getDefaultTimeToLive();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -409,10 +395,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        pluginCfgs = cc.getPluginConfigurations();
     }
 
     /**
-     * Cache name. If not provided or {@code null}, then this will be considered a default
+     * Cache name or {@code null} if not provided, then this will be considered a default
      * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
      * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
      *
@@ -431,25 +418,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         A.ensure(name == null || !name.isEmpty(), "Name cannot be null or empty.");
 
         this.name = name;
-    }
-
-    /**
-     * Gets time to live for all objects in cache. This value can be overridden for individual objects.
-     * If not set, then value is {@code 0} which means that objects never expire.
-     *
-     * @return Time to live for all objects in cache.
-     */
-    public long getDefaultTimeToLive() {
-        return ttl;
-    }
-
-    /**
-     * Sets time to live for all objects in cache. This value can be override for individual objects.
-     *
-     * @param ttl Time to live for all objects in cache.
-     */
-    public void setDefaultTimeToLive(long ttl) {
-        this.ttl = ttl;
     }
 
     /**
@@ -1234,7 +1202,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Default value is {@code 0} which means that repartitioning and rebalancing will start
      * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
-     * will only be started manually by calling {@link GridCache#forceRepartition()} method or
+     * will only be started manually by calling {@link IgniteCache#rebalance()} method or
      * from management console.
      *
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
@@ -1439,24 +1407,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets flag indicating whether copy of of the value stored in cache should be created
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
-     * <p>
-     * Copies are not created for immutable types, see {@link IgniteImmutable}.
      *
-     * @return Copy on get flag.
-     * @see IgniteImmutable
+     * @return Copy on read flag.
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
     }
 
     /**
-     * Set copy on get flag.
+     * Sets copy on read flag.
      *
-     * @param cpOnGet Copy on get flag.
+     * @param cpOnRead Copy on get flag.
      * @see #isCopyOnRead
      */
-    public void setCopyOnRead(boolean cpOnGet) {
-        this.cpOnRead = cpOnGet;
+    public void setCopyOnRead(boolean cpOnRead) {
+        this.cpOnRead = cpOnRead;
     }
 
     /**
@@ -1520,7 +1485,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1537,7 +1502,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1550,6 +1515,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param indexedTypes Key and value type pairs.
      */
     public void setIndexedTypes(Class<?>... indexedTypes) {
+        A.ensure(indexedTypes == null || (indexedTypes.length & 1) == 0,
+            "Number of indexed types is expected to be even. Refer to method javadoc for details.");
+
         this.indexedTypes = indexedTypes;
     }
 
@@ -1575,8 +1543,66 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.sqlOnheapRowCacheSize = size;
     }
 
+    /**
+     * Gets array of cache plugin configurations.
+     *
+     * @return Cache plugin configurations.
+     */
+    public CachePluginConfiguration[] getPluginConfigurations() {
+        return pluginCfgs != null ? pluginCfgs : new CachePluginConfiguration[0];
+    }
+
+    /**
+     * Sets cache plugin configurations.
+     *
+     * @param pluginCfgs Cache plugin configurations.
+     */
+    public void setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
+        this.pluginCfgs = pluginCfgs;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
+    }
+
+    /**
+     * Filter that accepts only server nodes.
+     */
+    public static class IgniteServerNodePredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        @Override public boolean apply(ClusterNode n) {
+            Boolean attr = n.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            return attr != null && !attr;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+
+            return obj.getClass().equals(this.getClass());
+        }
+    }
+
+    /**
+     *  Filter that accepts all nodes.
+     */
+    public static class IgniteAllNodesPredicate  implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return true;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+
+            return obj.getClass().equals(this.getClass());
+        }
     }
 }

@@ -1014,7 +1014,7 @@ public final class GridCacheMvcc {
             for (Iterator<GridCacheMvccCandidate> it = rmts.iterator(); it.hasNext(); ) {
                 GridCacheMvccCandidate cand = it.next();
 
-                if (!cand.tx() && nodeId.equals(cand.nodeId())) {
+                if (!cand.tx() && (nodeId.equals(cand.nodeId()) || nodeId.equals(cand.otherNodeId()))) {
                     cand.setUsed(); // Mark as used to be consistent.
                     cand.setRemoved();
 

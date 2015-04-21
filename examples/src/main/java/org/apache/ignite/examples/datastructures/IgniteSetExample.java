@@ -18,12 +18,14 @@
 package org.apache.ignite.examples.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Ignite cache distributed set example.
@@ -35,9 +37,6 @@ import java.util.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class IgniteSetExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = IgniteSetExample.class.getSimpleName();
-
     /** Set instance. */
     private static IgniteSet<String> set;
 
@@ -52,24 +51,14 @@ public class IgniteSetExample {
             System.out.println();
             System.out.println(">>> Ignite set example started.");
 
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+            // Make set name.
+            String setName = UUID.randomUUID().toString();
 
-            cfg.setCacheMode(CacheMode.PARTITIONED);
-            cfg.setName(CACHE_NAME);
-            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            set = initializeSet(ignite, setName);
 
-            NearCacheConfiguration<Integer, String> nearCacheCfg = new NearCacheConfiguration<>();
+            writeToSet(ignite);
 
-            try (IgniteCache<Integer, String> cache = ignite.createCache(cfg, nearCacheCfg)) {
-                // Make set name.
-                String setName = UUID.randomUUID().toString();
-
-                set = initializeSet(ignite, setName);
-
-                writeToSet(ignite);
-
-                clearAndRemoveSet();
-            }
+            clearAndRemoveSet();
         }
 
         System.out.println("Ignite set example finished.");
@@ -86,7 +75,8 @@ public class IgniteSetExample {
     private static IgniteSet<String> initializeSet(Ignite ignite, String setName) throws IgniteException {
         CollectionConfiguration setCfg = new CollectionConfiguration();
 
-        setCfg.setCacheName(CACHE_NAME);
+        setCfg.setAtomicityMode(TRANSACTIONAL);
+        setCfg.setCacheMode(PARTITIONED);
 
         // Initialize new set.
         IgniteSet<String> set = ignite.set(setName, setCfg);

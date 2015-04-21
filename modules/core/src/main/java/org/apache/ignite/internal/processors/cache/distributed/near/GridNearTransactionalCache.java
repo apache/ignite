@@ -37,7 +37,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 
 /**
@@ -104,8 +103,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -128,9 +126,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
@@ -139,7 +137,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : prj != null ? prj.expiry() : null,
+            skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals);
     }
 
@@ -291,7 +289,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.threadId(),
                                         req.version(),
                                         null,
-                                        ctx.system(),
+                                        ctx.systemTx(),
                                         ctx.ioPolicy(),
                                         PESSIMISTIC,
                                         req.isolation(),
@@ -415,8 +413,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter
+        long accessTtl
     ) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
@@ -425,7 +422,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.empty0());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);
@@ -467,7 +464,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -486,7 +483,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                     GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                    if (entry == null || !ctx.isAll(entry, filter))
+                    if (entry == null)
                         break; // While.
 
                     try {

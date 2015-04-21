@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.igfs.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * IGFS utils processor.
@@ -43,7 +44,7 @@ public class IgfsHelperImpl implements IgfsHelper {
 
             if (evictFilter != null && !(evictFilter instanceof IgfsEvictionFilter))
                 throw new IgniteCheckedException("Eviction filter cannot be set explicitly when using " +
-                    "IgfsPerBlockLruEvictionPolicy:" + cfg.getName());
+                    "IgfsPerBlockLruEvictionPolicy: " + U.maskName(cfg.getName()));
         }
     }
 

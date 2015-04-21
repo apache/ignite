@@ -121,13 +121,13 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     public void testProjectionForDefaultCache() throws Exception {
         ClusterGroup prj = ignite.cluster().forCacheNodes(null);
 
-        assert prj != null;
-        assert prj.nodes().size() == 3;
-        assert prj.nodes().contains(grid(0).localNode());
-        assert !prj.nodes().contains(grid(1).localNode());
-        assert prj.nodes().contains(grid(2).localNode());
-        assert prj.nodes().contains(grid(3).localNode());
-        assert !prj.nodes().contains(grid(4).localNode());
+        assertNotNull(prj);
+        assertEquals(3, prj.nodes().size());
+        assertTrue(prj.nodes().contains(grid(0).localNode()));
+        assertFalse(prj.nodes().contains(grid(1).localNode()));
+        assertTrue(prj.nodes().contains(grid(2).localNode()));
+        assertTrue(prj.nodes().contains(grid(3).localNode()));
+        assertFalse(prj.nodes().contains(grid(4).localNode()));
     }
 
     /**
