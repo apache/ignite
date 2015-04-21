@@ -1592,18 +1592,18 @@ public abstract class IgniteUtils {
             IgniteBiTuple<Collection<String>, Collection<String>> res = cachedLocalAddr;
 
             if (res == null) {
-                List<InetAddress> localAddrs = new ArrayList<>();
+                List<InetAddress> locAddrs = new ArrayList<>();
 
                 for (NetworkInterface itf : asIterable(NetworkInterface.getNetworkInterfaces())) {
                     for (InetAddress addr : asIterable(itf.getInetAddresses())) {
                         if (!addr.isLinkLocalAddress())
-                            localAddrs.add(addr);
+                            locAddrs.add(addr);
                     }
                 }
 
-                localAddrs = filterReachable(localAddrs);
+                locAddrs = filterReachable(locAddrs);
 
-                for (InetAddress addr : localAddrs)
+                for (InetAddress addr : locAddrs)
                     addresses(addr, addrs, hostNames);
 
                 if (F.isEmpty(addrs))
@@ -2162,9 +2162,8 @@ public abstract class IgniteUtils {
      */
     public static byte[] join(byte[]... bufs) {
         int size = 0;
-        for (byte[] buf : bufs) {
+        for (byte[] buf : bufs)
             size += buf.length;
-        }
 
         byte[] res = new byte[size];
         int position = 0;
