@@ -536,6 +536,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                         return;
                     }
+
+                    break;
                 }
             }
 

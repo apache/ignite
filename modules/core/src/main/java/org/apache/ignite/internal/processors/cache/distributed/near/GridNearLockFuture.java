@@ -668,6 +668,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                         return;
                     }
+
+                    break;
                 }
             }
 
