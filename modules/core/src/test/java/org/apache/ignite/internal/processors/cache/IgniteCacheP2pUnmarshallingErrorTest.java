@@ -26,11 +26,11 @@ import java.io.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Check behavior on exception while unmarshalling key
+ * Check behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTest {
-    /** Allows to change behavior of readExternal method */
-    private static AtomicInteger nodeCnt = new AtomicInteger();
+    /** Allows to change behavior of readExternal method. */
+    private static AtomicInteger readCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -67,18 +67,18 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         return cfg;
     }
 
-    /** Test key 1 */
+    /** Test key 1. */
     public static class TestKey implements Externalizable {
-        /** Test key 1 */
+        /** Test key 1. */
         public TestKey(String field) {
             this.field = field;
         }
 
-        /** Test key 1 */
+        /** Test key 1. */
         public TestKey() {
         }
 
-        /** field */
+        /** field. */
         private String field;
 
         /** {@inheritDoc} */
@@ -105,29 +105,28 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            if (nodeCnt.decrementAndGet() < 1) { //will throw exception on backup node only
+            if (readCnt.decrementAndGet() <= 0) { //will throw exception on backup node only
                 throw new IOException("Class can not be unmarshalled");
             }
         }
     }
 
     /**
-     * Test key 2.
-     * Unmarshalling always failed.
+     * Test key 2. Unmarshalling always failed.
      */
     public static class TestKeyAlwaysFailed extends TestKey {
-        /** Test key 2 */
+        /** Test key 2. */
         public TestKeyAlwaysFailed(String field) {
             super(field);
         }
 
-        /** Test key 2 */
+        /** Test key 2. */
         public TestKeyAlwaysFailed() {
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            nodeCnt.decrementAndGet();
+            readCnt.decrementAndGet();
             throw new IOException("Class can not be unmarshalled"); //will throw exception on primary node
         }
 
@@ -138,20 +137,23 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
      */
     public void testResponseMessageOnUnmarshallingFailed() {
 
-        nodeCnt.set(1);
+        //Checking failed unmarshalling on primary node.
+        readCnt.set(1);
 
         try {
-            jcache(0).put(new TestKeyAlwaysFailed("1"), "");
+            jcache(0).put(new TestKeyAlwaysFailed("1"), ""); //put will fail at primary node.
+
             assert false : "p2p marshalling failed, but error response was not sent";
         }
         catch (CacheException e) {
             assert X.hasCause(e, IOException.class);
         }
 
-        assert nodeCnt.get() == 0;//put request should not go to backup node in case failed at primary.
+        assert readCnt.get() == 0; //put request should not be handled by backup node in case failed at primary.
 
         try {
             assert jcache(0).get(new TestKeyAlwaysFailed("1")) == null;
+
             assert false : "p2p marshalling failed, but error response was not sent";
         }
         catch (CacheException e) {
@@ -160,20 +162,22 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
         assert grid(0).cachex().entrySet().size() == 0;
 
-        nodeCnt.set(2); //put request will be unmarshalled twice (at primary and at backup node).
+        //Checking failed unmarshalling on backup node.
+        readCnt.set(2); //put request will be unmarshalled twice (at primary and at backup node).
 
         try {
-            jcache(0).put(new TestKey("1"), "");//put will fail at backup node.
+            jcache(0).put(new TestKey("1"), ""); //put will fail at backup node only.
+
             assert false : "p2p marshalling failed, but error response was not sent";
         }
         catch (CacheException e) {
             assert X.hasCause(e, IOException.class);
         }
 
-        assert nodeCnt.get() == 0;//put request should go to primary and backup node.
+        assert readCnt.get() == 0; //put request should be handled by primary and backup node.
 
-        // Need to have to exception while unmarshalling getKeyResponse.
-        nodeCnt.set(3); //get response will me unmarshalled twice (request at primary node and response at client).
+        // Need to have no exception while unmarshalling getKeyResponse.
+        readCnt.set(3); //get response will me unmarshalled twice (request at primary node and response at client).
 
         assert jcache(0).get(new TestKey("1")) == null;
 

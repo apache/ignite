@@ -606,25 +606,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearGetRequest(final UUID nodeId, final GridNearGetRequest req) {
         assert ctx.affinityNode();
 
-        if (req.classError() != null) {
-            GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
-                req.futureId(),
-                req.miniId(),
-                req.version());
-
-            res.error(req.classError());
-
-            try {
-                ctx.io().send(nodeId, res, ctx.ioPolicy());
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
-                    ",req=" + req + ", res=" + res + ']', e);
-            }
-
-            return;
-        }
-
         long ttl = req.accessTtl();
 
         final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);

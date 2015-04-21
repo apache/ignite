@@ -24,6 +24,8 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -32,7 +34,6 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -226,68 +227,66 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             unmarshall(nodeId, cacheMsg);
 
-            if (cacheMsg.allowForStartup())
-                processMessage(nodeId, cacheMsg, c);
+            if (cacheMsg.classError() != null)
+                processFailedMessage(nodeId, cacheMsg);
             else {
-                IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
-
-                if (startFut.isDone())
+                if (cacheMsg.allowForStartup())
                     processMessage(nodeId, cacheMsg, c);
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
-                            ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
+                    IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
 
-                    // Don't hold this thread waiting for preloading to complete.
-                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(final IgniteInternalFuture<?> f) {
-                            cctx.kernalContext().closure().runLocalSafe(
-                                new GridPlainRunnable() {
-                                    @Override public void run() {
-                                        rw.readLock();
+                    if (startFut.isDone())
+                        processMessage(nodeId, cacheMsg, c);
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
+                                ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
-                                        try {
-                                            if (stopping) {
+                        // Don't hold this thread waiting for preloading to complete.
+                        startFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(final IgniteInternalFuture<?> f) {
+                                cctx.kernalContext().closure().runLocalSafe(
+                                    new GridPlainRunnable() {
+                                        @Override public void run() {
+                                            rw.readLock();
+
+                                            try {
+                                                if (stopping) {
+                                                    if (log.isDebugEnabled())
+                                                        log.debug("Received cache communication message while stopping " +
+                                                            "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
+
+                                                    return;
+                                                }
+
+                                                f.get();
+
                                                 if (log.isDebugEnabled())
-                                                    log.debug("Received cache communication message while stopping " +
-                                                        "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
+                                                    log.debug("Start future completed for message [nodeId=" + nodeId +
+                                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
-                                                return;
+                                                processMessage(nodeId, cacheMsg, c);
                                             }
-
-                                            f.get();
-
-                                            if (log.isDebugEnabled())
-                                                log.debug("Start future completed for message [nodeId=" + nodeId +
-                                                    ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                                            processMessage(nodeId, cacheMsg, c);
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            // Log once.
-                                            if (startErr.compareAndSet(false, true))
-                                                U.error(log, "Failed to complete preload start future " +
-                                                    "(will ignore message) " +
-                                                    "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
-                                        }
-                                        finally {
-                                            rw.readUnlock();
+                                            catch (IgniteCheckedException e) {
+                                                // Log once.
+                                                if (startErr.compareAndSet(false, true))
+                                                    U.error(log, "Failed to complete preload start future " +
+                                                        "(will ignore message) " +
+                                                        "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
+                                            }
+                                            finally {
+                                                rw.readUnlock();
+                                            }
                                         }
                                     }
-                                }
-                            );
-                        }
-                    });
+                                );
+                            }
+                        });
+                    }
                 }
             }
         }
         catch (Throwable e) {
-//            if (X.hasCause(e, ClassNotFoundException.class))
-//                U.error(log, "Failed to process message (note that distributed services " +
-//                    "do not support peer class loading, if you deploy distributed service " +
-//                    "you should have all required classes in CLASSPATH on all nodes in topology) " +
-//                    "[senderId=" + nodeId + ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
-//            else
             U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
         }
         finally {
@@ -295,6 +294,61 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 cctx.deploy().ignoreOwnership(false);
 
             rw.readUnlock();
+        }
+    }
+
+    private void sendResponseOnFailedMessage(UUID nodeId, GridCacheMessage res, GridCacheContext ctx) {
+        try {
+            ctx.io().send(nodeId, res, ctx.ioPolicy());
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+                ",res=" + res + ']', e);
+        }
+    }
+
+    private void processFailedMessage(UUID nodeId, GridCacheMessage msg) {
+        GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+
+        switch (msg.directType()) {
+            case 38: {
+                GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
+
+                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion());
+
+                res.onError(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, ctx);
+            }
+
+            break;
+            case 40: {
+                GridNearAtomicUpdateRequest req = (GridNearAtomicUpdateRequest)msg;
+
+                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+                    nodeId,
+                    req.futureVersion());
+
+                res.onError(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, ctx);
+            }
+
+            break;
+            case 49: {
+                GridNearGetRequest req = (GridNearGetRequest)msg;
+
+                GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version());
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, ctx);
+            }
+
+            break;
         }
     }
 
@@ -738,11 +792,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cacheMsg.finishUnmarshal(cctx, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
-//            if (cacheMsg.ignoreClassErrors() && X.hasCause(e, InvalidClassException.class,
-//                    ClassNotFoundException.class, NoClassDefFoundError.class, UnsupportedClassVersionError.class))
-                cacheMsg.onClassError(e);
-//            else
-//                throw e;
+            cacheMsg.onClassError(e);
         }
         catch (Error e) {
             if (cacheMsg.ignoreClassErrors() && X.hasCause(e, NoClassDefFoundError.class,
