@@ -386,6 +386,18 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void failNode(UUID nodeId) {
+        ClusterNode node = rmtNodes.get(nodeId);
+
+        if (node != null) {
+            TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
+                node.id(), node.order());
+
+            sockRdr.addMessage(msg);
+        }
+    }
+
     /**
      * @param recon Reconnect flag.
      * @return Whether joined successfully.

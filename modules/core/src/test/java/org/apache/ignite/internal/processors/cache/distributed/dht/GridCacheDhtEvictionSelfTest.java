@@ -208,7 +208,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         String val = "v1";
 
         // Put on primary node.
-        nearPrimary.put(key, val, null);
+        nearPrimary.getAndPut(key, val, null);
 
         assertEquals(val, localPeek(nearPrimary, key));
         assertEquals(val, localPeek(dhtPrimary, key));
@@ -276,7 +276,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         // Put on primary node.
         for (Integer key : keys)
-            nearPrimary.put(key, "v" + key, null);
+            nearPrimary.getAndPut(key, "v" + key, null);
 
         for (Integer key : keys) {
             String val = "v" + key;

@@ -161,7 +161,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      * @return Running thread.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private Thread runCacheOperations(final GridCache<Object,Object> cache, final int keys) {
+    private Thread runCacheOperations(final IgniteInternalCache<Object,Object> cache, final int keys) {
         Thread t = new Thread() {
             @Override public void run() {
                 while (run) {

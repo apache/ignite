@@ -83,9 +83,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.scala-lang</groupId>
+            <groupId>jline</groupId>
             <artifactId>jline</artifactId>
-            <version>2.11.0-M3</version>
+            <version>2.12.1</version>
         </dependency>
         <!-- Third party dependencies -->
 

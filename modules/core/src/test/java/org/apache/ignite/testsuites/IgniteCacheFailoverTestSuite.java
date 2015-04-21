@@ -46,7 +46,7 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
         suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
-        //suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO IGNITE-560
+        suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
         suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
@@ -59,6 +59,9 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
+        suite.addTestSuite(IgniteCacheTxFairAffinityNodeJoinTest.class);
+
+        //suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
 
         return suite;
     }

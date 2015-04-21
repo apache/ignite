@@ -27,16 +27,12 @@ import org.jetbrains.annotations.*;
 /**
  * Main API for configuring and executing cache queries.
  * <p>
- * Cache queries are created from {@link CacheQueries} API via any of the available
- * {@code createXXXQuery(...)} methods.
  * <h1 class="header">SQL Queries</h1>
  * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
- * or joins must be annotated with {@link QuerySqlField} annotation. Query can be created
- * with {@link CacheQueries#createSqlQuery(Class, String)} method.
+ * or joins must be annotated with {@link QuerySqlField} annotation.
  * <h2 class="header">Field Queries</h2>
  * By default {@code select} clause is ignored as query result contains full objects.
- * If it is needed to select individual fields, use {@link CacheQueries#createSqlFieldsQuery(String)} method.
  * This type of query replaces full objects with individual fields. Note that selected fields
  * must be annotated with {@link QuerySqlField} annotation.
  * <h2 class="header">Cross-Cache Queries</h2>
@@ -56,15 +52,13 @@ import org.jetbrains.annotations.*;
  * and annotated with {@link QuerySqlFunction}. Classes containing these methods must be registered in
  * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
- * Ignite supports full text queries based on Apache Lucene engine. This queries are created by
- * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
+ * Ignite supports full text queries based on Apache Lucene engine. Note that all fields that
  * are expected to show up in text query results must be annotated with {@link QueryTextField}
  * annotation.
  * <h1 class="header">Scan Queries</h1>
  * Sometimes when it is known in advance that SQL query will cause a full data scan, or whenever data set
  * is relatively small, the full scan query may be used. This query will iterate over all cache
- * entries, skipping over entries that don't pass the optionally provided key-value filter
- * (see {@link CacheQueries#createScanQuery(org.apache.ignite.lang.IgniteBiPredicate)} method).
+ * entries, skipping over entries that don't pass the optionally provided key-value filter.
  * <h2 class="header">Limitations</h2>
  * Data in Ignite cache is usually distributed across several nodes,
  * so some queries may not work as expected. Keep in mind following limitations

@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
  * Implementation of {@link AccessType#TRANSACTIONAL} cache access strategy.
  * <p>
  * It is supposed that this strategy is used in JTA environment and Hibernate and
- * {@link org.apache.ignite.internal.processors.cache.GridCache} corresponding to the L2 cache region are configured to use the same transaction manager.
+ * {@link IgniteInternalCache} corresponding to the L2 cache region are configured to use the same transaction manager.
  * <p>
  * Configuration of L2 cache and per-entity cache access strategy can be set in the
  * Hibernate configuration file:
@@ -59,7 +59,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
      * @param ignite Grid.
      * @param cache Cache.
      */
-    public HibernateTransactionalAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
+    public HibernateTransactionalAccessStrategy(Ignite ignite, IgniteInternalCache<Object, Object> cache) {
         super(ignite, cache);
     }
 
@@ -76,7 +76,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected void putFromLoad(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -96,7 +96,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected boolean update(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             return true;
         }
@@ -113,7 +113,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected boolean insert(Object key, Object val) throws CacheException {
         try {
-            cache.putx(key, val);
+            cache.put(key, val);
 
             return true;
         }
@@ -130,7 +130,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
     /** {@inheritDoc} */
     @Override protected void remove(Object key) throws CacheException {
         try {
-            cache.removex(key);
+            cache.remove(key);
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);

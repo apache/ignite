@@ -89,7 +89,6 @@ import static org.apache.ignite.events.EventType.*;
  * <li>{@code TCP_NODELAY} socket option for sockets (see {@link #setTcpNoDelay(boolean)})</li>
  * <li>Message queue limit (see {@link #setMessageQueueLimit(int)})</li>
  * <li>Minimum buffered message count (see {@link #setMinimumBufferedMessageCount(int)})</li>
- * <li>Buffer size ratio (see {@link #setBufferSizeRatio(double)})</li>
  * <li>Connect timeout (see {@link #setConnectTimeout(long)})</li>
  * <li>Maximum connect timeout (see {@link #setMaxConnectTimeout(long)})</li>
  * <li>Reconnect attempts count (see {@link #setReconnectCount(int)})</li>
@@ -260,19 +259,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (!isNodeStopping()) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
-                            if (recoveryData != null) {
-                                if (recoveryData.nodeAlive(getSpiContext().node(id))) {
-                                    if (!recoveryData.messagesFutures().isEmpty()) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Session was closed but there are unacknowledged messages, " +
-                                                "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
+                            if (!getSpiContext().tryFailNode(id)) {
+                                if (recoveryData != null) {
+                                    if (recoveryData.nodeAlive(getSpiContext().node(id))) {
+                                        if (!recoveryData.messagesFutures().isEmpty()) {
+                                            if (log.isDebugEnabled())
+                                                log.debug("Session was closed but there are unacknowledged messages, " +
+                                                    "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
 
-                                        recoveryWorker.addReconnectRequest(recoveryData);
+                                            recoveryWorker.addReconnectRequest(recoveryData);
+                                        }
                                     }
+                                    else
+                                        recoveryData.onNodeLeft();
                                 }
-                                else
-                                    recoveryData.onNodeLeft();
                             }
+                            else
+                                recoveryData.onNodeLeft();
                         }
                     }
 
@@ -628,9 +631,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Min buffered message count. */
     private int minBufferedMsgCnt = Integer.getInteger(IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
-
-    /** Buffer size ratio. */
-    private double bufSizeRatio = IgniteSystemProperties.getDouble(IGNITE_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
 
     /** NIO server. */
     private GridNioServer<Message> nioSrvr;
@@ -1119,25 +1119,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         return minBufferedMsgCnt;
     }
 
-    /**
-     * Sets the buffer size ratio for this SPI. As messages are sent,
-     * the buffer size is adjusted using this ratio.
-     * <p>
-     * Defaults to either {@code 0.8} or {@link IgniteSystemProperties#IGNITE_COMMUNICATION_BUF_RESIZE_RATIO}
-     * system property (if specified).
-     *
-     * @param bufSizeRatio Buffer size ratio.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public void setBufferSizeRatio(double bufSizeRatio) {
-        this.bufSizeRatio = bufSizeRatio;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getBufferSizeRatio() {
-        return bufSizeRatio;
-    }
-
     /** {@inheritDoc} */
     @Override public void setListener(CommunicationListener<Message> lsnr) {
         this.lsnr = lsnr;
@@ -1201,7 +1182,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         assertParameter(reconCnt > 0, "reconnectCnt > 0");
         assertParameter(selectorsCnt > 0, "selectorsCnt > 0");
         assertParameter(minBufferedMsgCnt >= 0, "minBufferedMsgCnt >= 0");
-        assertParameter(bufSizeRatio > 0 && bufSizeRatio < 1, "bufSizeRatio > 0 && bufSizeRatio < 1");
         assertParameter(connTimeout >= 0, "connTimeout >= 0");
         assertParameter(maxConnTimeout >= connTimeout, "maxConnTimeout >= connTimeout");
         assertParameter(sockWriteTimeout >= 0, "sockWriteTimeout >= 0");
@@ -1273,7 +1253,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             log.debug(configInfo("sockRcvBuf", sockRcvBuf));
             log.debug(configInfo("msgQueueLimit", msgQueueLimit));
             log.debug(configInfo("minBufferedMsgCnt", minBufferedMsgCnt));
-            log.debug(configInfo("bufSizeRatio", bufSizeRatio));
             log.debug(configInfo("connTimeout", connTimeout));
             log.debug(configInfo("maxConnTimeout", maxConnTimeout));
             log.debug(configInfo("reconCnt", reconCnt));
@@ -2051,6 +2030,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         else if (log.isDebugEnabled())
             log.debug("Received communication message without any registered listeners (will ignore, " +
                 "is node stopping?) [senderNodeId=" + sndId + ", msg=" + msg + ']');
+    }
+
+    /**
+     * Stops service threads to simulate node failure.
+     *
+     * FOR TEST PURPOSES ONLY!!!
+     */
+    void simulateNodeFailure() {
+        if (nioSrvr != null)
+            nioSrvr.stop();
+
+        U.interrupt(idleClientWorker);
+        U.interrupt(clientFlushWorker);
+        U.interrupt(sockTimeoutWorker);
+        U.interrupt(recoveryWorker);
+
+        U.join(idleClientWorker, log);
+        U.join(clientFlushWorker, log);
+        U.join(sockTimeoutWorker, log);
+        U.join(recoveryWorker, log);
+
+        for (GridCommunicationClient client : clients.values())
+            client.forceClose();
     }
 
     /**

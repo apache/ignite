@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -1203,7 +1202,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Default value is {@code 0} which means that repartitioning and rebalancing will start
      * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
-     * will only be started manually by calling {@link GridCache#forceRepartition()} method or
+     * will only be started manually by calling {@link IgniteCache#rebalance()} method or
      * from management console.
      *
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
@@ -1409,20 +1408,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      *
-     * @return Copy on get flag.
+     * @return Copy on read flag.
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
     }
 
     /**
-     * Set copy on get flag.
+     * Sets copy on read flag.
      *
-     * @param cpOnGet Copy on get flag.
+     * @param cpOnRead Copy on get flag.
      * @see #isCopyOnRead
      */
-    public void setCopyOnRead(boolean cpOnGet) {
-        this.cpOnRead = cpOnGet;
+    public void setCopyOnRead(boolean cpOnRead) {
+        this.cpOnRead = cpOnRead;
     }
 
     /**

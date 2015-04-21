@@ -1918,6 +1918,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         sesFactory2 = null;
 
         for (IgniteCacheProxy<?, ?> cache : ((IgniteKernal)grid(0)).caches())
-            cache.legacyProxy().clear();
+            cache.clear();
     }
 }
