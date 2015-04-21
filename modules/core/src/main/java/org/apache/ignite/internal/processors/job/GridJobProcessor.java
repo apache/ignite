@@ -1635,25 +1635,33 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobHoldListener implements GridJobHoldListener {
         /** {@inheritDoc} */
-        @Override public void onHold(GridJobWorker worker) {
+        @Override public boolean onHeld(GridJobWorker worker) {
             if (log.isDebugEnabled())
-                log.debug("Received onHold() callback [worker=" + worker + ']');
+                log.debug("Received onHeld() callback [worker=" + worker + ']');
+
+            boolean res = false;
 
             if (activeJobs.containsKey(worker.getJobId())) {
-                heldJobs.add(worker.getJobId());
+                res = heldJobs.add(worker.getJobId());
 
-                if (!activeJobs.containsKey(worker.getJobId()))
+                if (!activeJobs.containsKey(worker.getJobId())) {
                     heldJobs.remove(worker.getJobId());
+
+                    // Job has been completed and therefore cannot be held.
+                    res = false;
+                }
             }
+
+            return res;
         }
 
         /** {@inheritDoc} */
-        @Override public void onUnhold(GridJobWorker worker) {
+        @Override public boolean onUnheld(GridJobWorker worker) {
             if (log.isDebugEnabled())
-                log.debug("Received onUnhold() callback [worker=" + worker + ", active=" + activeJobs +
+                log.debug("Received onUnheld() callback [worker=" + worker + ", active=" + activeJobs +
                     ", held=" + heldJobs + ']');
 
-            heldJobs.remove(worker.getJobId());
+            return heldJobs.remove(worker.getJobId());
         }
     }
 

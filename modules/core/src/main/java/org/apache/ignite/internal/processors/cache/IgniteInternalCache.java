@@ -21,13 +21,19 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -157,7 +163,7 @@ import java.util.Date;
  * that class definitions are present in the classpath). By default, cache works with deserialized form
  * (example shows the case when {@link Integer} is used as a key for a portable object):
  * <pre>
- * CacheProjection<Integer, Value> prj = Ignition.grid().cache(null);
+ * IgniteInternalCache<Integer, Value> prj = Ignition.grid().cache(null);
  *
  * // Value will be serialized and stored in cache in portable format.
  * prj.put(1, new Value());
@@ -170,14 +176,14 @@ import java.util.Date;
  * needed for performance reasons. To work with portable format directly you should create special projection
  * using {@link #keepPortable()} method:
  * <pre>
- * CacheProjection<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepPortable();
+ * IgniteInternalCache<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepPortable();
  *
  * // Value is not deserialized and returned in portable format.
  * GridPortableObject po = prj.get(1);
  * </pre>
  * See {@link #keepPortable()} method JavaDoc for more details.
  */
-public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
+public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Gets name of this cache ({@code null} for default cache).
      *
@@ -193,7 +199,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Base cache for this projection.
      */
     @SuppressWarnings({"ClassReferencesSubclass"})
-    public <K1, V1> GridCache<K1, V1> cache();
+    public <K1, V1> IgniteInternalCache<K1, V1> cache();
 
     /**
      * @return Skip store.
@@ -201,17 +207,10 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean skipStore();
 
     /**
-     * Returns queries facade responsible for creating various SQL, TEXT, or SCAN queries.
-
-     * @return Queries facade responsible for creating various SQL, TEXT, or SCAN queries.
-     */
-    public CacheQueries<K, V> queries();
-
-    /**
      * @param skipStore Skip store flag.
-     * @return New projection based on this one, but with skip store flag enabled.
+     * @return New internal cache instance based on this one, but with skip store flag enabled.
      */
-    public CacheProjection<K, V> setSkipStore(boolean skipStore);
+    public IgniteInternalCache<K, V> setSkipStore(boolean skipStore);
 
     /**
      * Creates projection that will operate with portable objects.
@@ -238,7 +237,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * (which will be stored in portable format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     * IgniteInternalCache<Integer, GridPortableObject> prj = cache.keepPortable();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);
@@ -248,9 +247,9 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * (<code>org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()</code> returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
-     * @return Projection for portable objects.
+     * @return New internal cache instance for portable objects.
      */
-    public <K1, V1> CacheProjection<K1, V1> keepPortable();
+    public <K1, V1> IgniteInternalCache<K1, V1> keepPortable();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.
@@ -947,7 +946,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears key on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearLocally(Object)} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocally(Object)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -960,7 +959,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears keys on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearLocallyAll(Set)} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocallyAll(Set)} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -973,7 +972,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
+     * nodes and local node, as opposed to {@link IgniteInternalCache#clearLocally()} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
@@ -1320,7 +1319,7 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link GridCache} projection. It is essentially the
+     * all cache entries and has O(1) complexity on base {@link IgniteInternalCache}. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.
@@ -1383,4 +1382,435 @@ public interface CacheProjection<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException If promote failed.
      */
     public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+
+    /**
+     * Gets configuration bean for this cache.
+     *
+     * @return Configuration bean for this cache.
+     */
+    public CacheConfiguration configuration();
+
+    /**
+     * Gets affinity service to provide information about data partitioning
+     * and distribution.
+     *
+     * @return Cache data affinity service.
+     */
+    public Affinity<K> affinity();
+
+    /**
+     * Gets metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics();
+
+    /**
+     * Gets metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetricsMXBean mxBean();
+
+    /**
+     * Gets size (in bytes) of all entries swapped to disk.
+     *
+     * @return Size (in bytes) of all entries swapped to disk.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public long overflowSize() throws IgniteCheckedException;
+
+    /**
+     * Gets number of cache entries stored in off-heap memory.
+     *
+     * @return Number of cache entries stored in off-heap memory.
+     */
+    public long offHeapEntriesCount();
+
+    /**
+     * Gets memory size allocated in off-heap.
+     *
+     * @return Allocated memory size.
+     */
+    public long offHeapAllocatedSize();
+
+    /**
+     * Gets size in bytes for swap space.
+     *
+     * @return Size in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapSize() throws IgniteCheckedException;
+
+    /**
+     * Gets number of swap entries (keys).
+     *
+     * @return Number of entries stored in swap.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapKeys() throws IgniteCheckedException;
+
+    /**
+     * Gets iterator over keys and values belonging to this cache swap space on local node. This
+     * iterator is thread-safe, which means that cache (and therefore its swap space)
+     * may be modified concurrently with iteration over swap.
+     * <p>
+     * Returned iterator supports {@code remove} operation which delegates to
+     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> method.
+     *
+     * @return Iterator over keys.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException;
+
+    /**
+     * Gets iterator over keys and values belonging to this cache off-heap memory on local node. This
+     * iterator is thread-safe, which means that cache (and therefore its off-heap memory)
+     * may be modified concurrently with iteration over off-heap. To achieve better performance
+     * the keys and values deserialized on demand, whenever accessed.
+     * <p>
+     * Returned iterator supports {@code remove} operation which delegates to
+     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])}</code> method.
+     *
+     * @return Iterator over keys.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
+
+    /**
+     * Forces this cache node to re-balance its partitions. This method is usually used when
+     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
+     * When many nodes are started or stopped almost concurrently, it is more efficient to delay
+     * rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+     * happens.
+     * <p>
+     * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
+     * usually make sure that new nodes get placed on the same place of consistent hash ring as
+     * the left nodes, and that nodes are restarted before
+     * {@link CacheConfiguration#getRebalanceDelay() rebalanceDelay} expires. To place nodes
+     * on the same place in consistent hash ring, use
+     * {@link org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction#setHashIdResolver(AffinityNodeHashResolver)} to make sure that
+     * a node maps to the same hash ID if re-started.
+     * <p>
+     * See {@link org.apache.ignite.configuration.CacheConfiguration#getRebalanceDelay()} for more information on how to configure
+     * rebalance re-partition delay.
+     * <p>
+     * @return Future that will be completed when rebalancing is finished.
+     */
+    public IgniteInternalFuture<?> rebalance();
+
+    /**
+     * Creates projection for specified subject ID.
+     *
+     * @param subjId Client ID.
+     * @return Internal projection.
+     */
+    IgniteInternalCache<K, V> forSubjectId(UUID subjId);
+    /**
+     * Store DR data.
+     *
+     * @param drMap DR map.
+     * @throws IgniteCheckedException If put operation failed.
+     */
+    public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException;
+
+    /**
+     * Store DR data asynchronously.
+     *
+     * @param drMap DR map.
+     * @return Future.
+     * @throws IgniteCheckedException If put operation failed.
+     */
+    public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
+        throws IgniteCheckedException;
+
+    /**
+     * Removes DR data.
+     *
+     * @param drMap DR map.
+     * @throws IgniteCheckedException If remove failed.
+     */
+    public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
+
+    /**
+     * Removes DR data asynchronously.
+     *
+     * @param drMap DR map.
+     * @return Future.
+     * @throws IgniteCheckedException If remove failed.
+     */
+    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
+
+    /**
+     * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
+     * {@code 'oldVal'} passed in.
+     * <p>
+     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
+     * <p>
+     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param key Key to store in cache.
+     * @param oldVal Old value to match.
+     * @param newVal Value to be associated with the given key.
+     * @return Future for the replace operation. The future will return object containing actual old value and success
+     *      flag.
+     * @throws NullPointerException If either key or value are {@code null}.
+     */
+    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
+
+    /**
+     * Stores given key-value pair in cache only if only if the previous value is equal to the
+     * {@code 'oldVal'} passed in.
+     * <p>
+     * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
+     * <p>
+     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param key Key to store in cache.
+     * @param oldVal Old value to match.
+     * @param newVal Value to be associated with the given key.
+     * @return Object containing actual old value and success flag.
+     * @throws NullPointerException If either key or value are {@code null}.
+     * @throws IgniteCheckedException If replace operation failed.
+     */
+    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
+
+    /**
+     * Removes given key mapping from cache if one exists and value is equal to the passed in value.
+     * <p>
+     * If write-through is enabled, the value will be removed from {@link CacheStore}
+     * via {@link CacheStore#delete(Object)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param key Key whose mapping is to be removed from cache.
+     * @param val Value to match against currently cached value.
+     * @return Object containing actual old value and success flag.
+     * @throws NullPointerException if the key or value is {@code null}.
+     * @throws IgniteCheckedException If remove failed.
+     */
+    public GridCacheReturn removex(K key, V val) throws IgniteCheckedException;
+
+    /**
+     * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
+     * <p>
+     * This method will return {@code true} if remove did occur, which means that all optionally
+     * provided filters have passed and there was something to remove, {@code false} otherwise.
+     * <p>
+     * If write-through is enabled, the value will be removed from {@link CacheStore}
+     * via {@link CacheStore#delete(Object)} method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param key Key whose mapping is to be removed from cache.
+     * @param val Value to match against currently cached value.
+     * @return Future for the remove operation. The future will return object containing actual old value and success
+     *      flag.
+     * @throws NullPointerException if the key or value is {@code null}.
+     */
+    public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val);
+
+    /**
+     * Gets value from cache. Will go to primary node even if this is a backup.
+     *
+     * @param key Key to get value for.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public V getForcePrimary(K key) throws IgniteCheckedException;
+
+    /**
+     * Asynchronously gets value from cache. Will go to primary node even if this is a backup.
+     *
+     * @param key Key to get value for.
+     * @return Future with result.
+     */
+    public IgniteInternalFuture<V> getForcePrimaryAsync(K key);
+
+    /**
+     * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
+     * and will not lock any keys if pessimistic transaction is started by thread.
+     *
+     * @param keys Keys to get values for.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public Map<K, V> getAllOutTx(List<K> keys) throws IgniteCheckedException;
+
+    /**
+     * Checks whether this cache is IGFS data cache.
+     *
+     * @return {@code True} in case this cache is IGFS data cache.
+     */
+    public boolean isIgfsDataCache();
+
+    /**
+     * Get current amount of used IGFS space in bytes.
+     *
+     * @return Amount of used IGFS space in bytes.
+     */
+    public long igfsDataSpaceUsed();
+
+    /**
+     * Get maximum space available for IGFS.
+     *
+     * @return Amount of space available for IGFS in bytes.
+     */
+    public long igfsDataSpaceMax();
+
+    /**
+     * Checks whether this cache is Mongo data cache.
+     *
+     * @return {@code True} if this cache is mongo data cache.
+     */
+    public boolean isMongoDataCache();
+
+    /**
+     * Checks whether this cache is Mongo meta cache.
+     *
+     * @return {@code True} if this cache is mongo meta cache.
+     */
+    public boolean isMongoMetaCache();
+
+    /**
+     * Gets entry set containing internal entries.
+     *
+     * @param filter Filter.
+     * @return Entry set.
+     */
+    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
+
+    /**
+     * @return {@link javax.cache.expiry.ExpiryPolicy} associated with this projection.
+     */
+    @Nullable public ExpiryPolicy expiry();
+
+    /**
+     * @param plc {@link ExpiryPolicy} to associate with this projection.
+     * @return New projection based on this one, but with the specified expiry policy.
+     */
+    public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
+
+    /**
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke result.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <T> EntryProcessorResult<T> invoke(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteInternalFuture<EntryProcessorResult<T>> invokeAsync(K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param keys Keys.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Arguments.
+     * @return Invoke results.
+     * @throws IgniteCheckedException If failed.
+     */
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args) throws IgniteCheckedException;
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Arguments.
+     * @return Future.
+     */
+    public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+        Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args);
+
+    /**
+     * @return Context.
+     */
+    public GridCacheContext<K, V> context();
+
+    /**
+     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
+     * to load state from the underlying persistent storage. The loaded values
+     * will then be given to the optionally passed in predicate, and, if the predicate returns
+     * {@code true}, will be stored in cache. If predicate is {@code null}, then
+     * all loaded values will be stored in cache.
+     * <p>
+     * Note that this method does not receive keys as a parameter, so it is up to
+     * {@link CacheStore} implementation to provide all the data to be loaded.
+     * <p>
+     * This method is not transactional and may end up loading a stale value into
+     * cache if another thread has updated the value immediately after it has been
+     * loaded. It is mostly useful when pre-loading the cache from underlying
+     * data store before start, or for read-only caches.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
+     * @throws IgniteCheckedException If loading failed.
+     */
+    public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+        throws IgniteCheckedException;
+
+    /**
+     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
+     * to reload state from the underlying persistent storage. The reloaded values
+     * will then be given to the optionally passed in predicate, and if the predicate returns
+     * {@code true}, will be stored in cache. If predicate is {@code null}, then
+     * all reloaded values will be stored in cache.
+     * <p>
+     * Note that this method does not receive keys as a parameter, so it is up to
+     * {@link CacheStore} implementation to provide all the data to be loaded.
+     * <p>
+     * This method is not transactional and may end up loading a stale value into
+     * cache if another thread has updated the value immediately after it has been
+     * loaded. It is mostly useful when pre-loading the cache from underlying
+     * data store before start, or for read-only caches.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
+     * @return Future to be completed whenever loading completes.
+     */
+    public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args);
 }

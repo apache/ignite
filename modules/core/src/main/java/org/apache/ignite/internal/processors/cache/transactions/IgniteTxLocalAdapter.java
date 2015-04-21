@@ -1614,9 +1614,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             final Map<KeyCacheObject, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
 
-            GridCacheProjectionImpl prj = cacheCtx.projectionPerCall();
+            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-            ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+            ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
 
             final Collection<KeyCacheObject> lockKeys = enlistRead(cacheCtx,
                 keys,
@@ -2583,13 +2583,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
-            GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
+            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
             final IgniteInternalFuture<Set<KeyCacheObject>> loadFut = enlistWrite(
                 cacheCtx,
                 keySet,
                 cached,
-                prj != null ? prj.expiry() : null,
+                opCtx != null ? opCtx.expiry() : null,
                 implicit,
                 map0,
                 invokeMap0,
@@ -2794,9 +2794,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             ExpiryPolicy plc;
 
             if (!F.isEmpty(filter)) {
-                GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
+                CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-                plc = prj != null ? prj.expiry() : null;
+                plc = opCtx != null ? opCtx.expiry() : null;
             }
             else
                 plc = null;
@@ -2939,9 +2939,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @return {@code True} if portables should be deserialized, {@code false} otherwise.
      */
     private boolean deserializePortables(GridCacheContext cacheCtx) {
-        GridCacheProjectionImpl prj = cacheCtx.projectionPerCall();
+        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
-        return prj == null || prj.deserializePortables();
+        return opCtx == null || !opCtx.isKeepPortable();
     }
 
     /**

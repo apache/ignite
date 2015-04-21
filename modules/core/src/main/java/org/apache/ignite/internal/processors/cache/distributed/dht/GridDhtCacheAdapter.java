@@ -396,9 +396,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy plc0 = prj != null ? prj.expiry() : null;
+        ExpiryPolicy plc0 = opCtx != null ? opCtx.expiry() : null;
 
         final ExpiryPolicy plc = plc0 != null ? plc0 : ctx.expiry();
 

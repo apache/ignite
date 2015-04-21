@@ -2427,7 +2427,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Default cache.
      */
-    public <K, V> GridCache<K, V> cache() {
+    public <K, V> IgniteInternalCache<K, V> cache() {
         return cache(null);
     }
 
@@ -2438,22 +2438,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    public <K, V> IgniteInternalCache<K, V> cache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
-        return jcache == null ? null : jcache.legacyProxy();
+        return jcache == null ? null : jcache.internalProxy();
     }
 
     /**
      * @return All configured cache instances.
      */
-    public Collection<GridCache<?, ?>> caches() {
-        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>, GridCache<?, ?>>() {
-            @Override public GridCache<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
-                return entries.legacyProxy();
+    public Collection<IgniteInternalCache<?, ?>> caches() {
+        return F.viewReadOnly(jCacheProxies.values(), new IgniteClosure<IgniteCacheProxy<?, ?>,
+            IgniteInternalCache<?, ?>>() {
+            @Override public IgniteInternalCache<?, ?> apply(IgniteCacheProxy<?, ?> entries) {
+                return entries.internalProxy();
             }
         });
     }
@@ -2486,7 +2487,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @return Utility cache for atomic data structures.
      */
-    public <K, V> GridCache<K, V> atomicsCache() {
+    public <K, V> IgniteInternalCache<K, V> atomicsCache() {
         return cache(CU.ATOMICS_CACHE_NAME);
     }
 
@@ -2497,7 +2498,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCache<K, V> publicCache(@Nullable String name) {
+    public <K, V> IgniteInternalCache<K, V> publicCache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
 
@@ -2514,7 +2515,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (jcache == null)
             throw new IllegalArgumentException("Cache is not started: " + name);
 
-        return jcache.legacyProxy();
+        return jcache.internalProxy();
     }
 
     /**
