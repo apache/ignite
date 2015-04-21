@@ -39,7 +39,8 @@ public class IgniteNodeRunner {
     public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
     
     /** */
-    private static final String CACHE_CONFIGURATION_TMP_FILE = "/tmp/cacheConfiguration.tmp";
+    private static final String CACHE_CONFIGURATION_TMP_FILE = System.getProperty("java.io.tmpdir") + 
+        File.separator + "cacheConfiguration.tmp";
 
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
