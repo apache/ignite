@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.stream.*;
 import org.jetbrains.annotations.*;
@@ -39,8 +38,8 @@ public class DataStreamerCacheUpdaters {
     private static final StreamReceiver BATCHED_SORTED = new BatchedSorted();
 
     /**
-     * Updates cache using independent {@link GridCache#put(Object, Object)} and
-     * {@link GridCache#remove(Object)} operations. Thus it is safe from deadlocks but performance
+     * Updates cache using independent {@link IgniteCache#put(Object, Object)}and
+     * {@link IgniteCache#remove(Object)} operations. Thus it is safe from deadlocks but performance
      * is not the best.
      *
      * @return Single updater.
@@ -50,8 +49,8 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link GridCache#putAll(Map)} and
-     * {@link GridCache#removeAll(Collection)}. Can cause deadlocks if the same keys are getting
+     * Updates cache using batched methods {@link IgniteCache#putAll(Map)}and
+     * {@link IgniteCache#removeAll()}. Can cause deadlocks if the same keys are getting
      * updated concurrently. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched updater.
@@ -61,8 +60,8 @@ public class DataStreamerCacheUpdaters {
     }
 
     /**
-     * Updates cache using batched methods {@link GridCache#putAll(Map)} and
-     * {@link GridCache#removeAll(Collection)}. Keys are sorted in natural order and if all updates
+     * Updates cache using batched methods {@link IgniteCache#putAll(Map)} and
+     * {@link IgniteCache#removeAll(Set)}. Keys are sorted in natural order and if all updates
      * use the same rule deadlock can not happen. Performance is generally better than in {@link #individual()}.
      *
      * @return Batched sorted updater.

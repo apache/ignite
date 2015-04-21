@@ -90,8 +90,8 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
             }, 1);
 
         // Create query.
-        final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.queries().createFullTextQuery(
-            H2TextValue.class.getName(), txt);
+        final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.context().queries().createFullTextQuery(
+            H2TextValue.class.getName(), txt, false);
 
         qry.enableDedup(false);
         qry.includeBackups(false);

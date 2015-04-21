@@ -478,16 +478,16 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        UUID subjId = ctx.subjectIdPerCall(null, prj);
+        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
         Map<K, V> vals = new HashMap<>(keys.size(), 1.0f);
 
         if (keyCheck)
             validateCacheKeys(keys);
 
-        final IgniteCacheExpiryPolicy expiry = expiryPolicy(prj != null ? prj.expiry() : null);
+        final IgniteCacheExpiryPolicy expiry = expiryPolicy(opCtx != null ? opCtx.expiry() : null);
 
         boolean success = true;
 
@@ -1440,9 +1440,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Expiry policy.
      */
     @Nullable private ExpiryPolicy expiryPerCall() {
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        ExpiryPolicy expiry = prj != null ? prj.expiry() : null;
+        ExpiryPolicy expiry = opCtx != null ? opCtx.expiry() : null;
 
         if (expiry == null)
             expiry = ctx.expiry();
