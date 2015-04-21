@@ -113,6 +113,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        boolean skipStore = opCtx != null && opCtx.skipStore();
+
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
@@ -121,12 +125,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         entry,
                         deserializePortable,
                         skipVals,
-                        false);
+                        false,
+                        skipStore);
                 }
             });
         }
-
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
@@ -139,7 +142,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             deserializePortable,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
-            opCtx != null && opCtx.skipStore());
+            skipStore);
     }
 
     /**

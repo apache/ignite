@@ -1744,7 +1744,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     }
                 }
 
-                if (!skipVals && misses != null && readThrough && ctx.readThrough() && !ctx.skipStore()) {
+                if (!skipVals && misses != null && readThrough && ctx.readThrough()) {
                     final Map<KeyCacheObject, GridCacheVersion> loadKeys = misses;
 
                     final IgniteTxLocalAdapter tx0 = tx;
@@ -1891,7 +1891,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         else {
             return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
                 @Override public IgniteInternalFuture<Map<K1, V1>> op(IgniteTxLocalAdapter tx) {
-                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false);
+                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false, readThrough);
                 }
             });
         }

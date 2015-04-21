@@ -593,9 +593,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         false,
                         -1L,
                         -1L,
-                        null);
-
-                    txEntry.skipStore(skipStore);
+                        null,
+                        skipStore);
 
                     if (read)
                         txEntry.ttl(accessTtl);

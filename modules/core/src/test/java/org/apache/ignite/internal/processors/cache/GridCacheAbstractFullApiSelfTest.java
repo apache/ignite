@@ -4534,6 +4534,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         tx.commit();
 
+        assert map.size() == 0;
+
         // cacheSkipStore putAll(..)/removeAll(..) check
         tx = txs.txStart(txConcurrency, txIsolation);
 
