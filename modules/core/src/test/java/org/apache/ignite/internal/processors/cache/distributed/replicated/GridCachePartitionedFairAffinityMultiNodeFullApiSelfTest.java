@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.job;
+package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import java.util.*;
+import org.apache.ignite.cache.affinity.fair.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
- * Job hold listener to notify job processor on {@code hold}
- * state change.
+ * Multi-node tests for partitioned cache with {@link FairAffinityFunction}.
  */
-interface GridJobHoldListener extends EventListener {
-    /**
-     * @param worker Held job worker.
-     * @return {@code True} if worker has been held.
-     */
-    public boolean onHeld(GridJobWorker worker);
+public class GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-    /**
-     * @param worker Unheld job worker.
-     * @return {@code True} if worker has been unheld.
-     */
-    public boolean onUnheld(GridJobWorker worker);
+        cfg.setAffinity(new FairAffinityFunction());
+
+        return cfg;
+    }
 }
