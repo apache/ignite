@@ -116,6 +116,7 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
 
     /**
      * Commits with error.
+     *
      * @param tx transaction.
      */
     protected void commitFailed(Transaction tx) {
@@ -129,18 +130,20 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     }
 
     /**
-     * Removes key-value
+     * Removes key-value.
      *
      * @param cacheName cache name.
      */
     public void remove(String cacheName) {
+        assert grid(0).cache(cacheName).get(KEY_VALUE) != null;
+
         grid(0).cache(cacheName).remove(KEY_VALUE);
     }
 
     /**
      * Asserts that cache doesn't contains key.
      *
-     * @param cacheName
+     * @param cacheName cache name.
      */
     public void assertEmpty(String cacheName) {
         assert grid(0).cache(cacheName).get(KEY_VALUE) == null;

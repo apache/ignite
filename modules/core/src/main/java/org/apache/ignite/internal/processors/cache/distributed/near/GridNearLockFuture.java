@@ -660,6 +660,17 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
+                if (fut.topologyVersion().equals(topVer)){
+                    if (!fut.isCacheTopologyValid(cctx)) {
+                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                            cctx.name()));
+
+                        return;
+                    }
+                }
+            }
+
             // Continue mapping on the same topology version as it was before.
             this.topVer.compareAndSet(null, topVer);
 

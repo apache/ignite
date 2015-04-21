@@ -59,15 +59,15 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
 
         assertEmpty(null); // rolled back
         assertEmpty(CACHE_NAME_1); // rolled back
+        assertEmpty(CACHE_NAME_2); // rolled back
 
-//        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-//            putValid(null);
-//            putInvalid(CACHE_NAME_1);
-//        }
-//
-//        assertEmpty(null); // rolled back
-//        assertEmpty(CACHE_NAME_1); // rolled back
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            putValid(null);
+            putInvalid(CACHE_NAME_1);
+        }
 
+        assertEmpty(null); // rolled back
+        assertEmpty(CACHE_NAME_1); // rolled back
 
         startGrid(1);
 
@@ -87,6 +87,14 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
 
         startGrid(2);
 
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            putValid(null);
+            putInvalid(CACHE_NAME_1);
+        }
+
+        assertEmpty(null); // rolled back
+        assertEmpty(CACHE_NAME_1); // rolled back
+
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
             putValid(CACHE_NAME_1);
             commitFailed(tx);
@@ -96,5 +104,22 @@ public abstract class IgniteTopologyValidatorAbstractTxCacheTest extends IgniteT
             putInvalid(CACHE_NAME_1);
         }
 
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            putValid(null);
+            putValid(CACHE_NAME_2);
+            tx.commit();
+        }
+
+        remove(null);
+        remove(CACHE_NAME_2);
+
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            putValid(null);
+            putValid(CACHE_NAME_2);
+            tx.commit();
+        }
+
+        remove(null);
+        remove(CACHE_NAME_2);
     }
 }
