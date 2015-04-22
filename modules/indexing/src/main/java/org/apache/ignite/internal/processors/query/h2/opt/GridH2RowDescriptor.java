@@ -101,9 +101,12 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public GridUnsafeGuard guard();
 
     /**
-     * @param o Object
-     * @param type Object type.
+     * Wraps object to respective {@link Value}.
+     *
+     * @param o Object.
+     * @param type Value type.
      * @return Value.
+     * @throws IgniteCheckedException If failed.
      */
     public Value wrap(Object o, int type) throws IgniteCheckedException;
 }

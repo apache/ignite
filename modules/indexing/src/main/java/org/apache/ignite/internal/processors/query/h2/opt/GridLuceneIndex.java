@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
+import org.h2.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -130,6 +132,9 @@ public class GridLuceneIndex implements Closeable {
      * @return Cache object context.
      */
     private CacheObjectContext objectContext() {
+        if (ctx == null)
+            return null;
+
         return ctx.cache().internalCache(spaceName).context().cacheObjectContext();
     }
 
@@ -145,8 +150,8 @@ public class GridLuceneIndex implements Closeable {
     public void store(CacheObject k, CacheObject v, byte[] ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 
-        Object key = coctx.processor().isPortableObject(k) ? k : k.value(coctx, false);
-        Object val = coctx.processor().isPortableObject(v) ? v : v.value(coctx, false);
+        Object key = k.value(coctx, false);
+        Object val = v.value(coctx, false);
 
         Document doc = new Document();
 
@@ -343,6 +348,9 @@ public class GridLuceneIndex implements Closeable {
          */
         @SuppressWarnings("unchecked")
         private <Z> Z unmarshall(byte[] bytes, ClassLoader ldr) throws IgniteCheckedException {
+            if (coctx == null) // For tests.
+                return (Z)Utils.deserialize(bytes, null);
+
             return (Z)coctx.processor().unmarshal(coctx, bytes, ldr);
         }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -28,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.h2.util.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -134,7 +136,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         map.put("txt", txt);
 
-        return new CacheObjectImpl(map, null);
+        return new TestCacheObject(map);
     }
 
     /**
@@ -149,7 +151,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         map.put("sex", sex);
 
-        return new CacheObjectImpl(map, null);
+        return new TestCacheObject(map);
     }
 
     /**
@@ -268,23 +270,23 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             spi.query(typeAA.space(), "from a order by age", Collections.emptySet(), typeAA, null);
 
         assertTrue(res.hasNext());
-        assertEquals(aa(3, "Borya", 18), value(res.next()));
+        assertEquals(aa(3, "Borya", 18).value(null, false), value(res.next()));
         assertTrue(res.hasNext());
-        assertEquals(aa(2, "Valera", 19), value(res.next()));
+        assertEquals(aa(2, "Valera", 19).value(null, false), value(res.next()));
         assertFalse(res.hasNext());
 
         res = spi.query(typeAB.space(), "from b order by name", Collections.emptySet(), typeAB, null);
 
         assertTrue(res.hasNext());
-        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here."), value(res.next()));
+        assertEquals(ab(1, "Vasya", 20, "Some text about Vasya goes here.").value(null, false), value(res.next()));
         assertTrue(res.hasNext());
-        assertEquals(ab(4, "Vitalya", 20, "Very Good guy"), value(res.next()));
+        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").value(null, false), value(res.next()));
         assertFalse(res.hasNext());
 
         res = spi.query(typeBA.space(), "from a", Collections.emptySet(), typeBA, null);
 
         assertTrue(res.hasNext());
-        assertEquals(ba(2, "Kolya", 25, true), value(res.next()));
+        assertEquals(ba(2, "Kolya", 25, true).value(null, false), value(res.next()));
         assertFalse(res.hasNext());
 
         // Text queries
@@ -292,7 +294,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
             typeAB, null);
 
         assertTrue(txtRes.hasNext());
-        assertEquals(ab(4, "Vitalya", 20, "Very Good guy"), value(txtRes.next()));
+        assertEquals(ab(4, "Vitalya", 20, "Very Good guy").value(null, false), value(txtRes.next()));
         assertFalse(txtRes.hasNext());
 
         // Fields query
@@ -559,7 +561,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
+            return Utils.serialize(val, null);
         }
 
         /** {@inheritDoc} */

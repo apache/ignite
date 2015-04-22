@@ -376,6 +376,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If it is a portable object.
      */
     private boolean isPortable(CacheObject o) {
+        if (ctx == null)
+            return false;
+
         return ctx.cacheObjects().isPortableObject(o);
     }
 
@@ -395,6 +398,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Cache object context.
      */
     private CacheObjectContext objectContext(String space) {
+        if (ctx == null)
+            return null;
+
         return ctx.cache().internalCache(space).context().cacheObjectContext();
     }
 
@@ -1949,25 +1955,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return IgniteH2Indexing.this;
         }
 
-        /**
-         * Wraps object to respective {@link Value}.
-         *
-         * @param obj Object.
-         * @param type Value type.
-         * @return Value.
-         * @throws IgniteCheckedException If failed.
-         */
-        public Value wrap(Object obj, int type) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public Value wrap(Object obj, int type) throws IgniteCheckedException {
             assert obj != null;
 
-            CacheObjectContext coctx = null;
+            if (obj instanceof CacheObject) { // Handle cache object.
+                CacheObject co = (CacheObject)obj;
 
-            CacheObject co = null;
+                CacheObjectContext coctx = objectContext(schema.spaceName);
 
-            if (obj instanceof CacheObject) { // Unwrap cache object.
-                co = (CacheObject)obj;
+                if (type == Value.JAVA_OBJECT)
+                    return new ValueCacheObject(coctx, co);
 
-                obj = co.value(coctx = objectContext(schema.spaceName), false);
+                obj = co.value(coctx, false);
             }
 
             switch (type) {
@@ -2004,10 +2004,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 case Value.BYTES:
                     return ValueBytes.get((byte[])obj);
                 case Value.JAVA_OBJECT:
-                    return ValueJavaObject.getNoCopy(obj,
-                        co != null && co.hasValueBytes() ? co.valueBytes(coctx) : null,
-                        null);
-
+                    return ValueJavaObject.getNoCopy(obj, null, null);
                 case Value.ARRAY:
                     Object[] arr = (Object[])obj;
 
@@ -2104,6 +2101,147 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return new GridH2KeyValueRowOffheap(this, ptr);
+        }
+    }
+
+    /**
+     * Replacement for {@link ValueJavaObject}.
+     * Note that after serialization/deserialization it will become {@link ValueJavaObject}.
+     */
+    private static class ValueCacheObject extends Value {
+        /** */
+        private CacheObject obj;
+
+        /** */
+        private CacheObjectContext coctx;
+
+        /**
+         * @param coctx Cache object context.
+         * @param obj Object.
+         */
+        ValueCacheObject(CacheObjectContext coctx, CacheObject obj) {
+            assert obj != null;
+
+            this.obj = obj;
+            this.coctx = coctx; // Allowed to be null in tests.
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSQL() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getType() {
+            return Value.JAVA_OBJECT;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPrecision() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getDisplaySize() {
+            return 64;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getString() {
+            return getObject().toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte[] getBytes() {
+            return Utils.cloneByteArray(getBytesNoCopy());
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte[] getBytesNoCopy() {
+            // Can't just return valueBytes for portable because it can't be unmarshalled then.
+            if (coctx != null && coctx.processor().isPortableObject(obj))
+                return Utils.serialize(obj, null);
+
+            try {
+                return obj.valueBytes(coctx); // Result must be the same: `marshaller.marshall(obj.value(coctx, false))`
+            }
+            catch (IgniteCheckedException e) {
+                throw DbException.convert(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getObject() {
+            return obj.value(coctx, false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void set(PreparedStatement prep, int parameterIndex) throws SQLException {
+            prep.setObject(parameterIndex, getObject(), Types.JAVA_OBJECT);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override protected int compareSecure(Value v, CompareMode mode) {
+            Object o1 = getObject();
+            Object o2 = v.getObject();
+
+            boolean o1Comparable = o1 instanceof Comparable;
+            boolean o2Comparable = o2 instanceof Comparable;
+
+            if (o1Comparable && o2Comparable &&
+                Utils.haveCommonComparableSuperclass(o1.getClass(), o2.getClass())) {
+                Comparable<Object> c1 = (Comparable<Object>)o1;
+
+                return c1.compareTo(o2);
+            }
+
+            // Group by types.
+            if (o1.getClass() != o2.getClass()) {
+                if (o1Comparable != o2Comparable)
+                    return o1Comparable ? -1 : 1;
+
+                return o1.getClass().getName().compareTo(o2.getClass().getName());
+            }
+
+            // Compare hash codes.
+            int h1 = hashCode();
+            int h2 = v.hashCode();
+
+            if (h1 == h2) {
+                if (o1.equals(o2))
+                    return 0;
+
+                return Utils.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
+            }
+
+            return h1 > h2 ? 1 : -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return getObject().hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object other) {
+            if (!(other instanceof Value))
+                return false;
+
+            Value otherVal = (Value)other;
+
+            return otherVal.getType() == Value.JAVA_OBJECT
+                && getObject().equals(otherVal.getObject());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Value convertPrecision(long precision, boolean force) {
+            return this;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMemory() {
+            return 0;
         }
     }
 }
