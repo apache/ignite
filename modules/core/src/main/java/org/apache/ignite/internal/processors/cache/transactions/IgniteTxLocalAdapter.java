@@ -1399,6 +1399,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param missedMap Missed keys.
      * @param redos Keys to retry.
      * @param deserializePortable Deserialize portable flag.
+     * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
      * @param skipStore Skip store flag.
      * @return Loaded key-value pairs.
@@ -2814,9 +2815,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             ExpiryPolicy plc;
 
-            if (!F.isEmpty(filter)) {
+            if (!F.isEmpty(filter))
                 plc = opCtx != null ? opCtx.expiry() : null;
-            }
             else
                 plc = null;
 

@@ -130,7 +130,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private long accessTtl;
 
     /** Need return value flag. */
-    private boolean needReturnValue;
+    private boolean needReturnVal;
 
     /** Skip store flag. */
     private final boolean skipStore;
@@ -142,6 +142,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param topVer Topology version.
      * @param cnt Number of keys to lock.
      * @param read Read flag.
+     * @param needReturnVal Need return value flag.
      * @param timeout Lock acquisition timeout.
      * @param tx Transaction.
      * @param threadId Thread ID.
@@ -156,7 +157,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         @NotNull AffinityTopologyVersion topVer,
         int cnt,
         boolean read,
-        boolean needReturnValue,
+        boolean needReturnVal,
         long timeout,
         GridDhtTxLocalAdapter tx,
         long threadId,
@@ -174,7 +175,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         this.nearLockVer = nearLockVer;
         this.topVer = topVer;
         this.read = read;
-        this.needReturnValue = needReturnValue;
+        this.needReturnVal = needReturnVal;
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
@@ -957,7 +958,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      *
      */
     private void loadMissingFromStore() {
-        if (cctx.loadPreviousValue() && cctx.readThrough() && (needReturnValue || read)) {
+        if (cctx.loadPreviousValue() && cctx.readThrough() && (needReturnVal || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
             final GridCacheVersion ver = version();

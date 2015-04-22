@@ -594,6 +594,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param keys Mapped keys.
      * @param txRead Tx read.
+     * @param retval Return value flag.
      * @param timeout Lock timeout.
      * @param accessTtl TTL for read operation.
      * @param filter filter Optional filter.
@@ -674,6 +675,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param keys Mapped keys.
      * @param txRead Tx read.
+     * @param retval Return value flag.
      * @param timeout Lock timeout.
      * @param accessTtl TTL for read operation.
      * @param filter filter Optional filter.

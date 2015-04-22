@@ -103,6 +103,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param nearXidVer Near transaction ID.
      * @param threadId Thread ID.

@@ -356,7 +356,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         /*deserialize portable*/false,
                         skipVals,
                         /*keep cache objects*/true,
-                        /*skip store*/readThrough);
+                        /*skip store*/!readThrough);
                 }
             }
         }
@@ -384,7 +384,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     readThrough,
                                     subjId,
                                     taskName,
-                                    expiryPlc, skipVals);
+                                    expiryPlc,
+                                    skipVals);
                             }
                             else {
                                 return tx.getAllAsync(cctx,
@@ -393,7 +394,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     /*deserialize portable*/false,
                                     skipVals,
                                     /*keep cache objects*/true,
-                                    /*skip store*/readThrough);
+                                    /*skip store*/!readThrough);
                             }
                         }
                     }

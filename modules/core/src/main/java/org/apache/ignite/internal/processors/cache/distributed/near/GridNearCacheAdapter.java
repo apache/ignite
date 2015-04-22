@@ -210,6 +210,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
      * @return Loaded values.
      */
