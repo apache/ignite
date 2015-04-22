@@ -498,6 +498,13 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
+        if (tx == null && locTx != null && !req.commit()) {
+            U.warn(log, "DHT local tx not found for near local tx rollback " +
+                "[req=" + req + ", dhtVer=" + dhtVer + ", tx=" + locTx + ']');
+
+            return null;
+        }
+
         if (tx == null && !req.explicitLock()) {
             assert locTx == null : "DHT local tx should never be lost for near local tx: " + locTx;
 
