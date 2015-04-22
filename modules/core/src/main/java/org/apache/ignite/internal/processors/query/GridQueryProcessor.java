@@ -388,27 +388,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param space Space name.
+     * @return Cache object context.
+     */
+    private CacheObjectContext cacheObjectContext(String space) {
+        return ctx.cache().internalCache(space).context().cacheObjectContext();
+    }
+
+    /**
      * Writes key-value pair to index.
      *
      * @param space Space.
      * @param key Key.
-     * @param keyBytes Byte array with key data.
      * @param val Value.
-     * @param valBytes Byte array with value data.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void store(final String space, final K key, @Nullable byte[] keyBytes, final V val,
-        @Nullable byte[] valBytes, byte[] ver, long expirationTime) throws IgniteCheckedException {
+    public void store(final String space, final CacheObject key, final CacheObject val,
+        byte[] ver, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
         if (log.isDebugEnabled())
             log.debug("Store [space=" + space + ", key=" + key + ", val=" + val + "]");
 
-        ctx.indexing().store(space, key, val, expirationTime);
+        CacheObjectContext coctx = null;
+
+        if (ctx.indexing().enabled()) {
+            coctx = cacheObjectContext(space);
+
+            ctx.indexing().store(space, key.value(coctx, false), val.value(coctx, false), expirationTime);
+        }
 
         if (idx == null)
             return;
@@ -417,7 +429,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            final Class<?> valCls = val.getClass();
+            if (coctx == null)
+                coctx = cacheObjectContext(space);
+
+            Class<?> valCls = null;
 
             TypeId id;
 
@@ -428,8 +443,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 id = new TypeId(space, typeId);
             }
-            else
+            else {
+                valCls = val.value(coctx, false).getClass();
+
                 id = new TypeId(space, valCls);
+            }
 
             TypeDescriptor desc = types.get(id);
 
@@ -441,9 +459,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!ctx.cacheObjects().isPortableObject(key) && !desc.keyClass().isAssignableFrom(key.getClass()))
-                throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
-                    desc.keyClass().getName() + ", actualCls=" + key.getClass().getName() + "]");
+            if (!ctx.cacheObjects().isPortableObject(key)) {
+                Class<?> keyCls = key.value(coctx, false).getClass();
+
+                if (!desc.keyClass().isAssignableFrom(keyCls))
+                    throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
+                        desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
+            }
 
             idx.store(space, desc, key, val, ver, expirationTime);
         }
@@ -684,13 +706,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key, Object val) throws IgniteCheckedException {
+    public void remove(String space, CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
 
-        ctx.indexing().remove(space, key);
+        if (ctx.indexing().enabled()) {
+            CacheObjectContext coctx = cacheObjectContext(space);
+
+            ctx.indexing().remove(space, key.value(coctx, false));
+        }
 
         if (idx == null)
             return;
@@ -792,11 +818,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String spaceName, Object key) throws IgniteCheckedException {
+    public void onSwap(String spaceName, CacheObject key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
 
-        ctx.indexing().onSwap(spaceName, key);
+        if (ctx.indexing().enabled()) {
+            CacheObjectContext coctx = cacheObjectContext(spaceName);
+
+            ctx.indexing().onSwap(spaceName, key.value(coctx, false));
+        }
 
         if (idx == null)
             return;
@@ -818,15 +848,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param spaceName Space name.
      * @param key Key.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(String spaceName, Object key, Object val, byte[] valBytes)
+    public void onUnswap(String spaceName, CacheObject key, CacheObject val)
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
 
-        ctx.indexing().onUnswap(spaceName, key, val);
+        if (ctx.indexing().enabled()) {
+            CacheObjectContext coctx = cacheObjectContext(spaceName);
+
+            ctx.indexing().onUnswap(spaceName, key.value(coctx, false), val.value(coctx, false));
+        }
 
         if (idx == null)
             return;
@@ -835,7 +868,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");
 
         try {
-            idx.onUnswap(spaceName, key, val, valBytes);
+            idx.onUnswap(spaceName, key, val);
         }
         finally {
             busyLock.leaveBusy();

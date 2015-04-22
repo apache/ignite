@@ -19,14 +19,18 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
+import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -108,14 +112,14 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param age Age.
      * @return AA.
      */
-    private Map<String, Object> aa(long id, String name, int age) {
+    private CacheObject aa(long id, String name, int age) {
         Map<String, Object> map = new HashMap<>();
 
         map.put("id", id);
         map.put("name", name);
         map.put("age", age);
 
-        return map;
+        return new TestCacheObject(map);
     }
 
     /**
@@ -125,12 +129,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param txt Text.
      * @return AB.
      */
-    private Map<String, Object> ab(long id, String name, int age, String txt) {
-        Map<String, Object> map = aa(id, name, age);
+    private CacheObject ab(long id, String name, int age, String txt) {
+        Map<String, Object> map = aa(id, name, age).value(null, false);
 
         map.put("txt", txt);
 
-        return map;
+        return new CacheObjectImpl(map, null);
     }
 
     /**
@@ -140,12 +144,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param sex Sex.
      * @return BA.
      */
-    private Map<String, Object> ba(long id, String name, int age, boolean sex) {
-        Map<String, Object> map = aa(id, name, age);
+    private CacheObject ba(long id, String name, int age, boolean sex) {
+        Map<String, Object> map = aa(id, name, age).value(null, false);
 
         map.put("sex", sex);
 
-        return map;
+        return new CacheObjectImpl(map, null);
     }
 
     /**
@@ -166,6 +170,14 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
     protected boolean offheap() {
         return false;
+    }
+
+    /**
+     * @param key Key.
+     * @return Cache object.
+     */
+    private CacheObject key(int key) {
+        return new TestCacheObject(key);
     }
 
     /**
@@ -202,16 +214,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
 
         // Nothing to remove.
-        spi.remove("A", 1, aa(1, "", 10));
-        spi.remove("B", 1, ba(1, "", 10, true));
+        spi.remove("A", key(1), aa(1, "", 10));
+        spi.remove("B", key(1), ba(1, "", 10, true));
 
-        spi.store(typeAA.space(), typeAA, 1, aa(1, "Vasya", 10), "v1".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(1), aa(1, "Vasya", 10), "v1".getBytes(), 0);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(0, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAB.space(), typeAB, 1, ab(1, "Vasya", 20, "Some text about Vasya goes here."),
+        spi.store(typeAB.space(), typeAB, key(1), ab(1, "Vasya", 20, "Some text about Vasya goes here."),
             "v2".getBytes(), 0);
 
         // In one space all keys must be unique.
@@ -219,33 +231,33 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeBA.space(), typeBA, 1, ba(2, "Petya", 25, true), "v3".getBytes(), 0);
+        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Petya", 25, true), "v3".getBytes(), 0);
 
         // No replacement because of different space.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeBA.space(), typeBA, 1, ba(2, "Kolya", 25, true), "v4".getBytes(), 0);
+        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Kolya", 25, true), "v4".getBytes(), 0);
 
         // Replacement in the same table.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAA.space(), typeAA, 2, aa(2, "Valera", 19), "v5".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(2), aa(2, "Valera", 19), "v5".getBytes(), 0);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAA.space(), typeAA, 3, aa(3, "Borya", 18), "v6".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(3), aa(3, "Borya", 18), "v6".getBytes(), 0);
 
         assertEquals(2, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAB.space(), typeAB, 4, ab(4, "Vitalya", 20, "Very Good guy"), "v7".getBytes(), 0);
+        spi.store(typeAB.space(), typeAB, key(4), ab(4, "Vitalya", 20, "Very Good guy"), "v7".getBytes(), 0);
 
         assertEquals(2, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
@@ -307,13 +319,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(fieldsRes.iterator().hasNext());
 
         // Remove
-        spi.remove(typeAA.space(), 2, aa(2, "Valera", 19));
+        spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.remove(typeBA.space(), 1, ba(2, "Kolya", 25, true));
+        spi.remove(typeBA.space(), key(1), ba(2, "Kolya", 25, true));
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
@@ -352,7 +364,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         spi.unregisterType(typeBA.space(), typeBA);
 
         // Should not store but should not fail as well.
-        spi.store(typeAA.space(), typeAA, 10, aa(1, "Fail", 100500), "v220".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(10), aa(1, "Fail", 100500), "v220".getBytes(), 0);
 
         assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
     }
@@ -524,6 +536,75 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         @Override public boolean valueTextIndex() {
             return textIdx == null;
+        }
+    }
+
+    /**
+     */
+    private static class TestCacheObject implements CacheObject {
+        /** */
+        private Object val;
+
+        /**
+         * @param val Value.
+         */
+        private TestCacheObject(Object val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+            return (T)val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasValueBytes() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte type() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte directType() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            throw new UnsupportedOperationException();
         }
     }
 }

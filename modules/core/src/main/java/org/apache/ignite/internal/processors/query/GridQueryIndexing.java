@@ -176,8 +176,8 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, Object key, Object val, byte[] ver,
-        long expirationTime) throws IgniteCheckedException;
+    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject key, CacheObject val,
+        byte[] ver, long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -187,7 +187,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -196,7 +196,7 @@ public interface GridQueryIndexing {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException;
+    public void onSwap(@Nullable String spaceName, CacheObject key) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -204,10 +204,9 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param key Key.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes) throws IgniteCheckedException;
+    public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
      * Rebuilds all indexes of given type.

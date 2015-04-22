@@ -46,6 +46,11 @@ public interface CacheObject extends Message {
     public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
+     * @return {@code true} If this cache object contains serialized value representation.
+     */
+    public boolean hasValueBytes();
+
+    /**
      * @return Object type.
      */
     public byte type();

@@ -3466,10 +3466,8 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr != null && qryMgr.enabled()) {
-                qryMgr.store(key.value(cctx.cacheObjectContext(), false),
-                    null,
-                    CU.value(val, cctx, false),
-                    null,
+                qryMgr.store(key,
+                    val,
                     ver,
                     expireTime);
             }
@@ -3492,8 +3490,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr != null)
-                qryMgr.remove(key().value(cctx.cacheObjectContext(), false),
-                    prevVal == null ? null : prevVal.value(cctx.cacheObjectContext(), false));
+                qryMgr.remove(key(), prevVal == null ? null : prevVal);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);

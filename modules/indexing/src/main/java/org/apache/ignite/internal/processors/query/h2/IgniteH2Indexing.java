@@ -63,6 +63,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
 import java.sql.*;
+import java.sql.Date;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -291,13 +292,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tblToUpdate Table to update.
      * @throws IgniteCheckedException In case of error.
      */
-    private void removeKey(@Nullable String spaceName, Object key, TableDescriptor tblToUpdate)
+    private void removeKey(@Nullable String spaceName, CacheObject key, TableDescriptor tblToUpdate)
         throws IgniteCheckedException {
         try {
             Collection<TableDescriptor> tbls = tables(schema(spaceName));
 
+            Class<?> keyCls = getClass(objectContext(spaceName), key);
+
             for (TableDescriptor tbl : tbls) {
-                if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(key.getClass())) {
+                if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
                     if (tbl.tbl.update(key, null, 0, true)) {
                         if (tbl.luceneIdx != null)
                             tbl.luceneIdx.remove(key);
@@ -350,8 +353,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, Object k, Object v, byte[] ver,
-        long expirationTime) throws IgniteCheckedException {
+    @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject k, CacheObject v,
+        byte[] ver, long expirationTime) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         removeKey(spaceName, k, tbl);
@@ -368,14 +371,46 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             tbl.luceneIdx.store(k, v, ver, expirationTime);
     }
 
+    /**
+     * @param o Object.
+     * @return {@code true} If it is a portable object.
+     */
+    private boolean isPortable(CacheObject o) {
+        return ctx.cacheObjects().isPortableObject(o);
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param o Object.
+     * @return Object class.
+     */
+    private Class<?> getClass(CacheObjectContext coctx, CacheObject o) {
+        return isPortable(o) ?
+            Object.class :
+            o.value(coctx, false).getClass();
+    }
+
+    /**
+     * @param space Space.
+     * @return Cache object context.
+     */
+    private CacheObjectContext objectContext(String space) {
+        return ctx.cache().internalCache(space).context().cacheObjectContext();
+    }
+
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException {
+    @Override public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ']');
+            log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
+
+        CacheObjectContext coctx = objectContext(spaceName);
+
+        Class<?> keyCls = getClass(coctx, key);
+        Class<?> valCls = val == null ? null : getClass(coctx, val);
 
         for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().isAssignableFrom(key.getClass())
-                && (val == null || tbl.type().valueClass().isAssignableFrom(val.getClass()))) {
+            if (tbl.type().keyClass().isAssignableFrom(keyCls)
+                && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
                 if (tbl.tbl.update(key, val, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
@@ -387,14 +422,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException {
+    @Override public void onSwap(@Nullable String spaceName, CacheObject key) throws IgniteCheckedException {
         Schema schema = schemas.get(schema(spaceName));
 
         if (schema == null)
             return;
 
+        Class<?> keyCls = getClass(objectContext(spaceName), key);
+
         for (TableDescriptor tbl : schema.tbls.values()) {
-            if (tbl.type().keyClass().isAssignableFrom(key.getClass())) {
+            if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
                 try {
                     if (tbl.tbl.onSwap(key))
                         return;
@@ -407,13 +444,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes)
+    @Override public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val)
         throws IgniteCheckedException {
         assert val != null;
 
+        CacheObjectContext coctx = objectContext(spaceName);
+
+        Class<?> keyCls = getClass(coctx, key);
+        Class<?> valCls = getClass(coctx, val);
+
         for (TableDescriptor tbl : tables(schema(spaceName))) {
-            if (tbl.type().keyClass().isAssignableFrom(key.getClass())
-                && tbl.type().valueClass().isAssignableFrom(val.getClass())) {
+            if (tbl.type().keyClass().isAssignableFrom(keyCls)
+                && tbl.type().valueClass().isAssignableFrom(valCls)) {
                 try {
                     if (tbl.tbl.onUnswap(key, val))
                         return;
@@ -514,7 +556,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     meta = meta(rs.getMetaData());
                 }
                 catch (SQLException e) {
-                    throw new IgniteSpiException("Failed to get meta data.", e);
+                    throw new IgniteCheckedException("Failed to get meta data.", e);
                 }
             }
 
@@ -1114,6 +1156,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Starting cache query index...");
 
         System.setProperty("h2.serializeJavaObject", "false");
+        System.setProperty("h2.objectCacheMaxPerElementSize", "0"); // Avoid ValueJavaObject caching.
 
         if (SysProperties.serializeJavaObject) {
             U.warn(log, "Serialization of Java objects in H2 was enabled.");
@@ -1551,7 +1594,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (type().valueClass() == String.class) {
                 try {
-                    luceneIdx = new GridLuceneIndex(ctx, marshaller, schema.offheap, schema.spaceName, type, true);
+                    luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
                 }
                 catch (IgniteCheckedException e1) {
                     throw new IgniteException(e1);
@@ -1564,7 +1607,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (idx.type() == FULLTEXT) {
                     try {
-                        luceneIdx = new GridLuceneIndex(ctx, marshaller, schema.offheap, schema.spaceName, type, true);
+                        luceneIdx = new GridLuceneIndex(ctx, schema.offheap, schema.spaceName, type);
                     }
                     catch (IgniteCheckedException e1) {
                         throw new IgniteException(e1);
@@ -1906,8 +1949,87 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return IgniteH2Indexing.this;
         }
 
+        /**
+         * Wraps object to respective {@link Value}.
+         *
+         * @param obj Object.
+         * @param type Value type.
+         * @return Value.
+         * @throws IgniteCheckedException If failed.
+         */
+        public Value wrap(Object obj, int type) throws IgniteCheckedException {
+            assert obj != null;
+
+            CacheObjectContext coctx = null;
+
+            CacheObject co = null;
+
+            if (obj instanceof CacheObject) { // Unwrap cache object.
+                co = (CacheObject)obj;
+
+                obj = co.value(coctx = objectContext(schema.spaceName), false);
+            }
+
+            switch (type) {
+                case Value.BOOLEAN:
+                    return ValueBoolean.get((Boolean)obj);
+                case Value.BYTE:
+                    return ValueByte.get((Byte)obj);
+                case Value.SHORT:
+                    return ValueShort.get((Short)obj);
+                case Value.INT:
+                    return ValueInt.get((Integer)obj);
+                case Value.FLOAT:
+                    return ValueFloat.get((Float)obj);
+                case Value.LONG:
+                    return ValueLong.get((Long)obj);
+                case Value.DOUBLE:
+                    return ValueDouble.get((Double)obj);
+                case Value.UUID:
+                    UUID uuid = (UUID)obj;
+                    return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
+                case Value.DATE:
+                    return ValueDate.get((Date)obj);
+                case Value.TIME:
+                    return ValueTime.get((Time)obj);
+                case Value.TIMESTAMP:
+                    if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
+                        obj = new Timestamp(((java.util.Date) obj).getTime());
+
+                    return GridH2Utils.toValueTimestamp((Timestamp)obj);
+                case Value.DECIMAL:
+                    return ValueDecimal.get((BigDecimal)obj);
+                case Value.STRING:
+                    return ValueString.get(obj.toString());
+                case Value.BYTES:
+                    return ValueBytes.get((byte[])obj);
+                case Value.JAVA_OBJECT:
+                    return ValueJavaObject.getNoCopy(obj,
+                        co != null && co.hasValueBytes() ? co.valueBytes(coctx) : null,
+                        null);
+
+                case Value.ARRAY:
+                    Object[] arr = (Object[])obj;
+
+                    Value[] valArr = new Value[arr.length];
+
+                    for (int i = 0; i < arr.length; i++) {
+                        Object o = arr[i];
+
+                        valArr[i] = o == null ? ValueNull.INSTANCE : wrap(o, DataType.getTypeFromClass(o.getClass()));
+                    }
+
+                    return ValueArray.get(valArr);
+
+                case Value.GEOMETRY:
+                    return ValueGeometry.getFromGeometry(obj);
+            }
+
+            throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
+        }
+
         /** {@inheritDoc} */
-        @Override public GridH2Row createRow(Object key, @Nullable Object val, long expirationTime)
+        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
             throws IgniteCheckedException {
             try {
                 if (val == null) // Only can happen for remove operation, can create simple search row.
