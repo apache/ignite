@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.sorted.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -77,6 +78,10 @@ public class GridCacheSortedEvictionPolicyPerformanceTest extends GridCommonAbst
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setNearConfiguration(null);
         ccfg.setEvictionPolicy(new SortedEvictionPolicy(MAX_SIZE));
+//        ccfg.setEvictionPolicy(new FifoEvictionPolicy(MAX_SIZE));
+       ccfg.setEvictSynchronized(false);
+
+        cfg.setPeerClassLoadingEnabled(false);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -97,17 +102,11 @@ public class GridCacheSortedEvictionPolicyPerformanceTest extends GridCommonAbst
 
         multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                int c = MEASUREMENT_CNT;
-
-                for (; c > 0; c--) {
+                for (;;) {
                     U.sleep(1000);
 
                     info("Ops/sec: " + cnt.sumThenReset());
                 }
-
-                finished.set(true);
-
-                return null;
             }
         }, 1);
 
