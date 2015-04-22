@@ -63,15 +63,19 @@ public class CodeGenerator {
      * Checks if string is a valid java identifier.
      *
      * @param identifier String to check.
+     * @param split If {@code true} then identifier will be split by dots.
      * @param msg Identifier type.
      * @param type Checked type.
      * @throws IllegalStateException If passed string is not valid java identifier.
      */
-    private static void checkValidJavaIdentifier(String identifier, String msg, String type) throws IllegalStateException{
+    private static void checkValidJavaIdentifier(String identifier, boolean split, String msg, String type)
+        throws IllegalStateException{
         if (identifier.isEmpty())
             throw new IllegalStateException(msg + " could not be empty!");
 
-        for (String part : identifier.split("\\.")) {
+        String[] parts = split ? identifier.split("\\.") : new String[] {identifier};
+
+        for (String part : parts) {
             if (javaKeywords.contains(part))
                 throw new IllegalStateException(msg + " could not contains reserved keyword:" +
                     " [type = " + type + ", identifier=" + identifier + ", keyword=" + part + "]");
@@ -254,8 +258,8 @@ public class CodeGenerator {
 
         File out = new File(pkgFolder, type + ".java");
 
-        checkValidJavaIdentifier(pkg, "Package", type);
-        checkValidJavaIdentifier(type, "Type", type);
+        checkValidJavaIdentifier(pkg, true, "Package", type);
+        checkValidJavaIdentifier(type, false, "Type", type);
 
         if (out.exists()) {
             MessageBox.Result choice = askOverwrite.confirm(out.getName());
@@ -281,7 +285,7 @@ public class CodeGenerator {
         for (PojoField field : fields) {
             String fldName = field.javaName();
 
-            checkValidJavaIdentifier(fldName, "Field", type);
+            checkValidJavaIdentifier(fldName, false, "Field", type);
 
             add1(src, "/** Value for " + fldName + ". */");
 
@@ -539,7 +543,7 @@ public class CodeGenerator {
      * @param varName Variable name to generate.
      * @param mtdName Method name to generate.
      * @param comment Commentary text.
-     * @param first {@code true} if varable should be declared.
+     * @param first {@code true} if variable should be declared.
      */
     private static void addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
         String mtdName, String comment, boolean first) {
