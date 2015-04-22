@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.visor.visor._
 
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask
@@ -92,13 +92,14 @@ class VisorCacheStopCommand {
             case Some(name) => name
         }
 
-        val grp = groupForDataNode(node, cacheName)
+        val grp = try {
+            groupForDataNode(node, cacheName)
+        }
+        catch {
+            case _: ClusterGroupEmptyException =>
+                scold(messageNodeNotFound(node, cacheName))
 
-        if (grp.nodes().isEmpty) {
-            warn("Can't find nodes with specified cache: " + escapeName(cacheName),
-                "Type 'cache' to see available cache names.")
-
-            return
+                return
         }
 
         ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [n]: ", "n") match {
@@ -109,6 +110,7 @@ class VisorCacheStopCommand {
                     println("Visor successfully stop cache: " + escapeName(cacheName))
                 }
                 catch {
+                    case _: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
                     case e: Exception => error(e)
                 }
 

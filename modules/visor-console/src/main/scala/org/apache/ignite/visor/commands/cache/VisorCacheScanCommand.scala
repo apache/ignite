@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.commands._
 import org.apache.ignite.visor.visor._
@@ -72,7 +72,7 @@ class VisorCacheScanCommand {
         warn("Type 'help cache' to see how to use this command.")
     }
 
-    private def error(e: Exception) {
+    private def error(e: Throwable) {
         var cause: Throwable = e
 
         while (cause.getCause != null)
@@ -136,20 +136,11 @@ class VisorCacheScanCommand {
             case Some(name) => name
         }
 
-        val grp = groupForDataNode(node, cacheName)
-
-        if (grp.nodes().isEmpty) {
-            scold(messageNodeNotFound(node))
-
-            return
-        }
-
-        val nid = grp.forRandom().node().id()
-
         val firstPage =
             try
-                executeOne(nid, classOf[VisorQueryTask], new VisorQueryArg(cacheName, "SCAN", pageSize))
-                    match {
+                val grp = groupForDataNode(node, cacheName)
+
+                executeRandom(grp, classOf[VisorQueryTask], new VisorQueryArg(cacheName, "SCAN", pageSize)) match {
                     case x if x.get1() != null =>
                         error(x.get1())
 
@@ -157,14 +148,18 @@ class VisorCacheScanCommand {
                     case x => x.get2()
                 }
             catch {
-                case e: Exception =>
+                case e: ClusterGroupEmptyException =>
+                    scold(messageNodeNotFound(node, cacheName))
+
+                    return
+                case e: Throwable =>
                     error(e)
 
                     return
             }
 
         if (firstPage.rows.isEmpty) {
-            println("Cache: " + escapeName(cacheName) + " is empty")
+            println(s"Cache: ${escapeName(cacheName)} is empty")
 
             return
         }
@@ -199,7 +194,6 @@ class VisorCacheScanCommand {
                     }
                 case _ => return
             }
-
         }
     }
 }

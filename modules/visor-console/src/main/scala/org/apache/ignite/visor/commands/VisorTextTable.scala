@@ -507,6 +507,8 @@ class VisorTextTable {
 
         print(tbl.toString)
     }
+
+    def nonEmpty = rows.nonEmpty
 }
 
 /**

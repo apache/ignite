@@ -29,7 +29,7 @@ import org.apache.ignite.visor.visor._
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
-import java.util.{ArrayList => JavaList, Collection => JavaCollection, UUID}
+import java.util.{Collection => JavaCollection, Collections, UUID}
 
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -495,15 +495,14 @@ class VisorCacheCommand {
         assert(node != null)
 
         try {
-            val prj = groupForNode(node)
+            val caches: JavaCollection[String] = name.fold(Collections.emptyList[String]())(Collections.singletonList)
 
-            val nids = prj.nodes().map(_.id())
+            val arg = new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches)
 
-            val caches: JavaCollection[String] = new JavaList[String](1)
-            name.foreach(caches.add)
-
-            executeMulti(nids, classOf[VisorCacheMetricsCollectorTask],
-                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches)).toList
+            node match {
+                case Some(n) => executeOne(n.id(), classOf[VisorCacheMetricsCollectorTask], arg).toList
+                case None => executeMulti(classOf[VisorCacheMetricsCollectorTask], arg).toList
+            }
         }
         catch {
             case e: IgniteException => Nil

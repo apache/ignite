@@ -260,31 +260,29 @@ object visor extends VisorTag {
 
     /**
      * @param node Optional node.
-     * @return Cluster group with specified node or projection with all remote nodes.
-     */
-    def groupForNode(node: Option[ClusterNode]): ClusterGroup = node match {
-        case Some(n) => ignite.cluster.forNode(n)
-        case None => ignite.cluster.forRemotes()
-    }
-
-    /**
-     * @param node Optional node.
      * @param cacheName Cache name to take cluster group for.
      * @return Cluster group with data nodes for specified cache or cluster group for specified node.
      */
-    def groupForDataNode(node: Option[ClusterNode], cacheName: String): ClusterGroup = node match {
-        case Some(n) => ignite.cluster.forNode(n)
-        case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+    def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
+        val grp = node match {
+            case Some(n) => ignite.cluster.forNode(n)
+            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+        }
+
+        if (grp.nodes().isEmpty)
+            throw new ClusterGroupEmptyException("Topology is empty.")
+
+        grp
     }
 
     /**
-     * @param node Node.
-     * @param msg Optional message.
+     * @param nodeOpt Node.
+     * @param cacheName Cache name.
      * @return Message about why node was not found.
      */
-    def messageNodeNotFound(node: Option[ClusterNode], msg: Option[String] = None): String = node match {
-        case Some(n) => msg.getOrElse("Can't find node with specified id: " + n.id())
-        case None => "Topology is empty."
+    def messageNodeNotFound(nodeOpt: Option[ClusterNode], cacheName: String) = nodeOpt match {
+        case Some(node) => "Can't find node with specified id: " + node.id()
+        case None => "Can't find nodes for cache: " + escapeName(cacheName)
     }
 
     Runtime.getRuntime.addShutdownHook(new Thread() {

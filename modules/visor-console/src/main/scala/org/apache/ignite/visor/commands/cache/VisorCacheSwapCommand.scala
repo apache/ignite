@@ -17,17 +17,16 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
+import org.apache.ignite.visor.commands.VisorTextTable
+import org.apache.ignite.visor.visor._
 
 import java.util.Collections
 
-import org.apache.ignite.visor.commands.VisorTextTable
-import org.apache.ignite.visor.visor
-import visor._
+import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
+import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
 
 /**
@@ -100,33 +99,33 @@ class VisorCacheSwapCommand {
             case Some(name) => name
         }
 
-        val grp = groupForDataNode(node, cacheName)
+        try {
+            val grp = groupForDataNode(node, cacheName)
 
-        if (grp.nodes().isEmpty)
-            scold(messageNodeNotFound(node, Some("Can't find nodes for cache: " + escapeName(cacheName))))
-        else
-            try {
-                val nid = grp.forRandom().node().id()
+            val t = VisorTextTable()
 
-                val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).get(cacheName)
+            t #=("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-                if (r != null) {
-                    val t = VisorTextTable()
+            for (node <- grp.nodes(); nid <- node.id()) {
+                val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).
+                    get(cacheName)
 
-                    t #= ("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
-
-                    t += (nodeId8(nid), r.get1() - r.get2(), r.get1(), r.get2())
-
-                    println("Swapped entries in cache: " + escapeName(cacheName))
-
-                    t.render()
-                }
-                else
-                    scold("Can't find nodes for cache: " + escapeName(cacheName))
+                if (r != null)
+                    t +=(nodeId8(nid), r.get1() - r.get2(), r.get1(), r.get2())
             }
-            catch {
-                case e: Exception => scold(e.getMessage)
+
+            if (t.nonEmpty) {
+                println("Swapped entries in cache: " + escapeName(cacheName))
+
+                t.render()
             }
+            else
+                scold(messageNodeNotFound(node, cacheName))
+        }
+        catch {
+            case e: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
+            case e: Throwable => scold(e.getMessage)
+        }
     }
 }
 
