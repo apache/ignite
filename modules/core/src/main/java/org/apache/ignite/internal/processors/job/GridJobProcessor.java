@@ -1639,6 +1639,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received onHeld() callback [worker=" + worker + ']');
 
+            if (worker.isInternal())
+                return true;
+
             boolean res = false;
 
             if (activeJobs.containsKey(worker.getJobId())) {
@@ -1660,6 +1663,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received onUnheld() callback [worker=" + worker + ", active=" + activeJobs +
                     ", held=" + heldJobs + ']');
+
+            if (worker.isInternal())
+                return true;
 
             return heldJobs.remove(worker.getJobId());
         }

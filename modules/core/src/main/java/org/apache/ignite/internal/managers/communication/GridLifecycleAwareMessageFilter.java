@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.cache.affinity.fair.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Multi-node tests for partitioned cache with {@link FairAffinityFunction}.
+ * Special version of bi-predicate for messaging with initialize/close callbacks.
  */
-public class GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest
-    extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+    /**
+     * Initializes the filter.
+     */
+    public void initialize();
 
-        cfg.setAffinity(new FairAffinityFunction());
-
-        return cfg;
-    }
+    /**
+     * Closes the filter.
+     */
+    public void close();
 }
