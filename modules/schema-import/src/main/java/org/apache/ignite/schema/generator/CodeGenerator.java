@@ -76,6 +76,9 @@ public class CodeGenerator {
         String[] parts = split ? identifier.split("\\.") : new String[] {identifier};
 
         for (String part : parts) {
+            if (part.isEmpty())
+                throw new IllegalStateException(msg + " could not has empty parts!");
+
             if (javaKeywords.contains(part))
                 throw new IllegalStateException(msg + " could not contains reserved keyword:" +
                     " [type = " + type + ", identifier=" + identifier + ", keyword=" + part + "]");
