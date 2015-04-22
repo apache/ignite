@@ -75,7 +75,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private volatile HeartbeatSender hbSender;
 
     /** Disconnect handler. */
-    private volatile DisconnectHandler disconnectHnd;
+    private DisconnectHandler disconnectHnd;
 
     /** Last message ID. */
     private volatile IgniteUuid lastMsgId;
