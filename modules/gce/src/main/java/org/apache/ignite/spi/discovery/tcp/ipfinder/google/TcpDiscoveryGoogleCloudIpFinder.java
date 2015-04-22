@@ -18,15 +18,18 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.google;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
 import com.google.api.services.storage.model.*;
 import com.google.common.collect.ImmutableMap;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 
@@ -42,17 +45,42 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Google Cloud Storage based IP finder.
- *
- * TODO: complete
+ * <p>
+ * For information about Cloud Storage visit <a href="https://cloud.google.com/storage/">cloud.google.com</a>.
+ * <h1 class="header">Configuration</h1>
+ * <h2 class="header">Mandatory</h2>
+ * <ul>
+ *      <li>Service Account Id (see {@link #setServiceAccountId(String)})</li>
+ *      <li>Service Account P12 key file path (see {@link #setServiceAccountP12FilePath(String)})</li>
+ *      <li>Google Platform project name (see {@link #setProjectName(String)})</li>
+ *      <li>Google Storage bucket name (see {@link #setBucketName(String)})</li>
+ * </ul>
+ * <h2 class="header">Optional</h2>
+ * <ul>
+ *      <li>Shared flag (see {@link #setShared(boolean)})</li>
+ * </ul>
+ * <p>
+ * The finder will create a bucket with the provided name. The bucket will contain entries named
+ * like the following: {@code 192.168.1.136#1001}.
+ * <p>
+ * Note that storing data in Google Cloud Storage service will result in charges to your Google Cloud Platform account.
+ * Choose another implementation of {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} for local
+ * or home network tests.
+ * <p>
+ * Note that this finder is shared by default (see {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
 public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     /* Default object's content. */
-    private final static ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[1]);
+    private final static ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
+
+    /** Grid logger. */
+    @LoggerResource
+    private IgniteLogger log;
 
     /* Google Cloud Platform's project name.*/
     private String projectName;
 
-    /* Google Cloud Platform's bucket name. */
+    /* Google Storage bucket name. */
     private String bucketName;
 
     /* Service account p12 private key file name. */
@@ -146,7 +174,8 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
                 Storage.Objects.Delete deleteObject = storage.objects().delete(bucketName, key);
 
                 deleteObject.execute();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new IgniteSpiException("Failed to delete entry [bucketName=" + bucketName +
                                                      ", entry=" + key + ']', e);
             }
@@ -155,7 +184,8 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
 
     /**
      * Sets Google Cloud Platforms project name.
-     * The project name is the one which your Google VM instances, Cloud Storage, etc. belong to.
+     * Usually this is an auto generated project number (ex. 208709979073) that can be found in "Overview" section
+     * of Google Developer Console.
      * <p>
      * For details refer to Google Cloud Platform API reference.
      *
@@ -167,7 +197,10 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
     }
 
     /**
-     * Sets Google Cloud Platforms bucket name.
+     * Sets Google Cloud Storage bucket name.
+     * If the bucket doesn't exist Ignite will automatically create it. However the name must be unique across whole
+     * Google Cloud Storage and Service Account Id (see {@link #setServiceAccountId(String)}) must be authorized to
+     * perform this operation.
      *
      * @param bucketName Bucket name.
      */
@@ -176,18 +209,37 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
         this.bucketName = bucketName;
     }
 
+
+    /**
+     * Sets a full path to the private key in PKCS12 format of the Service Account.
+     * <p>
+     * For more information refer to
+     * <a href="https://cloud.google.com/storage/docs/authentication#service_accounts">Service Account Authentication</a>.
+     *
+     * @param p12FileName Private key file full path.
+     */
     @IgniteSpiConfiguration(optional = false)
     public void setServiceAccountP12FilePath(String p12FileName) {
         this.serviceAccountP12FilePath = p12FileName;
     }
 
+    /**
+     * Sets the service account ID (typically an e-mail address).
+     * <p>
+     * For more information refer to
+     * <a href="https://cloud.google.com/storage/docs/authentication#service_accounts">Service Account Authentication</a>.
+     *
+     * @param id
+     */
     @IgniteSpiConfiguration(optional = false)
     public void setServiceAccountId(String id) {
         this.serviceAccountId = id;
     }
 
     /**
+     * Google Cloud Storage initialization.
      *
+     * @throws IgniteSpiException In case of error.
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
@@ -196,7 +248,8 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
 
                 try {
                     httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-                } catch (GeneralSecurityException | IOException e) {
+                }
+                catch (GeneralSecurityException | IOException e) {
                     throw new IgniteSpiException(e);
                 }
 
@@ -206,16 +259,55 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
                     credential = new GoogleCredential.Builder().setTransport(httpTransport)
                         .setJsonFactory(JacksonFactory.getDefaultInstance()).setServiceAccountId(serviceAccountId)
                         .setServiceAccountPrivateKeyFromP12File(new File(serviceAccountP12FilePath))
-                        .setServiceAccountScopes(Collections.singleton(StorageScopes.DEVSTORAGE_READ_WRITE)).build();
-                } catch (Exception e) {
+                        .setServiceAccountScopes(Collections.singleton(StorageScopes.DEVSTORAGE_FULL_CONTROL)).build();
+
+                }
+                catch (Exception e) {
                     throw new IgniteSpiException("Failed to authenticate on Google Cloud Platform", e);
                 }
 
                 try {
                     storage = new Storage.Builder(httpTransport, JacksonFactory.getDefaultInstance(), credential)
                                       .setApplicationName(projectName).build();
-                } catch (Exception e) {
-                    throw new IgniteSpiException("Failed to open a storage for given project name: " + projectName);
+                }
+                catch (Exception e) {
+                    throw new IgniteSpiException("Failed to open a storage for given project name: " + projectName, e);
+                }
+
+                boolean createBucket = false;
+
+                try {
+                    Storage.Buckets.Get getBucket = storage.buckets().get(bucketName);
+                    getBucket.setProjection("full");
+
+                    getBucket.execute();
+                }
+                catch (GoogleJsonResponseException e) {
+                    if (e.getStatusCode() == 404) {
+                        U.warn(log, "Bucket doesn't exist, will create it [bucketName=" + bucketName + "]");
+                        createBucket = true;
+                    }
+                    else
+                        throw new IgniteSpiException("Failed to open the bucket: " + bucketName, e);
+                }
+                catch (Exception e) {
+                    throw new IgniteSpiException("Failed to open the bucket: " + bucketName, e);
+                }
+
+                if (createBucket) {
+                    Bucket newBucket = new Bucket();
+                    newBucket.setName(bucketName);
+
+                    try {
+                        Storage.Buckets.Insert insertBucket = storage.buckets().insert(projectName, newBucket);
+                        insertBucket.setProjection("full");
+                        insertBucket.setPredefinedDefaultObjectAcl("projectPrivate");
+
+                        insertBucket.execute();
+                    }
+                    catch (Exception e) {
+                        throw new IgniteSpiException("Failed to create the bucket: " + bucketName, e);
+                    }
                 }
             }
             finally {
@@ -225,7 +317,8 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
         else {
             try {
                 U.await(initLatch);
-            } catch (IgniteInterruptedCheckedException e) {
+            }
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
@@ -234,15 +327,28 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
         }
     }
 
+    /**
+     * Constructs bucket's key from an address.
+     *
+     * @param addr Node address.
+     * @return Bucket key.
+     */
     private String keyFromAddr(InetSocketAddress addr) {
-        return addr.getAddress().getHostAddress() + ":" +  addr.getPort();
+        return addr.getAddress().getHostAddress() + "#" +  addr.getPort();
     }
 
-    private InetSocketAddress addrFromString(String address) throws IgniteSpiException {
-        String[] res = address.split(":");
+    /**
+     * Constructs a node address from bucket's key.
+     *
+     * @param key Bucket key.
+     * @return Node address.
+     * @throws IgniteSpiException In case of error.
+     */
+    private InetSocketAddress addrFromString(String key) throws IgniteSpiException {
+        String[] res = key.split("#");
 
         if (res.length != 2)
-            throw new IgniteSpiException("Invalid address string: " + address);
+            throw new IgniteSpiException("Invalid address string: " + key);
 
 
         int port;
@@ -255,49 +361,4 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
 
         return new InetSocketAddress(res[0], port);
     }
-
-
-
-    public static void main(String args[]) {
-        TcpDiscoveryGoogleCloudIpFinder ipFinder = new TcpDiscoveryGoogleCloudIpFinder();
-
-        String bucketName = "grid-gain-test-bucket1";
-
-        ipFinder.setBucketName(bucketName);
-        ipFinder.setProjectName("gridgain");
-        ipFinder.setServiceAccountId("208709979073-v0mn6ttpd3mqu2b5lbhh1mvdet7os3n6@developer.gserviceaccount.com");
-        ipFinder.setServiceAccountP12FilePath("C:\\ignite\\GCE\\gridgain-0889e44b58b7.p12");
-
-        List<InetSocketAddress> addresses = new LinkedList<>();
-        addresses.add(new InetSocketAddress("192.168.0.1", 23));
-        addresses.add(new InetSocketAddress("192.168.0.1", 89));
-        addresses.add(new InetSocketAddress("92.68.0.1", 1223));
-
-        System.out.println("PUT ADDR");
-        ipFinder.registerAddresses(addresses);
-
-        Collection<InetSocketAddress> result = ipFinder.getRegisteredAddresses();
-        System.out.println("GET ADDR");
-
-        for (InetSocketAddress add: result) {
-            System.out.println(add.getAddress().getHostAddress() + ":" + add.getPort());
-        }
-
-        System.out.println("REMOVE");
-        ipFinder.unregisterAddresses(addresses);
-
-
-        result = ipFinder.getRegisteredAddresses();
-        System.out.println("GET ADDR 2");
-
-        for (InetSocketAddress add: result) {
-            System.out.println(add.getAddress().getHostAddress() + ":" + add.getPort());
-        }
-
-        List<InetSocketAddress> addresses2 = new LinkedList<>();
-        addresses.add(new InetSocketAddress("192.1638.02.1", 23));
-        ipFinder.unregisterAddresses(addresses2);
-    }
-
-
 }
