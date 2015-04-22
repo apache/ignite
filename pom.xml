@@ -526,17 +526,13 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <mkdir dir="${basedir}/target/site" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false"/>
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false" />
                                         <copy todir="${basedir}/target/site">
                                             <fileset dir="${basedir}/target/bin">
-                                                <include name="**/*"/>
+                                                <include name="**/*" />
                                             </fileset>
                                         </copy>
                                         <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
