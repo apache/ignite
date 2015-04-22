@@ -778,14 +778,12 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         private final GridConcurrentSkipListSet<SocketTimeoutObject> timeoutObjs =
             new GridConcurrentSkipListSet<>(new Comparator<SocketTimeoutObject>() {
                 @Override public int compare(SocketTimeoutObject o1, SocketTimeoutObject o2) {
-                    long time1 = o1.endTime();
-                    long time2 = o2.endTime();
+                    int res = Long.compare(o1.endTime(), o2.endTime());
 
-                    long id1 = o1.id();
-                    long id2 = o2.id();
+                    if (res != 0)
+                        return res;
 
-                    return time1 < time2 ? -1 : time1 > time2 ? 1 :
-                        id1 < id2 ? -1 : id1 > id2 ? 1 : 0;
+                    return Long.compare(o1.id(), o2.id());
                 }
             });
 
