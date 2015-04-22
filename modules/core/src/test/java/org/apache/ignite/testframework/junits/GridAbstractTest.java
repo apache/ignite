@@ -985,6 +985,21 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setNodeId(null);
 
+        if (gridName.matches(".*\\d")) {
+            String idStr = UUID.randomUUID().toString();
+
+            char[] chars = idStr.toCharArray();
+
+            chars[0] = gridName.charAt(gridName.length() - 1);
+            chars[1] = '0';
+
+            chars[chars.length - 3] = '0';
+            chars[chars.length - 2] = '0';
+            chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+
+            cfg.setNodeId(UUID.fromString(new String(chars)));
+        }
+
         return cfg;
     }
 

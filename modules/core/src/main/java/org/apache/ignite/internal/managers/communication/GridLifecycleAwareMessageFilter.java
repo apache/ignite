@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.job;
+package org.apache.ignite.internal.managers.communication;
 
-import java.util.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Job hold listener to notify job processor on {@code hold}
- * state change.
+ * Special version of bi-predicate for messaging with initialize/close callbacks.
  */
-interface GridJobHoldListener extends EventListener {
+public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
     /**
-     * @param worker Held job worker.
-     * @return {@code True} if worker has been held.
+     * Initializes the filter.
      */
-    public boolean onHeld(GridJobWorker worker);
+    public void initialize();
 
     /**
-     * @param worker Unheld job worker.
-     * @return {@code True} if worker has been unheld.
+     * Closes the filter.
      */
-    public boolean onUnheld(GridJobWorker worker);
+    public void close();
 }

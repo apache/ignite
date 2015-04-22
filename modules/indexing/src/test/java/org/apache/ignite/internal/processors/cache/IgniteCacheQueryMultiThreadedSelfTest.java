@@ -193,6 +193,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
             assertEquals("Swap keys: " + c.size(CachePeekMode.SWAP), 0, c.size(CachePeekMode.SWAP));
             assertEquals(0, c.size(CachePeekMode.OFFHEAP));
+            assertEquals(0, c.size(CachePeekMode.PRIMARY));
             assertEquals(0, c.size());
         }
     }

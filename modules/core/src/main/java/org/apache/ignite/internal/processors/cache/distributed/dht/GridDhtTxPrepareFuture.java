@@ -1120,7 +1120,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             GridDistributedTxMapping dhtMapping,
             GridDistributedTxMapping nearMapping
         ) {
-            assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
+            assert dhtMapping == null || nearMapping == null || dhtMapping.node().equals(nearMapping.node());
 
             this.nodeId = nodeId;
             this.dhtMapping = dhtMapping;
