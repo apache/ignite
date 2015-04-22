@@ -332,7 +332,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public Collection<Object> injectables() {
-        return Arrays.<Object>asList(ipFinder);
+        return F.<Object>asList(ipFinder);
     }
 
     /** {@inheritDoc} */
