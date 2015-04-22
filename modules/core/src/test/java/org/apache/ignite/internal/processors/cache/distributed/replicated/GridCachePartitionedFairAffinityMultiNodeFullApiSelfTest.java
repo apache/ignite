@@ -24,7 +24,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.*;
 /**
  * Multi-node tests for partitioned cache with {@link FairAffinityFunction}.
  */
-public class GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
+public class GridCachePartitionedFairAffinityMultiNodeFullApiSelfTest
+    extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);

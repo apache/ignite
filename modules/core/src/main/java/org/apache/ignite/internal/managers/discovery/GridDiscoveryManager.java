@@ -1404,13 +1404,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Whether node is failed.
      */
     public boolean tryFailNode(UUID nodeId) {
-        if (!getSpi().pingNode(nodeId)) {
-            getSpi().failNode(nodeId);
+        if (!busyLock.enterBusy())
+            return false;
 
-            return true;
+        try {
+            if (!getSpi().pingNode(nodeId)) {
+                getSpi().failNode(nodeId);
+
+                return true;
+            }
+
+            return false;
         }
-
-        return false;
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
