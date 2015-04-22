@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Google Cloud Storage IP finder.
+ * Contains Google Cloud Storage IP finder internal tests.
  */
-package org.apache.ignite.spi.discovery.tcp.ipfinder.google;
+package org.apache.ignite.spi.discovery.tcp.ipfinder.gce;

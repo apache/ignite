@@ -15,33 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.ipfinder.google;
-
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.InputStreamContent;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.services.storage.Storage;
-import com.google.api.services.storage.StorageScopes;
-import com.google.api.services.storage.model.*;
-import com.google.common.collect.ImmutableMap;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-
-import com.google.api.client.googleapis.auth.oauth2.*;
-import com.google.api.client.json.jackson2.*;
+package org.apache.ignite.spi.discovery.tcp.ipfinder.gce;
 
 import java.io.*;
 import java.net.*;
-import java.security.GeneralSecurityException;
+import java.security.*;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+import com.google.api.client.googleapis.javanet.*;
+import com.google.api.client.googleapis.json.*;
+import com.google.api.client.http.*;
+import com.google.api.client.http.javanet.*;
+import com.google.api.services.storage.*;
+import com.google.api.services.storage.model.*;
+import com.google.api.client.googleapis.auth.oauth2.*;
+import com.google.api.client.json.jackson2.*;
+
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 
 /**
  * Google Cloud Storage based IP finder.
@@ -69,7 +67,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * Note that this finder is shared by default (see {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
-public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapter {
     /* Default object's content. */
     private final static ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
 
@@ -98,7 +96,7 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
     /* Init routine latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
-    public TcpDiscoveryGoogleCloudIpFinder() {
+    public TcpDiscoveryGoogleStorageIpFinder() {
         setShared(true);
     }
 
@@ -243,6 +241,12 @@ public class TcpDiscoveryGoogleCloudIpFinder extends TcpDiscoveryIpFinderAdapter
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
+            if (serviceAccountId == null || serviceAccountP12FilePath == null || projectName == null ||
+                bucketName == null)
+                throw new IgniteSpiException("One or more of the required parameters is not set [serviceAccountId=" +
+                    serviceAccountId + ", serviceAccountP12FilePath=" + serviceAccountP12FilePath + ", projectName=" +
+                    projectName + ", bucketName=" + bucketName + "]");
+
             try {
                 NetHttpTransport httpTransport;
 
