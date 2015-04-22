@@ -75,6 +75,9 @@ public class CodeGenerator {
 
         String[] parts = split ? identifier.split("\\.") : new String[] {identifier};
 
+        if (parts.length == 0)
+            throw new IllegalStateException(msg + " could not has empty parts!");
+
         for (String part : parts) {
             if (part.isEmpty())
                 throw new IllegalStateException(msg + " could not has empty parts!");
