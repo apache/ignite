@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -4319,10 +4320,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < keys.size(); ++i)
             cache.put(keys.get(i), i);
 
-        for (String key : keys) {
+        for (int i = 0; i < keys.size(); ++i) {
+            String key = keys.get(i);
+
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertEquals(i, map.get(key));
+        }
+
+        for (int i = 0; i < keys.size(); ++i) {
+            String key = keys.get(i);
+
+            Integer val1 = -1;
+
+            cacheSkipStore.put(key, val1);
+            assertEquals(i, map.get(key));
+            assertEquals(val1, cacheSkipStore.get(key));
+
+            Integer val2 = -2;
+
+            assertEquals(val1, cacheSkipStore.invoke(key, new SetValueProcessor(val2)));
+            assertEquals(i, map.get(key));
+            assertEquals(val2, cacheSkipStore.get(key));
         }
 
         for (String key : keys) {
@@ -4339,6 +4358,32 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
             assertFalse(map.containsKey(key));
+
+            map.put(key, 0);
+
+            Integer val = -1;
+
+            assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
+            assertEquals(0, map.get(key));
+            assertEquals(val, cacheSkipStore.get(key));
+
+            cache.remove(key);
+
+            map.put(key, 0);
+
+            assertTrue(cacheSkipStore.putIfAbsent(key, val));
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(0, map.get(key));
+
+            cache.remove(key);
+
+            map.put(key, 0);
+
+            assertNull(cacheSkipStore.getAndPut(key, val));
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(0, map.get(key));
+
+            cache.remove(key);
         }
 
         assertFalse(cacheSkipStore.iterator().hasNext());
@@ -4402,7 +4447,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertTrue(map.size() == 0);
 
-        // Miscellaneous checks
+        // Miscellaneous checks.
 
         String newKey = "New key";
 
@@ -4439,20 +4484,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertTrue(map.size() == 0);
 
-        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
-                TransactionIsolation.READ_COMMITTED);
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
-                TransactionIsolation.REPEATABLE_READ);
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.OPTIMISTIC,
-                TransactionIsolation.SERIALIZABLE);
+        if (txEnabled()) {
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC,READ_COMMITTED);
 
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
-                TransactionIsolation.READ_COMMITTED);
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
-               TransactionIsolation.REPEATABLE_READ);
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, TransactionConcurrency.PESSIMISTIC,
-                TransactionIsolation.SERIALIZABLE);
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, REPEATABLE_READ);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, SERIALIZABLE);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, READ_COMMITTED);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, REPEATABLE_READ);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, SERIALIZABLE);
         }
     }
 
@@ -4460,8 +4503,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testWithSkipStoreRemoveAll() throws Exception {
-        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL ||
-           (atomicityMode() == CacheAtomicityMode.ATOMIC && nearEnabled()))
+        if (atomicityMode() == TRANSACTIONAL ||
+           (atomicityMode() == ATOMIC && nearEnabled()))
             fail("https://issues.apache.org/jira/browse/IGNITE-373");
 
         IgniteCache<String, Integer> cache = grid(0).cache(null);
@@ -4513,98 +4556,118 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Map<String, Integer> data,
         List<String> keys,
         TransactionConcurrency txConcurrency,
-        TransactionIsolation txIsolation) throws  Exception {
-
+        TransactionIsolation txIsolation)
+        throws  Exception
+    {
         cache.removeAll(data.keySet());
         checkEmpty(cache, cacheSkipStore);
 
-        IgniteTransactions txs = grid(0).transactions();
+        IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-        // Several put check
-        Transaction tx = txs.txStart(txConcurrency, txIsolation);
+        Integer val = -1;
 
-        for (int i = 0; i < keys.size(); i++)
-            cacheSkipStore.put(keys.get(i), i);
+        // Several put check.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key: keys)
+                cacheSkipStore.put(key, val);
+
+            for (String key: keys) {
+                assertEquals(val, cacheSkipStore.get(key));
+                assertEquals(val, cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
+
+            tx.commit();
+        }
 
         for (String key: keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
             assertFalse(map.containsKey(key));
         }
 
-        tx.commit();
+        assertEquals(0, map.size());
 
-        assert map.size() == 0;
+        // cacheSkipStore putAll(..)/removeAll(..) check.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            cacheSkipStore.putAll(data);
 
-        // cacheSkipStore putAll(..)/removeAll(..) check
-        tx = txs.txStart(txConcurrency, txIsolation);
-
-        cacheSkipStore.putAll(data);
+            tx.commit();
+        }
 
         for (String key: keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
+            val = data.get(key);
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
             assertFalse(map.containsKey(key));
         }
 
-        cacheSkipStore.removeAll(data.keySet());
+        map.putAll(data);
 
-        for (String key: keys) {
-            assertNull(cacheSkipStore.get(key));
-            assertNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            cacheSkipStore.removeAll(data.keySet());
+
+            tx.commit();
         }
-
-        tx.commit();
-
-        assertTrue(map.size() == 0);
-
-        // cache putAll(..)/removeAll(..) check
-        tx = txs.txStart(txConcurrency, txIsolation);
-
-        cache.putAll(data);
-
-        for (String key: keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertFalse(map.containsKey(key));
-        }
-
-        cache.removeAll(data.keySet());
 
         for (String key: keys) {
             assertNull(cacheSkipStore.get(key));
-            assertNull(cache.get(key));
-            assertFalse(map.containsKey(key));
-        }
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
 
-        tx.commit();
+            cache.remove(key);
+        }
 
         assertTrue(map.size() == 0);
 
-        // putAll(..) from both cacheSkipStore and cache
-        tx = txs.txStart(txConcurrency, txIsolation);
+        // cache putAll(..)/removeAll(..) check.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            cache.putAll(data);
 
-        Map<String, Integer> subMap = new HashMap<>();
+            for (String key: keys) {
+                assertNotNull(cacheSkipStore.get(key));
+                assertNotNull(cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
 
-        for (int i = 0; i < keys.size() / 2; i++)
-            subMap.put(keys.get(i), i);
+            cache.removeAll(data.keySet());
 
-        cacheSkipStore.putAll(subMap);
+            for (String key: keys) {
+                assertNull(cacheSkipStore.get(key));
+                assertNull(cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
 
-        subMap.clear();
-        for (int i = keys.size() / 2; i < keys.size(); i++)
-            subMap.put(keys.get(i), i);
-
-        cache.putAll(subMap);
-
-        for (String key: keys) {
-            assertNotNull(cacheSkipStore.get(key));
-            assertNotNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            tx.commit();
         }
 
-        tx.commit();
+        assertTrue(map.size() == 0);
+
+        // putAll(..) from both cacheSkipStore and cache.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            Map<String, Integer> subMap = new HashMap<>();
+
+            for (int i = 0; i < keys.size() / 2; i++)
+                subMap.put(keys.get(i), i);
+
+            cacheSkipStore.putAll(subMap);
+
+            subMap.clear();
+
+            for (int i = keys.size() / 2; i < keys.size(); i++)
+                subMap.put(keys.get(i), i);
+
+            cache.putAll(subMap);
+
+            for (String key: keys) {
+                assertNotNull(cacheSkipStore.get(key));
+                assertNotNull(cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
+
+            tx.commit();
+        }
 
         for (int i = 0; i < keys.size() / 2; i++) {
             String key = keys.get(i);
@@ -4630,7 +4693,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertFalse(map.containsKey(key));
         }
 
-        // Check that read-through is disabled when cacheSkipStore is used
+        // Check that read-through is disabled when cacheSkipStore is used.
         for (int i = 0; i < keys.size(); i++)
             putToStore(keys.get(i), i);
 
@@ -4638,20 +4701,79 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertTrue(cache.size(CachePeekMode.ALL) == 0);
         assertTrue(map.size() != 0);
 
-        tx = txs.txStart(txConcurrency, txIsolation);
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
 
-        assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+            for (String key : keys) {
+                assertNull(cacheSkipStore.get(key));
 
-        for (String key : keys) {
-            assertNull(cacheSkipStore.get(key));
-
-            if (txIsolation == READ_COMMITTED) {
-                assertNotNull(cache.get(key));
-                assertNotNull(cacheSkipStore.get(key));
+                if (txIsolation == READ_COMMITTED) {
+                    assertNotNull(cache.get(key));
+                    assertNotNull(cacheSkipStore.get(key));
+                }
             }
+
+            tx.commit();
         }
 
-        tx.commit();
+        cache.removeAll(data.keySet());
+
+        val = -1;
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key : data.keySet()) {
+                map.put(key, 0);
+
+                assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
+            }
+
+            tx.commit();
+        }
+
+        for (String key : data.keySet()) {
+            assertEquals(0, map.get(key));
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+        }
+
+        cache.removeAll(data.keySet());
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key : data.keySet()) {
+                map.put(key, 0);
+
+                assertTrue(cacheSkipStore.putIfAbsent(key, val));
+            }
+
+            tx.commit();
+        }
+
+        for (String key : data.keySet()) {
+            assertEquals(0, map.get(key));
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+        }
+
+        cache.removeAll(data.keySet());
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key : data.keySet()) {
+                map.put(key, 0);
+
+                assertNull(cacheSkipStore.getAndPut(key, val));
+            }
+
+            tx.commit();
+        }
+
+        for (String key : data.keySet()) {
+            assertEquals(0, map.get(key));
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+        }
 
         cache.removeAll(data.keySet());
         checkEmpty(cache, cacheSkipStore);
@@ -4683,6 +4805,30 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return CacheStartMode.ONE_BY_ONE;
 
         return CacheStartMode.STATIC;
+    }
+
+    /**
+     * Sets given value, returns old value.
+     */
+    public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
+        /** */
+        private Integer newVal;
+
+        /**
+         * @param newVal New value to set.
+         */
+        SetValueProcessor(Integer newVal) {
+            this.newVal = newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> entry, Object... arguments) throws EntryProcessorException {
+            Integer val = entry.getValue();
+
+            entry.setValue(newVal);
+
+            return val;
+        }
     }
 
     /**
