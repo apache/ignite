@@ -50,7 +50,7 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
             assert X.hasCause(e, IOException.class);
         }
 
-        assert readCnt.get() == 0; //ensure we have read counts as expected.
+        assert readCnt.get() == 0; //ensure we have read count as expected.
     }
 
     /**
@@ -63,11 +63,11 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
 
             assert false : "p2p marshalling failed, but error response was not sent";
         }
-        catch (IgniteException e) {
-            assert X.hasCause(e, IOException.class);
-        }
+//        catch (IgniteException e) {
+//            assert X.hasCause(e, IOException.class);
+//        }
 
-        assert readCnt.get() == 0; //ensure we have read counts as expected.
+        assert readCnt.get() == 0; //ensure we have read count as expected.
     }
 
     /**
@@ -84,9 +84,9 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
 //
 //        failOptimistic();
 
-//        readCnt.set(1);
-//
-//        failPessimictic();
+        readCnt.set(100);
+
+        failPessimictic();
 
     }
 }

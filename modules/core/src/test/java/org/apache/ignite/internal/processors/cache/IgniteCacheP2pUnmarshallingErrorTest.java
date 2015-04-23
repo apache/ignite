@@ -100,11 +100,13 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-
+            out.writeObject(field);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            field = (String)in.readObject();
+
             if (readCnt.decrementAndGet() <= 0) { //will throw exception on backup node only
                 throw new IOException("Class can not be unmarshalled");
             }
@@ -112,74 +114,60 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /**
-     * Test key 2. Unmarshalling always failed.
+     * Sends put atomically and handles fail.
      */
-    public static class TestKeyAlwaysFailed extends TestKey {
-        /** Test key 2. */
-        public TestKeyAlwaysFailed(String field) {
-            super(field);
+    protected void failAtomicPut() {
+        try {
+            jcache(0).put(new TestKey("1"), "");
+
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
         }
 
-        /** Test key 2. */
-        public TestKeyAlwaysFailed() {
-        }
+        assert readCnt.get() == 0; //ensure we have read count as expected.
+    }
 
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            readCnt.decrementAndGet();
-            throw new IOException("Class can not be unmarshalled"); //will throw exception on primary node
-        }
+    /**
+     * Sends get atomically and handles fail.
+     */
+    protected void failAtomicGet() {
+        try {
+            jcache(0).get(new TestKey("1"));
 
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
+        }
     }
 
     /**
      * Tests that correct response will be sent to client node in case of unmarshalling failed.
      */
     public void testResponseMessageOnUnmarshallingFailed() {
-        //Checking failed unmarshalling on primary node.
+        //GridNearAtomicUpdateRequest unmarshalling failed test
         readCnt.set(1);
 
-        try {
-            jcache(0).put(new TestKeyAlwaysFailed("1"), ""); //put will fail at primary node.
+        failAtomicPut();
 
-            assert false : "p2p marshalling failed, but error response was not sent";
-        }
-        catch (CacheException e) {
-            assert X.hasCause(e, IOException.class);
-        }
+        //GridNearGetRequest unmarshalling failed test
+        readCnt.set(1);
 
-        assert readCnt.get() == 0; //put request should not be handled by backup node in case failed at primary.
+        failAtomicGet();
 
-        try {
-            assert jcache(0).get(new TestKeyAlwaysFailed("1")) == null;
-
-            assert false : "p2p marshalling failed, but error response was not sent";
-        }
-        catch (CacheException e) {
-            assert X.hasCause(e, IOException.class);
-        }
-
-        assert grid(0).cachex().entrySet().size() == 0;
-
-        //Checking failed unmarshalling on backup node.
-        readCnt.set(2); //put request will be unmarshalled twice (at primary and at backup node).
-
-        try {
-            jcache(0).put(new TestKey("1"), ""); //put will fail at backup node only.
-
-            assert false : "p2p marshalling failed, but error response was not sent";
-        }
-        catch (CacheException e) {
-            assert X.hasCause(e, IOException.class);
-        }
-
-        assert readCnt.get() == 0; //put request should be handled by primary and backup node.
-
-        // Need to have no exception while unmarshalling getKeyResponse.
-        readCnt.set(3); //get response will me unmarshalled twice (request at primary node and response at client).
+        readCnt.set(100);
 
         assert jcache(0).get(new TestKey("1")) == null;
 
-        assert grid(0).cachex().entrySet().size() == 0;
+        readCnt.set(2);
+
+        //GridDhtAtomicUpdateRequest unmarshalling failed test
+        failAtomicPut();
+
+        readCnt.set(100);
+
+        assert jcache(0).get(new TestKey("1")) != null;
     }
 }
