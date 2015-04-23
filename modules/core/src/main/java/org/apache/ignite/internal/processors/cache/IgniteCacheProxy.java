@@ -814,8 +814,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext prev = onEnter(opCtx);
 
             try {
-                if (isAsync())
-                    setFuture(delegate.putAsync(key, val));
+                if (isAsync()) {
+                    IgniteInternalFuture<Boolean> fut = delegate.putAsync(key, val);
+
+                    IgniteInternalFuture<Void> fut0 = fut.chain(new CX1<IgniteInternalFuture<Boolean>, Void>() {
+                        @Override public Void applyx(IgniteInternalFuture<Boolean> fut) throws IgniteCheckedException {
+                            fut.get();
+
+                            return null;
+                        }
+                    });
+
+                    setFuture(fut0);
+                }
                 else
                     delegate.put(key, val);
             }
