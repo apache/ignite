@@ -436,7 +436,7 @@ class VisorCacheCommand {
                         .foreach(ccfg => {
                             nl()
 
-                            showCacheConfiguration("Cache configuration:", ccfg)
+                            printCacheConfiguration("Cache configuration:", ccfg)
                     }))
                 })
             }
@@ -808,7 +808,7 @@ object VisorCacheCommand {
      * @param title Specified title for table.
      * @param cfg Config to show information.
      */
-    private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
+    private[commands] def printCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
         val affinityCfg = cfg.affinityConfiguration()
         val nearCfg = cfg.nearConfiguration()
         val rebalanceCfg = cfg.rebalanceConfiguration()

@@ -63,4 +63,18 @@ trait VisorConsoleCommand {
         warn(warnMsgs: _*)
         warn(s"Type 'help $name' to see how to use this command.")
     }
+
+    /**
+     * Joins array of strings to a single string with line feed.
+     *
+     * @param lines Lines to join together.
+     * @param dflt Value to return in case of array is `null` or empty.
+     *@return Joined line.
+     */
+    protected def join(lines: Iterable[Any], dflt: String = ""): String = {
+        if (lines == null || lines.isEmpty)
+            null
+        else
+            lines.mkString("[", ", ", "]")
+    }
 }

@@ -1881,6 +1881,7 @@ object visor extends VisorTag {
     def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] =
         new VisorTaskArgument(new JavaHashSet(nids), arg, false)
 
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R = {
         if (grp.nodes().isEmpty)
             throw new ClusterGroupEmptyException("Topology is empty.")
@@ -1899,6 +1900,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forNodeId(nid), task, arg)
 
@@ -1913,6 +1915,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def executeRandom[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(grp.forRandom(), task, arg)
 
@@ -1926,6 +1929,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forRandom(), task, arg)
 
@@ -1940,6 +1944,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def executeMulti[A, R, J](nids: Iterable[UUID], task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forNodeIds(nids), task, arg)
 
@@ -1953,6 +1958,7 @@ object visor extends VisorTag {
      * @tparam J Job class.
      * @return Task result.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def executeMulti[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
         execute(ignite.cluster.forRemotes(), task, arg)
 
@@ -1962,6 +1968,7 @@ object visor extends VisorTag {
      * @param nid Node ID to collect configuration from.
      * @return Collection of cache configurations.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
         executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
             null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
