@@ -303,18 +303,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param node Node.
-     * @param key Key to check.
-     * @param topVer Topology version.
-     * @return {@code true} if given key belongs to specified node.
-     */
-    public boolean belongs(ClusterNode node, Object key, AffinityTopologyVersion topVer) {
-        assert node != null;
-
-        return belongs(node, partition(key), topVer);
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param topVer Topology version to calculate affinity.
      * @return Partitions for which given node is primary.
