@@ -443,6 +443,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteInternalCacheTypesTest.class);
 
+        suite.addTestSuite(IgniteExcangeFutureHistoryTest.class);
+
         return suite;
     }
 }
