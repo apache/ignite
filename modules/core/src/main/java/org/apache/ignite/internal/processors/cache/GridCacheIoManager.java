@@ -24,6 +24,7 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.*;
@@ -297,9 +298,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    private void sendResponseOnFailedMessage(UUID nodeId, GridCacheMessage res, GridCacheContext ctx) {
+    private void sendResponseOnFailedMessage(UUID nodeId, GridCacheMessage res, GridCacheSharedContext cctx, GridIoPolicy plc) {
         try {
-            ctx.io().send(nodeId, res, ctx.ioPolicy());
+            cctx.io().send(nodeId, res, plc);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
@@ -311,6 +312,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
         switch (msg.directType()) {
+            case 34:{
+                GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
+
+                GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId());
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+            }
+
+            break;
+
             case 38: {
                 GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
@@ -318,7 +331,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 res.onError(req.classError());
 
-                sendResponseOnFailedMessage(nodeId, res, ctx);
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
 
             break;
@@ -332,7 +345,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 res.onError(req.classError());
 
-                sendResponseOnFailedMessage(nodeId, res, ctx);
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
 
             break;
@@ -347,10 +360,24 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                 res.error(req.classError());
 
-                sendResponseOnFailedMessage(nodeId, res, ctx);
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
 
             break;
+
+            case 55: {
+                GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
+
+                GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(req.version(), req.futureId(),
+                    req.miniId(), req.version(), null, null, null);
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+            }
+
+            break;
+
 
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="

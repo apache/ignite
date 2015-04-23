@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTest {
     /** Allows to change behavior of readExternal method. */
-    private static AtomicInteger readCnt = new AtomicInteger();
+    protected static AtomicInteger readCnt = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -136,7 +136,6 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
      * Tests that correct response will be sent to client node in case of unmarshalling failed.
      */
     public void testResponseMessageOnUnmarshallingFailed() {
-
         //Checking failed unmarshalling on primary node.
         readCnt.set(1);
 
