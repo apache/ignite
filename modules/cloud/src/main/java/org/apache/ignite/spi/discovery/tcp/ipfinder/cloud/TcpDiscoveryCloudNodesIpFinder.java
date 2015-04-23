@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Files;
 import com.google.inject.Module;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -35,6 +37,8 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.sshj.config.SshjSshClientModule;
 import org.jclouds.logging.log4j.config.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -201,6 +205,13 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
                 if (identity == null)
                     throw new IgniteSpiException("Cloud identity is not set.");
 
+                if (provider.equals("google-compute-engine")) {
+                    if (credential == null)
+                        throw new IgniteSpiException("Cloud credential is not set.");
+                    else 
+                        credential = getPrivateKeyFromFile(credential);
+                }
+
                 try {
                     ContextBuilder ctxBuilder = ContextBuilder.newBuilder(provider);
                     ctxBuilder.credentials(identity, credential);
@@ -229,6 +240,21 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
             if (computeService == null)
                 throw new IgniteSpiException("Ip finder has not been initialized properly.");
+        }
+    }
+
+    /**
+     * Retrieves a private key from the secrets file.
+     *
+     * @param filePath Full path to the file.
+     * @return Private key
+     */
+    private String getPrivateKeyFromFile(String filePath) throws IgniteSpiException {
+        try {
+            return Files.toString(new File(filePath), Charsets.UTF_8);
+        }
+        catch (IOException e) {
+            throw new IgniteSpiException("Failed to retrieve a private key from the file: " + filePath, e);
         }
     }
 }
