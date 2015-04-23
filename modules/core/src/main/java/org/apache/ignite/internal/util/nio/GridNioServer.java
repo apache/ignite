@@ -580,6 +580,9 @@ public class GridNioServer<T> {
             U.close(srvrCh, log);
             U.close(selector, log);
 
+            if (e instanceof Error)
+                throw (Error)e;
+
             throw new IgniteCheckedException("Failed to initialize NIO selector.", e);
         }
     }
@@ -1169,6 +1172,9 @@ public class GridNioServer<T> {
             }
             catch (Throwable e) {
                 U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
+
+                if (e instanceof Error)
+                    throw e;
             }
         }
 
