@@ -1729,8 +1729,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             deserializePortable,
                                             false);
                                     }
-                                    else if (txEntry.skipStore())
-                                        missed.remove(cacheKey);
 
                                     // Even though we bring the value back from lock acquisition,
                                     // we still need to recheck primary node for consistent values
@@ -1832,10 +1830,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     if (missed.isEmpty())
                         return new GridFinishedFuture<>(retMap);
 
+                    IgniteInternalFuture<Map<K, V>> fut0 = checkMissed(cacheCtx,
+                        retMap,
+                        missed,
+                        redos,
+                        deserializePortable,
+                        skipVals,
+                        keepCacheObjects,
+                        skipStore);
+
                     return new GridEmbeddedFuture<>(
                         // First future.
-                        checkMissed(cacheCtx, retMap, missed, redos, deserializePortable, skipVals, keepCacheObjects,
-                            skipStore),
+                        fut0,
                         // Closure that returns another future, based on result from first.
                         new PMC<Map<K, V>>() {
                             @Override public IgniteInternalFuture<Map<K, V>> postMiss(Map<K, V> map) {

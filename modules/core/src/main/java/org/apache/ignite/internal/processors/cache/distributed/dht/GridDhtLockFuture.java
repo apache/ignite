@@ -958,18 +958,14 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      *
      */
     private void loadMissingFromStore() {
-        if (cctx.loadPreviousValue() && cctx.readThrough() && (needReturnVal || read)) {
+        if (!skipStore && cctx.loadPreviousValue() && cctx.readThrough() && (needReturnVal || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
             final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
-                if (!entry.hasValue()) {
-                    IgniteTxEntry txEntry = tx != null ? tx.entry(entry.txKey()) : null;
-
-                    if (txEntry == null || !txEntry.skipStore())
-                        loadMap.put(entry.key(), entry);
-                }
+                if (!entry.hasValue())
+                    loadMap.put(entry.key(), entry);
             }
 
             try {
