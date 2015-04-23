@@ -4310,7 +4310,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertNull(cache.get(key));
 
-        final int KEYS = 500;
+        final int KEYS = 250;
 
         // Put/remove data from multiple nodes.
 
@@ -4537,7 +4537,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
 
-            final int KEYS = 500;
+            final int KEYS = 250;
 
             // Put/remove data from multiple nodes.
 
