@@ -2158,16 +2158,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public byte[] getBytesNoCopy() {
-            // Can't just return valueBytes for portable because it can't be unmarshalled then.
-            if (coctx != null && coctx.processor().isPortableObject(obj))
-                return Utils.serialize(obj, null);
+            if (obj.type() == CacheObject.TYPE_REGULAR) {
+                // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
+                try {
+                    return obj.valueBytes(coctx);
+                }
+                catch (IgniteCheckedException e) {
+                    throw DbException.convert(e);
+                }
+            }
 
-            try {
-                return obj.valueBytes(coctx); // Result must be the same: `marshaller.marshall(obj.value(coctx, false))`
-            }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
+            // For portables and byte array cache object types.
+            return Utils.serialize(obj.value(coctx, false), null);
         }
 
         /** {@inheritDoc} */
