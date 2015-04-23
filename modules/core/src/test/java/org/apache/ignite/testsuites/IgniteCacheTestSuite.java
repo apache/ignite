@@ -174,6 +174,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalIsolatedNodesSelfTest.class);
 
         // Partitioned cache.
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
