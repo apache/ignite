@@ -1199,8 +1199,9 @@ public class GridCacheUtils {
      * @param ctx Shared cache context.
      */
     public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
+        assert ctx != null;
+
         for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts()) {
-            assert ctx != null;
 
             cacheCtx.evicts().unwind();
 
