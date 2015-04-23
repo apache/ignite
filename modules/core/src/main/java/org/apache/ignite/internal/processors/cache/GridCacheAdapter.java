@@ -1229,8 +1229,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
             taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
-            @Override
-            public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
+            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
@@ -1588,7 +1587,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return getAllAsync(keys,
-            true,
+            opCtx == null || !opCtx.skipStore(),
             entry,
             !skipTx,
             subjId,
@@ -1653,7 +1652,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     public <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(@Nullable final Collection<KeyCacheObject> keys,
-        boolean readThrough,
+        final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
         final String taskName,
@@ -1892,7 +1891,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         else {
             return asyncOp(tx, new AsyncOp<Map<K1, V1>>(keys) {
                 @Override public IgniteInternalFuture<Map<K1, V1>> op(IgniteTxLocalAdapter tx) {
-                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false);
+                    return tx.getAllAsync(ctx, keys, null, deserializePortable, skipVals, false, !readThrough);
                 }
             });
         }

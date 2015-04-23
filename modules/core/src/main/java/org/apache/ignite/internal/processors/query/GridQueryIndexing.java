@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
@@ -39,9 +40,10 @@ public interface GridQueryIndexing {
      * Starts indexing.
      *
      * @param ctx Context.
+     * @param busyLock Busy lock.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(GridKernalContext ctx) throws IgniteCheckedException;
+    public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException;
 
     /**
      * Stops indexing.

@@ -94,7 +94,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             execSvc = ctx.getExecutorService();
 
-            idx.start(ctx);
+            idx.start(ctx, busyLock);
         }
     }
 
@@ -351,6 +351,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     log.error("Failed to rebuild indexes for type: " + desc.name(), e);
 
                     fut.onDone(e);
+
+                    if (e instanceof Error)
+                        throw e;
                 }
             }
         };
