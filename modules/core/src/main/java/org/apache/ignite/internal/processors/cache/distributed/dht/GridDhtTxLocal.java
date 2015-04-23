@@ -603,7 +603,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             }
         }
         else {
-            prepFut.complete();
+            // prepFut.complete();
 
             prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
