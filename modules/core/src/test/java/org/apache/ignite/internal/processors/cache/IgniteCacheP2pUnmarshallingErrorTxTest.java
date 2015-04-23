@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.transactions.*;
 
@@ -34,13 +35,17 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
+    }
+
     /**
      * Sends put with optimistic lock and handles fail.
      */
     protected void failOptimistic() {
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
 
-            jcache(0).put(new TestKey("1"), "");
+            jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
             tx.commit();
 
@@ -59,7 +64,26 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
     protected void failPessimictic() {
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
 
-            jcache(0).put(new TestKey("1"), "");
+            jcache(0).put(new TestKey(String.valueOf(++key)), "");
+
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+//        catch (IgniteException e) {
+//            assert X.hasCause(e, IOException.class);
+//        }
+
+        assert readCnt.get() == 0; //ensure we have read count as expected.
+    }
+
+    /**
+     * Sends put with pessimistic lock and handles fail.
+     */
+    protected void failPessimicticOnCommit() {
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+
+            jcache(0).put(new TestKey(String.valueOf(++key)), "");
+
+            tx.commit();
 
             assert false : "p2p marshalling failed, but error response was not sent";
         }
@@ -84,9 +108,22 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
 //
 //        failOptimistic();
 
-        readCnt.set(100);
+//        //GridNearLockRequest unmarshalling failed test
+//        readCnt.set(2);
+//
+//        failPessimictic();
 
-        failPessimictic();
+        //? unmarshalling failed test
+        readCnt.set(1000);
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+
+            TestKey tstKey = new TestKey(String.valueOf(++key));
+            jcache(0).put(tstKey, "");
+            jcache(0).lock(tstKey).lock();
+        }
+
+
+
 
     }
 }

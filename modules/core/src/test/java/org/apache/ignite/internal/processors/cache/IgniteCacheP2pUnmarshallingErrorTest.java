@@ -32,6 +32,9 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /** Allows to change behavior of readExternal method. */
     protected static AtomicInteger readCnt = new AtomicInteger();
 
+    /** iterable key */
+    protected static int key = 0;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;

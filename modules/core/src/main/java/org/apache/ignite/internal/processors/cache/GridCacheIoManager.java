@@ -315,7 +315,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 34:{
                 GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
-                GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId());
+                GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
+                    req.version(),
+                    req.futureId(),
+                    req.miniId());
 
                 res.error(req.classError());
 
@@ -327,7 +330,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 38: {
                 GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
-                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion());
+                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+                    ctx.cacheId(),
+                    req.futureVersion());
 
                 res.onError(req.classError());
 
@@ -339,7 +344,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 40: {
                 GridNearAtomicUpdateRequest req = (GridNearAtomicUpdateRequest)msg;
 
-                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                    ctx.cacheId(),
                     nodeId,
                     req.futureVersion());
 
@@ -353,7 +359,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 49: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
-                GridNearGetResponse res = new GridNearGetResponse(ctx.cacheId(),
+                GridNearGetResponse res = new GridNearGetResponse(
+                    ctx.cacheId(),
                     req.futureId(),
                     req.miniId(),
                     req.version());
@@ -365,11 +372,32 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 51: {
+                GridNearLockRequest req = (GridNearLockRequest)msg;
+
+                GridNearLockResponse res = new GridNearLockResponse(
+                    ctx.cacheId(),
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    false,
+                    0,
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
             case 55: {
                 GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
-                GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(req.version(), req.futureId(),
-                    req.miniId(), req.version(), null, null, null);
+                GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    null, null, null);
 
                 res.error(req.classError());
 
@@ -377,7 +405,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             }
 
             break;
-
 
             default:
                 throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
