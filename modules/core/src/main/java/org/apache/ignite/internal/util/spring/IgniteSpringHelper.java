@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.lang.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 
@@ -79,6 +80,16 @@ public interface IgniteSpringHelper {
      * @throws IgniteCheckedException In case of error.
      */
     public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException;
+
+    /**
+     * Loads bean instance by name.
+     *
+     * @param inputStream Spring XML file URL.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public <T> T loadBean(InputStream inputStream, String beanName) throws IgniteCheckedException;
 
     /**
      * Gets user version for given class loader by checking

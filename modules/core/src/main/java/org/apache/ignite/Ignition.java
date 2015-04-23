@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 
@@ -372,6 +373,24 @@ public class Ignition {
     public static <T> T loadSpringBean(String springXmlPath, String beanName) throws IgniteException {
         try {
             return IgnitionEx.loadSpringBean(springXmlPath, beanName);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * Loads Spring bean by its name from given Spring XML configuration file. If bean
+     * with such name doesn't exist, exception is thrown.
+     *
+     * @param springXmlCfg Spring XML configuration input stream (cannot be {@code null}).
+     * @param beanName Bean name (cannot be {@code null}).
+     * @return Loaded bean instance.
+     * @throws IgniteException If bean with provided name was not found or in case any other error.
+     */
+    public static <T> T loadSpringBean(InputStream springXmlCfg, String beanName) throws IgniteException {
+        try {
+            return IgnitionEx.loadSpringBean(springXmlCfg, beanName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

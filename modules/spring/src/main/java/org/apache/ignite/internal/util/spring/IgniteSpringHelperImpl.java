@@ -133,18 +133,49 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         }
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T loadBean(InputStream is, String beanName) throws IgniteCheckedException {
+        ApplicationContext springCtx = initContext(new InputStreamResource(is));
+
+        try {
+            return (T)springCtx.getBean(beanName);
+        }
+        catch (NoSuchBeanDefinitionException e) {
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist [stream=" + is +
+                ", beanName=" + beanName + ']');
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name [stream=" + is +
+                ", beanName=" + beanName + ']', e);
+        }
+    }
+
     /**
      * @param url XML file URL.
      * @return Context.
      * @throws IgniteCheckedException In case of error.
      */
     private ApplicationContext initContext(URL url) throws IgniteCheckedException {
+        return initContext(new UrlResource(url));
+    }
+
+    /**
+     * @param res Resource to load Spring configuration.
+     * @return Context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private ApplicationContext initContext(Resource res) throws IgniteCheckedException {
         GenericApplicationContext springCtx;
 
         try {
             springCtx = new GenericApplicationContext();
 
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(url));
+            XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
+
+            reader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_NONE);
+
+            reader.loadBeanDefinitions(res);
 
             springCtx.refresh();
         }
@@ -152,10 +183,10 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
             if (X.hasCause(e, ClassNotFoundException.class))
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + url + ']', e);
+                    "[resource=" + res + ']', e);
             else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    url + ", err=" + e.getMessage() + ']', e);
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [resource=" +
+                    res + ", err=" + e.getMessage() + ']', e);
         }
 
         return springCtx;
