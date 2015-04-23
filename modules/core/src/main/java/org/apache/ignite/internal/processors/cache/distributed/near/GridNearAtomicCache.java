@@ -222,6 +222,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         val,
                         null,
                         /*write-through*/false,
+                        /*read-through*/false,
                         /*retval*/false,
                         /**expiry policy*/null,
                         /*event*/true,
@@ -319,6 +320,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
+                            /*read-through*/false,
                             /*retval*/false,
                             null,
                             /*event*/true,
@@ -384,7 +386,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             taskName,
             deserializePortable,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
-            skipVals);
+            skipVals,
+            opCtx != null && opCtx.skipStore());
     }
 
     /** {@inheritDoc} */
