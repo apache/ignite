@@ -1340,7 +1340,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     }
                     finally {
                         if (cacheCtx.isNear() && entry != null && readCommitted()) {
-                            if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.key(), topVer)) {
+                            if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.partition(), topVer)) {
                                 if (entry.markObsolete(xidVer))
                                     cacheCtx.cache().removeEntry(entry);
                             }
