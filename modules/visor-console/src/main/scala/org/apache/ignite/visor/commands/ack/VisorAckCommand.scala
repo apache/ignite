@@ -18,8 +18,9 @@
 package org.apache.ignite.visor.commands.ack
 
 import org.apache.ignite.cluster.ClusterGroupEmptyException
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.VisorConsoleCommand
+import org.apache.ignite.visor.commands.common.VisorConsoleCommand
 import org.apache.ignite.visor.visor._
 
 import org.apache.ignite.internal.visor.misc.VisorAckTask
@@ -61,18 +62,8 @@ import scala.language.implicitConversions
  *         Prints local node ID on all nodes in the topology.
  * }}}
  */
-class VisorAckCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help ack' to see how to use this command.")
-    }
+class VisorAckCommand extends VisorConsoleCommand {
+    @impl protected val name = "ack"
 
     /**
      * ===Command===
@@ -115,6 +106,9 @@ class VisorAckCommand {
  * Companion object that does initialization of the command.
  */
 object VisorAckCommand {
+    /** Singleton command. */
+    private val cmd = new VisorAckCommand
+
     // Adds command's help to visor.
     addHelp(
         name = "ack",
@@ -133,11 +127,9 @@ object VisorAckCommand {
             "ack Howdy!" ->
                 "Prints 'Howdy!' on all nodes in the topology."
         ),
-        ref = VisorConsoleCommand(cmd.ack, cmd.ack)
+        emptyArgs = cmd.ack,
+        withArgs = cmd.ack
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorAckCommand
 
     /**
      * Singleton.

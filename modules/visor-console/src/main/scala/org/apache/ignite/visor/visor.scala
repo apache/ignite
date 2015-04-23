@@ -26,7 +26,6 @@ import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
-import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper
@@ -36,8 +35,7 @@ import org.apache.ignite.lang._
 import org.apache.ignite.logger.NullLogger
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.visor.commands.VisorConsole.consoleReader
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.commands.common.VisorTextTable
 
 import org.jetbrains.annotations.Nullable
 
@@ -56,13 +54,14 @@ import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
+import scala.io.StdIn._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
 /**
  * Holder for command help information.
  */
-sealed case class VisorConsoleCommandHolder(
+sealed case class VisorCommandHolder(
     name: String,
     shortInfo: String,
     longInfo: Seq[String],
@@ -70,7 +69,8 @@ sealed case class VisorConsoleCommandHolder(
     spec: Seq[String],
     args: Seq[(String, AnyRef)],
     examples: Seq[(String, AnyRef)],
-    impl: VisorConsoleCommand
+    emptyArgs: () => Unit,
+    withArgs: (String) => Unit
     ) {
     /** Command host with optional aliases. */
     lazy val nameWithAliases: String =
@@ -153,7 +153,7 @@ object visor extends VisorTag {
     final val NA = "<n/a>"
 
     /** */
-    private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
+    private var cmdLst: Seq[VisorCommandHolder] = Nil
 
     /** Node left listener. */
     private var nodeLeftLsnr: IgnitePredicate[Event] = null
@@ -316,7 +316,8 @@ object visor extends VisorTag {
             "mlist ac" ->
                 "Lists variables that start with 'a' or 'c' from Visor console memory."
         ),
-        ref = VisorConsoleCommand(mlist, mlist)
+        emptyArgs = mlist,
+        withArgs = mlist
     )
 
     addHelp(
@@ -352,7 +353,8 @@ object visor extends VisorTag {
             "mclear n2" ->
                 "Clears 'n2' Visor console variable."
         ),
-        ref = VisorConsoleCommand(mclear, mclear)
+        emptyArgs = mclear,
+        withArgs = mclear
     )
 
     addHelp(
@@ -372,7 +374,8 @@ object visor extends VisorTag {
             "mget <@v>" ->
                 "Gets Visor console variable whose name is referenced by variable 'v'."
         ),
-        ref = VisorConsoleCommand(mget, mget)
+        emptyArgs = mget,
+        withArgs = mget
     )
 
     addHelp(
@@ -392,7 +395,8 @@ object visor extends VisorTag {
             "help" ->
                 "Prints help for all command."
         ),
-        ref = VisorConsoleCommand(help, help)
+        emptyArgs = help,
+        withArgs = help
     )
 
     addHelp(
@@ -412,7 +416,8 @@ object visor extends VisorTag {
             "status -q" ->
                 "Prints Visor console status in quiet mode."
         ),
-        ref = VisorConsoleCommand(status, status)
+        emptyArgs = status,
+        withArgs = status
     )
 
     addHelp(
@@ -447,8 +452,17 @@ object visor extends VisorTag {
             "open -cpath=/gg/config/mycfg.xml" ->
                 "Connects Visor console to grid using Ignite configuration from provided file."
         ),
-        ref = VisorConsoleCommand(open, open)
+        emptyArgs = open,
+        withArgs = open
     )
+
+    /**
+     * @param name - command name.
+     */
+    private def wrongArgs(name: String) {
+        warn("Invalid arguments for command without arguments.",
+            s"Type 'help $name' to see how to use this command.")
+    }
 
     addHelp(
         name = "close",
@@ -458,7 +472,8 @@ object visor extends VisorTag {
             "close" ->
                 "Disconnects Visor console from the grid."
         ),
-        ref = VisorConsoleCommand(close)
+        emptyArgs = close,
+        withArgs = _ => wrongArgs("close")
     )
 
     addHelp(
@@ -470,7 +485,8 @@ object visor extends VisorTag {
                 "Quit from Visor console."
         ),
         aliases = Seq("exit"),
-        ref = VisorConsoleCommand(quit)
+        emptyArgs = quit,
+        withArgs = _ => wrongArgs("quit")
     )
 
     addHelp(
@@ -548,7 +564,8 @@ object visor extends VisorTag {
             "log -s" ->
                 "Stops logging."
         ),
-        ref = VisorConsoleCommand(log, log)
+        emptyArgs = log,
+        withArgs = log
     )
 
     logText("Visor started.")
@@ -842,7 +859,8 @@ object visor extends VisorTag {
      * @param spec Command specification.
      * @param args List of `(host, description)` tuples for command arguments. Optional.
      * @param examples List of `(example, description)` tuples for command examples.
-     * @param ref - command implementation.
+     * @param emptyArgs - command implementation with empty arguments.
+     * @param withArgs - command implementation with arguments.
      */
     def addHelp(
         name: String,
@@ -852,15 +870,17 @@ object visor extends VisorTag {
         spec: Seq[String],
         @Nullable args: Seq[(String, AnyRef)] = null,
         examples: Seq[(String, AnyRef)],
-        ref: VisorConsoleCommand) {
+        emptyArgs: () => Unit,
+        withArgs: (String) => Unit) {
         assert(name != null)
         assert(shortInfo != null)
         assert(spec != null && spec.nonEmpty)
         assert(examples != null && examples.nonEmpty)
-        assert(ref != null)
+        assert(emptyArgs != null)
+        assert(withArgs != null)
 
         // Add and re-sort
-        cmdLst = (cmdLst ++ Seq(VisorConsoleCommandHolder(name, shortInfo, longInfo, aliases, spec, args, examples, ref))).
+        cmdLst = (cmdLst ++ Seq(VisorCommandHolder(name, shortInfo, longInfo, aliases, spec, args, examples, emptyArgs, withArgs))).
             sortWith((a, b) => a.name.compareTo(b.name) < 0)
     }
 
@@ -1284,15 +1304,15 @@ object visor extends VisorTag {
     /**
      * Prints properly formatted error message like:
      * {{{
-     * <visor>: err: error message
+     * (wrn) <visor>: warning message
      * }}}
      *
-     * @param errMsgs Error messages to print. If `null` - this function is no-op.
+     * @param warnMsgs Error messages to print. If `null` - this function is no-op.
      */
-    def warn(errMsgs: Any*) {
-        assert(errMsgs != null)
+    def warn(warnMsgs: Any*) {
+        assert(warnMsgs != null)
 
-        errMsgs foreach (msg => println("(wrn) <visor>: " + msg))
+        warnMsgs.foreach(line => println(s"(wrn) <visor>: $line"))
     }
 
     /**
@@ -1324,19 +1344,6 @@ object visor extends VisorTag {
      * @param args Optional "-q" flag to disable ASCII logo printout.
      */
     def status(args: String) {
-        val argLst = parseArgs(args)
-
-        if (!hasArgFlag("q", argLst))
-            println(
-                " ___    _________________________ ________" + NL +
-                " __ |  / /____  _/__  ___/__  __ \\___  __ \\" + NL +
-                " __ | / /  __  /  _____ \\ _  / / /__  /_/ /" + NL +
-                " __ |/ /  __/ /   ____/ / / /_/ / _  _, _/" + NL +
-                " _____/   /___/   /____/  \\____/  /_/ |_|" + NL + NL +
-                " ADMIN CONSOLE" + NL +
-                " " + COPYRIGHT + NL
-            )
-
         val t = VisorTextTable()
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
@@ -1412,7 +1419,7 @@ object visor extends VisorTag {
                     if (opt.isEmpty)
                         warn("Invalid command name: " + n)
                     else {
-                        val hlp: VisorConsoleCommandHolder = opt.get
+                        val hlp: VisorCommandHolder = opt.get
 
                         val t = VisorTextTable()
 
@@ -1639,7 +1646,10 @@ object visor extends VisorTag {
         // Make sure visor starts without shutdown hook.
         System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
 
-        cfg.setGridLogger(new NullLogger)
+        sys.props.get(IGNITE_QUIET).map(_.toBoolean) match {
+            case Some(true) =>  // No-op.
+            case _ => cfg.setGridLogger(new NullLogger)
+        }
 
         val startedGridName = try {
              Ignition.start(cfg).name
@@ -1947,15 +1957,6 @@ object visor extends VisorTag {
         execute(ignite.cluster.forRemotes(), task, arg)
 
     /**
-     * Gets configuration from specified node.
-     *
-     * @param nid Node ID to collect configuration from.
-     * @return Grid configuration.
-     */
-    def nodeConfiguration(nid: UUID): VisorGridConfiguration =
-        executeOne(nid, classOf[VisorNodeConfigurationCollectorTask], null)
-
-    /**
      * Gets caches configurations from specified node.
      *
      * @param nid Node ID to collect configuration from.
@@ -2181,12 +2182,7 @@ object visor extends VisorTag {
      */
     private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] =
         try {
-            val s = if (mask.isDefined)
-                consoleReader().readLine(prompt, mask.get)
-            else
-                consoleReader().readLine(prompt)
-
-            Option(s)
+            Option(mask.fold(readLine(prompt))(readLine(prompt, _)))
         }
         catch {
             case _: Throwable => None
@@ -2439,7 +2435,7 @@ object visor extends VisorTag {
                         startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst),
                             hasArgFlag("dl", argLst))
                     catch {
-                        case e: Exception => scold(e.getMessage)
+                        case e: Exception => scold(e)
                     }
             else
                 scold("Invalid arguments.")

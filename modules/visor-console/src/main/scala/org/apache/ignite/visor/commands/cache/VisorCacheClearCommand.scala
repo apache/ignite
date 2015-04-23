@@ -17,14 +17,12 @@
 
 package org.apache.ignite.visor.commands.cache
 
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
+import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.apache.ignite.visor.visor._
+
 import org.apache.ignite.internal.visor.cache.VisorCacheClearTask
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
-
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-
-import org.apache.ignite.visor.commands.VisorTextTable
-import org.apache.ignite.visor.visor
-import visor._
 
 import scala.language.reflectiveCalls
 
@@ -115,7 +113,7 @@ class VisorCacheClearCommand {
         }
         catch {
             case e: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
-            case e: Throwable =>  scold(e.getMessage)
+            case e: Throwable =>  scold(e)
         }
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -172,7 +171,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
     /**
      * Job for task returns events data.
      */
-    private static class VisorNodeEventsCollectorJob extends VisorJob<VisorNodeEventsCollectorTaskArg,
+    protected static class VisorNodeEventsCollectorJob extends VisorJob<VisorNodeEventsCollectorTaskArg,
         Collection<? extends VisorGridEvent>> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -183,7 +182,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
          * @param arg Job argument.
          * @param debug Debug flag.
          */
-        private VisorNodeEventsCollectorJob(VisorNodeEventsCollectorTaskArg arg, boolean debug) {
+        protected VisorNodeEventsCollectorJob(VisorNodeEventsCollectorTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -260,6 +259,10 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
             return true;
         }
 
+        protected IgniteClosure<Event, VisorGridEvent> eventMapper() {
+            return EVT_MAPPER;
+        }
+
         /** {@inheritDoc} */
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
@@ -286,46 +289,19 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
             Long maxOrder = startEvtOrder;
 
-            for (Event e : evts) {
-                int tid = e.type();
-                IgniteUuid id = e.id();
-                String name = e.name();
-                UUID nid = e.node().id();
-                long t = e.timestamp();
-                String msg = e.message();
-                String shortDisplay = e.shortDisplay();
+            IgniteClosure<Event, VisorGridEvent> mapper = eventMapper();
 
+            for (Event e : evts) {
                 maxOrder = Math.max(maxOrder, e.localOrder());
 
-                if (e instanceof TaskEvent) {
-                    TaskEvent te = (TaskEvent)e;
+                VisorGridEvent visorEvt = mapper.apply(e);
 
-                    res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
-                        te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
-                }
-                else if (e instanceof JobEvent) {
-                    JobEvent je = (JobEvent)e;
-
-                    res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
-                        je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
-                }
-                else if (e instanceof DeploymentEvent) {
-                    DeploymentEvent de = (DeploymentEvent)e;
-
-                    res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
-                }
-                else if (e instanceof DiscoveryEvent) {
-                    DiscoveryEvent de = (DiscoveryEvent)e;
-
-                    ClusterNode node = de.eventNode();
-
-                    String addr = F.first(node.addresses());
-
-                    res.add(new VisorGridDiscoveryEvent(tid, id, name, nid, t, msg, shortDisplay,
-                        node.id(), addr, node.isDaemon()));
-                }
+                if (visorEvt != null)
+                    res.add(visorEvt);
                 else
-                    res.add(new VisorGridEvent(tid, id, name, nid, t, msg, shortDisplay));
+                    res.add(new VisorGridEvent(
+                        e.type(), e.id(), e.name(), e.node().id(), e.timestamp(), e.message(), e.shortDisplay()
+                    ));
             }
 
             // Update latest order in node local, if not empty.

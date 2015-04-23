@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
 import org.jetbrains.annotations._
@@ -521,7 +521,7 @@ class VisorCacheCommand {
         }
         catch {
             case e: IgniteException =>
-                scold(e.getMessage)
+                scold(e)
 
                 null
         }
@@ -662,6 +662,9 @@ class VisorCacheCommand {
  * Companion object that does initialization of the command.
  */
 object VisorCacheCommand {
+    /** Singleton command */
+    private val cmd = new VisorCacheCommand
+
     addHelp(
         name = "cache",
         shortInfo = "Prints cache statistics, clears cache, prints list of all entries from cache.",
@@ -777,7 +780,8 @@ object VisorCacheCommand {
             "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable."
         ),
-        ref = VisorConsoleCommand(cmd.cache, cmd.cache)
+        emptyArgs = cmd.cache,
+        withArgs = cmd.cache
     )
 
     /** Default cache name to show on screen. */
@@ -785,9 +789,6 @@ object VisorCacheCommand {
 
     /** Default cache key. */
     protected val DFLT_CACHE_KEY = DFLT_CACHE_NAME + "-" + UUID.randomUUID().toString
-
-    /** Singleton command */
-    private val cmd = new VisorCacheCommand
 
     /**
      * Singleton.

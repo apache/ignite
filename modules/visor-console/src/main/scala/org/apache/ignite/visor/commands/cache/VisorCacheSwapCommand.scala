@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.visor.commands.VisorTextTable
+import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
 import java.util.Collections
@@ -106,7 +106,9 @@ class VisorCacheSwapCommand {
 
             t #=("Node ID8(@)", "Entries Swapped", "Cache Size Before", "Cache Size After")
 
-            for (node <- grp.nodes(); nid <- node.id()) {
+            for (node <- grp.nodes()) {
+                val nid = node.id()
+
                 val r = executeOne(nid, classOf[VisorCacheSwapBackupsTask], Collections.singleton(cacheName)).
                     get(cacheName)
 
@@ -124,7 +126,7 @@ class VisorCacheSwapCommand {
         }
         catch {
             case e: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
-            case e: Throwable => scold(e.getMessage)
+            case e: Throwable => scold(e)
         }
     }
 }

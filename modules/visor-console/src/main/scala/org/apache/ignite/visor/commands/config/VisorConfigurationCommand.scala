@@ -18,17 +18,18 @@
 package org.apache.ignite.visor.commands.config
 
 import org.apache.ignite._
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang.IgniteBiTuple
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.cache.VisorCacheCommand
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
 
 import java.lang.System._
 
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.cache.VisorCacheCommand
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.visor.visor._
+import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -37,16 +38,6 @@ import scala.util.control.Breaks._
 /**
  * ==Overview==
  * Visor 'config' command implementation.
- *
- * ==Importing==
- * When using this command from Scala code (not from REPL) you need to make sure to
- * properly import all necessary typed and implicit conversions:
- * <ex>
- * import org.apache.ignite.visor._
- * import commands.config.VisorConfigurationCommand._
- * </ex>
- * Note that `VisorConfigurationCommand` object contains necessary implicit conversions so that
- * this command would be available via `visor` keyword.
  *
  * ==Help==
  * {{{
@@ -79,18 +70,8 @@ import scala.util.control.Breaks._
  *         Starts command in interactive mode.
  * }}}
  */
-class VisorConfigurationCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help config' to see how to use this command.")
-    }
+class VisorConfigurationCommand extends VisorConsoleCommand {
+    @impl protected val name = "config"
 
     /**
       * ===Command===
@@ -101,13 +82,13 @@ class VisorConfigurationCommand {
       * Starts command in interactive mode.
      */
     def config() {
-        if (!isConnected)
-            adviseToConnect()
-        else
+        if (isConnected)
             askForNode("Select node from:") match {
                 case Some(id) => config("-id=" + id)
                 case None => ()
             }
+        else
+            adviseToConnect()
     }
 
     /**
@@ -130,63 +111,28 @@ class VisorConfigurationCommand {
 
             val argLst = parseArgs(args)
 
-            val id8 = argValue("id8", argLst)
-            val id = argValue("id", argLst)
-
-            var node: ClusterNode = null
-
-            if (id8.isEmpty && id.isEmpty) {
-                scold("One of -id8 or -id is required.")
-
-                break()
-            }
-
-            if (id8.isDefined && id.isDefined) {
-                scold("Only one of -id8 or -id is allowed.")
-
-                break()
-            }
-
-            if (id8.isDefined) {
-                val ns = nodeById8(id8.get)
-
-                if (ns.isEmpty) {
-                    scold("Unknown 'id8' value: " + id8.get)
+            val nid = parseNode(argLst) match {
+                case Left(msg) =>
+                    scold(msg)
 
                     break()
-                }
-                else if (ns.size != 1) {
-                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
+
+                case Right(None) =>
+                    scold("One of -id8 or -id is required.")
 
                     break()
-                }
-                else
-                    node = ns.head
+
+                case Right(Some(n)) =>
+                    assert(n != null)
+
+                    n.id()
             }
-            else if (id.isDefined)
-                try {
-                    node = ignite.cluster.node(java.util.UUID.fromString(id.get))
-
-                    if (node == null) {
-                        scold("'id' does not match any node: " + id.get)
-
-                        break()
-                    }
-                }
-                catch {
-                    case e: IllegalArgumentException =>
-                        scold("Invalid node 'id': " + id.get)
-
-                        break()
-                }
-
-            assert(node != null)
 
             val cfg = try
-                nodeConfiguration(node.id())
+                executeOne(nid, classOf[VisorNodeConfigurationCollectorTask], null)
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
 
                     break()
             }
@@ -390,11 +336,11 @@ class VisorConfigurationCommand {
                 println("\nNo system properties defined.")
 
             try
-                cacheConfigurations(node.id).foreach(cacheCfg =>
+                cacheConfigurations(nid).foreach(cacheCfg =>
                     VisorCacheCommand.showCacheConfiguration("\nCache '" + escapeName(cacheCfg.name()) + "':", cacheCfg))
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
             }
         }
     }
@@ -405,11 +351,10 @@ class VisorConfigurationCommand {
      * @param value String.
      * @return List of strings.
      */
-    def compactProperty(name: String, value: String): List[String] = {
+    private[this] def compactProperty(name: String, value: String): List[String] = {
         val ps = getProperty("path.separator")
 
-        // Split all values having path separator into multiple
-        // lines (with few exceptions...).
+        // Split all values having path separator into multiple lines (with few exceptions...).
         val lst =
             if (name != "path.separator" && value.indexOf(ps) != -1 && value.indexOf("http:") == -1 &&
                 value.length() > 80)
@@ -428,12 +373,15 @@ class VisorConfigurationCommand {
  * Companion object that does initialization of the command.
  */
 object VisorConfigurationCommand {
+    /** Singleton command. */
+    private val cmd = new VisorConfigurationCommand
+
     addHelp(
-        name = "config",
+        name = cmd.name,
         shortInfo = "Prints node configuration.",
         spec = List(
-            "config",
-            "config {-id=<node-id>|id8=<node-id8>}"
+            cmd.name,
+            s"${cmd.name} {-id=<node-id>|id8=<node-id8>}"
         ),
         args = List(
             "-id=<node-id>" -> List(
@@ -447,18 +395,16 @@ object VisorConfigurationCommand {
             )
         ),
         examples = List(
-            "config -id8=12345678" ->
+            s"${cmd.name} -id8=12345678" ->
                 "Prints configuration for node with '12345678' id8.",
-            "config -id8=@n0" ->
+            s"${cmd.name} -id8=@n0" ->
                 "Prints configuration for node with id8 taken from '@n0' memory variable.",
-            "config" ->
+            cmd.name ->
                 "Starts command in interactive mode."
         ),
-        ref = VisorConsoleCommand(cmd.config, cmd.config)
+        emptyArgs = cmd.config,
+        withArgs = cmd.config
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorConfigurationCommand
 
     /**
      * Singleton.

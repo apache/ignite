@@ -19,11 +19,12 @@ package org.apache.ignite.visor.commands.tasks
 
 import org.apache.ignite._
 import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 
 import java.util.UUID
@@ -329,21 +330,11 @@ private case class VisorTask(
  *         Traces task execution with ID taken from 's1' memory variable.
  * }}}
  */
-class VisorTasksCommand {
+class VisorTasksCommand extends VisorConsoleCommand {
+    @impl protected val name = "tasks"
+
     /** Limit for printing tasks and executions. */
     private val SHOW_LIMIT = 100
-
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help tasks' to see how to use this command.")
-    }
 
     /**
      * ===Command===
@@ -770,7 +761,7 @@ class VisorTasksCommand {
             }
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
 
                     break()
             }
@@ -959,7 +950,7 @@ class VisorTasksCommand {
             }
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
 
                     break()
             }
@@ -1085,7 +1076,7 @@ class VisorTasksCommand {
             }
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
 
                     break()
             }
@@ -1195,7 +1186,7 @@ class VisorTasksCommand {
             }
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
 
                     break()
             }
@@ -1309,7 +1300,7 @@ class VisorTasksCommand {
             }
             catch {
                 case e: IgniteException =>
-                    scold(e.getMessage)
+                    scold(e)
 
                     break()
             }
@@ -1334,6 +1325,9 @@ class VisorTasksCommand {
  * Companion object that does initialization of the command.
  */
 object VisorTasksCommand {
+    /** Singleton command. */
+    private val cmd = new VisorTasksCommand
+
     addHelp(
         name = "tasks",
         shortInfo = "Prints tasks execution statistics.",
@@ -1438,11 +1432,9 @@ object VisorTasksCommand {
             "tasks -e=7D5CB773-225C-4165-8162-3BB67337894B" ->
                 "Traces task execution with ID '7D5CB773-225C-4165-8162-3BB67337894B'."
         ),
-        ref = VisorConsoleCommand(cmd.tasks, cmd.tasks)
+        emptyArgs = cmd.tasks,
+        withArgs = cmd.tasks
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorTasksCommand
 
     /**
      * Singleton.
