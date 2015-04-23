@@ -253,7 +253,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 // much time.
                 cctx.mvcc().finishLocks(d.topologyVersion()).get();
 
-                for (Integer part : d.partitions()) {
+                for (int part : d.partitions()) {
                     GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
                     if (loc == null || loc.state() != OWNING || !loc.reserve()) {
