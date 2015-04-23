@@ -438,7 +438,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
-        return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
+        return ctx.affinity().belongs(ctx.localNode(), e.partition(), topVer);
     }
 
     /**

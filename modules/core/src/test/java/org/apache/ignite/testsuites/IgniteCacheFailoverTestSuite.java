@@ -61,7 +61,8 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxFairAffinityNodeJoinTest.class);
 
-        //suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
+        suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
+        suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
         return suite;
     }

@@ -1368,8 +1368,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 f = tx.future();
             }
 
-            fut1.get();
-            fut2.get();
+            assertNull(fut1.get());
+            assertNull(fut2.get());
 
             assert f == null || f.get().state() == COMMITTED;
         }
