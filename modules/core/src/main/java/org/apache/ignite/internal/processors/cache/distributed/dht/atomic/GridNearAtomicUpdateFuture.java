@@ -422,6 +422,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (!fut.isCacheTopologyValid(cctx)) {
+                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                        cctx.name()));
+
+                    return;
+                }
+
                 topVer = fut.topologyVersion();
 
                 if (futVer == null)

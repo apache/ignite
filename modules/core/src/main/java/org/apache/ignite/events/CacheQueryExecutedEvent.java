@@ -138,7 +138,8 @@ public class CacheQueryExecutedEvent<K, V> extends EventAdapter {
     /**
      * Gets query type.
      *
-     * @return Query type. Can be {@code "SQL"}, {@code "TEXT"}, {@code "SCAN"} or {@code "SPI"}.
+     * @return Query type. Can be {@code "SQL"}, {@code "SQL_FIELDS"}, {@code "FULL_TEXT"}, {@code "SCAN"}, 
+     * {@code "CONTINUOUS"} or {@code "SPI"}.
      */
     public String queryType() {
         return qryType;

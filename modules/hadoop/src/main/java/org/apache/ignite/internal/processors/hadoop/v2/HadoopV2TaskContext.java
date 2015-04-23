@@ -183,6 +183,9 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
                 task = createTask();
             }
             catch (Throwable e) {
+                if (e instanceof Error)
+                    throw e;
+
                 throw transformException(e);
             }
 
@@ -193,6 +196,9 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
                 task.run(this);
             }
             catch (Throwable e) {
+                if (e instanceof Error)
+                    throw e;
+
                 throw transformException(e);
             }
         }
@@ -242,6 +248,9 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
             locFs.setWorkingDirectory(new Path(locDir.getAbsolutePath()));
         }
         catch (Throwable e) {
+            if (e instanceof Error)
+                throw (Error)e;
+
             throw transformException(e);
         }
         finally {
