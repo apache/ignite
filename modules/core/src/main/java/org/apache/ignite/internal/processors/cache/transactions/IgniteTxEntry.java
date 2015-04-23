@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Transaction entry. Note that it is essential that this class does not override
@@ -124,7 +125,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private AtomicBoolean prepared = new AtomicBoolean();
 
-    /** Lock flag for colocated cache. */
+    /** Lock flag for collocated cache. */
     @GridDirectTransient
     private transient boolean locked;
 
@@ -151,6 +152,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private byte[] expiryPlcBytes;
 
     /**
+     * Additional flags.
+     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
+     */
+    private byte flags;
+
+    /**
      * Required by {@link Externalizable}
      */
     public IgniteTxEntry() {
@@ -168,6 +175,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param conflictExpireTime DR expire time.
      * @param entry Cache entry.
      * @param conflictVer Data center replication version.
+     * @param skipStore Skip store flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
@@ -176,7 +184,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long ttl,
         long conflictExpireTime,
         GridCacheEntryEx entry,
-        @Nullable GridCacheVersion conflictVer) {
+        @Nullable GridCacheVersion conflictVer,
+        boolean skipStore) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -190,12 +199,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.conflictExpireTime = conflictExpireTime;
         this.conflictVer = conflictVer;
 
+        skipStore(skipStore);
+
         key = entry.key();
 
         cacheId = entry.context().cacheId();
     }
 
-    /**
+     /**
      * This constructor is meant for local transactions.
      *
      * @param ctx Cache registry.
@@ -208,6 +219,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param entry Cache entry.
      * @param filters Put filters.
      * @param conflictVer Data center replication version.
+     * @param skipStore Skip store flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
@@ -218,7 +230,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long ttl,
         GridCacheEntryEx entry,
         CacheEntryPredicate[] filters,
-        GridCacheVersion conflictVer) {
+        GridCacheVersion conflictVer,
+        boolean skipStore) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -231,6 +244,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.ttl = ttl;
         this.filters = filters;
         this.conflictVer = conflictVer;
+
+        skipStore(skipStore);
 
         if (entryProcessor != null)
             addEntryProcessor(entryProcessor, invokeArgs);
@@ -299,6 +314,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.grpLock = grpLock;
         cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
+        cp.flags = flags;
 
         return cp;
     }
@@ -401,6 +417,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * Sets skip store flag value.
+     *
+     * @param skipStore Skip store flag.
+     */
+    public void skipStore(boolean skipStore){
+        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipStore() {
+        return (flags & SKIP_STORE_FLAG_MASK) == 1;
     }
 
     /**
@@ -813,30 +845,36 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeBoolean("grpLock", grpLock))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeBoolean("grpLock", grpLock))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
+                if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeLong("ttl", ttl))
+                if (!writer.writeByteArray("transformClosBytes", transformClosBytes))
                     return false;
 
                 writer.incrementState();
 
             case 10:
+                if (!writer.writeLong("ttl", ttl))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -902,9 +940,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                     return false;
 
                 reader.incrementState();
-
+                
             case 6:
-                grpLock = reader.readBoolean("grpLock");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -912,7 +950,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 7:
-                key = reader.readMessage("key");
+                grpLock = reader.readBoolean("grpLock");
 
                 if (!reader.isLastRead())
                     return false;
@@ -920,7 +958,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 8:
-                transformClosBytes = reader.readByteArray("transformClosBytes");
+                key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
                     return false;
@@ -928,7 +966,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 9:
-                ttl = reader.readLong("ttl");
+                transformClosBytes = reader.readByteArray("transformClosBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -936,6 +974,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 reader.incrementState();
 
             case 10:
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -955,7 +1001,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

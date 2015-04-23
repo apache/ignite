@@ -272,6 +272,9 @@ public class GridJettyRestHandler extends AbstractHandler {
             U.error(log, "Failed to process HTTP request [action=" + act + ", req=" + req + ']', e);
 
             cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
 
         JsonConfig cfg = new GridJettyJsonConfig();

@@ -105,6 +105,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
         catch (Throwable eventsEx) {
             res.eventsEx(eventsEx);
+
+            if (eventsEx instanceof Error)
+                throw eventsEx;
         }
     }
 
@@ -139,6 +142,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
         catch (Throwable cachesEx) {
             res.cachesEx(cachesEx);
+
+            if (cachesEx instanceof Error)
+                throw (Error)cachesEx;
         }
     }
 
@@ -174,6 +180,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         }
         catch (Throwable igfssEx) {
             res.igfssEx(igfssEx);
+
+            if (igfssEx instanceof Error)
+                throw igfssEx;
         }
     }
 
