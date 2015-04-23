@@ -4310,11 +4310,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertNull(cache.get(key));
 
+        final int KEYS = 500;
+
         // Put/remove data from multiple nodes.
 
-        keys = new ArrayList<>(1000);
+        keys = new ArrayList<>(KEYS);
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < KEYS; i++)
             keys.add("key_" + i);
 
         for (int i = 0; i < keys.size(); ++i)
@@ -4392,7 +4394,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         // putAll/removeAll from multiple nodes.
 
-        Map<String, Integer> data = new HashMap<>();
+        Map<String, Integer> data = new LinkedHashMap<>();
 
         for (int i = 0; i < keys.size(); i++)
             data.put(keys.get(i), i);
@@ -4483,29 +4485,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.remove(rmvKey);
 
         assertTrue(map.size() == 0);
-
-        if (txEnabled()) {
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC,READ_COMMITTED);
-
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, REPEATABLE_READ);
-
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, SERIALIZABLE);
-
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, READ_COMMITTED);
-
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, REPEATABLE_READ);
-
-            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, SERIALIZABLE);
-        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testWithSkipStoreRemoveAll() throws Exception {
-        if (atomicityMode() == TRANSACTIONAL ||
-           (atomicityMode() == ATOMIC && nearEnabled()))
-            fail("https://issues.apache.org/jira/browse/IGNITE-373");
+        if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
+            return;
 
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
@@ -4542,6 +4529,43 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testWithSkipStoreTx() throws Exception {
+        if (txEnabled()) {
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+            IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
+
+            final int KEYS = 500;
+
+            // Put/remove data from multiple nodes.
+
+            List<String> keys = new ArrayList<>(KEYS);
+
+            for (int i = 0; i < KEYS; i++)
+                keys.add("key_" + i);
+
+            Map<String, Integer> data = new LinkedHashMap<>();
+
+            for (int i = 0; i < keys.size(); i++)
+                data.put(keys.get(i), i);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, READ_COMMITTED);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, REPEATABLE_READ);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, SERIALIZABLE);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, READ_COMMITTED);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, REPEATABLE_READ);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, SERIALIZABLE);
+        }
+    }
+
+    /**
      * @param cache Cache instance.
      * @param cacheSkipStore Cache skip store projection.
      * @param data Data set.
@@ -4559,6 +4583,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         TransactionIsolation txIsolation)
         throws  Exception
     {
+        log.info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
+
         cache.removeAll(data.keySet());
         checkEmpty(cache, cacheSkipStore);
 

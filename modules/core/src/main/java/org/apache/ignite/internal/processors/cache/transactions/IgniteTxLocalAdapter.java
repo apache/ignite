@@ -2095,7 +2095,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             CacheObject old = null;
 
-                            boolean readThrough = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
+                            boolean readThrough = !skipStore && !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
 
                             if (optimistic() && !implicit()) {
                                 try {
@@ -2390,10 +2390,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     if (retval || invoke) {
                         if (!cacheCtx.isNear()) {
                             try {
-                                if (!hasPrevVal)
+                                if (!hasPrevVal) {
+                                    boolean readThrough =
+                                        (invoke || cacheCtx.loadPreviousValue()) && !txEntry.skipStore();
+
                                     v = cached.innerGet(this,
                                         /*swap*/true,
-                                        /*read-through*/invoke || cacheCtx.loadPreviousValue(),
+                                        readThrough,
                                         /*failFast*/false,
                                         /*unmarshal*/true,
                                         /*metrics*/!invoke,
@@ -2403,6 +2406,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                         null,
                                         resolveTaskName(),
                                         null);
+                                }
                             }
                             catch (GridCacheFilterFailedException e) {
                                 e.printStackTrace();

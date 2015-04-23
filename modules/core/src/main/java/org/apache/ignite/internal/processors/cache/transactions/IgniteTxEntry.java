@@ -314,6 +314,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.grpLock = grpLock;
         cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
+        cp.flags = flags;
 
         return cp;
     }
