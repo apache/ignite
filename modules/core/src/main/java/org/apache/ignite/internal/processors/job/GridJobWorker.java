@@ -400,6 +400,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             ex = handleThrowable(e);
 
             assert ex != null;
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             if (ex != null)
@@ -521,6 +524,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             ex = handleThrowable(e);
 
             assert ex != null;
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             // Finish here only if not held by this thread.
@@ -617,6 +623,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         catch (Throwable e) {
             U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
                 ", ses=" + ses + ']', e);
+
+            if (e instanceof Error)
+                throw e;
         }
     }
 

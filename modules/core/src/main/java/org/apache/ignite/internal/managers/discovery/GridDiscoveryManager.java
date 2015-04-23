@@ -1640,6 +1640,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 catch (Throwable t) {
                     U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+
+                    if (t instanceof Error)
+                        throw (Error)t;
                 }
             }
         }

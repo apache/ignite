@@ -270,6 +270,9 @@ public class GridMapQueryExecutor {
             U.error(log, "Failed to execute local query: " + req, e);
 
             sendError(node, req.requestId(), e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             h2.setFilters(null);

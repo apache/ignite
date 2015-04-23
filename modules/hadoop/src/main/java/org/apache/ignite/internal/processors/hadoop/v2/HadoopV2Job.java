@@ -172,7 +172,10 @@ public class HadoopV2Job implements HadoopJob {
                 }
             }
             catch (Throwable e) {
-                throw transformException(e);
+                if (e instanceof Error)
+                    throw (Error)e;
+                else
+                    throw transformException(e);
             }
         }
         finally {
@@ -235,6 +238,9 @@ public class HadoopV2Job implements HadoopJob {
 
             fut.onDone(te);
 
+            if (e instanceof Error)
+                throw (Error)e;
+
             throw te;
         }
     }
@@ -287,6 +293,9 @@ public class HadoopV2Job implements HadoopJob {
                 catch (Throwable e) {
                     if (err == null)
                         err = e;
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
 

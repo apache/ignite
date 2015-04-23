@@ -431,6 +431,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         catch (Throwable e) {
             setRollbackOnly();
 
+            if (e instanceof Error)
+                throw e;
+
             throw new IgniteCheckedException("Transaction validation produced a runtime exception: " + this, e);
         }
     }
@@ -642,6 +645,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 // Safe to remove transaction from committed tx list because nothing was committed yet.
                 cctx.tm().removeCommittedTx(this);
+
+                if (ex instanceof Error)
+                    throw (Error)ex;
 
                 throw new IgniteCheckedException("Failed to commit transaction to database: " + this, ex);
             }
@@ -970,7 +976,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
+
+                                if (ex1 instanceof Error)
+                                    throw ex1;
                             }
+
+                            if (ex instanceof Error)
+                                throw ex;
 
                             throw err;
                         }

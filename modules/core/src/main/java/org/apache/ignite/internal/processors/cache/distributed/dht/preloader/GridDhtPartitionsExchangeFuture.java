@@ -631,6 +631,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 onDone(e);
 
+                if (e instanceof Error)
+                    throw (Error)e;
+
                 return;
             }
 
