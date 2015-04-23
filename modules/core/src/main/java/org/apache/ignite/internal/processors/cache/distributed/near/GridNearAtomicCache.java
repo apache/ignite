@@ -134,7 +134,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             if (F.contains(failed, key))
                 continue;
 
-            if (ctx.affinity().belongs(ctx.localNode(), key, req.topologyVersion())) { // Reader became backup.
+            if (ctx.affinity().belongs(ctx.localNode(), ctx.affinity().partition(key), req.topologyVersion())) { // Reader became backup.
                 GridCacheEntryEx entry = peekEx(key);
 
                 if (entry != null && entry.markObsolete(ver))
@@ -372,9 +372,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
@@ -383,7 +383,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : prj != null ? prj.expiry() : null,
+            skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals);
     }
 

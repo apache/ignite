@@ -68,8 +68,8 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)g).internalCache(null);
 
-            CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
-                "0 order by _key");
+            CacheQuery<List<?>> q = cache.context().queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
+                "0 order by _key", false);
 
             q.pageSize(50);
 
@@ -126,8 +126,8 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
         CacheQueryFuture<List<?>> fut = null;
 
         for (int i = 0; i < GridCacheQueryManager.MAX_ITERATORS + 1; i++) {
-            CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
-                "select _key from Integer where _key >= 0 order by _key").projection(grid(0).cluster());
+            CacheQuery<List<?>> q = cache.context().queries().createSqlFieldsQuery(
+                "select _key from Integer where _key >= 0 order by _key", false).projection(grid(0).cluster());
 
             q.pageSize(50);
 

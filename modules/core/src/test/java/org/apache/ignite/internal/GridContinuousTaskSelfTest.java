@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -131,6 +132,119 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopGrid(0);
+        }
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testClearTimeouts() throws Exception {
+        int holdccTimeout = 4000;
+
+        try {
+            Ignite grid = startGrid(0);
+
+            TestClearTimeoutsClosure closure = new TestClearTimeoutsClosure();
+
+            grid.compute().apply(closure, holdccTimeout);
+
+            Thread.sleep(holdccTimeout * 2);
+
+            assert closure.counter == 2;
+        }
+        finally {
+            stopGrid(0);
+        }
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testMultipleHoldccCalls() throws Exception {
+        try {
+            Ignite grid = startGrid(0);
+
+            assertTrue(grid.compute().apply(new TestMultipleHoldccCallsClosure(), (Object)null));
+        }
+        finally {
+            stopGrid(0);
+        }
+    }
+
+    /** */
+    @SuppressWarnings({"PublicInnerClass"})
+    public static class TestMultipleHoldccCallsClosure implements IgniteClosure<Object, Boolean> {
+        /** */
+        private int counter;
+
+        /** */
+        private volatile boolean success;
+
+        /** Auto-inject job context. */
+        @JobContextResource
+        private ComputeJobContext jobCtx;
+
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        @Override public Boolean apply(Object param) {
+            counter++;
+
+            if (counter == 2)
+                return success;
+
+            jobCtx.holdcc(4000);
+
+            try {
+                jobCtx.holdcc();
+            }
+            catch (IllegalStateException e) {
+                success = true;
+                log.info("Second holdcc() threw IllegalStateException as expected.");
+            }
+            finally {
+                new Timer().schedule(new TimerTask() {
+                    @Override public void run() {
+                        jobCtx.callcc();
+                    }
+                }, 1000);
+            }
+
+            return false;
+        }
+    }
+
+    /** */
+    @SuppressWarnings({"PublicInnerClass"})
+    public static class TestClearTimeoutsClosure implements IgniteClosure<Integer, Object> {
+        /** */
+        private int counter;
+
+        /** Auto-inject job context. */
+        @JobContextResource
+        private ComputeJobContext jobCtx;
+
+        @Override public Object apply(Integer holdccTimeout) {
+            assert holdccTimeout >= 2000;
+
+            counter++;
+
+            if (counter == 1) {
+                new Timer().schedule(new TimerTask() {
+                    @Override public void run() {
+                        jobCtx.callcc();
+                    }
+                }, 1000);
+
+                jobCtx.holdcc(holdccTimeout);
+            }
+
+            if (counter == 2)
+                // Job returned from the suspended state.
+                return null;
+
+            return null;
         }
     }
 

@@ -38,7 +38,7 @@ public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchma
     /**
      * Each benchmark must determine which cache will be used.
      *
-     * @return GridCache Cache to use.
+     * @return IgniteCache Cache to use.
      */
     protected abstract IgniteCache<Integer, Object> cache();
 }

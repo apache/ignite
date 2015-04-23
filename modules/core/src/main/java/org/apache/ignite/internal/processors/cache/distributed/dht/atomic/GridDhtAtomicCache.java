@@ -86,13 +86,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private GridNearAtomicCache<K, V> near;
 
-    /** */
-    private final GridDisconnectListener disconnectLsnr = new GridDisconnectListener() {
-        @Override public void onNodeDisconnected(UUID nodeId) {
-            scheduleAtomicFutureRecheck();
-        }
-    };
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -224,16 +217,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
-
-        ctx.io().addDisconnectListener(disconnectLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
         for (DeferredResponseBuffer buf : pendingResponses.values())
             buf.finish();
-
-        ctx.io().removeDisconnectListener(disconnectLsnr);
     }
 
     /**
@@ -267,13 +256,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(null, prj);
+        subjId = ctx.subjectIdPerCall(null, opCtx);
 
         final UUID subjId0 = subjId;
 
-        final ExpiryPolicy expiryPlc = skipVals ? null : prj != null ? prj.expiry() : null;
+        final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
 
         return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
             @Override public IgniteInternalFuture<Map<K, V>> apply() {
@@ -748,9 +737,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        UUID subjId = ctx.subjectIdPerCall(null, prj);
+        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
@@ -767,7 +756,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             conflictRmvMap != null ? conflictRmvMap.values() : null,
             retval,
             rawRetval,
-            prj != null ? prj.expiry() : null,
+            opCtx != null ? opCtx.expiry() : null,
             filter,
             subjId,
             taskNameHash);
@@ -809,9 +798,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        UUID subjId = ctx.subjectIdPerCall(null, prj);
+        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
 
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
@@ -827,7 +816,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             keys != null ? null : conflictMap.values(),
             retval,
             rawRetval,
-            (filter != null && prj != null) ? prj.expiry() : null,
+            (filter != null && opCtx != null) ? opCtx.expiry() : null,
             filter,
             subjId,
             taskNameHash);
@@ -1126,6 +1115,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             retVal = new GridCacheReturn(ctx, node.isLocal(), null, true);
 
                         res.returnValue(retVal);
+
+                        if (dhtFut != null)
+                            ctx.mvcc().addAtomicFuture(dhtFut.version(), dhtFut);
                     }
                     else
                         // Should remap all keys.
@@ -2183,36 +2175,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
-     * Checks if future timeout happened.
-     */
-    private void scheduleAtomicFutureRecheck() {
-        final long timeout = ctx.kernalContext().config().getNetworkTimeout();
-
-        ctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout * 2) {
-            @Override public void onTimeout() {
-                boolean leave = false;
-
-                try {
-                    ctx.gate().enter();
-
-                    leave = true;
-
-                    for (GridCacheAtomicFuture fut : ctx.mvcc().atomicFutures())
-                        fut.checkTimeout(timeout);
-                }
-                catch (IllegalStateException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not check pending atomic update futures for timeout (Grid is stopping).");
-                }
-                finally {
-                    if (leave)
-                        ctx.gate().leave();
-                }
-            }
-        });
-    }
-
-    /**
      * @param entry Entry to check.
      * @param req Update request.
      * @param res Update response. If filter evaluation failed, key will be added to failed keys and method
@@ -2333,12 +2295,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
 
-        GridDhtAtomicUpdateFuture fut = new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq,
-            updateRes);
-
-        ctx.mvcc().addAtomicFuture(fut.version(), fut);
-
-        return fut;
+        return new GridDhtAtomicUpdateFuture(ctx, completionCb, writeVer, updateReq, updateRes);
     }
 
     /**

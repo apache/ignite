@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -188,8 +189,11 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                     c.remove(e.getKey());
             }
 
+            U.sleep(5000);
+
             assertEquals("Swap keys: " + c.size(CachePeekMode.SWAP), 0, c.size(CachePeekMode.SWAP));
             assertEquals(0, c.size(CachePeekMode.OFFHEAP));
+            assertEquals(0, c.size(CachePeekMode.PRIMARY));
             assertEquals(0, c.size());
         }
     }

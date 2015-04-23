@@ -15,27 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cache.affinity.fair.*;
+import org.apache.ignite.configuration.*;
 
 /**
  *
  */
-public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
+public class GridCacheAtomicClientOnlyFairAffinityMultiNodeFullApiSelfTest
+    extends GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testRemove() throws IgniteCheckedException {
-        jcache().put("key", 1);
+        cfg.setAffinity(new FairAffinityFunction());
 
-        assert jcache().remove("key", 1);
-        assert !jcache().remove("key", 1);
+        return cfg;
     }
 }

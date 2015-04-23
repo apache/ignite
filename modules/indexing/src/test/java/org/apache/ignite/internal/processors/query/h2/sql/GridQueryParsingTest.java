@@ -199,6 +199,15 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select p.name n from \"\".Person p order by p.old + 10");
 
+        checkQuery("select case when p.name is null then 'Vasya' end x from \"\".Person p");
+        checkQuery("select case when p.name like 'V%' then 'Vasya' else 'Other' end x from \"\".Person p");
+        checkQuery("select case when upper(p.name) = 'VASYA' then 'Vasya' when p.name is not null then p.name else 'Other' end x from \"\".Person p");
+
+        checkQuery("select case p.name when 'Vasya' then 1 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 else 3 end z from \"\".Person p");
+        checkQuery("select case p.name when 'Vasya' then 1 else 3 end z from \"\".Person p");
+
         checkQuery("select count(*) as a from Person union select count(*) as a from Address");
         checkQuery("select old, count(*) as a from Person group by old union select 1, count(*) as a from Address");
         checkQuery("select name from Person MINUS select street from Address");

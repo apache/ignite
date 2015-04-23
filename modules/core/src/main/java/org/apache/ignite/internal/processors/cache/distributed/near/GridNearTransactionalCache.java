@@ -126,9 +126,9 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
@@ -137,7 +137,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : prj != null ? prj.expiry() : null,
+            skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals);
     }
 
@@ -438,7 +438,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @return {@code True} if entry is locally mapped as a primary or back up node.
      */
     protected boolean isNearLocallyMapped(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
-        return ctx.affinity().belongs(ctx.localNode(), e.key(), topVer);
+        return ctx.affinity().belongs(ctx.localNode(), e.partition(), topVer);
     }
 
     /**
