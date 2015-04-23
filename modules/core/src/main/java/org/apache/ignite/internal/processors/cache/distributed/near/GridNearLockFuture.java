@@ -289,8 +289,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @Nullable private GridCacheMvccCandidate addEntry(
-        AffinityTopologyVersion topVer, 
-        GridNearCacheEntry entry, 
+        AffinityTopologyVersion topVer,
+        GridNearCacheEntry entry,
         UUID dhtNodeId
     ) throws GridCacheEntryRemovedException {
         // Check if lock acquisition is timed out.
@@ -660,6 +660,19 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
+                if (fut.topologyVersion().equals(topVer)){
+                    if (!fut.isCacheTopologyValid(cctx)) {
+                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                            cctx.name()));
+
+                        return;
+                    }
+
+                    break;
+                }
+            }
+
             // Continue mapping on the same topology version as it was before.
             this.topVer.compareAndSet(null, topVer);
 
@@ -693,6 +706,13 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (!fut.isCacheTopologyValid(cctx)) {
+                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                        cctx.name()));
+
+                    return;
+                }
+
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
                 if (tx != null)
@@ -1145,7 +1165,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @throws IgniteCheckedException If mapping for key failed.
      */
     private GridNearLockMapping map(
-        KeyCacheObject key, 
+        KeyCacheObject key,
         @Nullable GridNearLockMapping mapping,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {

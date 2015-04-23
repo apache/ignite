@@ -94,7 +94,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             execSvc = ctx.getExecutorService();
 
-            idx.start(ctx);
+            idx.start(ctx, busyLock);
         }
     }
 
