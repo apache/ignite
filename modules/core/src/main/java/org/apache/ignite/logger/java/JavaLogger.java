@@ -60,17 +60,17 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * </pre>
  * And the same configuration if you'd like to configure Ignite in your code:
  * <pre name="code" class="java">
- *      GridConfiguration cfg = new GridConfiguration();
+ *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
- *      GridLogger log = new GridJavaLogger(Logger.global);
+ *      IgniteLogger log = new JavaLogger(Logger.global);
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
  * or which is actually the same:
  * <pre name="code" class="java">
- *      GridConfiguration cfg = new GridConfiguration();
+ *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
- *      GridLogger log = new GridJavaLogger();
+ *      IgniteLogger log = new JavaLogger();
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
