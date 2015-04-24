@@ -295,10 +295,14 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 if (hasFilters || retVal || txEntry.op() == GridCacheOperation.DELETE) {
                     cached.unswap(retVal);
 
+                    boolean readThrough = (retVal || hasFilters) &&
+                        cacheCtx.config().isLoadPreviousValue() &&
+                        !txEntry.skipStore();
+
                     CacheObject val = cached.innerGet(
                         tx,
                         /*swap*/true,
-                        /*read through*/(retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue(),
+                        readThrough,
                         /*fail fast*/false,
                         /*unmarshal*/true,
                         /*metrics*/retVal,

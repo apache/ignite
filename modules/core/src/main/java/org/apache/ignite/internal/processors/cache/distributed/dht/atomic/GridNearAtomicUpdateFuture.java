@@ -136,6 +136,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** Task name hash. */
     private final int taskNameHash;
 
+    /** Skip store flag. */
+    private final boolean skipStore;
+
     /**
      * @param cctx Cache context.
      * @param cache Cache instance.
@@ -152,6 +155,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param filter Entry filter.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param skipStore Skip store flag.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -168,7 +172,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        boolean skipStore
     ) {
         this.rawRetval = rawRetval;
 
@@ -191,6 +196,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.skipStore = skipStore;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
@@ -578,7 +584,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 invokeArgs,
                 filter,
                 subjId,
-                taskNameHash);
+                taskNameHash,
+                skipStore);
 
             req.addUpdateEntry(cacheKey,
                 val,
@@ -700,7 +707,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             invokeArgs,
                             filter,
                             subjId,
-                            taskNameHash);
+                            taskNameHash,
+                            skipStore);
 
                         pendingMappings.put(nodeId, mapped);
 

@@ -139,7 +139,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
         suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
-        suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class);
+        // suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class); TODO IGNITE-795
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);

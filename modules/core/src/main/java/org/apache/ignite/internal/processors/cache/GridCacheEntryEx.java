@@ -398,6 +398,7 @@ public interface GridCacheEntryEx {
      * @param val Value. Type depends on operation.
      * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
+     * @param readThrough Read through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy.
      * @param evt Event flag.
@@ -430,6 +431,7 @@ public interface GridCacheEntryEx {
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
@@ -456,6 +458,7 @@ public interface GridCacheEntryEx {
      * @param writeObj Value. Type depends on operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param writeThrough Write through flag.
+     * @param readThrough Read through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy..
      * @param evt Event flag.
@@ -474,6 +477,7 @@ public interface GridCacheEntryEx {
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
