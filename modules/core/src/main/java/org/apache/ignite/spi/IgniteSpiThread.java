@@ -71,6 +71,9 @@ public abstract class IgniteSpiThread extends Thread {
         // not to kill any threads from the underlying thread pool.
         catch (Throwable e) {
             U.error(log, "Runtime error caught during grid runnable execution: " + this, e);
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             cleanup();

@@ -149,8 +149,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
+                    CacheOperationContext opCtx = ctx.operationContextPerCall();
+
                     ctx.closures().callAsyncNoFailover(BROADCAST,
-                        new GlobalRemoveAllCallable<>(name(), topVer), nodes, true).get();
+                        new GlobalRemoveAllCallable<>(name(), topVer, opCtx != null && opCtx.skipStore()), nodes,
+                        true).get();
                 }
             }
             while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) > 0);
@@ -180,8 +183,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
             IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
-                    new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
+                    new GlobalRemoveAllCallable<>(name(), topVer, opCtx != null && opCtx.skipStore()), nodes, true);
 
             rmvFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -236,6 +241,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /** Topology version. */
         private AffinityTopologyVersion topVer;
 
+        /** Skip store flag. */
+        private boolean skipStore;
+
         /** Injected grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -250,10 +258,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         /**
          * @param cacheName Cache name.
          * @param topVer Topology version.
+         * @param skipStore Skip store flag.
          */
-        private GlobalRemoveAllCallable(String cacheName, @NotNull AffinityTopologyVersion topVer) {
+        private GlobalRemoveAllCallable(String cacheName, @NotNull AffinityTopologyVersion topVer, boolean skipStore) {
             this.cacheName = cacheName;
             this.topVer = topVer;
+            this.skipStore = skipStore;
         }
 
         /**
@@ -285,6 +295,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 try (DataStreamerImpl<KeyCacheObject, Object> dataLdr =
                          (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
                     ((DataStreamerImpl)dataLdr).maxRemapCount(0);
+
+                    dataLdr.skipStore(skipStore);
 
                     dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
@@ -328,12 +340,14 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
             out.writeObject(topVer);
+            out.writeBoolean(skipStore);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
             topVer = (AffinityTopologyVersion)in.readObject();
+            skipStore = in.readBoolean();
         }
     }
 }

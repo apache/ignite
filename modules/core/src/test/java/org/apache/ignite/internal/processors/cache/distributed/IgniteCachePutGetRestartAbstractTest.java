@@ -49,7 +49,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
     private final Object mux = new Object();
 
     /** */
-    private CountDownLatch latch = new CountDownLatch(1);
+    private volatile CountDownLatch latch = new CountDownLatch(1);
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -70,7 +70,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (gridName.equals(getTestGridName(0)))
+        if (gridName.equals(getTestGridName(gridCount() - 1)))
             cfg.setClientMode(true);
 
         cfg.setPeerClassLoadingEnabled(false);
@@ -96,9 +96,13 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
      * @throws Exception If failed.
      */
     public void testTxPutGetRestart() throws Exception {
-        final IgniteTransactions txs = ignite(0).transactions();
+        int clientGrid = gridCount() - 1;
 
-        final IgniteCache<Integer, Integer> cache = jcache(0);
+        assertTrue(ignite(clientGrid).configuration().isClientMode());
+
+        final IgniteTransactions txs = ignite(clientGrid).transactions();
+
+        final IgniteCache<Integer, Integer> cache = jcache(clientGrid);
 
         updateCache(cache, txs);
 
@@ -106,6 +110,8 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
 
         IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
+                Thread.currentThread().setName("update-thread");
+
                 assertTrue(latch.await(30_000, TimeUnit.MILLISECONDS));
 
                 int iter = 0;
@@ -128,18 +134,26 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
 
         IgniteInternalFuture<?> restartFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                assertTrue(latch.await(30_000, TimeUnit.MILLISECONDS));
+                Thread.currentThread().setName("restart-thread");
+
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!stop.get()) {
-                    log.info("Stop node.");
+                    assertTrue(latch.await(30_000, TimeUnit.MILLISECONDS));
 
-                    stopGrid(1);
+                    int node = rnd.nextInt(0, gridCount() - 1);
+
+                    log.info("Stop node: " + node);
+
+                    stopGrid(node);
 
                     U.sleep(100);
 
-                    log.info("Start node.");
+                    log.info("Start node: " + node);
 
-                    startGrid(1);
+                    startGrid(node);
+
+                    latch = new CountDownLatch(1);
 
                     U.sleep(100);
                 }
@@ -153,7 +167,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
         try {
             int iter = 0;
 
-            while (System.currentTimeMillis() < endTime) {
+            while (System.currentTimeMillis() < endTime && !updateFut.isDone() && !restartFut.isDone()) {
                 try {
                     log.info("Start get: " + iter);
 
@@ -164,14 +178,15 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
                     log.info("End get: " + iter++);
                 }
                 finally {
-                    if (latch.getCount() > 0)
-                        latch.countDown();
+                    latch.countDown();
                 }
             }
 
             log.info("Get iterations: " + iter);
         }
         finally {
+            latch.countDown();
+
             stop.set(true);
         }
 
@@ -189,7 +204,7 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
     private void readCache(IgniteCache<Integer, Integer> cache, IgniteTransactions txs) {
         try (Transaction tx = txs.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < ENTRY_CNT; i++)
-                assertEquals(expVal, cache.get(i));
+                assertNotNull(cache.get(i));
         }
     }
 

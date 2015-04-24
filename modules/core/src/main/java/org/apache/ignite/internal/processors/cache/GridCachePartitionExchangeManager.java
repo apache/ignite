@@ -471,9 +471,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Exchange futures.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public List<IgniteInternalFuture<?>> exchangeFutures() {
-        return (List<IgniteInternalFuture<?>>)(List)exchFuts.values();
+    public List<GridDhtPartitionsExchangeFuture> exchangeFutures() {
+        return exchFuts.values();
     }
 
     /**

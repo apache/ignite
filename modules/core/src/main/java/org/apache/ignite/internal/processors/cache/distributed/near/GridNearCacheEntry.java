@@ -329,7 +329,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             taskName,
             true,
             null,
-            false).get().get(keyValue(false));
+            false,
+            /*skip store*/false).get().get(keyValue(false));
     }
 
     /**

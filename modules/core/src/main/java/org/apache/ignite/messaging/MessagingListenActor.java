@@ -74,6 +74,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
         }
         catch (Throwable e) {
             onError(e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
 
         return keepGoing;

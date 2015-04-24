@@ -123,6 +123,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             U.error(log, "Client request execution failed with error.", e);
 
                         fut.onDone(U.cast(e));
+
+                        if (e instanceof Error)
+                            throw e;
                     }
                     finally {
                         workersCnt.decrement();

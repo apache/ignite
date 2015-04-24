@@ -148,6 +148,9 @@ public class IgniteConfiguration {
     /** Default keep alive time for system thread pool. */
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
 
+    /** Default keep alive time for utility thread pool. */
+    public static final long DFLT_UTILITY_KEEP_ALIVE_TIME = 10_000;
+
     /** Default max queue capacity of system thread pool. */
     public static final int DFLT_SYSTEM_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
@@ -204,6 +207,18 @@ public class IgniteConfiguration {
 
     /** IGFS pool size. */
     private int igfsPoolSize = AVAILABLE_PROC_CNT;
+
+    /** Utility cache pool size. */
+    private int utilityCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
+
+    /** Utility cache pool keep alive time. */
+    private long utilityCacheKeepAliveTime = DFLT_UTILITY_KEEP_ALIVE_TIME;
+
+    /** Marshaller pool size. */
+    private int marshCachePoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
+
+    /** Marshaller pool keep alive time. */
+    private long marshCacheKeepAliveTime = DFLT_UTILITY_KEEP_ALIVE_TIME;
 
     /** P2P pool size. */
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
@@ -442,6 +457,8 @@ public class IgniteConfiguration {
         lsnrs = cfg.getLocalEventListeners();
         marsh = cfg.getMarshaller();
         marshLocJobs = cfg.isMarshalLocalJobs();
+        marshCacheKeepAliveTime = cfg.getMarshallerCacheKeepAliveTime();
+        marshCachePoolSize = cfg.getMarshallerCacheThreadPoolSize();
         mbeanSrv = cfg.getMBeanServer();
         metricsHistSize = cfg.getMetricsHistorySize();
         metricsExpTime = cfg.getMetricsExpireTime();
@@ -467,6 +484,8 @@ public class IgniteConfiguration {
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
+        utilityCacheKeepAliveTime = cfg.getUtilityCacheKeepAliveTime();
+        utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
     }
@@ -648,6 +667,50 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Default size of thread pool that is in charge of processing utility cache messages.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
+     *
+     * @return Default thread pool size to be used in grid for utility cache messages.
+     */
+    public int getUtilityCacheThreadPoolSize() {
+        return utilityCachePoolSize;
+    }
+
+    /**
+     * Keep alive time of thread pool that is in charge of processing utility cache messages.
+     * <p>
+     * If not provided, executor service will have keep alive time {@link #DFLT_UTILITY_KEEP_ALIVE_TIME}.
+     *
+     * @return Thread pool keep alive time (in milliseconds) to be used in grid for utility cache messages.
+     */
+    public long getUtilityCacheKeepAliveTime() {
+        return utilityCacheKeepAliveTime;
+    }
+
+    /**
+     * Default size of thread pool that is in charge of processing marshaller messages.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
+     *
+     * @return Default thread pool size to be used in grid for marshaller messages.
+     */
+    public int getMarshallerCacheThreadPoolSize() {
+        return marshCachePoolSize;
+    }
+
+    /**
+     * Keep alive time of thread pool that is in charge of processing marshaller messages.
+     * <p>
+     * If not provided, executor service will have keep alive time {@link #DFLT_UTILITY_KEEP_ALIVE_TIME}.
+     *
+     * @return Thread pool keep alive time (in milliseconds) to be used in grid for marshaller messages.
+     */
+    public long getMarshallerCacheKeepAliveTime() {
+        return marshCacheKeepAliveTime;
+    }
+
+    /**
      * Sets thread pool size to use within grid.
      *
      * @param poolSize Thread pool size to use within grid.
@@ -695,6 +758,50 @@ public class IgniteConfiguration {
      */
     public void setIgfsThreadPoolSize(int poolSize) {
         igfsPoolSize = poolSize;
+    }
+
+    /**
+     * Sets default thread pool size that will be used to process utility cache messages.
+     *
+     * @param poolSize Default executor service size to use for utility cache messages.
+     * @see IgniteConfiguration#getUtilityCacheThreadPoolSize()
+     * @see IgniteConfiguration#getUtilityCacheKeepAliveTime()
+     */
+    public void setUtilityCachePoolSize(int poolSize) {
+        utilityCachePoolSize = poolSize;
+    }
+
+    /**
+     * Sets keep alive time of thread pool size that will be used to process utility cache messages.
+     *
+     * @param keepAliveTime Keep alive time of executor service to use for utility cache messages.
+     * @see IgniteConfiguration#getUtilityCacheThreadPoolSize()
+     * @see IgniteConfiguration#getUtilityCacheKeepAliveTime()
+     */
+    public void setUtilityCacheKeepAliveTime(long keepAliveTime) {
+        utilityCacheKeepAliveTime = keepAliveTime;
+    }
+
+    /**
+     * Sets default thread pool size that will be used to process marshaller messages.
+     *
+     * @param poolSize Default executor service size to use for marshaller messages.
+     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
+     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
+     */
+    public void setMarshallerCachePoolSize(int poolSize) {
+        marshCachePoolSize = poolSize;
+    }
+
+    /**
+     * Sets maximum thread pool size that will be used to process marshaller messages.
+     *
+     * @param keepAliveTime Keep alive time of executor service to use for marshaller messages.
+     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
+     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
+     */
+    public void setMarshallerCacheKeepAliveTime(long keepAliveTime) {
+        marshCacheKeepAliveTime = keepAliveTime;
     }
 
     /**

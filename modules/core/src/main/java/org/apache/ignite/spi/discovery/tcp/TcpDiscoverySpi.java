@@ -1223,6 +1223,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (Throwable t) {
                 fut.onDone(t);
 
+                if (t instanceof Error)
+                    throw t;
+
                 throw U.cast(t);
             }
             finally {

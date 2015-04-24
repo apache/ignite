@@ -496,7 +496,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 }
             }
             catch (Throwable t) {
-                if (t instanceof IgniteCheckedException)
+                if (t instanceof IgniteCheckedException || t instanceof Error)
                     throw t;
 
                 throw new IgniteCheckedException("Invalid value '" + e.getValue() + "' of the property '" + e.getKey() + "' in " +
