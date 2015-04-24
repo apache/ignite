@@ -17,33 +17,29 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
-import com.google.inject.Module;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.IgniteSpiConfiguration;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.jclouds.ContextBuilder;
-import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.compute.domain.ComputeMetadata;
-import org.jclouds.compute.domain.NodeMetadata;
-import org.jclouds.sshj.config.SshjSshClientModule;
+import com.google.common.base.*;
+import com.google.common.collect.*;
+import com.google.common.io.*;
+import com.google.inject.*;
+
+import org.jclouds.*;
+import org.jclouds.compute.*;
+import org.jclouds.compute.domain.*;
+import org.jclouds.sshj.config.*;
 import org.jclouds.logging.log4j.config.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * IP finder for automatic lookup of nodes running in a cloud.
@@ -80,9 +76,13 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /* Cloud specific identity (user name, email address, etc.). */
     private String identity;
 
-    /* Cloud specific credential (password, secrets key, etc.). */
+    /* Cloud specific credential (password, access key, etc.). */
     @GridToStringExclude
     private String credential;
+
+    /* Path to a cloud specific credential. */
+    @GridToStringExclude
+    private String credentialPath;
 
     /* Port to use to connect to nodes across a cluster. */
     private Integer discoveryPort;
@@ -168,7 +168,7 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
     /**
      * Sets credential that is used during authentication on the cloud.
-     * Depending on a cloud platform it can be a password, path to a secrets file, etc.
+     * Depending on a cloud platform it can be a password or access key.
      *
      * Refer to <a href="http://jclouds.apache.org/guides/">Apache jclouds guide</a> to get concrete information on
      * what is used as an credential for a particular cloud platform.
@@ -178,6 +178,24 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     @IgniteSpiConfiguration(optional = true)
     public void setCredential(String credential) {
         this.credential = credential;
+    }
+
+    /**
+     * Sets the path to a credential that is used during authentication on the cloud.
+     *
+     * This method should be used when an access key or private key is stored in a plain or PEM file without
+     * a passphrase.
+     * Content of the file, referred by @{code credentialPath}, is fully read and used as a access key or private key
+     * during authentication.
+     *
+     * Refer to <a href="http://jclouds.apache.org/guides/">Apache jclouds guide</a> to get concrete information on
+     * what is used as an credential for a particular cloud platform.
+     *
+     * @param credentialPath Path to the credential to use during authentication on the cloud.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setCredentialPath(String credentialPath) {
+        this.credentialPath = credentialPath;
     }
 
     /**
@@ -205,12 +223,11 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
                 if (identity == null)
                     throw new IgniteSpiException("Cloud identity is not set.");
 
-                if (provider.equals("google-compute-engine")) {
-                    if (credential == null)
-                        throw new IgniteSpiException("Cloud credential is not set.");
-                    else 
-                        credential = getPrivateKeyFromFile(credential);
-                }
+                if (credential != null && credentialPath != null)
+                    throw new IgniteSpiException("Both credential and credentialPath are set. Use only one method.");
+
+                if (credentialPath != null)
+                    credential = getPrivateKeyFromFile();
 
                 try {
                     ContextBuilder ctxBuilder = ContextBuilder.newBuilder(provider);
@@ -246,15 +263,14 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /**
      * Retrieves a private key from the secrets file.
      *
-     * @param filePath Full path to the file.
      * @return Private key
      */
-    private String getPrivateKeyFromFile(String filePath) throws IgniteSpiException {
+    private String getPrivateKeyFromFile() throws IgniteSpiException {
         try {
-            return Files.toString(new File(filePath), Charsets.UTF_8);
+            return Files.toString(new File(credentialPath), Charsets.UTF_8);
         }
         catch (IOException e) {
-            throw new IgniteSpiException("Failed to retrieve a private key from the file: " + filePath, e);
+            throw new IgniteSpiException("Failed to retrieve the private key from the file: " + credentialPath, e);
         }
     }
 }
