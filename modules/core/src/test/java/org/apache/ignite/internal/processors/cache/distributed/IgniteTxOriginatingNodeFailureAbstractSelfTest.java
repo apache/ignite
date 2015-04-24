@@ -141,7 +141,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         }
 
         info("Starting tx [values=" + map + ", topVer=" +
-            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
+            (grid(1)).context().discovery().topologyVersion() + ']');
 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());

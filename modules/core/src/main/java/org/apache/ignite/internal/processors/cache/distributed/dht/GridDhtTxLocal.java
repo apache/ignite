@@ -603,7 +603,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             }
         }
         else {
-            // prepFut.complete();
+            prepFut.complete();
 
             prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                 @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
@@ -682,6 +682,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (log.isDebugEnabled())
                 log.debug("Will not send finish reply because sender node has not sent finish request yet: " + this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+        return prepFut.get();
     }
 
     /** {@inheritDoc} */

@@ -579,6 +579,11 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public IgniteInternalFuture<IgniteInternalTx> finishFuture();
 
     /**
+     * @return Future for transaction prepare if prepare is in progress.
+     */
+    @Nullable public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture();
+
+    /**
      * @param state Transaction state.
      * @return {@code True} if transition was valid, {@code false} otherwise.
      */
