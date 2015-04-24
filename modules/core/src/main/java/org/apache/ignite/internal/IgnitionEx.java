@@ -560,8 +560,8 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL springCfgUrl) throws IgniteCheckedException {
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(URL springCfgUrl) throws IgniteCheckedException {
         IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
@@ -580,8 +580,8 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        InputStream springCfgStream) throws IgniteCheckedException {
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(InputStream springCfgStream) throws IgniteCheckedException {
         IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgStream);
@@ -600,8 +600,8 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        String springCfgPath) throws IgniteCheckedException {
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -636,7 +636,8 @@ public class IgnitionEx {
      */
     public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws IgniteCheckedException {
-        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
+            loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
     }

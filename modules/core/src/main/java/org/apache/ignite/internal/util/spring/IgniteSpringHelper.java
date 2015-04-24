@@ -75,7 +75,7 @@ public interface IgniteSpringHelper {
      * @throws IgniteCheckedException If configuration could not be read.
      */
     public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, Class<T> cl, String... excludedProps) throws IgniteCheckedException;
+        URL cfgUrl, Class<T> cls, String... excludedProps) throws IgniteCheckedException;
 
     /**
      * Loads all configurations with given type specified within given configuration input stream.
@@ -87,7 +87,7 @@ public interface IgniteSpringHelper {
      * @throws IgniteCheckedException If configuration could not be read.
      */
     public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        InputStream cfgStream, Class<T> cl, String... excludedProps) throws IgniteCheckedException;
+        InputStream cfgStream, Class<T> cls, String... excludedProps) throws IgniteCheckedException;
 
     /**
      * Loads bean instances that match the given types from given configuration file.
@@ -119,7 +119,8 @@ public interface IgniteSpringHelper {
      *       map value is {@code null}.
      * @throws IgniteCheckedException If failed to load configuration.
      */
-    public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses) throws IgniteCheckedException;
+    public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
+        throws IgniteCheckedException;
 
     /**
      * Loads bean instance by name.

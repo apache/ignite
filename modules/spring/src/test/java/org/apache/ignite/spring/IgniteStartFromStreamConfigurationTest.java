@@ -29,7 +29,7 @@ import java.net.*;
 /**
  * Checks starts from Stream.
  */
-public class IgniteStartFromStreamCfgTest extends GridCommonAbstractTest {
+public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTest {
     /** Tests starts from Stream. */
     public void testStartFromStream() throws Exception {
         String cfg = "examples/config/example-cache.xml";

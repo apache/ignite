@@ -45,7 +45,7 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgniteDynamicCacheConfigTest.class));
 
-        suite.addTest(new TestSuite(IgniteStartFromStreamCfgTest.class));
+        suite.addTest(new TestSuite(IgniteStartFromStreamConfigurationTest.class));
 
         return suite;
     }

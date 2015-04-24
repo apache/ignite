@@ -76,22 +76,22 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
         return loadConfigurations(cfgUrl, IgniteConfiguration.class, excludedProps);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, Class<T> cl, String... excludedProps) throws IgniteCheckedException {
+    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext>
+    loadConfigurations(URL cfgUrl, Class<T> cls, String... excludedProps) throws IgniteCheckedException {
         ApplicationContext springCtx = applicationContext(cfgUrl, excludedProps);
         Map<String, T> cfgMap;
 
         try {
-            cfgMap = springCtx.getBeansOfType(cl);
+            cfgMap = springCtx.getBeansOfType(cls);
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cl +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cls +
                 ", err=" + e.getMessage() + ']', e);
         }
 
@@ -102,22 +102,22 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        InputStream cfgStream, String... excludedProps) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(InputStream cfgStream, String... excludedProps) throws IgniteCheckedException {
         return loadConfigurations(cfgStream, IgniteConfiguration.class, excludedProps);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        InputStream cfgStream, Class<T> cl, String... excludedProps) throws IgniteCheckedException {
+        InputStream cfgStream, Class<T> cls, String... excludedProps) throws IgniteCheckedException {
         ApplicationContext springCtx = applicationContext(cfgStream, excludedProps);
         Map<String, T> cfgMap;
 
         try {
-            cfgMap = springCtx.getBeansOfType(cl);
+            cfgMap = springCtx.getBeansOfType(cls);
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cl +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cls +
                 ", err=" + e.getMessage() + ']', e);
         }
 
@@ -160,7 +160,8 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses) throws IgniteCheckedException {
+    @Override public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
+        throws IgniteCheckedException {
         assert beanClasses.length > 0;
 
         ApplicationContext springCtx = initContext(cfgStream);
@@ -336,7 +337,8 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * @return Spring application context.
      * @throws IgniteCheckedException If configuration could not be read.
      */
-    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) throws IgniteCheckedException {
+    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps)
+        throws IgniteCheckedException {
         try {
             GenericApplicationContext springCtx = prepareSpringContext(excludedProps);
 
@@ -368,7 +370,8 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * @return Spring application context.
      * @throws IgniteCheckedException If configuration could not be read.
      */
-    public static ApplicationContext applicationContext(InputStream cfgStream, final String... excludedProps) throws IgniteCheckedException {
+    public static ApplicationContext applicationContext(InputStream cfgStream, final String... excludedProps)
+        throws IgniteCheckedException {
         try {
             GenericApplicationContext springCtx = prepareSpringContext(excludedProps);
 
