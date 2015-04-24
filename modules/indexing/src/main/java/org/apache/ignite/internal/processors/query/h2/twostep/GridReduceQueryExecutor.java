@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -56,7 +57,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Reduce query executor.
  */
-public class GridReduceQueryExecutor implements GridMessageListener {
+public class GridReduceQueryExecutor {
     /** */
     private GridKernalContext ctx;
 
@@ -100,6 +101,16 @@ public class GridReduceQueryExecutor implements GridMessageListener {
         }
     }
 
+    /** */
+    private final GridSpinBusyLock busyLock;
+
+    /**
+     * @param busyLock Busy lock.
+     */
+    public GridReduceQueryExecutor(GridSpinBusyLock busyLock) {
+        this.busyLock = busyLock;
+    }
+
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -111,7 +122,19 @@ public class GridReduceQueryExecutor implements GridMessageListener {
 
         log = ctx.log(GridReduceQueryExecutor.class);
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (!busyLock.enterBusy())
+                    return;
+
+                try {
+                    GridReduceQueryExecutor.this.onMessage(nodeId, msg);
+                }
+                finally {
+                    busyLock.leaveBusy();
+                }
+            }
+        });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(final Event evt) {
@@ -133,8 +156,11 @@ public class GridReduceQueryExecutor implements GridMessageListener {
             " NOBUFFER FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
     }
 
-    /** {@inheritDoc} */
-    @Override public void onMessage(UUID nodeId, Object msg) {
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
         try {
             assert msg != null;
 

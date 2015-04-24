@@ -7975,7 +7975,7 @@ public abstract class IgniteUtils {
 
             return true;
         }
-        catch (Throwable ignored) {
+        catch (Exception ignored) {
             return false;
         }
     }

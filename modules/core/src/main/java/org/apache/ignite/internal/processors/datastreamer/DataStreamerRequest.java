@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -77,6 +78,9 @@ public class DataStreamerRequest implements Message {
     /** */
     private boolean forceLocDep;
 
+    /** Topology version. */
+    private AffinityTopologyVersion topVer;
+
     /**
      * {@code Externalizable} support.
      */
@@ -98,6 +102,7 @@ public class DataStreamerRequest implements Message {
      * @param ldrParticipants Loader participants.
      * @param clsLdrId Class loader ID.
      * @param forceLocDep Force local deployment.
+     * @param topVer Topology version.
      */
     public DataStreamerRequest(long reqId,
         byte[] resTopicBytes,
@@ -111,7 +116,10 @@ public class DataStreamerRequest implements Message {
         String userVer,
         Map<UUID, IgniteUuid> ldrParticipants,
         IgniteUuid clsLdrId,
-        boolean forceLocDep) {
+        boolean forceLocDep,
+        @NotNull AffinityTopologyVersion topVer) {
+        assert topVer != null;
+
         this.reqId = reqId;
         this.resTopicBytes = resTopicBytes;
         this.cacheName = cacheName;
@@ -125,6 +133,7 @@ public class DataStreamerRequest implements Message {
         this.ldrParticipants = ldrParticipants;
         this.clsLdrId = clsLdrId;
         this.forceLocDep = forceLocDep;
+        this.topVer = topVer;
     }
 
     /**
@@ -218,6 +227,13 @@ public class DataStreamerRequest implements Message {
         return forceLocDep;
     }
 
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerRequest.class, this);
@@ -302,12 +318,18 @@ public class DataStreamerRequest implements Message {
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeByteArray("updaterBytes", updaterBytes))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
+                if (!writer.writeByteArray("updaterBytes", updaterBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
                 if (!writer.writeString("userVer", userVer))
                     return false;
 
@@ -419,7 +441,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 11:
-                updaterBytes = reader.readByteArray("updaterBytes");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -427,6 +449,14 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 12:
+                updaterBytes = reader.readByteArray("updaterBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
                 userVer = reader.readString("userVer");
 
                 if (!reader.isLastRead())
@@ -446,6 +476,6 @@ public class DataStreamerRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 }

@@ -114,6 +114,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
         suite.addTestSuite(DataStreamProcessorSelfTest.class);
+        suite.addTestSuite(DataStreamerMultiThreadedSelfTest.class);
         suite.addTestSuite(DataStreamerImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
@@ -138,7 +139,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
         suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicTimeoutSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
+        // suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class); TODO IGNITE-795
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
@@ -173,6 +175,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalIsolatedNodesSelfTest.class);
 
         // Partitioned cache.
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
@@ -341,6 +344,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Cache metrics.
         suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
 
+        // Topology validator.
+        suite.addTest(IgniteTopologyValidatorTestSuit.suite());
+
         // Eviction.
         suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
 
@@ -438,6 +444,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheMultiTxLockSelfTest.class);
 
         suite.addTestSuite(IgniteInternalCacheTypesTest.class);
+
+        suite.addTestSuite(IgniteExcangeFutureHistoryTest.class);
 
         return suite;
     }

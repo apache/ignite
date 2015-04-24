@@ -55,13 +55,13 @@ public class IgfsMetaManager extends IgfsManager {
     private FileSystemConfiguration cfg;
 
     /** Metadata cache. */
-    private GridCache<Object, Object> metaCache;
+    private IgniteInternalCache<Object, Object> metaCache;
 
     /** */
     private CountDownLatch metaCacheStartLatch;
 
     /** File ID to file info projection. */
-    private GridCacheProjectionEx<IgniteUuid, IgfsFileInfo> id2InfoPrj;
+    private IgniteInternalCache<IgniteUuid, IgfsFileInfo> id2InfoPrj;
 
     /** Predefined key for sampling mode value. */
     private GridCacheInternal sampling;
@@ -119,7 +119,7 @@ public class IgfsMetaManager extends IgfsManager {
                 }
             });
 
-        id2InfoPrj = (GridCacheProjectionEx<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
+        id2InfoPrj = (IgniteInternalCache<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
 
         locNode = igfsCtx.kernalContext().discovery().localNode();
 
@@ -2564,7 +2564,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return {@code True} if value was stored in cache, {@code false} otherwise.
      * @throws IgniteCheckedException If operation failed.
      */
-    private <K, V> boolean putx(CacheProjection<K, V> cache, K key, IgniteClosure<V, V> c) throws IgniteCheckedException {
+    private <K, V> boolean putx(IgniteInternalCache<K, V> cache, K key, IgniteClosure<V, V> c) throws IgniteCheckedException {
         assert validTxState(true);
 
         V oldVal = cache.get(key);

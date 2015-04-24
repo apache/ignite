@@ -58,13 +58,10 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
         /** {@inheritDoc} */
         @Override protected GridCacheSqlMetadata run(String cacheName) {
             try {
-                GridCache<Object, Object> cache = ignite.cachex(cacheName);
+                IgniteInternalCache<Object, Object> cache = ignite.cachex(cacheName);
 
-                if (cache != null) {
-                    CacheQueries<Object, Object> queries = cache.queries();
-
-                    return F.first(queries.sqlMetadata());
-                }
+                if (cache != null)
+                    return F.first(cache.context().queries().sqlMetadata());
 
                 throw new IgniteException("Cache not found: " + escapeName(cacheName));
             }

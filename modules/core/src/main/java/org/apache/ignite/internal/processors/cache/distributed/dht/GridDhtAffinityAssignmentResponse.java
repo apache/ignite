@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -112,11 +113,29 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (affAssignmentBytes != null)
+        if (affAssignmentBytes != null) {
             affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
+
+            // TODO IGNITE-10: setting 'local' for nodes not needed when IGNITE-10 is implemented.
+            int assignments = affAssignment.size();
+
+            for (int n = 0; n < assignments; n++) {
+                List<ClusterNode> nodes = affAssignment.get(n);
+
+                int size = nodes.size();
+
+                for (int i = 0; i < size; i++) {
+                    ClusterNode node = nodes.get(i);
+
+                    if (node instanceof TcpDiscoveryNode)
+                        ((TcpDiscoveryNode)node).local(node.id().equals(ctx.localNodeId()));
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

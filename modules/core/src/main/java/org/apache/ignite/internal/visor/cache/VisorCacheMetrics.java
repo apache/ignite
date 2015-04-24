@@ -176,7 +176,7 @@ public class VisorCacheMetrics implements Serializable {
      * @param c Cache.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(IgniteEx ignite, GridCache c) {
+    public static VisorCacheMetrics from(IgniteEx ignite, IgniteInternalCache c) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
 
         CacheMetrics m = c.metrics();
@@ -216,7 +216,7 @@ public class VisorCacheMetrics implements Serializable {
         cm.commitsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxCommitTime());
         cm.rollbacksPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxRollbackTime());
 
-        cm.qryMetrics = VisorCacheQueryMetrics.from(c.queries().metrics());
+        cm.qryMetrics = VisorCacheQueryMetrics.from(c.context().queries().metrics());
 
         cm.dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         cm.txThreadMapSize = m.getTxThreadMapSize();

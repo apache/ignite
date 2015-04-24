@@ -110,6 +110,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
+     * @param skipStore Skip store flag.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -133,7 +134,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore
     ) {
         super(
             cacheId,
@@ -150,7 +152,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             keyCnt,
             txSize,
             grpLockKey,
-            partLock);
+            partLock,
+            skipStore);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 

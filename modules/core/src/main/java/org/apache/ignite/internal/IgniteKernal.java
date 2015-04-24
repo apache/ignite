@@ -512,6 +512,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (Throwable e) {
             U.error(log, "Failed to notify lifecycle bean (safely ignored) [evt=" + evt +
                 ", gridName=" + gridName + ']', e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -822,7 +825,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             stop(true);
 
-            if (e instanceof IgniteCheckedException)
+            if (e instanceof Error)
+                throw e;
+            else if (e instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e;
             else
                 throw new IgniteCheckedException(e);
@@ -1624,7 +1629,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 return "Scala ver. " + props.getProperty("version.number", "<unknown>");
             }
-            catch (Throwable ignore) {
+            catch (Exception ignore) {
                 return "Scala ver. <unknown>";
             }
         }
@@ -1703,6 +1708,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     errOnStop = true;
 
                     U.error(log, "Failed to pre-stop processor: " + comp, e);
+
+                    if (e instanceof Error)
+                        throw e;
                 }
             }
 
@@ -1787,6 +1795,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     errOnStop = true;
 
                     U.error(log, "Failed to stop component (ignoring): " + comp, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
 
@@ -2222,7 +2233,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> GridCache<K, V> getCache(@Nullable String name) {
+    public <K, V> IgniteInternalCache<K, V> getCache(@Nullable String name) {
         guard();
 
         try {
@@ -2456,7 +2467,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K extends GridCacheUtilityKey, V> GridCacheProjectionEx<K, V> utilityCache() {
+    @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
         guard();
 
         try {
@@ -2468,7 +2479,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
         guard();
 
         try {
@@ -2480,7 +2491,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridCache<K, V> cachex() {
+    @Override public <K, V> IgniteInternalCache<K, V> cachex() {
         guard();
 
         try {
@@ -2492,7 +2503,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCache<?, ?>> cachesx(IgnitePredicate<? super GridCache<?, ?>>[] p) {
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
         guard();
 
         try {

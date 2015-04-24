@@ -35,7 +35,7 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
      * @param cache Region cache.
      */
     public HibernateGeneralDataRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache) {
+        Ignite ignite, IgniteInternalCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
 

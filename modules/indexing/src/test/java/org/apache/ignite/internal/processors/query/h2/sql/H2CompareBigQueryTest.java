@@ -230,7 +230,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         
         assertTrue(!res.isEmpty()); // Ensure we set good testing data at database.
     }
-    
+
     /** {@inheritDoc} */
     @Override protected Statement initializeH2Schema() throws SQLException {
         Statement st = super.initializeH2Schema();

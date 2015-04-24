@@ -81,7 +81,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private ThreadLocal<String> svcName = new ThreadLocal<>();
 
     /** Service cache. */
-    private GridCacheProjectionEx<Object, Object> cache;
+    private IgniteInternalCache<Object, Object> cache;
 
     /** Topology listener. */
     private GridLocalEventListener topLsnr = new TopologyListener();
@@ -819,6 +819,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             catch (Throwable e) {
                                 log.error("Service execution stopped with error [name=" + svcCtx.name() +
                                     ", execId=" + svcCtx.executionId() + ']', e);
+
+                                if (e instanceof Error)
+                                    throw (Error)e;
                             }
                             finally {
                                 // Suicide.
@@ -872,6 +875,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             catch (Throwable e) {
                 log.error("Failed to cancel service (ignoring) [name=" + svcCtx.name() +
                     ", execId=" + svcCtx.executionId() + ']', e);
+
+                if (e instanceof Error)
+                    throw e;
             }
             finally {
                 try {
@@ -1243,6 +1249,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
             catch (Throwable t) {
                 log.error("Error when executing service: " + svcName.get(), t);
+
+                if (t instanceof Error)
+                    throw t;
             }
             finally {
                 busyLock.leaveBusy();

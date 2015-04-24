@@ -760,6 +760,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                             U.error(log, "Closure execution failed with error.", e);
 
                         fut.onDone(U.cast(e));
+
+                        if (e instanceof Error)
+                            throw e;
                     }
                 }
             };
@@ -819,8 +822,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return runLocal(c, plc);
         }
         catch (Throwable e) {
-            if (e instanceof Error)
+            if (e instanceof Error) {
                 U.error(log, "Closure execution failed with error.", e);
+
+                throw (Error)e;
+            }
 
             // If execution was rejected - rerun locally.
             if (e.getCause() instanceof RejectedExecutionException) {
@@ -833,8 +839,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     return new GridFinishedFuture();
                 }
                 catch (Throwable t) {
-                    if (t instanceof Error)
+                    if (t instanceof Error) {
                         U.error(log, "Closure execution failed with error.", t);
+
+                        throw t;
+                    }
 
                     return new GridFinishedFuture(U.cast(t));
                 }
@@ -890,6 +899,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                             U.error(log, "Closure execution failed with error.", e);
 
                         fut.onDone(U.cast(e));
+
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 }
             };

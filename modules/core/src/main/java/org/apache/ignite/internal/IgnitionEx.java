@@ -1418,16 +1418,16 @@ public class IgnitionEx {
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility-" + cfg.getGridName(),
-                DFLT_SYSTEM_CORE_THREAD_CNT,
+                myCfg.getUtilityCacheThreadPoolSize(),
                 DFLT_SYSTEM_MAX_THREAD_CNT,
-                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                myCfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
                 "marshaller-cache-" + cfg.getGridName(),
-                DFLT_SYSTEM_CORE_THREAD_CNT,
+                myCfg.getMarshallerCacheThreadPoolSize(),
                 DFLT_SYSTEM_MAX_THREAD_CNT,
-                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                myCfg.getMarshallerCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
             // Register Ignite MBean for current grid instance.
@@ -1464,6 +1464,9 @@ public class IgnitionEx {
             // Catch Throwable to protect against any possible failure.
             catch (Throwable e) {
                 unregisterFactoryMBean();
+
+                if (e instanceof Error)
+                    throw e;
 
                 throw new IgniteCheckedException("Unexpected exception when starting grid.", e);
             }
@@ -1981,6 +1984,9 @@ public class IgnitionEx {
             }
             catch (Throwable e) {
                 U.error(log, "Failed to properly stop grid instance due to undeclared exception.", e);
+
+                if (e instanceof Error)
+                    throw e;
             }
             finally {
                 state = grid0.context().segmented() ? STOPPED_ON_SEGMENTATION : STOPPED;
