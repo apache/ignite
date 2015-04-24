@@ -169,8 +169,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
             if (job == null)
                 job = ctx.job().activeJob(jobId);
 
-            // Completed?
-            if (job != null && !job.isDone()) {
+            if (job != null) {
                 if (!job.hold())
                     throw new IllegalStateException("Job has already been held [ctx=" + this + ']');
 
