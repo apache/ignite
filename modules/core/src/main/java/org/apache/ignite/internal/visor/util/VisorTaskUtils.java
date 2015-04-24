@@ -120,6 +120,16 @@ public class VisorTaskUtils {
     }
 
     /**
+     * @param name Escaped name.
+     * @return Name or {@code null} for default name.
+     */
+    public static String unescapeName(String name) {
+        assert name != null;
+
+        return DFLT_EMPTY_NAME.equals(name) ? null : name;
+    }
+
+    /**
      * @param a First name.
      * @param b Second name.
      * @return {@code true} if both names equals.

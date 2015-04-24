@@ -918,18 +918,18 @@ public class IgnitionEx {
     /**
      * Loads spring bean by name.
      *
-     * @param springXmlCfg Spring XML input stream.
+     * @param inputStream Spring XML input stream.
      * @param beanName Bean name.
      * @return Bean instance.
      * @throws IgniteCheckedException In case of error.
      */
-    public static <T> T loadSpringBean(InputStream springXmlCfg, String beanName) throws IgniteCheckedException {
-        A.notNull(springXmlCfg, "springXmlUrl");
+    public static <T> T loadSpringBean(InputStream inputStream, String beanName) throws IgniteCheckedException {
+        A.notNull(inputStream, "inputStream");
         A.notNull(beanName, "beanName");
 
         IgniteSpringHelper spring = SPRING.create(false);
 
-        return spring.loadBean(springXmlCfg, beanName);
+        return spring.loadBean(inputStream, beanName);
     }
 
     /**

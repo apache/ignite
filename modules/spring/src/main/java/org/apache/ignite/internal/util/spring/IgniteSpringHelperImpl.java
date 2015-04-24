@@ -125,7 +125,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         }
         catch (NoSuchBeanDefinitionException e) {
             throw new IgniteCheckedException("Spring bean with provided name doesn't exist [url=" + url +
-                ", beanName=" + beanName + ']');
+                ", beanName=" + beanName + ']', e);
         }
         catch (BeansException e) {
             throw new IgniteCheckedException("Failed to load Spring bean with provided name [url=" + url +
@@ -135,19 +135,17 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> T loadBean(InputStream is, String beanName) throws IgniteCheckedException {
-        ApplicationContext springCtx = initContext(new InputStreamResource(is));
+    @Override public <T> T loadBean(InputStream inputStream, String beanName) throws IgniteCheckedException {
+        ApplicationContext springCtx = initContext(new InputStreamResource(inputStream));
 
         try {
             return (T)springCtx.getBean(beanName);
         }
         catch (NoSuchBeanDefinitionException e) {
-            throw new IgniteCheckedException("Spring bean with provided name doesn't exist [stream=" + is +
-                ", beanName=" + beanName + ']');
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist: " + beanName, e);
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to load Spring bean with provided name [stream=" + is +
-                ", beanName=" + beanName + ']', e);
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name: " + beanName, e);
         }
     }
 

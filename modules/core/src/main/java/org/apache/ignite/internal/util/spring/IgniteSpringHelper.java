@@ -82,9 +82,9 @@ public interface IgniteSpringHelper {
     public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException;
 
     /**
-     * Loads bean instance by name.
+     * Loads bean instance by name from stream.
      *
-     * @param inputStream Spring XML file URL.
+     * @param inputStream Input stream with Spring XML.
      * @param beanName Bean name.
      * @return Bean instance.
      * @throws IgniteCheckedException In case of error.

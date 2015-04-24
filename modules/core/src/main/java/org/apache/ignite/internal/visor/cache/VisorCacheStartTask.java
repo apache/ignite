@@ -23,12 +23,13 @@ import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 
 import java.io.*;
 
 /**
- * Task that stop specified caches on specified node.
+ * Task that start cache or near cache with specified configuration.
  */
 @GridInternal
 public class VisorCacheStartTask extends VisorOneNodeTask<IgniteBiTuple<String, String>, Void> {
@@ -41,7 +42,7 @@ public class VisorCacheStartTask extends VisorOneNodeTask<IgniteBiTuple<String, 
     }
 
     /**
-     * Job that stop specified caches.
+     * Job that start cache or near cache with specified configuration.
      */
     private static class VisorCacheStartJob extends VisorJob<IgniteBiTuple<String, String>, Void> {
         /** */
@@ -50,7 +51,7 @@ public class VisorCacheStartTask extends VisorOneNodeTask<IgniteBiTuple<String, 
         /**
          * Create job.
          *
-         * @param arg Contains XML configurations of cache and near cache tuple.
+         * @param arg Contains cache name and XML configurations of cache.
          * @param debug Debug flag.
          */
         private VisorCacheStartJob(IgniteBiTuple<String, String> arg, boolean debug) {
@@ -59,21 +60,24 @@ public class VisorCacheStartTask extends VisorOneNodeTask<IgniteBiTuple<String, 
 
         /** {@inheritDoc} */
         @Override protected Void run(IgniteBiTuple<String, String> arg) {
-            String ccfg = arg.get1();
+            String name = arg.get1();
 
-            assert ccfg != null;
+            String cfg = arg.get2();
 
-            CacheConfiguration cfg = Ignition.loadSpringBean(
-                new ByteArrayInputStream(ccfg.getBytes()), "cacheConfiguration");
+            assert !F.isEmpty(cfg);
 
-            if (!F.isEmpty(arg.get2())) {
+            if (name == null) {
+                CacheConfiguration cacheCfg = Ignition.loadSpringBean(new ByteArrayInputStream(cfg.getBytes()),
+                    "cacheConfiguration");
+
+                ignite.createCache(cacheCfg);
+            }
+            else {
                 NearCacheConfiguration nearCfg = Ignition.loadSpringBean(
                     new ByteArrayInputStream(arg.get2().getBytes()), "nearCacheConfiguration");
 
-                ignite.createCache(cfg, nearCfg);
+                ignite.createNearCache(VisorTaskUtils.unescapeName(name), nearCfg);
             }
-            else
-                ignite.createCache(cfg);
 
             return null;
         }
