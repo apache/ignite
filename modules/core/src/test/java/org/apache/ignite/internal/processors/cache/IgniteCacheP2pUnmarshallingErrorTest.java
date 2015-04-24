@@ -32,7 +32,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /** Allows to change behavior of readExternal method. */
     protected static AtomicInteger readCnt = new AtomicInteger();
 
-    /** iterable key */
+    /** Iterable key. */
     protected static int key = 0;
 
     /** {@inheritDoc} */
@@ -81,7 +81,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         public TestKey() {
         }
 
-        /** field. */
+        /** Field. */
         private String field;
 
         /** {@inheritDoc} */
@@ -160,15 +160,17 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
         failAtomicGet();
 
+        //Check that cache is empty.
         readCnt.set(100);
 
         assert jcache(0).get(new TestKey("1")) == null;
 
+        //GridDhtAtomicUpdateRequest unmarshalling failed test
         readCnt.set(2);
 
-        //GridDhtAtomicUpdateRequest unmarshalling failed test
         failAtomicPut();
 
+        //Check that cache is not empty.
         readCnt.set(100);
 
         assert jcache(0).get(new TestKey("1")) != null;
