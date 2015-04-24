@@ -679,7 +679,7 @@ public class SchemaImportApp extends Application {
 
                 drivers.put(jdbcDrvCls, drv);
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -737,7 +737,7 @@ public class SchemaImportApp extends Application {
                     if (jarFolder.exists())
                         fc.setInitialDirectory(jarFolder);
                 }
-                catch (Throwable ignored) {
+                catch (Exception ignored) {
                     // No-op.
                 }
 
@@ -942,7 +942,7 @@ public class SchemaImportApp extends Application {
                     if (outFolder.exists())
                         dc.setInitialDirectory(outFolder);
                 }
-                catch (Throwable ignored) {
+                catch (Exception ignored) {
                     // No-op.
                 }
 
@@ -1548,7 +1548,7 @@ public class SchemaImportApp extends Application {
                 appCls.getDeclaredMethod("setDockIconImage", java.awt.Image.class)
                     .invoke(osxApp, fromFXImage(image("ignite", 128), null));
             }
-            catch (Throwable ignore) {
+            catch (Exception ignore) {
                 // No-op.
             }
         }

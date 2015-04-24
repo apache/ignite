@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.jdbc.*;
@@ -47,7 +48,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Map query executor.
  */
-public class GridMapQueryExecutor implements GridMessageListener {
+public class GridMapQueryExecutor {
     /** */
     private static final Field RESULT_FIELD;
 
@@ -77,6 +78,16 @@ public class GridMapQueryExecutor implements GridMessageListener {
     /** */
     private ConcurrentMap<UUID, ConcurrentMap<Long, QueryResults>> qryRess = new ConcurrentHashMap8<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock;
+
+    /**
+     * @param busyLock Busy lock.
+     */
+    public GridMapQueryExecutor(GridSpinBusyLock busyLock) {
+        this.busyLock = busyLock;
+    }
+
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -102,11 +113,26 @@ public class GridMapQueryExecutor implements GridMessageListener {
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (!busyLock.enterBusy())
+                    return;
+
+                try {
+                    GridMapQueryExecutor.this.onMessage(nodeId, msg);
+                }
+                finally {
+                    busyLock.leaveBusy();
+                }
+            }
+        });
     }
 
-    /** {@inheritDoc} */
-    @Override public void onMessage(UUID nodeId, Object msg) {
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
         try {
             assert msg != null;
 
@@ -244,6 +270,9 @@ public class GridMapQueryExecutor implements GridMessageListener {
             U.error(log, "Failed to execute local query: " + req, e);
 
             sendError(node, req.requestId(), e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             h2.setFilters(null);

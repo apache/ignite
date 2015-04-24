@@ -673,6 +673,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             catch (Throwable ex) {
                 U.error(log, "Failed to send finish response to node (transaction was " +
                     (commit ? "committed" : "rolledback") + ") [node=" + nearNodeId + ", res=" + res + ']', ex);
+
+                if (ex instanceof Error)
+                    throw (Error)ex;
             }
         }
         else {
