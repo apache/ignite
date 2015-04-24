@@ -64,15 +64,15 @@ import static org.apache.ignite.events.EventType.*;
  * </ul>
  *
  * <h2 class="header">Java Example</h2>
- * GridFileSwapSpaceSpi is configured by default and should be explicitly configured
+ * FileSwapSpaceSpi is configured by default and should be explicitly configured
  * only if some SPI configuration parameters need to be overridden.
  * <pre name="code" class="java">
- * GridFileSwapSpaceSpi spi = new GridFileSwapSpaceSpi();
+ * FileSwapSpaceSpi spi = new FileSwapSpaceSpi();
  *
  * // Configure root folder path.
  * spi.setBaseDirectory("/path/to/swap/folder");
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default swap space SPI.
  * cfg.setSwapSpaceSpi(spi);
@@ -81,12 +81,12 @@ import static org.apache.ignite.events.EventType.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridFileSwapSpaceSpi can be configured from Spring XML configuration file:
+ * FileSwapSpaceSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id=&quot;grid.cfg&quot; class=&quot;org.apache.ignite.configuration.IgniteConfiguration&quot; scope=&quot;singleton&quot;&gt;
  *     ...
  *     &lt;property name=&quot;swapSpaceSpi&quot;&gt;
- *         &lt;bean class=&quot;org.apache.ignite.spi.swapspace.file.GridFileSwapSpaceSpi&quot;&gt;
+ *         &lt;bean class=&quot;org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi&quot;&gt;
  *             &lt;property name=&quot;baseDirectory&quot; value=&quot;/path/to/swap/folder&quot;/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
