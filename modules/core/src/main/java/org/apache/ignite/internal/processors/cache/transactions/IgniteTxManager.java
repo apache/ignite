@@ -2054,7 +2054,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                for (IgniteInternalTx tx : txs()) {
+                for (final IgniteInternalTx tx : txs()) {
                     if ((tx.near() && !tx.local()) || (tx.storeUsed() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, false, RECOVERY_FINISH);
@@ -2062,12 +2062,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-                            if (tx.state() == PREPARED)
+                            if (tx.optimistic() && tx.state() == PREPARED)
                                 commitIfPrepared(tx);
                             else {
-                                if (tx.setRollbackOnly())
-                                    tx.rollbackAsync();
-                                // If we could not mark tx as rollback, it means that transaction is being committed.
+                                IgniteInternalFuture<IgniteInternalTx> prepFut = tx.currentPrepareFuture();
+
+                                if (prepFut != null) {
+                                    prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                            if (tx.setRollbackOnly())
+                                                tx.rollbackAsync();
+                                        }
+                                    });
+                                }
+                                else {
+                                    // If we could not mark tx as rollback, it means that transaction is being committed.
+                                    if (tx.setRollbackOnly())
+                                        tx.rollbackAsync();
+                                }
                             }
                         }
                     }
