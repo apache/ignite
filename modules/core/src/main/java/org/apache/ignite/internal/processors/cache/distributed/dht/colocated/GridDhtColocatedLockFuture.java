@@ -1080,6 +1080,10 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
 
+        if (primary == null)
+            throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
+                "(all partition nodes left the grid).");
+
         if (cctx.discovery().node(primary.id()) == null)
             // If primary node left the grid before lock acquisition, fail the whole future.
             throw newTopologyException(null, primary.id());
