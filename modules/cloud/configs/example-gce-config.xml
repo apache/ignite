@@ -62,7 +62,11 @@
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
 
-                    <!-- Explicitly configure IP finder for nodes located in Google Compute Engine. -->
+                    <!--
+                        Explicitly configure IP finder for nodes located in Google Compute Engine.
+                        For more info on settings refer to corresponding Ignite API and to
+                        https://jclouds.apache.org/guides/google/.
+                    -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudNodesIpFinder">
                         <property name="provider" value="google-compute-engine"/>
                         <property name="identity" value="209979073-test6@developer.gserviceaccount.com"/>

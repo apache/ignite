@@ -62,11 +62,15 @@
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
 
-                    <!-- Explicitly configure IP finder for nodes located in Google Compute Engine. -->
+                    <!--
+                        Explicitly configure IP finder for nodes located in Google Compute Engine.
+                        For more info on settings refer to corresponding Ignite API and to
+                        https://jclouds.apache.org/guides/aws/.
+                    -->
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudNodesIpFinder">
                         <property name="provider" value="aws-ec2"/>
-                        <property name="identity" value="Ahjdns2323TEST_ID"/>
-                        <property name="credential" value="Jkndwqo89834JkljdlsdTEST_KEY"/>
+                        <property name="identity" value="Ahjdns2323_TEST_ID"/>
+                        <property name="credential" value="Jkndwqo89834Jkljdlsd_TEST_KEY"/>
                         <property name="discoveryPort" value="45712"/>
                     </bean>
                 </property>

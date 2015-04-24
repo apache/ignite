@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudNodesIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.*;
 
 /**
  * Ignite Cloud integration test.
