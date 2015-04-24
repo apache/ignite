@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
-
 /**
  * Tests transaction consistency when originating node fails.
  */
@@ -37,7 +35,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */
@@ -58,21 +56,6 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
      * @throws Exception If failed.
      */
     public void testTxFromPrimary() throws Exception {
-        txFromPrimary(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticTxFromPrimary() throws Exception {
-        txFromPrimary(false);
-    }
-
-    /**
-     * @param optimistic If {@code true} tests optimistic transaction.
-     * @throws Exception If failed.
-     */
-    private void txFromPrimary(boolean optimistic) throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
         Integer key = null;
@@ -87,31 +70,13 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
 
         assertNotNull(key);
 
-        if (optimistic)
-            testTxOriginatingNodeFails(Collections.singleton(key), false);
-        else
-            testPessimisticTxOriginatingNodeFails(Collections.singleton(key));
+        testTxOriginatingNodeFails(Collections.singleton(key), false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxFromBackup() throws Exception {
-        txFromBackup(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticTxFromBackup() throws Exception {
-        txFromBackup(false);
-    }
-
-    /**
-     * @param optimistic If {@code true} tests optimistic transaction.
-     * @throws Exception If failed.
-     */
-    private void txFromBackup(boolean optimistic) throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
         Integer key = null;
@@ -126,31 +91,13 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
 
         assertNotNull(key);
 
-        if (optimistic)
-            testTxOriginatingNodeFails(Collections.singleton(key), false);
-        else
-            testPessimisticTxOriginatingNodeFails(Collections.singleton(key));
+        testTxOriginatingNodeFails(Collections.singleton(key), false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxFromNotColocated() throws Exception {
-        txFromNotColocated(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticTxFromNotColocated() throws Exception {
-        txFromNotColocated(false);
-    }
-
-    /**
-     * @param optimistic If {@code true} tests optimistic transaction.
-     * @throws Exception If failed.
-     */
-    private void txFromNotColocated(boolean optimistic) throws Exception {
         ClusterNode txNode = grid(originatingNode()).localNode();
 
         Integer key = null;
@@ -166,31 +113,13 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
 
         assertNotNull(key);
 
-        if (optimistic)
-            testTxOriginatingNodeFails(Collections.singleton(key), false);
-        else
-            testPessimisticTxOriginatingNodeFails(Collections.singleton(key));
+        testTxOriginatingNodeFails(Collections.singleton(key), false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxAllNodes() throws Exception {
-        txAllNodes(true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticTxAllNodes() throws Exception {
-        txAllNodes(false);
-    }
-
-    /**
-     * @param optimistic If {@code true} tests optimistic transaction.
-     * @throws Exception If failed.
-     */
-    private void txAllNodes(boolean optimistic) throws Exception {
         List<ClusterNode> allNodes = new ArrayList<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)
@@ -214,9 +143,6 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
 
         assertEquals(GRID_CNT, keys.size());
 
-        if (optimistic)
-            testTxOriginatingNodeFails(keys, false);
-        else
-            testPessimisticTxOriginatingNodeFails(keys);
+        testTxOriginatingNodeFails(keys, false);
     }
 }

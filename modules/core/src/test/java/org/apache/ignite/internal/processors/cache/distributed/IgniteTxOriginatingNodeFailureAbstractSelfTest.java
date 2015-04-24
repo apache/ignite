@@ -37,9 +37,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Abstract test for originating node failure.
@@ -64,18 +62,6 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             keys.add(i);
 
         testTxOriginatingNodeFails(keys, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPessimisticManyKeysCommit() throws Exception {
-        Collection<Integer> keys = new ArrayList<>(200);
-
-        for (int i = 0; i < 200; i++)
-            keys.add(i);
-
-        testPessimisticTxOriginatingNodeFails(keys);
     }
 
     /**
@@ -114,75 +100,6 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
      * @return Ignore message class.
      */
     protected abstract Class<?> ignoreMessageClass();
-
-    /**
-     * @param keys Keys to update.
-     * @throws Exception If failed.
-     */
-    protected void testPessimisticTxOriginatingNodeFails(Collection<Integer> keys) throws Exception {
-        final Map<Integer, String> map = new HashMap<>();
-
-        final String initVal = "initialValue";
-
-        for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
-
-            map.put(key, String.valueOf(key));
-        }
-
-        ClusterNode txNode = grid(originatingNode()).localNode();
-
-        final Ignite txIgniteNode = G.ignite(txNode.id());
-
-        info("Starting pessimistic tx " +
-            "[values=" + map + ", topVer=" + (grid(1)).context().discovery().topologyVersion() + ']');
-
-        GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> cache = txIgniteNode.cache(null);
-
-                assertNotNull(cache);
-
-                TransactionProxyImpl tx =
-                    (TransactionProxyImpl)txIgniteNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
-
-                IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
-
-                assertTrue(txEx.pessimistic());
-
-                cache.putAll(map);
-
-                return null;
-            }
-        }).get();
-
-        info("Stopping originating node " + txNode);
-
-        G.stop(G.ignite(txNode.id()).name(), true);
-
-        info("Stopped grid, waiting for transactions to complete.");
-
-        boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (Ignite ignite : G.allGrids()) {
-                    IgniteKernal g = (IgniteKernal)ignite;
-
-                    GridCacheSharedContext<Object, Object> ctx = g.context().cache().context();
-
-                    int txNum = ctx.tm().idMapSize();
-
-                    if (txNum != 0)
-                        return false;
-                }
-
-                return true;
-            }
-        }, 10_000);
-
-        assertTrue(txFinished);
-
-        info("Transactions finished.");
-    }
 
     /**
      * @param keys Keys to update.
@@ -299,7 +216,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.localPeek(key, ONHEAP));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }
