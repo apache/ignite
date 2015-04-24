@@ -99,6 +99,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Idexing implementation.
+     */
+    public GridQueryIndexing indexing() {
+        return idx;
+    }
+
+    /**
      * @param ccfg Cache configuration.
      * @return {@code true} If query index must be enabled for this cache.
      */

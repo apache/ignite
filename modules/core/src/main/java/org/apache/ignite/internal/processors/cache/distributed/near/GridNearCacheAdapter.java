@@ -67,7 +67,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
-                AffinityTopologyVersion topVer, 
+                AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
                 CacheObject val,
@@ -428,6 +428,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         // In near-only cache this is a no-op.
         if (ctx.affinityNode())
             dht().promoteAll(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridCacheMapEntry randomInternalEntry() {
+        return ctx.affinityNode() && ctx.isNear() ? dht().randomInternalEntry() : super.randomInternalEntry();
     }
 
     /** {@inheritDoc} */
