@@ -415,6 +415,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                     assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
+                    // Send request to remove from remote nodes.
+                    ClusterNode primary = ctx.affinity().primary(key, topVer);
+
+                    if (primary == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to unlock keys (all partition nodes left the grid).");
+
+                        continue;
+                    }
+
                     if (map == null) {
                         Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
 
@@ -425,9 +435,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                     if (ver == null)
                         ver = lock.version();
-
-                    // Send request to remove from remote nodes.
-                    ClusterNode primary = ctx.affinity().primary(key, topVer);
 
                     if (!lock.reentry()) {
                         if (!ver.equals(lock.version()))
@@ -527,6 +534,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     }
 
                     ClusterNode primary = ctx.affinity().primary(key, topVer);
+
+                    if (primary == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to remove locks (all partition nodes left the grid).");
+
+                        continue;
+                    }
 
                     if (!primary.isLocal()) {
                         // Send request to remove from remote nodes.
