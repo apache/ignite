@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Checks that top value at {@link GridCachePartitionExchangeManager#exchangeFutures()} is the newest one.
  */
-public class IgniteExcangeFutureHistoryTest extends IgniteCacheAbstractTest {
+public class IgniteExchangeFutureHistoryTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
