@@ -53,11 +53,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasValueBytes() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }

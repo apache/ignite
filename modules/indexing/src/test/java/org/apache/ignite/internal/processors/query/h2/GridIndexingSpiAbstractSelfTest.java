@@ -565,11 +565,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasValueBytes() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public byte type() {
             throw new UnsupportedOperationException();
         }

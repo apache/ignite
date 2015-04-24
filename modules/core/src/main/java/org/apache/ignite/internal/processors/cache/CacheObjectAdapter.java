@@ -37,11 +37,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** */
     protected byte[] valBytes;
 
-    /** {@inheritDoc} */
-    @Override public boolean hasValueBytes() {
-        return valBytes != null;
-    }
-
     /**
      * @param ctx Context.
      * @return {@code True} need to copy value returned to user.
