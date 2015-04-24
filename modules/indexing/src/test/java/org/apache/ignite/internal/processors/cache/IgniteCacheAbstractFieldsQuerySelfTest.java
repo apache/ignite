@@ -71,6 +71,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setPeerClassLoadingEnabled(false);
+
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (hasCache)
