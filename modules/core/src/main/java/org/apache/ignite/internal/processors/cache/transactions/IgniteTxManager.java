@@ -2070,7 +2070,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                 if (prepFut != null) {
                                     prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                            if (tx.setRollbackOnly())
+                                            if (tx.optimistic() && tx.state() == PREPARED)
+                                                commitIfPrepared(tx);
+                                            else if (tx.setRollbackOnly())
                                                 tx.rollbackAsync();
                                         }
                                     });
