@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.io.*;
 
 /**
@@ -35,8 +36,14 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
         return CacheAtomicityMode.TRANSACTIONAL;
     }
 
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (!gridName.endsWith("0"))
+            cfg.getCacheConfiguration()[0].setRebalanceDelay(-1); //allows to check GridDhtLockRequest fail.
+
+        return cfg;
     }
 
     /**
@@ -68,28 +75,9 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
 
             assert false : "p2p marshalling failed, but error response was not sent";
         }
-//        catch (IgniteException e) {
-//            assert X.hasCause(e, IOException.class);
-//        }
-
-        assert readCnt.get() == 0; //ensure we have read count as expected.
-    }
-
-    /**
-     * Sends put with pessimistic lock and handles fail.
-     */
-    protected void failPessimicticOnCommit() {
-        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-
-            jcache(0).put(new TestKey(String.valueOf(++key)), "");
-
-            tx.commit();
-
-            assert false : "p2p marshalling failed, but error response was not sent";
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
         }
-//        catch (IgniteException e) {
-//            assert X.hasCause(e, IOException.class);
-//        }
 
         assert readCnt.get() == 0; //ensure we have read count as expected.
     }
@@ -98,32 +86,26 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
      * Tests that correct response will be sent to client node in case of unmarshalling failed.
      */
     public void testResponseMessageOnUnmarshallingFailed() {
-//        //GridNearTxPrepareRequest unmarshalling failed test
-//        readCnt.set(2);
-//
-//        failOptimistic();
-//
-//        //GridDhtTxPrepareRequest unmarshalling failed test
-//        readCnt.set(3);
-//
-//        failOptimistic();
+        //GridNearTxPrepareRequest unmarshalling failed test
+        readCnt.set(2);
 
-//        //GridNearLockRequest unmarshalling failed test
-//        readCnt.set(2);
-//
-//        failPessimictic();
+        failOptimistic();
 
-        //? unmarshalling failed test
-        readCnt.set(1000);
+        //GridDhtTxPrepareRequest unmarshalling failed test
+        readCnt.set(3);
+
+        failOptimistic();
+
+        //GridNearLockRequest unmarshalling failed test
+        readCnt.set(2);
+
+        failPessimictic();
+
+        //GridDhtLockRequest unmarshalling failed test
+        readCnt.set(3);
+
         try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
-
-            TestKey tstKey = new TestKey(String.valueOf(++key));
-            jcache(0).put(tstKey, "");
-            jcache(0).lock(tstKey).lock();
+            jcache(0).put(new TestKey(String.valueOf(++key)), ""); //No failure at client side.
         }
-
-
-
-
     }
 }
