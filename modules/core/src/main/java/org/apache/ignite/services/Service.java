@@ -62,7 +62,7 @@ import java.io.*;
  * </pre>
  * Or from grid configuration on startup:
  * <pre name="code" class="java">
- * GridConfiguration gridCfg = new GridConfiguration();
+ * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * GridServiceConfiguration svcCfg = new GridServiceConfiguration();
  *

@@ -52,17 +52,17 @@ import org.jetbrains.annotations.*;
  * </pre>
  * And the same configuration if you'd like to configure Ignite in your code:
  * <pre name="code" class="java">
- *      GridConfiguration cfg = new GridConfiguration();
+ *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
- *      GridLogger log = new IgniteJclLogger(new Log4JLogger("config/ignite-log4j.xml"));
+ *      IgniteLogger log = new IgniteJclLogger(new Log4JLogger("config/ignite-log4j.xml"));
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
  * or following for the configuration by means of system properties:
  * <pre name="code" class="java">
- *      GridConfiguration cfg = new GridConfiguration();
+ *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
- *      GridLogger log = new IgniteJclLogger();
+ *      IgniteLogger log = new IgniteJclLogger();
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
