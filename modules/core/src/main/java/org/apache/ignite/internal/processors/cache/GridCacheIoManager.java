@@ -289,6 +289,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
         catch (Throwable e) {
             U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             if (depEnabled)
@@ -440,6 +443,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
         catch (Throwable e) {
             U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             // Reset thread local context.

@@ -120,6 +120,9 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Skip store flag. */
+    private final boolean skipStore;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -129,6 +132,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param timeout Lock acquisition timeout.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
+     * @param skipStore skipStore
      */
     public GridNearLockFuture(
         GridCacheContext<K, V> cctx,
@@ -138,7 +142,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean retval,
         long timeout,
         long accessTtl,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        boolean skipStore) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -151,6 +156,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         this.timeout = timeout;
         this.accessTtl = accessTtl;
         this.filter = filter;
+        this.skipStore = skipStore;
 
         ignoreInterrupts(true);
 
@@ -888,7 +894,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                             inTx() && tx.partitionLock(),
                                             inTx() ? tx.subjectId() : null,
                                             inTx() ? tx.taskNameHash() : 0,
-                                            read ? accessTtl : -1L);
+                                            read ? accessTtl : -1L,
+                                            skipStore);
 
                                         mapping.request(req);
                                     }
@@ -1172,6 +1179,10 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
+
+        if (primary == null)
+            throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
+                "(all partition nodes left the grid).");
 
         if (cctx.discovery().node(primary.id()) == null)
             // If primary node left the grid before lock acquisition, fail the whole future.

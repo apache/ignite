@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Checks that top value at {@link GridCachePartitionExchangeManager#exchangeFutures()} is the newest one.
  */
-public class IgniteExcangeFutureHistoryTest extends IgniteCacheAbstractTest {
+public class IgniteExchangeFutureHistoryTest extends IgniteCacheAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -53,7 +53,11 @@ public class IgniteExcangeFutureHistoryTest extends IgniteCacheAbstractTest {
         return null;
     }
 
-    /** Checks reverse order of exchangeFutures. */
+    /**
+     * Checks reverse order of exchangeFutures.
+     *
+     * @throws Exception If failed.
+     */
     public void testExchangeFutures() throws Exception {
         GridCachePartitionExchangeManager mgr = ((IgniteKernal)grid(0)).internalCache().context().shared().exchange();
 
@@ -66,9 +70,8 @@ public class IgniteExcangeFutureHistoryTest extends IgniteCacheAbstractTest {
 
             Collections.sort(sortedFuts, Collections.reverseOrder());
 
-            for (int j = 0; j < futs.size(); j++) {
-                assert futs.get(j).equals(sortedFuts.get(j));
-            }
+            for (int j = 0; j < futs.size(); j++)
+                assertEquals(futs.get(j), sortedFuts.get(j));
         }
     }
 }

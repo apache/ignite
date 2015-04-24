@@ -111,7 +111,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             false,
             filter,
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -126,7 +127,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             filter,
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -222,7 +224,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             true,
             ctx.equalsValArray(oldVal),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -238,7 +241,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             true,
             ctx.equalsValArray(val),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -272,7 +276,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             CU.empty0(),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -296,7 +301,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             false,
             CU.empty0(),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -316,7 +322,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             CU.empty0(),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -341,7 +348,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             CU.empty0(),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
 
         if (statsEnabled && rmv)
             metrics0().addRemoveTimeNanos(System.nanoTime() - start);
@@ -369,7 +377,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             ctx.equalsValArray(val),
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -551,8 +560,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (success || !storeEnabled)
             return vals;
 
-        return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry, skipVals)
-            .get();
+        return getAllAsync(keys, opCtx == null || !opCtx.skipStore(), null, false, subjId, taskName, deserializePortable,
+            false, expiry, skipVals).get();
     }
 
     /** {@inheritDoc} */
@@ -587,7 +596,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             null,
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -669,7 +679,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             null,
-            ctx.writeThrough());
+            ctx.writeThrough(),
+            ctx.readThrough());
     }
 
     /** {@inheritDoc} */
@@ -718,6 +729,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         final boolean writeThrough = ctx.writeThrough();
 
+        final boolean readThrough = ctx.readThrough();
+
         final ExpiryPolicy expiry = expiryPerCall();
 
         return asyncOp(new Callable<Object>() {
@@ -730,7 +743,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     retval,
                     rawRetval,
                     filter,
-                    writeThrough);
+                    writeThrough,
+                    readThrough);
             }
         });
     }
@@ -752,6 +766,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     ) {
         final boolean writeThrough = ctx.writeThrough();
 
+        final boolean readThrough = ctx.readThrough();
+
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -768,7 +784,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     retval,
                     rawRetval,
                     filter,
-                    writeThrough);
+                    writeThrough,
+                    readThrough);
             }
         });
 
@@ -789,7 +806,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param retval Return value required flag.
      * @param rawRetval Return {@code GridCacheReturn} instance.
      * @param filter Cache entry filter.
-     * @param storeEnabled Store enabled flag.
+     * @param writeThrough Write through.
+     * @param readThrough Read through.
      * @return Update result.
      * @throws IgniteCheckedException If failed.
      */
@@ -802,7 +820,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean retval,
         boolean rawRetval,
         CacheEntryPredicate[] filter,
-        boolean storeEnabled) throws IgniteCheckedException {
+        boolean writeThrough,
+        boolean readThrough) throws IgniteCheckedException {
         if (keyCheck)
             validateCacheKeys(keys);
 
@@ -817,7 +836,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         UUID subjId = ctx.subjectIdPerCall(null);
 
-        if (storeEnabled && keys.size() > 1) {
+        if (writeThrough && keys.size() > 1) {
             return updateWithBatch(op,
                 keys,
                 vals,
@@ -862,7 +881,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         val == null ? DELETE : op,
                         val,
                         invokeArgs,
-                        storeEnabled,
+                        writeThrough,
+                        readThrough,
                         retval,
                         expiryPlc,
                         true,
@@ -1313,6 +1333,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     op,
                     writeVal,
                     null,
+                    false,
                     false,
                     false,
                     expiryPlc,

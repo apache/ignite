@@ -113,6 +113,9 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
 
                 fut.onDone(e);
 
+                if (e instanceof Error)
+                    throw (Error)e;
+
                 throw CU.convertToCacheException(U.cast(e));
             }
         }
