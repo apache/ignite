@@ -103,11 +103,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             events0(res, arg.eventsOrderKey(), arg.eventsThrottleCounterKey(), arg.taskMonitoringEnabled());
         }
-        catch (Throwable eventsEx) {
+        catch (Exception eventsEx) {
             res.eventsEx(eventsEx);
-
-            if (eventsEx instanceof Error)
-                throw eventsEx;
         }
     }
 
@@ -140,11 +137,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Throwable cachesEx) {
+        catch (Exception cachesEx) {
             res.cachesEx(cachesEx);
-
-            if (cachesEx instanceof Error)
-                throw (Error)cachesEx;
         }
     }
 
@@ -178,11 +172,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Throwable igfssEx) {
+        catch (Exception igfssEx) {
             res.igfssEx(igfssEx);
-
-            if (igfssEx instanceof Error)
-                throw igfssEx;
         }
     }
 

@@ -1025,45 +1025,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param ctx Context.
-     * @param keys Keys.
-     * @return Mapped keys.
-     */
-    @SuppressWarnings( {"unchecked", "MismatchedQueryAndUpdateOfCollection"})
-    public static <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(GridCacheContext<K, ?> ctx,
-        Collection<? extends K> keys) {
-        if (keys == null || keys.isEmpty())
-            return Collections.emptyMap();
-
-        // Map all keys to local node for local caches.
-        if (ctx.config().getCacheMode() == LOCAL)
-            return F.asMap(ctx.localNode(), (Collection<K>)keys);
-
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
-
-        if (CU.affinityNodes(ctx, topVer).isEmpty())
-            return Collections.emptyMap();
-
-        if (keys.size() == 1)
-            return Collections.singletonMap(ctx.affinity().primary(F.first(keys), topVer), (Collection<K>)keys);
-
-        Map<ClusterNode, Collection<K>> map = new GridLeanMap<>(5);
-
-        for (K k : keys) {
-            ClusterNode primary = ctx.affinity().primary(k, topVer);
-
-            Collection<K> mapped = map.get(primary);
-
-            if (mapped == null)
-                map.put(primary, mapped = new LinkedList<>());
-
-            mapped.add(k);
-        }
-
-        return map;
-    }
-
-    /**
      * @param t Exception to check.
      * @return {@code true} if caused by lock timeout.
      */
@@ -1221,7 +1182,7 @@ public class GridCacheUtils {
      * @return Primary node for the key.
      */
     @SuppressWarnings( {"unchecked"})
-    public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
+    @Nullable public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
         assert ctx != null;
         assert key != null;
 
@@ -1230,11 +1191,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() != PARTITIONED)
             return ctx.localNode();
 
-        ClusterNode primary = ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
-
-        assert primary != null;
-
-        return primary;
+        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**

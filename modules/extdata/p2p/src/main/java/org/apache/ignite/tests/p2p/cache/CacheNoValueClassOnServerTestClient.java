@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p.startcache;
+package org.apache.ignite.tests.p2p.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -29,7 +28,7 @@ import java.util.*;
 /**
  *
  */
-public class CacheConfigurationP2PTestClient {
+public class CacheNoValueClassOnServerTestClient {
     /**
      * @param args Arguments.
      * @throws Exception If failed.
@@ -39,7 +38,9 @@ public class CacheConfigurationP2PTestClient {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setPeerClassLoadingEnabled(true);
+        cfg.setPeerClassLoadingEnabled(false);
+
+        cfg.setClientMode(true);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -60,58 +61,28 @@ public class CacheConfigurationP2PTestClient {
 
             int nodes = ignite.cluster().nodes().size();
 
-            if (nodes != 4)
+            if (nodes != 2)
                 throw new Exception("Unexpected nodes number: " + nodes);
 
-            CacheConfiguration<Integer, Organization1> ccfg1 = new CacheConfiguration<>();
+            IgniteCache<Integer, Person> cache = ignite.cache(null);
 
-            ccfg1.setName("cache1");
+            for (int i = 0; i < 100; i++)
+                cache.put(i, new Person("name-" + i));
 
-            ccfg1.setNodeFilter(new CacheAllNodesFilter());
+            for (int i = 0; i < 100; i++) {
+                Person p = cache.get(i);
 
-            ccfg1.setIndexedTypes(Integer.class, Organization1.class);
+                if (p == null)
+                    throw new Exception("Null result key: " + i);
 
-            System.out.println("Create cache1.");
+                String expName = "name-" + i;
 
-            IgniteCache<Integer, Organization1> cache1 = ignite.createCache(ccfg1);
+                if (!expName.equals(p.name()))
+                    throw new Exception("Unexpected data: " + p.name());
 
-            for (int i = 0; i < 500; i++)
-                cache1.put(i, new Organization1("org-" + i));
-
-            SqlQuery<Integer, Organization1> qry1 = new SqlQuery<>(Organization1.class, "_key >= 0");
-
-            int cnt = cache1.query(qry1).getAll().size();
-
-            if (cnt != 500)
-                throw new Exception("Unexpected query result: " + cnt);
-
-            System.out.println("Sleep some time.");
-
-            Thread.sleep(5000); // Sleep some time to wait when connection of p2p loader is closed.
-
-            System.out.println("Create cache2.");
-
-            CacheConfiguration<Integer, Organization2> ccfg2 = new CacheConfiguration<>();
-
-            ccfg2.setName("cache2");
-
-            ccfg2.setIndexedTypes(Integer.class, Organization2.class);
-
-            IgniteCache<Integer, Organization2> cache2 = ignite.createCache(ccfg2);
-
-            for (int i = 0; i < 600; i++)
-                cache2.put(i, new Organization2("org-" + i));
-
-            SqlQuery<Integer, Organization2> qry2 = new SqlQuery<>(Organization2.class, "_key >= 0");
-
-            cnt = cache2.query(qry2).getAll().size();
-
-            if (cnt != 600)
-                throw new Exception("Unexpected query result: " + cnt);
-
-            cache1.close();
-
-            cache2.close();
+                if (i % 10 == 0)
+                    System.out.println("Get expected value: " + p.name());
+            }
         }
     }
 }

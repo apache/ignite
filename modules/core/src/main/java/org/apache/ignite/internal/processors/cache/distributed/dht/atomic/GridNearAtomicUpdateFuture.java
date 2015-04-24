@@ -563,12 +563,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (op != TRANSFORM)
                 val = cctx.toCacheObject(val);
 
-            Collection<ClusterNode> primaryNodes = mapKey(cacheKey, topVer, fastMap);
+            ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
 
-            // One key and no backups.
-            assert primaryNodes.size() == 1 : "Should be mapped to single node: " + primaryNodes;
+            if (primary == null) {
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
+                    "left the grid)."));
 
-            ClusterNode primary = F.first(primaryNodes);
+                return;
+            }
 
             GridNearAtomicUpdateRequest req = new GridNearAtomicUpdateRequest(
                 cctx.cacheId(),
@@ -685,9 +687,23 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 Collection<ClusterNode> affNodes = mapKey(cacheKey, topVer, fastMap);
 
+                if (affNodes.isEmpty()) {
+                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                        "(all partition nodes left the grid)."));
+
+                    return;
+                }
+
                 int i = 0;
 
                 for (ClusterNode affNode : affNodes) {
+                    if (affNode == null) {
+                        onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                            "(all partition nodes left the grid)."));
+
+                        return;
+                    }
+
                     UUID nodeId = affNode.id();
 
                     GridNearAtomicUpdateRequest mapped = pendingMappings.get(nodeId);

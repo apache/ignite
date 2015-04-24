@@ -14,27 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.cluster;
+
+package org.apache.ignite.tests.p2p.cache;
+
+import java.io.*;
 
 /**
- * Internal exception that is used to indicate that all server nodes have left the grid.
+ *
  */
-public class ClusterTopologyServerNotFoundException extends ClusterTopologyCheckedException {
+public class Person implements Serializable {
     /** */
-    private static final long serialVersionUID = 0L;
+    private String name;
 
     /**
-     * @param msg Error message.
+     * @param name Name.
      */
-    public ClusterTopologyServerNotFoundException(String msg) {
-        super(msg);
+    public Person(String name) {
+        this.name = name;
     }
 
     /**
-     * @param msg Error message.
-     * @param cause Exception cause.
+     * @return Name.
      */
-    public ClusterTopologyServerNotFoundException(String msg, Throwable cause) {
-        super(msg, cause);
+    public String name() {
+        return name;
     }
 }

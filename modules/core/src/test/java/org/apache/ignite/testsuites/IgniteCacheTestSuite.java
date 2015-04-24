@@ -114,6 +114,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
         suite.addTestSuite(DataStreamProcessorSelfTest.class);
+        suite.addTestSuite(DataStreamerMultiThreadedSelfTest.class);
         suite.addTestSuite(DataStreamerImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
@@ -444,7 +445,9 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(IgniteInternalCacheTypesTest.class);
 
-        suite.addTestSuite(IgniteExcangeFutureHistoryTest.class);
+        suite.addTestSuite(IgniteExchangeFutureHistoryTest.class);
+
+        suite.addTestSuite(CacheNoValueClassOnServerNodeTest.class);
 
         return suite;
     }
