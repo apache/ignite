@@ -1284,6 +1284,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
@@ -1315,11 +1316,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             // Possibly get old value form store.
             old = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
 
-            boolean readThrough = false;
+            boolean readFromStore = false;
 
             Object old0 = null;
 
-            if (needVal && old == null &&
+            if (readThrough && needVal && old == null &&
                 (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
                     old0 = readThrough(null, key, false, subjId, taskName);
 
@@ -1364,7 +1365,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 boolean pass = cctx.isAllLocked(this, filter);
 
                 if (!pass) {
-                    if (expiryPlc != null && !readThrough && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
+                    if (expiryPlc != null && !readFromStore && !cctx.putIfAbsentFilter(filter) && hasValueUnlocked())
                         updateTtl(expiryPlc);
 
                     return new T3<>(false, retval ? CU.value(old, cctx, false) : null, null);
@@ -1410,7 +1411,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 if (!entry.modified()) {
-                    if (expiryPlc != null && !readThrough && hasValueUnlocked())
+                    if (expiryPlc != null && !readFromStore && hasValueUnlocked())
                         updateTtl(expiryPlc);
 
                     return new GridTuple3<>(false, null, invokeRes);
@@ -1585,6 +1586,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
@@ -1802,17 +1804,17 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             oldVal = needVal ? rawGetOrUnmarshalUnlocked(!retval) : val;
 
             // Possibly read value from store.
-            boolean readThrough = false;
+            boolean readFromStore = false;
 
             Object old0 = null;
 
-            if (needVal && oldVal == null && (cctx.readThrough() &&
+            if (readThrough && needVal && oldVal == null && (cctx.readThrough() &&
                 (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
                 old0 = readThrough(null, key, false, subjId, taskName);
 
                 oldVal = cctx.toCacheObject(old0);
 
-                readThrough = true;
+                readFromStore = true;
 
                 // Detach value before index update.
                 oldVal = cctx.kernalContext().cacheObjects().prepareForCache(oldVal, cctx);
@@ -1855,7 +1857,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 boolean pass = cctx.isAllLocked(this, filter);
 
                 if (!pass) {
-                    if (expiryPlc != null && !readThrough && hasValueUnlocked() && !cctx.putIfAbsentFilter(filter))
+                    if (expiryPlc != null && !readFromStore && hasValueUnlocked() && !cctx.putIfAbsentFilter(filter))
                         updateTtl(expiryPlc);
 
                     return new GridCacheUpdateAtomicResult(false,
@@ -1902,7 +1904,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
 
                 if (!entry.modified()) {
-                    if (expiryPlc != null && !readThrough && hasValueUnlocked())
+                    if (expiryPlc != null && !readFromStore && hasValueUnlocked())
                         updateTtl(expiryPlc);
 
                     return new GridCacheUpdateAtomicResult(false,

@@ -550,7 +550,7 @@ public class GridFunc {
 
                     return (R)mtd.invoke(t, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -586,7 +586,7 @@ public class GridFunc {
 
                     mtd.invoke(t, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -624,7 +624,7 @@ public class GridFunc {
 
                     return (R)mtd.invoke(o, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -661,7 +661,7 @@ public class GridFunc {
 
                     mtd.invoke(o, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -701,7 +701,7 @@ public class GridFunc {
 
                     return (R)mtd.invoke(null, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -738,7 +738,7 @@ public class GridFunc {
 
                     mtd.invoke(null, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }

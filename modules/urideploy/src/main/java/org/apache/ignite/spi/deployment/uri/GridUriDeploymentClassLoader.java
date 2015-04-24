@@ -65,7 +65,7 @@ class GridUriDeploymentClassLoader extends URLClassLoader {
             }
             // Catch Throwable to secure against any errors resulted from
             // corrupted class definitions or other user errors.
-            catch (Throwable e) {
+            catch (Exception e) {
                 throw new ClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
             }
         }
@@ -96,7 +96,7 @@ class GridUriDeploymentClassLoader extends URLClassLoader {
             }
             // Catch Throwable to secure against any errors resulted from
             // corrupted class definitions or other user errors.
-            catch (Throwable e) {
+            catch (Exception e) {
                 throw new ClassNotFoundException("Failed to load class due to unexpected error: " + name, e);
             }
         }

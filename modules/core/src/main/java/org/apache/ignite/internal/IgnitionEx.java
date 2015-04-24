@@ -1482,6 +1482,9 @@ public class IgnitionEx {
             catch (Throwable e) {
                 unregisterFactoryMBean();
 
+                if (e instanceof Error)
+                    throw e;
+
                 throw new IgniteCheckedException("Unexpected exception when starting grid.", e);
             }
             finally {
@@ -1998,6 +2001,9 @@ public class IgnitionEx {
             }
             catch (Throwable e) {
                 U.error(log, "Failed to properly stop grid instance due to undeclared exception.", e);
+
+                if (e instanceof Error)
+                    throw e;
             }
             finally {
                 state = grid0.context().segmented() ? STOPPED_ON_SEGMENTATION : STOPPED;

@@ -1042,7 +1042,7 @@ public class HadoopJobTracker extends HadoopComponent {
             try {
                 fut.get();
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 if (e.getCause() instanceof HadoopTaskCancelledException)
                     return true;
             }
@@ -1086,6 +1086,9 @@ public class HadoopJobTracker extends HadoopComponent {
             }
             catch (Throwable e) {
                 U.error(log, "Unhandled exception while processing event.", e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
             finally {
                 busyLock.readUnlock();
