@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -56,5 +58,10 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
      */
     public boolean clientExists() {
         return clientExists;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryPingResponse.class, this, "super", super.toString());
     }
 }
