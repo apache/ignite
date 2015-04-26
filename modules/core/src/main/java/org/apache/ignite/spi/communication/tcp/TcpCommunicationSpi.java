@@ -2453,7 +2453,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     client.release();
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException | IgniteException e) {
                     if (recoveryDesc.nodeAlive(getSpiContext().node(node.id()))) {
                         if (log.isDebugEnabled())
                             log.debug("Recovery reconnect failed, will retry " +
