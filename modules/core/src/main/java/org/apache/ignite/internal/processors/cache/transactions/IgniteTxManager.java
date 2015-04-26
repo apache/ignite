@@ -2062,7 +2062,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     else {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
-                            if (tx.optimistic() && tx.state() == PREPARED)
+                            if (tx.state() == PREPARED)
                                 commitIfPrepared(tx);
                             else {
                                 IgniteInternalFuture<IgniteInternalTx> prepFut = tx.currentPrepareFuture();
@@ -2070,7 +2070,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                 if (prepFut != null) {
                                     prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
                                         @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                            if (tx.optimistic() && tx.state() == PREPARED)
+                                            if (tx.state() == PREPARED)
                                                 commitIfPrepared(tx);
                                             else if (tx.setRollbackOnly())
                                                 tx.rollbackAsync();

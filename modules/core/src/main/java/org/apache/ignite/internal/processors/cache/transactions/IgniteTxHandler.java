@@ -1035,6 +1035,8 @@ public class IgniteTxHandler {
                     return null;
                 }
             }
+            else
+                tx.transactionNodes(req.transactionNodes());
 
             if (!tx.isSystemInvalidate() && !F.isEmpty(req.writes())) {
                 int idx = 0;
