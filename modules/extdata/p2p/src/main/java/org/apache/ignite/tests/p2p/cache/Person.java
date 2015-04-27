@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.tests.p2p.cache;
 
-import org.apache.ignite.configuration.*;
+import java.io.*;
 
 /**
- * Tests for fields queries.
+ *
  */
-public class GridCacheReplicatedFieldsQueryP2PEnableSelfTest extends GridCacheReplicatedFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+public class Person implements Serializable {
+    /** */
+    private String name;
 
-        c.setPeerClassLoadingEnabled(true);
+    /**
+     * @param name Name.
+     */
+    public Person(String name) {
+        this.name = name;
+    }
 
-        return c;
+    /**
+     * @return Name.
+     */
+    public String name() {
+        return name;
     }
 }
