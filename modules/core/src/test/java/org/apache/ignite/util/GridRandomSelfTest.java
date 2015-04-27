@@ -56,7 +56,9 @@ public class GridRandomSelfTest extends TestCase {
     /**
      * Test performance difference.
      */
-    public void _testPerformance() {
+    public void testPerformance() {
+        fail("https://issues.apache.org/jira/browse/IGNITE-824");
+
         Random rnd = new GridRandom(); // new Random();
 
         long start = System.nanoTime();
