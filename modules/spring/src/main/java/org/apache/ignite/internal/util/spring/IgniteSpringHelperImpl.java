@@ -76,27 +76,53 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(URL cfgUrl, String... excludedProps) throws IgniteCheckedException {
         return loadConfigurations(cfgUrl, IgniteConfiguration.class, excludedProps);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL cfgUrl, Class<T> cl, String... excludedProps) throws IgniteCheckedException {
+    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext>
+    loadConfigurations(URL cfgUrl, Class<T> cls, String... excludedProps) throws IgniteCheckedException {
         ApplicationContext springCtx = applicationContext(cfgUrl, excludedProps);
         Map<String, T> cfgMap;
 
         try {
-            cfgMap = springCtx.getBeansOfType(cl);
+            cfgMap = springCtx.getBeansOfType(cls);
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cl +
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cls +
                 ", err=" + e.getMessage() + ']', e);
         }
 
         if (cfgMap == null || cfgMap.isEmpty())
             throw new IgniteCheckedException("Failed to find configuration in: " + cfgUrl);
+
+        return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(InputStream cfgStream, String... excludedProps) throws IgniteCheckedException {
+        return loadConfigurations(cfgStream, IgniteConfiguration.class, excludedProps);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteBiTuple<Collection<T>, ? extends GridSpringResourceContext> loadConfigurations(
+        InputStream cfgStream, Class<T> cls, String... excludedProps) throws IgniteCheckedException {
+        ApplicationContext springCtx = applicationContext(cfgStream, excludedProps);
+        Map<String, T> cfgMap;
+
+        try {
+            cfgMap = springCtx.getBeansOfType(cls);
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to instantiate bean [type=" + cls +
+                ", err=" + e.getMessage() + ']', e);
+        }
+
+        if (cfgMap == null || cfgMap.isEmpty())
+            throw new IgniteCheckedException("Failed to find configuration in: " + cfgStream);
 
         return F.t(cfgMap.values(), new GridSpringResourceContextImpl(springCtx));
     }
@@ -131,6 +157,70 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
             throw new IgniteCheckedException("Failed to load Spring bean with provided name [url=" + url +
                 ", beanName=" + beanName + ']', e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Class<?>, Object> loadBeans(InputStream cfgStream, Class<?>... beanClasses)
+        throws IgniteCheckedException {
+        assert beanClasses.length > 0;
+
+        ApplicationContext springCtx = initContext(cfgStream);
+
+        Map<Class<?>, Object> beans = new HashMap<>();
+
+        for (Class<?> cls : beanClasses)
+            beans.put(cls, bean(springCtx, cls));
+
+        return beans;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T loadBean(InputStream cfgStream, String beanName) throws IgniteCheckedException {
+        ApplicationContext springCtx = initContext(cfgStream);
+
+        try {
+            return (T)springCtx.getBean(beanName);
+        }
+        catch (NoSuchBeanDefinitionException e) {
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
+                ", beanName=" + beanName + ']');
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
+                ", beanName=" + beanName + ']', e);
+        }
+    }
+
+    /**
+     * @param stream Input stream containing Spring XML configuration.
+     * @return Context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private ApplicationContext initContext(InputStream stream) throws IgniteCheckedException {
+        GenericApplicationContext springCtx;
+
+        try {
+            springCtx = new GenericApplicationContext();
+
+            XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
+
+            reader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_XSD);
+
+            reader.loadBeanDefinitions(new InputStreamResource(stream));
+
+            springCtx.refresh();
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) ", e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context" +
+                    ", err=" + e.getMessage() + ']', e);
+        }
+
+        return springCtx;
     }
 
     /**
@@ -247,40 +337,10 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * @return Spring application context.
      * @throws IgniteCheckedException If configuration could not be read.
      */
-    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps) throws IgniteCheckedException {
+    public static ApplicationContext applicationContext(URL cfgUrl, final String... excludedProps)
+        throws IgniteCheckedException {
         try {
-            GenericApplicationContext springCtx = new GenericApplicationContext();
-
-            BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-                @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                    throws BeansException {
-                    for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                        BeanDefinition def = beanFactory.getBeanDefinition(beanName);
-
-                        if (def.getBeanClassName() != null) {
-                            try {
-                                Class.forName(def.getBeanClassName());
-                            }
-                            catch (ClassNotFoundException ignored) {
-                                ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
-
-                                continue;
-                            }
-                        }
-
-                        MutablePropertyValues vals = def.getPropertyValues();
-
-                        for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                            for (String excludedProp : excludedProps) {
-                                if (val.getName().equals(excludedProp))
-                                    vals.removePropertyValue(val);
-                            }
-                        }
-                    }
-                }
-            };
-
-            springCtx.addBeanFactoryPostProcessor(postProc);
+            GenericApplicationContext springCtx = prepareSpringContext(excludedProps);
 
             new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 
@@ -297,5 +357,84 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
+    }
+
+    /**
+     * Creates Spring application context. Optionally excluded properties can be specified,
+     * it means that if such a property is found in {@link org.apache.ignite.configuration.IgniteConfiguration}
+     * then it is removed before the bean is instantiated.
+     * For example, {@code streamerConfiguration} can be excluded from the configs that Visor uses.
+     *
+     * @param cfgStream Stream where config file is located.
+     * @param excludedProps Properties to be excluded.
+     * @return Spring application context.
+     * @throws IgniteCheckedException If configuration could not be read.
+     */
+    public static ApplicationContext applicationContext(InputStream cfgStream, final String... excludedProps)
+        throws IgniteCheckedException {
+        try {
+            GenericApplicationContext springCtx = prepareSpringContext(excludedProps);
+
+            XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(springCtx);
+
+            reader.setValidationMode(XmlBeanDefinitionReader.VALIDATION_XSD);
+
+            reader.loadBeanDefinitions(new InputStreamResource(cfgStream));
+
+            springCtx.refresh();
+
+            return springCtx;
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) ", e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [err=" +
+                    e.getMessage() + ']', e);
+        }
+    }
+
+    /**
+     * Prepares Spring context.
+     *
+     * @param excludedProps Properties to be excluded.
+     * @return
+     */
+    private static GenericApplicationContext prepareSpringContext(final String... excludedProps){
+        GenericApplicationContext springCtx = new GenericApplicationContext();
+
+        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
+            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                throws BeansException {
+                for (String beanName : beanFactory.getBeanDefinitionNames()) {
+                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+
+                    if (def.getBeanClassName() != null) {
+                        try {
+                            Class.forName(def.getBeanClassName());
+                        }
+                        catch (ClassNotFoundException ignored) {
+                            ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
+
+                            continue;
+                        }
+                    }
+
+                    MutablePropertyValues vals = def.getPropertyValues();
+
+                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
+                        for (String excludedProp : excludedProps) {
+                            if (val.getName().equals(excludedProp))
+                                vals.removePropertyValue(val);
+                        }
+                    }
+                }
+            }
+        };
+
+        springCtx.addBeanFactoryPostProcessor(postProc);
+
+        return springCtx;
     }
 }
