@@ -421,9 +421,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCrossCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-829");
-
+    public void _testCrossCache() throws Exception {
         //TODO Investigate (should be 20 results instead of 0).
         compareQueryRes0("select firstName, lastName" +
             "  from \"part\".Person, \"part\".Purchase" +

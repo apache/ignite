@@ -89,9 +89,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOnHeapReplicatedPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOnHeapReplicatedPerformance() throws Exception {
         mode = REPLICATED;
         onheap = 0;
         startSize = 18 * 1024 * 1024;
@@ -102,9 +100,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOnHeapPartitionedPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOnHeapPartitionedPerformance() throws Exception {
         mode = PARTITIONED;
         onheap = 0;
         startSize = 18 * 1024 * 1024;
@@ -115,9 +111,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOffHeapReplicatedPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOffHeapReplicatedPerformance() throws Exception {
         mode = REPLICATED;
         onheap = 1024 * 1024;
         startSize = onheap;
@@ -128,9 +122,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOffHeapPartitionedPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOffHeapPartitionedPerformance() throws Exception {
         mode = PARTITIONED;
         onheap = 4 * 1024 * 1024;
 
@@ -140,9 +132,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOnHeapReplicatedPerformanceMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOnHeapReplicatedPerformanceMultithreaded() throws Exception {
         mode = REPLICATED;
         onheap = 0;
         startSize = 18 * 1024 * 1024;
@@ -153,9 +143,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOnHeapPartitionedPerformanceMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOnHeapPartitionedPerformanceMultithreaded() throws Exception {
         mode = PARTITIONED;
         onheap = 0;
         startSize = 18 * 1024 * 1024;
@@ -177,9 +165,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOffHeapPartitionedPerformanceMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-817");
-        
+    public void _testOffHeapPartitionedPerformanceMultithreaded() throws Exception {
         mode = PARTITIONED;
         onheap = 4 * 1024 * 1024;
 
