@@ -18,78 +18,18 @@
 package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Multy Jvm tests.
  */
 public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** */
-    private CountDownLatch allNodesJoinLatch;
-
-    /** */
-    private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
-        @Override public boolean apply(Event evt) {
-            allNodesJoinLatch.countDown();
-
-            return true;
-        }
-    };
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
-
-        super.beforeTestsStarted();
-
-        assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        IgniteExProcessProxy.killAll();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-        
+
         IgniteExProcessProxy.killAll(); // TODO: remove processes killing from here.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
-
-        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
-
-        lsnrs.put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
-
-        cfg.setLocalEventListeners(lsnrs);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        return super.cacheConfiguration(gridName); // TODO: CODE: implement.
     }
 
     /** {@inheritDoc} */
@@ -106,33 +46,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
      * @throws Exception If failed.
      */
     public void testPutAllRemoveAll() throws Exception {
-        // TODO: uncomment.
-//        for (int i = 0; i < gridCount(); i++) {
-//            IgniteEx grid0 = grid0(i);
-//
-//            info(">>>>> Grid" + i + ": " + grid0.localNode().id());
-//        }
-
-        Map<Integer, Integer> putMap = new LinkedHashMap<>();
-
-        int size = 100;
-
-        for (int i = 0; i < size; i++)
-            putMap.put(i, i * i);
-
-        IgniteCache<Object, Object> c0 = grid(0).cache(null);
-        IgniteCache<Object, Object> c1 = grid(1).cache(null);
-
-        c0.putAll(putMap);
-
-        atomicClockModeDelay(c0);
-
-        c1.removeAll(putMap.keySet());
-
-        for (int i = 0; i < size; i++) {
-            assertNull(c0.get(i));
-            assertNull(c1.get(i));
-        }
+        super.testPutAllRemoveAll();
     }
 
     /**

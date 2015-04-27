@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -109,6 +110,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** */
     private Map<String, CacheConfiguration[]> cacheCfgMap;
 
+    /** All nodes join latch (for multi JVM mode). */
+    private CountDownLatch allNodesJoinLatch;
+
+    /** /** Node join listener (for multi JVM mode). */
+    private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
+        @Override public boolean apply(Event evt) {
+            allNodesJoinLatch.countDown();
+
+            return true;
+        }
+    };
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -133,6 +146,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (offHeapValues())
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
+        if (isMultiJvm()) {
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
+
+            cfg.setLocalEventListeners(new HashMap<IgnitePredicate<? extends Event>, int[]>() {{
+                put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
+            }});
+        }
+
         return cfg;
     }
 
@@ -150,6 +171,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        if (isMultiJvm())
+            allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
+
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
         else {
@@ -195,7 +219,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+
+        if (isMultiJvm())
+            assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
     }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        IgniteExProcessProxy.killAll();
+
+        super.afterTestsStopped();
+    }
+
 
     /**
      * Gets flag whether nodes will run in one jvm or in separate jvms.
