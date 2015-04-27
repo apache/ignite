@@ -27,7 +27,7 @@ import javax.cache.*;
 import java.io.*;
 
 /**
- * Check behavior on exception while unmarshalling key.
+ * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
 

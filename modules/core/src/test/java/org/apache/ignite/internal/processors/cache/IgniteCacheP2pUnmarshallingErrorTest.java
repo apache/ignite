@@ -27,7 +27,7 @@ import java.io.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Check behavior on exception while unmarshalling key.
+ * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTest {
     /** Allows to change behavior of readExternal method. */

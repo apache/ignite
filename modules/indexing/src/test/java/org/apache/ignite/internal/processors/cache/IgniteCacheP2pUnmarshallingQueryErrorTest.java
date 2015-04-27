@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.*;
 import javax.cache.*;
 
 /**
- * Check behavior on exception while unmarshalling key.
+ * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
     /** {@inheritDoc} */

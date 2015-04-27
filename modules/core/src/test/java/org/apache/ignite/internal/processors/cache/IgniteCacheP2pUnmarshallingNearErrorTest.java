@@ -21,7 +21,7 @@ import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * Check behavior on exception while unmarshalling key.
+ * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
     /** {@inheritDoc} */

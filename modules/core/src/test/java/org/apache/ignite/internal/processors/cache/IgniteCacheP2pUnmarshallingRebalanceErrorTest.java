@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
+
+import javax.cache.*;
+import java.io.*;
 
 /**
- * Check behavior on exception while unmarshalling key.
+ * Checks behavior on exception while unmarshalling key.
  */
 public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
     /** {@inheritDoc} */
@@ -64,6 +68,13 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
 
         readCnt.set(1);
 
-        jcache(3).get(new TestKey(String.valueOf(key)));
+        try {
+            jcache(3).get(new TestKey(String.valueOf(key)));
+            assert false : "p2p marshalling failed, but error response was not sent";
+        }
+        catch (CacheException e) {
+            assert X.hasCause(e, IOException.class);
+        }
+
     }
 }
