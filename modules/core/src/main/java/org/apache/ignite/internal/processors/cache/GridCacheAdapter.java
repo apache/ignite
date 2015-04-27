@@ -2098,7 +2098,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     res = resMap.isEmpty() ? null : resMap.values().iterator().next();
                 }
 
-                return res != null ? res : new CacheInvokeResult<>((T)null);
+                return res != null ? res : new CacheInvokeResult();
             }
         });
     }
