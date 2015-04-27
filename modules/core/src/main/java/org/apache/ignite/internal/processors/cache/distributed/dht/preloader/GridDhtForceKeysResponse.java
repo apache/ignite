@@ -42,6 +42,10 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     /** Mini-future ID. */
     private IgniteUuid miniId;
 
+    /** Error. */
+    @GridDirectTransient
+    private volatile IgniteCheckedException err;
+
     /** Missed (not found) keys. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -71,6 +75,21 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
+    }
+
+    /**
+     * Sets error.
+     * @param err
+     */
+    public void error(IgniteCheckedException err){
+        this.err = err;
+    }
+
+    /**
+     * @return Error, if any.
+     */
+    public IgniteCheckedException error() {
+        return err;
     }
 
     /** {@inheritDoc} */

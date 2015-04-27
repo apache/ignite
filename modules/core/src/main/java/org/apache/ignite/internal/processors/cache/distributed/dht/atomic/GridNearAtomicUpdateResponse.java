@@ -140,7 +140,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * Sets update error.
      * @param err
      */
-    public void onError(IgniteCheckedException err){
+    public void error(IgniteCheckedException err){
         this.err = err;
     }
 

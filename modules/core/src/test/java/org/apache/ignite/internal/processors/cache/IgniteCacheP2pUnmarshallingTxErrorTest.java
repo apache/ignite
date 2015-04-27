@@ -29,7 +29,7 @@ import java.io.*;
 /**
  * Check behavior on exception while unmarshalling key.
  */
-public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmarshallingErrorTest {
+public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
@@ -82,10 +82,8 @@ public class IgniteCacheP2pUnmarshallingErrorTxTest extends IgniteCacheP2pUnmars
         assert readCnt.get() == 0; //ensure we have read count as expected.
     }
 
-    /**
-     * Tests that correct response will be sent to client node in case of unmarshalling failed.
-     */
-    public void testResponseMessageOnUnmarshallingFailed() {
+    /** {@inheritDoc} */
+    @Override public void testResponseMessageOnUnmarshallingFailed() {
         //GridNearTxPrepareRequest unmarshalling failed test
         readCnt.set(2);
 

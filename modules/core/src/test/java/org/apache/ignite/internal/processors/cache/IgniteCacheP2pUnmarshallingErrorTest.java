@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -82,6 +83,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         }
 
         /** Field. */
+        @QuerySqlField(index = true)
         private String field;
 
         /** {@inheritDoc} */
@@ -110,7 +112,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
-            if (readCnt.decrementAndGet() <= 0) { //will throw exception on backup node only
+            if (readCnt.decrementAndGet() <= 0) {
                 throw new IOException("Class can not be unmarshalled");
             }
         }
@@ -119,9 +121,9 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /**
      * Sends put atomically and handles fail.
      */
-    protected void failAtomicPut() {
+    protected void failAtomicPut(int k) {
         try {
-            jcache(0).put(new TestKey("1"), "");
+            jcache(0).put(new TestKey(String.valueOf(k)), "");
 
             assert false : "p2p marshalling failed, but error response was not sent";
         }
@@ -135,9 +137,9 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /**
      * Sends get atomically and handles fail.
      */
-    protected void failAtomicGet() {
+    protected void failAtomicGet(int k) {
         try {
-            jcache(0).get(new TestKey("1"));
+            jcache(0).get(new TestKey(String.valueOf(k)));
 
             assert false : "p2p marshalling failed, but error response was not sent";
         }
@@ -149,30 +151,39 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     /**
      * Tests that correct response will be sent to client node in case of unmarshalling failed.
      */
-    public void testResponseMessageOnUnmarshallingFailed() {
+    public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         //GridNearAtomicUpdateRequest unmarshalling failed test
         readCnt.set(1);
 
-        failAtomicPut();
-
-        //GridNearGetRequest unmarshalling failed test
-        readCnt.set(1);
-
-        failAtomicGet();
+        failAtomicPut(++key);
 
         //Check that cache is empty.
         readCnt.set(100);
 
-        assert jcache(0).get(new TestKey("1")) == null;
+        assert jcache(0).get(new TestKey(String.valueOf(key))) == null;
 
         //GridDhtAtomicUpdateRequest unmarshalling failed test
         readCnt.set(2);
 
-        failAtomicPut();
+        failAtomicPut(++key);
 
         //Check that cache is not empty.
         readCnt.set(100);
 
-        assert jcache(0).get(new TestKey("1")) != null;
+        assert jcache(0).get(new TestKey(String.valueOf(key))) != null;
+
+        //GridNearGetRequest unmarshalling failed test
+        readCnt.set(1);
+
+        failAtomicGet(++key);
+
+        //GridNearGetResponse unmarshalling failed test
+        readCnt.set(100);
+
+        jcache(0).put(new TestKey(String.valueOf(++key)), "");
+
+        readCnt.set(2);
+
+        failAtomicGet(key);
     }
 }
