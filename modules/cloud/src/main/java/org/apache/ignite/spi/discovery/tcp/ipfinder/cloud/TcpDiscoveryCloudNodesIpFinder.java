@@ -25,8 +25,8 @@ import com.google.inject.*;
 import org.jclouds.*;
 import org.jclouds.compute.*;
 import org.jclouds.compute.domain.*;
-import org.jclouds.sshj.config.*;
-import org.jclouds.logging.log4j.config.*;
+import org.jclouds.domain.*;
+import org.jclouds.location.reference.LocationConstants;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
 import java.net.*;
@@ -70,6 +71,9 @@ import java.util.concurrent.atomic.*;
  * </p>
  */
 public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter {
+    /* JCloud default connection timeout. */
+    private final static String JCLOUD_CONNECTION_TIMEOUT = "10000"; //10 secs
+
     /* Cloud provider. */
     private String provider;
 
@@ -83,6 +87,15 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /* Path to a cloud specific credential. */
     @GridToStringExclude
     private String credentialPath;
+
+    /* Regions where VMs are located. */
+    private TreeSet<String> regions;
+
+    /* Zones where VMs are located. */
+    private TreeSet<String> zones;
+
+    /* Nodes filter by regions and zones. */
+    private Predicate<ComputeMetadata> nodesFilter;
 
     /* Port to use to connect to nodes across a cluster. */
     private Integer discoveryPort;
@@ -112,9 +125,18 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
         Collection<InetSocketAddress> addresses = new LinkedList<>();
 
         try {
-            for (ComputeMetadata node : computeService.listNodes()) {
-                NodeMetadata metadata = computeService.getNodeMetadata(node.getId());
+            Set<NodeMetadata> nodes;
 
+            if (nodesFilter != null)
+                nodes = (Set<NodeMetadata>)computeService.listNodesDetailsMatching(nodesFilter);
+            else {
+                nodes = new HashSet<>();
+
+                for (ComputeMetadata metadata : computeService.listNodes())
+                    nodes.add(computeService.getNodeMetadata(metadata.getId()));
+            }
+
+            for (NodeMetadata metadata : nodes) {
                 for (String addr : metadata.getPrivateAddresses())
                     addresses.add(new InetSocketAddress(addr, discoveryPort));
 
@@ -123,7 +145,7 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
             }
         }
         catch (Exception e) {
-            throw new IgniteSpiException("Failed to get registered addresses for the provider: " + provider);
+            throw new IgniteSpiException("Failed to get registered addresses for the provider: " + provider, e);
         }
 
         return addresses;
@@ -212,6 +234,44 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     }
 
     /**
+     * Sets list of zones where VMs are located.
+     *
+     * If the zones are not set then every zone from regions, set by {@link #setRegions(Collection)}}, will be
+     * taken into account.
+     *
+     * Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such
+     * providers a call to this method is redundant.
+     *
+     * @param zones Zones where VMs are located or null if to take every zone into account.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setZones(Collection<String> zones) {
+        if (F.isEmpty(zones))
+            return;
+
+        this.zones = new TreeSet<>(zones);
+    }
+
+    /**
+     * Sets list of regions where VMs are located.
+     *
+     * If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead
+     * to significant performance degradation.
+     *
+     * Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such
+     * providers a call to this method is redundant.
+     *
+     * @param regions Regions where VMs are located or null if to check every region a provider has.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setRegions(Collection<String> regions) {
+        if (F.isEmpty(regions))
+            return;
+
+        this.regions = new TreeSet<>(regions);
+    }
+
+    /**
      * Initializes Apache jclouds compute service.
      */
     private void initComputeService() {
@@ -231,10 +291,55 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
                 try {
                     ContextBuilder ctxBuilder = ContextBuilder.newBuilder(provider);
+
                     ctxBuilder.credentials(identity, credential);
-                    ctxBuilder.modules(ImmutableSet.<Module>of(new Log4JLoggingModule(), new SshjSshClientModule()));
+
+                    Properties properties = new Properties();
+                    properties.setProperty(Constants.PROPERTY_SO_TIMEOUT, JCLOUD_CONNECTION_TIMEOUT);
+                    properties.setProperty(Constants.PROPERTY_CONNECTION_TIMEOUT, JCLOUD_CONNECTION_TIMEOUT);
+
+                    if (!F.isEmpty(regions))
+                        properties.setProperty(LocationConstants.PROPERTY_REGIONS, keysSetToStr(regions));
+
+                    if (!F.isEmpty(zones))
+                        properties.setProperty(LocationConstants.PROPERTY_ZONES, keysSetToStr(zones));
+
+                    ctxBuilder.overrides(properties);
 
                     computeService = ctxBuilder.buildView(ComputeServiceContext.class).getComputeService();
+
+                    if (!F.isEmpty(zones) || !F.isEmpty(regions)) {
+                        nodesFilter = new Predicate<ComputeMetadata>() {
+                            @Override public boolean apply(ComputeMetadata computeMetadata) {
+                                String region = null;
+                                String zone = null;
+
+                                Location location = computeMetadata.getLocation();
+
+                                while (location != null) {
+                                    switch (location.getScope()) {
+                                        case ZONE:
+                                            zone = location.getId();
+                                            break;
+
+                                        case REGION:
+                                            region = location.getId();
+                                            break;
+                                    }
+
+                                    location = location.getParent();
+                                }
+
+                                if (regions != null && region != null && !regions.contains(region))
+                                    return false;
+
+                                if (zones != null && zone != null && !zones.contains(zone))
+                                    return false;
+
+                                return true;
+                            }
+                        };
+                    }
                 }
                 catch (Exception e) {
                     throw new IgniteSpiException("Failed to connect to the provider: " + provider, e);
@@ -272,5 +377,25 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
         catch (IOException e) {
             throw new IgniteSpiException("Failed to retrieve the private key from the file: " + credentialPath, e);
         }
+    }
+
+    /**
+     * Converts set keys to string.
+     *
+     * @param set Set.
+     * @return String where keys delimited by ','.
+     */
+    private String keysSetToStr(Set<String> set) {
+        Iterator<String> iter = set.iterator();
+        StringBuilder builder = new StringBuilder();
+
+        while (iter.hasNext()) {
+            builder.append(iter.next());
+
+            if (iter.hasNext())
+                builder.append(',');
+        }
+
+        return builder.toString();
     }
 }

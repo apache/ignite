@@ -63,6 +63,8 @@ public class TcpDiscoveryCloudNodesIpFinderSelfTest extends
 
             ipFinder.setProvider(provider);
             ipFinder.setIdentity(IgniteCloudTestSuite.getAccessKey(provider));
+            ipFinder.setRegions(IgniteCloudTestSuite.getRegions(provider));
+            ipFinder.setZones(IgniteCloudTestSuite.getZones(provider));
 
             if (provider.equals("google-compute-engine"))
                 ipFinder.setCredentialPath(IgniteCloudTestSuite.getSecretKey(provider));

@@ -69,18 +69,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.jclouds.driver</groupId>
-            <artifactId>jclouds-sshj</artifactId>
-            <version>${jcloud.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.jclouds.driver</groupId>
-            <artifactId>jclouds-log4j</artifactId>
-            <version>${jcloud.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>

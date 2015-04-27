@@ -72,6 +72,12 @@
                         <property name="identity" value="username"/>
                         <property name="credential" value="7878a5a5b1aba2c4626TEST_KEY"/>
                         <property name="discoveryPort" value="45712"/>
+                        <property name="regions">
+                            <list>
+                                <value>IAD</value>
+                                <value>HKG</value>
+                            </list>
+                        </property>
                     </bean>
                 </property>
 
@@ -80,6 +86,8 @@
                     TcpDiscoveryCloudNodesIpFinder.discoveryPort
                 -->
                 <property name="localPort" value="45712"/>
+
+                <property name="socketTimeout" value="400"/>
             </bean>
         </property>
     </bean>

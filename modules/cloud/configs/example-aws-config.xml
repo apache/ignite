@@ -72,12 +72,27 @@
                         <property name="identity" value="Ahjdns2323_TEST_ID"/>
                         <property name="credential" value="Jkndwqo89834Jkljdlsd_TEST_KEY"/>
                         <property name="discoveryPort" value="45712"/>
+
+                        <property name="regions">
+                            <list>
+                                <value>us-east-1</value>
+                            </list>
+                        </property>
+
+                        <property name="zones">
+                            <list>
+                                <value>us-east-1b</value>
+                                <value>us-east-1e</value>
+                            </list>
+                        </property>
                     </bean>
                 </property>
                 
                 <!-- All nodes must be started on the same port. So localPort must be equal to
                     TcpDiscoveryCloudNodesIpFinder.discoveryPort -->
                 <property name="localPort" value="45712"/>
+
+                <property name="socketTimeout" value="400"/>
             </bean>
         </property>
     </bean>

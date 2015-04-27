@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.*;
+import java.util.*;
 
 /**
  * Ignite Cloud integration test.
@@ -65,5 +66,47 @@ public class IgniteCloudTestSuite extends TestSuite {
         assert key != null : "Environment variable 'test." + provider + ".secret.key' is not set";
 
         return key;
+    }
+
+    /**
+     * Zones where VMs are located.
+     *
+     * @return Zones list or null.
+     */
+    public static Collection<String> getZones(String provider) {
+        String zonesStr = System.getenv("test." + provider + ".zones.list");
+
+        if (zonesStr == null)
+            return null;
+
+        String[] zonesArr = zonesStr.split(",");
+
+        LinkedList<String> list = new LinkedList<>();
+
+        for (String zone : zonesArr)
+            list.add(zone.trim());
+
+        return list;
+    }
+
+    /**
+     * Regions where VMs are located.
+     *
+     * @return Zones list or null.
+     */
+    public static Collection<String> getRegions(String provider) {
+        String regionStr = System.getenv("test." + provider + ".regions.list");
+
+        if (regionStr == null)
+            return null;
+
+        String[] zonesArr = regionStr.split(",");
+
+        LinkedList<String> list = new LinkedList<>();
+
+        for (String zone : zonesArr)
+            list.add(zone.trim());
+
+        return list;
     }
 }

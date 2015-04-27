@@ -72,12 +72,21 @@
                         <property name="identity" value="209979073-test6@developer.gserviceaccount.com"/>
                         <property name="credentialPath" value="\var\credential\key.pem"/>
                         <property name="discoveryPort" value="45712"/>
+                        <property name="zones">
+                            <list>
+                                <value>us-central1-a</value>
+                                <value>asia-east1-a</value>
+                                <value>europe-west1-b</value>
+                            </list>
+                        </property>
                     </bean>
                 </property>
 
                 <!-- All nodes must be started on the same port. So localPort must be equal to
                     TcpDiscoveryCloudNodesIpFinder.discoveryPort -->
                 <property name="localPort" value="45712"/>
+
+                <property name="socketTimeout" value="400"/>
             </bean>
         </property>
     </bean>
