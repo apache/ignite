@@ -91,6 +91,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
             }
             catch (Throwable e) {
                 onDone(e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
         }
 

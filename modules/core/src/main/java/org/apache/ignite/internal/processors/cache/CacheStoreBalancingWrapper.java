@@ -98,6 +98,9 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
         catch (Throwable e) {
             fut.onError(key, e);
 
+            if (e instanceof Error)
+                throw e;
+
             throw e;
         }
     }
@@ -172,6 +175,9 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
             }
             catch (Throwable e) {
                 span.onError(needLoad, e);
+
+                if (e instanceof Error)
+                    throw e;
 
                 throw e;
             }

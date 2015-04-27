@@ -120,7 +120,7 @@ public final class CommandLineStartup {
 
             appCls.getDeclaredMethod("setAboutHandler", aboutHndCls).invoke(osxApp, aboutHndProxy);
         }
-        catch (Throwable ignore) {
+        catch (Exception ignore) {
             // Ignore.
         }
     }
@@ -296,6 +296,9 @@ public final class CommandLineStartup {
                 note = "\nNote! You may use 'USER_LIBS' environment variable to specify your classpath.";
 
             exit("Failed to start grid: " + e.getMessage() + note, false, -1);
+
+            if (e instanceof Error)
+                throw e;
 
             return;
         }

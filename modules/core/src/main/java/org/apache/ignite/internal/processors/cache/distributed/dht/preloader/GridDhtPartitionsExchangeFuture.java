@@ -146,6 +146,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Dynamic cache change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
 
+    private volatile Map<Integer, Boolean> cacheValidRes;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -629,6 +631,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 onDone(e);
 
+                if (e instanceof Error)
+                    throw (Error)e;
+
                 return;
             }
 
@@ -834,6 +839,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
+        Map<Integer, Boolean> m = new HashMap<>();
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name()))
+                m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+        }
+
+        cacheValidRes = m;
+
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         cctx.exchange().onExchangeDone(this, err);
@@ -859,6 +873,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         return dummy;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCacheTopologyValid(GridCacheContext cctx) {
+        return cctx.config().getTopologyValidator() != null && cacheValidRes.containsKey(cctx.cacheId()) ?
+            cacheValidRes.get(cctx.cacheId()) : true;
     }
 
     /**

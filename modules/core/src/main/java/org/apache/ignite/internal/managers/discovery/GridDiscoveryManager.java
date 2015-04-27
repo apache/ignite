@@ -660,7 +660,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Map<Integer, CacheMetrics> metrics = null;
 
                 for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.configuration().isStatisticsEnabled()) {
+                    if (cache.context().started() && cache.configuration().isStatisticsEnabled()) {
                         if (metrics == null)
                             metrics = U.newHashMap(caches.size());
 
@@ -1404,13 +1404,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Whether node is failed.
      */
     public boolean tryFailNode(UUID nodeId) {
-        if (!getSpi().pingNode(nodeId)) {
-            getSpi().failNode(nodeId);
+        if (!busyLock.enterBusy())
+            return false;
 
-            return true;
+        try {
+            if (!getSpi().pingNode(nodeId)) {
+                getSpi().failNode(nodeId);
+
+                return true;
+            }
+
+            return false;
         }
-
-        return false;
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -1632,6 +1640,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 catch (Throwable t) {
                     U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+
+                    if (t instanceof Error)
+                        throw (Error)t;
                 }
             }
         }

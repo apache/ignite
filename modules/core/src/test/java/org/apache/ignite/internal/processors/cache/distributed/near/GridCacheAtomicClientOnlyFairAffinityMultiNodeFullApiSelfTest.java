@@ -17,18 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * Tests for fields queries.
+ *
  */
-public class IgniteCachePartitionedFieldsQueryP2PDisabledSelfTest extends IgniteCachePartitionedFieldsQuerySelfTest {
+public class GridCacheAtomicClientOnlyFairAffinityMultiNodeFullApiSelfTest
+    extends GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        c.setPeerClassLoadingEnabled(true);
+        cfg.setAffinity(new FairAffinityFunction());
 
-        return c;
+        return cfg;
     }
 }

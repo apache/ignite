@@ -138,6 +138,9 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
             err = e;
 
             U.error(log, "Task execution failed.", e);
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             execEndTs = U.currentTimeMillis();

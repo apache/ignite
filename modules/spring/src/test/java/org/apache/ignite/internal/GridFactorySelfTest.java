@@ -62,7 +62,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private static final AtomicInteger cnt = new AtomicInteger();
 
     /** */
-    private static final String CUSTOM_CFG_PATH = "modules/core/src/test/config/factory/custom-grid-name-spring-test.xml";
+    private static final String CUSTOM_CFG_PATH =
+        "modules/core/src/test/config/factory/custom-grid-name-spring-test.xml";
 
     /**
      *
