@@ -232,18 +232,17 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (msgs == null)
             msgs = EMPTY;
 
-        MessageFactory qryMsgs = null;
+        List<MessageFactory> compMsgs = new ArrayList<>();
 
-        try {
-            qryMsgs = U.newInstance( // TODO fix this dirty hack
-                "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory");
-        }
-        catch (IgniteCheckedException e) {
-            // No-op.
+        for (IgniteComponentType compType : IgniteComponentType.values()) {
+            MessageFactory f = compType.messageFactory();
+
+            if (f != null)
+                compMsgs.add(f);
         }
 
-        if (qryMsgs != null)
-            msgs = F.concat(msgs, qryMsgs);
+        if (!compMsgs.isEmpty())
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
 
         msgFactory = new GridIoMessageFactory(msgs);
 
