@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.h2.util.*;
 import org.h2.value.*;
 
 import java.math.*;
@@ -28,6 +27,9 @@ import java.nio.*;
  * H2 Decimal.
  */
 public class GridH2Decimal extends GridH2ValueMessage {
+    /** */
+    private int scale;
+
     /** */
     private byte[] b;
 
@@ -44,12 +46,15 @@ public class GridH2Decimal extends GridH2ValueMessage {
     public GridH2Decimal(Value val) {
         assert val.getType() == Value.DECIMAL : val.getType();
 
-        b = Utils.serialize(val.getBigDecimal(), null);
+        BigDecimal x = val.getBigDecimal();
+
+        scale = x.scale();
+        b = x.unscaledValue().toByteArray();
     }
 
     /** {@inheritDoc} */
     @Override public Value value() {
-        return ValueDecimal.get((BigDecimal)Utils.deserialize(b, null));
+        return ValueDecimal.get(new BigDecimal(new BigInteger(b), scale));
     }
 
     /** {@inheritDoc} */
@@ -69,6 +74,12 @@ public class GridH2Decimal extends GridH2ValueMessage {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("b", b))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeInt("scale", scale))
                     return false;
 
                 writer.incrementState();
@@ -97,6 +108,14 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
                 reader.incrementState();
 
+            case 1:
+                scale = reader.readInt("scale");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -109,6 +128,6 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 }
