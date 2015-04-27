@@ -34,17 +34,17 @@ public class GridH2ValueCacheObject extends Value {
     private CacheObject obj;
 
     /** */
-    private CacheObjectContext coctx;
+    private GridCacheContext<?,?> cctx;
 
     /**
-     * @param coctx Cache object context.
+     * @param cctx Cache context.
      * @param obj Object.
      */
-    public GridH2ValueCacheObject(CacheObjectContext coctx, CacheObject obj) {
+    public GridH2ValueCacheObject(GridCacheContext<?,?> cctx, CacheObject obj) {
         assert obj != null;
 
         this.obj = obj;
-        this.coctx = coctx; // Allowed to be null in tests.
+        this.cctx = cctx; // Allowed to be null in tests.
     }
 
     /**
@@ -52,6 +52,13 @@ public class GridH2ValueCacheObject extends Value {
      */
     public CacheObject getCacheObject() {
         return obj;
+    }
+
+    /**
+     * @return Cache context.
+     */
+    public GridCacheContext<?,?> getCacheContext() {
+        return cctx;
     }
 
     /** {@inheritDoc} */
@@ -84,12 +91,19 @@ public class GridH2ValueCacheObject extends Value {
         return Utils.cloneByteArray(getBytesNoCopy());
     }
 
+    /**
+     * @return Cache object context.
+     */
+    private CacheObjectContext objectContext() {
+        return cctx == null ? null : cctx.cacheObjectContext();
+    }
+
     /** {@inheritDoc} */
     @Override public byte[] getBytesNoCopy() {
         if (obj.type() == CacheObject.TYPE_REGULAR) {
             // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
             try {
-                return obj.valueBytes(coctx);
+                return obj.valueBytes(objectContext());
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -97,12 +111,12 @@ public class GridH2ValueCacheObject extends Value {
         }
 
         // For portables and byte array cache object types.
-        return Utils.serialize(obj.value(coctx, false), null);
+        return Utils.serialize(obj.value(objectContext(), false), null);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject() {
-        return obj.value(coctx, false);
+        return obj.value(objectContext(), false);
     }
 
     /** {@inheritDoc} */

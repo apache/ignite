@@ -406,6 +406,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return ctx.cache().internalCache(space).context().cacheObjectContext();
     }
 
+    /**
+     * @param space Space.
+     * @return Cache object context.
+     */
+    private GridCacheContext cacheContext(String space) {
+        if (ctx == null)
+            return null;
+
+        return ctx.cache().internalCache(space).context();
+    }
+
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -1969,12 +1980,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (obj instanceof CacheObject) { // Handle cache object.
                 CacheObject co = (CacheObject)obj;
 
-                CacheObjectContext coctx = objectContext(schema.spaceName);
-
                 if (type == Value.JAVA_OBJECT)
-                    return new GridH2ValueCacheObject(coctx, co);
+                    return new GridH2ValueCacheObject(cacheContext(schema.spaceName), co);
 
-                obj = co.value(coctx, false);
+                obj = co.value(objectContext(schema.spaceName), false);
             }
 
             switch (type) {

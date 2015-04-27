@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -46,12 +47,13 @@ public class GridResultPage {
     private Iterator<Value[]> rows;
 
     /**
+     * @param ctx Kernal context.
      * @param src Source.
      * @param res Response.
      * @param last If this is the globally last page.
      */
     @SuppressWarnings("unchecked")
-    public GridResultPage(UUID src, GridQueryNextPageResponse res, boolean last) {
+    public GridResultPage(final GridKernalContext ctx, UUID src, GridQueryNextPageResponse res, boolean last) {
         assert src != null;
 
         this.src = src;
@@ -91,7 +93,7 @@ public class GridResultPage {
 
                         rowIdx++;
 
-                        return fillArray(valsIter, new Value[cols], null); // TODO coctx
+                        return fillArray(valsIter, new Value[cols], ctx);
                     }
 
                     @Override public void remove() {

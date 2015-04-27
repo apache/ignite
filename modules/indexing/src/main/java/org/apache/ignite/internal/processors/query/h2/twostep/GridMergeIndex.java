@@ -96,7 +96,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param nodeId Node ID.
      */
     public void fail(UUID nodeId) {
-        addPage0(new GridResultPage(nodeId, null, false));
+        addPage0(new GridResultPage(null, nodeId, null, false));
     }
 
     /**
@@ -137,7 +137,7 @@ public abstract class GridMergeIndex extends BaseIndex {
             if (last)
                 last = lastSubmitted.compareAndSet(false, true);
 
-            addPage0(new GridResultPage(page.source(), null, last));
+            addPage0(new GridResultPage(null, page.source(), null, last));
         }
     }
 

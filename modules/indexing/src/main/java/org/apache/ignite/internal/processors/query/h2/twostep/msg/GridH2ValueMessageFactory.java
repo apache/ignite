@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
@@ -85,6 +85,9 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -21:
                 return new GridH2Geometry();
+
+            case -22:
+                return new GridH2CacheObject();
         }
 
         return null;
@@ -107,17 +110,14 @@ public class GridH2ValueMessageFactory implements MessageFactory {
     /**
      * @param src Source iterator.
      * @param dst Array to fill with values.
-     * @param coctx Cache object context.
+     * @param ctx Kernal context.
      * @return Filled array.
      */
-    public static Value[] fillArray(Iterator<Message> src, Value[] dst, CacheObjectContext coctx) {
+    public static Value[] fillArray(Iterator<Message> src, Value[] dst, GridKernalContext ctx) {
         for (int i = 0; i < dst.length; i++) {
             Message msg = src.next();
 
-            if (msg instanceof GridH2ValueMessage)
-                dst[i] = ((GridH2ValueMessage)msg).value();
-            else
-                dst[i] = new GridH2ValueCacheObject(coctx, (CacheObject)msg);
+            dst[i] = ((GridH2ValueMessage)msg).value(ctx);
         }
 
         return dst;
@@ -177,9 +177,11 @@ public class GridH2ValueMessageFactory implements MessageFactory {
                 return new GridH2Array(v);
 
             case Value.JAVA_OBJECT:
-                // TODO
-//                if (v instanceof GridH2ValueCacheObject)
-//                    return ((GridH2ValueCacheObject)v).getCacheObject();
+                if (v instanceof GridH2ValueCacheObject) {
+                    GridH2ValueCacheObject v0 = (GridH2ValueCacheObject)v;
+
+                    return new GridH2CacheObject(v0.getCacheContext().cacheId(), v0.getCacheObject());
+                }
 
                 return new GridH2JavaObject(v);
 

@@ -56,9 +56,8 @@ public class GridH2Array extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Value value() {
-        // TODO we need cache object context
-        return ValueArray.get(fillArray(x.iterator(), new Value[x.size()], null));
+    @Override public Value value(GridKernalContext ctx) {
+        return ValueArray.get(fillArray(x.iterator(), new Value[x.size()], ctx));
     }
 
     /** {@inheritDoc} */

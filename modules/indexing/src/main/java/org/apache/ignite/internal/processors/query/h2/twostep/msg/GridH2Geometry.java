@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
 
@@ -62,7 +63,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Value value() {
+    @Override public Value value(GridKernalContext ctx) {
         try {
             return (Value)GEOMETRY_FROM_BYTES.invoke(null, new Object[]{b});
         }

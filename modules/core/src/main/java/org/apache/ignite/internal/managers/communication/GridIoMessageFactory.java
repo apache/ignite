@@ -602,7 +602,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
             // [-3..112] - this
             // [120..123] - DR
-            // [-4..-21] - SQL
+            // [-4..-22] - SQL
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

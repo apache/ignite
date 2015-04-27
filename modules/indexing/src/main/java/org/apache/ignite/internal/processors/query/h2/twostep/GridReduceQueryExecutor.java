@@ -231,7 +231,7 @@ public class GridReduceQueryExecutor {
         GridResultPage page;
 
         try {
-            page = new GridResultPage(node.id(), msg, false) {
+            page = new GridResultPage(ctx, node.id(), msg, false) {
                 @Override public void fetchNextPage() {
                     if (r.rmtErr != null)
                         throw new CacheException("Next page fetch failed.", r.rmtErr);

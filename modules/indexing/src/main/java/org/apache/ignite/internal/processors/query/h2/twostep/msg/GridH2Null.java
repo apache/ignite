@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
 
@@ -37,7 +38,7 @@ public class GridH2Null extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Value value() {
+    @Override public Value value(GridKernalContext ctx) {
         return ValueNull.INSTANCE;
     }
 
@@ -62,13 +63,7 @@ public class GridH2Null extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        return true;
+        return reader.beforeMessageRead() && super.readFrom(buf, reader);
     }
 
     /** {@inheritDoc} */
