@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.h2.util.*;
 import org.h2.value.*;
 
 import java.math.*;
@@ -26,10 +27,9 @@ import java.nio.*;
 /**
  * H2 Decimal.
  */
-// TODO optimize representation
 public class GridH2Decimal extends GridH2ValueMessage {
     /** */
-    private String b;
+    private byte[] b;
 
     /**
      *
@@ -44,12 +44,12 @@ public class GridH2Decimal extends GridH2ValueMessage {
     public GridH2Decimal(Value val) {
         assert val.getType() == Value.DECIMAL : val.getType();
 
-        b = val.getString();
+        b = Utils.serialize(val.getBigDecimal(), null);
     }
 
     /** {@inheritDoc} */
     @Override public Value value() {
-        return ValueDecimal.get(new BigDecimal(b));
+        return ValueDecimal.get((BigDecimal)Utils.deserialize(b, null));
     }
 
     /** {@inheritDoc} */
@@ -68,7 +68,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("b", b))
+                if (!writer.writeByteArray("b", b))
                     return false;
 
                 writer.incrementState();
@@ -90,7 +90,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         switch (reader.state()) {
             case 0:
-                b = reader.readString("b");
+                b = reader.readByteArray("b");
 
                 if (!reader.isLastRead())
                     return false;
