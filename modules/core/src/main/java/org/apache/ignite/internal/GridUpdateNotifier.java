@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
 import org.xml.sax.*;
@@ -28,6 +29,7 @@ import org.xml.sax.*;
 import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static java.net.URLEncoder.*;
@@ -72,6 +74,8 @@ class GridUpdateNotifier {
     /** System properties */
     private final String vmProps;
 
+    private final Map<String, String> pluginVers;
+
     /** Kernal gateway */
     private final GridKernalGateway gw;
 
@@ -83,11 +87,12 @@ class GridUpdateNotifier {
      *
      * @param gridName gridName
      * @param ver Compound Ignite version.
-     * @param reportOnlyNew Whether or not to report only new version.
      * @param gw Kernal gateway.
+     * @param pluginProviders Kernal gateway.
+     * @param reportOnlyNew Whether or not to report only new version.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, boolean reportOnlyNew)
+    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders, boolean reportOnlyNew)
         throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -108,8 +113,14 @@ class GridUpdateNotifier {
             url = "http://tiny.cc/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
-            this.reportOnlyNew = reportOnlyNew;
             this.gw = gw;
+
+            pluginVers = U.newHashMap(pluginProviders.size());
+
+            for (PluginProvider provider : pluginProviders)
+                pluginVers.put("plugin_" + provider.name(), provider.version());
+
+            this.reportOnlyNew = reportOnlyNew;
 
             vmProps = getSystemProperties();
         }
@@ -261,6 +272,11 @@ class GridUpdateNotifier {
         @Override protected void body() throws InterruptedException {
             try {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
+
+                SB plugins = new SB();
+
+                for (Map.Entry<String, String> p : pluginVers.entrySet())
+                    plugins.a("&").a(p.getKey()).a("=").a(p.getValue());
 
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
