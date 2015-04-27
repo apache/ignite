@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.*;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
@@ -1346,6 +1348,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         };
     }
 
+    /** {@inheritDoc} */
+    @Override public MessageFactory messageFactory() {
+        return new GridH2ValueMessageFactory();
+    }
+
     /**
      * Wrapper to store connection and flag is schema set or not.
      */
@@ -1965,7 +1972,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 CacheObjectContext coctx = objectContext(schema.spaceName);
 
                 if (type == Value.JAVA_OBJECT)
-                    return new ValueCacheObject(coctx, co);
+                    return new GridH2ValueCacheObject(coctx, co);
 
                 obj = co.value(coctx, false);
             }
@@ -2101,149 +2108,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return new GridH2KeyValueRowOffheap(this, ptr);
-        }
-    }
-
-    /**
-     * Replacement for {@link ValueJavaObject}.
-     * Note that after serialization/deserialization it will become {@link ValueJavaObject}.
-     */
-    private static class ValueCacheObject extends Value {
-        /** */
-        private CacheObject obj;
-
-        /** */
-        private CacheObjectContext coctx;
-
-        /**
-         * @param coctx Cache object context.
-         * @param obj Object.
-         */
-        ValueCacheObject(CacheObjectContext coctx, CacheObject obj) {
-            assert obj != null;
-
-            this.obj = obj;
-            this.coctx = coctx; // Allowed to be null in tests.
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getSQL() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getType() {
-            return Value.JAVA_OBJECT;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getPrecision() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getDisplaySize() {
-            return 64;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String getString() {
-            return getObject().toString();
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte[] getBytes() {
-            return Utils.cloneByteArray(getBytesNoCopy());
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte[] getBytesNoCopy() {
-            if (obj.type() == CacheObject.TYPE_REGULAR) {
-                // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
-                try {
-                    return obj.valueBytes(coctx);
-                }
-                catch (IgniteCheckedException e) {
-                    throw DbException.convert(e);
-                }
-            }
-
-            // For portables and byte array cache object types.
-            return Utils.serialize(obj.value(coctx, false), null);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object getObject() {
-            return obj.value(coctx, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void set(PreparedStatement prep, int parameterIndex) throws SQLException {
-            prep.setObject(parameterIndex, getObject(), Types.JAVA_OBJECT);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override protected int compareSecure(Value v, CompareMode mode) {
-            Object o1 = getObject();
-            Object o2 = v.getObject();
-
-            boolean o1Comparable = o1 instanceof Comparable;
-            boolean o2Comparable = o2 instanceof Comparable;
-
-            if (o1Comparable && o2Comparable &&
-                Utils.haveCommonComparableSuperclass(o1.getClass(), o2.getClass())) {
-                Comparable<Object> c1 = (Comparable<Object>)o1;
-
-                return c1.compareTo(o2);
-            }
-
-            // Group by types.
-            if (o1.getClass() != o2.getClass()) {
-                if (o1Comparable != o2Comparable)
-                    return o1Comparable ? -1 : 1;
-
-                return o1.getClass().getName().compareTo(o2.getClass().getName());
-            }
-
-            // Compare hash codes.
-            int h1 = hashCode();
-            int h2 = v.hashCode();
-
-            if (h1 == h2) {
-                if (o1.equals(o2))
-                    return 0;
-
-                return Utils.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
-            }
-
-            return h1 > h2 ? 1 : -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return getObject().hashCode();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object other) {
-            if (!(other instanceof Value))
-                return false;
-
-            Value otherVal = (Value)other;
-
-            return otherVal.getType() == Value.JAVA_OBJECT
-                && getObject().equals(otherVal.getObject());
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value convertPrecision(long precision, boolean force) {
-            return this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getMemory() {
-            return 0;
         }
     }
 }

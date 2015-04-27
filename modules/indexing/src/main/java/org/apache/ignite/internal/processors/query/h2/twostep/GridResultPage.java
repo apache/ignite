@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
 
 import java.util.*;
+
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
  * Page result.
@@ -34,10 +37,13 @@ public class GridResultPage {
     protected final GridQueryNextPageResponse res;
 
     /** */
-    private final Collection<Value[]> rows;
+    private final int rowsInPage;
 
     /** */
     private final boolean last;
+
+    /** */
+    private Iterator<Value[]> rows;
 
     /**
      * @param src Source.
@@ -57,12 +63,48 @@ public class GridResultPage {
 
         // res == null means that it is a terminating dummy page for the given source node ID.
         if (res != null) {
-            Object plainRows = res.plainRows();
+            Collection<?> plainRows = res.plainRows();
 
-            rows = plainRows != null ? (Collection<Value[]>)plainRows : GridMapQueryExecutor.unmarshallRows(res.rows());
+            if (plainRows != null) {
+                rowsInPage = plainRows.size();
+
+                rows = (Iterator<Value[]>)plainRows.iterator();
+            }
+            else {
+                final int cols = res.columns();
+
+                rowsInPage = res.values().size() / cols;
+
+                final Iterator<Message> valsIter = res.values().iterator();
+
+                rows = new Iterator<Value[]>() {
+                    /** */
+                    int rowIdx;
+
+                    @Override public boolean hasNext() {
+                        return rowIdx < rowsInPage;
+                    }
+
+                    @Override public Value[] next() {
+                        if (!hasNext())
+                            throw new NoSuchElementException();
+
+                        rowIdx++;
+
+                        return fillArray(valsIter, new Value[cols], null); // TODO coctx
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
         }
-        else
-            rows = Collections.emptySet();
+        else {
+            rowsInPage = 0;
+
+            rows = Collections.emptyIterator();
+        }
     }
 
     /**
@@ -73,10 +115,23 @@ public class GridResultPage {
     }
 
     /**
+     * @return Number on rows in this page.
+     */
+    public int rowsInPage() {
+        return rowsInPage;
+    }
+
+    /**
      * @return Rows.
      */
-    public Collection<Value[]> rows() {
-        return rows;
+    public Iterator<Value[]> rows() {
+        Iterator<Value[]> r = rows;
+
+        assert r != null;
+
+        rows = null;
+
+        return r;
     }
 
     /**

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.command.ddl.*;
 import org.h2.command.dml.Query;
@@ -317,8 +318,14 @@ public class GridReduceQueryExecutor {
         runs.put(qryReqId, r);
 
         try {
-            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, qry.mapQueries(),
-                ctx.config().getMarshaller().marshal(qry.mapQueries())));
+            if (nodes.size() != 1 || !F.first(nodes).isLocal()) { // Marshall params for remotes.
+                Marshaller m = ctx.config().getMarshaller();
+
+                for (GridCacheSqlQuery mapQry : qry.mapQueries())
+                    mapQry.marshallParams(m);
+            }
+
+            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, qry.mapQueries()));
 
             r.latch.await();
 

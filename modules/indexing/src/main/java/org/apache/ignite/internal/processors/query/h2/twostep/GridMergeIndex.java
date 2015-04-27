@@ -103,7 +103,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param page Page.
      */
     public final void addPage(GridResultPage page) {
-        int pageRowsCnt = page.rows().size();
+        int pageRowsCnt = page.rowsInPage();
 
         if (pageRowsCnt != 0)
             addPage0(page);
