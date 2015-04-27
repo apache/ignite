@@ -29,12 +29,9 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * TODO: Add class description.
+ * Multy Jvm tests.
  */
 public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
-    /** Local ignite. */
-    private Ignite locIgnite;
-
     /** */
     private CountDownLatch allNodesJoinLatch;
 
@@ -60,8 +57,6 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
     @Override protected void afterTestsStopped() throws Exception {
         IgniteExProcessProxy.killAll();
 
-        locIgnite = null;
-
         super.afterTestsStopped();
     }
 
@@ -72,9 +67,9 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteExProcessProxy.killAll(); // TODO: remove processes killing from here.
-
         super.afterTest();
+        
+        IgniteExProcessProxy.killAll(); // TODO: remove processes killing from here.
     }
 
     /** {@inheritDoc} */
@@ -179,7 +174,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         assertEquals(val, c1.get(key));
         assertEquals(val, c0.get(key));
 
-        assertTrue(c1.remove(key));
+        assertTrue(c0.remove(key));
 
         U.sleep(1_000);
 

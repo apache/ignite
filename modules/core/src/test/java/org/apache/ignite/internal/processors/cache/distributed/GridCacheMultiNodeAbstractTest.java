@@ -121,10 +121,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         removeListeners(ignite3);
 
         lsnrs.clear();
-        
-        cache1.clear();
-        cache2.clear();
-        cache3.clear();
     }
 
     /**

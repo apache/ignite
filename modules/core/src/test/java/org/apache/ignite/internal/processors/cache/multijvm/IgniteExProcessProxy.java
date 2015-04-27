@@ -26,6 +26,8 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -39,22 +41,25 @@ import java.util.concurrent.*;
  */
 public class IgniteExProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private static final Map<String, IgniteExProcessProxy> gridProxies = new HashMap<>();
+    private transient static final Map<String, IgniteExProcessProxy> gridProxies = new HashMap<>();
 
     /** Jvm process with ignite instance. */
-    private final GridJavaProcess proc;
+    private transient final GridJavaProcess proc;
 
     /** Configuration. */
-    private final IgniteConfiguration cfg;
+    private transient final IgniteConfiguration cfg;
 
     /** Local jvm grid. */
-    private final Ignite locJvmGrid;
+    private transient final Ignite locJvmGrid;
 
     /** Logger. */
-    private final IgniteLogger log;
+    private transient final IgniteLogger log;
 
     /** Grid id. */
     private final UUID id = UUID.randomUUID();
+
+    /** Compute. */
+    private transient final IgniteCompute compute;
 
     /**
      * @param cfg Configuration.
@@ -96,6 +101,8 @@ public class IgniteExProcessProxy implements IgniteEx {
         U.sleep(3_000);
 
         gridProxies.put(cfg.getGridName(), this);
+
+        compute = locJvmGrid.compute(locJvmGrid.cluster().forNodeId(id));
     }
 
     /**
@@ -215,7 +222,11 @@ public class IgniteExProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public ClusterNode localNode() {
-        return null; // TODO: CODE: implement.
+        return F.first(compute.broadcast(new IgniteClosureX<Object, ClusterNode>() {
+            @Override public ClusterNode applyx(Object o) {
+                return ((IgniteEx)Ignition.ignite(id)).localNode();
+            }
+        }, null));
     }
 
     /** {@inheritDoc} */

@@ -193,8 +193,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cacheCfgMap = null;
         }
 
-//        for (int i = 0; i < gridCount(); i++)
-//            info("Grid " + i + ": " + grid(i).localNode().id());
+        for (int i = 0; i < gridCount(); i++)
+            info("Grid " + i + ": " + grid(i).localNode().id());
     }
 
     /**
@@ -244,29 +244,43 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         return IgniteExProcessProxy.get(name);
     }
 
+    /**
+     * @param idx Index of grid.
+     * @return Default cache.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Override protected IgniteCache<String, Integer> jcache(int idx) {
+        if (!isMultiJvm() || idx == 0)
+            return super.jcache(idx);
+
+        String name = getTestGridName(idx);
+
+        return IgniteExProcessProxy.get(name).cache(null);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-//        IgniteCache<String, Integer> cache = jcache();
-//
-//        assertEquals(0, cache.localSize());
-//        assertEquals(0, cache.size());
-//
-//        super.beforeTest();
-//
-//        assertEquals(0, cache.localSize());
-//        assertEquals(0, cache.size());
+        IgniteCache<String, Integer> cache = jcache();
+
+        assertEquals(0, cache.localSize());
+        assertEquals(0, cache.size());
+
+        super.beforeTest();
+
+        assertEquals(0, cache.localSize());
+        assertEquals(0, cache.size());
 
         dfltIgnite = grid(0);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-//        super.afterTest();
+        super.afterTest();
 
-//        IgniteCache<String, Integer> cache = jcache();
-//
-//        assertEquals(0, cache.localSize());
-//        assertEquals(0, cache.size());
+        IgniteCache<String, Integer> cache = jcache();
+
+        assertEquals(0, cache.localSize());
+        assertEquals(0, cache.size());
 
         dfltIgnite = null;
     }
