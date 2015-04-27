@@ -202,7 +202,10 @@ class VisorConsole {
                             case _ => adviseToHelp(line)
                         }
                     } catch {
-                        case ignore: Exception => adviseToHelp(line)
+                        case ignore: Exception =>
+                            ignore.printStackTrace()
+
+                            adviseToHelp(line)
                     }
                 }
             }

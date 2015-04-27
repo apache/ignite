@@ -137,25 +137,35 @@ class VisorEventsCommand extends VisorConsoleCommand {
             }
     }
 
+    /**
+     * Gets type filter by mnemonics.
+     * @param typeArg Type mnemonics.
+     * @throws IllegalArgumentException In case unknown event mnemonic.
+     * @return Type id filter.
+     */
+    @throws[IllegalArgumentException]("In case unknown event mnemonic.")
     protected def typeFilter(typeArg: Option[String]) = {
-        if (typeArg.isEmpty)
-            null
-        else {
-            val arr = collection.mutable.ArrayBuffer.empty[Int]
+        typeArg.map(_.split(",").map(typeIds).flatten).orNull
+    }
 
-            typeArg.get split "," foreach {
-                case "ch" => arr ++= EVTS_CHECKPOINT.toList
-                case "de" => arr ++= EVTS_DEPLOYMENT.toList
-                case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
-                case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
-                case "ca" => arr ++= EVTS_CACHE.toList
-                case "cr" => arr ++= EVTS_CACHE_REBALANCE.toList
-                case "sw" => arr ++= EVTS_SWAPSPACE.toList
-                case "di" => arr ++= EVTS_DISCOVERY.toList
-                case t => throw new IllegalArgumentException("Unknown event type: " + t)
-            }
-
-            arr.toArray
+    /**
+     * Gets type filter by mnemonic.
+     * @param mnemonic Type mnemonic.
+     * @throws IllegalArgumentException In case unknown event mnemonic.
+     * @return Type id filter.
+     */
+    @throws[IllegalArgumentException]("In case unknown event mnemonic.")
+    protected def typeIds(mnemonic: String) = {
+        mnemonic match {
+            case "ch" => EVTS_CHECKPOINT
+            case "de" => EVTS_DEPLOYMENT
+            case "di" => EVTS_DISCOVERY
+            case "jo" => EVTS_JOB_EXECUTION
+            case "ta" => EVTS_TASK_EXECUTION
+            case "ca" => EVTS_CACHE
+            case "cr" => EVTS_CACHE_REBALANCE
+            case "sw" => EVTS_SWAPSPACE
+            case t => throw new IllegalArgumentException("Unknown event mnemonic: " + t)
         }
     }
 
@@ -163,19 +173,23 @@ class VisorEventsCommand extends VisorConsoleCommand {
      * Gets command's mnemonic for given event.
      *
      * @param e Event to get mnemonic for.
+     * @throws IllegalArgumentException In case unknown event type.
+     * @return Type mnemonic.
      */
-    private def mnemonic(e: VisorGridEvent): String = {
+    @throws[IllegalArgumentException]("In case unknown event type.")
+    protected def mnemonic(e: VisorGridEvent) = {
         assert(e != null)
 
         e.typeId() match {
-            case t if EVTS_DISCOVERY_ALL.contains(t) => "di"
             case t if EVTS_CHECKPOINT.contains(t) => "ch"
             case t if EVTS_DEPLOYMENT.contains(t) => "de"
+            case t if EVTS_DISCOVERY_ALL.contains(t) => "di"
             case t if EVTS_JOB_EXECUTION.contains(t)=> "jo"
             case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
             case t if EVTS_CACHE.contains(t) => "ca"
-            case t if EVTS_SWAPSPACE.contains(t) => "sw"
             case t if EVTS_CACHE_REBALANCE.contains(t) => "cr"
+            case t if EVTS_SWAPSPACE.contains(t) => "sw"
+            case t => throw new IllegalArgumentException("Unknown event type: " + t)
         }
     }
 
