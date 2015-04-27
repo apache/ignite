@@ -39,9 +39,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     @Override public void testResponseMessageOnUnmarshallingFailed() {
         readCnt.set(Integer.MAX_VALUE);
 
-        TestKey val = new TestKey(String.valueOf(++key));
-
-        jcache(0).put(val, "");
+        jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
         //GridCacheQueryRequest unmarshalling failed test
         readCnt.set(1);
