@@ -462,6 +462,13 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
                 ClusterNode node = cctx.affinity().primary(key, topVer);
 
+                if (node == null) {
+                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                        "(all partition nodes left the grid)."));
+
+                    return false;
+                }
+
                 remote = !node.isLocal();
 
                 LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(node);

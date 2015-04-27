@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 /**
  * Tests for fields queries.
  */
-public class IgniteCacheReplicatedFieldsQueryP2PDisabledSelfTest extends IgniteCacheReplicatedFieldsQuerySelfTest {
+public class IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest extends IgniteCacheReplicatedFieldsQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
