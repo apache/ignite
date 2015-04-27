@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -72,9 +71,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** */
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
-
-    /** */
-    private static final Object SPI_RECONNECT_SUCCESS = "SPI_RECONNECT_SUCCESS";
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
@@ -815,9 +811,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         /** */
         private volatile Socket sock;
 
-        /** */
-        private Collection<TcpDiscoveryAbstractMessage> pendingMsg;
-
         /**
          *
          */
@@ -838,20 +831,10 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         @Override protected void body() throws InterruptedException {
             assert !segmentation;
 
-            Socket sock = null;
-
-            try {
-                sock = joinTopology(false);
-            }
-            finally {
-                if (sock == null)
-                    msgWorker.addMessage(SPI_RECONNECT_FAILED);
-            }
-
             boolean success = false;
 
             try {
-                this.sock = sock;
+                sock = joinTopology(true);
 
                 if (isInterrupted())
                     throw new InterruptedException();
@@ -869,11 +852,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         TcpDiscoveryClientReconnectMessage res = (TcpDiscoveryClientReconnectMessage)msg;
 
                         if (res.creatorNodeId().equals(getLocalNodeId())) {
-                            pendingMsg = res.pendingMessages();
+                            if (res.success()) {
+                                msgWorker.addMessage(res);
 
-                            msgWorker.addMessage(SPI_RECONNECT_SUCCESS);
-
-                            success = true;
+                                success = true;
+                            }
 
                             break;
                         }
@@ -970,7 +953,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     else if (msg instanceof SocketClosedMessage) {
                         if (((SocketClosedMessage)msg).sock == currSock) {
                             currSock = null;
-                            // todo
 
                             if (joinLatch.getCount() > 0) {
                                 joinErr = new IgniteSpiException("Failed to connect to cluster: socket closed.");
@@ -995,11 +977,15 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                             }
                         }
                     }
-                    else if (msg == SPI_RECONNECT_FAILED) {
-                        segmentation = true;
+                    else if (msg == SPI_RECONNECT_FAILED || msg == RECONNECT_TIMEOUT) {
+                        if (!segmentation) {
+                            segmentation = true;
 
-                        reconnector.cancel();
-                        reconnector.join();
+                            reconnector.cancel();
+                            reconnector.join();
+
+                            notifyDiscovery(EVT_NODE_SEGMENTED, topVer, locNode, allNodes());
+                        }
                     }
                     else {
                         TcpDiscoveryAbstractMessage discoMsg = (TcpDiscoveryAbstractMessage)msg;
@@ -1062,6 +1048,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
             else if (msg instanceof TcpDiscoveryHeartbeatMessage)
                 processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
+            else if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
                 processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
 
@@ -1309,26 +1297,22 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 return;
 
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
+                assert msg.success();
 
-            }
+                currSock = reconnector.sock;
+                sockWriter.setSocket(currSock);
+                sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
-            if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                if (msg.success()) {
-                    pending = true;
+                reconnector = null;
 
-                    try {
-                        for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages())
-                            processDiscoveryMessage(pendingMsg);
-                    }
-                    finally {
-                        pending = false;
-                    }
+                pending = true;
+
+                try {
+                    for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages())
+                        processDiscoveryMessage(pendingMsg);
                 }
-                else {
-                    getSpiContext().recordEvent(new DiscoveryEvent(locNode,
-                        "Client node disconnected: " + locNode,
-                        EVT_NODE_SEGMENTED, locNode));
-
+                finally {
+                    pending = false;
                 }
             }
             else if (log.isDebugEnabled())
