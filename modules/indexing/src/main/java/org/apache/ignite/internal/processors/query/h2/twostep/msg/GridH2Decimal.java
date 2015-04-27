@@ -20,14 +20,16 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
 
+import java.math.*;
 import java.nio.*;
 
 /**
  * H2 Decimal.
  */
+// TODO optimize representation
 public class GridH2Decimal extends GridH2ValueMessage {
     /** */
-    private byte[] b;
+    private String b;
 
     /**
      *
@@ -42,12 +44,12 @@ public class GridH2Decimal extends GridH2ValueMessage {
     public GridH2Decimal(Value val) {
         assert val.getType() == Value.DECIMAL : val.getType();
 
-        b = val.getBytesNoCopy();
+        b = val.getString();
     }
 
     /** {@inheritDoc} */
     @Override public Value value() {
-        return ValueBytes.getNoCopy(b).convertTo(Value.DECIMAL);
+        return ValueDecimal.get(new BigDecimal(b));
     }
 
     /** {@inheritDoc} */
@@ -66,7 +68,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("b", b))
+                if (!writer.writeString("b", b))
                     return false;
 
                 writer.incrementState();
@@ -88,7 +90,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
 
         switch (reader.state()) {
             case 0:
-                b = reader.readByteArray("b");
+                b = reader.readString("b");
 
                 if (!reader.isLastRead())
                     return false;
