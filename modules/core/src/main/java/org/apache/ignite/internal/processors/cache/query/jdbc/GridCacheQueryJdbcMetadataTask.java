@@ -156,6 +156,9 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
                 }
+
+                if (t instanceof Error)
+                    throw (Error)t;
             }
 
             byte[] packet = new byte[data.length + 1];
