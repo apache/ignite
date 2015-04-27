@@ -29,10 +29,7 @@ import java.util.*;
 import java.util.concurrent.locks.*;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Ignite cache proxy for ignite instance at another JVM.
  */
 public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** Compute. */

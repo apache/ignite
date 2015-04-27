@@ -99,6 +99,31 @@ public class IgniteExProcessProxy implements IgniteEx {
     }
 
     /**
+     * @param gridName Grid name.
+     * @return Instance by name or <code>null</code>.
+     */
+    public static IgniteExProcessProxy get(String gridName) {
+        return gridProxies.get(gridName);
+    }
+
+    /**
+     * Kill all running processes.
+     *
+     * @throws Exception if failed.
+     */
+    public static void killAll() throws Exception {
+        for (IgniteExProcessProxy ignite : gridProxies.values())
+            try {
+                ignite.getProcess().kill();
+            }
+            catch (Exception e) {
+                U.error(ignite.log, "Killing failed.", e);
+            }
+
+        gridProxies.clear();
+    }
+
+    /**
      * @return Local JVM grid instance.
      */
     public Ignite localJvmGrid() {

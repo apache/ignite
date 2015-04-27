@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache.multijvm;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -49,9 +47,6 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         }
     };
 
-    /** Proces name to process map. */
-    private final Map<String, IgniteExProcessProxy> ignites = new HashMap<>();
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
@@ -63,10 +58,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (IgniteExProcessProxy ignite : ignites.values())
-            ignite.getProcess().kill();
-
-        ignites.clear();
+        IgniteExProcessProxy.killAll();
 
         locIgnite = null;
 
@@ -75,16 +67,14 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest(); // TODO: CODE: implement.
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // TODO: remove processes killing from here.
-        for (IgniteExProcessProxy ignite : ignites.values())
-            ignite.getProcess().kill();
+        IgniteExProcessProxy.killAll(); // TODO: remove processes killing from here.
 
-        super.afterTest(); // TODO: CODE: implement.
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
@@ -117,44 +107,11 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         return true;
     }
 
-    /** {@inheritDoc} */
-    protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (!isMultiJvm() || gridName.endsWith("0")) {
-            locIgnite = super.startGrid(gridName, ctx);
-
-            return locIgnite;
-        }
-
-        startingGrid.set(gridName);
-
-        try {
-            IgniteConfiguration cfg = optimize(getConfiguration(gridName));
-
-            IgniteExProcessProxy proxy = new IgniteExProcessProxy(cfg, log, grid(0));
-
-            ignites.put(gridName, proxy);
-
-            return proxy;
-        }
-        finally {
-            startingGrid.set(null);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEx grid(int idx) {
-        if (!isMultiJvm() || idx == 0)
-            return super.grid(idx);
-
-        String name = getTestGridName(idx);
-
-        return ignites.get(name);
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testPutAllRemoveAll() throws Exception {
+        // TODO: uncomment.
 //        for (int i = 0; i < gridCount(); i++) {
 //            IgniteEx grid0 = grid0(i);
 //

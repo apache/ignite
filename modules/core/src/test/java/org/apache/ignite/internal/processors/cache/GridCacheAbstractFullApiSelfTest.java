@@ -197,22 +197,51 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 //            info("Grid " + i + ": " + grid(i).localNode().id());
     }
 
+    /**
+     * Gets flag whether nodes will run in one jvm or in separate jvms.
+     *
+     * @return <code>True</code> to run nodes in separate jvms.
+     */
     protected boolean isMultiJvm() {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (cacheCfgMap == null)
-            return super.startGrid(gridName, ctx);
+        if (!isMultiJvm() || gridName.endsWith("0")) {
+            if (cacheCfgMap == null)
+                return super.startGrid(gridName, ctx);
 
-        IgniteConfiguration cfg = getConfiguration(gridName);
+            IgniteConfiguration cfg = getConfiguration(gridName);
 
-        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+            cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
 
-        cfg.setCacheConfiguration();
+            cfg.setCacheConfiguration();
 
-        return IgnitionEx.start(optimize(cfg), ctx);
+            return IgnitionEx.start(optimize(cfg), ctx);
+        }
+
+        startingGrid.set(gridName);
+
+        try {
+            IgniteConfiguration cfg = optimize(getConfiguration(gridName));
+
+            return new IgniteExProcessProxy(cfg, log, grid(0));
+        }
+        finally {
+            startingGrid.set(null);
+        }
+
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx grid(int idx) {
+        if (!isMultiJvm() || idx == 0)
+            return super.grid(idx);
+
+        String name = getTestGridName(idx);
+
+        return IgniteExProcessProxy.get(name);
     }
 
     /** {@inheritDoc} */
