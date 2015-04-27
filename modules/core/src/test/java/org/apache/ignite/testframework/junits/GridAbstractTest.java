@@ -1091,7 +1091,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
         return getConfiguration0(gridName, rsrcs, getClass(), isDebug());
     }
-    
+
     public static IgniteConfiguration getConfiguration0(String gridName, IgniteTestResources rsrcs,
         Class<? extends GridAbstractTest> cls, boolean isDebug) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();

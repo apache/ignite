@@ -160,10 +160,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 for (Map.Entry<String, CacheConfiguration[]> entry : cacheCfgMap.entrySet()) {
                     Ignite ignite;
-                    
+
                     if (isMultiJvm())
-                        ignite = IgniteExProxy.grid(entry.getKey());
-                    else 
+                        ignite = IgniteExProcessProxy.grid(entry.getKey());
+                    else
                         ignite = IgnitionEx.grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())

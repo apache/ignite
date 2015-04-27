@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 
@@ -38,7 +39,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** */
     private CountDownLatch allNodesJoinLatch;
-    
+
     /** */
     private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
         @Override public boolean apply(Event evt) {
@@ -47,14 +48,14 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
             return true;
         }
     };
-    
+
     /** Proces name to process map. */
-    private final Map<String, IgniteExProxy> ignites = new HashMap<>();
+    private final Map<String, IgniteExProcessProxy> ignites = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
-        
+
         super.beforeTestsStarted();
 
         assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
@@ -62,24 +63,27 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (IgniteExProxy ignite : ignites.values())
+        for (IgniteExProcessProxy ignite : ignites.values())
             ignite.getProcess().kill();
 
         ignites.clear();
-        
+
         locIgnite = null;
 
         super.afterTestsStopped();
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest(); // TODO: CODE: implement.
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (IgniteExProxy ignite : ignites.values())
+        // TODO: remove processes killing from here.
+        for (IgniteExProcessProxy ignite : ignites.values())
             ignite.getProcess().kill();
-        
+
         super.afterTest(); // TODO: CODE: implement.
     }
 
@@ -90,9 +94,9 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
 
         Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
-        
+
         lsnrs.put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
-        
+
         cfg.setLocalEventListeners(lsnrs);
 
         return cfg;
@@ -126,7 +130,7 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         try {
             IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-            IgniteExProxy proxy = new IgniteExProxy(cfg, log, grid(0));
+            IgniteExProcessProxy proxy = new IgniteExProcessProxy(cfg, log, grid(0));
 
             ignites.put(gridName, proxy);
 
@@ -164,25 +168,65 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteEx grid0 = grid(0);
-
-        IgniteCache<Object, Object> c0 = grid0.cache(null);
-
-        IgniteEx grid1 = grid(1);
-
-        IgniteCache<Object, Object> c1 = grid1.cache(null);
+        IgniteCache<Object, Object> c0 = grid(0).cache(null);
+        IgniteCache<Object, Object> c1 = grid(1).cache(null);
 
         c0.putAll(putMap);
 
         atomicClockModeDelay(c0);
 
         c1.removeAll(putMap.keySet());
-        
-        Thread.sleep(5_000);
 
         for (int i = 0; i < size; i++) {
             assertNull(c0.get(i));
             assertNull(c1.get(i));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutRemove() throws Exception {
+        IgniteCache<Object, Object> c0 = grid(0).cache(null);
+        IgniteCache<Object, Object> c1 = grid(1).cache(null);
+
+        final int key = 1;
+        final int val = 3;
+
+        c0.put(key, val);
+
+        assertEquals(val, c0.get(key));
+        assertEquals(val, c1.get(key));
+
+        assertTrue(c1.remove(key));
+
+        U.sleep(1_000);
+
+        assertTrue(c0.get(key) == null || c1.get(key) == null);
+        assertNull(c1.get(key));
+        assertNull(c0.get(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutRemove2() throws Exception {
+        IgniteCache<Object, Object> c0 = grid(0).cache(null);
+        IgniteCache<Object, Object> c1 = grid(1).cache(null);
+
+        final int key = 1;
+        final int val = 3;
+
+        c1.put(key, val);
+
+        assertEquals(val, c1.get(key));
+        assertEquals(val, c0.get(key));
+
+        assertTrue(c1.remove(key));
+
+        U.sleep(1_000);
+
+        assertNull(c1.get(key));
+        assertNull(c0.get(key));
     }
 }

@@ -37,22 +37,22 @@ import java.util.concurrent.*;
 /**
  * Ignite proxy for ignite instance at another JVM.
  */
-public class IgniteExProxy implements IgniteEx {
+public class IgniteExProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private static final Map<String, IgniteExProxy> gridProxies = new HashMap<>();
-    
+    private static final Map<String, IgniteExProcessProxy> gridProxies = new HashMap<>();
+
     /** Jvm process with ignite instance. */
     private final GridJavaProcess proc;
-    
+
     /** Configuration. */
     private final IgniteConfiguration cfg;
-    
+
     /** Local jvm grid. */
     private final Ignite locJvmGrid;
-    
+
     /** Logger. */
     private final IgniteLogger log;
-    
+
     /** Grid id. */
     private final UUID id = UUID.randomUUID();
 
@@ -61,39 +61,40 @@ public class IgniteExProxy implements IgniteEx {
      * @param log Logger.
      * @param locJvmGrid Local jvm grid.
      */
-    public IgniteExProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid) throws Exception {
+    public IgniteExProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid) throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = log;
+        this.log = log.getLogger("jvm-" + id);
 
         IgniteNodeRunner.storeToFile(cfg.getCacheConfiguration()[0]);
 
         List<String> jvmArgs = U.jvmArgs();
-        
+
         List<String> filteredJvmArgs = new ArrayList<>();
 
         for (String arg : jvmArgs) {
             if(!arg.toLowerCase().startsWith("-agentlib"))
                 filteredJvmArgs.add(arg);
         }
-        
+
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
             IgniteNodeRunner.asParams(id, cfg), // Params.
-            log,
+            this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
                 @Override public void apply(String s) {
-                    log.info("[" + cfg.getGridName() + "] " + s);
+                    IgniteExProcessProxy.this.log.info(s);
                 }
             },
             null,
             filteredJvmArgs, // JVM Args.
             System.getProperty("surefire.test.class.path")
         );
-        
-        Thread.sleep(3_000);
-        
+
+        // TODO: delete sleep.
+        U.sleep(3_000);
+
         gridProxies.put(cfg.getGridName(), this);
     }
 
@@ -104,7 +105,7 @@ public class IgniteExProxy implements IgniteEx {
         return locJvmGrid;
     }
 
-    /** 
+    /**
      * @return Grid id.
      */
     public UUID getId() {
@@ -312,7 +313,7 @@ public class IgniteExProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
-        return new CacheProxy(name, this);
+        return new IgniteCacheProcessProxy(name, this);
     }
 
     /** {@inheritDoc} */

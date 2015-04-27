@@ -32,19 +32,19 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Run ignite node. 
+ * Run ignite node.
  */
 public class IgniteNodeRunner {
     /** VM ip finder for TCP discovery. */
     public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-    
+
     /** */
-    private static final String CACHE_CONFIGURATION_TMP_FILE = System.getProperty("java.io.tmpdir") + 
+    private static final String CACHE_CONFIGURATION_TMP_FILE = System.getProperty("java.io.tmpdir") +
         File.separator + "cacheConfiguration.tmp";
 
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
-     *  
+     *
      * @param args Arguments.
      * @throws Exception If failed.
      */
@@ -60,12 +60,12 @@ public class IgniteNodeRunner {
         }
         catch (Throwable e) {
             e.printStackTrace();
-            
+
             System.exit(1);
         }
     }
 
-    /** 
+    /**
      * @param id Grid id.
      * @param cfg Configuration.
      * @return Given paramethers as command line string arguments.
@@ -74,7 +74,7 @@ public class IgniteNodeRunner {
         return id.toString() + ' ' + cfg.getGridName();
     }
 
-    /** 
+    /**
      * @param args Command line args.
      * @return Ignite configuration.
      * @throws Exception If failed.
@@ -85,11 +85,11 @@ public class IgniteNodeRunner {
 
         final UUID nodeId = UUID.fromString(args[0]);
         final String gridName = args[1];
-        
+
         // Configuration.
         IgniteConfiguration cfg = GridAbstractTest.getConfiguration0(gridName, new IgniteTestResources(),
             GridCachePartitionedMultiJvmFullApiSelfTest.class, false);
-        
+
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
 //        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
@@ -101,7 +101,7 @@ public class IgniteNodeRunner {
 
         cfg.setDiscoverySpi(disco);
 
-//        cfg.setCacheConfiguration(cacheConfiguration());
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 ////        ----------------
@@ -130,6 +130,7 @@ public class IgniteNodeRunner {
     public static void storeToFile(CacheConfiguration cc) throws IOException {
         File ccfgTmpFile = new File(CACHE_CONFIGURATION_TMP_FILE);
 
+        // TODO: add file created check (and delete the file after tests).
         boolean created = ccfgTmpFile.createNewFile();
 
         try(ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(ccfgTmpFile))) {
@@ -139,7 +140,7 @@ public class IgniteNodeRunner {
 
     /**
      * Reads cache configuration from the file.
-     *  
+     *
      * @return Cache configuration.
      * @throws Exception If exception.
      */

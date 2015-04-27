@@ -14,6 +14,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -33,16 +34,13 @@ import java.util.concurrent.locks.*;
  * @author @java.author
  * @version @java.version
  */
-public class CacheProxy<K, V> implements IgniteCache<K, V> {
-    /** Proxy. */
-    private final transient IgniteExProxy proxy;
-
+public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** Compute. */
     private final transient IgniteCompute compute;
 
     /** Cache name. */
     private final String cacheName;
-    
+
     /** Grid id. */
     private final UUID gridId;
 
@@ -50,8 +48,7 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
      * @param name Name.
      * @param proxy Ignite Process Proxy.
      */
-    public CacheProxy(String name, IgniteExProxy proxy) {
-        this.proxy = proxy;
+    public IgniteCacheProcessProxy(String name, IgniteExProcessProxy proxy) {
         cacheName = name;
         gridId = proxy.getId();
 
@@ -173,11 +170,11 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V get(K key) {
-        return compute.broadcast(new IgniteClosureX<K, V>() {
+        return F.first(compute.broadcast(new IgniteClosureX<K, V>() {
             @Override public V applyx(K k) {
                 return (V)Ignition.ignite(gridId).cache(cacheName).get(k);
             }
-        }, key).iterator().next();
+        }, key));
     }
 
     /** {@inheritDoc} */
@@ -202,7 +199,13 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
-        // TODO: CODE: implement.
+        compute.broadcast(new IgniteClosureX<List<?>, Object>() {
+            @Override public Object applyx(List<?> l) {
+                Ignition.ignite(gridId).cache(cacheName).put(l.get(0), l.get(1));
+
+                return null;
+            }
+        }, Arrays.asList(key, val));
     }
 
     /** {@inheritDoc} */
@@ -222,7 +225,11 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key) {
-        return false; // TODO: CODE: implement.
+        return F.first(compute.broadcast(new IgniteClosureX<K, Boolean>() {
+            @Override public Boolean applyx(K k) {
+                return Ignition.ignite(gridId).cache(cacheName).remove(k);
+            }
+        }, key));
     }
 
     /** {@inheritDoc} */
@@ -255,7 +262,7 @@ public class CacheProxy<K, V> implements IgniteCache<K, V> {
         compute.broadcast(new IgniteClosureX<Set<?>, Void>() {
             @Override public Void applyx(Set<?> ks) {
                 Ignition.ignite(gridId).cache(cacheName).removeAll(ks);
-                
+
                 return null;
             }
         }, keys);
