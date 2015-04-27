@@ -525,6 +525,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             // Send request to remove from remote nodes.
                             ClusterNode primary = ctx.affinity().primary(key, topVer);
 
+                            if (primary == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to unlock key (all partition nodes left the grid).");
+
+                                break;
+                            }
+
                             GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
@@ -639,6 +646,13 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                                 ClusterNode primary = ctx.affinity().primary(key, cand.topologyVersion());
 
+                                if (primary == null) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to unlock key (all partition nodes left the grid).");
+
+                                    break;
+                                }
+
                                 if (!primary.isLocal()) {
                                     req = map.get(primary);
 
@@ -659,9 +673,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         continue;
                                     }
 
-                                    req.addKey(
-                                        entry.key(),
-                                        ctx);
+                                    req.addKey(entry.key(), ctx);
                                 }
                             }
                         }
