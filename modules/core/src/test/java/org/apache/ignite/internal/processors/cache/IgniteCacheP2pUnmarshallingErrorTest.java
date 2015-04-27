@@ -158,7 +158,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         failAtomicPut(++key);
 
         //Check that cache is empty.
-        readCnt.set(100);
+        readCnt.set(Integer.MAX_VALUE);
 
         assert jcache(0).get(new TestKey(String.valueOf(key))) == null;
 
@@ -168,7 +168,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         failAtomicPut(++key);
 
         //Check that cache is not empty.
-        readCnt.set(100);
+        readCnt.set(Integer.MAX_VALUE);
 
         assert jcache(0).get(new TestKey(String.valueOf(key))) != null;
 
@@ -178,7 +178,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         failAtomicGet(++key);
 
         //GridNearGetResponse unmarshalling failed test
-        readCnt.set(100);
+        readCnt.set(Integer.MAX_VALUE);
 
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
 

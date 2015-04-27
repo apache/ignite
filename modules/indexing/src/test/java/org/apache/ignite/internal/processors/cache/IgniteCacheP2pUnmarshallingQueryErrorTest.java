@@ -37,7 +37,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
 
     /** {@inheritDoc} */
     @Override public void testResponseMessageOnUnmarshallingFailed() {
-        readCnt.set(100);
+        readCnt.set(Integer.MAX_VALUE);
 
         TestKey val = new TestKey(String.valueOf(++key));
 
