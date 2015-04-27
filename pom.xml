@@ -74,6 +74,7 @@
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/schema-import</module>
+        <module>modules/memory</module>
         <module>modules/codegen</module>
     </modules>
 

@@ -1044,7 +1044,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param schema Schema name.
      * @return Collection of table descriptors.
      */
-    private Collection<TableDescriptor> tables(String schema) {
+    public Collection<TableDescriptor> tables(String schema) {
         Schema s = schemas.get(schema);
 
         if (s == null)
@@ -1480,7 +1480,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Information about table in database.
      */
-    private class TableDescriptor implements GridH2Table.IndexesFactory {
+    public class TableDescriptor implements GridH2Table.IndexesFactory {
         /** */
         private final String fullTblName;
 
@@ -1540,6 +1540,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Override public String toString() {
             return S.toString(TableDescriptor.class, this);
         }
+
+        public GridH2Table h2Table() {
+            return tbl;
+        }
+
 
         /** {@inheritDoc} */
         @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {

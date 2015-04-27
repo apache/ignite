@@ -27,14 +27,13 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.ehcache.sizeof.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -45,8 +44,17 @@ public class VisorCache implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default cache size sampling. */
-    private static final int DFLT_CACHE_SIZE_SAMPLING = 10;
+    /** */
+    private static final String MEM_ESTIMATOR = "MemoryEstimator";
+
+    /** */
+    private static final String MEM_ESTIMATOR_INSTALLED = "MemoryEstimatorInstalled";
+
+    /** */
+    private static final String MEM_ESTIMATOR_CACHE_SZ_MTHD = "MemoryEstimatorCacheSizeMethod";
+
+    /** */
+    private static final String MEM_ESTIMATOR_INDEXES_SZ_MTHD = "MemoryEstimatorIndexesSizeMethod";
 
     /** Cache name. */
     private String name;
@@ -59,6 +67,9 @@ public class VisorCache implements Serializable {
 
     /** Cache size in bytes. */
     private long memorySize;
+
+    /** Cache size in bytes. */
+    private long indexesSize;
 
     /** Number of all entries in cache. */
     private int size;
@@ -196,13 +207,14 @@ public class VisorCache implements Serializable {
         nearSize = ca.nearSize();
 
         dynamicDeploymentId = ca.context().dynamicDeploymentId();
-        memorySize = estimateMemorySize(ignite, ca, sample);
         dhtSize = size - nearSize;
         primarySize = ca.primarySize();
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
         offHeapEntriesCnt = ca.offHeapEntriesCount();
         partitions = ca.affinity().partitions();
         metrics = VisorCacheMetrics.from(ignite, ca);
+
+        estimateMemorySize(ignite, ca, sample);
 
         return this;
     }
@@ -216,34 +228,51 @@ public class VisorCache implements Serializable {
      * @return Estimation of memory size occupied by cache.
      * @throws IgniteCheckedException If estimation failed.
      */
-    protected long estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
-        ConcurrentMap<String, SizeOf> storage = ignite.cluster().nodeLocalMap();
+    protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
+        ConcurrentMap<String, Object> storage = ignite.cluster().nodeLocalMap();
 
-        SizeOf sizeOf = storage.get("SizeOf");
+        Boolean installed = (Boolean)storage.get(MEM_ESTIMATOR_INSTALLED);
 
-        if (sizeOf == null)
-            sizeOf = SizeOf.newInstance();
+        if (installed == null) {
+            try {
+                Class<?> cls = Class.forName("org.apache.ignite.memory.MemoryEstimator");
 
-        int cnt = Math.min(sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING, ca.size());
+                Object estimator = cls.newInstance();
 
-        long memSz = 0;
+                Method mtdCacheSz = cls.getMethod("estimateCacheSize", GridCacheAdapter.class, int.class);
+                Method mtdIndexesSz = cls.getMethod("estimateIndexesSize", IgniteEx.class, GridCacheAdapter.class);
 
-        if (cnt > 0) {
-            for (int i = 0; i < cnt; i++) {
-                GridCacheMapEntry entry = ca.randomInternalEntry();
+                memorySize = (Long)mtdCacheSz.invoke(estimator, ca, sample);
+                indexesSize = (Long)mtdIndexesSz.invoke(estimator, ignite, ca);
 
-                long ksz = sizeOf.deepSizeOf(Integer.MAX_VALUE, false, entry.key()).getCalculated();
-                long vsz = sizeOf.deepSizeOf(Integer.MAX_VALUE, false, entry.rawGet()).getCalculated();
-
-                memSz += (ksz + vsz);
+                storage.putIfAbsent(MEM_ESTIMATOR, estimator);
+                storage.putIfAbsent(MEM_ESTIMATOR_CACHE_SZ_MTHD, mtdCacheSz);
+                storage.putIfAbsent(MEM_ESTIMATOR_INDEXES_SZ_MTHD, mtdIndexesSz);
+                storage.putIfAbsent(MEM_ESTIMATOR_INSTALLED, Boolean.TRUE);
             }
+            catch (Exception e) {
+                storage.putIfAbsent(MEM_ESTIMATOR_INSTALLED, Boolean.FALSE);
 
-            memSz = (long)((double)memSz / cnt * size);
+                throw U.cast(e);
+            }
+        }
+        else if (installed) {
+            Object estimator = storage.get(MEM_ESTIMATOR);
+            Method mtdCacheSz = (Method)storage.get(MEM_ESTIMATOR_CACHE_SZ_MTHD);
+            Method mtdIndexesSz = (Method)storage.get(MEM_ESTIMATOR_INDEXES_SZ_MTHD);
+
+            assert estimator != null && mtdCacheSz != null && mtdIndexesSz != null;
+
+            try {
+                memorySize = (Long)mtdCacheSz.invoke(estimator, ca, sample);
+                indexesSize = (Long)mtdIndexesSz.invoke(estimator, ignite, ca);
+            }
+            catch (Exception e) {
+                throw U.cast(e);
+            }
         }
 
-        GridQueryIndexing indexing = ignite.context().query().indexing();
-
-        return memSz;
+        System.out.println("Cache: " + name + ", entries memory=" + memorySize + ", indexes memory=" + indexesSize);
     }
 
     /**
@@ -255,6 +284,7 @@ public class VisorCache implements Serializable {
         c.name = name;
         c.mode = mode;
         c.memorySize = memorySize;
+        c.indexesSize = indexesSize;
         c.size = size;
         c.nearSize = nearSize;
         c.dhtSize = dhtSize;
@@ -297,6 +327,13 @@ public class VisorCache implements Serializable {
      */
     public long memorySize() {
         return memorySize;
+    }
+
+    /**
+     * @return Indexes size in bytes.
+     */
+    public long indexesSize() {
+        return indexesSize;
     }
 
     /**
