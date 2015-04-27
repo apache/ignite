@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -68,32 +69,40 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
      */
     public void testStartStopIgnites() throws Exception {
         for (int attempt = 0; attempt < 3; ++attempt) {
+            log.info("Iteration: " + attempt);
+            
             final Ignite ignite = startGrid(0);
 
             Set<IgniteFuture> futs = new HashSet<>();
+
+            IgniteInternalFuture<?> fut;
 
             try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(null)) {
                 dataLdr.maxRemapCount(0);
 
                 final AtomicInteger igniteId = new AtomicInteger(1);
 
-                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         for (int i = 1; i < 5; ++i)
                             startGrid(igniteId.incrementAndGet());
 
                         return true;
                     }
-                }, 2, "startedGridThread");
+                }, 2, "start-node-thread");
 
-               Random random = new Random();
+                Random random = new Random();
 
-                while (!fut.isDone())
-                    futs.add(dataLdr.addData(random.nextInt(100000), random.nextInt(100000)));
+                long endTime = U.currentTimeMillis() + 15_000;
+
+                while (!fut.isDone() && U.currentTimeMillis() < endTime)
+                    futs.add(dataLdr.addData(random.nextInt(100_000), random.nextInt(100_000)));
             }
 
             for (IgniteFuture f : futs)
                 f.get();
+
+            fut.get();
 
             stopAllGrids();
         }
