@@ -293,6 +293,9 @@ class VisorConsole {
     }
 }
 
+/**
+ * Command line Visor entry point.
+ */
 object VisorConsole extends VisorConsole with App {
     addAboutDialog()
 
