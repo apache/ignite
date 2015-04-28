@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.event.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -259,7 +260,10 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
             return true;
         }
 
-        protected IgniteClosure<Event, VisorGridEvent> eventMapper() {
+        /**
+         * @return Events mapper.
+         */
+        protected VisorEventMapper eventMapper() {
             return EVT_MAPPER;
         }
 
@@ -279,7 +283,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
                 @Override public boolean apply(Event evt) {
                     return evt.localOrder() > startEvtOrder &&
                         (arg.typeArgument() == null || F.contains(arg.typeArgument(), evt.type())) &&
-                        evt.timestamp() >= startEvtTime &&
+                        (evt.timestamp() >= startEvtTime) &&
                         (arg.taskName() == null || filterByTaskName(evt, arg.taskName())) &&
                         (arg.taskSessionId() == null || filterByTaskSessionId(evt, arg.taskSessionId()));
                 }

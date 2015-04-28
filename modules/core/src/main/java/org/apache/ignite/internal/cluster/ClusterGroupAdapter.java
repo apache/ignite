@@ -528,38 +528,39 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             return forPredicate(new OthersFilter(excludeIds));
     }
 
-    /** {@inheritDoc} */
-    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
+    /**
+     * @throws IllegalStateException In case of daemon node.
+     */
+    private void checkDaemon() throws IllegalStateException {
         if (ctx.isDaemon())
             throw new IllegalStateException("Not applicable for the daemon node.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
+        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forDataNodes(@Nullable String cacheName) {
-        if (ctx.isDaemon())
-            throw new IllegalStateException("Not applicable for the daemon node.");
+        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forClientNodes(@Nullable String cacheName) {
-        if (ctx.isDaemon())
-            throw new IllegalStateException("Not applicable for the daemon node.");
+        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName,
-        boolean affNodes,
-        boolean nearNodes,
-        boolean clientNodes)
-    {
-        if (ctx.isDaemon())
-            throw new IllegalStateException("Not applicable for the daemon node.");
+    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
+        boolean clientNodes) {
+        checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
