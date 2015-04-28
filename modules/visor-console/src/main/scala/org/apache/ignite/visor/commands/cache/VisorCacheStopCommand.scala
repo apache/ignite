@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.visor.visor._
 
 import org.apache.ignite.internal.visor.cache.VisorCacheStopTask
@@ -92,36 +92,26 @@ class VisorCacheStopCommand {
             case Some(name) => name
         }
 
-        val cachePrj = node match {
-            case Some(n) => ignite.cluster.forNode(n).forCacheNodes(cacheName)
-            case _ => ignite.cluster.forCacheNodes(cacheName)
+        val grp = try {
+            groupForDataNode(node, cacheName)
         }
+        catch {
+            case _: ClusterGroupEmptyException =>
+                scold(messageNodeNotFound(node, cacheName))
 
-        if (cachePrj.nodes().isEmpty) {
-            warn("Can't find nodes with specified cache: " + escapeName(cacheName),
-                "Type 'cache' to see available cache names."
-            )
-
-            return
+                return
         }
 
         ask(s"Are you sure you want to stop cache: ${escapeName(cacheName)}? (y/n) [n]: ", "n") match {
             case "y" | "Y" =>
-                val stopPrj = cachePrj.forRandom()
-
-                val nid = stopPrj.node().id()
-
                 try {
-                    ignite.compute(stopPrj)
-                        .withName("visor-cstop-task")
-                        .withNoFailover()
-                        .execute(classOf[VisorCacheStopTask], toTaskArgument(nid, cacheName))
+                    executeRandom(grp, classOf[VisorCacheStopTask], cacheName)
 
                     println("Visor successfully stop cache: " + escapeName(cacheName))
                 }
                 catch {
-                    case e: Exception =>
-                        error(e)
+                    case _: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
+                    case e: Exception => error(e)
                 }
 
             case "n" | "N" =>
