@@ -1402,12 +1402,12 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                     key0 = entry.key();
 
-                    invokeRes = computed != null ? new CacheInvokeResult<>(cctx.unwrapTemporary(computed)) : null;
+                    invokeRes = computed != null ? CacheInvokeResult.fromResult(cctx.unwrapTemporary(computed)) : null;
                 }
                 catch (Exception e) {
                     updated = old;
 
-                    invokeRes = new CacheInvokeResult<>(e);
+                    invokeRes = CacheInvokeResult.fromError(e);
                 }
 
                 if (!entry.modified()) {

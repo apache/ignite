@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -604,7 +603,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         throws IgniteCheckedException {
         EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
 
-        return res != null ? res : new CacheInvokeResult<>((T)null);
+        return res != null ? res : new CacheInvokeResult<T>();
     }
 
     /** {@inheritDoc} */

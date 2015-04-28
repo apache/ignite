@@ -570,7 +570,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         Object... args) throws IgniteCheckedException {
         EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
 
-        return res != null ? res : new CacheInvokeResult<>((T)null);
+        return res != null ? res : new CacheInvokeResult<T>();
     }
 
     /** {@inheritDoc} */
@@ -1056,10 +1056,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             updated = ctx.toCacheObject(updatedVal);
 
                             if (computed != null)
-                                invokeRes = new CacheInvokeResult<>(ctx.unwrapTemporary(computed));
+                                invokeRes = CacheInvokeResult.fromResult(ctx.unwrapTemporary(computed));
                         }
                         catch (Exception e) {
-                            invokeRes = new CacheInvokeResult<>(e);
+                            invokeRes = CacheInvokeResult.fromError(e);
 
                             updated = old;
                         }

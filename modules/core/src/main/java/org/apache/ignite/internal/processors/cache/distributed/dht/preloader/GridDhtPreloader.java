@@ -100,7 +100,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                 boolean set = topVer.setIfGreater(e.topologyVersion());
 
-                assert set : "Have you configured GridTcpDiscoverySpi for your in-memory data grid? [newVer=" +
+                assert set : "Have you configured TcpDiscoverySpi for your in-memory data grid? [newVer=" +
                     e.topologyVersion() + ", curVer=" + topVer.get() + ']';
 
                 if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {

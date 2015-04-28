@@ -45,17 +45,33 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     }
 
     /**
+     * Static constructor.
+     *
      * @param res Computed result.
+     * @return New instance.
      */
-    public CacheInvokeResult(T res) {
-        this.res = res;
+    public static <T> CacheInvokeResult<T> fromResult(T res) {
+        CacheInvokeResult<T> cacheRes = new CacheInvokeResult<>();
+
+        cacheRes.res = res;
+
+        return cacheRes;
     }
 
     /**
+     * Static constructor.
+     *
      * @param err Exception thrown by {@link EntryProcessor#process(MutableEntry, Object...)}.
+     * @return New instance.
      */
-    public CacheInvokeResult(Exception err) {
-        this.err = err;
+    public static <T> CacheInvokeResult<T> fromError(Exception err) {
+        assert err != null;
+
+        CacheInvokeResult<T> res = new CacheInvokeResult<>();
+
+        res.err = err;
+
+        return res;
     }
 
     /** {@inheritDoc} */

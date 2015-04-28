@@ -130,6 +130,10 @@ public final class GridJavaProcess {
 
         String javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         String classpath = System.getProperty("java.class.path");
+        String sfcp = System.getProperty("surefire.test.class.path");
+
+        if (sfcp != null)
+            classpath += System.getProperty("path.separator") + sfcp;
 
         if (cp != null)
             classpath += System.getProperty("path.separator") + cp;
