@@ -43,7 +43,6 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     private IgniteUuid miniId;
 
     /** Error. */
-    @GridDirectTransient
     private volatile IgniteCheckedException err;
 
     /** Missed (not found) keys. */
