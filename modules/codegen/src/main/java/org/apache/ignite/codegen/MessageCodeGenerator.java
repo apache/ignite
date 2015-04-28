@@ -18,6 +18,8 @@
 package org.apache.ignite.codegen;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -141,7 +143,7 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
-        gen.generateAndWrite(GridNearTxPrepareRequest.class);
+        gen.generateAndWrite(GridNearLockRequest.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
 //        gen.generateAndWrite(GridDistributedLockResponse.class);
