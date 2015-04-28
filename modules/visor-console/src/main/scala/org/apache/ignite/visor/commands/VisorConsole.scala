@@ -305,9 +305,9 @@ object VisorConsole extends VisorConsole with App {
     
     private val reader = buildReader(argLst)
 
-    scala.Console.withIn(reader.getInput) {
-        mainLoop(reader)
-    }
+    visor.reader(reader)
+
+    mainLoop(reader)
 }
 
 /**

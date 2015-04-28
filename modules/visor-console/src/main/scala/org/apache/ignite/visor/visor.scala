@@ -37,6 +37,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.common.VisorTextTable
 
+import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
 
 import java.io._
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
-import scala.io.StdIn._
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
 
@@ -235,6 +235,14 @@ object visor extends VisorTag {
 
     /** */
     @volatile var ignite: IgniteEx = null
+
+    private var reader: ConsoleReader = null
+
+    def reader(reader: ConsoleReader) {
+        assert(reader != null)
+
+        this.reader = reader
+    }
 
     /**
      * Get grid node for specified ID.
@@ -2187,13 +2195,16 @@ object visor extends VisorTag {
      * @param prompt User prompt.
      * @param mask Mask character (if `None`, no masking will be applied).
      */
-    private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] =
+    private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] = {
+        assert(reader != null)
+
         try {
-            Option(mask.fold(readLine(prompt))(readLine(prompt, _)))
+            Option(mask.fold(reader.readLine(prompt))(reader.readLine(prompt, _)))
         }
         catch {
             case _: Throwable => None
         }
+    }
 
     /**
      * Asks user to choose node id8.
