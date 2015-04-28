@@ -98,11 +98,14 @@ public class GridCacheUtils {
     public static final int SKIP_STORE_FLAG_MASK = 0x1;
 
     /** Per-thread generated UID store. */
-    private static final ThreadLocal<UUID> UUIDS = new ThreadLocal<UUID>() {
-        @Override protected UUID initialValue() {
-            return UUID.randomUUID();
+    private static final ThreadLocal<Integer> UIDS = new ThreadLocal<Integer>() {
+        @Override protected Integer initialValue() {
+            return uidGen.getAndIncrement();
         }
     };
+
+    /** Generates uid. */
+    private static final AtomicInteger uidGen = new GridAtomicInteger();
 
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
@@ -254,8 +257,8 @@ public class GridCacheUtils {
      *
      * @return ID for this thread.
      */
-    public static UUID uuid() {
-        return UUIDS.get();
+    public static int uid() {
+        return UIDS.get();
     }
 
     /**
@@ -311,7 +314,7 @@ public class GridCacheUtils {
      * @param meta Meta name.
      * @return Filter for entries with meta.
      */
-    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final UUID meta) {
+    public static IgnitePredicate<KeyCacheObject> keyHasMeta(final GridCacheContext ctx, final int meta) {
         return new P1<KeyCacheObject>() {
             @Override public boolean apply(KeyCacheObject k) {
                 GridCacheEntryEx e = ctx.cache().peekEx(k);

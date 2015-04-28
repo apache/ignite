@@ -3802,7 +3802,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     private boolean ensureData(int size) {
         if (attributeDataExtras() == null) {
-            attributeDataExtras(new GridLeanMap<UUID, Object>(size));
+            attributeDataExtras(new GridLeanMap<Integer, Object>(size));
 
             return true;
         }
@@ -3812,40 +3812,40 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 addMeta(UUID name, V1 val) {
-        A.notNull(name, "name", val, "val");
+    @Nullable @Override public <V1> V1 addMeta(int key, V1 val) {
+        A.notNull(key, "key", val, "val");
 
         synchronized (this) {
             ensureData(1);
 
-            return (V1)attributeDataExtras().put(name, val);
+            return (V1)attributeDataExtras().put(key, val);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 meta(UUID name) {
-        A.notNull(name, "name");
+    @Nullable @Override public <V1> V1 meta(int key) {
+        A.notNull(key, "key");
 
         synchronized (this) {
-            GridLeanMap<UUID, Object> attrData = attributeDataExtras();
+            GridLeanMap<Integer, Object> attrData = attributeDataExtras();
 
-            return attrData == null ? null : (V1)attrData.get(name);
+            return attrData == null ? null : (V1)attrData.get(key);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 removeMeta(UUID name) {
-        A.notNull(name, "name");
+    @Nullable @Override public <V1> V1 removeMeta(int key) {
+        A.notNull(key, "key");
 
         synchronized (this) {
-            GridLeanMap<UUID, Object> attrData = attributeDataExtras();
+            GridLeanMap<Integer, Object> attrData = attributeDataExtras();
 
             if (attrData == null)
                 return null;
 
-            V1 old = (V1)attrData.remove(name);
+            V1 old = (V1)attrData.remove(key);
 
             if (attrData.isEmpty())
                 attributeDataExtras(null);
@@ -3856,19 +3856,19 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <V1> boolean removeMeta(UUID name, V1 val) {
-        A.notNull(name, "name", val, "val");
+    @Override public <V1> boolean removeMeta(int key, V1 val) {
+        A.notNull(key, "key", val, "val");
 
         synchronized (this) {
-            GridLeanMap<UUID, Object> attrData = attributeDataExtras();
+            GridLeanMap<Integer, Object> attrData = attributeDataExtras();
 
             if (attrData == null)
                 return false;
 
-            V1 old = (V1)attrData.get(name);
+            V1 old = (V1)attrData.get(key);
 
             if (old != null && old.equals(val)) {
-                attrData.remove(name);
+                attrData.remove(key);
 
                 if (attrData.isEmpty())
                     attributeDataExtras(null);
@@ -3881,20 +3881,20 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasMeta(UUID name) {
-        return meta(name) != null;
+    @Override public boolean hasMeta(int key) {
+        return meta(key) != null;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 putMetaIfAbsent(UUID name, V1 val) {
-        A.notNull(name, "name", val, "val");
+    @Nullable @Override public <V1> V1 putMetaIfAbsent(int key, V1 val) {
+        A.notNull(key, "key", val, "val");
 
         synchronized (this) {
-            V1 v = meta(name);
+            V1 v = meta(key);
 
             if (v == null)
-                return addMeta(name, val);
+                return addMeta(key, val);
 
             return v;
         }
@@ -3902,15 +3902,15 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V1> boolean replaceMeta(UUID name, V1 curVal, V1 newVal) {
-        A.notNull(name, "name", newVal, "newVal", curVal, "curVal");
+    @Override public <V1> boolean replaceMeta(int key, V1 curVal, V1 newVal) {
+        A.notNull(key, "key", newVal, "newVal", curVal, "curVal");
 
         synchronized (this) {
-            if (hasMeta(name)) {
-                V1 val = this.<V1>meta(name);
+            if (hasMeta(key)) {
+                V1 val = this.<V1>meta(key);
 
                 if (val != null && val.equals(curVal)) {
-                    addMeta(name, newVal);
+                    addMeta(key, newVal);
 
                     return true;
                 }
@@ -3930,7 +3930,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     @SuppressWarnings({"TooBroadScope"})
     protected void writeExternalMeta(ObjectOutput out) throws IOException {
-        Map<UUID, Object> cp;
+        Map<Integer, Object> cp;
 
         // Avoid code warning (suppressing is bad here, because we need this warning for other places).
         synchronized (this) {
@@ -3951,7 +3951,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      */
     @SuppressWarnings({"unchecked"})
     protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
-        GridLeanMap<UUID, Object> cp = (GridLeanMap<UUID, Object>)in.readObject();
+        GridLeanMap<Integer, Object> cp = (GridLeanMap<Integer, Object>)in.readObject();
 
         synchronized (this) {
             attributeDataExtras(cp);
@@ -4013,14 +4013,14 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     /**
      * @return Attribute data.
      */
-    @Nullable private GridLeanMap<UUID, Object> attributeDataExtras() {
+    @Nullable private GridLeanMap<Integer, Object> attributeDataExtras() {
         return extras != null ? extras.attributesData() : null;
     }
 
     /**
      * @param attrData Attribute data.
      */
-    private void attributeDataExtras(@Nullable GridLeanMap<UUID, Object> attrData) {
+    private void attributeDataExtras(@Nullable GridLeanMap<Integer, Object> attrData) {
         extras = (extras != null) ? extras.attributesData(attrData) : attrData != null ?
             new GridCacheAttributesEntryExtras(attrData) : null;
     }

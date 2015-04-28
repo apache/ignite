@@ -1291,7 +1291,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         if (!F.isEmpty(keys)) {
-            final UUID uid = CU.uuid(); // Get meta UUID for this thread.
+            final int uid = CU.uid(); // Get meta UID for this thread.
 
             assert keys != null;
 

@@ -32,7 +32,7 @@ import java.util.*;
  */
 public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>, EvictableEntry<K, V> {
     /** */
-    private static final UUID META_KEY = UUID.randomUUID();
+    private static final int META_KEY = GridMetadataAwareAdapter.nextUniqueKey();
 
     /** */
     @GridToStringInclude
@@ -74,8 +74,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
      *
      */
     private void onEvicted() {
-        for (UUID key : allMeta().keySet())
-            removeMeta(key);
+        removeAllMeta();
     }
 
     /** {@inheritDoc} */

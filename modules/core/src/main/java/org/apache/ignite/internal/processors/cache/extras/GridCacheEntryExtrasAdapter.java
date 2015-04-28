@@ -28,7 +28,7 @@ import java.util.*;
  */
 public abstract class GridCacheEntryExtrasAdapter implements GridCacheEntryExtras {
     /** {@inheritDoc} */
-    @Override public GridLeanMap<UUID, Object> attributesData() {
+    @Override public GridLeanMap<Integer, Object> attributesData() {
         return null;
     }
 

@@ -44,7 +44,7 @@ import java.util.*;
 @SuppressWarnings({"AssignmentToCatchBlockParameter", "unchecked"})
 public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapter implements CacheStoreManager {
     /** */
-    private static final UUID SES_ATTR = UUID.randomUUID();
+    private static final int SES_ATTR = GridMetadataAwareAdapter.nextUniqueKey();
 
     /** */
     protected CacheStore<Object, Object> store;

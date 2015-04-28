@@ -54,7 +54,7 @@ public class GridCacheMvccTtlEntryExtras extends GridCacheEntryExtrasAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<Integer, Object> attrData) {
         return attrData != null ? new GridCacheAttributesMvccTtlEntryExtras(attrData, mvcc, ttl, expireTime) : this;
     }
 

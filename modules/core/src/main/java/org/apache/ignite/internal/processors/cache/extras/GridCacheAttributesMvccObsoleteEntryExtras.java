@@ -30,7 +30,7 @@ import java.util.*;
  */
 public class GridCacheAttributesMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
-    private GridLeanMap<UUID, Object> attrData;
+    private GridLeanMap<Integer, Object> attrData;
 
     /** MVCC. */
     private GridCacheMvcc mvcc;
@@ -45,7 +45,7 @@ public class GridCacheAttributesMvccObsoleteEntryExtras extends GridCacheEntryEx
      * @param mvcc MVCC.
      * @param obsoleteVer Obsolete version.
      */
-    public GridCacheAttributesMvccObsoleteEntryExtras(GridLeanMap<UUID, Object> attrData, GridCacheMvcc mvcc,
+    public GridCacheAttributesMvccObsoleteEntryExtras(GridLeanMap<Integer, Object> attrData, GridCacheMvcc mvcc,
         GridCacheVersion obsoleteVer) {
         assert attrData != null;
         assert mvcc != null;
@@ -57,12 +57,12 @@ public class GridCacheAttributesMvccObsoleteEntryExtras extends GridCacheEntryEx
     }
 
     /** {@inheritDoc} */
-    @Override public GridLeanMap<UUID, Object> attributesData() {
+    @Override public GridLeanMap<Integer, Object> attributesData() {
         return attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<Integer, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 

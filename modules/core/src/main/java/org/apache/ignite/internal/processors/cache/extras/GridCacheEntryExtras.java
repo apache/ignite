@@ -31,13 +31,13 @@ public interface GridCacheEntryExtras {
     /**
      * @return Attributes data.
      */
-    @Nullable public GridLeanMap<UUID, Object> attributesData();
+    @Nullable public GridLeanMap<Integer, Object> attributesData();
 
     /**
      * @param attrData Attributes data.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData);
+    public GridCacheEntryExtras attributesData(GridLeanMap<Integer, Object> attrData);
 
     /**
      * @return MVCC.

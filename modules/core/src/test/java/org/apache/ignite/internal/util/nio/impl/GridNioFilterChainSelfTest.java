@@ -344,21 +344,6 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T meta(int key) {
-            return meta(new UUID(key, key));
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T addMeta(int key, T val) {
-            return addMeta(new UUID(key, key), val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T removeMeta(int key) {
-            return removeMeta(new UUID(key, key));
-        }
-
-        /** {@inheritDoc} */
         @Override public GridNioFuture<Object> resumeReads() {
             return null;
         }

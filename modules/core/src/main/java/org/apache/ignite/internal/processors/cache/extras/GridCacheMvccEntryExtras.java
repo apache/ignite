@@ -42,8 +42,9 @@ public class GridCacheMvccEntryExtras extends GridCacheEntryExtrasAdapter {
         this.mvcc = mvcc;
     }
 
+
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<Integer, Object> attrData) {
         return attrData != null ? new GridCacheAttributesMvccEntryExtras(attrData, mvcc) : this;
     }
 

@@ -30,26 +30,26 @@ import java.util.*;
  */
 public class GridCacheAttributesEntryExtras extends GridCacheEntryExtrasAdapter {
     /** Attributes data. */
-    private GridLeanMap<UUID, Object> attrData;
+    private GridLeanMap<Integer, Object> attrData;
 
     /**
      * Constructor.
      *
      * @param attrData Attributes data.
      */
-    public GridCacheAttributesEntryExtras(GridLeanMap<UUID, Object> attrData) {
+    public GridCacheAttributesEntryExtras(GridLeanMap<Integer, Object> attrData) {
         assert attrData != null;
 
         this.attrData = attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridLeanMap<UUID, Object> attributesData() {
+    @Override public GridLeanMap<Integer, Object> attributesData() {
         return attrData;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<UUID, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(@Nullable GridLeanMap<Integer, Object> attrData) {
         if (attrData != null) {
             this.attrData = attrData;
 

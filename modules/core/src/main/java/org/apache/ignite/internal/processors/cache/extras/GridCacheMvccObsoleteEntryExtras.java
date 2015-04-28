@@ -49,7 +49,7 @@ public class GridCacheMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras attributesData(GridLeanMap<UUID, Object> attrData) {
+    @Override public GridCacheEntryExtras attributesData(GridLeanMap<Integer, Object> attrData) {
         return attrData != null ? new GridCacheAttributesMvccObsoleteEntryExtras(attrData, mvcc, obsoleteVer) : this;
     }
 
