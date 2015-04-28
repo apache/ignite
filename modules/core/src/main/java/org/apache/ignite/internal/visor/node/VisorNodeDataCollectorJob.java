@@ -125,7 +125,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        VisorCache cache = VisorCache.from(ignite, cacheName, arg.sample());
+                        VisorCache cache = new VisorCache().from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
                             res.caches().add(cache);
