@@ -397,7 +397,7 @@ public class ConnectorConfiguration {
      * Sets whether Secure Socket Layer should be enabled for REST TCP binary protocol.
      * <p/>
      * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
-     * should be provided in {@code GridConfiguration}. Otherwise, TCP binary protocol will fail to start.
+     * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param sslEnabled {@code True} if SSL should be enabled.
      */
