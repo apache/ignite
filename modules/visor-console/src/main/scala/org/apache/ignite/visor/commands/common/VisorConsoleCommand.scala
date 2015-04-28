@@ -68,10 +68,9 @@ trait VisorConsoleCommand {
      * Joins array of strings to a single string with line feed.
      *
      * @param lines Lines to join together.
-     * @param dflt Value to return in case of array is `null` or empty.
-     *@return Joined line.
+     * @return Joined line.
      */
-    protected def join(lines: Iterable[Any], dflt: String = ""): String = {
+    protected def join(lines: Iterable[Any]) = {
         if (lines == null || lines.isEmpty)
             null
         else
