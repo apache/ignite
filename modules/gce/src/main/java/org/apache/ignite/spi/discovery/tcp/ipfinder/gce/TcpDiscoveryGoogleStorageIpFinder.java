@@ -104,7 +104,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         init();
 
-        Collection<InetSocketAddress> addrs = new LinkedList<>();
+        Collection<InetSocketAddress> addrs = new ArrayList<>();
 
         try {
             Storage.Objects.List listObjects = storage.objects().list(bucketName);
@@ -121,7 +121,8 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
                     addrs.add(addrFromString(object.getName()));
 
                 listObjects.setPageToken(objects.getNextPageToken());
-            } while (null != objects.getNextPageToken());
+            }
+            while (null != objects.getNextPageToken());
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to get content from the bucket: " + bucketName, e);
@@ -145,6 +146,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
             object.setName(key);
 
             InputStreamContent content =  new InputStreamContent("application/octet-stream", OBJECT_CONTENT);
+
             content.setLength(OBJECT_CONTENT.available());
 
             try {
@@ -175,7 +177,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
             }
             catch (Exception e) {
                 throw new IgniteSpiException("Failed to delete entry [bucketName=" + bucketName +
-                                                     ", entry=" + key + ']', e);
+                    ", entry=" + key + ']', e);
             }
         }
     }
@@ -211,8 +213,9 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
     /**
      * Sets a full path to the private key in PKCS12 format of the Service Account.
      * <p>
-     * For more information refer to
-     * <a href="https://cloud.google.com/storage/docs/authentication#service_accounts">Service Account Authentication</a>.
+     * For more information please refer to
+     * <a href="https://cloud.google.com/storage/docs/authentication#service_accounts">
+     *     Service Account Authentication</a>.
      *
      * @param p12FileName Private key file full path.
      */
@@ -224,10 +227,11 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
     /**
      * Sets the service account ID (typically an e-mail address).
      * <p>
-     * For more information refer to
-     * <a href="https://cloud.google.com/storage/docs/authentication#service_accounts">Service Account Authentication</a>.
+     * For more information please refer to
+     * <a href="https://cloud.google.com/storage/docs/authentication#service_accounts">
+     *     Service Account Authentication</a>.
      *
-     * @param id
+     * @param id Service account ID.
      */
     @IgniteSpiConfiguration(optional = false)
     public void setServiceAccountId(String id) {
@@ -241,11 +245,15 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
-            if (serviceAccountId == null || serviceAccountP12FilePath == null || projectName == null ||
-                bucketName == null)
-                throw new IgniteSpiException("One or more of the required parameters is not set [serviceAccountId=" +
-                    serviceAccountId + ", serviceAccountP12FilePath=" + serviceAccountP12FilePath + ", projectName=" +
-                    projectName + ", bucketName=" + bucketName + "]");
+            if (serviceAccountId == null ||
+                serviceAccountP12FilePath == null ||
+                projectName == null ||
+                bucketName == null) {
+                throw new IgniteSpiException(
+                    "One or more of the required parameters is not set [serviceAccountId=" +
+                        serviceAccountId + ", serviceAccountP12FilePath=" + serviceAccountP12FilePath + ", projectName=" +
+                        projectName + ", bucketName=" + bucketName + "]");
+            }
 
             try {
                 NetHttpTransport httpTransport;
@@ -272,7 +280,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
 
                 try {
                     storage = new Storage.Builder(httpTransport, JacksonFactory.getDefaultInstance(), credential)
-                                      .setApplicationName(projectName).build();
+                        .setApplicationName(projectName).build();
                 }
                 catch (Exception e) {
                     throw new IgniteSpiException("Failed to open a storage for given project name: " + projectName, e);
@@ -282,6 +290,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
 
                 try {
                     Storage.Buckets.Get getBucket = storage.buckets().get(bucketName);
+
                     getBucket.setProjection("full");
 
                     getBucket.execute();
@@ -289,6 +298,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
                 catch (GoogleJsonResponseException e) {
                     if (e.getStatusCode() == 404) {
                         U.warn(log, "Bucket doesn't exist, will create it [bucketName=" + bucketName + "]");
+
                         createBucket = true;
                     }
                     else
@@ -300,10 +310,12 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
 
                 if (createBucket) {
                     Bucket newBucket = new Bucket();
+
                     newBucket.setName(bucketName);
 
                     try {
                         Storage.Buckets.Insert insertBucket = storage.buckets().insert(projectName, newBucket);
+
                         insertBucket.setProjection("full");
                         insertBucket.setPredefinedDefaultObjectAcl("projectPrivate");
 
@@ -354,8 +366,8 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
         if (res.length != 2)
             throw new IgniteSpiException("Invalid address string: " + key);
 
-
         int port;
+
         try {
             port = Integer.parseInt(res[1]);
         }

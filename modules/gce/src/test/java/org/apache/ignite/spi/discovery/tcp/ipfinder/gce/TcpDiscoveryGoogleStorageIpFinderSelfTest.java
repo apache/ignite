@@ -39,6 +39,7 @@ public class TcpDiscoveryGoogleStorageIpFinderSelfTest
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override protected TcpDiscoveryGoogleStorageIpFinder ipFinder() throws Exception {
         TcpDiscoveryGoogleStorageIpFinder finder = new TcpDiscoveryGoogleStorageIpFinder();
 
