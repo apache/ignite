@@ -22,6 +22,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 
@@ -361,6 +362,31 @@ public class Ignition {
     }
 
     /**
+     * Starts all grids specified within given Spring XML configuration input stream. If grid with given name
+     * is already started, then exception is thrown. In this case all instances that may
+     * have been started so far will be stopped too.
+     * <p>
+     * Usually Spring XML configuration input stream will contain only one Grid definition. Note that
+     * Grid configuration bean(s) is retrieved form configuration input stream by type, so the name of
+     * the Grid configuration bean is ignored.
+     *
+     * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
+     * @return Started grid. If Spring configuration contains multiple grid instances,
+     *      then the 1st found instance is returned.
+     * @throws IgniteException If grid could not be started or configuration
+     *      read. This exception will be thrown also if grid with given name has already
+     *      been started or Spring XML configuration file is invalid.
+     */
+    public static Ignite start(InputStream springCfgStream) throws IgniteException {
+        try {
+            return IgnitionEx.start(springCfgStream);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
      * Loads Spring bean by its name from given Spring XML configuration file. If bean
      * with such name doesn't exist, exception is thrown.
      *
@@ -390,6 +416,24 @@ public class Ignition {
     public static <T> T loadSpringBean(URL springXmlUrl, String beanName) throws IgniteException {
         try {
             return IgnitionEx.loadSpringBean(springXmlUrl, beanName);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * Loads Spring bean by its name from given Spring XML configuration file. If bean
+     * with such name doesn't exist, exception is thrown.
+     *
+     * @param springXmlStream Input stream containing Spring XML configuration (cannot be {@code null}).
+     * @param beanName Bean name (cannot be {@code null}).
+     * @return Loaded bean instance.
+     * @throws IgniteException If bean with provided name was not found or in case any other error.
+     */
+    public static <T> T loadSpringBean(InputStream springXmlStream, String beanName) throws IgniteException {
+        try {
+            return IgnitionEx.loadSpringBean(springXmlStream, beanName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

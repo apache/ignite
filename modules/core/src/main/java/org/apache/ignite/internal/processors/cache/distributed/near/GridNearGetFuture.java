@@ -472,6 +472,13 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         else {
                             primary = cctx.affinity().primary(key, topVer);
 
+                            if (primary == null) {
+                                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                                    "(all partition nodes left the grid)."));
+
+                                return savedVers;
+                            }
+
                             if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
                                 near.metrics0().onRead(false);
                         }
@@ -498,8 +505,16 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
                 }
                 else {
-                    if (primary == null)
+                    if (primary == null) {
                         primary = cctx.affinity().primary(key, topVer);
+
+                        if (primary == null) {
+                            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                                "(all partition nodes left the grid)."));
+
+                            return savedVers;
+                        }
+                    }
 
                     GridNearCacheEntry nearEntry = allowLocRead ? near.peekExx(key) : null;
 

@@ -519,8 +519,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean deserializePortable,
         boolean skipVals
     ) {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return getAllAsync(keys,
-            true,
+            opCtx == null || !opCtx.skipStore(),
             null,
             /*don't check local tx. */false,
             subjId,

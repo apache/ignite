@@ -124,6 +124,9 @@ public abstract class GridWorker implements Runnable {
                 U.error(log, "Runtime error caught during grid runnable execution: " + this, e);
             else
                 U.warn(log, "Runtime exception occurred during grid runnable execution caused by thread interruption: " + e.getMessage());
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             synchronized (mux) {
