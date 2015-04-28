@@ -560,11 +560,31 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        URL springCfgUrl) throws IgniteCheckedException {
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(URL springCfgUrl) throws IgniteCheckedException {
         IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
+    }
+
+    /**
+     * Loads all grid configurations specified within given input stream.
+     * <p>
+     * Usually Spring XML input stream will contain only one Grid definition. Note that
+     * Grid configuration bean(s) is retrieved form configuration input stream by type, so the name of
+     * the Grid configuration bean is ignored.
+     *
+     * @param springCfgStream Input stream contained Spring XML configuration. This cannot be {@code null}.
+     * @return Tuple containing all loaded configurations and Spring context used to load them.
+     * @throws IgniteCheckedException If grid could not be started or configuration
+     *      read. This exception will be thrown also if grid with given name has already
+     *      been started or Spring XML configuration file is invalid.
+     */
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(InputStream springCfgStream) throws IgniteCheckedException {
+        IgniteSpringHelper spring = SPRING.create(false);
+
+        return spring.loadConfigurations(springCfgStream);
     }
 
     /**
@@ -580,8 +600,8 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
-        String springCfgPath) throws IgniteCheckedException {
+    public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext>
+    loadConfigurations(String springCfgPath) throws IgniteCheckedException {
         A.notNull(springCfgPath, "springCfgPath");
 
         URL url;
@@ -616,7 +636,8 @@ public class IgnitionEx {
      */
     public static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> loadConfiguration(URL springCfgUrl)
         throws IgniteCheckedException {
-        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t = loadConfigurations(springCfgUrl);
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
+            loadConfigurations(springCfgUrl);
 
         return F.t(F.first(t.get1()), t.get2());
     }
@@ -717,6 +738,52 @@ public class IgnitionEx {
     }
 
     /**
+     * Starts all grids specified within given Spring XML configuration input stream. If grid with given name
+     * is already started, then exception is thrown. In this case all instances that may
+     * have been started so far will be stopped too.
+     * <p>
+     * Usually Spring XML configuration input stream will contain only one Grid definition. Note that
+     * Grid configuration bean(s) is retrieved form configuration input stream by type, so the name of
+     * the Grid configuration bean is ignored.
+     *
+     * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
+     * @return Started grid. If Spring configuration contains multiple grid instances,
+     *      then the 1st found instance is returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration
+     *      read. This exception will be thrown also if grid with given name has already
+     *      been started or Spring XML configuration file is invalid.
+     */
+    public static Ignite start(InputStream springCfgStream) throws IgniteCheckedException {
+        return start(springCfgStream, null, null);
+    }
+
+    /**
+     * Starts all grids specified within given Spring XML configuration input stream. If grid with given name
+     * is already started, then exception is thrown. In this case all instances that may
+     * have been started so far will be stopped too.
+     * <p>
+     * Usually Spring XML configuration input stream will contain only one Grid definition. Note that
+     * Grid configuration bean(s) is retrieved form configuration input stream by type, so the name of
+     * the Grid configuration bean is ignored.
+     *
+     * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
+     * @param gridName Grid name that will override default.
+     * @param springCtx Optional Spring application context, possibly {@code null}.
+     *      Spring bean definitions for bean injection are taken from this context.
+     *      If provided, this context can be injected into grid tasks and grid jobs using
+     *      {@link SpringApplicationContextResource @IgniteSpringApplicationContextResource} annotation.
+     * @return Started grid. If Spring configuration contains multiple grid instances,
+     *      then the 1st found instance is returned.
+     * @throws IgniteCheckedException If grid could not be started or configuration
+     *      read. This exception will be thrown also if grid with given name has already
+     *      been started or Spring XML configuration file is invalid.
+     */
+    public static Ignite start(InputStream springCfgStream, @Nullable String gridName,
+        @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
+        return start(springCfgStream, gridName, springCtx, null);
+    }
+
+    /**
      * Internal Spring-based start routine.
      *
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
@@ -763,6 +830,77 @@ public class IgnitionEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
+        return startConfigurations(cfgMap, springCfgUrl, gridName, springCtx, cfgClo);
+    }
+
+    /**
+     * Internal Spring-based start routine.
+     *
+     * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
+     * @param gridName Grid name that will override default.
+     * @param springCtx Optional Spring application context.
+     * @param cfgClo Optional closure to change configuration before it is used to start the grid.
+     * @return Started grid.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static Ignite start(final InputStream springCfgStream, @Nullable String gridName,
+        @Nullable GridSpringResourceContext springCtx,
+        @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
+        throws IgniteCheckedException {
+        A.notNull(springCfgStream, "springCfgUrl");
+
+        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
+
+        IgniteBiTuple<Object, Object> t = null;
+
+        if (isLog4jUsed) {
+            try {
+                t = U.addLog4jNoOpLogger();
+            }
+            catch (IgniteCheckedException ignore) {
+                isLog4jUsed = false;
+            }
+        }
+
+        Collection<Handler> savedHnds = null;
+
+        if (!isLog4jUsed)
+            savedHnds = U.addJavaNoOpLogger();
+
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
+
+        try {
+            cfgMap = loadConfigurations(springCfgStream);
+        }
+        finally {
+            if (isLog4jUsed && t != null)
+                U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
+        }
+
+        return startConfigurations(cfgMap, null, gridName, springCtx, cfgClo);
+    }
+
+    /**
+     * Internal Spring-based start routine. Starts loaded configurations.
+     *
+     * @param cfgMap Configuration map.
+     * @param springCfgUrl Spring XML configuration file URL.
+     * @param gridName Grid name that will override default.
+     * @param springCtx Optional Spring application context.
+     * @param cfgClo Optional closure to change configuration before it is used to start the grid.
+     * @return Started grid.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static Ignite startConfigurations(
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap,
+        URL springCfgUrl,
+        @Nullable String gridName,
+        @Nullable GridSpringResourceContext springCtx,
+        @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
+        throws IgniteCheckedException {
         List<IgniteNamedInstance> grids = new ArrayList<>(cfgMap.size());
 
         try {
@@ -913,6 +1051,23 @@ public class IgnitionEx {
         IgniteSpringHelper spring = SPRING.create(false);
 
         return spring.loadBean(springXmlUrl, beanName);
+    }
+
+    /**
+     * Loads spring bean by name.
+     *
+     * @param springXmlStream Input stream containing Spring XML configuration.
+     * @param beanName Bean name.
+     * @return Bean instance.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static <T> T loadSpringBean(InputStream springXmlStream, String beanName) throws IgniteCheckedException {
+        A.notNull(springXmlStream, "springXmlPath");
+        A.notNull(beanName, "beanName");
+
+        IgniteSpringHelper spring = SPRING.create(false);
+
+        return spring.loadBean(springXmlStream, beanName);
     }
 
     /**
