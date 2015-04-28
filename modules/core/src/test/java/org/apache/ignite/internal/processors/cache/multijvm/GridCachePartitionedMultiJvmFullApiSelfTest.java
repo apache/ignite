@@ -33,13 +33,12 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
     protected boolean isMultiJvm() {
         return true;
+    }
+
+    @Override protected boolean isMultiJvmApplicable(String testName) {
+        return "testPutAllRemoveAll".equals(testName);
     }
 
     /**
@@ -47,6 +46,10 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
      */
     public void testPutAllRemoveAll() throws Exception {
         super.testPutAllRemoveAll();
+    }
+
+    public void testPutAllPutAll() throws Exception {
+        super.testPutAllPutAll();
     }
 
     /**
