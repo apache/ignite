@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -123,14 +124,64 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
         // First check transactions on local node.
         int locTxNum = nodeTransactions(cctx.localNodeId());
 
-        if (locTxNum > 1 && !cctx.tm().txsPreparedOrCommitted(tx.nearXidVersion(), locTxNum)) {
-            onDone(false);
+        if (locTxNum > 1) {
+            IgniteInternalFuture<Boolean> fut = cctx.tm().txsPreparedOrCommitted(tx.nearXidVersion(), locTxNum);
 
-            markInitialized();
+            if (fut == null || fut.isDone()) {
+                boolean prepared;
 
-            return;
+                try {
+                    prepared = fut == null ? true : fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Check prepared transaction future failed: " + e, e);
+
+                    prepared = false;
+                }
+
+                if (!prepared) {
+                    onDone(false);
+
+                    markInitialized();
+
+                    return;
+                }
+            }
+            else {
+                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        boolean prepared;
+
+                        try {
+                            prepared = fut.get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Check prepared transaction future failed: " + e, e);
+
+                            prepared = false;
+                        }
+
+                        if (!prepared) {
+                            onDone(false);
+
+                            markInitialized();
+                        }
+                        else
+                            proceedPrepare();
+                    }
+                });
+
+                return;
+            }
         }
 
+        proceedPrepare();
+    }
+
+    /**
+     * Process prepare after local check.
+     */
+    private void proceedPrepare() {
         for (Map.Entry<UUID, Collection<UUID>> entry : txNodes.entrySet()) {
             UUID nodeId = entry.getKey();
 

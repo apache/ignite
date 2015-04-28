@@ -872,10 +872,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             boolean invalidateRdr = e.readerId(n.id()) != null;
 
-                            req.addDhtKey(
-                                e.key(),
-                                invalidateRdr,
-                                cctx);
+                            req.addDhtKey(e.key(), invalidateRdr, cctx);
 
                             if (needVal) {
                                 // Mark last added key as needed to be preloaded.
@@ -893,12 +890,17 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             it.set(addOwned(req, e));
                         }
 
-                        add(fut); // Append new future.
+                        if (!F.isEmpty(req.keys())) {
+                            if (tx != null)
+                                tx.addLockTransactionNode(n);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
+                            add(fut); // Append new future.
 
-                        cctx.io().send(n, req, cctx.ioPolicy());
+                            if (log.isDebugEnabled())
+                                log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
+
+                            cctx.io().send(n, req, cctx.ioPolicy());
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.

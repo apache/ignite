@@ -498,6 +498,13 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
+        if (tx == null && locTx != null && !req.commit()) {
+            U.warn(log, "DHT local tx not found for near local tx rollback " +
+                "[req=" + req + ", dhtVer=" + dhtVer + ", tx=" + locTx + ']');
+
+            return null;
+        }
+
         if (tx == null && !req.explicitLock()) {
             assert locTx == null : "DHT local tx should never be lost for near local tx: " + locTx;
 
@@ -1028,6 +1035,8 @@ public class IgniteTxHandler {
                     return null;
                 }
             }
+            else
+                tx.transactionNodes(req.transactionNodes());
 
             if (!tx.isSystemInvalidate() && !F.isEmpty(req.writes())) {
                 int idx = 0;
@@ -1168,12 +1177,56 @@ public class IgniteTxHandler {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    protected void processCheckPreparedTxRequest(UUID nodeId, GridCacheOptimisticCheckPreparedTxRequest req) {
+    protected void processCheckPreparedTxRequest(final UUID nodeId,
+        final GridCacheOptimisticCheckPreparedTxRequest req)
+    {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
 
-        boolean prepared = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+        IgniteInternalFuture<Boolean> fut = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
 
+        if (fut == null || fut.isDone()) {
+            boolean prepared;
+
+            try {
+                prepared = fut == null ? true : fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
+
+                prepared = false;
+            }
+
+            sendCheckPreparedResponse(nodeId, req, prepared);
+        }
+        else {
+            fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                    boolean prepared;
+
+                    try {
+                        prepared = fut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
+
+                        prepared = false;
+                    }
+
+                    sendCheckPreparedResponse(nodeId, req, prepared);
+                }
+            });
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     * @param prepared {@code True} if all transaction prepared or committed.
+     */
+    private void sendCheckPreparedResponse(UUID nodeId,
+        GridCacheOptimisticCheckPreparedTxRequest req,
+        boolean prepared) {
         GridCacheOptimisticCheckPreparedTxResponse res =
             new GridCacheOptimisticCheckPreparedTxResponse(req.version(), req.futureId(), req.miniId(), prepared);
 

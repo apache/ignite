@@ -178,6 +178,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         topologyVersion(topVer);
     }
 
+    /**
+     * @param txNodes Transaction nodes.
+     */
+    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+        this.txNodes = txNodes;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
