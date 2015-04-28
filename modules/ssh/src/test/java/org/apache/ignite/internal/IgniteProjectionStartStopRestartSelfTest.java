@@ -530,7 +530,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testStopNodesFiltered() throws Exception {
+    public void _testStopNodesFiltered() throws Exception {
         joinedLatch = new CountDownLatch(2);
 
         Collection<ClusterStartNodeResult> res =
