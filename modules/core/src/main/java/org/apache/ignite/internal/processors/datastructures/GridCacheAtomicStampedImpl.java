@@ -62,7 +62,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private GridCacheInternalKey key;
 
     /** Atomic stamped projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -118,7 +118,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param atomicView Atomic projection.
      * @param ctx Cache context.
      */
-    public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, CacheProjection<GridCacheInternalKey,
+    public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, IgniteInternalCache<GridCacheInternalKey,
             GridCacheAtomicStampedValue<T, S>> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
@@ -264,7 +264,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
 
                     stmp.set(val, stamp);
 
-                    atomicView.putx(key, stmp);
+                    atomicView.put(key, stmp);
 
                     tx.commit();
 
@@ -308,7 +308,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                     else {
                         stmp.set(newValClos.apply(stmp.value()), newStampClos.apply(stmp.stamp()));
 
-                        atomicView.put(key, stmp);
+                        atomicView.getAndPut(key, stmp);
 
                         tx.commit();
 

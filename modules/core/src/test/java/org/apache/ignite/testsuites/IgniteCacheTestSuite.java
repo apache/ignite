@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
@@ -81,8 +82,13 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCachePrivateExecutionContextTest.class);
         suite.addTestSuite(IgniteCacheSharedExecutionContextTest.class);
 
+        // Warmup closure tests.
+        suite.addTestSuite(IgniteWarmupClosureSelfTest.class);
+
         // Affinity tests.
         suite.addTestSuite(GridFairAffinityFunctionNodesSelfTest.class);
+        suite.addTestSuite(GridFairAffinityFunctionSelfTest.class);
+        suite.addTestSuite(IgniteFairAffinityDynamicCacheSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 
@@ -108,6 +114,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
         suite.addTestSuite(DataStreamProcessorSelfTest.class);
+        suite.addTestSuite(DataStreamerMultiThreadedSelfTest.class);
         suite.addTestSuite(DataStreamerImplSelfTest.class);
         suite.addTestSuite(GridCacheEntryMemorySizeSelfTest.class);
         suite.addTestSuite(GridCacheClearAllSelfTest.class);
@@ -132,7 +139,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMissingCommitVersionSelfTest.class);
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
         suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicTimeoutSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
+        // suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class); TODO IGNITE-795
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
@@ -167,6 +175,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheVariableTopologySelfTest.class);
         suite.addTestSuite(GridCacheLocalTxMultiThreadedSelfTest.class);
         suite.addTestSuite(GridCacheTransformEventSelfTest.class);
+        suite.addTestSuite(GridCacheLocalIsolatedNodesSelfTest.class);
 
         // Partitioned cache.
         suite.addTestSuite(GridCachePartitionedGetSelfTest.class);
@@ -335,6 +344,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Cache metrics.
         suite.addTest(IgniteCacheMetricsSelfTestSuite.suite());
 
+        // Topology validator.
+        suite.addTest(IgniteTopologyValidatorTestSuit.suite());
+
         // Eviction.
         suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
 
@@ -432,6 +444,10 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheMultiTxLockSelfTest.class);
 
         suite.addTestSuite(IgniteInternalCacheTypesTest.class);
+
+        suite.addTestSuite(IgniteExchangeFutureHistoryTest.class);
+
+        suite.addTestSuite(CacheNoValueClassOnServerNodeTest.class);
 
         return suite;
     }

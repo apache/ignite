@@ -64,7 +64,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private GridCacheInternalKey key;
 
     /** Sequence projection. */
-    private CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context. */
     private volatile GridCacheContext ctx;
@@ -113,7 +113,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     public GridCacheAtomicSequenceImpl(String name,
         GridCacheInternalKey key,
-        CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
+        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
         GridCacheContext ctx,
         int batchSize,
         long locVal,
@@ -496,7 +496,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                     // Global counter must be more than reserved upper bound.
                     seq.set(newUpBound + 1);
 
-                    seqView.putx(key, seq);
+                    seqView.put(key, seq);
 
                     tx.commit();
 

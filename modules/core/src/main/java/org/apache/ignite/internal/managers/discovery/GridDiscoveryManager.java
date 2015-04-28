@@ -173,6 +173,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -419,13 +422,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         spi.setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Object> collect(UUID nodeId) {
+            @Override public Map<Integer, Serializable> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                Map<Integer, Object> data = new HashMap<>();
+                Map<Integer, Serializable> data = new HashMap<>();
 
                 for (GridComponent comp : ctx.components()) {
-                    Object compData = comp.collectDiscoveryData(nodeId);
+                    Serializable compData = comp.collectDiscoveryData(nodeId);
 
                     if (compData != null) {
                         assert comp.discoveryDataType() != null;
@@ -437,8 +440,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return data;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
-                for (Map.Entry<Integer, Object> e : data.entrySet()) {
+            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                for (Map.Entry<Integer, Serializable> e : data.entrySet()) {
                     GridComponent comp = null;
 
                     for (GridComponent c : ctx.components()) {
@@ -657,7 +660,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Map<Integer, CacheMetrics> metrics = null;
 
                 for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.configuration().isStatisticsEnabled()) {
+                    if (cache.context().started() && cache.configuration().isStatisticsEnabled()) {
                         if (metrics == null)
                             metrics = U.newHashMap(caches.size());
 
@@ -738,11 +741,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Object locMode = locNode.attribute(ATTR_DEPLOYMENT_MODE);
 
+        int locJvmMajVer = nodeJavaMajorVersion(locNode);
+
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
         boolean warned = false;
 
         for (ClusterNode n : nodes) {
+            int rmtJvmMajVer = nodeJavaMajorVersion(n);
+
+            if (locJvmMajVer != rmtJvmMajVer)
+                throw new IgniteCheckedException("Local node's java major version is different from remote node's one" +
+                    " [locJvmMajVer=" + locJvmMajVer + ", rmtJvmMajVer=" + rmtJvmMajVer + "]");
+
             String rmtPreferIpV4 = n.attribute("java.net.preferIPv4Stack");
 
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
@@ -781,6 +792,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug("Finished node attributes consistency check.");
+    }
+
+    /**
+     * Gets Java major version running on the node.
+     *
+     * @param node Cluster node.
+     * @return Java major version.
+     * @throws IgniteCheckedException If failed to get the version.
+     */
+    private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
+        try {
+            // The format is identical for Oracle JDK, OpenJDK and IBM JDK.
+            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
+                node.<String>attribute("java.version") + "]", e);
+
+            return 0;
+        }
     }
 
     /**
@@ -909,11 +940,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         if (!locJoinEvt.isDone())
-            locJoinEvt.onDone(new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
+            locJoinEvt.onDone(
+                new IgniteCheckedException("Failed to wait for local node joined event (grid is stopping)."));
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        busyLock.block();
+
         // Stop receiving notifications.
         getSpi().setListener(null);
 
@@ -973,7 +1007,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean pingNode(UUID nodeId) {
         assert nodeId != null;
 
-        return getSpi().pingNode(nodeId);
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            return getSpi().pingNode(nodeId);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -1358,6 +1400,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @return Whether node is failed.
+     */
+    public boolean tryFailNode(UUID nodeId) {
+        if (!busyLock.enterBusy())
+            return false;
+
+        try {
+            if (!getSpi().pingNode(nodeId)) {
+                getSpi().failNode(nodeId);
+
+                return true;
+            }
+
+            return false;
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.
@@ -1576,6 +1640,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 catch (Throwable t) {
                     U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+
+                    if (t instanceof Error)
+                        throw (Error)t;
                 }
             }
         }

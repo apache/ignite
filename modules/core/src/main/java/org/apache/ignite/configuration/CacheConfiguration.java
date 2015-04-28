@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -314,6 +313,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache plugin configurations. */
     private CachePluginConfiguration[] pluginCfgs;
 
+    /** Cache topology validator. */
+    private TopologyValidator topValidator;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -389,6 +391,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeFactory = cc.getCacheStoreFactory();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
+        topValidator = cc.getTopologyValidator();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -1203,7 +1206,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Default value is {@code 0} which means that repartitioning and rebalancing will start
      * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
-     * will only be started manually by calling {@link GridCache#forceRepartition()} method or
+     * will only be started manually by calling {@link IgniteCache#rebalance()} method or
      * from management console.
      *
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
@@ -1409,20 +1412,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
      *
-     * @return Copy on get flag.
+     * @return Copy on read flag.
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
     }
 
     /**
-     * Set copy on get flag.
+     * Sets copy on read flag.
      *
-     * @param cpOnGet Copy on get flag.
+     * @param cpOnRead Copy on get flag.
      * @see #isCopyOnRead
      */
-    public void setCopyOnRead(boolean cpOnGet) {
-        this.cpOnRead = cpOnGet;
+    public void setCopyOnRead(boolean cpOnRead) {
+        this.cpOnRead = cpOnRead;
     }
 
     /**
@@ -1486,7 +1489,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1503,7 +1506,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1516,6 +1519,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param indexedTypes Key and value type pairs.
      */
     public void setIndexedTypes(Class<?>... indexedTypes) {
+        A.ensure(indexedTypes == null || (indexedTypes.length & 1) == 0,
+            "Number of indexed types is expected to be even. Refer to method javadoc for details.");
+
         this.indexedTypes = indexedTypes;
     }
 
@@ -1557,6 +1563,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public void setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
+    }
+
+    /**
+     * Gets topology validator.
+     * @return validator.
+     */
+    public TopologyValidator getTopologyValidator() {
+        return topValidator;
+    }
+
+    /**
+     * Sets topology validator.
+     * @param topValidator validator.
+     */
+    public void setTopologyValidator(TopologyValidator topValidator) {
+        this.topValidator = topValidator;
     }
 
     /** {@inheritDoc} */

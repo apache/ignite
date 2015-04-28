@@ -286,13 +286,15 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param val Value.
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
+     * @param skipStore Skip store flag.
      */
     public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
         IgniteTxKey key,
         @Nullable CacheObject val,
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
-        long ttl) {
+        long ttl,
+        boolean skipStore) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -307,7 +309,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             ttl,
             -1L,
             cached,
-            null);
+            null,
+            skipStore);
 
         txEntry.entryProcessors(entryProcessors);
 

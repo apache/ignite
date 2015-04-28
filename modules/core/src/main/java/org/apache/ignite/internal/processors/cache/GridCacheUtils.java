@@ -94,6 +94,9 @@ public class GridCacheUtils {
     /** Expire time: must be calculated based on TTL value. */
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
+    /** Skip store flag bit mask. */
+    public static final int SKIP_STORE_FLAG_MASK = 0x1;
+
     /** Per-thread generated UID store. */
     private static final ThreadLocal<UUID> UUIDS = new ThreadLocal<UUID>() {
         @Override protected UUID initialValue() {
@@ -390,34 +393,6 @@ public class GridCacheUtils {
         assert swapSpaceName != null;
 
         return "gg-swap-cache-dflt".equals(swapSpaceName) ? null : swapSpaceName.substring("gg-swap-cache-".length());
-    }
-
-    /**
-     * Gets closure which returns {@code Entry} given cache key.
-     * If current cache is DHT and key doesn't belong to current partition,
-     * {@code null} is returned.
-     *
-     * @param ctx Cache context.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
-     */
-    public static <K, V> IgniteClosure<K, Cache.Entry<K, V>> cacheKey2Entry(
-        final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, Cache.Entry<K, V>>() {
-            @Nullable @Override public Cache.Entry<K, V> apply(K k) {
-                try {
-                    return ctx.cache().entry(k);
-                }
-                catch (GridDhtInvalidPartitionException ignored) {
-                    return null;
-                }
-            }
-
-            @Override public String toString() {
-                return "Key-to-entry transformer.";
-            }
-        };
     }
 
     /**
@@ -1050,45 +1025,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param ctx Context.
-     * @param keys Keys.
-     * @return Mapped keys.
-     */
-    @SuppressWarnings( {"unchecked", "MismatchedQueryAndUpdateOfCollection"})
-    public static <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(GridCacheContext<K, ?> ctx,
-        Collection<? extends K> keys) {
-        if (keys == null || keys.isEmpty())
-            return Collections.emptyMap();
-
-        // Map all keys to local node for local caches.
-        if (ctx.config().getCacheMode() == LOCAL)
-            return F.asMap(ctx.localNode(), (Collection<K>)keys);
-
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
-
-        if (CU.affinityNodes(ctx, topVer).isEmpty())
-            return Collections.emptyMap();
-
-        if (keys.size() == 1)
-            return Collections.singletonMap(ctx.affinity().primary(F.first(keys), topVer), (Collection<K>)keys);
-
-        Map<ClusterNode, Collection<K>> map = new GridLeanMap<>(5);
-
-        for (K k : keys) {
-            ClusterNode primary = ctx.affinity().primary(k, topVer);
-
-            Collection<K> mapped = map.get(primary);
-
-            if (mapped == null)
-                map.put(primary, mapped = new LinkedList<>());
-
-            mapped.add(k);
-        }
-
-        return map;
-    }
-
-    /**
      * @param t Exception to check.
      * @return {@code true} if caused by lock timeout.
      */
@@ -1187,7 +1123,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, IgniteInternalCache prj,
         TransactionConcurrency concurrency, TransactionIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1227,8 +1163,9 @@ public class GridCacheUtils {
      * @param ctx Shared cache context.
      */
     public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
+        assert ctx != null;
+
         for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts()) {
-            assert ctx != null;
 
             cacheCtx.evicts().unwind();
 
@@ -1245,7 +1182,7 @@ public class GridCacheUtils {
      * @return Primary node for the key.
      */
     @SuppressWarnings( {"unchecked"})
-    public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
+    @Nullable public static ClusterNode primaryNode(GridCacheContext ctx, Object key) {
         assert ctx != null;
         assert key != null;
 
@@ -1254,11 +1191,7 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() != PARTITIONED)
             return ctx.localNode();
 
-        ClusterNode primary = ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
-
-        assert primary != null;
-
-        return primary;
+        return ctx.affinity().primary(key, ctx.affinity().affinityTopologyVersion());
     }
 
     /**
@@ -1623,8 +1556,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(CacheProjection<K, V> cache, TransactionConcurrency concurrency,
-        TransactionIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
+        TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);

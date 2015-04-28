@@ -72,7 +72,7 @@ public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, FifoEvict
      * Constructs FIFO eviction policy with maximum size and given batch size. Empty entries are allowed.
      *
      * @param max Maximum allowed size of cache before entry will start getting evicted.
-     * @param batchSize Maximum size of batch.
+     * @param batchSize Batch size.
      */
     public FifoEvictionPolicy(int max, int batchSize) {
         A.ensure(max > 0, "max > 0");
@@ -203,11 +203,10 @@ public class FifoEvictionPolicy<K, V> implements EvictionPolicy<K, V>, FifoEvict
                 if (entry == null)
                     break;
 
-                if (!entry.evict()) {
-                    entry.removeMeta();
+                Node<EvictableEntry<K, V>> meta = entry.removeMeta();
 
+                if (meta != null && !entry.evict())
                     touch(entry);
-                }
             }
         }
     }

@@ -23,7 +23,11 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.util.*;
 import org.eclipse.jetty.util.*;
 
 import java.util.*;
@@ -33,11 +37,18 @@ import java.util.*;
  */
 public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private int backupCnt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        disco.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(disco);
 
         if (gridName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
@@ -50,6 +61,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
             cfg.setNodeId(UUID.fromString(new String(chars)));
         }
+
+        cfg.setCommunicationSpi(new TestTcpCommunicationSpi());
 
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
 
@@ -95,8 +108,11 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         assert jcache(0).containsKey(key);
         assert jcache(1).containsKey(key);
 
-        stopGrid(0);
-        stopGrid(1);
+        TestTcpCommunicationSpi.stop(ignite(0));
+        TestTcpCommunicationSpi.stop(ignite(1));
+
+        stopGrid(0, true);
+        stopGrid(1, true);
 
         awaitPartitionMapExchange();
 
@@ -121,6 +137,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         jcache(1).put(key, key);
 
         assert jcache(0).containsKey(key);
+
+        TestTcpCommunicationSpi.stop(ignite(0));
 
         stopGrid(0, true);
 

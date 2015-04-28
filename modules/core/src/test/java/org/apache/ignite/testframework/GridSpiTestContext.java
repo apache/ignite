@@ -519,6 +519,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean tryFailNode(UUID nodeId) {
+        return false;
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.

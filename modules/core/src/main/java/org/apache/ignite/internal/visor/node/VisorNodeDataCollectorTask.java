@@ -70,6 +70,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     /**
      * @param taskRes Task result.
      * @param results Results.
+     * @return Data collector task result.
      */
     protected VisorNodeDataCollectorTaskResult reduce(VisorNodeDataCollectorTaskResult taskRes,
         List<ComputeJobResult> results) {

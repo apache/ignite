@@ -744,6 +744,33 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     }
 
     /**
+     * @param joiningNodeID Joining node ID.
+     * @param nodeId Remote node ID for which data is provided.
+     * @param data Collection of marshalled discovery data objects from different components.
+     * @param clsLdr Class loader for discovery data unmarshalling.
+     */
+    protected void onExchange(UUID joiningNodeID,
+        UUID nodeId,
+        Map<Integer, byte[]> data,
+        ClassLoader clsLdr)
+    {
+        Map<Integer, Serializable> data0 = U.newHashMap(data.size());
+
+        for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
+            try {
+                Serializable compData = marsh.unmarshal(entry.getValue(), clsLdr);
+
+                data0.put(entry.getKey(), compData);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
+            }
+        }
+
+        exchange.onExchange(joiningNodeID, nodeId, data0);
+    }
+
+    /**
      * Handles sockets timeouts.
      */
     protected class SocketTimeoutWorker extends IgniteSpiThread {

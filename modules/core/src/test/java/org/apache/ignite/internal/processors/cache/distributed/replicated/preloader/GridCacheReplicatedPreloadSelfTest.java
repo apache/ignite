@@ -156,8 +156,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, String> cache1 = ((IgniteKernal)g1).internalCache(null);
 
-            cache1.put(1, "val1");
-            cache1.put(2, "val2");
+            cache1.getAndPut(1, "val1");
+            cache1.getAndPut(2, "val2");
 
             GridCacheEntryEx e1 = cache1.peekEx(1);
 

@@ -740,6 +740,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                 }
                 catch (Throwable e) {
                     U.error(log, "Unexpected exception in listener notification for event: " + evt, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
         }
@@ -1077,6 +1080,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     evts = Collections.emptyList();
 
                     ex = e;
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
 
                 // Response message.

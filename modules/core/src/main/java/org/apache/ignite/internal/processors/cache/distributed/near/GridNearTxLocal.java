@@ -1063,13 +1063,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param read Read flag.
      * @param accessTtl Access ttl.
      * @param <K> Key type.
+     * @param skipStore Skip store flag.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
         final Collection<? extends K> keys,
         boolean implicit,
         boolean read,
-        long accessTtl) {
+        long accessTtl,
+        boolean skipStore) {
         assert pessimistic();
 
         try {
@@ -1097,7 +1099,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             /*retval*/false,
             isolation,
             accessTtl,
-            CU.empty0());
+            CU.empty0(),
+            skipStore);
 
         return new GridEmbeddedFuture<>(
             fut,

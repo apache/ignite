@@ -24,7 +24,21 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * SQL Fields query.
+ * SQL Fields query. This query can return specific fields of data based
+ * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
+ * the whole key and value objects back.
+ * <h1 class="header">Collocated Flag</h1>
+ * Collocation flag is used for optimization purposes. Whenever Ignite executes
+ * a distributed query, it sends sub-queries to individual cluster members.
+ * If you know in advance that the elements of your query selection are collocated
+ * together on the same node, usually based on some <b>affinity-key</b>, Ignite
+ * can make significant performance and network optimizations.
+ * <p>
+ * For example, in case of Word-Count example, we know that all identical words
+ * are processed on the same cluster member, because we use the {@code word} itself
+ * as affinity key. This allows Ignite to execute the {@code 'limit'} clause on
+ * the remote nodes and bring back only the small data set specified within the 'limit' clause,
+ * instead of the whole query result as would happen in a non-collocated execution.
  *
  * @see IgniteCache#query(Query)
  */
@@ -39,13 +53,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     @GridToStringInclude
     private Object[] args;
 
+    /** Collocation flag. */
+    private boolean collocated;
+
     /**
-     * Constructs sql fields query.
+     * Constructs SQL fields query.
      *
-     * @param sql SQL Query.
+     * @param sql SQL query.
      */
     public SqlFieldsQuery(String sql) {
         setSql(sql);
+    }
+
+    /**
+     * Constructs SQL fields query.
+     *
+     * @param sql SQL query.
+     * @param collocated Collocated flag.
+     */
+    public SqlFieldsQuery(String sql, boolean collocated) {
+        this.sql = sql;
+        this.collocated = collocated;
     }
 
     /**
@@ -88,6 +116,27 @@ public final class SqlFieldsQuery extends Query<List<?>> {
      */
     public SqlFieldsQuery setArgs(Object... args) {
         this.args = args;
+
+        return this;
+    }
+
+    /**
+     * Checks if this query is collocated.
+     *
+     * @return {@code true} If the query is collocated.
+     */
+    public boolean isCollocated() {
+        return collocated;
+    }
+
+    /**
+     * Sets flag defining if this query is collocated.
+     *
+     * @param collocated Flag value.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setCollocated(boolean collocated) {
+        this.collocated = collocated;
 
         return this;
     }

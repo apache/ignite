@@ -49,7 +49,7 @@ public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion i
      * @param dataDesc Region data description.
      */
     public HibernateNaturalIdRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
+        Ignite ignite, IgniteInternalCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
 

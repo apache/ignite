@@ -39,7 +39,7 @@ public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSe
 
         spi.setAwsCredentials(cred);
 
-        spi.setBucketNameSuffix("test");
+        spi.setBucketNameSuffix("test-bucket");
 
         cfg.setCheckpointSpi(spi);
 

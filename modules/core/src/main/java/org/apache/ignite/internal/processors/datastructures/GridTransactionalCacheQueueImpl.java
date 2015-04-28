@@ -60,7 +60,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         if (idx != null) {
                             checkRemoved(idx);
 
-                            cache.put(itemKey(idx), item);
+                            cache.getAndPut(itemKey(idx), item);
 
                             retVal = true;
                         }
@@ -108,7 +108,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     if (idx != null) {
                         checkRemoved(idx);
 
-                        retVal = (T)cache.remove(itemKey(idx), null);
+                        retVal = (T)cache.getAndRemove(itemKey(idx));
 
                         assert retVal != null : idx;
                     }
@@ -165,7 +165,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                             idx++;
                         }
 
-                        cache.putAll(putMap, null);
+                        cache.putAll(putMap);
 
                         retVal = true;
                     }
@@ -210,7 +210,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     if (idx != null) {
                         checkRemoved(idx);
 
-                        boolean rmv = cache.removex(itemKey(idx));
+                        boolean rmv = cache.remove(itemKey(idx));
 
                         assert rmv : idx;
                     }
