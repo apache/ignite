@@ -659,6 +659,9 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             // as there is no way to rollback at this point.
                             err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                 "(all transaction entries will be invalidated): " + CU.txString(this), ex);
+
+                            if (ex instanceof Error)
+                                throw (Error)ex;
                         }
                     }
                 }

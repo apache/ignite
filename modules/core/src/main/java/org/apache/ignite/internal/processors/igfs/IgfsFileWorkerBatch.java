@@ -151,6 +151,9 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
         catch (Throwable e) {
             // Safety. This should never happen under normal conditions.
             err = e;
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             // Order of events is very important here. First, we close the stream so that metadata locks are released.

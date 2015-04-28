@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.configuration;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cluster.*;
+
+import java.io.*;
+import java.util.*;
 
 /**
- * Tests for fields queries.
+ * Topology validator.
  */
-public class IgniteCacheReplicatedFieldsQueryP2PDisabledSelfTest extends IgniteCacheReplicatedFieldsQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        c.setPeerClassLoadingEnabled(true);
-
-        return c;
-    }
+public interface TopologyValidator extends Serializable {
+    /**
+     * Validates topology.
+     * @param nodes nodes collection to be validated.
+     * @return is topology valid or not.
+     */
+    boolean validate(Collection<ClusterNode> nodes);
 }

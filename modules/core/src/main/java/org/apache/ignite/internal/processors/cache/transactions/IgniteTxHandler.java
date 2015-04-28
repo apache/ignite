@@ -522,6 +522,9 @@ public class IgniteTxHandler {
                 else
                     U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", " +
                         "res=" + res + ']', e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
 
             return null;
@@ -623,6 +626,9 @@ public class IgniteTxHandler {
                         else
                             U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", " +
                                 "res=" + res + ']', e);
+
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
 
                     return null;
@@ -632,16 +638,21 @@ public class IgniteTxHandler {
         catch (Throwable e) {
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
+            IgniteInternalFuture<IgniteInternalTx> res = null;
+
             if (tx != null) {
                 IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
                 rollbackFut.listen(CU.errorLogger(log));
 
-                return rollbackFut;
+                res = rollbackFut;
             }
 
-            return new GridFinishedFuture<>(e);
+            if (e instanceof Error)
+                throw (Error)e;
+
+            return res == null ? new GridFinishedFuture<IgniteInternalTx>(e) : res;
         }
     }
 
@@ -667,6 +678,9 @@ public class IgniteTxHandler {
         }
         catch (Throwable e) {
             U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
+
+            if (e instanceof Error)
+                throw e;
 
             if (tx != null)
                 return tx.rollbackAsync();
@@ -883,6 +897,9 @@ public class IgniteTxHandler {
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to invalidate transaction: " + tx, ex);
             }
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -918,6 +935,9 @@ public class IgniteTxHandler {
             tx.systemInvalidate(true);
 
             tx.rollback();
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -941,6 +961,9 @@ public class IgniteTxHandler {
             }
             else
                 U.error(log, "Failed to send finish response to node [nodeId=" + nodeId + ", res=" + res + ']', e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 

@@ -38,13 +38,13 @@ import java.util.concurrent.*;
 public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** Org count. */
     public static final int ORG_CNT = 30;
-    
+
     /** Address count. */
     public static final int ADDR_CNT = 10;
-    
+
     /** Person count. */
     public static final int PERS_CNT = 50;
-    
+
     /** Product count. */
     public static final int PROD_CNT = 100;
 
@@ -87,7 +87,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
             insertInDb(org);
         }
-        
+
        // Adresses.
         List<Address> addreses = new ArrayList<>();
 
@@ -143,7 +143,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             int id = idGen++;
 
             Person person = persons.get(i % persons.size());
-            
+
             Purchase purchase = new Purchase(id, products.get(i % products.size()), person.orgId, person);
 
             pCache.put(purchase.key(), purchase);
@@ -199,10 +199,10 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 //        compareQueryRes0("select * from table0('aaa', 100) x left join table0('bbb', 100) y where x.b = 'bbb'");
 
         final String addStreet = "Addr" + ORG_CNT + 1;
-        
+
         List<List<?>> res = compareQueryRes0("select avg(old) from \"part\".Person left join \"repl\".Address " +
             " on Person.addrId = Address.id where lower(Address.street) = lower(?)", addStreet);
-        
+
         assertNotSame(0, res);
 
         compareQueryRes0("select avg(old) from \"part\".Person join \"repl\".Address on Person.addrId = Address.id " +
@@ -216,14 +216,14 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
         compareQueryRes0("select firstName, date from \"part\".Person");
         compareQueryRes0("select distinct firstName, date from \"part\".Person");
-        
+
         final String star = " _key, _val, id, firstName, lastName, orgId, salary, addrId, old, date ";
-        
+
         compareQueryRes0("select " + star + " from \"part\".Person p");
         compareQueryRes0("select " + star + " from \"part\".Person");
         compareQueryRes0("select distinct " + star + " from \"part\".Person");
         compareQueryRes0("select p.firstName, date from \"part\".Person p");
-        
+
         compareQueryRes0("select p._key, p._val, p.id, p.firstName, p.lastName, p.orgId, p.salary, p.addrId, p.old, " +
             " p.date, a._key, a._val, a.id, a.street" +
             " from \"part\".Person p, \"repl\".Address a");
@@ -443,7 +443,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /** {@inheritDoc} */
     @Override protected Statement initializeH2Schema() throws SQLException {
         Statement st = super.initializeH2Schema();
-        
+
         st.execute("create table \"part\".ORGANIZATION" +
             "  (_key int not null," +
             "  _val other not null," +
@@ -484,10 +484,10 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             "  street varchar(255))");
 
         conn.commit();
-        
+
         return st;
     }
-    
+
     /**
      * Insert {@link Organization} at h2 database.
      *
@@ -568,7 +568,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
             st.executeUpdate();
         }
     }
-    
+
     /**
      * Insert {@link Address} at h2 database.
      *
@@ -675,7 +675,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
                 ", lastName=" + lastName +
                 ", id=" + id +
                 ", orgId=" + orgId +
-                ", salary=" + salary + 
+                ", salary=" + salary +
                 ", addrId=" + addrId + ']';
         }
     }
@@ -781,7 +781,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
         /** Person ID. */
         @QuerySqlField
         private int personId;
-        
+
         /** Organization id. */
         @QuerySqlField
         private int organizationId;

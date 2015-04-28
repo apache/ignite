@@ -512,6 +512,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         catch (Throwable e) {
             U.error(log, "Failed to notify lifecycle bean (safely ignored) [evt=" + evt +
                 ", gridName=" + gridName + ']', e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 
@@ -822,7 +825,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             stop(true);
 
-            if (e instanceof IgniteCheckedException)
+            if (e instanceof Error)
+                throw e;
+            else if (e instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e;
             else
                 throw new IgniteCheckedException(e);
@@ -1624,7 +1629,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 return "Scala ver. " + props.getProperty("version.number", "<unknown>");
             }
-            catch (Throwable ignore) {
+            catch (Exception ignore) {
                 return "Scala ver. <unknown>";
             }
         }
@@ -1703,6 +1708,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     errOnStop = true;
 
                     U.error(log, "Failed to pre-stop processor: " + comp, e);
+
+                    if (e instanceof Error)
+                        throw e;
                 }
             }
 
@@ -1787,6 +1795,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     errOnStop = true;
 
                     U.error(log, "Failed to stop component (ignoring): " + comp, e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
 

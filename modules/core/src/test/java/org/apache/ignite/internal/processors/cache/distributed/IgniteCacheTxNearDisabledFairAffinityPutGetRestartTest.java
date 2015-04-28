@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * Tests for fields queries.
+ *
  */
-public class GridCachePartitionedFieldsQueryP2PEnabledSelfTest extends GridCachePartitionedFieldsQuerySelfTest {
+public class IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest extends IgniteCacheTxNearDisabledPutGetRestartTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        c.setPeerClassLoadingEnabled(true);
+        cfg.setAffinity(new FairAffinityFunction());
 
-        return c;
+        return cfg;
     }
 }
