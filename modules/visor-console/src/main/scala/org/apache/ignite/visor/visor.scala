@@ -1665,10 +1665,9 @@ object visor extends VisorTag {
         // Make sure visor starts without shutdown hook.
         System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
 
-        sys.props.get(IGNITE_QUIET).map(_.toBoolean) match {
-            case Some(true) =>  // Node will print to Visor console in verbose mode..
-            case _ => cfg.setGridLogger(new NullLogger) // Set NullLoger in quite mode.
-        }
+        // Set NullLoger in quite mode.
+        if ("true".equalsIgnoreCase(sys.props.getOrElse(IGNITE_QUIET, "true")))
+            cfg.setGridLogger(new NullLogger)
 
         val startedGridName = try {
              Ignition.start(cfg).name
