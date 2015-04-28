@@ -177,6 +177,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                 Transaction tx = originatingNodeGrid.transactions().txStart();
 
+                assertEquals(PESSIMISTIC, tx.concurrency());
+
                 try {
                     cache.putAll(map);
 
@@ -315,8 +317,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             nodeMap.put(key, nodes);
         }
 
-        info("Starting tx [values=" + map + ", topVer=" +
-            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
+        info("Starting tx [values=" + map + ", topVer=" + grid(1).context().discovery().topologyVersion() + ']');
 
         assertNotNull(cache);
 
@@ -329,6 +330,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             TransactionProxyImpl txProxy = (TransactionProxyImpl)tx;
 
             IgniteInternalTx txEx = txProxy.tx();
+
+            assertTrue(txEx.pessimistic());
 
             if (commmit) {
                 txEx.prepare();
