@@ -223,7 +223,7 @@ public class GridCacheReturn implements Externalizable, Message {
                 v = resMap;
             }
 
-            CacheInvokeResult res0 = err == null ? new CacheInvokeResult(res) : new CacheInvokeResult(err);
+            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
             resMap.put(key0 != null ? key0 : CU.value(key, cctx, true), res0);
         }
@@ -313,7 +313,8 @@ public class GridCacheReturn implements Externalizable, Message {
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
-                    new CacheInvokeResult<>(CU.value(res.result(), ctx, false)) : new CacheInvokeResult<>(res.error());
+                    CacheInvokeResult.fromResult(CU.value(res.result(), ctx, false)) :
+                    CacheInvokeResult.fromError(res.error());
 
                 map0.put(res.key().value(ctx.cacheObjectContext(), false), res0);
             }
