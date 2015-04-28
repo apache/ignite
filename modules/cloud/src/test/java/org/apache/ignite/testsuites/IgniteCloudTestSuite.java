@@ -33,7 +33,7 @@ public class IgniteCloudTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Cloud Integration Test Suite");
 
         // Cloud Nodes IP finder.
-        suite.addTest(new TestSuite(TcpDiscoveryCloudNodesIpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryCloudIpFinderSelfTest.class));
 
         return suite;
     }

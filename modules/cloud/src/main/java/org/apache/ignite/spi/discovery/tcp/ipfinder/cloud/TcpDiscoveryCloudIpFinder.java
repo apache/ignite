@@ -52,21 +52,73 @@ import java.util.concurrent.atomic.*;
  * <h2 class="header">Optional</h2>
  * <ul>
  *      <li>Credential (see {@link #setCredential(String)})</li>
- *      <li>Discovery port (see {@link #setDiscoveryPort(Integer)})</li>
+ *      <li>Credential path (see {@link #setCredentialPath(String)}</li>
+ *      <li>Regions (see {@link #setRegions(Collection)})</li>
+ *      <li>Zones (see {@link #setZones(Collection)}</li>
  * </ul>
  * </p>
  * <p>
  * The finder forms nodes addresses, that possibly running Ignite, by getting private and public IPs of all
- * VMs in a cloud and adding {@link #discoveryPort} to them.
+ * VMs in a cloud and adding a port number to them.
+ * The port is either the one that is set with {@link TcpDiscoverySpi#setLocalPort(int)} or
+ * {@link TcpDiscoverySpi#DFLT_PORT}.
+ * Make sure that all VMs start Ignite instances on the same port, otherwise they will not be able to discover each
+ * other using this IP finder.
+ * </p>
+ * <p>
  * Both {@link #registerAddresses(Collection)} and {@link #unregisterAddresses(Collection)} has no effect.
  * </p>
  * <p>
- * Note, this finder is only workable when it used directly by a cloud VM.
+ * Note, this finder is only workable when it used directly by cloud VM.
  * Choose another implementation of {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} for local
  * or home network tests.
  * </p>
+ * <h2 class="header">Java Example</h2>
+ * <pre name="code" class="java">
+ * String accountId = "your_account_id";
+ * String accountKey = "your_account_key";
+ *
+ * TcpDiscoveryCloudIpFinder ipFinder = new TcpDiscoveryCloudIpFinder();
+ *
+ * ipFinder.setProvider("aws-ec2");
+ * ipFinder.setIdentity(accountId);
+ * ipFinder.setCredential(accountKey);
+ * ipFinder.setRegions(Collections.<String>emptyList().add("us-east-1"));
+ * ipFinder.setZones(Arrays.asList("us-east-1b", "us-east-1e"));
+ * </pre>
+ * <h2 class="header">Spring Example</h2>
+ * TcpDiscoveryCloudIpFinder can be configured from Spring XML configuration file:
+ * <pre name="code" class="xml">
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
+ *         ...
+ *         &lt;property name="discoverySpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi"&gt;
+ *                 &lt;property name="ipFinder"&gt;
+ *                     &lt;bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinder"/&gt;
+ *                         &lt;property name="provider" value="google-compute-engine"/&gt;
+ *                         &lt;property name="identity" value="your_service_account_email"/&gt;
+ *                         &lt;property name="credentialPath" value="path_to_pem_file"/&gt;
+ *                         &lt;property name="zones"&gt;
+ *                             &lt;list&gt;
+ *                                 &lt;value>us-central1-a&lt/value&gt;
+ *                                 &lt;value>asia-east1-a&lt/value&gt;
+ *                             &lt;/list&gt;
+ *                         &lt;/property&gt;
+ *                     &lt;/bean&gt;
+ *                 &lt;/property&gt;
+ *
+ *                 &lt;property name="socketTimeout" value="400"/&gt;
+ *             &lt;/bean&gt;
+ *         &lt;/property&gt;
+ *         ...
+ * &lt;/bean&gt;
+ * </pre>
+ * <p>
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     /* JCloud default connection timeout. */
     private final static String JCLOUD_CONNECTION_TIMEOUT = "10000"; //10 secs
 
@@ -93,9 +145,6 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /* Nodes filter by regions and zones. */
     private Predicate<ComputeMetadata> nodesFilter;
 
-    /* Port to use to connect to nodes across a cluster. */
-    private Integer discoveryPort;
-
     /** Init guard. */
     @GridToStringExclude
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -110,7 +159,7 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /**
      * Constructor.
      */
-    public TcpDiscoveryCloudNodesIpFinder() {
+    public TcpDiscoveryCloudIpFinder() {
         setShared(true);
     }
 
@@ -133,11 +182,14 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
             }
 
             for (NodeMetadata metadata : nodes) {
+                if (metadata.getStatus() != NodeMetadata.Status.RUNNING)
+                    continue;
+
                 for (String addr : metadata.getPrivateAddresses())
-                    addresses.add(new InetSocketAddress(addr, discoveryPort));
+                    addresses.add(new InetSocketAddress(addr, 0));
 
                 for (String addr : metadata.getPublicAddresses())
-                    addresses.add(new InetSocketAddress(addr, discoveryPort));
+                    addresses.add(new InetSocketAddress(addr, 0));
             }
         }
         catch (Exception e) {
@@ -214,19 +266,6 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
     @IgniteSpiConfiguration(optional = true)
     public void setCredentialPath(String credentialPath) {
         this.credentialPath = credentialPath;
-    }
-
-    /**
-     * Sets the port that is used to discover other nodes running Apache Ignite in the cloud.
-     * If doesn't set, a default port number is used.
-     *
-     * Note that all cloud nodes must accept connection on the same port number.
-     *
-     * @param discoveryPort Port number to use for discovering of other nodes.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public void setDiscoveryPort(Integer discoveryPort) {
-        this.discoveryPort = discoveryPort;
     }
 
     /**
@@ -340,10 +379,6 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
                 catch (Exception e) {
                     throw new IgniteSpiException("Failed to connect to the provider: " + provider, e);
                 }
-
-                if (discoveryPort == null)
-                    discoveryPort = TcpDiscoverySpi.DFLT_PORT;
-
             }
             finally {
                 initLatch.countDown();
