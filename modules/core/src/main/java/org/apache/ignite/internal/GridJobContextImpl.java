@@ -169,10 +169,9 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
             if (job == null)
                 job = ctx.job().activeJob(jobId);
 
-            // Completed?
-            if (job != null && !job.isDone()) {
+            if (job != null) {
                 if (!job.hold())
-                    throw new IllegalStateException("Job has already been held [ctx=" + this + ']');
+                    throw new IllegalStateException("Job has already been hold [ctx=" + this + ']');
 
                 assert timeoutObj == null;
 
@@ -184,7 +183,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
                 // Overflow.
                 if (endTime > 0) {
                     timeoutObj = new GridTimeoutObject() {
-                        private final IgniteUuid id = IgniteUuid.randomUuid();;
+                        private final IgniteUuid id = IgniteUuid.randomUuid();
 
                         @Override public IgniteUuid timeoutId() {
                             return id;
