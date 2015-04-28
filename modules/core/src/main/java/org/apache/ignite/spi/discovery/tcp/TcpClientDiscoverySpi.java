@@ -226,10 +226,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
 
-        // Warn on odd heartbeat frequency.
-        if (hbFreq < 2000)
-            U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
-
         registerMBean(gridName, this, TcpClientDiscoverySpiMBean.class);
 
         try {
