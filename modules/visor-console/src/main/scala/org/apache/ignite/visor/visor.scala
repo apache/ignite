@@ -1620,7 +1620,9 @@ object visor extends VisorTag {
         // Make sure visor starts without shutdown hook.
         System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
 
-        cfg.setGridLogger(new NullLogger)
+        // Set NullLoger in quite mode.
+        if ("true".equalsIgnoreCase(System.getProperty(IGNITE_QUIET, "true")))
+            cfg.setGridLogger(new NullLogger)
 
         val startedGridName = try {
              Ignition.start(cfg).name
