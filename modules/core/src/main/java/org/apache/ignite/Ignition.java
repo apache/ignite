@@ -441,24 +441,6 @@ public class Ignition {
     }
 
     /**
-     * Loads Spring bean by its name from given Spring XML configuration file. If bean
-     * with such name doesn't exist, exception is thrown.
-     *
-     * @param springXmlStream Input stream containing Spring XML configuration (cannot be {@code null}).
-     * @param beanName Bean name (cannot be {@code null}).
-     * @return Loaded bean instance.
-     * @throws IgniteException If bean with provided name was not found or in case any other error.
-     */
-    public static <T> T loadSpringBean(InputStream springXmlStream, String beanName) throws IgniteException {
-        try {
-            return IgnitionEx.loadSpringBean(springXmlStream, beanName);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /**
      * Gets an instance of default no-name grid. Note that
      * caller of this method should not assume that it will return the same
      * instance every time.

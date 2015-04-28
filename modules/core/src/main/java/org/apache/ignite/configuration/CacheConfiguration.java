@@ -175,7 +175,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Eviction key buffer size. */
     private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
 
-    /** Synchronous eviction timeout. */
+    /** Synchronous eviction concurrency level. */
     private int evictSyncConcurrencyLvl = DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL;
 
     /** Synchronous eviction timeout. */
@@ -1529,7 +1529,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
      * This setting only makes sense when offheap is enabled for this cache.
      *
-     * @return size Cache size.
+     * @return Cache size.
      * @see #setOffHeapMaxMemory(long)
      */
     public int getSqlOnheapRowCacheSize() {
