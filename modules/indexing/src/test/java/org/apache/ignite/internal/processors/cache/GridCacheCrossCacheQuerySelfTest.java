@@ -115,9 +115,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTwoStep() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-827");
-
+    public void _testTwoStep() throws Exception {
         String cache = "partitioned";
 
         GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
@@ -251,9 +249,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //        return 10 * 60 * 1000;
 //    }
 
-    public void testLoop() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-827");
-
+    public void _testLoop() throws Exception {
         final IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
         X.println("___ GET READY");

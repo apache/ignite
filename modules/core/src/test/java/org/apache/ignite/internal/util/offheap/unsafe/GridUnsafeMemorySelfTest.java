@@ -257,9 +257,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGuardedOpsPerformance() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-823");
-
+    public void _testGuardedOpsPerformance() throws Exception {
         final GridUnsafeGuard guard = new GridUnsafeGuard();
 
         final AtomicInteger i = new AtomicInteger();
