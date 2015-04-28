@@ -316,7 +316,9 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testStartFiveNodesInTwoCalls() throws Exception {
+    public void _testStartFiveNodesInTwoCalls() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-837.");
+
         joinedLatch = new CountDownLatch(3);
 
         Collection<ClusterStartNodeResult> res =
