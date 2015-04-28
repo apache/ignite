@@ -63,8 +63,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
-    /** Default heartbeat messages issuing frequency (value is <tt>500ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 500;
+    /** Default heartbeat messages issuing frequency (value is <tt>300ms</tt>). */
+    public static final long DFLT_HEARTBEAT_FREQ = 300;
 
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
