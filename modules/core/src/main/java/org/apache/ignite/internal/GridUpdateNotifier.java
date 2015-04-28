@@ -92,8 +92,8 @@ class GridUpdateNotifier {
      * @param reportOnlyNew Whether or not to report only new version.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders, boolean reportOnlyNew)
-        throws IgniteCheckedException {
+    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+        boolean reportOnlyNew) throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
@@ -118,7 +118,7 @@ class GridUpdateNotifier {
             pluginVers = U.newHashMap(pluginProviders.size());
 
             for (PluginProvider provider : pluginProviders)
-                pluginVers.put("plugin_" + provider.name(), provider.version());
+                pluginVers.put("plugins." + provider.name(), provider.version());
 
             this.reportOnlyNew = reportOnlyNew;
 
@@ -276,14 +276,15 @@ class GridUpdateNotifier {
                 SB plugins = new SB();
 
                 for (Map.Entry<String, String> p : pluginVers.entrySet())
-                    plugins.a("&").a(p.getKey()).a("=").a(p.getValue());
+                    plugins.a("&").a(p.getKey()).a("=").a(encode(p.getValue(), CHARSET));
 
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
-                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "");
+                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
+                    plugins.toString();
 
                 URLConnection conn = new URL(url).openConnection();
 
