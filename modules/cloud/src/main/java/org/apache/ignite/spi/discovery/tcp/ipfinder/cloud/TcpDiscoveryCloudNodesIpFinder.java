@@ -18,23 +18,19 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
 import com.google.common.base.*;
-import com.google.common.collect.*;
 import com.google.common.io.*;
-import com.google.inject.*;
-
-import org.jclouds.*;
-import org.jclouds.compute.*;
-import org.jclouds.compute.domain.*;
-import org.jclouds.domain.*;
-import org.jclouds.location.reference.LocationConstants;
-
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.jclouds.*;
+import org.jclouds.compute.*;
+import org.jclouds.compute.domain.*;
+import org.jclouds.domain.*;
+import org.jclouds.location.reference.*;
 
 import java.io.*;
 import java.net.*;
@@ -348,7 +344,8 @@ public class TcpDiscoveryCloudNodesIpFinder extends TcpDiscoveryIpFinderAdapter 
                 if (discoveryPort == null)
                     discoveryPort = TcpDiscoverySpi.DFLT_PORT;
 
-            } finally {
+            }
+            finally {
                 initLatch.countDown();
             }
         else

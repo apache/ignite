@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.cloud;
 
 import com.google.common.collect.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.testsuites.*;
@@ -56,7 +55,7 @@ public class TcpDiscoveryCloudNodesIpFinderSelfTest extends
         String[] providers = {"google-compute-engine", "aws-ec2", "rackspace-cloudservers-us"};
 
         for (String provider : providers) {
-            U.log(log, "Testing provider: " + provider);
+            info("Testing provider: " + provider);
 
             ipFinder = new TcpDiscoveryCloudNodesIpFinder();
             injectLogger(ipFinder);
@@ -79,13 +78,13 @@ public class TcpDiscoveryCloudNodesIpFinderSelfTest extends
             assert addresses.size() > 0;
 
             for (InetSocketAddress addr: addresses)
-                U.log(log, "Registered instance: " + addr.getAddress().getHostAddress() + ":" + addr.getPort());
+                info("Registered instance: " + addr.getAddress().getHostAddress() + ":" + addr.getPort());
 
             ipFinder.unregisterAddresses(addresses);
 
             assert addresses.size() == ipFinder.getRegisteredAddresses().size();
 
-            ipFinder.registerAddresses(ImmutableList.<InetSocketAddress>of(
+            ipFinder.registerAddresses(ImmutableList.of(
                 new InetSocketAddress("192.168.0.1", TcpDiscoverySpi.DFLT_PORT)));
 
             assert addresses.size() == ipFinder.getRegisteredAddresses().size();
