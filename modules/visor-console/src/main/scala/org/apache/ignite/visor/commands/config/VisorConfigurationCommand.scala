@@ -34,7 +34,6 @@ import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==

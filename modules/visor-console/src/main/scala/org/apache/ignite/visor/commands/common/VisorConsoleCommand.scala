@@ -19,6 +19,10 @@
 
 package org.apache.ignite.visor.commands.common
 
+import org.apache.ignite.visor.visor.NA
+
+import scala.collection.JavaConversions._
+
 /**
  * Command implementation.
  */
@@ -70,9 +74,16 @@ trait VisorConsoleCommand {
      * @param lines Lines to join together.
      * @return Joined line.
      */
-    protected def join(lines: Iterable[Any]) = {
+    protected def join(lines: java.lang.Iterable[_ <: Any]) = {
         if (lines == null || lines.isEmpty)
-            null
+            NA
+        else
+            lines.mkString("[", ", ", "]")
+    }
+
+    protected def join(lines: Array[_ <: Any]) = {
+        if (lines == null || lines.isEmpty)
+            NA
         else
             lines.mkString("[", ", ", "]")
     }
