@@ -397,7 +397,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             info("Nodes were started");
 
