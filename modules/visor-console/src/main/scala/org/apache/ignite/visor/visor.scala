@@ -41,6 +41,7 @@ import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
 
 import java.io._
+import java.lang.{Boolean => JavaBoolean}
 import java.net._
 import java.text._
 import java.util.concurrent._
@@ -1076,6 +1077,16 @@ object visor extends VisorTag {
      * @return String.
      */
     def bool2Str(bool: Boolean) = if (bool) "on" else "off"
+
+    /**
+     * Converts `java.lang.Boolean` to 'on'/'off' string.
+     *
+     * @param bool Boolean value.
+     * @param ifNull Default value in case if `bool` is `null`.
+     * @return String.
+     */
+    def javaBoolToStr(bool: JavaBoolean, ifNull: Boolean = false) =
+        bool2Str(if (bool == null) ifNull else bool.booleanValue())
 
     /**
      * Reconstructs string presentation for given argument.
