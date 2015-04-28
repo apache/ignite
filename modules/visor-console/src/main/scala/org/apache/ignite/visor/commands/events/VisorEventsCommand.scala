@@ -17,18 +17,18 @@
 
 package org.apache.ignite.visor.commands.events
 
-import org.apache.ignite._
 import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.visor.event.VisorGridEvent
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
 
 import java.util.UUID
 
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands._
-import org.apache.ignite.visor.visor._
+import org.apache.ignite.internal.visor.event.VisorGridEvent
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -112,18 +112,8 @@ import scala.language.implicitConversions
  *         Starts command in interactive mode.
  * }}}
  */
-class VisorEventsCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help events' to see how to use this command.")
-    }
+class VisorEventsCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "events"
 
     /**
      * ===Command===
@@ -147,25 +137,35 @@ class VisorEventsCommand {
             }
     }
 
-    private[this] def typeFilter(typeArg: Option[String]) = {
-        if (typeArg.isEmpty)
-            null
-        else {
-            val arr = collection.mutable.ArrayBuffer.empty[Int]
+    /**
+     * Gets type filter by mnemonics.
+     * @param typeArg Type mnemonics.
+     * @throws IllegalArgumentException In case unknown event mnemonic.
+     * @return Type id filter.
+     */
+    @throws[IllegalArgumentException]("In case unknown event mnemonic.")
+    protected def typeFilter(typeArg: Option[String]) = {
+        typeArg.map(_.split(",").map(typeIds).flatten).orNull
+    }
 
-            typeArg.get split "," foreach {
-                case "ch" => arr ++= EVTS_CHECKPOINT.toList
-                case "de" => arr ++= EVTS_DEPLOYMENT.toList
-                case "jo" => arr ++= EVTS_JOB_EXECUTION.toList
-                case "ta" => arr ++= EVTS_TASK_EXECUTION.toList
-                case "ca" => arr ++= EVTS_CACHE.toList
-                case "cr" => arr ++= EVTS_CACHE_REBALANCE.toList
-                case "sw" => arr ++= EVTS_SWAPSPACE.toList
-                case "di" => arr ++= EVTS_DISCOVERY.toList
-                case t => throw new IllegalArgumentException("Unknown event type: " + t)
-            }
-
-            arr.toArray
+    /**
+     * Gets type filter by mnemonic.
+     * @param mnemonic Type mnemonic.
+     * @throws IllegalArgumentException In case unknown event mnemonic.
+     * @return Type id filter.
+     */
+    @throws[IllegalArgumentException]("In case unknown event mnemonic.")
+    protected def typeIds(mnemonic: String) = {
+        mnemonic match {
+            case "ch" => EVTS_CHECKPOINT
+            case "de" => EVTS_DEPLOYMENT
+            case "di" => EVTS_DISCOVERY
+            case "jo" => EVTS_JOB_EXECUTION
+            case "ta" => EVTS_TASK_EXECUTION
+            case "ca" => EVTS_CACHE
+            case "cr" => EVTS_CACHE_REBALANCE
+            case "sw" => EVTS_SWAPSPACE
+            case t => throw new IllegalArgumentException("Unknown event mnemonic: " + t)
         }
     }
 
@@ -173,19 +173,23 @@ class VisorEventsCommand {
      * Gets command's mnemonic for given event.
      *
      * @param e Event to get mnemonic for.
+     * @throws IllegalArgumentException In case unknown event type.
+     * @return Type mnemonic.
      */
-    private def mnemonic(e: VisorGridEvent): String = {
+    @throws[IllegalArgumentException]("In case unknown event type.")
+    protected def mnemonic(e: VisorGridEvent) = {
         assert(e != null)
 
         e.typeId() match {
-            case t if EVTS_DISCOVERY_ALL.contains(t) => "di"
             case t if EVTS_CHECKPOINT.contains(t) => "ch"
             case t if EVTS_DEPLOYMENT.contains(t) => "de"
+            case t if EVTS_DISCOVERY_ALL.contains(t) => "di"
             case t if EVTS_JOB_EXECUTION.contains(t)=> "jo"
             case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
             case t if EVTS_CACHE.contains(t) => "ca"
-            case t if EVTS_SWAPSPACE.contains(t) => "sw"
             case t if EVTS_CACHE_REBALANCE.contains(t) => "cr"
+            case t if EVTS_SWAPSPACE.contains(t) => "sw"
+            case t => throw new IllegalArgumentException("Unknown event type: " + t)
         }
     }
 
@@ -203,191 +207,144 @@ class VisorEventsCommand {
      * @param args Command parameters.
      */
     def events(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (isConnected) {
             val argLst = parseArgs(args)
 
-            val typeArg = argValue("e", argLst)
-            val timeArg = argValue("t", argLst)
+            parseNode(argLst) match {
+                case Left(msg) => scold(msg)
+                case Right(None) => scold("Either '-id8' or '-id' must be provided.")
+                case Right(Some(node)) =>
+                    val nid = node.id()
 
-            val id8 = argValue("id8", argLst)
-            val id = argValue("id", argLst)
+                    val typeArg = argValue("e", argLst)
+                    val timeArg = argValue("t", argLst)
 
-            if (!id8.isDefined && !id.isDefined) {
-                scold("Either '-id8' or '-id' must be provided.")
+                    val evts = try
+                        collectEvents(nid, typeArg, timeArg)
+                    catch {
+                        case e: Exception =>
+                            scold(e)
 
-                return
-            }
+                            return
+                    }
 
-            if (id8.isDefined && id.isDefined) {
-                scold("Only one of '-id8' or '-id' is allowed.")
-
-                return
-            }
-
-            val node = if (id8.isDefined) {
-                val ns = nodeById8(id8.get)
-
-                if (ns.isEmpty) {
-                    scold("Unknown 'id8' value: " + id8.get)
-
-                    return
-                }
-
-                if (ns.size != 1) {
-                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get)
-
-                    return
-                }
-
-                ns.head
-            }
-            else {
-                val node = try
-                    ignite.cluster.node(UUID.fromString(id.get))
-                catch {
-                    case _: IllegalArgumentException =>
-                        scold("Invalid node 'id': " + id.get)
+                    if (evts == null || evts.isEmpty) {
+                        println("No events found.")
 
                         return
-                }
+                    }
 
-                if (node == null) {
-                    scold("'id' does not match any node: " + id.get)
+                    val sortedOpt = sort(evts.toList, argValue("s", argLst), hasArgName("r", argLst))
 
-                    return
-                }
-
-                node
-            }
-
-            val nid = node.id()
-
-            val tpFilter = try
-                typeFilter(typeArg)
-            catch {
-                case e: Exception =>
-                    scold(e.getMessage)
-
-                    return
-            }
-
-            val tmFilter = try
-                timeFilter(timeArg)
-            catch {
-                case e: Exception =>
-                    scold(e.getMessage)
-
-                    return
-            }
-
-            val evts = try
-                ignite.compute(ignite.cluster.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
-                    toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
-            catch {
-                case e: IgniteException =>
-                    scold(e.getMessage)
-
-                    return
-            }
-
-            if (evts == null || evts.isEmpty) {
-                println("No events found.")
-
-                return
-            }
-
-            val sortedOpt = sort(evts.toList, argValue("s", argLst), hasArgName("r", argLst))
-
-            if (!sortedOpt.isDefined)
-                return
-
-            val sorted = sortedOpt.get
-
-            val cntOpt = argValue("c", argLst)
-
-            var cnt = Int.MaxValue
-
-            if (cntOpt.isDefined)
-                try
-                    cnt = cntOpt.get.toInt
-                catch {
-                    case e: NumberFormatException =>
-                        scold("Invalid count: " + cntOpt.get)
-
+                    if (!sortedOpt.isDefined)
                         return
-                }
 
-            println("Summary:")
+                    val sorted = sortedOpt.get
 
-            val st = VisorTextTable()
+                    val cntOpt = argValue("c", argLst)
 
-            st += ("Node ID8(@ID)", nodeId8Addr(nid))
-            st += ("Total", sorted.size)
-            st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.timestamp).timestamp))
-            st += ("Oldest timestamp", formatDateTime(evts.minBy(_.timestamp).timestamp))
+                    var cnt = Int.MaxValue
 
-            st.render()
+                    if (cntOpt.isDefined)
+                        try
+                            cnt = cntOpt.get.toInt
+                        catch {
+                            case e: NumberFormatException =>
+                                scold("Invalid count: " + cntOpt.get)
 
-            nl()
+                                return
+                        }
 
-            println("Per-Event Summary:")
+                    println("Summary:")
 
-            var sum = Map[Int, (String, Int, Long, Long)]()
+                    val st = VisorTextTable()
 
-            evts.foreach(evt => {
-                val info = sum.getOrElse(evt.typeId(), (null, 0, Long.MinValue, Long.MaxValue))
+                    st += ("Node ID8(@ID)", nodeId8Addr(nid))
+                    st += ("Total", sorted.size)
+                    st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.timestamp).timestamp))
+                    st += ("Oldest timestamp", formatDateTime(evts.minBy(_.timestamp).timestamp))
 
-                sum += (evt.typeId -> (
-                    "(" + mnemonic(evt) + ") " + evt.name(),
-                    info._2 + 1,
-                    if (evt.timestamp() > info._3) evt.timestamp() else info._3,
-                    if (evt.timestamp() < info._4) evt.timestamp() else info._4)
-                )
-            })
+                    st.render()
 
-            val et = VisorTextTable()
+                    nl()
 
-            et #= (
-                "Event",
-                "Total",
-                ("Earliest/Oldest", "Timestamp"),
-                ("Rate", "events/sec")
-            )
+                    println("Per-Event Summary:")
 
-            sum.values.toList.sortBy(_._2).reverse.foreach(v => {
-                val range = v._3 - v._4
+                    var sum = Map[Int, (String, Int, Long, Long)]()
 
-                et += (
-                    v._1,
-                    v._2,
-                    (formatDateTime(v._3), formatDateTime(v._4)),
-                    formatDouble(if (range != 0) (v._2.toDouble * 1000) / range else v._2)
-                )
-            })
+                    evts.foreach(evt => {
+                        val info = sum.getOrElse(evt.typeId(), (null, 0, Long.MinValue, Long.MaxValue))
 
-            et.render()
+                        sum += (evt.typeId -> (
+                            "(" + mnemonic(evt) + ") " + evt.name(),
+                            info._2 + 1,
+                            if (evt.timestamp() > info._3) evt.timestamp() else info._3,
+                            if (evt.timestamp() < info._4) evt.timestamp() else info._4)
+                            )
+                    })
 
-            nl()
+                    val et = VisorTextTable()
 
-            if (sorted.size > cnt)
-                println("Top " + cnt + " Events:")
-            else
-                println("All Events:")
+                    et #= (
+                        "Event",
+                        "Total",
+                        ("Earliest/Oldest", "Timestamp"),
+                        ("Rate", "events/sec")
+                        )
 
-            val all = VisorTextTable()
+                    sum.values.toList.sortBy(_._2).reverse.foreach(v => {
+                        val range = v._3 - v._4
 
-            all.maxCellWidth = 50
+                        et += (
+                            v._1,
+                            v._2,
+                            (formatDateTime(v._3), formatDateTime(v._4)),
+                            formatDouble(if (range != 0) (v._2.toDouble * 1000) / range else v._2)
+                            )
+                    })
 
-            all #= ("Timestamp", "Description")
+                    et.render()
 
-            sorted.take(cnt).foreach(evt =>
-                all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
-            )
+                    nl()
 
-            all.render()
+                    if (sorted.size > cnt)
+                        println("Top " + cnt + " Events:")
+                    else
+                        println("All Events:")
+
+                    val all = VisorTextTable()
+
+                    all.maxCellWidth = 50
+
+                    all #= ("Timestamp", "Description")
+
+                    sorted.take(cnt).foreach(evt =>
+                        all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
+                    )
+
+                    all.render()
+            }
         }
+        else
+            adviseToConnect()
+    }
+
+    /**
+     * Collect events.
+     *
+     * @param nid Node id.
+     * @param typeArg Type ids argument.
+     * @param timeArg Time argument.
+     * @return
+     */
+    @throws[Exception]("In case of error.")
+    protected def collectEvents(nid: UUID, typeArg: Option[String], timeArg: Option[String]) = {
+        val tpFilter = typeFilter(typeArg)
+
+        val tmFilter = timeFilter(timeArg)
+
+        executeOne(nid, classOf[VisorNodeEventsCollectorTask],
+            VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter))
     }
 
     /**
@@ -419,6 +376,9 @@ class VisorEventsCommand {
  * Companion object that does initialization of the command.
  */
 object VisorEventsCommand {
+    /** Singleton command. */
+    private val cmd = new VisorEventsCommand
+
     addHelp(
         name = "events",
         shortInfo = "Print events from a node.",
@@ -495,11 +455,9 @@ object VisorEventsCommand {
             "events" ->
                 "Starts command in interactive mode."
         ),
-        ref = VisorConsoleCommand(cmd.events, cmd.events)
+        emptyArgs = cmd.events,
+        withArgs = cmd.events
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorEventsCommand
 
     /**
      * Singleton.

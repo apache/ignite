@@ -18,18 +18,16 @@
 package org.apache.ignite.visor.commands.gc
 
 import org.apache.ignite._
-
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.internal.visor.node.VisorNodeGcTask
+import org.apache.ignite.cluster.ClusterGroupEmptyException
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 
-import java.util.UUID
+import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -47,7 +45,7 @@ import scala.util.control.Breaks._
  * ====Specification====
  * {{{
  *     gc
- *     gc "{-id8=<node-id8>|-id=<node-id>} {-c}"
+ *     gc "{-id8=<node-id8>|-id=<node-id>}"
  * }}}
  *
  * ====Arguments====
@@ -58,8 +56,6 @@ import scala.util.control.Breaks._
  *     -id=<node-id>
  *         ID of the node.
  *         Note that either '-id8' or '-id' can be specified.
- *     -c
- *         Run DGC procedure on all caches.
  * }}}
  *
  * ====Examples====
@@ -68,24 +64,10 @@ import scala.util.control.Breaks._
  *         Runs garbage collector on specified node.
  *     gc
  *         Runs garbage collector on all nodes in topology.
- *     gc "-id8=12345678 -c"
- *         Runs garbage collector and DGC procedure on all caches.
  * }}}
  */
-class VisorGcCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        nl()
-
-        warn(errMsgs: _*)
-        warn("Type 'help gc' to see how to use this command.")
-    }
+class VisorGcCommand extends VisorConsoleCommand {
+    @impl protected val name = "gc"
 
     /**
      * ===Command===
@@ -94,71 +76,40 @@ class VisorGcCommand {
      * ===Examples===
      * <ex>gc "-id8=12345678"</ex>
      * Runs `System.gc()` on specified node.
-     *
-     * <ex>gc "-id8=12345678 -c"</ex>
-     * Runs garbage collector and DGC procedure on all caches.
      */
-    def gc(args: String) = breakable {
+    def gc(args: String) {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (isConnected) {
             val argLst = parseArgs(args)
-
-            val id8 = argValue("id8", argLst)
-            val id = argValue("id", argLst)
-            val dgc = hasArgFlag("c", argLst)
-
-            var node: ClusterNode = null
-
-            if (id8.isDefined && id.isDefined)
-                scold("Only one of '-id8' or '-id' is allowed.").^^
-            else if (id8.isDefined) {
-                val ns = nodeById8(id8.get)
-
-                if (ns.isEmpty)
-                    scold("Unknown 'id8' value: " + id8.get).^^
-                else if (ns.size != 1) {
-                    scold("'id8' resolves to more than one node (use full 'id' instead): " + id8.get).^^
-                }
-                else
-                    node = ns.head
-            }
-            else if (id.isDefined)
-                try {
-                    node = ignite.cluster.node(UUID.fromString(id.get))
-
-                    if (node == null)
-                        scold("'id' does not match any node: " + id.get).^^
-                }
-                catch {
-                    case e: IllegalArgumentException => scold("Invalid node 'id': " + id.get).^^
-                }
 
             try {
                 val t = VisorTextTable()
 
                 t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
-                val prj = ignite.cluster.forRemotes()
-
-                val nids = prj.nodes().map(_.id())
-
                 val NULL: Void = null
 
-                ignite.compute(prj).withNoFailover().execute(classOf[VisorNodeGcTask],
-                    toTaskArgument(nids, NULL)).foreach {
-                        case (nid, stat) =>
-                            val roundHb = stat.get1() / (1024L * 1024L)
-                            val roundHa = stat.get2() / (1024L * 1024L)
+                val res = parseNode(argLst) match {
+                    case Left(msg) =>
+                        scold(msg)
 
-                            val sign = if (roundHa > roundHb) "+" else ""
+                        return
+                    case Right(None) => executeMulti(classOf[VisorNodeGcTask], NULL)
+                    case Right(Some(node)) => executeOne(node.id, classOf[VisorNodeGcTask], NULL)
+                }
 
-                            val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
+                res.foreach {
+                    case (nid, stat) =>
+                        val roundHb = stat.get1() / (1024L * 1024L)
+                        val roundHa = stat.get2() / (1024L * 1024L)
 
-                            t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
-                    }
+                        val sign = if (roundHa > roundHb) "+" else ""
+
+                        val deltaPercent = math.round(roundHa * 100d / roundHb - 100)
+
+                        t += (nodeId8(nid), roundHb + "mb", roundHa + "mb", sign + deltaPercent + "%")
+                }
 
                 println("Garbage collector procedure results:")
 
@@ -166,9 +117,11 @@ class VisorGcCommand {
             }
             catch {
                 case e: ClusterGroupEmptyException => scold("Topology is empty.")
-                case e: IgniteException => scold(e.getMessage)
+                case e: IgniteException => scold(e)
             }
         }
+        else
+            adviseToConnect()
     }
 
     /**
@@ -188,8 +141,11 @@ class VisorGcCommand {
  * Companion object that does initialization of the command.
  */
 object VisorGcCommand {
+    /** Singleton command. */
+    private val cmd = new VisorGcCommand
+
     addHelp(
-        name = "gc",
+        name = cmd.name,
         shortInfo = "Runs GC on remote nodes.",
         longInfo = List(
             "Runs garbage collector on remote nodes.",
@@ -197,8 +153,8 @@ object VisorGcCommand {
             "Otherwise, it will be run on all nodes in topology."
         ),
         spec = List(
-            "gc",
-            "gc {-id8=<node-id8>|-id=<node-id>} {-c}"
+            cmd.name,
+            s"${cmd.name} {-id8=<node-id8>|-id=<node-id>}"
         ),
         args = List(
             "-id8=<node-id8>" -> List(
@@ -209,25 +165,19 @@ object VisorGcCommand {
             "-id=<node-id>" -> List(
                 "ID of the node.",
                 "Note that either '-id8' or '-id' can be specified."
-            ),
-            "-c" -> List(
-                "Run DGC procedure on all caches."
             )
         ),
         examples = List(
-            "gc -id8=12345678" ->
+            s"${cmd.name} -id8=12345678" ->
                 "Runs garbage collector on specified node.",
-            "gc" ->
+            cmd.name ->
                 "Runs garbage collector on all nodes in topology.",
-            "gc -id8=@n0 -c" ->
-                ("Runs garbage collector on specified node with id8 taken from 'n0' memory variable " +
-                "and run DGC procedure on all caches.")
+            s"${cmd.name} -id8=@n0" ->
+                "Runs garbage collector on specified node with id8 taken from 'n0' memory variable."
         ),
-        ref = VisorConsoleCommand(cmd.gc, cmd.gc)
+        emptyArgs = cmd.gc,
+        withArgs = cmd.gc
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorGcCommand
 
     /**
      * Singleton.

@@ -97,30 +97,30 @@ public class VisorCacheTypeMetadata implements Serializable {
 
         VisorCacheTypeMetadata metadata = new VisorCacheTypeMetadata();
 
-        metadata.dbSchema(m.getDatabaseSchema());
-        metadata.dbTbl(m.getDatabaseTable());
-        metadata.keyType(m.getKeyType());
-        metadata.valType(m.getValueType());
+        metadata.dbSchema = m.getDatabaseSchema();
+        metadata.dbTbl = m.getDatabaseTable();
+        metadata.keyType = m.getKeyType();
+        metadata.valType = m.getValueType();
 
         ArrayList<VisorCacheTypeFieldMetadata> fields = new ArrayList<>(m.getKeyFields().size());
 
         for (CacheTypeFieldMetadata field : m.getKeyFields())
             fields.add(VisorCacheTypeFieldMetadata.from(field));
 
-        metadata.keyFields(fields);
+        metadata.keyFields = fields;
 
         fields = new ArrayList<>(m.getValueFields().size());
 
         for (CacheTypeFieldMetadata field : m.getValueFields())
             fields.add(VisorCacheTypeFieldMetadata.from(field));
 
-        metadata.valFields(fields);
+        metadata.valFields = fields;
 
-        metadata.qryFlds(convertFieldsMap(m.getQueryFields()));
-        metadata.ascFlds(convertFieldsMap(m.getAscendingFields()));
-        metadata.descFlds(convertFieldsMap(m.getDescendingFields()));
-        metadata.txtFlds(m.getTextFields());
-        metadata.grps(convertGrpsMap(m.getGroups()));
+        metadata.qryFlds = convertFieldsMap(m.getQueryFields());
+        metadata.ascFlds = convertFieldsMap(m.getAscendingFields());
+        metadata.descFlds = convertFieldsMap(m.getDescendingFields());
+        metadata.txtFlds = m.getTextFields();
+        metadata.grps = convertGrpsMap(m.getGroups());
 
         return metadata;
     }
@@ -167,24 +167,10 @@ public class VisorCacheTypeMetadata implements Serializable {
     }
 
     /**
-     * @param dbSchema New schema name in database.
-     */
-    public void dbSchema(String dbSchema) {
-        this.dbSchema = dbSchema;
-    }
-
-    /**
      * @return Schema name in database.
      */
     public String dbSchema() {
         return dbSchema;
-    }
-
-    /**
-     * @param dbTbl New table name in database.
-     */
-    public void dbTbl(String dbTbl) {
-        this.dbTbl = dbTbl;
     }
 
     /**
@@ -195,24 +181,10 @@ public class VisorCacheTypeMetadata implements Serializable {
     }
 
     /**
-     * @param keyType New key class used to store key in cache.
-     */
-    public void keyType(String keyType) {
-        this.keyType = keyType;
-    }
-
-    /**
      * @return Key class used to store key in cache.
      */
     public String keyType() {
         return keyType;
-    }
-
-    /**
-     * @param valType New value class used to store value in cache.
-     */
-    public void valType(String valType) {
-        this.valType = valType;
     }
 
     /**
@@ -223,24 +195,10 @@ public class VisorCacheTypeMetadata implements Serializable {
     }
 
     /**
-     * @param keyFields New key fields.
-     */
-    public void keyFields(Collection<VisorCacheTypeFieldMetadata> keyFields) {
-        this.keyFields = keyFields;
-    }
-
-    /**
      * @return Key fields.
      */
     public Collection<VisorCacheTypeFieldMetadata> keyFields() {
         return keyFields;
-    }
-
-    /**
-     * @param valFields New value fields.
-     */
-    public void valFields(Collection<VisorCacheTypeFieldMetadata> valFields) {
-        this.valFields = valFields;
     }
 
     /**
@@ -251,24 +209,10 @@ public class VisorCacheTypeMetadata implements Serializable {
     }
 
     /**
-     * @param qryFlds New fields to be queried, in addition to indexed fields.
-     */
-    public void qryFlds(Map<String, String> qryFlds) {
-        this.qryFlds = qryFlds;
-    }
-
-    /**
      * @return Fields to be queried, in addition to indexed fields.
      */
     public Map<String, String> qryFlds() {
         return qryFlds;
-    }
-
-    /**
-     * @param ascFlds New fields to index in ascending order.
-     */
-    public void ascFlds(Map<String, String> ascFlds) {
-        this.ascFlds = ascFlds;
     }
 
     /**
@@ -279,13 +223,6 @@ public class VisorCacheTypeMetadata implements Serializable {
     }
 
     /**
-     * @param descFlds New fields to index in descending order.
-     */
-    public void descFlds(Map<String, String> descFlds) {
-        this.descFlds = descFlds;
-    }
-
-    /**
      * @return Fields to index in descending order.
      */
     public Map<String, String> descFlds() {
@@ -293,24 +230,10 @@ public class VisorCacheTypeMetadata implements Serializable {
     }
 
     /**
-     * @param txtFlds New fields to index as text.
-     */
-    public void txtFlds(Collection<String> txtFlds) {
-        this.txtFlds = txtFlds;
-    }
-
-    /**
      * @return Fields to index as text.
      */
     public Collection<String> txtFlds() {
         return txtFlds;
-    }
-
-    /**
-     * @param grps New fields to create group indexes for.
-     */
-    public void grps(Map<String, LinkedHashMap<String, IgniteBiTuple<String, Boolean>>> grps) {
-        this.grps = grps;
     }
 
     /**
