@@ -1,6 +1,19 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.0.3
+-----------------------------------------
+
+* Added Google Compute Engine TCP discovery IP finder.
+* Added generic cloud TCP discovery IP finder (based on jcoulds).
+* Added SortedEvictionPolicy.
+* Added chaining for IgniteConfiguration and CacheConfiguration setters.
+* Improved expiry policy handling.
+* Fixed job continuations.
+* Fixed compilation and runtime with OpenJDK 7 & 8
+* Many stability and fault-tolerance fixes.
+
+
 Apache Ignite In-Memory Data Fabric 1.1
 ---------------------------------------
 

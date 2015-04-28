@@ -21,15 +21,15 @@ import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.lang.IgnitePredicate
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
 
 import java.util.UUID
 import java.util.concurrent.atomic._
-
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.visor.visor._
 
 import scala.collection.immutable._
 import scala.language.implicitConversions
@@ -119,7 +119,9 @@ import scala.util.control.Breaks._
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
  * }}}
  */
-class VisorAlertCommand {
+class VisorAlertCommand extends VisorConsoleCommand {
+    @impl protected val name = "alert"
+
     /** Default alert frequency. */
     val DFLT_FREQ = 15L * 60L
 
@@ -140,18 +142,6 @@ class VisorAlertCommand {
 
     /** Node metric update listener. */
     private var lsnr: IgnitePredicate[Event] = null
-
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help alert' to see how to use this command.")
-    }
 
     /**
      * ===Command===
@@ -297,7 +287,7 @@ class VisorAlertCommand {
                         break()
 
                     case e: Exception =>
-                        scold(e.getMessage)
+                        scold(e)
 
                         break()
                 }
@@ -667,6 +657,9 @@ sealed private case class VisorStats(
  * Companion object that does initialization of the command.
  */
 object VisorAlertCommand {
+    /** Singleton command. */
+    private val cmd = new VisorAlertCommand
+
     addHelp(
         name = "alert",
         shortInfo = "Alerts for user-defined events.",
@@ -746,11 +739,9 @@ object VisorAlertCommand {
             "alert -r -t=900 -cc=gte4 -cl=gt50" ->
                 "Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load."
         ),
-        ref = VisorConsoleCommand(cmd.alert, cmd.alert)
+        emptyArgs = cmd.alert,
+        withArgs = cmd.alert
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorAlertCommand
 
     addCloseCallback(() => {
         cmd.reset()

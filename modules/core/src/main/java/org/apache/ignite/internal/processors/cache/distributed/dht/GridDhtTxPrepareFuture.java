@@ -826,10 +826,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             if (entry.explicitVersion() == null) {
                                 GridCacheMvccCandidate added = cached.candidate(version());
 
-                                assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
+                                assert added != null || entry.groupLockEntry() :
+                                    "Null candidate for non-group-lock entry " +
+                                        "[added=" + added + ", entry=" + entry + ']';
+                                assert added == null || added.dhtLocal() :
+                                    "Got non-dht-local candidate for prepare future " +
+                                        "[added=" + added + ", entry=" + entry + ']';
 
                                 if (added != null && added.ownerVersion() != null)
                                     req.owned(entry.txKey(), added.ownerVersion());
