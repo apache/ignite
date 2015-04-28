@@ -203,6 +203,7 @@ class VisorConfigurationCommand {
             cmnT += ("Node ID", safe(basic.nodeId()))
             cmnT += ("Marshaller", basic.marshaller())
             cmnT += ("Deployment mode", safe(basic.deploymentMode()))
+            cmnT += ("ClientMode", javaBoolToStr(basic.clientMode()))
             cmnT += ("Daemon", bool2Str(basic.daemon()))
             cmnT += ("Remote JMX", bool2Str(basic.jmxRemote()))
             cmnT += ("Restart", bool2Str(basic.restart()))
