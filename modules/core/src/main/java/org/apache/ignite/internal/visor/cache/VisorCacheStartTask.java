@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -25,20 +26,26 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
  * Task that start cache or near cache with specified configuration.
  */
 @GridInternal
-public class VisorCacheStartTask extends VisorOneNodeTask<IgniteBiTuple<String, String>, Void> {
+public class VisorCacheStartTask extends VisorMultiNodeTask<IgniteBiTuple<String, String>, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorCacheStartJob job(IgniteBiTuple<String, String> arg) {
         return new VisorCacheStartJob(arg, debug);
+    }
+
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
+        return null;
     }
 
     /**
