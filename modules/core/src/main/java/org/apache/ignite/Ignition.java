@@ -408,14 +408,14 @@ public class Ignition {
      * Loads Spring bean by its name from given Spring XML configuration file. If bean
      * with such name doesn't exist, exception is thrown.
      *
-     * @param springXmlCfg Spring XML configuration input stream (cannot be {@code null}).
+     * @param springXmlUrl Spring XML configuration file URL (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
-    public static <T> T loadSpringBean(InputStream springXmlCfg, String beanName) throws IgniteException {
+    public static <T> T loadSpringBean(URL springXmlUrl, String beanName) throws IgniteException {
         try {
-            return IgnitionEx.loadSpringBean(springXmlCfg, beanName);
+            return IgnitionEx.loadSpringBean(springXmlUrl, beanName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -426,14 +426,14 @@ public class Ignition {
      * Loads Spring bean by its name from given Spring XML configuration file. If bean
      * with such name doesn't exist, exception is thrown.
      *
-     * @param springXmlUrl Spring XML configuration file URL (cannot be {@code null}).
+     * @param springXmlStream Input stream containing Spring XML configuration (cannot be {@code null}).
      * @param beanName Bean name (cannot be {@code null}).
      * @return Loaded bean instance.
      * @throws IgniteException If bean with provided name was not found or in case any other error.
      */
-    public static <T> T loadSpringBean(URL springXmlUrl, String beanName) throws IgniteException {
+    public static <T> T loadSpringBean(InputStream springXmlStream, String beanName) throws IgniteException {
         try {
-            return IgnitionEx.loadSpringBean(springXmlUrl, beanName);
+            return IgnitionEx.loadSpringBean(springXmlStream, beanName);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
