@@ -380,7 +380,7 @@ object VisorEventsCommand {
     private val cmd = new VisorEventsCommand
 
     addHelp(
-        name = cmd.name,
+        name = "events",
         shortInfo = "Print events from a node.",
         longInfo = List(
             "Print events from a node.",
@@ -396,8 +396,8 @@ object VisorEventsCommand {
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
-            cmd.name,
-            s"${cmd.name} {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cr,sw>}",
+            "events",
+            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cr,sw>}",
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
@@ -446,13 +446,13 @@ object VisorEventsCommand {
             )
         ),
         examples = List(
-            s"${cmd.name} -id8=12345678" ->
+            "events -id8=12345678" ->
                 "Queries all events from node with '12345678' id8.",
-            s"${cmd.name} -id8=@n0" ->
+            "events -id8=@n0" ->
                 "Queries all events from node with id8 taken from 'n0' memory variable.",
-            s"${cmd.name} -id8=12345678 -e=di,ca" ->
+            "events -id8=12345678 -e=di,ca" ->
                 "Queries discovery and cache events from node with '12345678' ID8.",
-            cmd.name ->
+            "events" ->
                 "Starts command in interactive mode."
         ),
         emptyArgs = cmd.events,
