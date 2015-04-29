@@ -69,7 +69,7 @@ public interface IgniteSpringHelper {
      * Loads all configurations with given type specified within given configuration file.
      *
      * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
-     * @param cl Required type of configuration.
+     * @param cls Required type of configuration.
      * @param excludedProps Properties to exclude.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
      * @throws IgniteCheckedException If configuration could not be read.
@@ -81,7 +81,7 @@ public interface IgniteSpringHelper {
      * Loads all configurations with given type specified within given configuration input stream.
      *
      * @param cfgStream Configuration input stream. This cannot be {@code null}.
-     * @param cl Required type of configuration.
+     * @param cls Required type of configuration.
      * @param excludedProps Properties to exclude.
      * @return Tuple containing all loaded configurations and Spring context used to load them.
      * @throws IgniteCheckedException If configuration could not be read.

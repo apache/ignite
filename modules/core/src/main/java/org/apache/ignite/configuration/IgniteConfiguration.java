@@ -1416,7 +1416,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * GridConfiguration.getPublicThreadPoolSize() configuration property.
+     * IgniteConfiguration.getPublicThreadPoolSize() configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */

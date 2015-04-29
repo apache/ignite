@@ -399,7 +399,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
      * Prepares Spring context.
      *
      * @param excludedProps Properties to be excluded.
-     * @return
+     * @return application context.
      */
     private static GenericApplicationContext prepareSpringContext(final String... excludedProps){
         GenericApplicationContext springCtx = new GenericApplicationContext();
