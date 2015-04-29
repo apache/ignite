@@ -76,6 +76,8 @@
         <module>modules/jcl</module>
         <module>modules/schema-import</module>
         <module>modules/codegen</module>
+        <module>modules/gce</module>
+        <module>modules/cloud</module>
     </modules>
 
     <profiles>
