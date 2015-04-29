@@ -131,7 +131,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
                     if (joinedLatch != null)
                         joinedLatch.countDown();
-                } else if (evt.type() == EVT_NODE_LEFT) {
+                }
+                else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     leftCnt.incrementAndGet();
 
                     if (leftLatch != null)
@@ -140,7 +141,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
                 return true;
             }
-        }, EVT_NODE_JOINED, EVT_NODE_LEFT);
+        }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
