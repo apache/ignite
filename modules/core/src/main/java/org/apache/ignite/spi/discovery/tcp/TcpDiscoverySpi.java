@@ -108,14 +108,14 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- * GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+ * TcpDiscoverySpi spi = new TcpDiscoverySpi();
  *
- * GridTcpDiscoveryVmIpFinder finder =
+ * TcpDiscoveryVmIpFinder finder =
  *     new GridTcpDiscoveryVmIpFinder();
  *
  * spi.setIpFinder(finder);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default discovery SPI.
  * cfg.setDiscoverySpi(spi);
@@ -124,7 +124,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridTcpDiscoverySpi can be configured from Spring XML configuration file:
+ * TcpDiscoverySpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
@@ -1393,7 +1393,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     LT.warn(log, null, "Node has not been connected to topology and will repeat join process. " +
                         "Check remote nodes logs for possible error messages. " +
                         "Note that large topology may require significant time to start. " +
-                        "Increase 'GridTcpDiscoverySpi.networkTimeout' configuration property " +
+                        "Increase 'TcpDiscoverySpi.networkTimeout' configuration property " +
                         "if getting this message on the starting nodes [networkTimeout=" + netTimeout + ']');
             }
         }

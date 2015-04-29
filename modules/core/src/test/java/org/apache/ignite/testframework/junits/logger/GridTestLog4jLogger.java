@@ -42,17 +42,17 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Here is a typical example of configuring log4j logger in Ignite configuration file:
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.apache.ignite.logger.log4j.GridLog4jLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.log4j.Log4JLogger"&gt;
  *              &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *          &lt;/bean>
  *      &lt;/property&gt;
  * </pre>
  * and from your code:
  * <pre name="code" class="java">
- *      GridConfiguration cfg = new GridConfiguration();
+ *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
- *      GridLogger log = new GridLog4jLogger(xml);
+ *      IgniteLogger log = new Log4JLogger(xml);
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
@@ -95,9 +95,9 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
      * Creates new logger and automatically detects if root logger already
      * has appenders configured. If it does not, the root logger will be
      * configured with default appender (analogous to calling
-     * {@link #GridTestLog4jLogger(boolean) GridLog4jLogger(boolean)}
+     * {@link #GridTestLog4jLogger(boolean) Log4jLogger(boolean)}
      * with parameter {@code true}, otherwise, existing appenders will be used (analogous
-     * to calling {@link #GridTestLog4jLogger(boolean) GridLog4jLogger(boolean)}
+     * to calling {@link #GridTestLog4jLogger(boolean) Log4jLogger(boolean)}
      * with parameter {@code false}).
      */
     public GridTestLog4jLogger() {

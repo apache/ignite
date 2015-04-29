@@ -31,6 +31,8 @@ import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -57,8 +59,9 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
+        ccfg.setRebalanceMode(ASYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 100));
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -76,14 +79,31 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxNoWrite() throws Exception {
+        txNoWrite(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxNoWriteRollback() throws Exception {
+        txNoWrite(false);
+    }
+
+    /**
+     * @param commit {@code True} if commit transaction.
+     * @throws Exception If failed.
+     */
+    private void txNoWrite(boolean commit) throws Exception {
         Ignite ignite0 = startGrid(0);
 
         Affinity<Integer> aff = ignite0.affinity(null);
 
         IgniteCache<Integer, Object> cache0 = ignite0.cache(null);
 
-        for (int i = 0; i < 1000; i++)
-            cache0.put(i + 10000, new byte[1024]);
+        try (IgniteDataStreamer<Integer, Object> streamer = ignite0.dataStreamer(null)) {
+            for (int i = 0; i < 1000; i++)
+                streamer.addData(i + 10000, new byte[1024]);
+        }
 
         Ignite ignite1 = startGrid(1);
 
@@ -95,7 +115,8 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache0.get(key);
 
-            tx.commit();
+            if (commit)
+                tx.commit();
         }
 
         GridCacheAdapter cacheAdapter = ((IgniteKernal)ignite(0)).context().cache().internalCache();

@@ -331,7 +331,7 @@ public class VisorTaskUtils {
     };
 
     /** Mapper from grid event to Visor data transfer object. */
-    private static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
+    public static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
     /**
      * Grabs local events and detects if events was lost since last poll.
