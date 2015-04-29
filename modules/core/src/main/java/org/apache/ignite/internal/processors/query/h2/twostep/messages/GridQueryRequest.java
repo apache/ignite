@@ -22,7 +22,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
@@ -46,11 +45,8 @@ public class GridQueryRequest implements Message {
 
     /** */
     @GridToStringInclude
-    @GridDirectTransient
+    @GridDirectCollection(GridCacheSqlQuery.class)
     private Collection<GridCacheSqlQuery> qrys;
-
-    /** */
-    private byte[] qrysBytes;
 
     /**
      * Default constructor.
@@ -64,17 +60,13 @@ public class GridQueryRequest implements Message {
      * @param pageSize Page size.
      * @param space Space.
      * @param qrys Queries.
-     * @param qrysBytes Marshalled queries.
      */
-    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys, byte[] qrysBytes) {
+    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
 
-        assert qrysBytes != null;
-
         this.qrys = qrys;
-        this.qrysBytes = qrysBytes;
     }
 
     /**
@@ -101,10 +93,7 @@ public class GridQueryRequest implements Message {
     /**
      * @return Queries.
      */
-    public Collection<GridCacheSqlQuery> queries(Marshaller m) throws IgniteCheckedException {
-        if (qrys == null && qrysBytes != null)
-            qrys = m.unmarshal(qrysBytes, null);
-
+    public Collection<GridCacheSqlQuery> queries() throws IgniteCheckedException {
         return qrys;
     }
 
@@ -132,7 +121,7 @@ public class GridQueryRequest implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("qrysBytes", qrysBytes))
+                if (!writer.writeCollection("qrys", qrys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -171,7 +160,7 @@ public class GridQueryRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                qrysBytes = reader.readByteArray("qrysBytes");
+                qrys = reader.readCollection("qrys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;

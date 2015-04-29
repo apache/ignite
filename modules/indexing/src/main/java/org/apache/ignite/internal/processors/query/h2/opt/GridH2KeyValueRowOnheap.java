@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 
-import org.apache.ignite.spi.*;
+import org.apache.ignite.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
@@ -35,10 +35,10 @@ public class GridH2KeyValueRowOnheap extends GridH2AbstractKeyValueRow {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws IgniteSpiException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridH2KeyValueRowOnheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
-        long expirationTime) throws IgniteSpiException {
+        long expirationTime) throws IgniteCheckedException {
         super(desc, key, keyType, val, valType, expirationTime);
     }
 
