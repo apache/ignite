@@ -110,7 +110,7 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            url = "http://tiny.cc/updater/update_status_ignite.php";
+            url = "http://tiny.cc/updater/update_status_community.php";
 
             this.gridName = gridName == null ? "null" : gridName;
             this.gw = gw;
@@ -118,7 +118,7 @@ class GridUpdateNotifier {
             pluginVers = U.newHashMap(pluginProviders.size());
 
             for (PluginProvider provider : pluginProviders)
-                pluginVers.put("plugins." + provider.name(), provider.version());
+                pluginVers.put(provider.name() + "-plugin-version", provider.version());
 
             this.reportOnlyNew = reportOnlyNew;
 

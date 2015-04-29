@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.h2.constant.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -54,7 +54,9 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNotifier() throws Exception {
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, IgniteProperties.get("ignite.version"),
+        String nodeVer = IgniteProperties.get("ignite.version");
+
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer,
             TEST_GATEWAY, Collections.<PluginProvider>emptyList(), false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
@@ -64,6 +66,9 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         info("Latest version: " + ver);
 
         assertNotNull("Ignite latest version has not been detected.", ver);
+
+        assertEquals("Wrong latest version.", IgniteProductVersion.fromString(nodeVer).maintenance(),
+            IgniteProductVersion.fromString(ver).maintenance());
 
         ntf.reportStatus(log);
     }
