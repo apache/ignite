@@ -1183,7 +1183,8 @@ public class IgniteTxHandler {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
 
-        IgniteInternalFuture<Boolean> fut = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+        IgniteInternalFuture<Boolean> fut = req.nearTxCheck() ? ctx.tm().txCommitted(req.nearXidVersion()) :
+            ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
 
         if (fut == null || fut.isDone()) {
             boolean prepared;

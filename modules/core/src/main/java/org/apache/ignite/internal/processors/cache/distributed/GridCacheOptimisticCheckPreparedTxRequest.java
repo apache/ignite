@@ -27,8 +27,7 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * Message sent to check that transactions related to some optimistic transaction
- * were prepared on remote node.
+ * Message sent to check that transactions related to transaction were prepared on remote node.
  */
 public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBaseMessage {
     /** */
@@ -49,6 +48,9 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
     /** System transaction flag. */
     private boolean sys;
 
+    /** {@code True} if should check only tx on near node. */
+    private boolean nearTxCheck;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -59,11 +61,16 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
     /**
      * @param tx Transaction.
      * @param txNum Expected number of transactions on remote node.
+     * @param nearTxCheck
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx tx, int txNum, IgniteUuid futId,
-        IgniteUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx tx,
+        int txNum,
+        boolean nearTxCheck,
+        IgniteUuid futId,
+        IgniteUuid miniId)
+    {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();
@@ -72,6 +79,14 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
         this.futId = futId;
         this.miniId = miniId;
         this.txNum = txNum;
+        this.nearTxCheck = nearTxCheck;
+    }
+
+    /**
+     * @return {@code True} if should check only tx on near node.
+     */
+    public boolean nearTxCheck() {
+        return nearTxCheck;
     }
 
     /**
@@ -137,18 +152,24 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
+                if (!writer.writeBoolean("nearTxCheck", nearTxCheck))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeBoolean("sys", sys))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
                 if (!writer.writeInt("txNum", txNum))
                     return false;
 
@@ -187,7 +208,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
                 reader.incrementState();
 
             case 10:
-                nearXidVer = reader.readMessage("nearXidVer");
+                nearTxCheck = reader.readBoolean("nearTxCheck");
 
                 if (!reader.isLastRead())
                     return false;
@@ -195,7 +216,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
                 reader.incrementState();
 
             case 11:
-                sys = reader.readBoolean("sys");
+                nearXidVer = reader.readMessage("nearXidVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -203,6 +224,14 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
                 reader.incrementState();
 
             case 12:
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
                 txNum = reader.readInt("txNum");
 
                 if (!reader.isLastRead())
@@ -222,7 +251,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */

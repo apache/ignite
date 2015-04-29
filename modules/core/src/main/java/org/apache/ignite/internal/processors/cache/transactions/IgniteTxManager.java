@@ -727,14 +727,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param txId Transaction ID.
-     * @return Transaction with given ID.
-     */
-    @Nullable public IgniteInternalTx txx(GridCacheVersion txId) {
-        return idMap.get(txId);
-    }
-
-    /**
      * Handles prepare stage of 2PC.
      *
      * @param tx Transaction to prepare.
@@ -1767,6 +1759,45 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     @Nullable public IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
         return txsPreparedOrCommitted(nearVer, txNum, null, null);
+    }
+
+    /**
+     * @param ver Version.
+     * @return Future for flag indicating if transactions was committed.
+     */
+    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion ver) {
+        final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
+
+        final IgniteInternalTx tx = cctx.tm().tx(ver);
+
+        if (tx != null) {
+            assert tx.near() && tx.local() : tx;
+
+            if (log.isDebugEnabled())
+                log.debug("Found near transaction, will wait for completion: " + tx);
+
+            tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                    TransactionState state = tx.state();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Near transaction finished with state: " + state);
+
+                    resFut.onDone(state == COMMITTED);
+                }
+            });
+
+            return resFut;
+        }
+
+        Boolean committed = completedVers.get(ver);
+
+        if (log.isDebugEnabled())
+            log.debug("Near transaction committed: " + committed);
+
+        resFut.onDone(committed != null && committed);
+
+        return resFut;
     }
 
     /**

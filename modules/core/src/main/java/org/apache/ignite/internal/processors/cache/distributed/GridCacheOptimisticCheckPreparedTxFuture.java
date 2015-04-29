@@ -70,6 +70,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     /** Transaction nodes mapping. */
     private final Map<UUID, Collection<UUID>> txNodes;
 
+    /** */
+    private final boolean nearTxCheck;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -77,8 +80,11 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx tx,
-        UUID failedNodeId, Map<UUID, Collection<UUID>> txNodes) {
+    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx,
+        IgniteInternalTx tx,
+        UUID failedNodeId,
+        Map<UUID, Collection<UUID>> txNodes)
+    {
         super(cctx.kernalContext(), CU.boolReducer());
 
         this.cctx = cctx;
@@ -114,6 +120,10 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 }
             }
         }
+
+        UUID nearNodeId = tx.eventNodeId();
+
+        nearTxCheck = !failedNodeId.equals(nearNodeId) && cctx.discovery().alive(nearNodeId);
     }
 
     /**
@@ -121,6 +131,48 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      */
     @SuppressWarnings("ConstantConditions")
     public void prepare() {
+        if (nearTxCheck) {
+            UUID nearNodeId = tx.eventNodeId();
+
+            if (cctx.localNodeId().equals(nearNodeId)) {
+                IgniteInternalFuture<Boolean> fut = cctx.tm().txCommitted(tx.nearXidVersion());
+
+                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        try {
+                            onDone(fut.get());
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+                        }
+                    }
+                });
+            }
+            else {
+                MiniFuture fut = new MiniFuture(tx.eventNodeId());
+
+                add(fut);
+
+                GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(
+                    tx,
+                    0,
+                    true,
+                    futureId(),
+                    fut.futureId());
+
+                try {
+                    cctx.io().send(nearNodeId, req, tx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onError(e);
+                }
+
+                markInitialized();
+            }
+
+            return;
+        }
+
         // First check transactions on local node.
         int locTxNum = nodeTransactions(cctx.localNodeId());
 
@@ -206,6 +258,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                     GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(tx,
                         nodeTransactions(id),
+                        false,
                         futureId(),
                         fut.futureId());
 
@@ -228,7 +281,11 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 add(fut);
 
                 GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(
-                    tx, nodeTransactions(nodeId), futureId(), fut.futureId());
+                    tx,
+                    nodeTransactions(nodeId),
+                    false,
+                    futureId(),
+                    fut.futureId());
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
@@ -341,11 +398,18 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 cctx.tm().finishOptimisticTxOnRecovery(tx, res);
             }
             else {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to check prepared transactions, " +
-                        "invalidating transaction [err=" + err + ", tx=" + tx + ']');
+                if (nearTxCheck) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to check transaction on near node, " +
+                            "ignoring [err=" + err + ", tx=" + tx + ']');
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to check prepared transactions, " +
+                            "invalidating transaction [err=" + err + ", tx=" + tx + ']');
 
-                cctx.tm().salvageTx(tx);
+                    cctx.tm().salvageTx(tx);
+                }
             }
         }
 
