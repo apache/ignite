@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -97,8 +98,10 @@ public class GridH2ValueMessageFactory implements MessageFactory {
      * @param src Source values.
      * @param dst Destination collection.
      * @return Destination collection.
+     * @throws IgniteCheckedException If failed.
      */
-    public static Collection<Message> toMessages(Collection<Value[]> src, Collection<Message> dst) {
+    public static Collection<Message> toMessages(Collection<Value[]> src, Collection<Message> dst)
+        throws IgniteCheckedException {
         for (Value[] row : src) {
             for (Value val : row)
                 dst.add(toMessage(val));
@@ -112,8 +115,10 @@ public class GridH2ValueMessageFactory implements MessageFactory {
      * @param dst Array to fill with values.
      * @param ctx Kernal context.
      * @return Filled array.
+     * @throws IgniteCheckedException If failed.
      */
-    public static Value[] fillArray(Iterator<Message> src, Value[] dst, GridKernalContext ctx) {
+    public static Value[] fillArray(Iterator<Message> src, Value[] dst, GridKernalContext ctx)
+        throws IgniteCheckedException {
         for (int i = 0; i < dst.length; i++) {
             Message msg = src.next();
 
@@ -126,8 +131,9 @@ public class GridH2ValueMessageFactory implements MessageFactory {
     /**
      * @param v Value.
      * @return Message.
+     * @throws IgniteCheckedException If failed.
      */
-    public static Message toMessage(Value v) {
+    public static Message toMessage(Value v) throws IgniteCheckedException {
         switch (v.getType()) {
             case Value.NULL:
                 return GridH2Null.INSTANCE;
@@ -177,11 +183,8 @@ public class GridH2ValueMessageFactory implements MessageFactory {
                 return new GridH2Array(v);
 
             case Value.JAVA_OBJECT:
-                if (v instanceof GridH2ValueCacheObject) {
-                    GridH2ValueCacheObject v0 = (GridH2ValueCacheObject)v;
-
-                    return new GridH2CacheObject(v0.getCacheContext().cacheId(), v0.getCacheObject());
-                }
+                if (v instanceof GridH2ValueCacheObject)
+                    return new GridH2CacheObject((GridH2ValueCacheObject)v);
 
                 return new GridH2JavaObject(v);
 

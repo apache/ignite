@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
@@ -43,8 +44,9 @@ public class GridH2Array extends GridH2ValueMessage {
 
     /**
      * @param val Value.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridH2Array(Value val) {
+    public GridH2Array(Value val) throws IgniteCheckedException {
         assert val.getType() == Value.ARRAY : val.getType();
 
         ValueArray arr = (ValueArray)val;
@@ -56,7 +58,7 @@ public class GridH2Array extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
+    @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
         return ValueArray.get(fillArray(x.iterator(), new Value[x.size()], ctx));
     }
 

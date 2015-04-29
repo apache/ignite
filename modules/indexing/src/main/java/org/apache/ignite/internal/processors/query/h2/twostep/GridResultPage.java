@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.value.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
@@ -93,7 +95,12 @@ public class GridResultPage {
 
                         rowIdx++;
 
-                        return fillArray(valsIter, new Value[cols], ctx);
+                        try {
+                            return fillArray(valsIter, new Value[cols], ctx);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new CacheException(e);
+                        }
                     }
 
                     @Override public void remove() {

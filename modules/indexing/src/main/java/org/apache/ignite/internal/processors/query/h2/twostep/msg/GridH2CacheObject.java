@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
@@ -43,17 +44,32 @@ public class GridH2CacheObject extends GridH2ValueMessage {
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @param obj Object.
+     * @param v Value.
+     * @throws IgniteCheckedException If failed.
      */
-    public GridH2CacheObject(int cacheId, CacheObject obj) {
-        this.cacheId = cacheId;
-        this.obj = obj;
+    public GridH2CacheObject(GridH2ValueCacheObject v) throws IgniteCheckedException {
+        this.obj = v.getCacheObject();
+
+        GridCacheContext<?,?> cctx = v.getCacheContext();
+
+        if (cctx != null) {
+            this.cacheId = cctx.cacheId();
+
+            obj.prepareMarshal(cctx.cacheObjectContext());
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public Value value(GridKernalContext ctx) {
-        return new GridH2ValueCacheObject(ctx.cache().context().cacheContext(cacheId), obj);
+    @Override public Value value(GridKernalContext ctx) throws IgniteCheckedException {
+        GridCacheContext<?,?> cctx = null;
+
+        if (ctx != null) {
+            cctx = ctx.cache().context().cacheContext(cacheId);
+
+            obj.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+        }
+
+        return new GridH2ValueCacheObject(cctx, obj);
     }
 
     /** {@inheritDoc} */
