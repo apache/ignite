@@ -712,7 +712,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         expirePlcCache.put(key, 10);
 
-        U.sleep(500);
+        U.sleep(700);
 
         if (!eagerTtl())
             assertNull(primaryCache(key, cache.getName()).get(key)); // Provoke expire event if eager ttl is disabled.

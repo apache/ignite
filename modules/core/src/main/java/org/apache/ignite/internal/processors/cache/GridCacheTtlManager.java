@@ -73,6 +73,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to remove.
      */
     public void removeTrackedEntry(GridCacheMapEntry entry) {
+        assert Thread.holdsLock(entry);
+
         pendingEntries.remove(new EntryWrapper(entry));
     }
 
@@ -93,7 +95,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         GridCacheVersion obsoleteVer = null;
 
-        int size = pendingEntries.sizex();
+        // Make sure that worker thread (e.g. sys pool) or user thread
+        // will not be trapped.
+        int size = Math.min(pendingEntries.sizex(), 1024);
 
         while (!sizeLimited || size-- > 0) {
             EntryWrapper e = pendingEntries.pollFirst();
