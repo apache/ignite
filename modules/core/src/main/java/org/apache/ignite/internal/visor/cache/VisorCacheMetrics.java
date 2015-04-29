@@ -29,7 +29,7 @@ import java.io.*;
  */
 public class VisorCacheMetrics implements Serializable {
     /** */
-    private static final int MICROSECONDS_IN_SECOND = 1_000_000;
+    private static final float MICROSECONDS_IN_SECOND = 1_000_000;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -94,14 +94,11 @@ public class VisorCacheMetrics implements Serializable {
     /** Reads per second. */
     private int readsPerSec;
 
-    /** Writes per second. */
-    private int writesPerSec;
+    /** Puts per second. */
+    private int putsPerSec;
 
-    /** Hits per second. */
-    private int hitsPerSec;
-
-    /** Misses per second. */
-    private int missesPerSec;
+    /** Removes per second. */
+    private int removalsPerSec;
 
     /** Commits per second. */
     private int commitsPerSec;
@@ -160,15 +157,11 @@ public class VisorCacheMetrics implements Serializable {
     /**
      * Calculate rate of metric per second.
      *
-     * @param metric Metric value.
-     * @param time Metric finish time.
-     * @param createTime Metric start time.
+     * @param meanTime Metric mean time.
      * @return Metric per second.
      */
-    private static int perSecond(int metric, long time, long createTime) {
-        long seconds = (time - createTime) / 1000;
-
-        return (seconds > 0) ? (int)(metric / seconds) : 0;
+    private static int perSecond(float meanTime) {
+        return (meanTime > 0) ? (int)(MICROSECONDS_IN_SECOND / meanTime) : 0;
     }
 
     /**
@@ -209,12 +202,11 @@ public class VisorCacheMetrics implements Serializable {
         cm.avgPutTime = m.getAveragePutTime();
         cm.avgRemovalTime = m.getAverageRemoveTime();
 
-        cm.readsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageGetTime());
-        cm.writesPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAveragePutTime());
-        cm.hitsPerSec = -1;
-        cm.missesPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageRemoveTime());
-        cm.commitsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxCommitTime());
-        cm.rollbacksPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxRollbackTime());
+        cm.readsPerSec = perSecond(m.getAverageGetTime());
+        cm.putsPerSec = perSecond(m.getAveragePutTime());
+        cm.removalsPerSec = perSecond(m.getAverageRemoveTime());
+        cm.commitsPerSec = perSecond(m.getAverageTxCommitTime());
+        cm.rollbacksPerSec = perSecond(m.getAverageTxRollbackTime());
 
         cm.qryMetrics = VisorCacheQueryMetrics.from(c.context().queries().metrics());
 
@@ -364,24 +356,17 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @return Writes per second.
+     * @return Puts per second.
      */
-    public int writesPerSecond() {
-        return writesPerSec;
+    public int putsPerSecond() {
+        return putsPerSec;
     }
 
     /**
-     * @return Hits per second.
+     * @return Removes per second.
      */
-    public int hitsPerSecond() {
-        return hitsPerSec;
-    }
-
-    /**
-     * @return Misses per second.
-     */
-    public int missesPerSecond() {
-        return missesPerSec;
+    public int removalsPerSecond() {
+        return removalsPerSec;
     }
 
     /**
