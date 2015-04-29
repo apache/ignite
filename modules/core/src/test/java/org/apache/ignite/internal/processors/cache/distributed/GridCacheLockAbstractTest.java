@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -502,8 +503,12 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     public void testLockReentrancy() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-835");
 
+        Affinity<Integer> aff = ignite1.affinity(null);
+
         for (int i = 10; i < 100; i++) {
-            log.info("Key: " + i);
+            log.info("Test lock [key=" + i +
+                ", primary=" + aff.isPrimary(ignite1.cluster().localNode(), i) +
+                ", backup=" + aff.isBackup(ignite1.cluster().localNode(), i) + ']');
 
             final int i0 = i;
 
