@@ -43,7 +43,11 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
     private IgniteUuid miniId;
 
     /** Error. */
+    @GridDirectTransient
     private volatile IgniteCheckedException err;
+
+    /** Serialized error. */
+    private byte[] errBytes;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
@@ -160,6 +164,8 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
             for (GridCacheEntryInfo info : infos)
                 info.marshal(cctx);
         }
+
+        errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
@@ -175,6 +181,8 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
             for (GridCacheEntryInfo info : infos)
                 info.unmarshal(cctx, ldr);
         }
+
+        err = ctx.marshaller().unmarshal(errBytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -193,24 +201,30 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 6:
+                if (!writer.writeIgniteUuid("miniId", miniId))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
                 if (!writer.writeCollection("missedKeys", missedKeys, MessageCollectionItemType.MSG))
                     return false;
 
@@ -233,7 +247,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
 
         switch (reader.state()) {
             case 3:
-                futId = reader.readIgniteUuid("futId");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -241,7 +255,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 4:
-                infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -249,7 +263,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 5:
-                miniId = reader.readIgniteUuid("miniId");
+                infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,6 +271,14 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 reader.incrementState();
 
             case 6:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 missedKeys = reader.readCollection("missedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -276,7 +298,7 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */
