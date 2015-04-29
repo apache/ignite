@@ -686,7 +686,32 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 try {
                     verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
 
-                    verChecker.checkForNewVersion(execSvc, log);
+                    updateNtfTimer = new Timer("ignite-update-notifier-timer");
+
+                    // Setup periodic version check.
+                    updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
+                        private boolean first = true;
+
+                        @Override public void safeRun() throws InterruptedException {
+                            if (!first)
+                                verChecker.topologySize(cluster().nodes().size());
+
+                            verChecker.checkForNewVersion(execSvc, log);
+
+                            // Just wait for 10 secs.
+                            Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
+
+                            // Report status if one is available.
+                            // No-op if status is NOT available.
+                            verChecker.reportStatus(log);
+
+                            if (first) {
+                                first = false;
+
+                                verChecker.reportOnlyNew(true);
+                            }
+                        }
+                    }, 0, PERIODIC_VER_CHECK_DELAY);
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -833,34 +858,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Mark start timestamp.
         startTime = U.currentTimeMillis();
-
-        // Ack latest version information.
-        if (verChecker != null)
-            verChecker.reportStatus(log);
-
-        if (notifyEnabled) {
-            assert verChecker != null;
-
-            verChecker.reportOnlyNew(true);
-
-            updateNtfTimer = new Timer("ignite-update-notifier-timer");
-
-            // Setup periodic version check.
-            updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
-                @Override public void safeRun() throws InterruptedException {
-                    verChecker.topologySize(cluster().nodes().size());
-
-                    verChecker.checkForNewVersion(execSvc, log);
-
-                    // Just wait for 10 secs.
-                    Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
-
-                    // Report status if one is available.
-                    // No-op if status is NOT available.
-                    verChecker.reportStatus(log);
-                }
-            }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
-        }
 
         String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
 

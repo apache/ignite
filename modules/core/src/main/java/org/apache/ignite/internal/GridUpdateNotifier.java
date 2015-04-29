@@ -59,6 +59,9 @@ class GridUpdateNotifier {
     /** Latest version. */
     private volatile String latestVer;
 
+    /** Download url for latest version. */
+    private volatile String downloadUrl;
+
     /** HTML parsing helper. */
     private final DocumentBuilder documentBuilder;
 
@@ -208,6 +211,9 @@ class GridUpdateNotifier {
         U.cancel(checker);
 
         String latestVer = this.latestVer;
+        String downloadUrl = this.downloadUrl;
+
+        downloadUrl = downloadUrl != null ? downloadUrl : IgniteKernal.SITE;
 
         if (latestVer != null)
             if (latestVer.equals(ver)) {
@@ -215,7 +221,7 @@ class GridUpdateNotifier {
                     throttle(log, false, "Your version is up to date.");
             }
             else
-                throttle(log, true, "New version is available at " + IgniteKernal.SITE + ": " + latestVer);
+                throttle(log, true, "New version is available at " + downloadUrl + ": " + latestVer);
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");
@@ -328,8 +334,11 @@ class GridUpdateNotifier {
                             log.debug("Failed to connect to Ignite update server. " + e.getMessage());
                     }
 
-                    if (dom != null)
+                    if (dom != null) {
                         latestVer = obtainVersionFrom(dom);
+
+                        downloadUrl = obtainDownloadUrlFrom(dom);
+                    }
                 }
             }
             catch (Exception e) {
@@ -344,7 +353,7 @@ class GridUpdateNotifier {
          * @param node W3C DOM node.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainVersionFrom(Node node) {
+        @Nullable private String obtainMeta(String metaName, Node node) {
             assert node != null;
 
             if (node instanceof Element && "meta".equals(node.getNodeName().toLowerCase())) {
@@ -352,7 +361,7 @@ class GridUpdateNotifier {
 
                 String name = meta.getAttribute("name");
 
-                if (("version").equals(name)) {
+                if (metaName.equals(name)) {
                     String content = meta.getAttribute("content");
 
                     if (content != null && !content.isEmpty())
@@ -363,13 +372,33 @@ class GridUpdateNotifier {
             NodeList childNodes = node.getChildNodes();
 
             for (int i = 0; i < childNodes.getLength(); i++) {
-                String ver = obtainVersionFrom(childNodes.item(i));
+                String ver = obtainMeta(metaName, childNodes.item(i));
 
                 if (ver != null)
                     return ver;
             }
 
             return null;
+        }
+
+        /**
+         * Gets the version from the current {@code node}, if one exists.
+         *
+         * @param node W3C DOM node.
+         * @return Version or {@code null} if one's not found.
+         */
+        @Nullable private String obtainVersionFrom(Node node) {
+            return obtainMeta("version", node);
+        }
+
+        /**
+         * Gets the download url from the current {@code node}, if one exists.
+         *
+         * @param node W3C DOM node.
+         * @return download url or {@code null} if one's not found.
+         */
+        @Nullable private String obtainDownloadUrlFrom(Node node) {
+            return obtainMeta("downloadUrl", node);
         }
     }
 }
