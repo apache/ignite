@@ -35,7 +35,8 @@ import java.util.*;
  * Task that start cache or near cache with specified configuration.
  */
 @GridInternal
-public class VisorCacheStartTask extends VisorMultiNodeTask<IgniteBiTuple<String, String>, Void, Void> {
+public class VisorCacheStartTask extends
+    VisorMultiNodeTask<IgniteBiTuple<String, String>, Map<UUID, IgniteException>, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,8 +45,15 @@ public class VisorCacheStartTask extends VisorMultiNodeTask<IgniteBiTuple<String
         return new VisorCacheStartJob(arg, debug);
     }
 
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    /** {@inheritDoc} */
+    @Nullable @Override protected Map<UUID, IgniteException> reduce0(List<ComputeJobResult> results) throws IgniteException {
+        Map<UUID, IgniteException> map = new HashMap<>();
+
+        for (ComputeJobResult res : results)
+            if (res.getException() != null)
+                map.put(res.getNode().id(), res.getException());
+
+        return map;
     }
 
     /**
