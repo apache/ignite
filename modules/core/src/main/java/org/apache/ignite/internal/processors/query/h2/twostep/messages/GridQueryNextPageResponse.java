@@ -23,6 +23,7 @@ import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Next page response.
@@ -44,11 +45,15 @@ public class GridQueryNextPageResponse implements Message {
     private int allRows;
 
     /** */
-    private byte[] rows;
+    private int cols;
+
+    /** */
+    @GridDirectCollection(Message.class)
+    private Collection<Message> vals;
 
     /** */
     @GridDirectTransient
-    private transient Object plainRows;
+    private transient Collection<?> plainRows;
 
     /**
      * For {@link Externalizable}.
@@ -62,18 +67,21 @@ public class GridQueryNextPageResponse implements Message {
      * @param qry Query.
      * @param page Page.
      * @param allRows All rows count.
-     * @param rows Rows.
+     * @param cols Number of columns in row.
+     * @param vals Values for rows in this page added sequentially.
      * @param plainRows Not marshalled rows for local node.
      */
-    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows,
-        byte[] rows, Object plainRows) {
-        assert rows != null ^ plainRows != null;
+    public GridQueryNextPageResponse(long qryReqId, int qry, int page, int allRows, int cols,
+        Collection<Message> vals, Collection<?> plainRows) {
+        assert vals != null ^ plainRows != null;
+        assert cols > 0 : cols;
 
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.page = page;
         this.allRows = allRows;
-        this.rows = rows;
+        this.cols = cols;
+        this.vals = vals;
         this.plainRows = plainRows;
     }
 
@@ -106,16 +114,23 @@ public class GridQueryNextPageResponse implements Message {
     }
 
     /**
-     * @return Rows.
+     * @return Columns in row.
      */
-    public byte[] rows() {
-        return rows;
+    public int columns() {
+        return cols;
+    }
+
+    /**
+     * @return Values.
+     */
+    public Collection<Message> values() {
+        return vals;
     }
 
     /**
      * @return Plain rows.
      */
-    public Object plainRows() {
+    public Collection<?> plainRows() {
         return plainRows;
     }
 
@@ -143,29 +158,34 @@ public class GridQueryNextPageResponse implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("page", page))
+                if (!writer.writeInt("cols", cols))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("qry", qry))
+                if (!writer.writeInt("page", page))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeInt("qry", qry))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("rows", rows))
+                if (!writer.writeLong("qryReqId", qryReqId))
                     return false;
 
                 writer.incrementState();
 
+            case 5:
+                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -188,7 +208,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                page = reader.readInt("page");
+                cols = reader.readInt("cols");
 
                 if (!reader.isLastRead())
                     return false;
@@ -196,7 +216,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                qry = reader.readInt("qry");
+                page = reader.readInt("page");
 
                 if (!reader.isLastRead())
                     return false;
@@ -204,7 +224,7 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 3:
-                qryReqId = reader.readLong("qryReqId");
+                qry = reader.readInt("qry");
 
                 if (!reader.isLastRead())
                     return false;
@@ -212,7 +232,15 @@ public class GridQueryNextPageResponse implements Message {
                 reader.incrementState();
 
             case 4:
-                rows = reader.readByteArray("rows");
+                qryReqId = reader.readLong("qryReqId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -231,6 +259,6 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 }

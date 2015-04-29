@@ -15,21 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.h2.value.*;
 
-import java.lang.annotation.*;
+import java.nio.*;
 
 /**
- * Annotates iterable fields.
- * Note that for any {@link Message} implementations it is enough to set item type to {@code Message.class}.
+ * Abstract message wrapper for H2 values.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface GridDirectCollection {
+public abstract class GridH2ValueMessage implements Message {
     /**
-     * @return Item type.
+     * Gets H2 value.
+     *
+     * @param ctx Kernal context.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
      */
-    Class<?> value();
+    public abstract Value value(GridKernalContext ctx) throws IgniteCheckedException;
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        return true;
+    }
 }
