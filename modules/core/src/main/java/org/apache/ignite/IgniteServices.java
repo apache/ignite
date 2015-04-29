@@ -60,7 +60,7 @@ import java.util.*;
  * you can also automatically deploy services on startup by specifying them in {@link IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
- * GridConfiguration gridCfg = new GridConfiguration();
+ * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
  *

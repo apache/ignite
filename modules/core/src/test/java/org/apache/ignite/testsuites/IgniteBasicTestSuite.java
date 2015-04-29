@@ -21,6 +21,7 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.product.*;
@@ -61,6 +62,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
         suite.addTestSuite(GridProjectionForCachesSelfTest.class);
+        suite.addTestSuite(GridProjectionForCachesOnDaemonNodeSelfTest.class);
         suite.addTestSuite(GridSpiLocalHostInjectionTest.class);
         suite.addTestSuite(GridLifecycleBeanSelfTest.class);
         suite.addTestSuite(GridStopWithCancelSelfTest.class);

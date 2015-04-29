@@ -3952,6 +3952,8 @@ public abstract class IgniteUtils {
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
+        appendClassLoaderHash(sb);
+
         appendJvmId(sb);
 
         if (gridName != null && !gridName.isEmpty())
@@ -3968,12 +3970,20 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    private static void appendJvmId(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
-            String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
-                + ManagementFactory.getRuntimeMXBean().getName();
+    private static void appendClassLoaderHash(SB sb) {
+        String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
-            sb.a("jvmId=").a(gridId).a(',');
+        sb.a("clsLdr=").a(clsLdrHash).a(',');
+    }
+
+    /**
+     * @param sb Sb.
+     */
+    private static void appendJvmId(SB sb) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)){
+            String jvmId = ManagementFactory.getRuntimeMXBean().getName();
+
+            sb.a("jvmId=").a(jvmId).a(',');
         }
     }
 
@@ -4000,6 +4010,8 @@ public abstract class IgniteUtils {
     public static ObjectName makeCacheMBeanName(@Nullable String gridName, @Nullable String cacheName, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
+
+        appendClassLoaderHash(sb);
 
         appendJvmId(sb);
 

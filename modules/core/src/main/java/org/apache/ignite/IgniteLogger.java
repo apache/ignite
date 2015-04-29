@@ -30,10 +30,10 @@ import org.jetbrains.annotations.*;
  * <p>
  * Ignite logger could be configured either from code (for example log4j logger):
  * <pre name="code" class="java">
- *      GridConfiguration cfg = new GridConfiguration();
+ *      IgniteConfiguration cfg = new IgniteConfiguration();
  *      ...
  *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
- *      GridLogger log = new GridLog4jLogger(xml);
+ *      IgniteLogger log = new Log4JLogger(xml);
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
@@ -41,7 +41,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.apache.ignite.logger.jcl.IgniteJclLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.jcl.JclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
@@ -55,7 +55,7 @@ import org.jetbrains.annotations.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  * <h1 class="header">Quiet Mode</h1>
- * By default Ignite 3.0 and later starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}
+ * By default Ignite starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}
  * log output. If system property {@code IGNITE_QUIET} is set to {@code false} than Ignition
  * will operate in normal un-suppressed logging mode. Note that all output in "quiet" mode is
  * done through standard output (STDOUT).

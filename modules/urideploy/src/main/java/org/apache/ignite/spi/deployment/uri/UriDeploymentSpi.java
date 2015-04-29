@@ -208,7 +208,7 @@ import java.util.Map.*;
  * <pre name="code" class="java">
  * UriDeploymentSpi deploySpi = new UriDeploymentSpi();
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * List&lt;String&gt; uris = new ArrayList&lt;String&gt;(5);
  *
