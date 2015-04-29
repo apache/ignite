@@ -40,7 +40,7 @@ import java.util.concurrent.locks.*;
  *      <li>GridManagerRegistry
  *      <li>GridProcessor
  *      <li>GridProcessorRegistry
- *      <li>GridLogger
+ *      <li>IgniteLogger
  *      <li>GridDiscoveryMetricsProvider
  *      <li>GridByteArrayList
  *      </ul>

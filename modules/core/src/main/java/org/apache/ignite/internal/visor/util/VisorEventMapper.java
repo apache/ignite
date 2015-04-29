@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.visor.util;
 
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.lang.*;
 
@@ -63,6 +65,17 @@ public class VisorEventMapper implements IgniteClosure<Event, VisorGridEvent> {
             DeploymentEvent de = (DeploymentEvent)evt;
 
             return new VisorGridDeploymentEvent(type, id, name, nid, ts, msg, shortDisplay, de.alias());
+        }
+
+        if (evt instanceof DiscoveryEvent) {
+            DiscoveryEvent de = (DiscoveryEvent)evt;
+
+            ClusterNode node = de.eventNode();
+
+            String addr = F.first(node.addresses());
+
+            return new VisorGridDiscoveryEvent(type, id, name, nid, ts, msg, shortDisplay,
+                node.id(), addr, node.isDaemon());
         }
 
         return null;

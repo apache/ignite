@@ -250,13 +250,6 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @param memoryMode New memory mode.
-     */
-    public void memoryMode(CacheMemoryMode memoryMode) {
-        this.memoryMode = memoryMode;
-    }
-
-    /**
      * @return Cache interceptor.
      */
     @Nullable public String interceptor() {

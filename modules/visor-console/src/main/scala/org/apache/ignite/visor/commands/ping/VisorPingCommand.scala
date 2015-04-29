@@ -18,12 +18,12 @@
 package org.apache.ignite.visor.commands.ping
 
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.util.scala.impl
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
 
 import java.util.concurrent._
-
-import org.apache.ignite.visor.{VisorTag, visor}
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -99,18 +99,8 @@ private case class Pinger(n: ClusterNode, res: Result) extends Runnable {
  *         Pings all nodes in the topology.
  * }}}
  */
-class VisorPingCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help ping' to see how to use this command.")
-    }
+class VisorPingCommand extends VisorConsoleCommand {
+    @impl protected val name = "ping"
 
     /**
      * ===Command===
@@ -191,28 +181,29 @@ class VisorPingCommand {
  * Companion object that does initialization of the command.
  */
 object VisorPingCommand {
+    /** Singleton command. */
+    private val cmd = new VisorPingCommand
+
     // Adds command's help to visor.
     addHelp(
-        name = "ping",
+        name = cmd.name,
         shortInfo = "Pings node.",
-        spec = List("ping <id81> <id82> ... <id8k>"),
+        spec = List(s"${cmd.name} <id81> <id82> ... <id8k>"),
         args = List(
             ("<id8k>",
                 "ID8 of the node to ping. Note you can also use '@n0' ... '@nn' variables as shortcut to <id8k>.")
         ),
         examples = List(
-            "ping 12345678" ->
+            s"${cmd.name} 12345678" ->
                 "Pings node with '12345678' ID8.",
-            "ping @n0" ->
+            s"${cmd.name} @n0" ->
                 "Pings node with 'specified node with ID8 taken from 'n0' memory variable.",
-            "ping" ->
+            cmd.name ->
                 "Pings all nodes in the topology."
         ),
-        ref = VisorConsoleCommand(cmd.ping, cmd.ping)
+        emptyArgs = cmd.ping,
+        withArgs = cmd.ping
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorPingCommand
 
     /**
      * Singleton.

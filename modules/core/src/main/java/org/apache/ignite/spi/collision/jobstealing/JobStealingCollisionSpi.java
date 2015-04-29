@@ -62,21 +62,21 @@ import static org.apache.ignite.events.EventType.*;
  * <p>
  * <i>
  * Note that this SPI must always be used in conjunction with
- * {@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi}.
+ * {@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi JobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
- * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()}
+ * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency() IgniteConfiguration#getMetricsUpdateFrequency()}
  * should be set to {@code 0} or greater value).
  * The responsibility of Job Stealing Failover SPI is to properly route <b>stolen</b>
  * jobs to the nodes that initially requested (<b>stole</b>) these jobs. The
  * SPI maintains a counter of how many times a jobs was stolen and
- * hence traveled to another node. {@code GridJobStealingCollisionSpi}
+ * hence traveled to another node. {@link JobStealingCollisionSpi}
  * checks this counter and will not allow a job to be stolen if this counter
  * exceeds a certain threshold {@link JobStealingCollisionSpi#setMaximumStealingAttempts(int)}.
  * </i>
  * <p>
  * <h1 class="header">Configuration</h1>
  * In order to use this SPI, you should configure your grid instance
- * to use {@code GridJobStealingCollisionSpi} either from Spring XML file or
+ * to use {@link JobStealingCollisionSpi JobStealingCollisionSpi} either from Spring XML file or
  * directly. The following configuration parameters are supported:
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -110,7 +110,7 @@ import static org.apache.ignite.events.EventType.*;
  * </ul>
  * Below is example of configuring this SPI from Java code:
  * <pre name="code" class="java">
- * GridJobStealingCollisionSpi spi = new GridJobStealingCollisionSpi();
+ * JobStealingCollisionSpi spi = new JobStealingCollisionSpi();
  *
  * // Configure number of waiting jobs
  * // in the queue for job stealing.
@@ -133,7 +133,7 @@ import static org.apache.ignite.events.EventType.*;
  * // Set stealing attribute to steal from/to nodes that have it.
  * spi.setStealingAttributes(Collections.singletonMap("node.segment", "foobar"));
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default Collision SPI.
  * cfg.setCollisionSpi(spi);
@@ -141,7 +141,7 @@ import static org.apache.ignite.events.EventType.*;
  * Here is an example of how this SPI can be configured from Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi"&gt;
  *         &lt;property name="activeJobsThreshold" value="100"/&gt;
  *         &lt;property name="waitJobsThreshold" value="0"/&gt;
  *         &lt;property name="messageExpireTime" value="1000"/&gt;
