@@ -168,7 +168,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final MetricsUpdater metricsUpdater = new MetricsUpdater();
 
     /** Custom event listener. */
-    private GridPlainInClosure<Serializable> customEvtLsnr;
+    private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs
+        = new ConcurrentHashMap8<>();
 
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
@@ -379,12 +380,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    try {
-                        if (customEvtLsnr != null)
-                            customEvtLsnr.apply(data);
-                    }
-                    catch (Exception e) {
-                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
+                    if (data != null) {
+                        for (Class cls = data.getClass(); cls != null; cls = cls.getSuperclass()) {
+                            List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
+
+                            if (list != null) {
+                                for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
+                                    try {
+                                        lsnr.onCustomEvent(node, (DiscoveryCustomMessage)data);
+                                    }
+                                    catch (Exception e) {
+                                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -492,10 +502,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param customEvtLsnr Custom event listener.
+     * @param lsnr Custom event listener.
      */
-    public void setCustomEventListener(GridPlainInClosure<Serializable> customEvtLsnr) {
-        this.customEvtLsnr = customEvtLsnr;
+    public <T extends DiscoveryCustomMessage> void setCustomEventListener(Class<T> msgCls, CustomEventListener<T> lsnr) {
+        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(msgCls);
+
+        if (list == null) {
+            list = F.addIfAbsent(customEvtLsnrs, msgCls,
+                new CopyOnWriteArrayList<CustomEventListener<DiscoveryCustomMessage>>());
+        }
+
+        list.add((CustomEventListener<DiscoveryCustomMessage>)lsnr);
     }
 
     /**
