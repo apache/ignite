@@ -145,15 +145,21 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (!ignite.cluster().nodes().isEmpty()) {
-            leftLatch = new CountDownLatch(ignite.cluster().nodes().size());
+        boolean wasEmpty = true;
 
-            ignite.cluster().stopNodes();
+        if (ignite != null) {
+            if (!ignite.cluster().nodes().isEmpty()) {
+                leftLatch = new CountDownLatch(ignite.cluster().nodes().size());
 
-            assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
+                ignite.cluster().stopNodes();
+
+                assert leftLatch.await(
+                    WAIT_TIMEOUT,
+                    MILLISECONDS);
+            }
+
+            wasEmpty = ignite.cluster().nodes().isEmpty();
         }
-
-        boolean wasEmpty = ignite.cluster().nodes().isEmpty();
 
         G.stop(true);
 
@@ -163,7 +169,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         joinedLatch = null;
         leftLatch = null;
 
-        assert wasEmpty : "grid.isEmpty() returned false after all nodes were stopped [nodes=" + ignite.cluster().nodes() + ']';
+        assert wasEmpty : "grid.isEmpty() returned false after all nodes were stopped " +
+            "[nodes=" + ignite.cluster().nodes() + ']';
     }
 
     /** {@inheritDoc} */
