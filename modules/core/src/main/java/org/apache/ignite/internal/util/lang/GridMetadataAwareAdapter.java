@@ -191,9 +191,13 @@ public class GridMetadataAwareAdapter {
      * @return All metadata in this entry.
      */
     public <V> Object[] allMeta() {
+        Object[] cp;
+
         synchronized (mux) {
-            return data;
+            cp = Arrays.copyOf(data, data.length);
         }
+
+        return cp;
     }
 
     /**
@@ -345,7 +349,7 @@ public class GridMetadataAwareAdapter {
 
         // Avoid code warning (suppressing is bad here, because we need this warning for other places).
         synchronized (mux) {
-            cp = Arrays.copyOf(data, data.length);
+            cp = Arrays.copyOf(this.data, this.data.length);
         }
 
         out.writeObject(cp);
@@ -365,7 +369,7 @@ public class GridMetadataAwareAdapter {
         Object[] cp = (Object[])in.readObject();
 
         synchronized (mux) {
-            data = cp;
+            this.data = cp;
         }
     }
 
