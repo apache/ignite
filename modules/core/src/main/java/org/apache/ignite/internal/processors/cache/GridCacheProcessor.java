@@ -2381,8 +2381,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert val != null;
 
-                    qryMgr.remove(key.value(cctx.cacheObjectContext(), false),
-                        val.value(cctx.cacheObjectContext(), false));
+                    qryMgr.remove(key, val);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);

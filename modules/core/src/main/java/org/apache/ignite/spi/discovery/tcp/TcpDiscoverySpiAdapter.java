@@ -680,9 +680,13 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         Collection<InetSocketAddress> res = new ArrayList<>();
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
-            if (addr.getPort() == 0)
-                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), DFLT_PORT) :
-                    new InetSocketAddress(addr.getAddress(), DFLT_PORT);
+            if (addr.getPort() == 0) {
+                // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
+                int port = locNode.discoveryPort() != 0 ? locNode.discoveryPort() : DFLT_PORT;
+
+                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
+                    new InetSocketAddress(addr.getAddress(), port);
+            }
 
             res.add(addr);
         }

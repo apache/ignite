@@ -55,6 +55,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Empty array of message factories. */
+    public static final MessageFactory[] EMPTY = {};
+
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
 
@@ -224,7 +227,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             };
         }
 
-        msgFactory = new GridIoMessageFactory(ctx.plugins().extensions(MessageFactory.class));
+        MessageFactory[] msgs = ctx.plugins().extensions(MessageFactory.class);
+
+        if (msgs == null)
+            msgs = EMPTY;
+
+        List<MessageFactory> compMsgs = new ArrayList<>();
+
+        for (IgniteComponentType compType : IgniteComponentType.values()) {
+            MessageFactory f = compType.messageFactory();
+
+            if (f != null)
+                compMsgs.add(f);
+        }
+
+        if (!compMsgs.isEmpty())
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
+
+        msgFactory = new GridIoMessageFactory(msgs);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

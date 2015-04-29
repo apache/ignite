@@ -595,6 +595,14 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 112:
+                msg = new GridCacheSqlQuery();
+
+                break;
+
+            // [-3..112] - this
+            // [120..123] - DR
+            // [-4..-22] - SQL
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

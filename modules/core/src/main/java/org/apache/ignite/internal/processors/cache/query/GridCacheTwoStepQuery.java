@@ -23,16 +23,12 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
  * Two step map-reduce style query.
  */
-public class GridCacheTwoStepQuery implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridCacheTwoStepQuery {
     /** */
     public static final int DFLT_PAGE_SIZE = 1000;
 
@@ -95,7 +91,7 @@ public class GridCacheTwoStepQuery implements Serializable {
      * @return Map queries.
      */
     public Collection<GridCacheSqlQuery> mapQueries() {
-        return new ArrayList<>(mapQrys.values()); // Copy to make it Serializable.
+        return mapQrys.values();
     }
 
     /** {@inheritDoc} */
