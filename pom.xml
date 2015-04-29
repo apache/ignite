@@ -586,6 +586,22 @@
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
+
+                            <execution>
+                                <id>schema-import-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -624,6 +640,22 @@
                                     </descriptors>
                                     <outputDirectory>target/release-package/bin</outputDirectory>
                                     <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>schema-import-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
