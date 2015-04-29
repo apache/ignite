@@ -56,14 +56,14 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * <ul>
  * <li>Maximum failover attempts for a single job (see {@link #setMaximumFailoverAttempts(int)}).</li>
  * </ul>
- * Here is a Java example on how to configure grid with {@code JobStealingFailoverSpi}.
+ * Here is a Java example on how to configure grid with {@link JobStealingFailoverSpi}.
  * <pre name="code" class="java">
  * JobStealingFailoverSpi spi = new JobStealingFailoverSpi();
  *
  * // Override maximum failover attempts.
  * spi.setMaximumFailoverAttempts(5);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default failover SPI.
  * cfg.setFailoverSpiSpi(spi);
@@ -71,7 +71,7 @@ import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSp
  * // Starts grid.
  * G.start(cfg);
  </pre>
- * Here is an example of how to configure {@code JobStealingFailoverSpi} from Spring XML configuration file.
+ * Here is an example of how to configure {@link JobStealingFailoverSpi} from Spring XML configuration file.
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
  *     &lt;bean class="org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi"&gt;

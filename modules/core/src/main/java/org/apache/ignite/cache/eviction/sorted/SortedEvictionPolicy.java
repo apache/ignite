@@ -381,7 +381,7 @@ public class SortedEvictionPolicy<K, V> implements EvictionPolicy<K, V>, SortedE
         private static final long serialVersionUID = 0L;
 
         /** Size. */
-        private volatile LongAdder8 size = new LongAdder8();
+        private final LongAdder8 size = new LongAdder8();
 
         /**
          * @param comp Comparator.

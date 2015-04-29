@@ -36,14 +36,14 @@ import org.slf4j.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridSlf4jLogger implements IgniteLogger {
+public class Slf4jLogger implements IgniteLogger {
     /** SLF4J implementation proxy. */
     private final Logger impl;
 
     /**
      * Creates new logger.
      */
-    public GridSlf4jLogger() {
+    public Slf4jLogger() {
         impl = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
     }
 
@@ -52,19 +52,19 @@ public class GridSlf4jLogger implements IgniteLogger {
      *
      * @param impl SLF4J implementation to use.
      */
-    public GridSlf4jLogger(Logger impl) {
+    public Slf4jLogger(Logger impl) {
         assert impl != null;
 
         this.impl = impl;
     }
 
     /** {@inheritDoc} */
-    @Override public GridSlf4jLogger getLogger(Object ctgr) {
+    @Override public Slf4jLogger getLogger(Object ctgr) {
         Logger impl = ctgr == null ? LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) :
             ctgr instanceof Class ? LoggerFactory.getLogger(((Class<?>)ctgr).getName()) :
                 LoggerFactory.getLogger(ctgr.toString());
 
-        return new GridSlf4jLogger(impl);
+        return new Slf4jLogger(impl);
     }
 
     /** {@inheritDoc} */
