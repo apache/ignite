@@ -114,6 +114,7 @@
             <id>dev-libs</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -167,6 +168,7 @@
             <id>release</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -432,6 +434,7 @@
 
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
 
             <modules>
@@ -550,13 +553,52 @@
         </profile>
 
         <profile>
+            <id>java8-schema-import</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/lib/ext/jfxrt.jar</exists>
+                </file>
+            </activation>
+            <modules>
+                <module>modules/schema-import</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+        <profile>
             <id>schema-import</id>
             <activation>
-                <jdk>[1.8)</jdk>
-                <property>
-                    <name>java.vendor</name>
-                    <value>Oracle Corporation</value>
-                </property>
+                <file>
+                    <exists>${java.home}/lib/jfxrt.jar</exists>
+                </file>
             </activation>
             <modules>
                 <module>modules/schema-import</module>
