@@ -88,7 +88,6 @@ public class VisorQueryCursor<T> implements Iterator<T>, AutoCloseable {
         this.accessed = accessed;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorQueryCursor.class, this);

@@ -20,14 +20,15 @@ package org.apache.ignite.visor.commands.disco
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
+
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -85,21 +86,11 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         Prints discovery events fired during last two minutes sorted chronologically.
  * }}}
  */
-class VisorDiscoveryCommand {
+class VisorDiscoveryCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "disco"
+
     /** */
     private type TimeFilter = EventFilter
-
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help disco' to see how to use this command.")
-    }
 
     /**
      * ===Command===
@@ -143,7 +134,7 @@ class VisorDiscoveryCommand {
                     return
                 }
 
-                val oldest = ignite.cluster.nodes().maxBy(_.metrics().getUpTime)
+                val node = ignite.cluster.forOldest().node()
 
                 val cntOpt = argValue("c", argLst)
 
@@ -157,14 +148,14 @@ class VisorDiscoveryCommand {
                             return
                     }
 
-                println("Oldest alive node in grid: " + nodeId8Addr(oldest.id))
+                println("Oldest alive node in grid: " + nodeId8Addr(node.id()))
 
                 val evts =
                     try
-                        events(oldest, tm, hasArgFlag("r", argLst))
+                        events(node, tm, hasArgFlag("r", argLst))
                     catch {
                         case e: Throwable =>
-                            scold(e.getMessage)
+                            scold(e)
 
                             return
                     }
@@ -217,8 +208,8 @@ class VisorDiscoveryCommand {
         assert(node != null)
         assert(!node.isDaemon)
 
-        var evts = ignite.compute(ignite.cluster.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
-            toTaskArgument(node.id(), VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame))).toSeq
+        var evts = executeOne(node.id(), classOf[VisorNodeEventsCollectorTask],
+            VisorNodeEventsCollectorTaskArg.createEventsArg(EVTS_DISCOVERY, tmFrame)).toSeq
 
         val nodeStartTime = node.metrics().getStartTime
 
@@ -239,8 +230,11 @@ class VisorDiscoveryCommand {
  * Companion object that does initialization of the command.
  */
 object VisorDiscoveryCommand {
+    /** Singleton command. */
+    private val cmd = new VisorDiscoveryCommand
+
     addHelp(
-        name = "disco",
+        name = cmd.name,
         shortInfo = "Prints topology change log.",
         longInfo = List(
             "Prints topology change log as seen from the oldest node.",
@@ -257,8 +251,8 @@ object VisorDiscoveryCommand {
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
-            "disco",
-            "disco {-t=<num>s|m|h|d} {-r} {-c=<n>}"
+            cmd.name,
+            s"${cmd.name} {-t=<num>s|m|h|d} {-r} {-c=<n>}"
         ),
         args = List(
             "-t=<num>s|m|h|d" -> List(
@@ -276,18 +270,16 @@ object VisorDiscoveryCommand {
             )
         ),
         examples = List(
-            "disco" ->
+            cmd.name ->
                 "Prints all discovery events sorted chronologically (oldest first).",
-            "disco -r" ->
+            s"${cmd.name} -r" ->
                 "Prints all discovery events sorted chronologically in reversed order (newest first).",
-            "disco -t=2m" ->
+            s"${cmd.name} -t=2m" ->
                 "Prints discovery events fired during last two minutes sorted chronologically."
         ),
-        ref = VisorConsoleCommand(cmd.disco, cmd.disco)
+        emptyArgs = cmd.disco,
+        withArgs = cmd.disco
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorDiscoveryCommand
 
     /**
      * Singleton.

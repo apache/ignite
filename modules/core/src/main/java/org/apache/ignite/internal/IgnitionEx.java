@@ -1856,7 +1856,7 @@ public class IgnitionEx {
                 if (!U.discoOrdered(cfg.getDiscoverySpi()) && !U.relaxDiscoveryOrdered())
                     throw new IgniteCheckedException("Discovery SPI implementation does not support node ordering and " +
                         "cannot be used with cache (use SPI with @GridDiscoverySpiOrderSupport annotation, " +
-                        "like GridTcpDiscoverySpi)");
+                        "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
                     if (CU.isHadoopSystemCache(ccfg.getName()))
