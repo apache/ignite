@@ -1763,18 +1763,64 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param nearVer Near version ID.
      * @param txNum Number of transactions.
-     * @return {@code True} if transactions were prepared or committed.
+     * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
      */
-    public boolean txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
-        Collection<GridCacheVersion> processedVers = null;
+    @Nullable public IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
+        return txsPreparedOrCommitted(nearVer, txNum, null, null);
+    }
 
-        for (IgniteInternalTx tx : txs()) {
+    /**
+     * @param nearVer Near version ID.
+     * @param txNum Number of transactions.
+     * @param fut Result future.
+     * @param processedVers Processed versions.
+     * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
+     */
+    @Nullable private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
+        int txNum,
+        @Nullable GridFutureAdapter<Boolean> fut,
+        @Nullable Collection<GridCacheVersion> processedVers)
+    {
+        for (final IgniteInternalTx tx : txs()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 TransactionState state = tx.state();
 
+                IgniteInternalFuture<IgniteInternalTx> prepFut = tx.currentPrepareFuture();
+
+                if (prepFut != null && !prepFut.isDone()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Transaction is preparing (will wait): " + tx);
+
+                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<Boolean>();
+
+                    final int txNum0 = txNum;
+
+                    final Collection<GridCacheVersion> processedVers0 = processedVers;
+
+                    prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> prepFut) {
+                            if (log.isDebugEnabled())
+                                log.debug("Transaction prepare future finished: " + tx);
+
+                            IgniteInternalFuture<Boolean> fut = txsPreparedOrCommitted(nearVer,
+                                txNum0,
+                                fut0,
+                                processedVers0);
+
+                            assert fut == fut0;
+                        }
+                    });
+
+                    return fut0;
+                }
+
                 if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
-                    if (--txNum == 0)
-                        return true;
+                    if (--txNum == 0) {
+                        if (fut != null)
+                            fut.onDone(true);
+
+                        return fut;
+                    }
                 }
                 else {
                     if (tx.state(MARKED_ROLLBACK) || tx.state() == UNKNOWN) {
@@ -1783,18 +1829,32 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         if (log.isDebugEnabled())
                             log.debug("Transaction was not prepared (rolled back): " + tx);
 
-                        return false;
+                        if (fut == null)
+                            fut = new GridFutureAdapter<>();
+
+                        fut.onDone(false);
+
+                        return fut;
                     }
                     else {
                         if (tx.state() == COMMITTED) {
-                            if (--txNum == 0)
-                                return true;
+                            if (--txNum == 0) {
+                                if (fut != null)
+                                    fut.onDone(true);
+
+                                return fut;
+                            }
                         }
                         else {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction is not prepared: " + tx);
 
-                            return false;
+                            if (fut == null)
+                                fut = new GridFutureAdapter<>();
+
+                            fut.onDone(false);
+
+                            return fut;
                         }
                     }
                 }
@@ -1821,13 +1881,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 CommittedVersion commitVer = (CommittedVersion)ver;
 
                 if (commitVer.nearVer.equals(nearVer)) {
-                    if (--txNum == 0)
-                        return true;
+                    if (--txNum == 0) {
+                        if (fut != null)
+                            fut.onDone(true);
+
+                        return fut;
+                    }
                 }
             }
         }
 
-        return false;
+        if (fut == null)
+            fut = new GridFutureAdapter<>();
+
+        fut.onDone(false);
+
+        return fut;
     }
 
     /**
@@ -1985,7 +2054,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     log.debug("Processing node failed event [locNodeId=" + cctx.localNodeId() +
                         ", failedNodeId=" + evtNodeId + ']');
 
-                for (IgniteInternalTx tx : txs()) {
+                for (final IgniteInternalTx tx : txs()) {
                     if ((tx.near() && !tx.local()) || (tx.storeUsed() && tx.masterNodeIds().contains(evtNodeId))) {
                         // Invalidate transactions.
                         salvageTx(tx, false, RECOVERY_FINISH);
@@ -1996,9 +2065,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (tx.state() == PREPARED)
                                 commitIfPrepared(tx);
                             else {
-                                if (tx.setRollbackOnly())
-                                    tx.rollbackAsync();
-                                // If we could not mark tx as rollback, it means that transaction is being committed.
+                                IgniteInternalFuture<IgniteInternalTx> prepFut = tx.currentPrepareFuture();
+
+                                if (prepFut != null) {
+                                    prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                            if (tx.state() == PREPARED)
+                                                commitIfPrepared(tx);
+                                            else if (tx.setRollbackOnly())
+                                                tx.rollbackAsync();
+                                        }
+                                    });
+                                }
+                                else {
+                                    // If we could not mark tx as rollback, it means that transaction is being committed.
+                                    if (tx.setRollbackOnly())
+                                        tx.rollbackAsync();
+                                }
                             }
                         }
                     }

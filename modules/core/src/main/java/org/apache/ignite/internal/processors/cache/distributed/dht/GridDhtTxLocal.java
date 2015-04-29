@@ -685,6 +685,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+        return prepFut.get();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocal.class, this, "super", super.toString());
     }

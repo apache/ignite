@@ -110,7 +110,7 @@ class GridUpdateNotifier {
 
             this.ver = ver;
 
-            url = "http://tiny.cc/updater/update_status_community.php";
+            url = "http://tiny.cc/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
             this.gw = gw;

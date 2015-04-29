@@ -118,7 +118,7 @@ import static org.apache.ignite.events.EventType.*;
  * <p>
  * <h1 class="header">Configuration</h1>
  * In order to use this load balancer, you should configure your grid instance
- * to use {@code GridRoundRobinLoadBalancingSpi} either from Spring XML file or
+ * to use {@link RoundRobinLoadBalancingSpi} either from Spring XML file or
  * directly. The following configuration parameters are supported:
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -132,12 +132,12 @@ import static org.apache.ignite.events.EventType.*;
  * </ul>
  * Below is Java configuration example:
  * <pre name="code" class="java">
- * GridRandomLoadBalancingSpi = new GridRandomLoadBalancingSpi();
+ * RoundRobinLoadBalancingSpi spi = new RoundRobinLoadBalancingSpi();
  *
  * // Configure SPI to use global round-robin mode.
  * spi.setPerTask(false);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default load balancing SPI.
  * cfg.setLoadBalancingSpi(spi);
@@ -145,10 +145,10 @@ import static org.apache.ignite.events.EventType.*;
  * // Starts grid.
  * G.start(cfg);
  * </pre>
- * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
+ * Here is how you can configure {@link RoundRobinLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.loadBalancing.roundrobin.GridRoundRobinLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.roundrobin.RoundRobinLoadBalancingSpi"&gt;
  *         &lt;!-- Set to global round-robin mode. --&gt;
  *         &lt;property name="perTask" value="false"/&gt;
  *     &lt;/bean&gt;
