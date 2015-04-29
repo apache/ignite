@@ -5,7 +5,7 @@ Apache Ignite In-Memory Data Fabric 1.1
 ---------------------------------------
 
 * Added Google Compute Engine TCP discovery IP finder.
-* Added generic cloud TCP discovery IP finder (based on jcoulds).
+* Added generic cloud TCP discovery IP finder (based on jclouds).
 * Added SortedEvictionPolicy.
 * Added chaining for IgniteConfiguration and CacheConfiguration setters.
 * Added AffinityUuid class for easier generation of unique collocated keys.
