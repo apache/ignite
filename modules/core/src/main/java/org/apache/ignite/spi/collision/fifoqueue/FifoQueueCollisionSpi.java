@@ -41,14 +41,14 @@ import java.util.*;
  * </li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * {@code GridFifoQueueCollisionSpi} can be configured as follows:
+ * {@code FifoQueueCollisionSpi} can be configured as follows:
  * <pre name="code" class="java">
- * GridFifoQueueCollisionSpi colSpi = new GridFifoQueueCollisionSpi();
+ * FifoQueueCollisionSpi colSpi = new FifoQueueCollisionSpi();
  *
  * // Execute all jobs sequentially by setting parallel job number to 1.
  * colSpi.setParallelJobsNumber(1);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default collision SPI.
  * cfg.setCollisionSpi(colSpi);
@@ -57,12 +57,12 @@ import java.util.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * {@code GridFifoQueueCollisionSpi} can be configured from Spring XML configuration file:
+ * {@code FifoQueueCollisionSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *       ...
  *       &lt;property name="collisionSpi"&gt;
- *           &lt;bean class="org.apache.ignite.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
+ *           &lt;bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi"&gt;
  *               &lt;property name="parallelJobsNumber" value="1"/&gt;
  *           &lt;/bean&gt;
  *       &lt;/property&gt;

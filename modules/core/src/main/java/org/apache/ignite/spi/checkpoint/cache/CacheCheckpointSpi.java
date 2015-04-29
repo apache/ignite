@@ -44,7 +44,7 @@ import static org.apache.ignite.events.EventType.*;
  * <h2 class="header">Java Example</h2>
  * {@link CacheCheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * String cacheName = "checkpoints";
  *

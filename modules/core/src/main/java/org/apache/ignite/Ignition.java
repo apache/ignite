@@ -42,7 +42,7 @@ import java.util.*;
  * {@link org.apache.ignite.configuration.IgniteConfiguration} to override some default configuration. Below is an
  * example on how to start grid with custom configuration for <strong>URI deployment</strong>.
  * <pre name="code" class="java">
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * GridUriDeployment deploySpi = new GridUriDeployment();
  *

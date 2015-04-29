@@ -1007,6 +1007,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         return fut;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+        return null;
+    }
+
     /**
      *
      * @param state State to set.
@@ -2018,6 +2023,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
             return null;
         }
 

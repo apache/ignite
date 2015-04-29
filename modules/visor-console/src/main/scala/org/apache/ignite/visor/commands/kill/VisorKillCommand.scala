@@ -17,17 +17,15 @@
 
 package org.apache.ignite.visor.commands.kill
 
-import org.apache.ignite.internal.IgniteNodeAttributes
-import IgniteNodeAttributes._
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.util.scala.impl
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.VisorConsoleCommand
+import org.apache.ignite.visor.visor._
 
 import java.util.{Collections, UUID}
-
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.VisorConsoleCommand
-import visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -91,20 +89,8 @@ import scala.util.control.Breaks._
  *         Kill (stop) all nodes.
  * }}}
  */
-class VisorKillCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        nl()
-
-        warn(errMsgs: _*)
-        warn("Type 'help kill' to see how to use this command.")
-    }
+class VisorKillCommand extends VisorConsoleCommand {
+    @impl protected val name = "kill"
 
     /**
      * ===Command===
@@ -282,14 +268,17 @@ class VisorKillCommand {
  * Companion object that does initialization of the command.
  */
 object VisorKillCommand {
+    /** Singleton command. */
+    private val cmd = new VisorKillCommand
+
     // Adds command's help to visor.
     addHelp(
-        name = "kill",
+        name = cmd.name,
         shortInfo = "Kills or restarts node.",
         spec = List(
-            "kill",
-            "kill -in|-ih",
-            "kill {-r|-k} {-id8=<node-id8>|-id=<node-id>}"
+            cmd.name,
+            s"${cmd.name} -in|-ih",
+            s"${cmd.name} {-r|-k} {-id8=<node-id8>|-id=<node-id>}"
         ),
         args = List(
             "-in" -> List(
@@ -327,20 +316,18 @@ object VisorKillCommand {
             )
         ),
         examples = List(
-            "kill" ->
+            cmd.name ->
                 "Starts command in interactive mode.",
-            "kill -id8=12345678 -r" ->
+            s"${cmd.name} -id8=12345678 -r" ->
                 "Restart node with id8.",
-            "kill -id8=@n0 -r" ->
+            s"${cmd.name} -id8=@n0 -r" ->
                 "Restart specified node with id8 taken from 'n0' memory variable.",
-            "kill -k" ->
+            s"${cmd.name} -k" ->
                 "Kill (stop) all nodes."
         ),
-        ref = VisorConsoleCommand(cmd.kill, cmd.kill)
+        emptyArgs = cmd.kill,
+        withArgs = cmd.kill
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorKillCommand
 
     /**
      * Singleton.
