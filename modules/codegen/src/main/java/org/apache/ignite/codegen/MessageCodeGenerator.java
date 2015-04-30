@@ -18,7 +18,6 @@
 package org.apache.ignite.codegen;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -44,6 +43,9 @@ public class MessageCodeGenerator {
 
     /** */
     private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+
+    /** */
+    private static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = Message.class;
@@ -140,7 +142,7 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
-        gen.generateAndWrite(DataStreamerEntry.class);
+//        gen.generateAndWrite(DataStreamerEntry.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
 //        gen.generateAndWrite(GridDistributedLockResponse.class);
@@ -172,6 +174,26 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridQueryNextPageResponse.class);
 //        gen.generateAndWrite(GridQueryRequest.class);
 //        gen.generateAndWrite(GridCacheSqlQuery.class);
+
+//        gen.generateAndWrite(GridH2Null.class);
+//        gen.generateAndWrite(GridH2Boolean.class);
+//        gen.generateAndWrite(GridH2Byte.class);
+//        gen.generateAndWrite(GridH2Short.class);
+//        gen.generateAndWrite(GridH2Integer.class);
+//        gen.generateAndWrite(GridH2Long.class);
+//        gen.generateAndWrite(GridH2Decimal.class);
+//        gen.generateAndWrite(GridH2Double.class);
+//        gen.generateAndWrite(GridH2Float.class);
+//        gen.generateAndWrite(GridH2Time.class);
+//        gen.generateAndWrite(GridH2Date.class);
+//        gen.generateAndWrite(GridH2Timestamp.class);
+//        gen.generateAndWrite(GridH2Bytes.class);
+//        gen.generateAndWrite(GridH2String.class);
+//        gen.generateAndWrite(GridH2Array.class);
+//        gen.generateAndWrite(GridH2JavaObject.class);
+//        gen.generateAndWrite(GridH2Uuid.class);
+//        gen.generateAndWrite(GridH2Geometry.class);
+//        gen.generateAndWrite(GridH2CacheObject.class);
     }
 
     /**

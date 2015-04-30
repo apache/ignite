@@ -50,7 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * <tt>GridTcpCommunicationSpi</tt> is default communication SPI which uses
+ * <tt>TcpCommunicationSpi</tt> is default communication SPI which uses
  * TCP/IP protocol and Java NIO to communicate with other nodes.
  * <p>
  * To enable communication with other nodes, this SPI adds {@link #ATTR_ADDRS}
@@ -99,15 +99,15 @@ import static org.apache.ignite.events.EventType.*;
  * <li>Maximum number of unacknowledged messages (see {@link #setUnacknowledgedMessagesBufferSize(int)})</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * GridTcpCommunicationSpi is used by default and should be explicitly configured
+ * TcpCommunicationSpi is used by default and should be explicitly configured
  * only if some SPI configuration parameters need to be overridden.
  * <pre name="code" class="java">
- * GridTcpCommunicationSpi commSpi = new GridTcpCommunicationSpi();
+ * TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
  *
  * // Override local port.
  * commSpi.setLocalPort(4321);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default communication SPI.
  * cfg.setCommunicationSpi(commSpi);
@@ -116,12 +116,12 @@ import static org.apache.ignite.events.EventType.*;
  * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridTcpCommunicationSpi can be configured from Spring XML configuration file:
+ * TcpCommunicationSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="communicationSpi"&gt;
- *             &lt;bean class="org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi"&gt;
  *                 &lt;!-- Override local port. --&gt;
  *                 &lt;property name="localPort" value="4321"/&gt;
  *             &lt;/bean&gt;

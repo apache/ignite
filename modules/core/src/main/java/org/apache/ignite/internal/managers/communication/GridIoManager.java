@@ -35,6 +35,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -55,6 +56,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Empty array of message factories. */
+    public static final MessageFactory[] EMPTY = {};
+
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
 
@@ -183,7 +187,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
-        affPool = Executors.newFixedThreadPool(1);
+        affPool = new IgniteThreadPoolExecutor(
+            "aff-" + ctx.gridName(),
+            1,
+            1,
+            0,
+            new LinkedBlockingQueue<Runnable>());
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -224,7 +233,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             };
         }
 
-        msgFactory = new GridIoMessageFactory(ctx.plugins().extensions(MessageFactory.class));
+        MessageFactory[] msgs = ctx.plugins().extensions(MessageFactory.class);
+
+        if (msgs == null)
+            msgs = EMPTY;
+
+        List<MessageFactory> compMsgs = new ArrayList<>();
+
+        for (IgniteComponentType compType : IgniteComponentType.values()) {
+            MessageFactory f = compType.messageFactory();
+
+            if (f != null)
+                compMsgs.add(f);
+        }
+
+        if (!compMsgs.isEmpty())
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
+
+        msgFactory = new GridIoMessageFactory(msgs);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -600,7 +626,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'GridConfiguration.getPeerClassLoadingThreadPoolSize()'. " +
+                "on 'ExecutorService' provided by 'IgniteConfiguration.getPeerClassLoadingThreadPoolSize()'. " +
                 "Will attempt to process message in the listener thread instead.", e);
 
             c.run();
@@ -639,7 +665,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'GridConfiguration.getPublicThreadPoolSize()'. " +
+                "on 'ExecutorService' provided by 'IgniteConfiguration.getPublicThreadPoolSize()'. " +
                 "Will attempt to process message in the listener thread instead.", e);
 
             c.run();
@@ -1342,7 +1368,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to process delayed message due to execution rejection. Increase the upper bound " +
-                    "on executor service provided in 'GridConfiguration.getPublicThreadPoolSize()'). Will attempt to " +
+                    "on executor service provided in 'IgniteConfiguration.getPublicThreadPoolSize()'). Will attempt to " +
                     "process message in the listener thread instead.", e);
 
                 for (GridCommunicationMessageSet msgSet : msgSets)

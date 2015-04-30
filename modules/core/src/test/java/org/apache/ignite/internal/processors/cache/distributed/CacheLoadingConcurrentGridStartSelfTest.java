@@ -37,7 +37,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
-public class GridCacheLoadingConcurrentGridStartTest extends GridCommonAbstractTest {
+public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest {
     /** Grids count */
     private static int GRIDS_CNT = 5;
 

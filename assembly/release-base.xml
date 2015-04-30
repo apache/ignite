@@ -73,6 +73,7 @@
                 <exclude>igniterouter.bat</exclude>
                 <exclude>**/target-classpath.bat</exclude>
                 <exclude>ignitevisorcmd.bat</exclude>
+                <exclude>ignite-schema-import.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -89,6 +90,7 @@
                 <exclude>**/target-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
                 <exclude>ignitevisorcmd.sh</exclude>
+                <exclude>ignite-schema-import.sh</exclude>
             </excludes>
         </fileSet>
 

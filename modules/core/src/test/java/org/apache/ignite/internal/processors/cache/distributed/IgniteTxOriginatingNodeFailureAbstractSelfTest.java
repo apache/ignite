@@ -140,8 +140,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             nodeMap.put(key, nodes);
         }
 
-        info("Starting tx [values=" + map + ", topVer=" +
-            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
+        info("Starting optimistic tx " +
+            "[values=" + map + ", topVer=" + (grid(1)).context().discovery().topologyVersion() + ']');
 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());
@@ -157,6 +157,8 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                 TransactionProxyImpl tx = (TransactionProxyImpl)txIgniteNode.transactions().txStart();
 
                 IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
+
+                assertTrue(txEx.optimistic());
 
                 cache.putAll(map);
 
