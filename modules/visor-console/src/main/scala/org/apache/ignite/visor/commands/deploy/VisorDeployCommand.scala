@@ -18,19 +18,19 @@
 package org.apache.ignite.visor.commands.deploy
 
 import org.apache.ignite.internal.util.io.GridFilenameUtils
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.util.{IgniteUtils => U}
-import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.VisorConsoleCommand
+import org.apache.ignite.visor.visor._
 
 import com.jcraft.jsch._
 
 import java.io._
 import java.net.UnknownHostException
 import java.util.concurrent._
-
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.VisorConsoleCommand
-import org.apache.ignite.visor.visor._
 
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
@@ -308,26 +308,14 @@ private case class VisorCopier(
  *         Copies file or directory to remote host (private key authentication).
  * }}}
  */
-class VisorDeployCommand {
+class VisorDeployCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "deploy"
+
     /** Default port. */
     private val DFLT_PORT = 22
 
     /** String that specifies range of IPs. */
     private val RANGE_SMB = "~"
-
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        nl()
-
-        warn(errMsgs: _*)
-        warn("Type 'help deploy' to see how to use this command.")
-    }
 
     /**
      * Catch point for missing arguments case.
@@ -367,7 +355,7 @@ class VisorDeployCommand {
             try
                 hosts ++= mkHosts(h, dfltUname, dfltPasswd, key.isDefined)
             catch {
-                case e: IllegalArgumentException => scold(e.getMessage).^^
+                case e: IllegalArgumentException => scold(e).^^
             }
         })
 
@@ -524,15 +512,18 @@ class VisorDeployCommand {
  * Companion object that does initialization of the command.
  */
 object VisorDeployCommand {
+    /** Singleton command. */
+    private val cmd = new VisorDeployCommand
+
     addHelp(
-        name = "deploy",
+        name = cmd.name,
         shortInfo = "Copies file or folder to remote host.",
         longInfo = List(
             "Copies file or folder to remote host.",
             "Command relies on SFTP protocol."
         ),
         spec = List(
-            "deploy -h={<username>{:<password>}@}<host>{:<port>} {-u=<username>}",
+            s"${cmd.name} -h={<username>{:<password>}@}<host>{:<port>} {-u=<username>}",
             "    {-p=<password>} {-k=<path>} -s=<path> {-d<path>}"
         ),
         args = List(
@@ -568,16 +559,14 @@ object VisorDeployCommand {
             )
         ),
         examples = List(
-            "deploy -h=uname:passwd@host -s=/local/path -d=/remote/path" ->
+            s"${cmd.name} -h=uname:passwd@host -s=/local/path -d=/remote/path" ->
                 "Copies file or folder to remote host (password authentication).",
-            "deploy -h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path" ->
+            s"${cmd.name} -h=uname@host -k=ssh-key.pem -s=/local/path -d=/remote/path" ->
                 "Copies file or folder to remote host (private key authentication)."
         ),
-        ref = VisorConsoleCommand(cmd.deploy, cmd.deploy)
+        emptyArgs = cmd.deploy,
+        withArgs = cmd.deploy
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorDeployCommand
 
     /**
      * Singleton.

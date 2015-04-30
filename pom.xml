@@ -21,7 +21,7 @@
     POM file.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
@@ -73,8 +73,9 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>modules/schema-import</module>
         <module>modules/codegen</module>
+        <module>modules/gce</module>
+        <module>modules/cloud</module>
     </modules>
 
     <profiles>
@@ -114,6 +115,7 @@
             <id>dev-libs</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -130,10 +132,6 @@
                                     <filesets>
                                         <fileset>
                                             <directory>libs</directory>
-                                        </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/schema-import</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration>
@@ -171,6 +169,7 @@
             <id>release</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -380,22 +379,6 @@
                             </execution>
 
                             <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>prepare-package</phase>
                                 <goals>
@@ -452,6 +435,7 @@
 
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
 
             <modules>
@@ -561,6 +545,119 @@
                                 <phase>deploy</phase>
                                 <configuration>
                                     <inputDirectory>${basedir}/target/site</inputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>java8-schema-import</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/lib/ext/jfxrt.jar</exists>
+                </file>
+            </activation>
+            <modules>
+                <module>modules/schema-import</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>schema-import-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+        <profile>
+            <id>schema-import</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/lib/jfxrt.jar</exists>
+                </file>
+            </activation>
+            <modules>
+                <module>modules/schema-import</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>schema-import-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
                         </executions>

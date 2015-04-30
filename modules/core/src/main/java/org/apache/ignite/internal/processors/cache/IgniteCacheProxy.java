@@ -222,7 +222,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Entry<K, V> randomEntry() {
+    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
         CacheOperationContext prev = onEnter(opCtx);
 
         try {
@@ -344,7 +344,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Entry<K,V>> query(Query filter, @Nullable ClusterGroup grp) {
+    private QueryCursor<Cache.Entry<K,V>> query(Query filter, @Nullable ClusterGroup grp) {
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
@@ -433,7 +433,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Initial iteration cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Entry<K, V>> queryContinuous(ContinuousQuery qry, boolean loc) {
+    private QueryCursor<Cache.Entry<K, V>> queryContinuous(ContinuousQuery qry, boolean loc) {
         if (qry.getInitialQuery() instanceof ContinuousQuery)
             throw new IgniteException("Initial predicate for continuous query can't be an instance of another " +
                 "continuous query. Use SCAN or SQL query for initial iteration.");
@@ -546,7 +546,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
+    @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
         CacheOperationContext prev = onEnter(opCtx);
 
         try {
@@ -730,7 +730,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
+    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
         CacheOperationContext prev = onEnter(opCtx);
 
         try {

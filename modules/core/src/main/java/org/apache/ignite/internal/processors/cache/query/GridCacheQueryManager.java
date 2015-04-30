@@ -286,11 +286,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * Entry for given key unswapped.
      *
-     * @param swapSpaceName Swap space name.
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String swapSpaceName, K key) throws IgniteCheckedException {
+    public void onSwap(CacheObject key) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
@@ -307,15 +306,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param key Key.
      * @param val Value
-     * @param valBytes Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(K key, V val, byte[] valBytes) throws IgniteCheckedException {
+    public void onUnswap(CacheObject key, CacheObject val) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.onUnswap(space, key, val, valBytes);
+            qryProc.onUnswap(space, key, val);
         }
         finally {
             leaveBusy();
@@ -334,18 +332,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Writes key-value pair to index.
      *
      * @param key Key.
-     * @param keyBytes Byte array with key data.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
-        GridCacheVersion ver, long expirationTime)
+    public void store(CacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
-        assert val != null || valBytes != null;
+        assert val != null;
         assert enabled();
 
         if (key instanceof GridCacheInternal)
@@ -355,10 +350,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            if (val == null)
-                val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
-
-            qryProc.store(space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
+            qryProc.store(space, key, val, CU.versionToBytes(ver), expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -373,7 +365,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(Object key, Object val) throws IgniteCheckedException {
+    public void remove(CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
