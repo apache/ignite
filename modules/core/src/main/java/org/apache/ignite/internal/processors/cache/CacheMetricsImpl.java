@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.*;
+
 /**
  * Adapter for cache metrics.
  */
@@ -63,13 +65,46 @@ public class CacheMetricsImpl implements CacheMetrics {
     private AtomicLong getTimeNanos = new AtomicLong();
 
     /** Remove time taken nanos. */
-    private AtomicLong removeTimeNanos = new AtomicLong();
+    private AtomicLong rmvTimeNanos = new AtomicLong();
 
     /** Commit transaction time taken nanos. */
     private AtomicLong commitTimeNanos = new AtomicLong();
 
     /** Commit transaction time taken nanos. */
     private AtomicLong rollbackTimeNanos = new AtomicLong();
+
+    /** Number of reads from off-heap memory. */
+    private AtomicLong offHeapGets = new AtomicLong();
+
+    /** Number of writes to off-heap memory. */
+    private AtomicLong offHeapPuts = new AtomicLong();
+
+    /** Number of removed entries from off-heap memory. */
+    private AtomicLong offHeapRemoves = new AtomicLong();
+
+    /** Number of evictions from off-heap memory. */
+    private AtomicLong offHeapEvicts = new AtomicLong();
+
+    /** Number of off-heap hits. */
+    private AtomicLong offHeapHits = new AtomicLong();
+
+    /** Number of off-heap misses. */
+    private AtomicLong offHeapMisses = new AtomicLong();
+
+    /** Number of reads from swap. */
+    private AtomicLong swapGets = new AtomicLong();
+
+    /** Number of writes to swap. */
+    private AtomicLong swapPuts = new AtomicLong();
+
+    /** Number of removed entries from swap. */
+    private AtomicLong swapRemoves = new AtomicLong();
+
+    /** Number of swap hits. */
+    private AtomicLong swapHits = new AtomicLong();
+
+    /** Number of swap misses. */
+    private AtomicLong swapMisses = new AtomicLong();
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -126,13 +161,157 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getOffHeapGets() {
+        return offHeapGets.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapPuts() {
+        return offHeapPuts.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapRemovals() {
+        return offHeapRemoves.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapEvictions() {
+        return offHeapEvicts.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapHits() {
+        return offHeapHits.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getOffHeapHitPercentage() {
+        long hits0 = offHeapHits.get();
+        long gets0 = offHeapGets.get();
+
+        if (hits0 == 0)
+            return 0;
+
+        return (float) hits0 / gets0 * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapMisses() {
+        return offHeapMisses.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getOffHeapMissPercentage() {
+        long misses0 = offHeapMisses.get();
+        long reads0 = offHeapGets.get();
+
+        if (misses0 == 0)
+            return 0;
+
+        return (float) misses0 / reads0 * 100.0f;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return cctx.cache().offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
+    @Override public long getOffHeapPrimaryEntriesCount() {
+        try {
+            return cctx.swap().offheapEntriesCount(true, false, NONE);
+        }
+        catch (IgniteCheckedException e) {
+            return 0;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapBackupEntriesCount() {
+        try {
+            return cctx.swap().offheapEntriesCount(false, true, NONE);
+        }
+        catch (IgniteCheckedException e) {
+            return 0;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
         return cctx.cache().offHeapAllocatedSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapMaxSize() {
+        return cctx.config().getOffHeapMaxMemory();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapGets() {
+        return swapGets.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapPuts() {
+        return swapPuts.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapRemovals() {
+        return swapRemoves.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapHits() {
+        return swapHits.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapMisses() {
+        return swapMisses.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapEntriesCount() {
+        try {
+            return cctx.cache().swapKeys();
+        }
+        catch (IgniteCheckedException e) {
+            return 0;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSwapSize() {
+        try {
+            return cctx.cache().swapSize();
+        }
+        catch (IgniteCheckedException e) {
+            return 0;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getSwapHitPercentage() {
+        long hits0 = swapHits.get();
+        long gets0 = swapGets.get();
+
+        if (hits0 == 0)
+            return 0;
+
+        return (float) hits0 / gets0 * 100.0f;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getSwapMissPercentage() {
+        long misses0 = swapMisses.get();
+        long reads0 = swapGets.get();
+
+        if (misses0 == 0)
+            return 0;
+
+        return (float) misses0 / reads0 * 100.0f;
     }
 
     /** {@inheritDoc} */
@@ -317,10 +496,23 @@ public class CacheMetricsImpl implements CacheMetrics {
         txCommits.set(0);
         txRollbacks.set(0);
         putTimeNanos.set(0);
-        removeTimeNanos.set(0);
+        rmvTimeNanos.set(0);
         getTimeNanos.set(0);
         commitTimeNanos.set(0);
         rollbackTimeNanos.set(0);
+
+        offHeapGets.set(0);
+        offHeapPuts.set(0);
+        offHeapRemoves.set(0);
+        offHeapHits.set(0);
+        offHeapMisses.set(0);
+        offHeapEvicts.set(0);
+
+        swapGets.set(0);
+        swapPuts.set(0);
+        swapRemoves.set(0);
+        swapHits.set(0);
+        swapMisses.set(0);
 
         if (delegate != null)
             delegate.clear();
@@ -402,7 +594,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public float getAverageRemoveTime() {
-        long timeNanos = removeTimeNanos.get();
+        long timeNanos = rmvTimeNanos.get();
         long removesCnt = rmCnt.get();
 
         if (timeNanos == 0 || removesCnt == 0)
@@ -483,7 +675,6 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.onTxRollback(duration);
     }
 
-
     /**
      * Increments the get time accumulator.
      *
@@ -514,7 +705,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveTimeNanos(long duration) {
-        removeTimeNanos.addAndGet(duration);
+        rmvTimeNanos.addAndGet(duration);
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
@@ -526,7 +717,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveAndGetTimeNanos(long duration) {
-        removeTimeNanos.addAndGet(duration);
+        rmvTimeNanos.addAndGet(duration);
         getTimeNanos.addAndGet(duration);
 
         if (delegate != null)
@@ -579,6 +770,108 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public boolean isManagementEnabled() {
         return cctx.config().isManagementEnabled();
+    }
+
+    /**
+     * Off-heap read callback.
+     *
+     * @param hit Hit or miss flag.
+     */
+    public void onOffHeapRead(boolean hit) {
+        offHeapGets.incrementAndGet();
+
+        if (hit)
+            offHeapHits.incrementAndGet();
+        else
+            offHeapMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onOffHeapRead(hit);
+    }
+
+    /**
+     * Off-heap write callback.
+     */
+    public void onOffHeapWrite() {
+        offHeapPuts.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onOffHeapWrite();
+    }
+
+    /**
+     * Off-heap remove callback.
+     */
+    public void onOffHeapRemove() {
+        offHeapRemoves.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onOffHeapRemove();
+    }
+
+    /**
+     * Off-heap evict callback.
+     */
+    public void onOffHeapEvict() {
+        offHeapEvicts.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onOffHeapRemove();
+    }
+
+    /**
+     * Swap read callback.
+     *
+     * @param hit Hit or miss flag.
+     */
+    public void onSwapRead(boolean hit) {
+        swapGets.incrementAndGet();
+
+        if (hit)
+            swapHits.incrementAndGet();
+        else
+            swapMisses.incrementAndGet();
+
+        if (delegate != null)
+            delegate.onSwapRead(hit);
+    }
+
+    /**
+     * Swap write callback.
+     */
+    public void onSwapWrite() {
+        onSwapWrite(1);
+    }
+
+    /**
+     * Swap write callback.
+     *
+     * @param cnt Amount of entries.
+     */
+    public void onSwapWrite(int cnt) {
+        swapPuts.addAndGet(cnt);
+
+        if (delegate != null)
+            delegate.onSwapWrite(cnt);
+    }
+
+    /**
+     * Swap remove callback.
+     */
+    public void onSwapRemove() {
+        onSwapRemove(1);
+    }
+
+    /**
+     * Swap remove callback.
+     *
+     * @param cnt Amount of entries.
+     */
+    public void onSwapRemove(int cnt) {
+        swapRemoves.addAndGet(cnt);
+
+        if (delegate != null)
+            delegate.onSwapRemove(cnt);
     }
 
     /** {@inheritDoc} */

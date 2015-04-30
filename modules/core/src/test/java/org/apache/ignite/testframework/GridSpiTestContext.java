@@ -29,7 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.swapspace.*;
+
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -447,25 +447,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-        @Nullable ClassLoader ldr) {
-        /* No-op. */
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public int partition(String cacheName, Object key) {
         return -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeFromSwap(String spaceName, Object key,
-        @Nullable ClassLoader ldr) {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -480,12 +463,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-        @Nullable ClassLoader ldr) {
         return null;
     }
 

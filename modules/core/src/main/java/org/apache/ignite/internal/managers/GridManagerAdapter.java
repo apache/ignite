@@ -23,7 +23,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -31,7 +30,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.swapspace.*;
+
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -439,44 +438,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.cache().cache(cacheName).containsKey(key);
                     }
 
-                    @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-                        @Nullable ClassLoader ldr) {
-                        assert ctx.swap().enabled();
-
-                        try {
-                            ctx.swap().write(spaceName, key, val, ldr);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
-                    @SuppressWarnings({"unchecked"})
-                    @Nullable @Override public <T> T readFromSwap(String spaceName, SwapKey key,
-                        @Nullable ClassLoader ldr) {
-                        try {
-                            assert ctx.swap().enabled();
-
-                            return ctx.swap().readValue(spaceName, key, ldr);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
                     @Override public int partition(String cacheName, Object key) {
                         return ctx.cache().cache(cacheName).affinity().partition(key);
-                    }
-
-                    @Override public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) {
-                        try {
-                            assert ctx.swap().enabled();
-
-                            ctx.swap().remove(spaceName, key, null, ldr);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
                     }
 
                     @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
@@ -502,26 +465,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
                         try {
                             return ctx.security().authenticatedSubject(subjId);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
-                    @SuppressWarnings("unchecked")
-                    @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
-                        Object key, @Nullable ClassLoader ldr) {
-                        try {
-                            IgniteInternalCache<Object, V> cache = ctx.cache().cache(spaceName);
-
-                            GridCacheContext cctx = cache.context();
-
-                            if (cctx.isNear())
-                                cctx = cctx.near().dht().context();
-
-                            GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
-
-                            return e != null ? CU.<V>value(e.value(), cctx, true) : null;
                         }
                         catch (IgniteCheckedException e) {
                             throw U.convertException(e);
