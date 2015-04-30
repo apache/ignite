@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.store.*;
@@ -44,6 +46,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
  * Map query executor.
@@ -203,7 +206,14 @@ public class GridMapQueryExecutor {
         Collection<GridCacheSqlQuery> qrys;
 
         try {
-            qrys = req.queries(ctx.config().getMarshaller());
+            qrys = req.queries();
+
+            if (!node.isLocal()) {
+                Marshaller m = ctx.config().getMarshaller();
+
+                for (GridCacheSqlQuery qry : qrys)
+                    qry.unmarshallParams(m);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -344,7 +354,10 @@ public class GridMapQueryExecutor {
             boolean loc = node.isLocal();
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
-                page == 0 ? res.rowCount : -1, loc ? null : marshallRows(rows), loc ? rows : null);
+                page == 0 ? res.rowCount : -1 ,
+                res.cols,
+                loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
+                loc ? rows : null);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -510,6 +523,9 @@ public class GridMapQueryExecutor {
         private final UUID qrySrcNodeId;
 
         /** */
+        private final int cols;
+
+        /** */
         private int page;
 
         /** */
@@ -538,6 +554,7 @@ public class GridMapQueryExecutor {
             }
 
             rowCount = res.getRowCount();
+            cols = res.getVisibleColumnCount();
         }
 
         /**

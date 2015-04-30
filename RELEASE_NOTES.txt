@@ -4,12 +4,19 @@ Apache Ignite Release Notes
 Apache Ignite In-Memory Data Fabric 1.1
 ---------------------------------------
 
-* Fixed SQL Union support
-* Added "collocated" mode for SQL queries.
-* Fixed Word-Count streaming example to produce better results.
+* Added Google Compute Engine TCP discovery IP finder.
+* Added generic cloud TCP discovery IP finder (based on jclouds).
+* Added SortedEvictionPolicy.
+* Added chaining for IgniteConfiguration and CacheConfiguration setters.
 * Added AffinityUuid class for easier generation of unique collocated keys.
 * Added support for cache configuration templates.
 * Added support for (*) star notation in cache names.
+* Added "collocated" mode for SQL queries.
+* Improved expiry policy handling (TTL based evictions) to avoid thrashing.
+* Fixed job continuations.
+* Fixed compilation and runtime with OpenJDK 7 & 8
+* Fixed SQL Union support
+* Fixed Word-Count streaming example to produce better results.
 * Removed edtFTPj scanner from URI deployment due to licensing issues.
 * Made deployment scanners for URI-based deployment pluggable.
 * Many stability and fault-tolerance fixes.

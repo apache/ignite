@@ -73,6 +73,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
 
+    /** Nodes where transactions were started on lock step. */
+    private Set<ClusterNode> lockTxNodes;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -121,6 +124,26 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         threadId = Thread.currentThread().getId();
         dhtThreadId = threadId;
+    }
+
+    /**
+     * @param node Node.
+     */
+    public void addLockTransactionNode(ClusterNode node) {
+        assert node != null;
+        assert !node.isLocal();
+
+        if (lockTxNodes == null)
+            lockTxNodes = new HashSet<>();
+
+        lockTxNodes.add(node);
+    }
+
+    /**
+     * @return Nodes where transactions were started on lock step.
+     */
+    @Nullable public Set<ClusterNode> lockTransactionNodes() {
+        return lockTxNodes;
     }
 
     /**

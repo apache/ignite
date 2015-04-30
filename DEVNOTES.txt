@@ -68,7 +68,7 @@ In case you want to release both fabric and hadoop editions you have to build ha
 restore them before deploy step.
 
 Start vote based on people.apache.org/~<username>/ignite-version.
-Close nexus staging when version accepted.
+Release nexus staging when version accepted.
 
 
 JCache TCK compliance

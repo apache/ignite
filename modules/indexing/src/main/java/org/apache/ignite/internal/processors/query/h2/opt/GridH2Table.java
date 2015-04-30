@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.api.*;
 import org.h2.command.ddl.*;
@@ -105,7 +106,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onSwap(Object key) throws IgniteCheckedException {
+    public boolean onSwap(CacheObject key) throws IgniteCheckedException {
         return onSwapUnswap(key, null);
     }
 
@@ -117,7 +118,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onUnswap(Object key, Object val) throws IgniteCheckedException {
+    public boolean onUnswap(CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert val != null : "Key=" + key;
 
         return onSwapUnswap(key, val);
@@ -132,7 +133,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(Object key, @Nullable Object val) throws IgniteCheckedException {
+    private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         GridH2TreeIndex pk = pk();
@@ -300,7 +301,8 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(Object key, Object val, long expirationTime, boolean rmv) throws IgniteCheckedException {
+    public boolean update(CacheObject key, CacheObject val, long expirationTime, boolean rmv)
+        throws IgniteCheckedException {
         assert desc != null;
 
         GridH2Row row = desc.createRow(key, val, expirationTime);

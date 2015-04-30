@@ -23,11 +23,11 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * {@code GridMarshaller} allows to marshal or unmarshal objects in grid. It provides
+ * {@code Marshaller} allows to marshal or unmarshal objects in grid. It provides
  * serialization/deserialization mechanism for all instances that are sent across networks
  * or are otherwise serialized.
  * <p>
- * Ignite provides the following {@code GridMarshaller} implementations:
+ * Ignite provides the following {@code Marshaller} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} - default</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
@@ -36,11 +36,11 @@ import java.io.*;
  * Below are examples of marshaller configuration, usage, and injection into tasks, jobs,
  * and SPI's.
  * <h2 class="header">Java Example</h2>
- * {@code GridMarshaller} can be explicitely configured in code.
+ * {@code Marshaller} can be explicitly configured in code.
  * <pre name="code" class="java">
- * GridJdkMarshaller marshaller = new GridJdkMarshaller();
+ * JdkMarshaller marshaller = new JdkMarshaller();
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override marshaller.
  * cfg.setMarshaller(marshaller);
@@ -49,12 +49,12 @@ import java.io.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridMarshaller can be configured from Spring XML configuration file:
+ * Marshaller can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.jdk.GridJdkMarshaller"/&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.jdk.JdkMarshaller"/&gt;
  *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;
