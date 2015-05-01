@@ -24,7 +24,7 @@ public interface IgniteAsyncSupport {
     /**
      * Gets instance of this component with asynchronous mode enabled.
      *
-     * @return Component with asynchronous mode enabled.
+     * @return Instance of this component with asynchronous mode enabled.
      */
     public IgniteAsyncSupport withAsync();
 
