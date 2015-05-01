@@ -499,7 +499,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
-     * Completely deletes the cache with all its data from the system.
+     * Completely deletes the cache with all its data from the system on all cluster nodes.
      */
     @Override void close();
 
