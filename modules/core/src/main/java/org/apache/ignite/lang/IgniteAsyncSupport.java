@@ -22,7 +22,7 @@ package org.apache.ignite.lang;
  */
 public interface IgniteAsyncSupport {
     /**
-     * Gets component with asynchronous mode enabled.
+     * Gets instance of this component with asynchronous mode enabled.
      *
      * @return Component with asynchronous mode enabled.
      */
