@@ -161,35 +161,6 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testCacheWithServerNodesRestart() throws Exception {
-        srvNodesCnt = 1;
-        clientNodesCnt = 1;
-
-        startServerNodes();
-
-        client = true;
-
-        Ignite client = startGrid(srvNodesCnt);
-
-        checkTopology(gridCount());
-
-        IgniteCache<Integer, Integer> cache = client.cache(null);
-
-        performSimpleOperationsOnCache(cache);
-
-        // Restart server nodes, client node should reconnect automatically.
-        stopServerNodes();
-
-        startServerNodes();
-
-        checkTopology(gridCount());
-
-        performSimpleOperationsOnCache(cache);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void startServerNodes() throws Exception {
         client = false;
 
