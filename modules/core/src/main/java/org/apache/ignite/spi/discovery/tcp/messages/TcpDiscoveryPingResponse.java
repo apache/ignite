@@ -33,13 +33,6 @@ public class TcpDiscoveryPingResponse extends TcpDiscoveryAbstractMessage {
     private boolean clientExists;
 
     /**
-     * For {@link Externalizable}.
-     */
-    public TcpDiscoveryPingResponse() {
-        // No-op.
-    }
-
-    /**
      * @param creatorNodeId Creator node ID.
      */
     public TcpDiscoveryPingResponse(UUID creatorNodeId) {
