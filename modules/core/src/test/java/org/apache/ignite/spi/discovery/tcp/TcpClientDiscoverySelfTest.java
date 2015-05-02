@@ -39,7 +39,6 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
@@ -327,7 +326,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 2);
 
-        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).suspend();
+        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).pauseAll();
 
         stopGrid("server-2");
 
@@ -786,21 +785,55 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private static class TestTcpClientDiscovery extends TcpClientDiscoverySpi {
         /** */
-        private final Lock ioOperationsLock = new ReentrantLock();
+        private final Object mux = new Object();
+
+        /** */
+        private final AtomicBoolean writeLock = new AtomicBoolean();
+
+        /** */
+        private final AtomicBoolean openSockLock = new AtomicBoolean();
+
+        /**
+         * @param lock Lock.
+         */
+        private void waitFor(AtomicBoolean lock) {
+            try {
+                synchronized (mux) {
+                    while (lock.get())
+                        mux.wait();
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+
+                throw new RuntimeException(e);
+            }
+        }
+
+        /**
+         * @param isPause Is lock.
+         * @param locks Locks.
+         */
+        private void pauseResumeOperation(boolean isPause, AtomicBoolean... locks) {
+            synchronized (mux) {
+                for (AtomicBoolean lock : locks)
+                    lock.set(isPause);
+
+                mux.notifyAll();
+            }
+        }
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             GridByteArrayOutputStream bout) throws IOException, IgniteCheckedException {
-            ioOperationsLock.lock();
-            ioOperationsLock.unlock();
+            waitFor(writeLock);
 
             super.writeToSocket(sock, msg, bout);
         }
 
         /** {@inheritDoc} */
         @Override protected Socket openSocket(InetSocketAddress sockAddr) throws IOException {
-            ioOperationsLock.lock();
-            ioOperationsLock.unlock();
+            waitFor(openSockLock);
 
             return super.openSocket(sockAddr);
         }
@@ -808,8 +841,8 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         /**
          *
          */
-        private void suspend() {
-            ioOperationsLock.lock();
+        private void pauseAll() {
+            pauseResumeOperation(true, openSockLock, writeLock);
 
             brokeConnection();
         }
@@ -818,7 +851,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
          *
          */
         private void resume() {
-            ioOperationsLock.unlock();
+            pauseResumeOperation(false, openSockLock, writeLock);
         }
     }
 }
