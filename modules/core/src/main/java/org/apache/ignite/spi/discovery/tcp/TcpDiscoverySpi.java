@@ -1167,7 +1167,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         UUID locNodeId = getLocalNodeId();
 
         if (F.contains(locNodeAddrs, addr))
-            return F.t(getLocalNodeId(), false);
+            return F.t(getLocalNodeId(), clientNodeId != null && clientMsgWorkers.containsKey(clientNodeId));
 
         GridFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapter<>();
 
