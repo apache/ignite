@@ -282,12 +282,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: IGNITE-587.
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
-        fail("ignite-587");
-
         clientsPerSrv = 1;
 
         startServerNodes(3);
@@ -370,18 +367,10 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         checkNodes(1, 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
-    }
-
     /**
-     * TODO: IGNITE-587.
      * @throws Exception If failed.
      */
     public void testClientNodeLeaveOneServer() throws Exception {
-        fail("ignite-587");
-
         startServerNodes(1);
         startClientNodes(1);
 
@@ -491,8 +480,6 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDataExchangeFromClient() throws Exception {
-        fail("ignite-587");
-
         testDataExchange("client-0");
     }
 
