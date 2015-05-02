@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;
@@ -324,12 +325,29 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 2);
 
-        failServer(2);
+        final CountDownLatch client2StoppedLatch = new CountDownLatch(1);
 
-        await(srvFailedLatch);
-        await(clientFailedLatch);
+        IgnitionListener lsnr = new IgnitionListener() {
+            @Override public void onStateChange(@Nullable String name, IgniteState state) {
+                if (state == IgniteState.STOPPED_ON_SEGMENTATION)
+                    client2StoppedLatch.countDown();
+            }
+        };
+        G.addListener(lsnr);
 
-        checkNodes(2, 2);
+        try {
+            failServer(2);
+
+            await(srvFailedLatch);
+            await(clientFailedLatch);
+
+            await(client2StoppedLatch);
+
+            checkNodes(2, 2);
+        }
+        finally {
+            G.removeListener(lsnr);
+        }
     }
 
     /**
