@@ -551,6 +551,13 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     }
 
     /**
+     * FOR TEST PURPOSE ONLY!
+     */
+    public void brokeConnection() {
+        U.closeQuiet(msgWorker.currSock);
+    }
+
+    /**
      * Heartbeat sender.
      */
     private class HeartbeatSender extends TimerTask {
@@ -1288,6 +1295,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 assert msg.success();
 
                 currSock = reconnector.sock;
+
                 sockWriter.setSocket(currSock);
                 sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 

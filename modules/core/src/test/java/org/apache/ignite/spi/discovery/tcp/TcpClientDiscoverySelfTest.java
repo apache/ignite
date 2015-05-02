@@ -22,20 +22,24 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
@@ -97,7 +101,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setDiscoverySpi(disco);
         }
         else if (gridName.startsWith("client")) {
-            TcpClientDiscoverySpi disco = new TcpClientDiscoverySpi();
+            TcpClientDiscoverySpi disco = new TestTcpClientDiscovery();
 
             TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
@@ -305,6 +309,43 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         await(clientFailedLatch);
 
         checkNodes(2, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetMissedMessagesOnReconnect() throws Exception {
+        clientsPerSrv = 1;
+
+        startServerNodes(3);
+        startClientNodes(2);
+
+        checkNodes(3, 2);
+
+        clientLeftLatch = new CountDownLatch(1);
+        srvLeftLatch = new CountDownLatch(2);
+
+        attachListeners(2, 2);
+
+        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).suspend();
+
+        stopGrid("server-2");
+
+        await(srvLeftLatch);
+        await(srvLeftLatch);
+
+        Thread.sleep(500);
+
+        assert G.ignite("client-0").cluster().nodes().size() == 4;
+        assert G.ignite("client-1").cluster().nodes().size() == 5;
+
+        clientLeftLatch = new CountDownLatch(1);
+
+        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).resume();
+
+        await(clientLeftLatch);
+
+        checkNodes(2, 2);
     }
 
     /**
@@ -737,6 +778,47 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             msgLatch.countDown();
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestTcpClientDiscovery extends TcpClientDiscoverySpi {
+        /** */
+        private final Lock ioOperationsLock = new ReentrantLock();
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+            GridByteArrayOutputStream bout) throws IOException, IgniteCheckedException {
+            ioOperationsLock.lock();
+            ioOperationsLock.unlock();
+
+            super.writeToSocket(sock, msg, bout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Socket openSocket(InetSocketAddress sockAddr) throws IOException {
+            ioOperationsLock.lock();
+            ioOperationsLock.unlock();
+
+            return super.openSocket(sockAddr);
+        }
+
+        /**
+         *
+         */
+        private void suspend() {
+            ioOperationsLock.lock();
+
+            brokeConnection();
+        }
+
+        /**
+         *
+         */
+        private void resume() {
+            ioOperationsLock.unlock();
         }
     }
 }
