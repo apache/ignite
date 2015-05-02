@@ -611,22 +611,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
 
-        verChecker = null;
-
-        if (notifyEnabled) {
-            try {
-                verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, false);
-
-                verChecker.checkForNewVersion(execSvc, log);
-            }
-            catch (IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to create GridUpdateNotifier: " + e);
-            }
-        }
-
-        final GridUpdateNotifier verChecker0 = verChecker;
-
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
             log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
@@ -695,6 +679,45 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg));
+
+            verChecker = null;
+
+            if (notifyEnabled) {
+                try {
+                    verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
+
+                    updateNtfTimer = new Timer("ignite-update-notifier-timer");
+
+                    // Setup periodic version check.
+                    updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
+                        private boolean first = true;
+
+                        @Override public void safeRun() throws InterruptedException {
+                            if (!first)
+                                verChecker.topologySize(cluster().nodes().size());
+
+                            verChecker.checkForNewVersion(execSvc, log);
+
+                            // Just wait for 10 secs.
+                            Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
+
+                            // Report status if one is available.
+                            // No-op if status is NOT available.
+                            verChecker.reportStatus(log);
+
+                            if (first) {
+                                first = false;
+
+                                verChecker.reportOnlyNew(true);
+                            }
+                        }
+                    }, 0, PERIODIC_VER_CHECK_DELAY);
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to create GridUpdateNotifier: " + e);
+                }
+            }
 
             // Off-heap processor has no dependencies.
             startProcessor(new GridOffHeapProcessor(ctx));
@@ -835,34 +858,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Mark start timestamp.
         startTime = U.currentTimeMillis();
-
-        // Ack latest version information.
-        if (verChecker0 != null)
-            verChecker0.reportStatus(log);
-
-        if (notifyEnabled) {
-            assert verChecker0 != null;
-
-            verChecker0.reportOnlyNew(true);
-
-            updateNtfTimer = new Timer("ignite-update-notifier-timer");
-
-            // Setup periodic version check.
-            updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
-                @Override public void safeRun() throws InterruptedException {
-                    verChecker0.topologySize(cluster().nodes().size());
-
-                    verChecker0.checkForNewVersion(execSvc, log);
-
-                    // Just wait for 10 secs.
-                    Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
-
-                    // Report status if one is available.
-                    // No-op if status is NOT available.
-                    verChecker0.reportStatus(log);
-                }
-            }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
-        }
 
         String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
 

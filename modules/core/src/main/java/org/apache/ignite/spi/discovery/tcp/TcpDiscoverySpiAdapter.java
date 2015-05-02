@@ -51,8 +51,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
-    /** Default socket operations timeout in milliseconds (value is <tt>2,000ms</tt>). */
-    public static final long DFLT_SOCK_TIMEOUT = 2000;
+    /** Default socket operations timeout in milliseconds (value is <tt>200ms</tt>). */
+    public static final long DFLT_SOCK_TIMEOUT = 200;
 
     /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>5,000ms</tt>). */
     public static final long DFLT_ACK_TIMEOUT = 5000;
@@ -63,8 +63,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
-    /** Default heartbeat messages issuing frequency (value is <tt>2,000ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 2000;
+    /** Default heartbeat messages issuing frequency (value is <tt>300ms</tt>). */
+    public static final long DFLT_HEARTBEAT_FREQ = 300;
 
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
@@ -680,9 +680,13 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         Collection<InetSocketAddress> res = new ArrayList<>();
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
-            if (addr.getPort() == 0)
-                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), DFLT_PORT) :
-                    new InetSocketAddress(addr.getAddress(), DFLT_PORT);
+            if (addr.getPort() == 0) {
+                // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
+                int port = locNode.discoveryPort() != 0 ? locNode.discoveryPort() : DFLT_PORT;
+
+                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
+                    new InetSocketAddress(addr.getAddress(), port);
+            }
 
             res.add(addr);
         }

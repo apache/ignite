@@ -67,7 +67,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private String name;
 
     /** Grid SPI context. */
-    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null, false);
+    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null, false, null);
 
     /** Discovery listener. */
     private GridLocalEventListener paramsLsnr;
@@ -190,7 +190,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         ClusterNode locNode = spiCtx == null ? null : spiCtx.localNode();
 
         // Set dummy no-op context.
-        spiCtx = new GridDummySpiContext(locNode, true);
+        spiCtx = new GridDummySpiContext(locNode, true, spiCtx);
     }
 
     /**
@@ -551,15 +551,24 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** */
         private final boolean stopping;
 
+        /** */
+        private final MessageFactory msgFactory;
+
+        /** */
+        private final MessageFormatter msgFormatter;
+
         /**
          * Create temp SPI context.
          *
          * @param locNode Local node.
          * @param stopping Node stopping flag.
+         * @param spiCtx SPI context.
          */
-        GridDummySpiContext(ClusterNode locNode, boolean stopping) {
+        GridDummySpiContext(ClusterNode locNode, boolean stopping, @Nullable IgniteSpiContext spiCtx) {
             this.locNode = locNode;
             this.stopping = stopping;
+            this.msgFactory = spiCtx != null ? spiCtx.messageFactory() : null;
+            this.msgFormatter = spiCtx != null ? spiCtx.messageFormatter() : null;
         }
 
         /** {@inheritDoc} */
@@ -711,12 +720,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public MessageFormatter messageFormatter() {
-            return null;
+            return msgFormatter;
         }
 
         /** {@inheritDoc} */
         @Override public MessageFactory messageFactory() {
-            return null;
+            return msgFactory;
         }
 
         /** {@inheritDoc} */
