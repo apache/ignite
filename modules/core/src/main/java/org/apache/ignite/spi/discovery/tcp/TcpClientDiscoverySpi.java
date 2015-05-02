@@ -311,9 +311,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             msgWorker.addMessage(SPI_STOP);
 
             try {
-                if (!leaveLatch.await(10000, MILLISECONDS)) {
-                    System.out.println("leaveLatch Timeout!!!!");
-
+                if (!leaveLatch.await(netTimeout, MILLISECONDS)) {
                     if (log.isDebugEnabled())
                         U.error(log, "Failed to left node: timeout [nodeId=" + locNode + ']');
                 }
@@ -634,8 +632,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                             try {
                                 msg = marsh.unmarshal(in, U.gridClassLoader());
-
-                                System.out.println("TcpClientDiscoverySpi.SocketReader: read: " + msg);
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
@@ -674,8 +670,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         }
                     }
                     catch (IOException e) {
-                        System.out.println("TcpClientDiscoverySpi.SocketReader: IOException: " + e);
-
                         msgWorker.addMessage(new SocketClosedMessage(sock));
 
                         if (log.isDebugEnabled())
@@ -683,8 +677,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                 }
                 finally {
-                    System.out.println("TcpClientDiscoverySpi.SocketReader: Closed");
-
                     U.closeQuiet(sock);
 
                     synchronized (mux) {
@@ -781,8 +773,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     msg = null;
                 }
                 catch (IOException e) {
-                    System.out.println("TcpClientDiscoverSpi.SocketWriter: IOException: " + e);
-
                     if (log.isDebugEnabled())
                         U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
 
@@ -794,8 +784,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    System.out.println("TcpClientDiscoverSpi.SocketWriter: ICException: " + e);
-
                     log.error("Failed to send message: " + msg, e);
 
                     msg = null;
@@ -926,8 +914,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                 while (true) {
                     Object msg = queue.take();
-
-                    System.out.println("TcpClientDiscoverySpi.MessageWorker: process: " + msg);
 
                     if (msg == JOIN_TIMEOUT) {
                         if (joinLatch.getCount() > 0) {
