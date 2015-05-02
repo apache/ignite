@@ -111,6 +111,12 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             disco.setIpFinder(ipFinder);
 
             cfg.setDiscoverySpi(disco);
+
+            String nodeId = cfg.getNodeId().toString();
+
+            nodeId = "cc" + nodeId.substring(2);
+
+            cfg.setNodeId(UUID.fromString(nodeId));
         }
 
         return cfg;
@@ -285,7 +291,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-        resetClientIpFinder(2);
+        setClientRouter(2, 0);
 
         srvFailedLatch = new CountDownLatch(2);
         clientFailedLatch = new CountDownLatch(3);
@@ -303,6 +309,32 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testClientSegmentation() throws Exception {
+        clientsPerSrv = 1;
+
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+//        setClientRouter(2, 2);
+
+        srvFailedLatch = new CountDownLatch(2 + 2);
+        clientFailedLatch = new CountDownLatch(2 + 2);
+
+        attachListeners(2, 2);
+
+        failServer(2);
+
+        await(srvFailedLatch);
+        await(clientFailedLatch);
+
+        checkNodes(2, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientNodeJoinOneServer() throws Exception {
         startServerNodes(1);
 
@@ -315,6 +347,11 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         await(srvJoinedLatch);
 
         checkNodes(1, 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return Long.MAX_VALUE;
     }
 
     /**
@@ -473,16 +510,16 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param idx Index.
+     * @param clientIdx Index.
      * @throws Exception In case of error.
      */
-    private void resetClientIpFinder(int idx) throws Exception {
+    private void setClientRouter(int clientIdx, int srvIdx) throws Exception {
         TcpClientDiscoverySpi disco =
-            (TcpClientDiscoverySpi)G.ignite("client-" + idx).configuration().getDiscoverySpi();
+            (TcpClientDiscoverySpi)G.ignite("client-" + clientIdx).configuration().getDiscoverySpi();
 
         TcpDiscoveryVmIpFinder ipFinder = (TcpDiscoveryVmIpFinder)disco.getIpFinder();
 
-        String addr = IP_FINDER.getRegisteredAddresses().iterator().next().toString();
+        String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).get(srvIdx).toString();
 
         if (addr.startsWith("/"))
             addr = addr.substring(1);
