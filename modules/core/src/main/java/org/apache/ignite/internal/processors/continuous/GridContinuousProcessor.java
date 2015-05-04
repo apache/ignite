@@ -447,14 +447,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (dep == null)
                         throw new IgniteDeploymentCheckedException("Failed to deploy projection predicate: " + prjPred);
 
-                    reqData.clsName = clsName;
-                    reqData.depInfo = new GridDeploymentInfoBean(dep);
+                    reqData.className(clsName);
+                    reqData.deploymentInfo(new GridDeploymentInfoBean(dep));
 
                     reqData.p2pMarshal(marsh);
                 }
 
                 // Handle peer deployment for other handler-specific objects.
-                reqData.hnd.p2pMarshal(ctx);
+                reqData.handler().p2pMarshal(ctx);
             }
         }
         catch (IgniteCheckedException e) {
@@ -557,8 +557,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (!nodes.isEmpty()) {
             // Do not send projection predicate (nodes already filtered).
-            reqData.prjPred = null;
-            reqData.prjPredBytes = null;
+            reqData.projectionPredicate(null);
+            reqData.projectionPredicateBytes(null);
 
             // Send start requests.
             try {
@@ -789,16 +789,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         UUID routineId = req.routineId();
         StartRequestData data = req.data();
 
-        GridContinuousHandler hnd = data.hnd;
+        GridContinuousHandler hnd = data.handler();
 
         IgniteCheckedException err = null;
 
         try {
             if (ctx.config().isPeerClassLoadingEnabled()) {
-                String clsName = data.clsName;
+                String clsName = data.className();
 
                 if (clsName != null) {
-                    GridDeploymentInfo depInfo = data.depInfo;
+                    GridDeploymentInfo depInfo = data.deploymentInfo();
 
                     GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
                         depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
@@ -822,11 +822,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (err == null) {
             try {
-                IgnitePredicate<ClusterNode> prjPred = data.prjPred;
+                IgnitePredicate<ClusterNode> prjPred = data.projectionPredicate();
 
                 if (prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) {
-                    registered = registerHandler(nodeId, routineId, hnd, data.bufSize, data.interval,
-                        data.autoUnsubscribe, false);
+                    registered = registerHandler(nodeId, routineId, hnd, data.bufferSize(), data.interval(),
+                        data.autoUnsubscribe(), false);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1426,133 +1426,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
 
             return F.t(toSnd, diff < interval ? interval - diff : interval);
-        }
-    }
-
-    /**
-     * Start request data.
-     */
-    private static class StartRequestData implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Projection predicate. */
-        private IgnitePredicate<ClusterNode> prjPred;
-
-        /** Serialized projection predicate. */
-        private byte[] prjPredBytes;
-
-        /** Deployment class name. */
-        private String clsName;
-
-        /** Deployment info. */
-        private GridDeploymentInfo depInfo;
-
-        /** Handler. */
-        private GridContinuousHandler hnd;
-
-        /** Buffer size. */
-        private int bufSize;
-
-        /** Time interval. */
-        private long interval;
-
-        /** Automatic unsubscribe flag. */
-        private boolean autoUnsubscribe;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public StartRequestData() {
-            // No-op.
-        }
-
-        /**
-         * @param prjPred Serialized projection predicate.
-         * @param hnd Handler.
-         * @param bufSize Buffer size.
-         * @param interval Time interval.
-         * @param autoUnsubscribe Automatic unsubscribe flag.
-         */
-        StartRequestData(@Nullable IgnitePredicate<ClusterNode> prjPred, GridContinuousHandler hnd,
-            int bufSize, long interval, boolean autoUnsubscribe) {
-            assert hnd != null;
-            assert bufSize > 0;
-            assert interval >= 0;
-
-            this.prjPred = prjPred;
-            this.hnd = hnd;
-            this.bufSize = bufSize;
-            this.interval = interval;
-            this.autoUnsubscribe = autoUnsubscribe;
-        }
-
-        /**
-         * @param marsh Marshaller.
-         * @throws IgniteCheckedException In case of error.
-         */
-        void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
-            assert marsh != null;
-
-            prjPredBytes = marsh.marshal(prjPred);
-        }
-
-        /**
-         * @param marsh Marshaller.
-         * @param ldr Class loader.
-         * @throws IgniteCheckedException In case of error.
-         */
-        void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-            assert marsh != null;
-
-            assert prjPred == null;
-            assert prjPredBytes != null;
-
-            prjPred = marsh.unmarshal(prjPredBytes, ldr);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            boolean b = prjPredBytes != null;
-
-            out.writeBoolean(b);
-
-            if (b) {
-                U.writeByteArray(out, prjPredBytes);
-                U.writeString(out, clsName);
-                out.writeObject(depInfo);
-            }
-            else
-                out.writeObject(prjPred);
-
-            out.writeObject(hnd);
-            out.writeInt(bufSize);
-            out.writeLong(interval);
-            out.writeBoolean(autoUnsubscribe);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            boolean b = in.readBoolean();
-
-            if (b) {
-                prjPredBytes = U.readByteArray(in);
-                clsName = U.readString(in);
-                depInfo = (GridDeploymentInfo)in.readObject();
-            }
-            else
-                prjPred = (IgnitePredicate<ClusterNode>)in.readObject();
-
-            hnd = (GridContinuousHandler)in.readObject();
-            bufSize = in.readInt();
-            interval = in.readLong();
-            autoUnsubscribe = in.readBoolean();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(StartRequestData.class, this);
         }
     }
 
