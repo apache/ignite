@@ -70,7 +70,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
 
 
-        // Fields queries.
+        // Fields queries with indexed types.
         suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest.class);
@@ -78,6 +78,16 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
+
+        // Fields queries with cache type metadata.
+        suite.addTestSuite(IgniteCacheLocalFieldsQueryTypeMetaSelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryTypeMetaSelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PEnabledTypeMetaSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQueryTypeMetaSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicFieldsQueryTypeMetaSelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQueryTypeMetaSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PEnabledTypeMetaSelfTest.class);
         suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
 
         // Continuous queries.

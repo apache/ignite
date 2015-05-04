@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests for fields queries.
  */
-public class IgniteCacheLocalFieldsQueryTypeMetadataSelfTest extends IgniteCacheAbstractFieldsQueryTypeMetaSelfTest {
+public class IgniteCacheLocalFieldsQueryTypeMetaSelfTest extends IgniteCacheAbstractFieldsQueryTypeMetaSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return LOCAL;
