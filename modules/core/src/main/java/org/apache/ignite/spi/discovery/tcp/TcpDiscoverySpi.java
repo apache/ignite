@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -1248,7 +1249,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(Serializable evt) {
+    @Override public void sendCustomEvent(DiscoveryCustomMessage evt) {
         try {
             msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(evt)));
         }

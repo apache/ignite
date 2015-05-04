@@ -279,19 +279,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    /**
-     * @param evtType Event type.
-     * @return Next affinity topology version.
-     */
-    private AffinityTopologyVersion nextTopologyVersion(int evtType, long topVer) {
-        if (evtType == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)
-            minorTopVer++;
-        else if (evtType != EVT_NODE_METRICS_UPDATED)
-            minorTopVer = 0;
-
-        return new AffinityTopologyVersion(topVer, minorTopVer);
-    }
-
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         long totSysMemory = -1;
@@ -363,7 +350,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (snapshots != null)
                     topHist = snapshots;
 
-                AffinityTopologyVersion nextTopVer = nextTopologyVersion(type, topVer);
+                boolean verChanged;
+
+                if (type == EVT_NODE_METRICS_UPDATED)
+                    verChanged = false;
+                else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                    if (data != null && ((DiscoveryCustomMessage)data).forwardMinorVersion()) {
+                        minorTopVer++;
+
+                        verChanged = true;
+                    }
+                    else
+                        verChanged = false;
+                }
+                else {
+                    minorTopVer = 0;
+
+                    verChanged = true;
+                }
+
+                AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
                     for (DiscoCache c : discoCacheHist.values())
@@ -385,7 +391,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
-                if (type != EVT_NODE_METRICS_UPDATED) {
+                if (verChanged) {
                     DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())));
 
                     discoCacheHist.put(nextTopVer, cache);
@@ -1386,7 +1392,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * @param evt Event.
      */
-    public void sendCustomEvent(Serializable evt) {
+    public void sendCustomEvent(DiscoveryCustomMessage evt) {
         getSpi().sendCustomEvent(evt);
     }
 
