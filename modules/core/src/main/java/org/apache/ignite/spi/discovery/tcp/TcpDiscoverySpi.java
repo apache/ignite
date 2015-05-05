@@ -2216,9 +2216,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * @param nodeId Node ID.
      * @return Marshalled exchange data.
-     * @throws IgniteSpiException If failed.
      */
-    private Map<Integer, byte[]> collectExchangeData(UUID nodeId) throws IgniteSpiException {
+    private Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
         Map<Integer, Serializable> data = exchange.collect(nodeId);
 
         Map<Integer, byte[]> data0 = null;
@@ -2235,8 +2234,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
-
-                    throw new IgniteSpiException("Failed to marshal discovery data.", e);
                 }
             }
         }
