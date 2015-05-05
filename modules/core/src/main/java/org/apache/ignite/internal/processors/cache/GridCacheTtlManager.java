@@ -30,7 +30,8 @@ import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 /**
- * Eagerly removes expired entries from cache when {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
+ * Eagerly removes expired entries from cache when
+ * {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
@@ -93,35 +94,24 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     public void expire(boolean sizeLimited) {
         long now = U.currentTimeMillis();
 
+        int size = pendingEntries.sizex();
+
         GridCacheVersion obsoleteVer = null;
 
-        // Make sure that worker thread (e.g. sys pool) or user thread
-        // will not be trapped.
-        int size = Math.min(pendingEntries.sizex(), 1024);
-
         while (!sizeLimited || size-- > 0) {
-            EntryWrapper e = pendingEntries.pollFirst();
+            EntryWrapper e = pendingEntries.firstx();
 
-            if (e == null)
-                break;
+            if (e == null || e.expireTime > now)
+                return;
 
-            if (e.expireTime > now) {
-                pendingEntries.add(e);
+            if (pendingEntries.remove(e)) {
+                if (obsoleteVer == null)
+                    obsoleteVer = cctx.versions().next();
 
-                break;
-            }
+                if (log.isDebugEnabled())
+                    log.debug("Trying to remove expired entry from cache: " + e);
 
-            if (obsoleteVer == null)
-                obsoleteVer = cctx.versions().next();
-
-            if (log.isDebugEnabled())
-                log.debug("Trying to remove expired entry from cache: " + e);
-
-            if (e.entry.onTtlExpired(obsoleteVer)) {
-                e.entry.context().cache().removeEntry(e.entry);
-
-                if (e.entry.context().cache().configuration().isStatisticsEnabled())
-                    e.entry.context().cache().metrics0().onEvict();
+                e.entry.onTtlExpired(obsoleteVer);
             }
         }
     }

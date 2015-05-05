@@ -3305,7 +3305,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (!obsolete()) {
                         if (cctx.deferredDelete() && !detached() && !isInternal()) {
                             if (!deletedUnlocked()) {
-                                update(null, 0L, 0L, ver);
+                                update(null, 0L, 0L, obsoleteVer);
 
                                 deletedUnlocked(true);
 
@@ -3345,11 +3345,17 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             U.error(log, "Failed to clean up expired cache entry: " + this, e);
         }
         finally {
-            if (obsolete)
+            if (obsolete) {
                 onMarkedObsolete();
+
+                cctx.cache().removeEntry(this);
+            }
 
             if (deferred)
                 cctx.onDeferredDelete(this, obsoleteVer);
+
+            if ((obsolete || deferred) && cctx.cache().configuration().isStatisticsEnabled())
+                cctx.cache().metrics0().onEvict();
         }
 
         return obsolete;
