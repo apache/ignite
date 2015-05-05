@@ -160,7 +160,7 @@ public class GridClientConfiguration {
      * @throws GridClientException If parsing configuration failed.
      */
     public GridClientConfiguration(Properties in) throws GridClientException {
-        this("gg.client", in);
+        this("ignite.client", in);
     }
 
     /**
