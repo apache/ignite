@@ -130,8 +130,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
         suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);
@@ -141,14 +139,9 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
         // suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class); TODO IGNITE-795
-        suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredEvictionSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapTieredSelfTest.class);
         suite.addTestSuite(GridCacheGlobalLoadTest.class);
         suite.addTestSuite(GridCachePartitionedLocalStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedLocalStoreSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
         suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
         suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
 
@@ -205,12 +198,10 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedTxSingleThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedPreloadOffHeapSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadLifecycleSelfTest.class);
         suite.addTestSuite(GridCacheSyncReplicatedPreloadSelfTest.class);
 
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
-        suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
