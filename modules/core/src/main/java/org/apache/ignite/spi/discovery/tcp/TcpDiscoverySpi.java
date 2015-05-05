@@ -4460,7 +4460,22 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
             if (isLocalNodeCoordinator()) {
-                if (msg.verified()) {
+                boolean sndNext;
+
+                if (!msg.verified()) {
+                    msg.verify(getLocalNodeId());
+                    msg.topologyVersion(ring.topologyVersion());
+
+                    notifyDiscoveryListener(msg);
+
+                    sndNext = true;
+                }
+                else
+                    sndNext = false;
+
+                if (sndNext && ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+                else {
                     stats.onRingMessageReceived(msg);
 
                     try {
@@ -4479,52 +4494,54 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     }
 
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
-
-                    return;
-                }
-
-                msg.verify(getLocalNodeId());
-                msg.topologyVersion(ring.topologyVersion());
-            }
-
-            if (msg.verified()) {
-                DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
-
-                TcpDiscoverySpiState spiState = spiStateCopy();
-
-                Map<Long, Collection<ClusterNode>> hist;
-
-                synchronized (mux) {
-                    hist = new TreeMap<>(topHist);
-                }
-
-                Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
-
-                if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                    assert msg.messageBytes() != null;
-
-                    TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
-
-                    try {
-                        Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
-
-                        lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                            msg.topologyVersion(),
-                            node,
-                            snapshot,
-                            hist,
-                            msgObj);
-
-                        msg.messageBytes(marsh.marshal(msgObj));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to unmarshal discovery custom message.", e);
-                    }
                 }
             }
+            else {
+                if (msg.verified())
+                    notifyDiscoveryListener(msg);
 
-            if (ring.hasRemoteNodes())
-                sendMessageAcrossRing(msg);
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+            }
+        }
+
+        /**
+         * @param msg Custom message.
+         */
+        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg) {
+            DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+
+            TcpDiscoverySpiState spiState = spiStateCopy();
+
+            Map<Long, Collection<ClusterNode>> hist;
+
+            synchronized (mux) {
+                hist = new TreeMap<>(topHist);
+            }
+
+            Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
+
+            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+                assert msg.messageBytes() != null;
+
+                TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
+
+                try {
+                    Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+
+                    lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                        msg.topologyVersion(),
+                        node,
+                        snapshot,
+                        hist,
+                        msgObj);
+
+                    msg.messageBytes(marsh.marshal(msgObj));
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to unmarshal discovery custom message.", e);
+                }
+            }
         }
     }
 
