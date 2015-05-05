@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.lang.*;
@@ -142,8 +143,9 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sends custom message across the ring.
      * @param evt Event.
+     * @throws IgniteException if failed to marshal evt.
      */
-    public void sendCustomEvent(DiscoveryCustomMessage evt);
+    public void sendCustomEvent(DiscoveryCustomMessage evt) throws IgniteException;
 
     /**
      * Initiates failure of provided node.
