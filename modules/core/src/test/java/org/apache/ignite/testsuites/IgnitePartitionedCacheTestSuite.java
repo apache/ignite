@@ -71,7 +71,6 @@ public class IgnitePartitionedCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtMappingSelfTest.class));
 //        suite.addTest(new TestSuite(GridCachePartitionedTxMultiThreadedSelfTest.class)); TODO-gg-4066
         suite.addTest(new TestSuite(GridCacheDhtPreloadSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheDhtPreloadOffHeapSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadBigDataSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadPutGetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadDisabledSelfTest.class));
@@ -105,8 +104,6 @@ public class IgnitePartitionedCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearExpiredEntriesPreloadSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicExpiredEntriesPreloadSelfTest.class));
-
-        suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
 
         // TODO: GG-7242, GG-7243: Enabled when fixed.
 //        suite.addTest(new TestSuite(GridCacheDhtRemoveFailureTest.class));

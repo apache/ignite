@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
 
 /**
@@ -41,6 +42,9 @@ public class IgniteCacheOffHeapTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedOffHeapLocalStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadOffHeapSelfTest.class);
         suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+
+        suite.addTest(new TestSuite(GridCacheDhtPreloadOffHeapSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
 
         return suite;
     }
