@@ -2053,6 +2053,31 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Commits optimistic transaction in case when node started transaction failed, but all related
+     * transactions were prepared (invalidates transaction if it is not fully prepared).
+     *
+     * @param tx Transaction.
+     */
+    public void commitIfPrepared(IgniteInternalTx tx) {
+        assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
+        assert !F.isEmpty(tx.transactionNodes()) : tx;
+        assert tx.nearXidVersion() != null : tx;
+
+        GridCacheOptimisticCheckPreparedTxFuture fut = new GridCacheOptimisticCheckPreparedTxFuture<>(
+            cctx,
+            tx,
+            tx.originatingNodeId(),
+            tx.transactionNodes());
+
+        cctx.mvcc().addFuture(fut);
+
+        if (log.isDebugEnabled())
+            log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
+
+        fut.prepare();
+    }
+
+    /**
      * Timeout object for node failure handler.
      */
     private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
@@ -2121,31 +2146,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             finally {
                 cctx.kernalContext().gateway().readUnlock();
             }
-        }
-
-        /**
-         * Commits optimistic transaction in case when node started transaction failed, but all related
-         * transactions were prepared (invalidates transaction if it is not fully prepared).
-         *
-         * @param tx Transaction.
-         */
-        private void commitIfPrepared(IgniteInternalTx tx) {
-            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
-            assert !F.isEmpty(tx.transactionNodes()) : tx;
-            assert tx.nearXidVersion() != null : tx;
-
-            GridCacheOptimisticCheckPreparedTxFuture fut = new GridCacheOptimisticCheckPreparedTxFuture<>(
-                cctx,
-                tx,
-                evtNodeId,
-                tx.transactionNodes());
-
-            cctx.mvcc().addFuture(fut);
-
-            if (log.isDebugEnabled())
-                log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
-
-            fut.prepare();
         }
     }
 

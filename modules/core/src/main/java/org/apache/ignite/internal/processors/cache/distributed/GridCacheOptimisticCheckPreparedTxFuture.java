@@ -163,6 +163,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    fut.onNodeLeft();
+                }
                 catch (IgniteCheckedException e) {
                     fut.onError(e);
                 }
@@ -398,7 +401,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 cctx.tm().finishOptimisticTxOnRecovery(tx, res);
             }
             else {
-                if (nearTxCheck) {
+                if (err instanceof ClusterTopologyCheckedException && nearTxCheck) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to check transaction on near node, " +
                             "ignoring [err=" + err + ", tx=" + tx + ']');
@@ -480,7 +483,14 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
             if (log.isDebugEnabled())
                 log.debug("Transaction node left grid (will ignore) [fut=" + this + ']');
 
-            onDone(true);
+            if (nearTxCheck) {
+                // Near and originating nodes left, need initiate tx check.
+                cctx.tm().commitIfPrepared(tx);
+
+                onDone(new ClusterTopologyCheckedException("Transaction node left grid (will ignore)."));
+            }
+            else
+                onDone(true);
         }
 
         /**

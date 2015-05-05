@@ -149,7 +149,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     }
 
     /**
-     * @param locBackupKey If {@code true} uses recovery for local backup key.
+     * @param locBackupKey If {@code true} uses one key which is backup for originating node.
      * @param rollback If {@code true} tests rollback after primary node failure.
      * @param optimistic If {@code true} tests optimistic transaction.
      * @throws Exception If failed.
@@ -176,6 +176,9 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
         final Integer key1 = key0;
         final Integer key2 = primaryKey(cache2);
+
+        final Collection<ClusterNode> key1Nodes = aff.mapKeyToPrimaryAndBackups(key1);
+        final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackups(key2);
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
@@ -225,8 +228,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    checkKey(key1, rollback);
-                    checkKey(key2, rollback);
+                    checkKey(key1, rollback ? null : key1Nodes);
+                    checkKey(key2, rollback ? null : key2Nodes);
 
                     return true;
                 }
@@ -238,50 +241,104 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             }
         }, 5000);
 
-        checkKey(key1, rollback);
-        checkKey(key2, rollback);
+        checkKey(key1, rollback ? null : key1Nodes);
+        checkKey(key2, rollback ? null : key2Nodes);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery() throws Exception {
-        primaryAndOriginatingNodeFailure(false, true);
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
+        primaryAndOriginatingNodeFailure(false, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback() throws Exception {
-        primaryAndOriginatingNodeFailure(true, true);
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
+        primaryAndOriginatingNodeFailure(true, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPessimisticPrimaryAndOriginatingNodeFailureRecovery() throws Exception {
-        primaryAndOriginatingNodeFailure(false, false);
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
+        primaryAndOriginatingNodeFailure(false, true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPessimisticPrimaryAndOriginatingNodeFailureRollback() throws Exception {
-        primaryAndOriginatingNodeFailure(true, false);
+    public void testOptimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
+        primaryAndOriginatingNodeFailure(true, true, true);
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
+        primaryAndOriginatingNodeFailure(false, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
+        primaryAndOriginatingNodeFailure(true, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
+        primaryAndOriginatingNodeFailure(false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
+        primaryAndOriginatingNodeFailure(true, true, false);
+    }
+
+    /**
+     * @param locBackupKey If {@code true} uses one key which is backup for originating node.
      * @param rollback If {@code true} tests rollback after primary node failure.
      * @param optimistic If {@code true} tests optimistic transaction.
      * @throws Exception If failed.
      */
-    private void primaryAndOriginatingNodeFailure(final boolean rollback, boolean optimistic) throws Exception {
+    private void primaryAndOriginatingNodeFailure(final boolean locBackupKey,
+        final boolean rollback,
+        boolean optimistic)
+        throws Exception
+    {
         IgniteCache<Integer, Integer> cache0 = jcache(0);
-        IgniteCache<Integer, Integer> cache1 = jcache(1);
         IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        final Integer key1 = primaryKey(cache1);
+        Affinity<Integer> aff = ignite(0).affinity(null);
+
+        Integer key0 = null;
+
+        for (int key = 0; key < 10_000; key++) {
+            if (aff.isPrimary(ignite(1).cluster().localNode(), key)) {
+                if (locBackupKey == aff.isBackup(ignite(0).cluster().localNode(), key)) {
+                    key0 = key;
+
+                    break;
+                }
+            }
+        }
+
+        assertNotNull(key0);
+
+        final Integer key1 = key0;
         final Integer key2 = primaryKey(cache2);
+
+        int backups = cache0.getConfiguration(CacheConfiguration.class).getBackups();
+
+        final Collection<ClusterNode> key1Nodes =
+            (locBackupKey && backups < 2) ? null : aff.mapKeyToPrimaryAndBackups(key1);
+        final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackups(key2);
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
@@ -326,12 +383,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    checkKey(key1, rollback);
-                    checkKey(key2, rollback);
+                    checkKey(key1, rollback ? null : key1Nodes);
+                    checkKey(key2, rollback ? null : key2Nodes);
 
                     return true;
-                }
-                catch (AssertionError e) {
+                } catch (AssertionError e) {
                     log.info("Check failed: " + e);
 
                     return false;
@@ -339,30 +395,53 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             }
         }, 5000);
 
-        checkKey(key1, rollback);
-        checkKey(key2, rollback);
+        checkKey(key1, rollback ? null : key1Nodes);
+        checkKey(key2, rollback ? null : key2Nodes);
     }
 
     /**
      * @param key Key.
-     * @param expNull {@code True} if {@code null} value is expected.
+     * @param keyNodes Key nodes.
      */
-    private void checkKey(Integer key, boolean expNull) {
-        Affinity<Integer> aff = ignite(2).affinity(null);
+    private void checkKey(Integer key, Collection<ClusterNode> keyNodes) {
+        if (keyNodes == null) {
+            for (Ignite ignite : G.allGrids()) {
+                IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
-        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
-
-        assertFalse(nodes.isEmpty());
-
-        for (ClusterNode node : nodes) {
-            Ignite ignite = grid(node);
-
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
-
-            if (expNull)
                 assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
-            else
-                assertEquals("Unexpected value for: " + ignite.name(), key, cache.localPeek(key));
+            }
+
+            for (Ignite ignite : G.allGrids()) {
+                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+
+                assertNull("Unexpected value for: " + ignite.name(), cache.get(key));
+            }
+        }
+        else {
+            boolean found = false;
+
+            for (ClusterNode node : keyNodes) {
+                try {
+                    Ignite ignite = grid(node);
+
+                    found = true;
+
+                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+
+                    assertEquals("Unexpected value for: " + ignite.name(), key, key);
+                }
+                catch (IgniteIllegalStateException ignore) {
+                    // No-op.
+                }
+            }
+
+            assertTrue("Failed to find key node.", found);
+
+            for (Ignite ignite : G.allGrids()) {
+                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+
+                assertEquals("Unexpected value for: " + ignite.name(), key, cache.get(key));
+            }
         }
     }
 
