@@ -959,7 +959,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * Local routine info.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class LocalRoutineInfo {
+    static class LocalRoutineInfo implements Serializable {
         /** Projection predicate. */
         private final IgnitePredicate<ClusterNode> prjPred;
 
