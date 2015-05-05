@@ -499,6 +499,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args);
 
     /**
+     * Completely deletes the cache with all its data from the system on all cluster nodes.
+     */
+    @Override void close();
+
+    /**
      * This cache node to re-balance its partitions. This method is usually used when
      * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
