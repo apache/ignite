@@ -1788,11 +1788,6 @@ public class IgnitionEx {
                 else
                     marsh = new OptimizedMarshaller();
             }
-            else if (marsh instanceof OptimizedMarshaller && !U.isHotSpot()) {
-                U.warn(log, "Using OptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
-                    "object serialization behavior could yield unexpected results.",
-                    "Using GridOptimizedMarshaller on untested JVM.");
-            }
 
             myCfg.setMarshaller(marsh);
 

@@ -9,7 +9,7 @@ With LGPL dependencies:
 Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
-
+      Schema Import module use JavaFX, under OpenJDK may be compiled and run only on OpenJDK 8 with installed OpenJFX.
 
 Ignite Hadoop Accelerator Maven Build Instructions
 ============================================
@@ -40,35 +40,27 @@ Specify gpg profile at settings.xml. It will be used to sign sources and artifac
    </properties>
 </profile>
 
-Configure access to people.apache.org/~<username>. It necessary to upload sources to site.
-See https://blogs.apache.org/infra/entry/committer_shell_access_to_people for details.
-Specify ignite-site server at settings.xml.
-
-<server>
-   <id>ignite-site</id>
-   <username>username</username>
-   <privateKey>/home/username.ppk</privateKey>
-   <passphrase>passphrase</passphrase>
-</server>
-
 Ensure you have RELEASE (not SNAPSHOT) version at Ignite poms.
 Maven release plugin release:prepare goal can be used to make release tag.
 
-Deploy Ignite release to maven repository and site:
+Deploy Ignite release candidate to maven repository and dev-svn:
 
-mvn deploy -P apache-release,gpg,release,scala,lgpl,deploy-ignite-site -Dignite.edition=fabric -DskipTests -Dignite.site=scp://people.apache.org:/home/<username>/public_html -B
+   mvn deploy -P apache-release,gpg,release,scala,lgpl,deploy-ignite-site -Dignite.edition=fabric -DskipTests -B
 
-You might need to allow connection to people.apache.org. Just do following at console:
+   Binary artifact name can be changed by setting additional property -Dignite.zip.pattern.
+   Sources package name is fixed. Sources package zip will be created automatically when apache-release profile used.
 
-ssh people.apache.org
+   In case you want to release both fabric and hadoop editions you have to build hadoop first, save /target/bin/*.zip,
+   make "mvn clean" and restore them before deploy step.
 
-and type "yes" + enter.
+   Nexus staging (repository.apache.org) should be closed when mvn deploy finished.
+   Checkout https://dist.apache.org/repos/dist/dev/incubator/ignite svn. Create new folder with name equals to released
+   version at svn root. Copy target/site folder content to svn/ignite/<version> folder and commit.
 
-In case you want to release both fabric and hadoop editions you have to build hadoop first, save /target/bin/*.zip, make "mvn clean" and
-restore them before deploy step.
+Start vote based on https://dist.apache.org/repos/dist/dev/incubator/ignite/<version>.
 
-Start vote based on people.apache.org/~<username>/ignite-version.
-Release nexus staging when version accepted.
+Release nexus staging and copy binaries and sources from https://dist.apache.org/repos/dist/dev/incubator/ignite/<version>
+to https://dist.apache.org/repos/dist/release/incubator/ignite/<version> when version accepted.
 
 
 JCache TCK compliance

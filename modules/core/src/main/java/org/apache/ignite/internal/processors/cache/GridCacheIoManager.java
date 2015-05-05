@@ -24,6 +24,10 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -32,7 +36,6 @@ import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -226,69 +229,67 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             unmarshall(nodeId, cacheMsg);
 
-            if (cacheMsg.allowForStartup())
-                processMessage(nodeId, cacheMsg, c);
+            if (cacheMsg.classError() != null)
+                processFailedMessage(nodeId, cacheMsg);
             else {
-                IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
-
-                if (startFut.isDone())
+                if (cacheMsg.allowForStartup())
                     processMessage(nodeId, cacheMsg, c);
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
-                            ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
+                    IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
 
-                    // Don't hold this thread waiting for preloading to complete.
-                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(final IgniteInternalFuture<?> f) {
-                            cctx.kernalContext().closure().runLocalSafe(
-                                new GridPlainRunnable() {
-                                    @Override public void run() {
-                                        rw.readLock();
+                    if (startFut.isDone())
+                        processMessage(nodeId, cacheMsg, c);
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Waiting for start future to complete for message [nodeId=" + nodeId +
+                                ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
-                                        try {
-                                            if (stopping) {
+                        // Don't hold this thread waiting for preloading to complete.
+                        startFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(final IgniteInternalFuture<?> f) {
+                                cctx.kernalContext().closure().runLocalSafe(
+                                    new GridPlainRunnable() {
+                                        @Override public void run() {
+                                            rw.readLock();
+
+                                            try {
+                                                if (stopping) {
+                                                    if (log.isDebugEnabled())
+                                                        log.debug("Received cache communication message while stopping " +
+                                                            "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
+
+                                                    return;
+                                                }
+
+                                                f.get();
+
                                                 if (log.isDebugEnabled())
-                                                    log.debug("Received cache communication message while stopping " +
-                                                        "(will ignore) [nodeId=" + nodeId + ", msg=" + cacheMsg + ']');
+                                                    log.debug("Start future completed for message [nodeId=" + nodeId +
+                                                        ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
-                                                return;
+                                                processMessage(nodeId, cacheMsg, c);
                                             }
-
-                                            f.get();
-
-                                            if (log.isDebugEnabled())
-                                                log.debug("Start future completed for message [nodeId=" + nodeId +
-                                                    ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
-
-                                            processMessage(nodeId, cacheMsg, c);
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            // Log once.
-                                            if (startErr.compareAndSet(false, true))
-                                                U.error(log, "Failed to complete preload start future " +
-                                                    "(will ignore message) " +
-                                                    "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
-                                        }
-                                        finally {
-                                            rw.readUnlock();
+                                            catch (IgniteCheckedException e) {
+                                                // Log once.
+                                                if (startErr.compareAndSet(false, true))
+                                                    U.error(log, "Failed to complete preload start future " +
+                                                        "(will ignore message) " +
+                                                        "[fut=" + f + ", nodeId=" + nodeId + ", msg=" + cacheMsg + ']', e);
+                                            }
+                                            finally {
+                                                rw.readUnlock();
+                                            }
                                         }
                                     }
-                                }
-                            );
-                        }
-                    });
+                                );
+                            }
+                        });
+                    }
                 }
             }
         }
         catch (Throwable e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                U.error(log, "Failed to process message (note that distributed services " +
-                    "do not support peer class loading, if you deploy distributed service " +
-                    "you should have all required classes in CLASSPATH on all nodes in topology) " +
-                    "[senderId=" + nodeId + ", err=" + X.cause(e, ClassNotFoundException.class).getMessage() + ']');
-            else
-                U.error(log, "Failed to process message [senderId=" + nodeId + ']', e);
+            U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -298,6 +299,207 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 cctx.deploy().ignoreOwnership(false);
 
             rw.readUnlock();
+        }
+    }
+
+    /**
+     * Sends response on failed message.
+     * @param nodeId node id.
+     * @param res response.
+     * @param cctx shared context.
+     * @param plc grid io policy.
+     */
+    private void sendResponseOnFailedMessage(UUID nodeId, GridCacheMessage res, GridCacheSharedContext cctx,
+        GridIoPolicy plc) {
+        try {
+            cctx.io().send(nodeId, res, plc);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
+                ",res=" + res + ']', e);
+        }
+    }
+
+    /**
+     * Processes failed messages.
+     * @param nodeId niode id.
+     * @param msg message.
+     * @throws IgniteCheckedException
+     */
+    private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
+        GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+
+        switch (msg.directType()) {
+            case 14: {
+                GridCacheEvictionRequest req = (GridCacheEvictionRequest)msg;
+
+                GridCacheEvictionResponse res = new GridCacheEvictionResponse(
+                    ctx.cacheId(),
+                    req.futureId(),
+                    req.classError() != null
+                );
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 30: {
+                GridDhtLockRequest req = (GridDhtLockRequest)msg;
+
+                GridDhtLockResponse res = new GridDhtLockResponse(
+                    ctx.cacheId(),
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    0);
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 34: {
+                GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
+
+                GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
+                    req.version(),
+                    req.futureId(),
+                    req.miniId());
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+            }
+
+            break;
+
+            case 38: {
+                GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
+
+                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+                    ctx.cacheId(),
+                    req.futureVersion());
+
+                res.onError(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 40: {
+                GridNearAtomicUpdateRequest req = (GridNearAtomicUpdateRequest)msg;
+
+                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                    ctx.cacheId(),
+                    nodeId,
+                    req.futureVersion());
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 42: {
+                GridDhtForceKeysRequest req = (GridDhtForceKeysRequest)msg;
+
+                GridDhtForceKeysResponse res = new GridDhtForceKeysResponse(
+                    ctx.cacheId(),
+                    req.futureId(),
+                    req.miniId()
+                );
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 45: {
+                GridDhtPartitionSupplyMessage req = (GridDhtPartitionSupplyMessage)msg;
+
+                U.error(log, "Supply message cannot be unmarshalled.", req.classError());
+            }
+
+            break;
+
+            case 49: {
+                GridNearGetRequest req = (GridNearGetRequest)msg;
+
+                GridNearGetResponse res = new GridNearGetResponse(
+                    ctx.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version());
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 50: {
+                GridNearGetResponse res = (GridNearGetResponse)msg;
+
+                GridPartitionedGetFuture fut = (GridPartitionedGetFuture)ctx.mvcc().future(
+                    res.version(), res.futureId());
+
+                if (fut == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+                    return;
+                }
+
+                res.error(res.classError());
+
+                fut.onResult(nodeId, res);
+            }
+
+            break;
+
+            case 51: {
+                GridNearLockRequest req = (GridNearLockRequest)msg;
+
+                GridNearLockResponse res = new GridNearLockResponse(
+                    ctx.cacheId(),
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    false,
+                    0,
+                    req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
+            case 55: {
+                GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
+
+                GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    null, null, null);
+
+                res.error(req.classError());
+
+                sendResponseOnFailedMessage(nodeId, res, cctx, req.policy());
+            }
+
+            break;
+
+            default:
+                throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [message="
+                    + msg + "]");
         }
     }
 
@@ -744,16 +946,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cacheMsg.finishUnmarshal(cctx, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {
-            if (cacheMsg.ignoreClassErrors() && X.hasCause(e, InvalidClassException.class,
-                    ClassNotFoundException.class, NoClassDefFoundError.class, UnsupportedClassVersionError.class))
-                cacheMsg.onClassError(e);
-            else
-                throw e;
+            cacheMsg.onClassError(e);
         }
         catch (Error e) {
             if (cacheMsg.ignoreClassErrors() && X.hasCause(e, NoClassDefFoundError.class,
                 UnsupportedClassVersionError.class))
-                    cacheMsg.onClassError(new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e));
+                cacheMsg.onClassError(new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e));
             else
                 throw e;
         }
@@ -782,7 +980,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings( {"CatchGenericClass", "unchecked"})
+        @SuppressWarnings({"CatchGenericClass", "unchecked"})
         @Override public void onMessage(final UUID nodeId, Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received cache ordered message [nodeId=" + nodeId + ", msg=" + msg + ']');

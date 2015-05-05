@@ -15,28 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.testsuites;
+
+import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
- * Allows to enable asynchronous mode on Ignite APIs.
+ * Checks behavior on exception while unmarshalling key.
  */
-public interface IgniteAsyncSupport {
+public class IgniteCacheP2pUnmarshallingErrorTestSuit extends TestSuite {
     /**
-     * Gets instance of this component with asynchronous mode enabled.
-     *
-     * @return Instance of this component with asynchronous mode enabled.
+     * @return Suite.
+     * @throws Exception If failed.
      */
-    public IgniteAsyncSupport withAsync();
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
 
-    /**
-     * @return {@code True} if asynchronous mode is enabled.
-     */
-    public boolean isAsync();
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingErrorTest.class);
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingNearErrorTest.class);
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingTxErrorTest.class);
 
-    /**
-     * Gets and resets future for previous asynchronous operation.
-     *
-     * @return Future for previous asynchronous operation.
-     */
-    public <R> IgniteFuture<R> future();
+        return suite;
+    }
 }
