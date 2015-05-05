@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 
 import javax.cache.*;
@@ -54,9 +55,17 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(spi());
 
         return cfg;
+    }
+
+    /**
+     * Creates a SwapSpaceSpi.
+     * @return the Spi
+     */
+    protected SwapSpaceSpi spi() {
+        return new FileSwapSpaceSpi();
     }
 
     /** {@inheritDoc} */
@@ -231,7 +240,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             for (Integer key : keys)
                 cache0.put(key, val);
 
-            FileSwapSpaceSpi swap = (FileSwapSpaceSpi)ignite(nodeIdx).configuration().getSwapSpaceSpi();
+            SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
 
             Set<Integer> swapKeys = new HashSet<>();
 
@@ -614,7 +623,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      * @return Tuple with primary and backup keys.
      */
     private T2<List<Integer>, List<Integer>> swapKeys(int nodeIdx) {
-        FileSwapSpaceSpi swap = (FileSwapSpaceSpi)ignite(nodeIdx).configuration().getSwapSpaceSpi();
+        SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
 
         IgniteSpiCloseableIterator<Integer> it = swap.keyIterator(SPACE_NAME, null);
 
