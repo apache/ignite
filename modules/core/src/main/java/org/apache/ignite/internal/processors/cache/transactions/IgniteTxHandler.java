@@ -53,6 +53,11 @@ public class IgniteTxHandler {
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> ctx;
 
+    /**
+     * @param nearNodeId Node ID.
+     * @param req Request.
+     * @return Prepare future.
+     */
     public IgniteInternalFuture<IgniteInternalTx> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest req) {
         return prepareTx(nearNodeId, null, req, null);
