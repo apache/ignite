@@ -56,13 +56,13 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     private static final String CACHE = "cache";
 
     /** Empty cache name. */
-    private static final String EMPTY_CACHE = "emptyCache";
+    protected static final String EMPTY_CACHE = "emptyCache";
 
     /** Name of the cache that doesn't index primitives. */
-    private static final String CACHE_NO_PRIMITIVES = "cacheNoPrimitives";
+    protected static final String CACHE_NO_PRIMITIVES = "cacheNoPrimitives";
 
     /** Name of the cache that doesn't index primitives. */
-    private static final String CACHE_COMPLEX_KEYS = "cacheComplexKeys";
+    protected static final String CACHE_COMPLEX_KEYS = "cacheComplexKeys";
 
     /** Flag indicating if starting node should have cache. */
     protected boolean hasCache;
@@ -839,7 +839,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      * Person key.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static class PersonKey implements Serializable {
+    protected static class PersonKey implements Serializable {
         /** ID. */
         @QuerySqlField
         private final UUID id;
@@ -875,7 +875,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static class Person implements Serializable {
+    protected static class Person implements Serializable {
         /** Name. */
         @QuerySqlField(index = false)
         private final String name;
@@ -932,7 +932,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      * Organization.
      */
     @SuppressWarnings("UnusedDeclaration")
-    private static class Organization implements Serializable {
+    protected static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField
         private final int id;
