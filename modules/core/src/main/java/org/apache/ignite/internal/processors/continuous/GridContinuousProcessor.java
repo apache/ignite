@@ -146,6 +146,26 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                for (Iterator<StartFuture> itr = startFuts.values().iterator(); itr.hasNext(); ) {
+                    StartFuture fut = itr.next();
+
+                    itr.remove();
+
+                    fut.onDone(new IgniteException("Topology segmented"));
+                }
+
+                for (Iterator<StopFuture> itr = stopFuts.values().iterator(); itr.hasNext(); ) {
+                    StopFuture fut = itr.next();
+
+                    itr.remove();
+
+                    fut.onDone(new IgniteException("Topology segmented"));
+                }
+            }
+        }, EVT_NODE_SEGMENTED);
+
         ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessage.class,
             new CustomEventListener<StartRoutineDiscoveryMessage>() {
                 @Override public void onCustomEvent(ClusterNode snd, StartRoutineDiscoveryMessage msg) {
@@ -504,6 +524,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             unregisterHandler(routineId, routine.hnd, true);
 
             ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
+
+            if (ctx.isStopping())
+                fut.onDone();
         }
 
         return fut;
