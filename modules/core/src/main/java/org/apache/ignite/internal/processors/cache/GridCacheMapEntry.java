@@ -3305,7 +3305,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                     if (!obsolete()) {
                         if (cctx.deferredDelete() && !detached() && !isInternal()) {
                             if (!deletedUnlocked()) {
-                                update(null, 0L, 0L, obsoleteVer);
+                                update(null, 0L, 0L, ver);
 
                                 deletedUnlocked(true);
 
@@ -3352,7 +3352,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
             }
 
             if (deferred)
-                cctx.onDeferredDelete(this, obsoleteVer);
+                cctx.onDeferredDelete(this, ver);
 
             if ((obsolete || deferred) && cctx.cache().configuration().isStatisticsEnabled())
                 cctx.cache().metrics0().onEvict();
