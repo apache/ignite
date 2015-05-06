@@ -1766,7 +1766,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<ClusterNode> top = F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -4522,20 +4522,22 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-                try {
-                    Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                if (node != null) {
+                    try {
+                        Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
-                    lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
-                        msg.topologyVersion(),
-                        node,
-                        snapshot,
-                        hist,
-                        msgObj);
+                        lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                            msg.topologyVersion(),
+                            node,
+                            snapshot,
+                            hist,
+                            msgObj);
 
-                    msg.messageBytes(marsh.marshal(msgObj));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal discovery custom message.", e);
+                        msg.messageBytes(marsh.marshal(msgObj));
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                    }
                 }
             }
         }
