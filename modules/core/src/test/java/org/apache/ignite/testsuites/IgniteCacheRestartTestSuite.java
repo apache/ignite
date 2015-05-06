@@ -46,6 +46,7 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
         suite.addTestSuite(IgniteCachePutAllRestartTest.class);
         suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
+        suite.addTestSuite(CacheGetFromJobTest.class);
 
         return suite;
     }
