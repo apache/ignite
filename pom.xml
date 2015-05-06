@@ -38,7 +38,7 @@
     <properties>
         <ignite.site>scp://localhost:/home</ignite.site>
         <!--fix <attachartifact>...</> at apache-release profile if changed-->
-        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}-incubating</ignite.zip.pattern>
+        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}</ignite.zip.pattern>
     </properties>
 
     <scm>
@@ -488,7 +488,7 @@
                                         <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
                                     </descriptorRefs>
                                     <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>incubator-ignite-${project.version}-src</finalName>
+                                    <finalName>ignite-${project.version}-src</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
@@ -509,11 +509,11 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <attachartifact
-                                            file="${basedir}/target/bin/ignite-fabric-${project.version}-incubating.zip"
+                                            file="${basedir}/target/bin/ignite-fabric-${project.version}.zip"
                                             classifier="fabric"
                                             type="zip"/>
                                         <attachartifact
-                                            file="${basedir}/target/bin/ignite-hadoop-${project.version}-incubating.zip"
+                                            file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip"
                                             classifier="hadoop"
                                             type="zip"/>
                                     </target>
@@ -562,7 +562,7 @@
                                 <fileSet>
                                     <directory>${basedir}/target</directory>
                                     <includes>
-                                        <include>incubator-ignite-${project.version}-src.zip</include>
+                                        <include>ignite-${project.version}-src.zip</include>
                                         <include>bin/*.zip</include>
                                     </includes>
                                 </fileSet>
@@ -590,10 +590,10 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <mkdir dir="${basedir}/target/site" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip.asc" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip.md5" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip" tofile="${basedir}/target/site/ignite-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.asc" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.asc" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.md5" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.md5" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.sha1" failonerror="false" />
                                         <copy todir="${basedir}/target/site">
                                             <fileset dir="${basedir}/target/bin">
                                                 <include name="**/*" />
