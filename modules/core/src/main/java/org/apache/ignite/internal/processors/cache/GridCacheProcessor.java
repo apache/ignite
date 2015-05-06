@@ -2452,6 +2452,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param name Cache name.
+     * @return Cache instance for given name.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public <K, V> IgniteInternalCache<K, V> getOrStartCache(@Nullable String name) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Getting cache for name: " + name);
+
+        IgniteCache<K, V> jcache = (IgniteCache<K, V>)jCacheProxies.get(maskNull(name));
+
+        if (jcache == null)
+            jcache = startJCache(name, true);
+
+        return jcache == null ? null : ((IgniteCacheProxy<K, V>)jcache).internalProxy();
+    }
+
+    /**
      * @return All configured cache instances.
      */
     public Collection<IgniteInternalCache<?, ?>> caches() {
@@ -2558,37 +2576,53 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
-        if (cache == null) {
-            if (desc == null || desc.cancelled()) {
-                if (failIfNotStarted)
-                    throw new IllegalArgumentException("Cache is not started: " + cacheName);
+        if (cache == null)
+           cache = startJCache(cacheName, failIfNotStarted);
 
-                return null;
-            }
+        return cache;
+    }
 
-            DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+    /**
+     * @param cacheName Cache name.
+     * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
+     *        otherwise returns {@code null} in this case.
+     * @return Cache instance for given name.
+     * @throws IgniteCheckedException If failed.
+     */
+    private IgniteCache startJCache(String cacheName, boolean failIfNotStarted) throws IgniteCheckedException {
+        String masked = maskNull(cacheName);
 
-            req.cacheName(cacheName);
+        DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
-            req.deploymentId(desc.deploymentId());
-
-            CacheConfiguration cfg = new CacheConfiguration(desc.cacheConfiguration());
-
-            cfg.setNearConfiguration(null);
-
-            req.startCacheConfiguration(cfg);
-
-            req.cacheType(desc.cacheType());
-
-            req.clientStartOnly(true);
-
-            F.first(initiateCacheChanges(F.asList(req))).get();
-
-            cache = (IgniteCache<K, V>)jCacheProxies.get(masked);
-
-            if (cache == null && failIfNotStarted)
+        if (desc == null || desc.cancelled()) {
+            if (failIfNotStarted)
                 throw new IllegalArgumentException("Cache is not started: " + cacheName);
+
+            return null;
         }
+
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+
+        req.cacheName(cacheName);
+
+        req.deploymentId(desc.deploymentId());
+
+        CacheConfiguration cfg = new CacheConfiguration(desc.cacheConfiguration());
+
+        cfg.setNearConfiguration(null);
+
+        req.startCacheConfiguration(cfg);
+
+        req.cacheType(desc.cacheType());
+
+        req.clientStartOnly(true);
+
+        F.first(initiateCacheChanges(F.asList(req))).get();
+
+        IgniteCache cache = jCacheProxies.get(masked);
+
+        if (cache == null && failIfNotStarted)
+            throw new IllegalArgumentException("Cache is not started: " + cacheName);
 
         return cache;
     }
