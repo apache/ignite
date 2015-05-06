@@ -26,13 +26,6 @@ import java.io.*;
  */
 public interface DiscoverySpiCustomMessage extends Serializable {
     /**
-     * Whether or not minor version of topology should be increased on message receive.
-     *
-     * @return {@code true} if minor topology version should be increased.
-     */
-    public boolean forwardMinorVersion();
-
-    /**
      * Called when message passed the ring.
      */
     @Nullable public DiscoverySpiCustomMessage newMessageOnRingEnd();

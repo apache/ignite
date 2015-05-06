@@ -1332,7 +1332,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                     if (node != null && node.visible()) {
                         try {
-                            Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                            DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allNodes(), msgObj);
                         }
@@ -1433,7 +1433,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param top Topology snapshot.
          */
         private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top,
-            @Nullable Serializable data) {
+            @Nullable DiscoverySpiCustomMessage data) {
             DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
 
             if (lsnr != null) {

@@ -35,11 +35,6 @@ class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean forwardMinorVersion() {
-        return delegate.forwardMinorVersion();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage newMessageOnRingEnd() {
         DiscoveryCustomMessage res = delegate.newMessageOnRingEnd();
 

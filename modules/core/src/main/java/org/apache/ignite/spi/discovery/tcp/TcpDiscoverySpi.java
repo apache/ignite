@@ -4524,7 +4524,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 if (node != null) {
                     try {
-                        Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),

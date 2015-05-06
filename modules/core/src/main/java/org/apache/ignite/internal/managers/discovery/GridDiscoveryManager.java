@@ -344,8 +344,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ClusterNode node,
                 Collection<ClusterNode> topSnapshot,
                 Map<Long, Collection<ClusterNode>> snapshots,
-                @Nullable Serializable data
+                @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
+                DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
+                    : ((CustomMessageWrapper)spiCustomMsg).delegate();
+
                 final ClusterNode locNode = localNode();
 
                 if (snapshots != null)
@@ -356,7 +359,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
                 else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    if (data != null && ((DiscoverySpiCustomMessage)data).forwardMinorVersion()) {
+                    if (customMsg != null && customMsg.forwardMinorVersion()) {
                         minorTopVer++;
 
                         verChanged = true;
@@ -380,9 +383,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    if (data != null) {
-                        DiscoveryCustomMessage customMsg = ((CustomMessageWrapper)data).delegate();
-
+                    if (customMsg != null) {
                         for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                             List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
@@ -435,7 +436,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
                 }
 
-                discoWrk.addEvent(type, nextTopVer, node, topSnapshot, data);
+                discoWrk.addEvent(type, nextTopVer, node, topSnapshot, customMsg);
             }
         });
 
@@ -1567,8 +1568,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** Event queue. */
-        private final BlockingQueue<GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>, Serializable>> evts =
-            new LinkedBlockingQueue<>();
+        private final BlockingQueue<GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>,
+            DiscoveryCustomMessage>> evts = new LinkedBlockingQueue<>();
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
@@ -1634,7 +1635,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             AffinityTopologyVersion topVer,
             ClusterNode node,
             Collection<ClusterNode> topSnapshot,
-            @Nullable Serializable data
+            @Nullable DiscoveryCustomMessage data
         ) {
             assert node != null : data;
 
@@ -1675,7 +1676,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** @throws InterruptedException If interrupted. */
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
-            GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>, Serializable> evt = evts.take();
+            GridTuple5<Integer, AffinityTopologyVersion, ClusterNode, Collection<ClusterNode>,
+                DiscoveryCustomMessage> evt = evts.take();
 
             int type = evt.get1();
 
@@ -1793,7 +1795,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         customEvt.type(type);
                         customEvt.topologySnapshot(topVer.topologyVersion(), null);
                         customEvt.affinityTopologyVersion(topVer);
-                        customEvt.data(evt.get5());
+                        customEvt.customMessage(evt.get5());
 
                         ctx.event().record(customEvt);
                     }
