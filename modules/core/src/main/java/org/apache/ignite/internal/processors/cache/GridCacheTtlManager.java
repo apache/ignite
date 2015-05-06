@@ -88,17 +88,13 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /**
      * Expires entries by TTL.
-     *
-     * @param sizeLimited Size limited.
      */
-    public void expire(boolean sizeLimited) {
+    public void expire() {
         long now = U.currentTimeMillis();
-
-        int size = pendingEntries.sizex();
 
         GridCacheVersion obsoleteVer = null;
 
-        while (!sizeLimited || size-- > 0) {
+        for (int size = pendingEntries.sizex(); size > 0; size--) {
             EntryWrapper e = pendingEntries.firstx();
 
             if (e == null || e.expireTime > now)
@@ -108,8 +104,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (obsoleteVer == null)
                     obsoleteVer = cctx.versions().next();
 
-                if (log.isDebugEnabled())
-                    log.debug("Trying to remove expired entry from cache: " + e);
+                if (log.isTraceEnabled())
+                    log.trace("Trying to remove expired entry from cache: " + e);
 
                 e.entry.onTtlExpired(obsoleteVer);
             }
@@ -130,7 +126,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                expire(false);
+                expire();
 
                 EntryWrapper first = pendingEntries.firstx();
 

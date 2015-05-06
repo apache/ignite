@@ -1157,7 +1157,7 @@ public class GridCacheUtils {
         if (ctx.isNear())
             ctx.near().dht().context().evicts().unwind();
 
-        ctx.ttl().expire(true);
+        ctx.ttl().expire();
     }
 
     /**
@@ -1172,7 +1172,7 @@ public class GridCacheUtils {
             if (cacheCtx.isNear())
                 cacheCtx.near().dht().context().evicts().unwind();
 
-            cacheCtx.ttl().expire(true);
+            cacheCtx.ttl().expire();
         }
     }
 
