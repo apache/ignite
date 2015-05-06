@@ -43,8 +43,8 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
         cc.setWriteSynchronizationMode(FULL_ASYNC);
         cc.setNearConfiguration(null);
         cc.setStartSize(20);
-        cc.setRebalanceMode(preloadMode);
-        cc.setRebalanceBatchSize(preloadBatchSize);
+        cc.setRebalanceMode(rebalancMode);
+        cc.setRebalanceBatchSize(rebalancBatchSize);
         cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
