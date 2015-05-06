@@ -21,8 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -109,7 +107,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
-        return null; // TODO: CODE: implement.
+        return (V)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).getAndPutIfAbsent(key, val);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -157,7 +159,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V localPeek(K key, CachePeekMode... peekModes) {
-        return null; // TODO: CODE: implement.
+        return (V)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).localPeek(key, peekModes);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -167,12 +173,20 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        return 0; // TODO: CODE: implement.
+        return (int)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).size(peekModes);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
-        return 0; // TODO: CODE: implement.
+        return (int)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).localSize(peekModes);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -183,21 +197,29 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public V get(K key) {
-        return F.first(compute.broadcast(new IgniteClosureX<K, V>() {
-            @Override public V applyx(K k) {
-                return (V)Ignition.ignite(gridId).cache(cacheName).get(k);
+        return (V)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).get(key);
             }
-        }, key));
+        });
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
-        return null; // TODO: CODE: implement.
+        return (Map<K, V>)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).getAll(keys);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).containsKey(key);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -207,129 +229,204 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKeys(Set<? extends K> keys) {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).containsKeys(keys);
+            }
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public void put(K key, V val) {
-        compute.broadcast(new IgniteClosureX<List<?>, Object>() {
-            @Override public Object applyx(List<?> l) {
-                Ignition.ignite(gridId).cache(cacheName).put(l.get(0), l.get(1));
-
-                return null;
+    @Override public void put(K key, V val) {;
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).put(key, val);
             }
-        }, Arrays.asList(key, val));
+        });
     }
 
     /** {@inheritDoc} */
     @Override public V getAndPut(K key, V val) {
-        return null; // TODO: CODE: implement.
+        return (V)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).getAndPut(key, val);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).putAll(map);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).putIfAbsent(key, val);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key) {
-        return F.first(compute.broadcast(new IgniteClosureX<K, Boolean>() {
-            @Override public Boolean applyx(K k) {
-                return Ignition.ignite(gridId).cache(cacheName).remove(k);
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).remove(key);
             }
-        }, key));
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V oldVal) {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).remove(key, oldVal);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
-        return null; // TODO: CODE: implement.
+        return (V)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).getAndRemove(key);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).replace(key, oldVal, newVal);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).replace(key, val);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) {
-        return null; // TODO: CODE: implement.
+        return (V)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).getAndReplace(key, val);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(final Set<? extends K> keys) {
-        compute.broadcast(new IgniteClosureX<Set<?>, Void>() {
-            @Override public Void applyx(Set<?> ks) {
-                Ignition.ignite(gridId).cache(cacheName).removeAll(ks);
-
-                return null;
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).removeAll(keys);
             }
-        }, keys);
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll() {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).removeAll();
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).clear();
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void clear(K key) {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).clear(key);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).clearAll(keys);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void localClear(K key) {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).localClear(key);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).localClearAll(keys);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) {
-        return null; // TODO: CODE: implement.
+        return (T)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).invoke(key,
+                    (EntryProcessor<Object, Object, Object>)entryProcessor, arguments);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments) {
-        return null; // TODO: CODE: implement.
+        return (T)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).invoke(key,
+                    (CacheEntryProcessor<Object, Object, Object>)entryProcessor, arguments);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override  public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
-        return null; // TODO: CODE: implement.
+        return (Map<K, EntryProcessorResult<T>>)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).invokeAll(keys,
+                    (EntryProcessor<Object, Object, Object>)entryProcessor, args);
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public String getName() {
-        return null; // TODO: CODE: implement.
+        return (String)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).getName();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -339,12 +436,20 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // TODO: CODE: implement.
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                Ignition.ignite(gridId).cache(cacheName).close();
+            }
+        });
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        return false; // TODO: CODE: implement.
+        return (boolean)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return Ignition.ignite(gridId).cache(cacheName).isClosed();
+            }
+        });
     }
 
     /** {@inheritDoc} */
