@@ -4481,13 +4481,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     try {
                         DiscoveryCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
-                        if (msgObj instanceof RingEndAwareCustomMessage) {
-                            DiscoveryCustomMessage nextMsg = ((RingEndAwareCustomMessage)msgObj)
-                                .newMessageOnRingEnd(getSpiContext());
+                        DiscoveryCustomMessage nextMsg = msgObj.newMessageOnRingEnd();
 
-                            if (nextMsg != null)
-                                addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
-                        }
+                        if (nextMsg != null)
+                            addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);

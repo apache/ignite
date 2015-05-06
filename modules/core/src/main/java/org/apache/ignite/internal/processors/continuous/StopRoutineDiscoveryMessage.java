@@ -26,7 +26,7 @@ import java.util.*;
 /**
  *
  */
-public class StopRoutineDiscoveryMessage implements RingEndAwareCustomMessage {
+public class StopRoutineDiscoveryMessage implements DiscoveryCustomMessage {
     /** Routine ID. */
     private final UUID routineId;
 
@@ -50,7 +50,7 @@ public class StopRoutineDiscoveryMessage implements RingEndAwareCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage newMessageOnRingEnd(IgniteSpiContext ctx) {
+    @Nullable @Override public DiscoveryCustomMessage newMessageOnRingEnd() {
         return new StopRoutineAckDiscoveryMessage(routineId);
     }
 }

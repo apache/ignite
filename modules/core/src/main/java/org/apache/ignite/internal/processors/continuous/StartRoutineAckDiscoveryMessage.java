@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -44,6 +45,11 @@ public class StartRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean forwardMinorVersion() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage newMessageOnRingEnd() {
+        return null;
     }
 
     /**

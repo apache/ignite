@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -76,5 +77,10 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean forwardMinorVersion() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage newMessageOnRingEnd() {
+        return null;
     }
 }

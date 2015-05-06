@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
@@ -29,4 +31,9 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @return {@code true} if minor topology version should be increased.
      */
     public boolean forwardMinorVersion();
+
+    /**
+     * Called when message passed the ring.
+     */
+    @Nullable public DiscoveryCustomMessage newMessageOnRingEnd();
 }
