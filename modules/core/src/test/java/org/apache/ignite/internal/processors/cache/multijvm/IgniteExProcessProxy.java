@@ -41,7 +41,7 @@ import java.util.concurrent.*;
  */
 public class IgniteExProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private transient static final Map<String, IgniteExProcessProxy> gridProxies = new ConcurrentHashMap<>();
+    private transient static final Map<String, IgniteExProcessProxy> gridProxies = new HashMap<>();
 
     /** Jvm process with ignite instance. */
     private transient final GridJavaProcess proc;

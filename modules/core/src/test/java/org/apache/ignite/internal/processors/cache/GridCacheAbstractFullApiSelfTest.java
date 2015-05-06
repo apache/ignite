@@ -294,17 +294,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected void runTest() throws Throwable {
-        if (isMultiJvm() && !isMultiJvmApplicable(getName())) {
-            log.info("Test" + getName() + " do not applicable for multi JVM");
-
-            return;
-        }
-
-        super.runTest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -319,19 +308,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         dfltIgnite = grid(0);
     }
 
-    /**
-     * @param testName Test name.
-     * @return <code>True</code> if test can be run in milti JVM mode.
-     */
-    protected boolean isMultiJvmApplicable(String testName) {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (isMultiJvm() && !isMultiJvmApplicable(getName()))
-            return;
-
         super.afterTest();
 
         IgniteCache<String, Integer> cache = jcache();
