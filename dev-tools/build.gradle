@@ -14,29 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+apply plugin: 'groovy'
 
-package org.apache.ignite.lang;
+repositories {
+    mavenCentral()
+}
 
-/**
- * Allows to enable asynchronous mode on Ignite APIs.
- */
-public interface IgniteAsyncSupport {
-    /**
-     * Gets instance of this component with asynchronous mode enabled.
-     *
-     * @return Instance of this component with asynchronous mode enabled.
-     */
-    public IgniteAsyncSupport withAsync();
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.2.1'
+}
 
-    /**
-     * @return {@code True} if asynchronous mode is enabled.
-     */
-    public boolean isAsync();
+task help {
+  println '''There are two interfaces to work with JIRA attachment validation tool
+  - to do the batch validation of all latest patch attachments
+     gradle slurp
+  - to grab a single JIRA's latest attachment and run test validation on it
+     JIRA_NUM=INGITE-### gradle patchapply'''
+}
 
-    /**
-     * Gets and resets future for previous asynchronous operation.
-     *
-     * @return Future for previous asynchronous operation.
-     */
-    public <R> IgniteFuture<R> future();
+task slurp (dependsOn: 'classes', type: JavaExec) {
+  args (project.buildDir, 'slurp')
+  main = 'jiraslurp'
+  classpath = sourceSets.main.runtimeClasspath
+}
+
+task patchapply (dependsOn: 'classes', type: JavaExec) {
+  args ("JIRA_NUM=${System.getenv('JIRA_NUM')}")
+  main = 'jiraslurp'
+  classpath = sourceSets.main.runtimeClasspath
 }
