@@ -60,6 +60,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsClientCacheSelfTest.class));
+        suite.addTest(new TestSuite(IgfsOneClientNodeTest.class));
 
         suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
 
