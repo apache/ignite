@@ -17,82 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.multijvm;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Multy Jvm tests.
  */
 public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        IgniteExProcessProxy.killAll(); // TODO: remove processes killing from here.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
     protected boolean isMultiJvm() {
         return true;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllRemoveAll() throws Exception {
-        super.testPutAllRemoveAll();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutRemove() throws Exception {
-        IgniteCache<Object, Object> c0 = grid(0).cache(null);
-        IgniteCache<Object, Object> c1 = grid(1).cache(null);
-
-        final int key = 1;
-        final int val = 3;
-
-        c0.put(key, val);
-
-        assertEquals(val, c0.get(key));
-        assertEquals(val, c1.get(key));
-
-        assertTrue(c1.remove(key));
-
-        U.sleep(1_000);
-
-        assertTrue(c0.get(key) == null || c1.get(key) == null);
-        assertNull(c1.get(key));
-        assertNull(c0.get(key));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutRemove2() throws Exception {
-        IgniteCache<Object, Object> c0 = grid(0).cache(null);
-        IgniteCache<Object, Object> c1 = grid(1).cache(null);
-
-        final int key = 1;
-        final int val = 3;
-
-        c1.put(key, val);
-
-        assertEquals(val, c1.get(key));
-        assertEquals(val, c0.get(key));
-
-        assertTrue(c0.remove(key));
-
-        U.sleep(1_000);
-
-        assertNull(c1.get(key));
-        assertNull(c0.get(key));
     }
 }
