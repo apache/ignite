@@ -32,13 +32,13 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.1.0-incubating-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <ignite.site>scp://localhost:/home</ignite.site>
         <ignite.site.folder>${project.artifactId}-${project.version}</ignite.site.folder>
-        <!--fix <attachartifact>...</> at apache-release profile if changed-->
+        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
         <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}</ignite.zip.pattern>
     </properties>
 
@@ -508,14 +508,8 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <attachartifact
-                                            file="${basedir}/target/bin/ignite-fabric-${project.version}.zip"
-                                            classifier="fabric"
-                                            type="zip"/>
-                                        <attachartifact
-                                            file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip"
-                                            classifier="hadoop"
-                                            type="zip"/>
+                                        <attachartifact file="${basedir}/target/bin/ignite-fabric-${project.version}.zip" classifier="fabric" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip" classifier="hadoop" type="zip" />
                                     </target>
                                 </configuration>
                             </execution>
