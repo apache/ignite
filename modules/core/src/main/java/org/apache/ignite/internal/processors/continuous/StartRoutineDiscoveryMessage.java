@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
 
 import java.util.*;
 
@@ -45,8 +45,6 @@ public class StartRoutineDiscoveryMessage implements RingEndAwareCustomMessage {
         this.routineId = routineId;
         this.startReqData = startReqData;
     }
-
-
 
     /** {@inheritDoc} */
     @Override public boolean forwardMinorVersion() {
@@ -85,5 +83,10 @@ public class StartRoutineDiscoveryMessage implements RingEndAwareCustomMessage {
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage newMessageOnRingEnd(IgniteSpiContext ctx) {
         return new StartRoutineAckDiscoveryMessage(routineId, errs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StartRoutineDiscoveryMessage.class, this, super.toString());
     }
 }
