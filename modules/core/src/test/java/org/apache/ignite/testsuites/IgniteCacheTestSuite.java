@@ -353,9 +353,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         // Iterators.
         suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());
 
-        // Add tx recovery test suite.
-        suite.addTest(IgniteCacheTxRecoverySelfTestSuite.suite());
-
         // Cache interceptor tests.
         suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite());
 

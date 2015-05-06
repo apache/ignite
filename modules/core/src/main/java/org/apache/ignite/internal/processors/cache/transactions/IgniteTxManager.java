@@ -727,14 +727,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param txId Transaction ID.
-     * @return Transaction with given ID.
-     */
-    @Nullable public IgniteInternalTx txx(GridCacheVersion txId) {
-        return idMap.get(txId);
-    }
-
-    /**
      * Handles prepare stage of 2PC.
      *
      * @param tx Transaction to prepare.
@@ -1770,6 +1762,45 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param ver Version.
+     * @return Future for flag indicating if transactions was committed.
+     */
+    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion ver) {
+        final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
+
+        final IgniteInternalTx tx = cctx.tm().tx(ver);
+
+        if (tx != null) {
+            assert tx.near() && tx.local() : tx;
+
+            if (log.isDebugEnabled())
+                log.debug("Found near transaction, will wait for completion: " + tx);
+
+            tx.finishFuture().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                    TransactionState state = tx.state();
+
+                    if (log.isDebugEnabled())
+                        log.debug("Near transaction finished with state: " + state);
+
+                    resFut.onDone(state == COMMITTED);
+                }
+            });
+
+            return resFut;
+        }
+
+        Boolean committed = completedVers.get(ver);
+
+        if (log.isDebugEnabled())
+            log.debug("Near transaction committed: " + committed);
+
+        resFut.onDone(committed != null && committed);
+
+        return resFut;
+    }
+
+    /**
      * @param nearVer Near version ID.
      * @param txNum Number of transactions.
      * @param fut Result future.
@@ -1900,40 +1931,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Gets local transaction for pessimistic tx recovery.
-     *
-     * @param nearXidVer Near tx ID.
-     * @return Near local or colocated local transaction.
-     */
-    @Nullable public IgniteInternalTx localTxForRecovery(GridCacheVersion nearXidVer, boolean markFinalizing) {
-        // First check if we have near transaction with this ID.
-        IgniteInternalTx tx = idMap.get(nearXidVer);
-
-        if (tx == null) {
-            // Check all local transactions and mark them as waiting for recovery to prevent finish race.
-            for (IgniteInternalTx txEx : idMap.values()) {
-                if (nearXidVer.equals(txEx.nearXidVersion())) {
-                    if (!markFinalizing || !txEx.markFinalizing(RECOVERY_WAIT))
-                        tx = txEx;
-                }
-            }
-        }
-
-        // Either we found near transaction or one of transactions is being committed by user.
-        // Wait for it and send reply.
-        if (tx != null && tx.local())
-            return tx;
-
-        return null;
-    }
-
-    /**
      * Commits or rolls back prepared transaction.
      *
      * @param tx Transaction.
      * @param commit Whether transaction should be committed or rolled back.
      */
-    public void finishOptimisticTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
+    public void finishTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
         if (log.isDebugEnabled())
             log.debug("Finishing prepared transaction [tx=" + tx + ", commit=" + commit + ']');
 
@@ -1958,67 +1961,28 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Commits or rolls back pessimistic transaction.
+     * Commits transaction in case when node started transaction failed, but all related
+     * transactions were prepared (invalidates transaction if it is not fully prepared).
      *
-     * @param tx Transaction to finish.
-     * @param commitInfo Commit information.
+     * @param tx Transaction.
      */
-    public void finishPessimisticTxOnRecovery(final IgniteInternalTx tx, GridCacheCommittedTxInfo commitInfo) {
-        if (!tx.markFinalizing(RECOVERY_FINISH)) {
-            if (log.isDebugEnabled())
-                log.debug("Will not try to finish pessimistic transaction (could not mark as finalizing): " + tx);
+    public void commitIfPrepared(IgniteInternalTx tx) {
+        assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
+        assert !F.isEmpty(tx.transactionNodes()) : tx;
+        assert tx.nearXidVersion() != null : tx;
 
-            return;
-        }
+        GridCacheTxRecoveryFuture fut = new GridCacheTxRecoveryFuture(
+            cctx,
+            tx,
+            tx.originatingNodeId(),
+            tx.transactionNodes());
 
-        if (tx instanceof GridDistributedTxRemoteAdapter) {
-            IgniteTxRemoteEx rmtTx = (IgniteTxRemoteEx)tx;
+        cctx.mvcc().addFuture(fut);
 
-            rmtTx.doneRemote(tx.xidVersion(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
-        }
+        if (log.isDebugEnabled())
+            log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
 
-        try {
-            tx.prepare();
-
-            if (commitInfo != null) {
-                for (IgniteTxEntry entry : commitInfo.recoveryWrites()) {
-                    IgniteTxEntry write = tx.writeMap().get(entry.txKey());
-
-                    if (write != null) {
-                        GridCacheEntryEx cached = write.cached();
-
-                        IgniteTxEntry recovered = entry.cleanCopy(write.context());
-
-                        if (cached == null || cached.detached())
-                            cached = write.context().cache().entryEx(entry.key(), tx.topologyVersion());
-
-                        recovered.cached(cached);
-
-                        tx.writeMap().put(entry.txKey(), recovered);
-
-                        continue;
-                    }
-
-                    // If write was not found, check read.
-                    IgniteTxEntry read = tx.readMap().remove(entry.txKey());
-
-                    if (read != null)
-                        tx.writeMap().put(entry.txKey(), entry);
-                }
-
-                tx.commitAsync().listen(new CommitListener(tx));
-            }
-            else
-                tx.rollbackAsync();
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to prepare pessimistic transaction (will invalidate): " + tx, e);
-
-            salvageTx(tx);
-        }
+        fut.prepare();
     }
 
     /**
@@ -2090,31 +2054,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             finally {
                 cctx.kernalContext().gateway().readUnlock();
             }
-        }
-
-        /**
-         * Commits optimistic transaction in case when node started transaction failed, but all related
-         * transactions were prepared (invalidates transaction if it is not fully prepared).
-         *
-         * @param tx Transaction.
-         */
-        private void commitIfPrepared(IgniteInternalTx tx) {
-            assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
-            assert !F.isEmpty(tx.transactionNodes()) : tx;
-            assert tx.nearXidVersion() != null : tx;
-
-            GridCacheOptimisticCheckPreparedTxFuture fut = new GridCacheOptimisticCheckPreparedTxFuture<>(
-                cctx,
-                tx,
-                evtNodeId,
-                tx.transactionNodes());
-
-            cctx.mvcc().addFuture(fut);
-
-            if (log.isDebugEnabled())
-                log.debug("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
-
-            fut.prepare();
         }
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -27,10 +26,9 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * Message sent to check that transactions related to some optimistic transaction
- * were prepared on remote node.
+ * Transactions recovery check response.
  */
-public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBaseMessage {
+public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,45 +38,32 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
     /** Mini future ID. */
     private IgniteUuid miniId;
 
-    /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
-
-    /** Expected number of transactions on node. */
-    private int txNum;
-
-    /** System transaction flag. */
-    private boolean sys;
+    /** Flag indicating if all remote transactions were prepared. */
+    private boolean success;
 
     /**
      * Empty constructor required by {@link Externalizable}
      */
-    public GridCacheOptimisticCheckPreparedTxRequest() {
+    public GridCacheTxRecoveryResponse() {
         // No-op.
     }
 
     /**
-     * @param tx Transaction.
-     * @param txNum Expected number of transactions on remote node.
+     * @param txId Transaction ID.
      * @param futId Future ID.
      * @param miniId Mini future ID.
+     * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx tx, int txNum, IgniteUuid futId,
-        IgniteUuid miniId) {
-        super(tx.xidVersion(), 0);
-
-        nearXidVer = tx.nearXidVersion();
-        sys = tx.system();
+    public GridCacheTxRecoveryResponse(GridCacheVersion txId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        boolean success)
+    {
+        super(txId, 0);
 
         this.futId = futId;
         this.miniId = miniId;
-        this.txNum = txNum;
-    }
-
-    /**
-     * @return Near version.
-     */
-    public GridCacheVersion nearXidVersion() {
-        return nearXidVer;
+        this.success = success;
     }
 
     /**
@@ -96,17 +81,10 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
     }
 
     /**
-     * @return Expected number of transactions on node.
+     * @return {@code True} if all remote transactions were prepared.
      */
-    public int transactions() {
-        return txNum;
-    }
-
-    /**
-     * @return System transaction flag.
-     */
-    public boolean system() {
-        return sys;
+    public boolean success() {
+        return success;
     }
 
     /** {@inheritDoc} */
@@ -137,19 +115,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeBoolean("sys", sys))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeInt("txNum", txNum))
+                if (!writer.writeBoolean("success", success))
                     return false;
 
                 writer.incrementState();
@@ -187,23 +153,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
                 reader.incrementState();
 
             case 10:
-                nearXidVer = reader.readMessage("nearXidVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                sys = reader.readBoolean("sys");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                txNum = reader.readInt("txNum");
+                success = reader.readBoolean("success");
 
                 if (!reader.isLastRead())
                     return false;
@@ -217,16 +167,16 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 16;
+        return 17;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 11;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheOptimisticCheckPreparedTxRequest.class, this, "super", super.toString());
+        return S.toString(GridCacheTxRecoveryResponse.class, this, "super", super.toString());
     }
 }
