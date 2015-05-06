@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
-import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -44,12 +44,12 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
         if (cfg.isClientMode() != null && cfg.isClientMode()) {
             TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
 
-            Collection<String> addrs = new ArrayList<>(ipFinder.getRegisteredAddresses().size());
+            String firstSrvAddr = F.first(ipFinder.getRegisteredAddresses()).toString();
 
-            for (InetSocketAddress sockAddr : ipFinder.getRegisteredAddresses())
-                addrs.add(sockAddr.getHostString() + ":" + sockAddr.getPort());
+            if (firstSrvAddr.startsWith("/"))
+                firstSrvAddr = firstSrvAddr.substring(1);
 
-            clientFinder.setAddresses(addrs);
+            clientFinder.setAddresses(Collections.singletonList(firstSrvAddr));
 
             TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
             discoverySpi.setIpFinder(clientFinder);
