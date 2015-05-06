@@ -27,6 +27,9 @@ import java.util.*;
  *
  */
 public class StopRoutineDiscoveryMessage implements DiscoveryCustomMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Routine ID. */
     private final UUID routineId;
 

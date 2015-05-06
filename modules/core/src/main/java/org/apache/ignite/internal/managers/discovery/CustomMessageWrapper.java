@@ -25,6 +25,9 @@ import org.jetbrains.annotations.*;
  */
 class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final DiscoveryCustomMessage delegate;
 
     /**
