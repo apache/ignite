@@ -35,11 +35,9 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Future verifying that all remote transactions related to some
- * optimistic transaction were prepared.
+ * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
-public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
-    implements GridCacheFuture<Boolean> {
+public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolean> implements GridCacheFuture<Boolean> {
     /** */         
     private static final long serialVersionUID = 0L;
     
@@ -53,7 +51,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private boolean trackable = true;
 
     /** Context. */
-    private final GridCacheSharedContext<K, V> cctx;
+    private final GridCacheSharedContext<?, ?> cctx;
 
     /** Future ID. */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
@@ -80,9 +78,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx,
+    public GridCacheTxRecoveryFuture(GridCacheSharedContext<?, ?> cctx,
         IgniteInternalTx tx,
-        UUID failedNodeId,
+         UUID failedNodeId,
         Map<UUID, Collection<UUID>> txNodes)
     {
         super(cctx.kernalContext(), CU.boolReducer());
@@ -93,7 +91,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
         this.failedNodeId = failedNodeId;
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheOptimisticCheckPreparedTxFuture.class);
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheTxRecoveryFuture.class);
 
         nodes = new GridLeanMap<>();
 
@@ -153,7 +151,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                 add(fut);
 
-                GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(
+                GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(
                     tx,
                     0,
                     true,
@@ -259,7 +257,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                     add(fut);
 
-                    GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(tx,
+                    GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(tx,
                         nodeTransactions(id),
                         false,
                         futureId(),
@@ -283,7 +281,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                 add(fut);
 
-                GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(
+                GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(
                     tx,
                     nodeTransactions(nodeId),
                     false,
@@ -331,7 +329,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param nodeId Node ID.
      * @param res Response.
      */
-    public void onResult(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse res) {
+    public void onResult(UUID nodeId, GridCacheTxRecoveryResponse res) {
         if (!isDone()) {
             for (IgniteInternalFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
@@ -398,7 +396,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
             if (err == null) {
                 assert res != null;
 
-                cctx.tm().finishOptimisticTxOnRecovery(tx, res);
+                cctx.tm().finishTxOnRecovery(tx, res);
             }
             else {
                 if (err instanceof ClusterTopologyCheckedException && nearTxCheck) {
@@ -430,7 +428,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheOptimisticCheckPreparedTxFuture.class, this, "super", super.toString());
+        return S.toString(GridCacheTxRecoveryFuture.class, this, "super", super.toString());
     }
 
     /**
@@ -496,7 +494,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
         /**
          * @param res Result callback.
          */
-        private void onResult(GridCacheOptimisticCheckPreparedTxResponse res) {
+        private void onResult(GridCacheTxRecoveryResponse res) {
             onDone(res.success());
         }
 

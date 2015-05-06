@@ -26,9 +26,9 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * Check prepared transactions response.
+ * Transactions recovery check response.
  */
-public class GridCacheOptimisticCheckPreparedTxResponse extends GridDistributedBaseMessage {
+public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ public class GridCacheOptimisticCheckPreparedTxResponse extends GridDistributedB
     /**
      * Empty constructor required by {@link Externalizable}
      */
-    public GridCacheOptimisticCheckPreparedTxResponse() {
+    public GridCacheTxRecoveryResponse() {
         // No-op.
     }
 
@@ -54,8 +54,11 @@ public class GridCacheOptimisticCheckPreparedTxResponse extends GridDistributedB
      * @param miniId Mini future ID.
      * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
      */
-    public GridCacheOptimisticCheckPreparedTxResponse(GridCacheVersion txId, IgniteUuid futId, IgniteUuid miniId,
-        boolean success) {
+    public GridCacheTxRecoveryResponse(GridCacheVersion txId,
+        IgniteUuid futId,
+        IgniteUuid miniId,
+        boolean success)
+    {
         super(txId, 0);
 
         this.futId = futId;
@@ -174,6 +177,6 @@ public class GridCacheOptimisticCheckPreparedTxResponse extends GridDistributedB
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheOptimisticCheckPreparedTxResponse.class, this, "super", super.toString());
+        return S.toString(GridCacheTxRecoveryResponse.class, this, "super", super.toString());
     }
 }

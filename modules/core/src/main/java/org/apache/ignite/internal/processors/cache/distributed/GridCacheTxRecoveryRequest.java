@@ -29,7 +29,7 @@ import java.nio.*;
 /**
  * Message sent to check that transactions related to transaction were prepared on remote node.
  */
-public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBaseMessage {
+public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -54,18 +54,18 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
     /**
      * Empty constructor required by {@link Externalizable}
      */
-    public GridCacheOptimisticCheckPreparedTxRequest() {
+    public GridCacheTxRecoveryRequest() {
         // No-op.
     }
 
     /**
      * @param tx Transaction.
      * @param txNum Expected number of transactions on remote node.
-     * @param nearTxCheck
+     * @param nearTxCheck {@code True} if should check only tx on near node.
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx tx,
+    public GridCacheTxRecoveryRequest(IgniteInternalTx tx,
         int txNum,
         boolean nearTxCheck,
         IgniteUuid futId,
@@ -256,6 +256,6 @@ public class GridCacheOptimisticCheckPreparedTxRequest extends GridDistributedBa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheOptimisticCheckPreparedTxRequest.class, this, "super", super.toString());
+        return S.toString(GridCacheTxRecoveryRequest.class, this, "super", super.toString());
     }
 }
