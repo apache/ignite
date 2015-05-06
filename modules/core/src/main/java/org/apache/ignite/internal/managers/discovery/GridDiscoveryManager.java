@@ -356,7 +356,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
                 else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    if (data != null && ((DiscoveryCustomMessage)data).forwardMinorVersion()) {
+                    if (data != null && ((DiscoverySpiCustomMessage)data).forwardMinorVersion()) {
                         minorTopVer++;
 
                         verChanged = true;
@@ -381,16 +381,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     if (data != null) {
-                        for (Class cls = data.getClass(); cls != null; cls = cls.getSuperclass()) {
+                        DiscoveryCustomMessage customMsg = ((CustomMessageWrapper)data).delegate();
+
+                        for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                             List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
                             if (list != null) {
                                 for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
                                     try {
-                                        lsnr.onCustomEvent(node, (DiscoveryCustomMessage)data);
+                                        lsnr.onCustomEvent(node, customMsg);
                                     }
                                     catch (Exception e) {
-                                        U.error(log, "Failed to notify direct custom event listener: " + data, e);
+                                        U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
                                     }
                                 }
                             }
@@ -1407,10 +1409,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @param evt Event.
+     * @param msg Custom message.
      */
-    public void sendCustomEvent(DiscoveryCustomMessage evt) {
-        getSpi().sendCustomEvent(evt);
+    public void sendCustomEvent(DiscoveryCustomMessage msg) {
+        getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
     }
 
     /**
@@ -1634,7 +1636,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collection<ClusterNode> topSnapshot,
             @Nullable Serializable data
         ) {
-            assert node != null;
+            assert node != null : data;
 
             evts.add(F.t(type, topVer, node, topSnapshot, data));
         }
