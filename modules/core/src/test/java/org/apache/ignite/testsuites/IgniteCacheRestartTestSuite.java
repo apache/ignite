@@ -21,7 +21,6 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 
 /**
  * In-Memory Data Grid stability test suite on changing topology.
