@@ -60,6 +60,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
+    /** Default open connection. */
+    public static final long DFLT_OPEN_CONN_TIMEOUT = 5000;
+
     /** */
     private static final Object JOIN_TIMEOUT = "JOIN_TIMEOUT";
 
@@ -106,6 +109,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private final Timer timer = new Timer("TcpClientDiscoverySpi.timer");
 
     /** */
+    private long openConnTimeout = DFLT_OPEN_CONN_TIMEOUT;
+
+    /** */
     private MessageWorker msgWorker;
 
     /** {@inheritDoc} */
@@ -136,6 +142,20 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** {@inheritDoc} */
     @Override public long getNetworkTimeout() {
         return netTimeout;
+    }
+
+    /**
+     * @return Timeout for opening socket.
+     */
+    public long getOpenConnectionTimeout() {
+        return openConnTimeout;
+    }
+
+    /**
+     * @param openConnTimeout Timeout for opening socket
+     */
+    public void setOpenConnectionTimeout(long openConnTimeout) {
+        this.openConnTimeout = openConnTimeout;
     }
 
     /** {@inheritDoc} */
@@ -213,6 +233,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         assertParameter(ackTimeout > 0, "ackTimeout > 0");
         assertParameter(hbFreq > 0, "heartbeatFreq > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
+        assertParameter(openConnTimeout > 0, "openConnectionTimeout > 0");
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -303,14 +324,12 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     @Override public void spiStop() throws IgniteSpiException {
         timer.cancel();
 
-        if (msgWorker.isAlive()) { // Should always be alive
+        if (msgWorker != null && msgWorker.isAlive()) { // Should always be alive
             msgWorker.addMessage(SPI_STOP);
 
             try {
-                if (!leaveLatch.await(netTimeout, MILLISECONDS)) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Failed to left node: timeout [nodeId=" + locNode + ']');
-                }
+                if (!leaveLatch.await(netTimeout, MILLISECONDS))
+                    U.warn(log, "Failed to left node: timeout [nodeId=" + locNode + ']');
             }
             catch (InterruptedException ignored) {
 
@@ -413,11 +432,14 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     }
 
     /**
-     *
+     * @return Opened socket or {@code null} if timeout.
+     * @see #openConnTimeout
      */
-    @NotNull
-    private Socket joinTopology(boolean recon) throws IgniteSpiException, InterruptedException {
+    @SuppressWarnings("BusyWait")
+    @Nullable private Socket joinTopology(boolean recon) throws IgniteSpiException, InterruptedException {
         Collection<InetSocketAddress> addrs = null;
+
+        long startTime = U.currentTimeMillis();
 
         while (true) {
             if (Thread.currentThread().isInterrupted())
@@ -432,6 +454,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 }
                 else {
                     U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + ipFinder);
+
+                    if ((U.currentTimeMillis() - startTime) > openConnTimeout)
+                        return null;
 
                     Thread.sleep(2000);
                 }
@@ -469,13 +494,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                     msg.client(true);
 
-                    System.out.println("TcpClientDiscoverySpi.SocketReader: join write: " + msg);
-
                     writeToSocket(sock, msg);
 
                     int res = readReceipt(sock, ackTimeout);
-
-                    System.out.println("TcpClientDiscoverySpi.SocketReader: join res: " + (res == RES_OK ? "OK" : "" + res));
 
                     switch (res) {
                         case RES_OK:
@@ -507,6 +528,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             if (addrs.isEmpty()) {
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
+
+                if ((U.currentTimeMillis() - startTime) > openConnTimeout)
+                    return null;
 
                 Thread.sleep(2000);
             }
@@ -674,9 +698,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                             msg.senderNodeId(rmtNodeId);
 
-                            if (!(msg instanceof TcpDiscoveryHeartbeatMessage))
-                                System.out.println("TcpClientDiscoverySpi.SocketReader: read: " + msg);
-
                             if (log.isDebugEnabled())
                                 log.debug("Message has been received: " + msg);
 
@@ -787,9 +808,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 }
 
                 try {
-                    if (!(msg instanceof TcpDiscoveryHeartbeatMessage))
-                        System.out.println("TcpClientDiscoverySpi.SocketReader: write: " + msg);
-
                     writeToSocket(sock, msg);
 
                     msg = null;
@@ -845,6 +863,12 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
             try {
                 sock = joinTopology(true);
+
+                if (sock == null) {
+                    log.error("Failed to reconnect to cluster: timeout.");
+
+                    return;
+                }
 
                 if (isInterrupted())
                     throw new InterruptedException();
@@ -921,6 +945,14 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             try {
                 final Socket sock = joinTopology(false);
 
+                if (sock == null) {
+                    joinErr = new IgniteSpiException("Join process timed out");
+
+                    joinLatch.countDown();
+
+                    return;
+                }
+
                 currSock = sock;
 
                 sockWriter.setSocket(sock);
@@ -936,9 +968,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                 while (true) {
                     Object msg = queue.take();
-
-                    if (!(msg instanceof TcpDiscoveryHeartbeatMessage))
-                        System.out.println("TcpClientDiscoverySpi.MessageWorker: process: " + msg);
 
                     if (msg == JOIN_TIMEOUT) {
                         if (joinLatch.getCount() > 0) {
@@ -1016,7 +1045,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                                 joinLatch.countDown();
 
-                                continue;
+                                break;
                             }
                         }
 
