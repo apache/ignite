@@ -303,14 +303,12 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     @Override public void spiStop() throws IgniteSpiException {
         timer.cancel();
 
-        if (msgWorker.isAlive()) { // Should always be alive
+        if (msgWorker != null && msgWorker.isAlive()) { // Should always be alive
             msgWorker.addMessage(SPI_STOP);
 
             try {
-                if (!leaveLatch.await(netTimeout, MILLISECONDS)) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Failed to left node: timeout [nodeId=" + locNode + ']');
-                }
+                if (!leaveLatch.await(netTimeout, MILLISECONDS))
+                    U.warn(log, "Failed to left node: timeout [nodeId=" + locNode + ']');
             }
             catch (InterruptedException ignored) {
 
@@ -1000,7 +998,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                                 joinLatch.countDown();
 
-                                continue;
+                                break;
                             }
                         }
 
