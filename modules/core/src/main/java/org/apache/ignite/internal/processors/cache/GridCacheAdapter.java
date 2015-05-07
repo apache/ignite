@@ -489,7 +489,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return values().isEmpty();
+        try {
+            return localSize(CachePeekModes.ONHEAP_ONLY) == 0;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
