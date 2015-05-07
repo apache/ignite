@@ -21,12 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
@@ -86,6 +88,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private static CountDownLatch msgLatch;
 
+    /** */
+    private UUID nodeId;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -123,6 +128,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
             cfg.setNodeId(UUID.fromString(nodeId));
         }
 
+        if (nodeId != null)
+            cfg.setNodeId(nodeId);
+
         return cfg;
     }
 
@@ -146,6 +154,8 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllClients(true);
         stopAllServers(true);
+
+        nodeId = null;
 
         assert G.allGrids().isEmpty();
     }
@@ -287,7 +297,25 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testClientReconnect() throws Exception {
+    public void testPing() throws Exception {
+        startServerNodes(2);
+        startClientNodes(1);
+
+        Ignite srv0 = G.ignite("server-0");
+        Ignite srv1 = G.ignite("server-1");
+        Ignite client = G.ignite("client-0");
+
+        assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
+        assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
+
+        assert ((IgniteEx)client).context().discovery().pingNode(srv0.cluster().localNode().id());
+        assert ((IgniteEx)client).context().discovery().pingNode(srv1.cluster().localNode().id());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectOnRouterFail() throws Exception {
         clientsPerSrv = 1;
 
         startServerNodes(3);
@@ -308,6 +336,31 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         await(clientFailedLatch);
 
         checkNodes(2, 3);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectOnNetworkProblem() throws Exception {
+        clientsPerSrv = 1;
+
+        startServerNodes(3);
+        startClientNodes(3);
+
+        checkNodes(3, 3);
+
+        setClientRouter(2, 0);
+
+        srvFailedLatch = new CountDownLatch(2);
+        clientFailedLatch = new CountDownLatch(3);
+
+        attachListeners(2, 3);
+
+        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brokeConnection();
+
+        G.ignite("client-2").message().remoteListen(null, new MessageListener()); // Send some discovery message.
+
+        checkNodes(3, 3);
     }
 
     /**
@@ -559,6 +612,86 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         finally {
             if (id != null)
                 msg.stopRemoteListen(id);
+        }
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testDuplicateId() throws Exception {
+        startServerNodes(2);
+
+        nodeId = G.ignite("server-1").cluster().localNode().id();
+
+        try {
+            startGrid("client-0");
+
+            assert false;
+        }
+        catch (IgniteCheckedException e) {
+            IgniteSpiException spiEx = e.getCause(IgniteSpiException.class);
+
+            assert spiEx != null : e;
+            assert spiEx.getMessage().contains("same ID") : spiEx.getMessage();
+        }
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testJoinTimeout() throws Exception {
+        startServerNodes(2);
+
+        final CountDownLatch cnt = new CountDownLatch(1);
+
+        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(
+            new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    try {
+                        cnt.await(10, MINUTES);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IgniteInterruptedException(e);
+                    }
+                }
+            });
+
+        try {
+            startGrid("client-0");
+
+            assert false;
+        }
+        catch (IgniteCheckedException e) {
+            cnt.countDown();
+
+            IgniteSpiException spiEx = e.getCause(IgniteSpiException.class);
+
+            assert spiEx != null : e;
+            assert spiEx.getMessage().contains("Join process timed out") : spiEx.getMessage();
+        }
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void testGridStartTime() throws Exception {
+        startServerNodes(2);
+
+        startClientNodes(2);
+
+        long startTime = -1;
+
+        for (Ignite g : G.allGrids()) {
+            IgniteEx kernal = (IgniteKernal)g;
+
+            assertTrue(kernal.context().discovery().gridStartTime() > 0);
+
+            if (startTime == -1)
+                startTime = kernal.context().discovery().gridStartTime();
+            else
+                assertEquals(startTime, kernal.context().discovery().gridStartTime());
         }
     }
 

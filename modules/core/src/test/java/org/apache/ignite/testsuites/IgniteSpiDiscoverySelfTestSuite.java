@@ -53,6 +53,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(TcpClientDiscoverySelfTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoverySpiConfigSelfTest.class));
+        suite.addTest(new TestSuite(TcpClientDiscoveryMarshallerCheckSelfTest.class));
 
         return suite;
     }
