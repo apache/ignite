@@ -69,7 +69,7 @@ public class CodeGenerator {
      * @throws IllegalStateException If passed string is not valid java identifier.
      */
     private static void checkValidJavaIdentifier(String identifier, boolean split, String msg, String type)
-        throws IllegalStateException{
+        throws IllegalStateException {
         if (identifier.isEmpty())
             throw new IllegalStateException(msg + " could not be empty!");
 
@@ -674,12 +674,12 @@ public class CodeGenerator {
             if (!groups.isEmpty()) {
                 add2(src, "// Groups for " + tbl + ".");
                 add2(src, (first ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
-                    " grps = new LinkedHashMap<>();");
+                    "grps = new LinkedHashMap<>();");
                 add0(src, "");
 
                 for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
                     add2(src, (firstGrp ? "LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> " : "") +
-                            "grpItems = new LinkedHashMap<>();");
+                        "grpItems = new LinkedHashMap<>();");
                     add0(src, "");
 
                     for (Map.Entry<String, IndexItem> grpItem : group.getValue().entrySet()) {
