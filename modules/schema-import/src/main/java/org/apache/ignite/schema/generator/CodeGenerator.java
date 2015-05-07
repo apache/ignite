@@ -674,7 +674,7 @@ public class CodeGenerator {
             if (!groups.isEmpty()) {
                 add2(src, "// Groups for " + tbl + ".");
                 add2(src, (first ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
-                    " grps = new LinkedHashMap<>();");
+                    "grps = new LinkedHashMap<>();");
                 add0(src, "");
 
                 for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
