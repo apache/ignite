@@ -202,7 +202,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                         unregisterRemote(routineId);
 
-                        if (((TcpDiscoveryNode)snd).clientRouterNodeId() != null) {
+                        if (snd.isClient()) {
                             Map<UUID, LocalRoutineInfo> infoMap = clientInfos.get(snd.id());
 
                             if (infoMap != null)
@@ -647,7 +647,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', e);
         }
 
-        if (((TcpDiscoveryNode)node).clientRouterNodeId() != null) {
+        if (node.isClient()) {
             Map<UUID, LocalRoutineInfo> clientRouteMap = clientInfos.get(node.id());
 
             if (clientRouteMap == null) {
