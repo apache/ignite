@@ -3401,7 +3401,18 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (routerNode == null)
                     throw new IgniteSpiException("Router node for client does not exist: " + node);
 
-                assert !routerNode.isClient();
+                if (routerNode.isClient())
+                    throw new IgniteSpiException("Router node is a client node: " + node);
+
+                if (routerNode.id().equals(getLocalNodeId())) {
+                    ClientMessageWorker worker = clientMsgWorkers.get(node.id());
+
+                    msg.verify(getLocalNodeId()); // Client worker require verified messages.
+
+                    worker.addMessage(msg);
+
+                    return;
+                }
 
                 trySendMessageDirectly(routerNode, msg);
 
