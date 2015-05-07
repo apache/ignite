@@ -46,10 +46,8 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
      *
      * @param val Value.
      * @param ver Version.
-     * @throws IgniteCheckedException If value unmarshalling failed.
      */
-    public void resetFromPrimary(CacheObject val, GridCacheVersion ver)
-        throws IgniteCheckedException {
+    public void resetFromPrimary(CacheObject val, GridCacheVersion ver) {
         value(val);
 
         this.ver = ver;

@@ -683,11 +683,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
-        GridNearTxPrepareFuture fut = (GridNearTxPrepareFuture)prepFut.get();
+        GridAbstractNearTxPrepareFuture fut = (GridAbstractNearTxPrepareFuture)prepFut.get();
 
         if (fut == null) {
             // Future must be created before any exception can be thrown.
-            fut = new GridNearTxPrepareFuture<>(cctx, this);
+            fut = optimistic() ? new GridNearOptimisticTxPrepareFuture(cctx, this) :
+                new GridNearPessimisticTxPrepareFuture(cctx, this);
 
             if (!prepFut.compareAndSet(null, fut))
                 return prepFut.get();
@@ -698,41 +699,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         mapExplicitLocks();
 
-        // For pessimistic mode we don't distribute prepare request and do not lock topology version
-        // as it was fixed on first lock.
-        if (pessimistic()) {
-            if (!state(PREPARING)) {
-                if (setRollbackOnly()) {
-                    if (timedOut())
-                        fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was " +
-                            "rolled back: " + this));
-                    else
-                        fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" +
-                            state() + ", tx=" + this + ']'));
-                }
-                else
-                    fut.onError(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare " +
-                        "[state=" + state() + ", tx=" + this + ']'));
-
-                return fut;
-            }
-
-            try {
-                userPrepare();
-
-                // Make sure to add future before calling prepare.
-                cctx.mvcc().addFuture(fut);
-
-                fut.prepare();
-            }
-            catch (IgniteCheckedException e) {
-                fut.onError(e);
-            }
-        }
-        else {
-            // In optimistic mode we must wait for topology map update.
-            fut.prepare();
-        }
+        fut.prepare();
 
         return fut;
     }

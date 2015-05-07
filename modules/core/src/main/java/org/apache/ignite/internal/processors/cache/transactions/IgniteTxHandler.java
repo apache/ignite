@@ -362,7 +362,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
-        GridNearTxPrepareFuture fut = (GridNearTxPrepareFuture)ctx.mvcc()
+        GridAbstractNearTxPrepareFuture fut = (GridAbstractNearTxPrepareFuture)ctx.mvcc()
             .<IgniteInternalTx>future(res.version(), res.futureId());
 
         if (fut == null) {
