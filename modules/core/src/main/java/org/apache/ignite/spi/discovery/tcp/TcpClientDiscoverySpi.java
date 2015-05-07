@@ -466,13 +466,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                     msg.client(true);
 
-                    System.out.println("TcpClientDiscoverySpi.SocketReader: join write: " + msg);
-
                     writeToSocket(sock, msg);
 
                     int res = readReceipt(sock, ackTimeout);
-
-                    System.out.println("TcpClientDiscoverySpi.SocketReader: join res: " + (res == RES_OK ? "OK" : "" + res));
 
                     switch (res) {
                         case RES_OK:
@@ -671,9 +667,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                             msg.senderNodeId(rmtNodeId);
 
-                            if (!(msg instanceof TcpDiscoveryHeartbeatMessage))
-                                System.out.println("TcpClientDiscoverySpi.SocketReader: read: " + msg);
-
                             if (log.isDebugEnabled())
                                 log.debug("Message has been received: " + msg);
 
@@ -784,9 +777,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 }
 
                 try {
-                    if (!(msg instanceof TcpDiscoveryHeartbeatMessage))
-                        System.out.println("TcpClientDiscoverySpi.SocketReader: write: " + msg);
-
                     writeToSocket(sock, msg);
 
                     msg = null;
@@ -933,9 +923,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                 while (true) {
                     Object msg = queue.take();
-
-                    if (!(msg instanceof TcpDiscoveryHeartbeatMessage))
-                        System.out.println("TcpClientDiscoverySpi.MessageWorker: process: " + msg);
 
                     if (msg == JOIN_TIMEOUT) {
                         if (joinLatch.getCount() > 0) {
