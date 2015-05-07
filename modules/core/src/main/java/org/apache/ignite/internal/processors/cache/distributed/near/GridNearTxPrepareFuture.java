@@ -648,11 +648,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             add(fut);
 
             if (node.isLocal()) {
-                cctx.tm().txHandler().prepareTx(node.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
-                    @Override public void apply(GridNearTxPrepareResponse res) {
-                        fut.onResult(node.id(), res);
-                    }
-                });
+//                cctx.tm().txHandler().prepareTx(node.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
+//                    @Override public void apply(GridNearTxPrepareResponse res) {
+//                        fut.onResult(node.id(), res);
+//                    }
+//                });
             }
             else {
                 try {
@@ -755,11 +755,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            cctx.tm().txHandler().prepareTx(n.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
-                @Override public void apply(GridNearTxPrepareResponse res) {
-                    fut.onResult(n.id(), res);
-                }
-            });
+//            cctx.tm().txHandler().prepareTx(n.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
+//                @Override public void apply(GridNearTxPrepareResponse res) {
+//                    fut.onResult(n.id(), res);
+//                }
+//            });
         }
         else {
             assert !tx.groupLock() : "Got group lock transaction that is mapped on remote node [tx=" + tx +

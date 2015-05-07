@@ -4343,7 +4343,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertEquals(val1, cacheSkipStore.invoke(key, new SetValueProcessor(val2)));
             assertEquals(i, map.get(key));
-            assertEquals(val2, cacheSkipStore.get(key));
+            assertEquals("For key " + key, val2, cacheSkipStore.get(key));
         }
 
         for (String key : keys) {

@@ -203,9 +203,18 @@ public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepar
             add(fut);
 
             if (node.isLocal()) {
-                cctx.tm().txHandler().prepareTx(node.id(), tx, req, new CI1<GridNearTxPrepareResponse>() {
-                    @Override public void apply(GridNearTxPrepareResponse res) {
-                        fut.onResult(res);
+                IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(node.id(),
+                    tx,
+                    req);
+
+                prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                    @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                        try {
+                            fut.onResult(prepFut.get());
+                        }
+                        catch (IgniteCheckedException e) {
+                            fut.onError(e);
+                        }
                     }
                 });
             }

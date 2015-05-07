@@ -54,10 +54,9 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
         suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
 
-        // TODO IGNITE-157.
-        // suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
-        // suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
-        // suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
+        suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);

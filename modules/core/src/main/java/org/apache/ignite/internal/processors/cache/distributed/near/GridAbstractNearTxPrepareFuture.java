@@ -153,6 +153,9 @@ public abstract class GridAbstractNearTxPrepareFuture extends GridCompoundIdenti
      * @param res Response.
      */
     protected final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
+        if (res == null)
+            return;
+
         assert res.error() == null : res;
         assert F.isEmpty(res.invalidPartitions()) : res;
 
