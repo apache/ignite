@@ -34,5 +34,6 @@ public class TcpClientDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTe
         checkNegativeSpiProperty(new TcpClientDiscoverySpi(), "ackTimeout", 0);
         checkNegativeSpiProperty(new TcpClientDiscoverySpi(), "heartbeatFrequency", 0);
         checkNegativeSpiProperty(new TcpClientDiscoverySpi(), "threadPriority", -1);
+        checkNegativeSpiProperty(new TcpClientDiscoverySpi(), "openConnectionTimeout", 0);
     }
 }

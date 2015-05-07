@@ -91,6 +91,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private UUID nodeId;
 
+    /** */
+    private TcpDiscoveryVmIpFinder clientIpFinder;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -107,15 +110,21 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         else if (gridName.startsWith("client")) {
             TcpClientDiscoverySpi disco = new TestTcpClientDiscovery();
 
-            TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+            TcpDiscoveryVmIpFinder ipFinder;
 
-            String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).
-                get((clientIdx.get() - 1) / clientsPerSrv).toString();
+            if (clientIpFinder != null)
+                ipFinder = clientIpFinder;
+            else {
+                ipFinder = new TcpDiscoveryVmIpFinder();
 
-            if (addr.startsWith("/"))
-                addr = addr.substring(1);
+                String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).
+                    get((clientIdx.get() - 1) / clientsPerSrv).toString();
 
-            ipFinder.setAddresses(Arrays.asList(addr));
+                if (addr.startsWith("/"))
+                    addr = addr.substring(1);
+
+                ipFinder.setAddresses(Arrays.asList(addr));
+            }
 
             disco.setIpFinder(ipFinder);
 
@@ -156,8 +165,30 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         stopAllServers(true);
 
         nodeId = null;
+        clientIpFinder = null;
 
         assert G.allGrids().isEmpty();
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    public void testNodeJoinedTimeout() throws Exception {
+        clientIpFinder = new TcpDiscoveryVmIpFinder();
+
+        try {
+            startClientNodes(1);
+
+            fail("Client cannot be start because no server nodes run");
+        }
+        catch (IgniteCheckedException e) {
+            IgniteSpiException spiEx = e.getCause(IgniteSpiException.class);
+
+            assert spiEx != null : e;
+
+            assert spiEx.getMessage().contains("Join process timed out") : spiEx.getMessage();
+        }
     }
 
     /**
