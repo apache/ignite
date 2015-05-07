@@ -69,6 +69,8 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
     public void testNotifier() throws Exception {
         String nodeVer = IgniteProperties.get("ignite.version");
 
+        info("Current version: " + nodeVer);
+
         GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer,
             TEST_GATEWAY, Collections.<PluginProvider>emptyList(), false);
 
