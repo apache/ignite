@@ -1760,7 +1760,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
                         }
 
-                        if (!missed.isEmpty() && (cacheCtx.isReplicated() || cacheCtx.isLocal())) {
+                        if (!missed.isEmpty() && cacheCtx.isLocal()) {
                             return checkMissed(cacheCtx,
                                 retMap,
                                 missed,

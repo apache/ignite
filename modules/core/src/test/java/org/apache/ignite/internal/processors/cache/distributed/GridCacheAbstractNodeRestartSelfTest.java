@@ -105,9 +105,9 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
         disco.setIpFinder(ipFinder);
 
-        disco.setSocketTimeout(10_000);
-        disco.setAckTimeout(10_000);
-        disco.setNetworkTimeout(10_000);
+        disco.setSocketTimeout(30_000);
+        disco.setAckTimeout(30_000);
+        disco.setNetworkTimeout(30_000);
 
         c.setDiscoverySpi(disco);
 
