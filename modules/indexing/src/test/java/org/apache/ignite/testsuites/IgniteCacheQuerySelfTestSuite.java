@@ -111,6 +111,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
 
+        //Unmarshallig query test.
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
+
         return suite;
     }
 }
