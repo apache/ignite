@@ -27,6 +27,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
@@ -296,6 +297,26 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         finally {
             ((IgniteKernal)grid(0)).getCache(null).remove(new GridCacheInternalKeyImpl("LONG"));
         }
+    }
+
+    /**
+     *
+     */
+    public void testExplain() {
+        List<List<?>> res = grid(0).cache(null).query(new SqlFieldsQuery(
+            "explain select p.age, p.name, o.name " +
+            "from Person p, Organization o where p.orgId = o.id")).getAll();
+
+        for (List<?> row : res)
+            X.println("____ : " + row);
+
+        if (cacheMode() == PARTITIONED) {
+            assertEquals(2, res.size());
+
+            assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.TABLE_FUNC_NAME));
+        }
+        else
+            assertEquals(1, res.size());
     }
 
     /** @throws Exception If failed. */

@@ -550,21 +550,25 @@ public class CodeGenerator {
      * @param mtdName Method name to generate.
      * @param comment Commentary text.
      * @param first {@code true} if variable should be declared.
+     * @return {@code false} if variable was declared.
      */
-    private static void addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
+    private static boolean addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
         String mtdName, String comment, boolean first) {
-        if (!fields.isEmpty()) {
-            add2(src, comment);
-            add2(src, (first ? "Map<String, Class<?>> " : "") + varName + " = new LinkedHashMap<>();");
-            add0(src, "");
+        if (fields.isEmpty())
+            return true;
 
-            for (PojoField field : fields)
-                add2(src, varName + ".put(\"" + field.javaName() + "\", " + javaTypeName(field) + ".class);");
+        add2(src, comment);
+        add2(src, (first ? "Map<String, Class<?>> " : "") + varName + " = new LinkedHashMap<>();");
+        add0(src, "");
 
-            add0(src, "");
-            add2(src, "type." + mtdName + "(" + varName + ");");
-            add0(src, "");
-        }
+        for (PojoField field : fields)
+            add2(src, varName + ".put(\"" + field.javaName() + "\", " + javaTypeName(field) + ".class);");
+
+        add0(src, "");
+        add2(src, "type." + mtdName + "(" + varName + ");");
+        add0(src, "");
+
+        return false;
     }
 
     /**
@@ -623,6 +627,9 @@ public class CodeGenerator {
         add0(src, "");
 
         boolean first = true;
+        boolean firstAsc = true;
+        boolean firstDesc = true;
+        boolean firstGrps = true;
         boolean firstGrp = true;
 
         for (PojoDescriptor pojo : pojos) {
@@ -661,21 +668,23 @@ public class CodeGenerator {
             addQueryFields(src, pojo.fields(), "qryFlds", "setQueryFields", "// Query fields for " + tbl + ".", first);
 
             // Ascending fields.
-            addQueryFields(src, pojo.ascendingFields(), "ascFlds", "setAscendingFields",
-                "// Ascending fields for " + tbl + ".", first);
+            firstAsc = addQueryFields(src, pojo.ascendingFields(), "ascFlds", "setAscendingFields",
+                "// Ascending fields for " + tbl + ".", firstAsc);
 
             // Descending fields.
-            addQueryFields(src, pojo.descendingFields(), "descFlds", "setDescendingFields",
-                "// Descending fields for " + tbl + ".", first);
+            firstDesc = addQueryFields(src, pojo.descendingFields(), "descFlds", "setDescendingFields",
+                "// Descending fields for " + tbl + ".", firstDesc);
 
             // Groups.
             Map<String, Map<String, IndexItem>> groups = pojo.groups();
 
             if (!groups.isEmpty()) {
                 add2(src, "// Groups for " + tbl + ".");
-                add2(src, (first ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
+                add2(src, (firstGrps ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
                     "grps = new LinkedHashMap<>();");
                 add0(src, "");
+
+                firstGrps = false;
 
                 for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
                     add2(src, (firstGrp ? "LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> " : "") +

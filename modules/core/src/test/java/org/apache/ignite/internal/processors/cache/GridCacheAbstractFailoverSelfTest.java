@@ -177,10 +177,10 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
                 info("Run topology change.");
 
                 try {
+                    String name = "new-node-" + Thread.currentThread().getName();
+
                     for (int i = 0; i < TOP_CHANGE_CNT && err.get() == null; i++) {
                         info("Topology change " + i);
-
-                        String name = UUID.randomUUID().toString();
 
                         try {
                             final Ignite g = startGrid(name);

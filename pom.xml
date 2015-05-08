@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.0.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -508,8 +508,8 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <attachartifact file="${basedir}/target/bin/ignite-fabric-${project.version}.zip" classifier="fabric" type="zip" />
-                                        <attachartifact file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip" classifier="hadoop" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/ignite-fabric-${project.version}-incubating.zip" classifier="fabric" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/ignite-hadoop-${project.version}-incubating.zip" classifier="hadoop" type="zip" />
                                     </target>
                                 </configuration>
                             </execution>
