@@ -2692,6 +2692,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void removeAll() throws IgniteCheckedException {
+        assert ctx.isLocal();
+
+        for (Iterator<KeyCacheObject> it = ctx.swap().offHeapKeyIterator(true, true, AffinityTopologyVersion.NONE);
+             it.hasNext(); )
+            remove((K)it.next());
+
+        for (Iterator<KeyCacheObject> it = ctx.swap().swapKeyIterator(true, true, AffinityTopologyVersion.NONE);
+             it.hasNext(); )
+            remove((K)it.next());
+
+        removeAll(keySet());
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(final Collection<? extends K> keys) throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -3779,16 +3795,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     log.debug("Entry has been concurrently removed.");
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        return ctx.swap().lazySwapIterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException {
-        return ctx.swap().lazyOffHeapIterator();
     }
 
     /** {@inheritDoc} */

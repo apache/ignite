@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Tests replicated cache with values being stored off-heap.
+ * Test queries in off-heap tired mode.
  */
-public class GridCacheReplicatedOffHeapFullApiSelfTest extends GridCacheReplicatedFullApiSelfTest {
+public class IgniteCacheQueryMultiThreadedOffHeapTiredSelfTest extends IgniteCacheQueryMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode memoryMode() {
-        return OFFHEAP_VALUES;
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration ccfg = super.cacheConfiguration();
+
+        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
+        ccfg.setOffHeapMaxMemory(0);
+
+        return ccfg;
     }
 }
