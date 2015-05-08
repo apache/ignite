@@ -154,7 +154,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      */
     public void testConfiguration() throws IgniteCheckedException {
         IgniteInternalCache metaCache = getFieldValue(fs, "meta", "metaCache");
-        GridCacheAdapter dataCache = getFieldValue(fs, "data", "dataCache");
+        IgniteInternalCache dataCache = getFieldValue(fs, "data", "dataCache");
 
         assertNotNull(metaCache);
         assertEquals(META_CACHE_NAME, metaCache.name());

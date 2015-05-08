@@ -23,13 +23,13 @@ import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
 import org.jetbrains.annotations._
 
 import java.lang.{Boolean => JavaBoolean}
-import java.util.{ArrayList => JavaList, Collection => JavaCollection, UUID}
+import java.util.{Collection => JavaCollection, Collections, UUID}
 
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
@@ -328,7 +328,7 @@ class VisorCacheCommand {
                     sumT += (
                         mkCacheName(ad.name()),
                         ad.mode(),
-                        ad.nodes,
+                        ad.nodes.map(nid8),
                         (
                             "min: " + ad.minimumSize,
                             "avg: " + formatDouble(ad.averageSize),
@@ -436,7 +436,7 @@ class VisorCacheCommand {
                         .foreach(ccfg => {
                             nl()
 
-                            showCacheConfiguration("Cache configuration:", ccfg)
+                            printCacheConfiguration("Cache configuration:", ccfg)
                     }))
                 })
             }
@@ -495,15 +495,14 @@ class VisorCacheCommand {
         assert(node != null)
 
         try {
-            val prj = node.fold(ignite.cluster.forRemotes())(ignite.cluster.forNode(_))
+            val caches: JavaCollection[String] = name.fold(Collections.emptyList[String]())(Collections.singletonList)
 
-            val nids = prj.nodes().map(_.id())
+            val arg = new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches)
 
-            val caches: JavaCollection[String] = new JavaList[String]()
-            name.foreach(caches.add)
-
-            ignite.compute(prj).execute(classOf[VisorCacheMetricsCollectorTask], toTaskArgument(nids,
-                new IgniteBiTuple(JavaBoolean.valueOf(systemCaches), caches))).toList
+            node match {
+                case Some(n) => executeOne(n.id(), classOf[VisorCacheMetricsCollectorTask], arg).toList
+                case None => executeMulti(classOf[VisorCacheMetricsCollectorTask], arg).toList
+            }
         }
         catch {
             case e: IgniteException => Nil
@@ -522,7 +521,7 @@ class VisorCacheCommand {
         }
         catch {
             case e: IgniteException =>
-                scold(e.getMessage)
+                scold(e)
 
                 null
         }
@@ -663,6 +662,9 @@ class VisorCacheCommand {
  * Companion object that does initialization of the command.
  */
 object VisorCacheCommand {
+    /** Singleton command */
+    private val cmd = new VisorCacheCommand
+
     addHelp(
         name = "cache",
         shortInfo = "Prints cache statistics, clears cache, prints list of all entries from cache.",
@@ -778,7 +780,8 @@ object VisorCacheCommand {
             "cache -swap -c=@c0" -> "Swaps entries in cache with name taken from 'c0' memory variable.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable."
         ),
-        ref = VisorConsoleCommand(cmd.cache, cmd.cache)
+        emptyArgs = cmd.cache,
+        withArgs = cmd.cache
     )
 
     /** Default cache name to show on screen. */
@@ -786,9 +789,6 @@ object VisorCacheCommand {
 
     /** Default cache key. */
     protected val DFLT_CACHE_KEY = DFLT_CACHE_NAME + "-" + UUID.randomUUID().toString
-
-    /** Singleton command */
-    private val cmd = new VisorCacheCommand
 
     /**
      * Singleton.
@@ -808,7 +808,7 @@ object VisorCacheCommand {
      * @param title Specified title for table.
      * @param cfg Config to show information.
      */
-    private[commands] def showCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
+    private[commands] def printCacheConfiguration(title: String, cfg: VisorCacheConfiguration) {
         val affinityCfg = cfg.affinityConfiguration()
         val nearCfg = cfg.nearConfiguration()
         val rebalanceCfg = cfg.rebalanceConfiguration()
@@ -859,9 +859,9 @@ object VisorCacheCommand {
         cacheT += ("Synchronous Eviction Timeout", evictCfg.synchronizedTimeout())
         cacheT += ("Synchronous Eviction Concurrency Level", evictCfg.synchronizedConcurrencyLevel())
 
+        cacheT += ("Near Cache Enabled", bool2Str(nearCfg.nearEnabled()))
         cacheT += ("Near Start Size", nearCfg.nearStartSize())
         cacheT += ("Near Eviction Policy", safe(nearCfg.nearEvictPolicy()))
-        cacheT += ("Near Eviction Enabled", bool2Str(nearCfg.nearEnabled()))
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.nearEvictMaxSize()))
 
         cacheT += ("Default Lock Timeout", defaultCfg.txLockTimeout())

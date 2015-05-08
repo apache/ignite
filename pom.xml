@@ -32,17 +32,19 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <ignite.site>scp://localhost:/home</ignite.site>
-        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}-incubating</ignite.zip.pattern>
+        <ignite.site.folder>${project.artifactId}-${project.version}</ignite.site.folder>
+        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
+        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}</ignite.zip.pattern>
     </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
-        <connection>scm:git:git://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
+        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
@@ -50,7 +52,7 @@
     <distributionManagement>
         <site>
             <id>ignite-site</id>
-            <url>${ignite.site}/${project.artifactId}-${project.version}</url>
+            <url>${ignite.site}/${ignite.site.folder}</url>
         </site>
     </distributionManagement>
 
@@ -73,8 +75,9 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
-        <module>modules/schema-import</module>
         <module>modules/codegen</module>
+        <module>modules/gce</module>
+        <module>modules/cloud</module>
     </modules>
 
     <profiles>
@@ -131,10 +134,6 @@
                                         <fileset>
                                             <directory>libs</directory>
                                         </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/schema-import</directory>
-                                        </fileset>
                                     </filesets>
                                 </configuration>
                             </execution>
@@ -171,6 +170,7 @@
             <id>release</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -380,22 +380,6 @@
                             </execution>
 
                             <execution>
-                                <id>dependencies-schema-import</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptors>
-                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
-                                    </descriptors>
-                                    <outputDirectory>target/release-package/bin</outputDirectory>
-                                    <finalName>include</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>dependencies-visor-console</id>
                                 <phase>prepare-package</phase>
                                 <goals>
@@ -452,6 +436,7 @@
 
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <jdk>[1.7,)</jdk>
             </activation>
 
             <modules>
@@ -478,6 +463,78 @@
         </profile>
 
         <profile>
+            <id>apache-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.apache.resources</groupId>
+                                <artifactId>apache-source-release-assembly-descriptor</artifactId>
+                                <version>1.0.4</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>source-release-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                    <descriptorRefs>
+                                        <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
+                                    </descriptorRefs>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                    <finalName>ignite-${project.version}-src</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-artifact</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                    <target>
+                                        <attachartifact file="${basedir}/target/bin/ignite-fabric-${project.version}.zip" classifier="fabric" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip" classifier="hadoop" type="zip" />
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <ascDirectory>${basedir}</ascDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>deploy-ignite-site</id>
             <build>
                 <plugins>
@@ -499,7 +556,8 @@
                                 <fileSet>
                                     <directory>${basedir}/target</directory>
                                     <includes>
-                                        <include>${project.artifactId}-${project.version}-source-release.zip</include>
+                                        <include>ignite-${project.version}-src.zip</include>
+                                        <include>bin/*.zip</include>
                                     </includes>
                                 </fileSet>
                             </fileSets>
@@ -526,17 +584,13 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <mkdir dir="${basedir}/target/site" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.asc"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.md5"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false"/>
-                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-source-release.zip.sha1"
-                                              tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false"/>
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip" tofile="${basedir}/target/site/ignite-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.asc" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.asc" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.md5" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.md5" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.sha1" failonerror="false" />
                                         <copy todir="${basedir}/target/site">
                                             <fileset dir="${basedir}/target/bin">
-                                                <include name="**/*"/>
+                                                <include name="**/*" />
                                             </fileset>
                                         </copy>
                                         <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
@@ -565,6 +619,119 @@
                                 <phase>deploy</phase>
                                 <configuration>
                                     <inputDirectory>${basedir}/target/site</inputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>java8-schema-import</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/lib/ext/jfxrt.jar</exists>
+                </file>
+            </activation>
+            <modules>
+                <module>modules/schema-import</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>schema-import-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+        <profile>
+            <id>schema-import</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/lib/jfxrt.jar</exists>
+                </file>
+            </activation>
+            <modules>
+                <module>modules/schema-import</module>
+            </modules>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+
+                        <executions>
+                            <execution>
+                                <id>dependencies-schema-import</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>schema-import-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-schema-import.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
                         </executions>

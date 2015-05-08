@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.streaming.wordcount;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 
 import javax.cache.configuration.*;
@@ -43,10 +42,6 @@ public class CacheConfig {
 
         // Sliding window of 1 seconds.
         cfg.setExpiryPolicyFactory(FactoryBuilder.factoryOf(new CreatedExpiryPolicy(new Duration(SECONDS, 1))));
-
-        // Do not allow more than 1 million entries.
-        // Allows to run this example with smaller available memory.
-        cfg.setEvictionPolicy(new FifoEvictionPolicy<>(1_000_000));
 
         return cfg;
     }

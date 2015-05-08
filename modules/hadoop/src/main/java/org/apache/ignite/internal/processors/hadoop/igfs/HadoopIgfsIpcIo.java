@@ -589,6 +589,9 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
                     log.error("Failed to obtain endpoint input stream (connection will be closed)", e);
 
                 err = e;
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
             finally {
                 close0(err);

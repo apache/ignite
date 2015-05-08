@@ -63,6 +63,8 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg) {
         try {
+            UUID nid = ignite.localNode().id();
+
             boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
             String qryId = (scan ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" +
@@ -73,6 +75,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
             if (scan) {
                 ScanQuery<Object, Object> qry = new ScanQuery<>(null);
                 qry.setPageSize(arg.pageSize());
+                qry.setLocal(arg.local());
 
                 long start = U.currentTimeMillis();
 
@@ -92,12 +95,13 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                 else
                     cur.close();
 
-                return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
-                    SCAN_COL_NAMES, rows, hasNext, duration));
+                return new IgniteBiTuple<>(null, new VisorQueryResultEx(nid, qryId, SCAN_COL_NAMES, rows, hasNext,
+                    duration));
             }
             else {
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
                 qry.setPageSize(arg.pageSize());
+                qry.setLocal(arg.local());
 
                 long start = U.currentTimeMillis();
 
@@ -129,8 +133,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
                     else
                         cur.close();
 
-                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(ignite.localNode().id(), qryId,
-                        names, rows, hasNext, duration));
+                    return new IgniteBiTuple<>(null, new VisorQueryResultEx(nid, qryId, names, rows, hasNext, duration));
                 }
             }
         }

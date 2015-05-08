@@ -17,9 +17,9 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.lang.IgniteBiTuple
-import org.apache.ignite.visor.commands._
+import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
 import org.apache.ignite.internal.visor.query._
@@ -72,7 +72,7 @@ class VisorCacheScanCommand {
         warn("Type 'help cache' to see how to use this command.")
     }
 
-    private def error(e: Exception) {
+    private def error(e: Throwable) {
         var cause: Throwable = e
 
         while (cause.getCause != null)
@@ -136,32 +136,10 @@ class VisorCacheScanCommand {
             case Some(name) => name
         }
 
-        val cachePrj = node match {
-            case Some(n) => ignite.cluster.forNode(n).forCacheNodes(cacheName)
-            case _ => ignite.cluster.forCacheNodes(cacheName)
-        }
-
-        if (cachePrj.nodes().isEmpty) {
-            warn("Can't find nodes with specified cache: " + cacheName,
-                "Type 'cache' to see available cache names."
-            )
-
-            return
-        }
-
-        val qryPrj = cachePrj.forRandom()
-        val proj = new java.util.HashSet(cachePrj.nodes().map(_.id()))
-
-        val nid = qryPrj.node().id()
-
-        val fullRes =
+        val firstPage =
             try
-                ignite.compute(qryPrj)
-                    .withName("visor-cscan-task")
-                    .withNoFailover()
-                    .execute(classOf[VisorQueryTask],
-                        toTaskArgument(nid, new VisorQueryArg(null, cacheName, "SCAN", pageSize)))
-                    match {
+                executeRandom(groupForDataNode(node, cacheName),
+                    classOf[VisorQueryTask], new VisorQueryArg(cacheName, "SCAN", false, pageSize)) match {
                     case x if x.get1() != null =>
                         error(x.get1())
 
@@ -169,19 +147,23 @@ class VisorCacheScanCommand {
                     case x => x.get2()
                 }
             catch {
-                case e: Exception =>
+                case e: ClusterGroupEmptyException =>
+                    scold(messageNodeNotFound(node, cacheName))
+
+                    return
+                case e: Throwable =>
                     error(e)
 
                     return
             }
 
-        var res: VisorQueryResult = fullRes
-
-        if (res.rows.isEmpty) {
-            println("Cache: " + escapeName(cacheName) + " is empty")
+        if (firstPage.rows.isEmpty) {
+            println(s"Cache: ${escapeName(cacheName)} is empty")
 
             return
         }
+
+        var nextPage: VisorQueryResult = firstPage
 
         def render() {
             println("Entries in cache: " + escapeName(cacheName))
@@ -190,22 +172,19 @@ class VisorCacheScanCommand {
 
             t #= ("Key Class", "Key", "Value Class", "Value")
 
-            res.rows.foreach(r => t += (r(0), r(1), r(2), r(3)))
+            nextPage.rows.foreach(r => t += (r(0), r(1), r(2), r(3)))
 
             t.render()
         }
 
         render()
 
-        while (res.hasMore) {
+        while (nextPage.hasMore) {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        res = ignite.compute(qryPrj)
-                            .withName("visor-cscan-fetch-task")
-                            .withNoFailover()
-                            .execute(classOf[VisorQueryNextPageTask],
-                                toTaskArgument(nid, new IgniteBiTuple[String, Integer](fullRes.queryId(), pageSize)))
+                        nextPage = executeOne(firstPage.responseNodeId(), classOf[VisorQueryNextPageTask],
+                            new IgniteBiTuple[String, Integer](firstPage.queryId(), pageSize))
 
                         render()
                     }
@@ -214,7 +193,6 @@ class VisorCacheScanCommand {
                     }
                 case _ => return
             }
-
         }
     }
 }

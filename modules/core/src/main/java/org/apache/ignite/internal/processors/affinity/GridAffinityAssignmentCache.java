@@ -133,7 +133,7 @@ public class GridAffinityAssignmentCache {
         stopping = true;
 
         IgniteCheckedException err =
-            new IgniteCheckedException("Failed to wait for topology update, node is stopping.");
+            new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
         for (AffinityReadyFuture fut : readyFuts.values())
             fut.onDone(err);
@@ -282,7 +282,7 @@ public class GridAffinityAssignmentCache {
             fut.onDone(topVer);
         }
         else if (stopping)
-            fut.onDone(new IgniteCheckedException("Failed to wait for topology update, node is stopping."));
+            fut.onDone(new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping."));
 
         return fut;
     }

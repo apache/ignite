@@ -130,7 +130,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private long accessTtl;
 
     /** Need return value flag. */
-    private boolean needReturnValue;
+    private boolean needReturnVal;
+
+    /** Skip store flag. */
+    private final boolean skipStore;
 
     /**
      * @param cctx Cache context.
@@ -139,11 +142,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param topVer Topology version.
      * @param cnt Number of keys to lock.
      * @param read Read flag.
+     * @param needReturnVal Need return value flag.
      * @param timeout Lock acquisition timeout.
      * @param tx Transaction.
      * @param threadId Thread ID.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
+     * @param skipStore Skip store flag.
      */
     public GridDhtLockFuture(
         GridCacheContext<K, V> cctx,
@@ -152,12 +157,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         @NotNull AffinityTopologyVersion topVer,
         int cnt,
         boolean read,
-        boolean needReturnValue,
+        boolean needReturnVal,
         long timeout,
         GridDhtTxLocalAdapter tx,
         long threadId,
         long accessTtl,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        boolean skipStore) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
@@ -169,11 +175,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         this.nearLockVer = nearLockVer;
         this.topVer = topVer;
         this.read = read;
-        this.needReturnValue = needReturnValue;
+        this.needReturnVal = needReturnVal;
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
         this.accessTtl = accessTtl;
+        this.skipStore = skipStore;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -830,7 +837,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
                         inTx() ? tx.taskNameHash() : 0,
-                        read ? accessTtl : -1L);
+                        read ? accessTtl : -1L,
+                        skipStore);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext();) {
@@ -864,10 +872,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             boolean invalidateRdr = e.readerId(n.id()) != null;
 
-                            req.addDhtKey(
-                                e.key(),
-                                invalidateRdr,
-                                cctx);
+                            req.addDhtKey(e.key(), invalidateRdr, cctx);
 
                             if (needVal) {
                                 // Mark last added key as needed to be preloaded.
@@ -885,12 +890,17 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             it.set(addOwned(req, e));
                         }
 
-                        add(fut); // Append new future.
+                        if (!F.isEmpty(req.keys())) {
+                            if (tx != null)
+                                tx.addLockTransactionNode(n);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
+                            add(fut); // Append new future.
 
-                        cctx.io().send(n, req, cctx.ioPolicy());
+                            if (log.isDebugEnabled())
+                                log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
+
+                            cctx.io().send(n, req, cctx.ioPolicy());
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
@@ -950,7 +960,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      *
      */
     private void loadMissingFromStore() {
-        if (cctx.loadPreviousValue() && cctx.readThrough() && (needReturnValue || read)) {
+        if (!skipStore && cctx.loadPreviousValue() && cctx.readThrough() && (needReturnVal || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
             final GridCacheVersion ver = version();

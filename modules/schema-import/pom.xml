@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-schema-import</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -84,9 +84,11 @@
 
     <profiles>
         <profile>
-            <id>jfxrt.jar</id>
+            <id>schema-import</id>
             <activation>
-                <jdk>[1.7,1.8)</jdk>
+                <file>
+                    <exists>${java.home}/lib/jfxrt.jar</exists>
+                </file>
             </activation>
             <dependencies>
                 <dependency>

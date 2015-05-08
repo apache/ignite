@@ -378,8 +378,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return Flag indicating whether near cache should be updated.
      */
     protected boolean updateNearCache(
-        GridCacheContext<?, ?> cacheCtx, 
-        KeyCacheObject key, 
+        GridCacheContext<?, ?> cacheCtx,
+        KeyCacheObject key,
         AffinityTopologyVersion topVer
     ) {
         return false;
@@ -471,6 +471,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+
+                if (t instanceof Error)
+                    throw (Error)t;
 
                 break;
             }
@@ -1002,6 +1005,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
             fut.onDone(this);
 
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+        return null;
     }
 
     /**
@@ -1956,7 +1964,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext ctx,
+        @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
             KeyCacheObject key,
             @Nullable CacheEntryPredicate[] filter) {
@@ -2015,6 +2023,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
             return null;
         }
 

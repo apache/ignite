@@ -1173,7 +1173,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.userVersion() : null,
                     dep != null ? dep.participants() : null,
                     dep != null ? dep.classLoaderId() : null,
-                    dep == null);
+                    dep == null,
+                    ctx.cache().context().exchange().readyAffinityVersion());
 
                 try {
                     ctx.io().send(node, TOPIC_DATASTREAM, req, PUBLIC_POOL);
@@ -1419,6 +1420,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         GridDrType.DR_LOAD);
 
                     cctx.evicts().touch(entry, topVer);
+
+                    CU.unwindEvicts(cctx);
                 }
                 catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
                     // No-op.

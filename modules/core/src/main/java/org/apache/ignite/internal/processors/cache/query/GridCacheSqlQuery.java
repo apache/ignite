@@ -17,16 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
-import java.io.*;
+import java.nio.*;
 
 /**
  * Query.
  */
-public class GridCacheSqlQuery implements Externalizable {
+public class GridCacheSqlQuery implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,18 +38,22 @@ public class GridCacheSqlQuery implements Externalizable {
     public static final Object[] EMPTY_PARAMS = {};
 
     /** */
-    String alias;
+    private String alias;
 
     /** */
     @GridToStringInclude
-    String qry;
+    private String qry;
 
     /** */
     @GridToStringInclude
-    Object[] params;
+    @GridDirectTransient
+    private Object[] params;
+
+    /** */
+    private byte[] paramsBytes;
 
     /**
-     * For {@link Externalizable}.
+     * For {@link Message}.
      */
     public GridCacheSqlQuery() {
         // No-op.
@@ -56,7 +64,7 @@ public class GridCacheSqlQuery implements Externalizable {
      * @param qry Query.
      * @param params Query parameters.
      */
-    GridCacheSqlQuery(String alias, String qry, Object[] params) {
+    public GridCacheSqlQuery(String alias, String qry, Object[] params) {
         A.ensure(!F.isEmpty(qry), "qry must not be empty");
 
         this.alias = alias;
@@ -86,25 +94,116 @@ public class GridCacheSqlQuery implements Externalizable {
         return params;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, alias);
-        U.writeString(out, qry);
-        U.writeArray(out, params);
+    /**
+     * @param m Marshaller.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void marshallParams(Marshaller m) throws IgniteCheckedException {
+        if (paramsBytes != null)
+            return;
+
+        assert params != null;
+
+        paramsBytes = m.marshal(params);
     }
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        alias = U.readString(in);
-        qry = U.readString(in);
-        params = U.readArray(in);
+    /**
+     * @param m Marshaller.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void unmarshallParams(Marshaller m) throws IgniteCheckedException {
+        if (params != null)
+            return;
 
-        if (F.isEmpty(params))
-            params = EMPTY_PARAMS;
+        assert paramsBytes != null;
+
+        params = m.unmarshal(paramsBytes, null);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSqlQuery.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeString("alias", alias))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeByteArray("paramsBytes", paramsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeString("qry", qry))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                alias = reader.readString("alias");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                paramsBytes = reader.readByteArray("paramsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                qry = reader.readString("qry");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 112;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
     }
 }

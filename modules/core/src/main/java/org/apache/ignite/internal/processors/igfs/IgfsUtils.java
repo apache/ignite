@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.igfs.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.lang.reflect.*;
@@ -50,9 +51,13 @@ public class IgfsUtils {
             if (err0 != null)
                 // Dealing with a kind of IGFS error, wrap it once again, preserving message and root cause.
                 err0 = newIgfsException(err0.getClass(), err0.getMessage(), err0);
-            else
-                // Unknown error nature.
-                err0 = new IgfsException("Generic IGFS error occurred.", err);
+            else {
+                if (err instanceof ClusterTopologyServerNotFoundException)
+                    err0 = new IgfsException("Cache server nodes not found.", err);
+                else
+                    // Unknown error nature.
+                    err0 = new IgfsException("Generic IGFS error occurred.", err);
+            }
         }
 
         return err0;

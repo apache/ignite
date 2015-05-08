@@ -26,21 +26,20 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.thread.*;
 
-import java.util.*;
+import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 /**
- * Eagerly removes expired entries from cache when {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
+ * Eagerly removes expired entries from cache when
+ * {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
-    private final GridConcurrentSkipListSet<EntryWrapper> pendingEntries = new GridConcurrentSkipListSet<>();
+    private final GridConcurrentSkipListSetEx pendingEntries = new GridConcurrentSkipListSetEx();
 
     /** Cleanup worker thread. */
     private CleanupWorker cleanupWorker;
-
-    /** Sync mutex. */
-    private final Object mux = new Object();
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -68,24 +67,15 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to add.
      */
     public void addTrackedEntry(GridCacheMapEntry entry) {
-        EntryWrapper wrapper = new EntryWrapper(entry);
-
-        pendingEntries.add(wrapper);
-
-        // If entry is on the first position, notify waiting thread.
-        if (wrapper == pendingEntries.firstx()) {
-            synchronized (mux) {
-                mux.notifyAll();
-            }
-        }
+        pendingEntries.add(new EntryWrapper(entry));
     }
 
     /**
      * @param entry Entry to remove.
      */
     public void removeTrackedEntry(GridCacheMapEntry entry) {
-        // Remove must be called while holding lock on entry before updating expire time.
-        // No need to wake up waiting thread in this case.
+        assert Thread.holdsLock(entry);
+
         pendingEntries.remove(new EntryWrapper(entry));
     }
 
@@ -94,6 +84,32 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         X.println(">>>");
         X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
         X.println(">>>   pendingEntriesSize: " + pendingEntries.size());
+    }
+
+    /**
+     * Expires entries by TTL.
+     */
+    public void expire() {
+        long now = U.currentTimeMillis();
+
+        GridCacheVersion obsoleteVer = null;
+
+        for (int size = pendingEntries.sizex(); size > 0; size--) {
+            EntryWrapper e = pendingEntries.firstx();
+
+            if (e == null || e.expireTime > now)
+                return;
+
+            if (pendingEntries.remove(e)) {
+                if (obsoleteVer == null)
+                    obsoleteVer = cctx.versions().next();
+
+                if (log.isTraceEnabled())
+                    log.trace("Trying to remove expired entry from cache: " + e);
+
+                e.entry.onTtlExpired(obsoleteVer);
+            }
+        }
     }
 
     /**
@@ -110,52 +126,18 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                long now = U.currentTimeMillis();
+                expire();
 
-                GridCacheVersion obsoleteVer = null;
+                EntryWrapper first = pendingEntries.firstx();
 
-                for (Iterator<EntryWrapper> it = pendingEntries.iterator(); it.hasNext(); ) {
-                    EntryWrapper wrapper = it.next();
+                if (first != null) {
+                    long waitTime = first.expireTime - U.currentTimeMillis();
 
-                    if (wrapper.expireTime <= now) {
-                        if (log.isDebugEnabled())
-                            log.debug("Trying to remove expired entry from cache: " + wrapper);
-
-                        if (obsoleteVer == null)
-                            obsoleteVer = cctx.versions().next();
-
-                        if (wrapper.entry.onTtlExpired(obsoleteVer))
-                            wrapper.entry.context().cache().removeEntry(wrapper.entry);
-
-                        if (wrapper.entry.context().cache().configuration().isStatisticsEnabled())
-                            wrapper.entry.context().cache().metrics0().onEvict();
-
-                        it.remove();
-                    }
-                    else
-                        break;
+                    if (waitTime > 0)
+                        U.sleep(waitTime);
                 }
-
-                synchronized (mux) {
-                    while (true) {
-                        // Access of the first element must be inside of
-                        // synchronization block, so we don't miss out
-                        // on thread notification events sent from
-                        // 'addTrackedEntry(..)' method.
-                        EntryWrapper first = pendingEntries.firstx();
-
-                        if (first != null) {
-                            long waitTime = first.expireTime - U.currentTimeMillis();
-
-                            if (waitTime > 0)
-                                mux.wait(waitTime);
-                            else
-                                break;
-                        }
-                        else
-                            mux.wait(5000);
-                    }
-                }
+                else
+                    U.sleep(500);
             }
         }
     }
@@ -212,6 +194,60 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             res = 31 * res + (int)(entry.startVersion() ^ (entry.startVersion() >>> 32));
 
             return res;
+        }
+    }
+
+    /**
+     * Provides additional method {@code #sizex()}. NOTE: Only the following methods supports this addition:
+     * <ul>
+     *     <li>{@code #add()}</li>
+     *     <li>{@code #remove()}</li>
+     *     <li>{@code #pollFirst()}</li>
+     * <ul/>
+     */
+    private static class GridConcurrentSkipListSetEx extends GridConcurrentSkipListSet<EntryWrapper> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Size. */
+        private final LongAdder8 size = new LongAdder8();
+
+        /**
+         * @return Size based on performed operations.
+         */
+        public int sizex() {
+            return size.intValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean add(EntryWrapper e) {
+            boolean res = super.add(e);
+
+            assert res;
+
+            size.increment();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(Object o) {
+            boolean res = super.remove(o);
+
+            if (res)
+                size.decrement();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public EntryWrapper pollFirst() {
+            EntryWrapper e = super.pollFirst();
+
+            if (e != null)
+                size.decrement();
+
+            return e;
         }
     }
 }

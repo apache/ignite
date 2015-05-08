@@ -1451,33 +1451,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long swapKeys() throws IgniteCheckedException;
 
     /**
-     * Gets iterator over keys and values belonging to this cache swap space on local node. This
-     * iterator is thread-safe, which means that cache (and therefore its swap space)
-     * may be modified concurrently with iteration over swap.
-     * <p>
-     * Returned iterator supports {@code remove} operation which delegates to
-     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])</code> method.
-     *
-     * @return Iterator over keys.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException;
-
-    /**
-     * Gets iterator over keys and values belonging to this cache off-heap memory on local node. This
-     * iterator is thread-safe, which means that cache (and therefore its off-heap memory)
-     * may be modified concurrently with iteration over off-heap. To achieve better performance
-     * the keys and values deserialized on demand, whenever accessed.
-     * <p>
-     * Returned iterator supports {@code remove} operation which delegates to
-     * <code>removex(Object, org.apache.ignite.lang.IgnitePredicate[])}</code> method.
-     *
-     * @return Iterator over keys.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
-
-    /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
      * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay

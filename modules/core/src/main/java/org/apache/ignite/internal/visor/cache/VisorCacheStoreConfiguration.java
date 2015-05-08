@@ -146,24 +146,10 @@ public class VisorCacheStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param writeBehindEnabled New flag indicating whether write-behind behaviour should be used for the cache store.
-     */
-    public void writeBehindEnabled(boolean writeBehindEnabled) {
-        this.writeBehindEnabled = writeBehindEnabled;
-    }
-
-    /**
      * @return Maximum batch size for write-behind cache store operations.
      */
     public int batchSize() {
         return batchSz;
-    }
-
-    /**
-     * @param batchSz New maximum batch size for write-behind cache store operations.
-     */
-    public void batchSize(int batchSz) {
-        this.batchSz = batchSz;
     }
 
     /**
@@ -174,13 +160,6 @@ public class VisorCacheStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param flushFreq New frequency with which write-behind cache is flushed to the cache store in milliseconds.
-     */
-    public void flushFrequency(long flushFreq) {
-        this.flushFreq = flushFreq;
-    }
-
-    /**
      * @return Maximum object count in write-behind cache.
      */
     public int flushSize() {
@@ -188,24 +167,10 @@ public class VisorCacheStoreConfiguration implements Serializable {
     }
 
     /**
-     * @param flushSz New maximum object count in write-behind cache.
-     */
-    public void flushSize(int flushSz) {
-        this.flushSz = flushSz;
-    }
-
-    /**
      * @return Number of threads that will perform cache flushing.
      */
     public int flushThreadCount() {
         return flushThreadCnt;
-    }
-
-    /**
-     * @param flushThreadCnt New number of threads that will perform cache flushing.
-     */
-    public void flushThreadCount(int flushThreadCnt) {
-        this.flushThreadCnt = flushThreadCnt;
     }
 
     /** {@inheritDoc} */

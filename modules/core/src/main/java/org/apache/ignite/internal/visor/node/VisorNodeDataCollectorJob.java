@@ -103,7 +103,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             events0(res, arg.eventsOrderKey(), arg.eventsThrottleCounterKey(), arg.taskMonitoringEnabled());
         }
-        catch (Throwable eventsEx) {
+        catch (Exception eventsEx) {
             res.eventsEx(eventsEx);
         }
     }
@@ -125,7 +125,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        VisorCache cache = VisorCache.from(ignite, cacheName, arg.sample());
+                        VisorCache cache = new VisorCache().from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
                             res.caches().add(cache);
@@ -137,7 +137,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Throwable cachesEx) {
+        catch (Exception cachesEx) {
             res.cachesEx(cachesEx);
         }
     }
@@ -172,7 +172,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Throwable igfssEx) {
+        catch (Exception igfssEx) {
             res.igfssEx(igfssEx);
         }
     }

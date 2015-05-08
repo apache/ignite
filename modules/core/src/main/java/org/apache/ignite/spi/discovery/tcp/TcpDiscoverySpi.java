@@ -108,14 +108,14 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
- * GridTcpDiscoverySpi spi = new GridTcpDiscoverySpi();
+ * TcpDiscoverySpi spi = new TcpDiscoverySpi();
  *
- * GridTcpDiscoveryVmIpFinder finder =
+ * TcpDiscoveryVmIpFinder finder =
  *     new GridTcpDiscoveryVmIpFinder();
  *
  * spi.setIpFinder(finder);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default discovery SPI.
  * cfg.setDiscoverySpi(spi);
@@ -124,7 +124,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridTcpDiscoverySpi can be configured from Spring XML configuration file:
+ * TcpDiscoverySpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
@@ -287,6 +287,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ConcurrentLinkedDeque<String> debugLog;
+
+    /** */
+    private final CopyOnWriteArrayList<IgniteInClosure<TcpDiscoveryAbstractMessage>> sendMsgLsnrs =
+        new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
     @IgniteInstanceResource
@@ -853,10 +857,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
 
-        // Warn on odd heartbeat frequency.
-        if (hbFreq < 2000)
-            U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
-
         registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
 
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
@@ -1223,6 +1223,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (Throwable t) {
                 fut.onDone(t);
 
+                if (t instanceof Error)
+                    throw t;
+
                 throw U.cast(t);
             }
             finally {
@@ -1390,7 +1393,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     LT.warn(log, null, "Node has not been connected to topology and will repeat join process. " +
                         "Check remote nodes logs for possible error messages. " +
                         "Note that large topology may require significant time to start. " +
-                        "Increase 'GridTcpDiscoverySpi.networkTimeout' configuration property " +
+                        "Increase 'TcpDiscoverySpi.networkTimeout' configuration property " +
                         "if getting this message on the starting nodes [networkTimeout=" + netTimeout + ']');
             }
         }
@@ -2065,13 +2068,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * This method is intended for test purposes only.
-     *
-     * @param msg Message.
      */
-    void onBeforeMessageSentAcrossRing(Serializable msg) {
-        // No-op.
+    public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> msg) {
+        sendMsgLsnrs.add(msg);
+    }
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     */
+    public void removeSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> msg) {
+        sendMsgLsnrs.remove(msg);
     }
 
     /**
@@ -2680,7 +2686,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             assert ring.hasRemoteNodes();
 
-            onBeforeMessageSentAcrossRing(msg);
+            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : sendMsgLsnrs)
+                msgLsnr.apply(msg);
 
             if (redirectToClients(msg)) {
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())

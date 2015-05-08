@@ -338,8 +338,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
 
     /**
      * Gets node ID which directly started this transaction. In case of DHT local transaction it will be
-     * near node ID, in case of DHT remote transaction it will be primary node ID, in case of replicated remote
-     * transaction it will be starter node ID.
+     * near node ID, in case of DHT remote transaction it will be primary node ID.
      *
      * @return Originating node ID.
      */
@@ -507,7 +506,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
-     @Nullable public <K, V> GridTuple<CacheObject> peek(
+     @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
          KeyCacheObject key,
@@ -577,6 +576,11 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return Future for transaction completion.
      */
     public IgniteInternalFuture<IgniteInternalTx> finishFuture();
+
+    /**
+     * @return Future for transaction prepare if prepare is in progress.
+     */
+    @Nullable public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture();
 
     /**
      * @param state Transaction state.

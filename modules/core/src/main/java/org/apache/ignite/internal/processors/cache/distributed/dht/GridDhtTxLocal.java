@@ -673,12 +673,21 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             catch (Throwable ex) {
                 U.error(log, "Failed to send finish response to node (transaction was " +
                     (commit ? "committed" : "rolledback") + ") [node=" + nearNodeId + ", res=" + res + ']', ex);
+
+                if (ex instanceof Error)
+                    throw (Error)ex;
             }
         }
         else {
             if (log.isDebugEnabled())
                 log.debug("Will not send finish reply because sender node has not sent finish request yet: " + this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+        return prepFut.get();
     }
 
     /** {@inheritDoc} */

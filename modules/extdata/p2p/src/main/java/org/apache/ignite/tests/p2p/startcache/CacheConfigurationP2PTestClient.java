@@ -114,5 +114,4 @@ public class CacheConfigurationP2PTestClient {
             cache2.close();
         }
     }
-
 }
