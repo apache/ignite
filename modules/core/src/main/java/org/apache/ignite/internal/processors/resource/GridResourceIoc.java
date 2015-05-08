@@ -91,7 +91,6 @@ class GridResourceIoc {
     /**
      * @param cls Class.
      */
-    @NotNull
     private ClassDescriptor descriptor(@Nullable GridDeployment dep, Class<?> cls) {
         ClassDescriptor res = clsDescs.get(cls);
 
@@ -319,7 +318,6 @@ class GridResourceIoc {
 
             for (Map.Entry<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> entry
                 : annMap.entrySet()) {
-
                 GridResourceField[] fields = GridResourceField.toArray(entry.getValue().get1());
                 GridResourceMethod[] mtds = GridResourceMethod.toArray(entry.getValue().get2());
 
