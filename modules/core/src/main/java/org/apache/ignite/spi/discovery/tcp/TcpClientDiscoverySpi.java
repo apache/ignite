@@ -60,9 +60,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
-    /** Default open connection. */
-    public static final long DFLT_OPEN_CONN_TIMEOUT = 5000;
-
     /** */
     private static final Object JOIN_TIMEOUT = "JOIN_TIMEOUT";
 
@@ -109,9 +106,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private final Timer timer = new Timer("TcpClientDiscoverySpi.timer");
 
     /** */
-    private long openConnTimeout = DFLT_OPEN_CONN_TIMEOUT;
-
-    /** */
     private MessageWorker msgWorker;
 
     /** {@inheritDoc} */
@@ -142,20 +136,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** {@inheritDoc} */
     @Override public long getNetworkTimeout() {
         return netTimeout;
-    }
-
-    /**
-     * @return Timeout for opening socket.
-     */
-    public long getOpenConnectionTimeout() {
-        return openConnTimeout;
-    }
-
-    /**
-     * @param openConnTimeout Timeout for opening socket
-     */
-    public void setOpenConnectionTimeout(long openConnTimeout) {
-        this.openConnTimeout = openConnTimeout;
     }
 
     /** {@inheritDoc} */
@@ -233,7 +213,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         assertParameter(ackTimeout > 0, "ackTimeout > 0");
         assertParameter(hbFreq > 0, "heartbeatFreq > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
-        assertParameter(openConnTimeout > 0, "openConnectionTimeout > 0");
+        assertParameter(joinTimeout >= 0, "joinTimeout >= 0");
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -430,7 +410,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /**
      * @return Opened socket or {@code null} if timeout.
-     * @see #openConnTimeout
+     * @see #joinTimeout
      */
     @SuppressWarnings("BusyWait")
     @Nullable private Socket joinTopology(boolean recon) throws IgniteSpiException, InterruptedException {
@@ -452,7 +432,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 else {
                     U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + ipFinder);
 
-                    if ((U.currentTimeMillis() - startTime) > openConnTimeout)
+                    if ((U.currentTimeMillis() - startTime) > joinTimeout)
                         return null;
 
                     Thread.sleep(2000);
@@ -526,7 +506,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
 
-                if ((U.currentTimeMillis() - startTime) > openConnTimeout)
+                if ((U.currentTimeMillis() - startTime) > joinTimeout)
                     return null;
 
                 Thread.sleep(2000);

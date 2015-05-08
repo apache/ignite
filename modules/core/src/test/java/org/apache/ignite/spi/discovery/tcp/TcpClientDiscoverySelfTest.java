@@ -94,6 +94,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryVmIpFinder clientIpFinder;
 
+    /** */
+    private long joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -109,6 +112,8 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         }
         else if (gridName.startsWith("client")) {
             TcpClientDiscoverySpi disco = new TestTcpClientDiscovery();
+
+            disco.setJoinTimeout(joinTimeout);
 
             TcpDiscoveryVmIpFinder ipFinder;
 
@@ -166,6 +171,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         nodeId = null;
         clientIpFinder = null;
+        joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
 
         assert G.allGrids().isEmpty();
     }
@@ -174,8 +180,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testNodeJoinedTimeout() throws Exception {
+    public void testJoinTimeout() throws Exception {
         clientIpFinder = new TcpDiscoveryVmIpFinder();
+        joinTimeout = 1000;
 
         try {
             startClientNodes(1);
@@ -670,7 +677,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void testJoinTimeout() throws Exception {
+    public void testTimeoutWaitingNodeAddedMessage() throws Exception {
         startServerNodes(2);
 
         final CountDownLatch cnt = new CountDownLatch(1);

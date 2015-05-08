@@ -152,9 +152,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Default local port range (value is <tt>100</tt>). */
     public static final int DFLT_PORT_RANGE = 100;
 
-    /** Default timeout for joining topology (value is <tt>0</tt>). */
-    public static final long DFLT_JOIN_TIMEOUT = 0;
-
     /** Default reconnect attempts count (value is <tt>10</tt>). */
     public static final int DFLT_RECONNECT_CNT = 10;
 
@@ -191,10 +188,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
-
-    /** Join timeout. */
-    @SuppressWarnings("RedundantFieldInitialization")
-    private long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** Max heartbeats count node can miss without initiating status check. */
     private int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
@@ -364,30 +357,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @IgniteSpiConfiguration(optional = true)
     public void setMaxAckTimeout(long maxAckTimeout) {
         this.maxAckTimeout = maxAckTimeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getJoinTimeout() {
-        return joinTimeout;
-    }
-
-    /**
-     * Sets join timeout.
-     * <p>
-     * If non-shared IP finder is used and node fails to connect to
-     * any address from IP finder, node keeps trying to join within this
-     * timeout. If all addresses are still unresponsive, exception is thrown
-     * and node startup fails.
-     * <p>
-     * If not specified, default is {@link #DFLT_JOIN_TIMEOUT}.
-     *
-     * @param joinTimeout Join timeout ({@code 0} means wait forever).
-     *
-     * @see TcpDiscoveryIpFinder#isShared()
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public void setJoinTimeout(long joinTimeout) {
-        this.joinTimeout = joinTimeout;
     }
 
     /** {@inheritDoc} */
