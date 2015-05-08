@@ -2690,8 +2690,28 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 msgLsnr.apply(msg);
 
             if (redirectToClients(msg)) {
-                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
-                    clientMsgWorker.addMessage(msg);
+                byte[] marshalledMsg = null;
+
+                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
+                    // Send a clone to client to avoid ConcurrentModificationException
+                    TcpDiscoveryAbstractMessage msgClone;
+
+                    try {
+                        if (marshalledMsg == null)
+                            marshalledMsg = marsh.marshal(msg);
+
+                        msgClone = marsh.unmarshal(marshalledMsg, null);
+
+                        clientMsgWorker.addMessage(msgClone);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to marshal message: " + msg, e);
+
+                        msgClone = msg;
+                    }
+
+                    clientMsgWorker.addMessage(msgClone);
+                }
             }
 
             Collection<TcpDiscoveryNode> failedNodes;

@@ -38,20 +38,8 @@ class GridResourceIoc {
     private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap =
         new ConcurrentHashMap8<>();
 
-    /** Field cache. */
-    private final ConcurrentMap<Class<?>, ConcurrentMap<Class<? extends Annotation>, GridResourceField[]>> fieldCache =
-        new ConcurrentHashMap8<>();
-
-    /** Method cache. */
-    private final ConcurrentMap<Class<?>, ConcurrentMap<Class<? extends Annotation>, GridResourceMethod[]>> mtdCache =
-        new ConcurrentHashMap8<>();
-
-    /**
-     * Cache for classes that do not require injection with some annotation.
-     * Maps annotation classes to set a set of target classes to skip.
-     */
-    private final ConcurrentMap<Class<? extends Annotation>, Set<Class<?>>> skipCache =
-        new ConcurrentHashMap8<>();
+    /** Class descriptors cache. */
+    private final ConcurrentMap<Class<?>, ClassDescriptor> clsDescs = new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<Class<?>, Class<? extends Annotation>[]> annCache =
@@ -64,18 +52,8 @@ class GridResourceIoc {
         Set<Class<?>> clss = taskMap.remove(ldr);
 
         if (clss != null) {
-            fieldCache.keySet().removeAll(clss);
-            mtdCache.keySet().removeAll(clss);
-
-            for (Map.Entry<Class<? extends Annotation>, Set<Class<?>>> e : skipCache.entrySet()) {
-                Set<Class<?>> skipClss = e.getValue();
-
-                if (skipClss != null)
-                    e.getValue().removeAll(clss);
-            }
-
-            for (Class<?> cls : clss)
-                annCache.remove(cls);
+            clsDescs.keySet().removeAll(clss);
+            annCache.keySet().removeAll(clss);
         }
     }
 
@@ -84,8 +62,8 @@ class GridResourceIoc {
      */
     void undeployAll() {
         taskMap.clear();
-        mtdCache.clear();
-        fieldCache.clear();
+        clsDescs.clear();
+        annCache.clear();
     }
 
     /**
@@ -107,15 +85,26 @@ class GridResourceIoc {
         @Nullable Class<?> depCls)
         throws IgniteCheckedException
     {
-        assert target != null;
-        assert annCls != null;
-        assert injector != null;
+        return injectInternal(target, annCls, injector, dep, depCls, null);
+    }
 
-        if (isAnnotationPresent(target, annCls, dep))
-            // Use identity hash set to compare via referential equality.
-            return injectInternal(target, annCls, injector, dep, depCls, new GridLeanIdentitySet<>());
+    /**
+     * @param cls Class.
+     */
+    private ClassDescriptor descriptor(@Nullable GridDeployment dep, Class<?> cls) {
+        ClassDescriptor res = clsDescs.get(cls);
 
-        return false;
+        if (res == null) {
+            if (dep != null) {
+                Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
+
+                classes.add(cls);
+            }
+
+            res = F.addIfAbsent(clsDescs, cls, new ClassDescriptor(cls));
+        }
+
+        return res;
     }
 
     /**
@@ -133,73 +122,54 @@ class GridResourceIoc {
         GridResourceInjector injector,
         @Nullable GridDeployment dep,
         @Nullable Class<?> depCls,
-        Set<Object> checkedObjs)
+        @Nullable Set<Object> checkedObjs)
         throws IgniteCheckedException
     {
-        assert target != null;
-        assert annCls != null;
-        assert injector != null;
-        assert checkedObjs != null;
-
         Class<?> targetCls = target.getClass();
 
-        Set<Class<?>> skipClss = skipCache.get(annCls);
+        ClassDescriptor descr = descriptor(dep, targetCls);
 
-        // Skip this class if it does not need to be injected.
-        if (skipClss != null && skipClss.contains(targetCls))
+        T2<GridResourceField[], GridResourceMethod[]> annotatedMembers = descr.annotatedMembers(annCls);
+
+        if (descr.recursiveFields().length == 0 && annotatedMembers == null)
             return false;
 
-        // Check if already inspected to avoid indefinite recursion.
-        if (!checkedObjs.add(target))
-            return false;
+        if (checkedObjs == null && descr.recursiveFields().length > 0)
+            checkedObjs = new GridLeanIdentitySet<>();
 
-        int annCnt = 0;
+        if (checkedObjs != null && !checkedObjs.add(target))
+            return false;
 
         boolean injected = false;
 
-        for (GridResourceField field : getFieldsWithAnnotation(dep, targetCls, annCls)) {
-            if (field.processFieldValue()) {
-                Field f = field.getField();
+        for (GridResourceField field : descr.recursiveFields()) {
+            try {
+                Object obj = field.getField().get(target);
 
-                try {
-                    Object obj = f.get(target);
+                if (obj != null) {
+                    assert checkedObjs != null;
 
-                    if (obj != null) {
-                        // Recursion.
-                        boolean injected0 = injectInternal(obj, annCls, injector, dep, depCls, checkedObjs);
-
-                        injected |= injected0;
-                    }
-                }
-                catch (IllegalAccessException e) {
-                    throw new IgniteCheckedException("Failed to inject resource [field=" + f.getName() +
-                        ", target=" + target + ']', e);
+                    injected |= injectInternal(obj, annCls, injector, dep, depCls, checkedObjs);
                 }
             }
-            else {
+            catch (IllegalAccessException e) {
+                throw new IgniteCheckedException("Failed to inject resource [field=" + field.getField().getName() +
+                    ", target=" + target + ']', e);
+            }
+        }
+
+        if (annotatedMembers != null) {
+            for (GridResourceField field : annotatedMembers.get1()) {
                 injector.inject(field, target, depCls, dep);
 
                 injected = true;
             }
 
-            annCnt++;
-        }
+            for (GridResourceMethod mtd : annotatedMembers.get2()) {
+                injector.inject(mtd, target, depCls, dep);
 
-        for (GridResourceMethod mtd : getMethodsWithAnnotation(dep, targetCls, annCls)) {
-            injector.inject(mtd, target, depCls, dep);
-
-            injected = true;
-
-            annCnt++;
-        }
-
-        if (annCnt == 0) {
-            if (skipClss == null)
-                skipClss = F.addIfAbsent(skipCache, annCls, F.<Class<?>>newCSet());
-
-            assert skipClss != null;
-
-            skipClss.add(targetCls);
+                injected = true;
+            }
         }
 
         return injected;
@@ -217,29 +187,9 @@ class GridResourceIoc {
         assert target != null;
         assert annCls != null;
 
-        Class<?> targetCls = target.getClass();
+        ClassDescriptor desc = descriptor(dep, target.getClass());
 
-        Set<Class<?>> skipClss = skipCache.get(annCls);
-
-        if (skipClss != null && skipClss.contains(targetCls))
-            return false;
-
-        GridResourceField[] fields = getFieldsWithAnnotation(dep, targetCls, annCls);
-
-        if (fields.length > 0)
-            return true;
-
-        GridResourceMethod[] mtds = getMethodsWithAnnotation(dep, targetCls, annCls);
-
-        if (mtds.length > 0)
-            return true;
-
-        if (skipClss == null)
-            skipClss = F.addIfAbsent(skipCache, annCls, F.<Class<?>>newCSet());
-
-        skipClss.add(targetCls);
-
-        return false;
+        return desc.recursiveFields().length > 0 || desc.annotatedMembers(annCls) != null;
     }
 
     /**
@@ -260,52 +210,19 @@ class GridResourceIoc {
         Class<? extends Annotation>[] res = annCache.get(cls);
 
         if (res == null) {
-            Collection<Class<? extends Annotation>> res0 =
-                new HashSet<>(annClss.size(), 1.0f);
+            Collection<Class<? extends Annotation>> res0 = new ArrayList<>();
 
             for (Class<? extends Annotation> annCls : annClss) {
                 if (isAnnotationPresent(target, annCls, dep))
                     res0.add(annCls);
             }
 
-            res = new Class[res0.size()];
-
-            res0.toArray(res);
+            res = res0.toArray(new Class[res0.size()]);
 
             annCache.putIfAbsent(cls, res);
         }
 
         return res;
-    }
-
-    /**
-     * For tests only.
-     *
-     * @param cls Class for test.
-     * @return {@code true} if cached, {@code false} otherwise.
-     */
-    boolean isCached(Class<?> cls) {
-        return isCached(cls.getName());
-    }
-
-    /**
-     * For tests only.
-     *
-     * @param clsName Class for test.
-     * @return {@code true} if cached, {@code false} otherwise.
-     */
-    boolean isCached(String clsName) {
-        for (Class<?> aClass : fieldCache.keySet()) {
-            if (aClass.getName().equals(clsName))
-                return true;
-        }
-
-        for (Class<?> aClass : mtdCache.keySet()) {
-            if (aClass.getName().equals(clsName))
-                return true;
-        }
-
-        return false;
     }
 
     /**
@@ -318,156 +235,108 @@ class GridResourceIoc {
      */
     GridResourceMethod[] getMethodsWithAnnotation(@Nullable GridDeployment dep, Class<?> cls,
         Class<? extends Annotation> annCls) {
-        GridResourceMethod[] mtds = getMethodsFromCache(cls, annCls);
+        ClassDescriptor desc = descriptor(dep, cls);
 
-        if (mtds == null) {
-            List<GridResourceMethod> mtdsList = new ArrayList<>();
+        T2<GridResourceField[], GridResourceMethod[]> t2 = desc.annotatedMembers(annCls);
 
-            for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
-                for (Method mtd : cls0.getDeclaredMethods()) {
-                    Annotation ann = mtd.getAnnotation(annCls);
-
-                    if (ann != null)
-                        mtdsList.add(new GridResourceMethod(mtd, ann));
-                }
-            }
-
-            if (mtdsList.isEmpty())
-                mtds = GridResourceMethod.EMPTY_ARRAY;
-            else
-                mtds = mtdsList.toArray(new GridResourceMethod[mtdsList.size()]);
-
-            cacheMethods(dep, cls, annCls, mtds);
-        }
-
-        return mtds;
-    }
-
-    /**
-     * Gets all entries from the specified class or its super-classes that have
-     * been annotated with annotation provided.
-     *
-     * @param cls Class in which search for methods.
-     * @param dep Deployment.
-     * @param annCls Annotation.
-     * @return Set of entries with given annotations.
-     */
-    private GridResourceField[] getFieldsWithAnnotation(@Nullable GridDeployment dep, Class<?> cls,
-        Class<? extends Annotation> annCls) {
-        GridResourceField[] fields = getFieldsFromCache(cls, annCls);
-
-        if (fields == null) {
-            List<GridResourceField> fieldsList = new ArrayList<>();
-
-            boolean allowImplicitInjection = !GridNoImplicitInjection.class.isAssignableFrom(cls);
-
-            for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
-                for (Field field : cls0.getDeclaredFields()) {
-                    Annotation ann = field.getAnnotation(annCls);
-
-                    if (ann != null)
-                        fieldsList.add(new GridResourceField(field, ann));
-                    else if (allowImplicitInjection && GridResourceUtils.mayRequireResources(field)) {
-                        // Account for anonymous inner classes.
-                        fieldsList.add(new GridResourceField(field, null));
-                    }
-                }
-            }
-
-            if (fieldsList.isEmpty())
-                fields = GridResourceField.EMPTY_ARRAY;
-            else
-                fields = fieldsList.toArray(new GridResourceField[fieldsList.size()]);
-
-            cacheFields(dep, cls, annCls, fields);
-        }
-
-        return fields;
-    }
-
-    /**
-     * Gets all fields for a given class with given annotation from cache.
-     *
-     * @param cls Class to get fields from.
-     * @param annCls Annotation class for fields.
-     * @return List of fields with given annotation, possibly {@code null}.
-     */
-    @Nullable private GridResourceField[] getFieldsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
-        Map<Class<? extends Annotation>, GridResourceField[]> annCache = fieldCache.get(cls);
-
-        return annCache != null ? annCache.get(annCls) : null;
-    }
-
-    /**
-     * Caches list of fields with given annotation from given class.
-     *
-     * @param cls Class the fields belong to.
-     * @param dep Deployment.
-     * @param annCls Annotation class for the fields.
-     * @param fields Fields to cache.
-     */
-    private void cacheFields(@Nullable GridDeployment dep, Class<?> cls, Class<? extends Annotation> annCls,
-        GridResourceField[] fields) {
-        if (dep != null) {
-            Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
-
-            assert classes != null;
-
-            classes.add(cls);
-        }
-
-        Map<Class<? extends Annotation>, GridResourceField[]> rsrcFields =
-            F.addIfAbsent(fieldCache, cls, F.<Class<? extends Annotation>, GridResourceField[]>newCMap());
-
-        assert rsrcFields != null;
-
-        rsrcFields.put(annCls, fields);
-    }
-
-    /**
-     * Gets all methods for a given class with given annotation from cache.
-     *
-     * @param cls Class to get methods from.
-     * @param annCls Annotation class for fields.
-     * @return List of methods with given annotation, possibly {@code null}.
-     */
-    @Nullable private GridResourceMethod[] getMethodsFromCache(Class<?> cls, Class<? extends Annotation> annCls) {
-        Map<Class<? extends Annotation>, GridResourceMethod[]> annCache = mtdCache.get(cls);
-
-        return annCache != null ? annCache.get(annCls) : null;
-    }
-
-    /**
-     * Caches list of methods with given annotation from given class.
-     *
-     * @param rsrcCls Class the fields belong to.
-     * @param dep Deployment.
-     * @param annCls Annotation class for the fields.
-     * @param mtds Methods to cache.
-     */
-    private void cacheMethods(@Nullable GridDeployment dep, Class<?> rsrcCls, Class<? extends Annotation> annCls,
-        GridResourceMethod[] mtds) {
-        if (dep != null) {
-            Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
-
-            assert classes != null;
-
-            classes.add(rsrcCls);
-        }
-
-        Map<Class<? extends Annotation>, GridResourceMethod[]> rsrcMtds = F.addIfAbsent(mtdCache,
-            rsrcCls, F.<Class<? extends Annotation>, GridResourceMethod[]>newCMap());
-
-        assert rsrcMtds != null;
-
-        rsrcMtds.put(annCls, mtds);
+        return t2 == null ? GridResourceMethod.EMPTY_ARRAY : t2.get2();
     }
 
     /** {@inheritDoc} */
     public void printMemoryStats() {
         X.println(">>>   taskMapSize: " + taskMap.size());
-        X.println(">>>   fieldCacheSize: " + fieldCache.size());
-        X.println(">>>   mtdCacheSize: " + mtdCache.size());
-        X.println(">>>   skipCacheSize: " + skipCache.size());
+        X.println(">>>   classDescriptorsCacheSize: " + clsDescs.size());
+    }
+
+    /**
+     *
+     */
+    private static class ClassDescriptor {
+        /** */
+        private final GridResourceField[] recursiveFields;
+
+        /** */
+        private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
+
+        /**
+         * @param cls Class.
+         */
+        ClassDescriptor(Class<?> cls) {
+            Map<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> annMap
+                = new HashMap<>();
+
+            Collection<GridResourceField> recursiveFieldsList = new ArrayList<>();
+
+            boolean allowImplicitInjection = !GridNoImplicitInjection.class.isAssignableFrom(cls);
+
+            for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
+                for (Field field : cls0.getDeclaredFields()) {
+                    Annotation[] fieldAnns = field.getAnnotations();
+
+                    for (Annotation ann : fieldAnns) {
+                        T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
+
+                        if (t2 == null) {
+                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
+                                new ArrayList<GridResourceField>(),
+                                new ArrayList<GridResourceMethod>());
+
+                            annMap.put(ann.annotationType(), t2);
+                        }
+
+                        t2.get1().add(new GridResourceField(field, ann));
+                    }
+
+                    if (allowImplicitInjection
+                        && fieldAnns.length == 0
+                        && GridResourceUtils.mayRequireResources(field)) {
+                        // Account for anonymous inner classes.
+                        recursiveFieldsList.add(new GridResourceField(field, null));
+                    }
+                }
+
+                for (Method mtd : cls0.getDeclaredMethods()) {
+                    for (Annotation ann : mtd.getAnnotations()) {
+                        T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
+
+                        if (t2 == null) {
+                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
+                                new ArrayList<GridResourceField>(),
+                                new ArrayList<GridResourceMethod>());
+
+                            annMap.put(ann.annotationType(), t2);
+                        }
+
+                        t2.get2().add(new GridResourceMethod(mtd, ann));
+                    }
+                }
+            }
+
+            recursiveFields = GridResourceField.toArray(recursiveFieldsList);
+
+            this.annMap = IgniteUtils.limitedMap(annMap.size());
+
+            for (Map.Entry<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> entry
+                : annMap.entrySet()) {
+                GridResourceField[] fields = GridResourceField.toArray(entry.getValue().get1());
+                GridResourceMethod[] mtds = GridResourceMethod.toArray(entry.getValue().get2());
+
+                this.annMap.put(entry.getKey(), new T2<>(fields, mtds));
+            }
+        }
+
+        /**
+         * @return Recursive fields.
+         */
+        public GridResourceField[] recursiveFields() {
+            return recursiveFields;
+        }
+
+        /**
+         * @return Fields.
+         */
+        @Nullable public T2<GridResourceField[], GridResourceMethod[]> annotatedMembers(Class<? extends Annotation> annCls) {
+            return annMap.get(annCls);
+        }
     }
 }
