@@ -85,7 +85,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private SocketReader sockReader;
 
     /** */
-    private boolean segmentation;
+    private boolean segmented;
 
     /** Last message ID. */
     private volatile IgniteUuid lastMsgId;
@@ -738,7 +738,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         private Socket sock;
 
         /** */
-        private final Queue<TcpDiscoveryAbstractMessage> queue = new LinkedList<>();
+        private final Queue<TcpDiscoveryAbstractMessage> queue = new ArrayDeque<>();
 
         /**
          *
@@ -821,7 +821,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to send message: " + msg, e);
+                    U.error(log, "Failed to send message: " + msg, e);
 
                     msg = null;
                 }
@@ -854,7 +854,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            assert !segmentation;
+            assert !segmented;
 
             boolean success = false;
 
@@ -862,7 +862,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 sock = joinTopology(true);
 
                 if (sock == null) {
-                    log.error("Failed to reconnect to cluster: timeout.");
+                    U.error(log, "Failed to reconnect to cluster: timeout.");
 
                     return;
                 }
@@ -896,7 +896,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 }
             }
             catch (IOException | IgniteCheckedException e) {
-                log.error("Failed to reconnect", e);
+                U.error(log, "Failed to reconnect", e);
             }
             finally {
                 if (!success) {
@@ -997,7 +997,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 joinLatch.countDown();
                             }
                             else {
-                                if (getSpiContext().isStopping() || segmentation)
+                                if (getSpiContext().isStopping() || segmented)
                                     leaveLatch.countDown();
                                 else {
                                     assert reconnector == null;
@@ -1015,8 +1015,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         }
                     }
                     else if (msg == SPI_RECONNECT_FAILED || msg == RECONNECT_TIMEOUT) {
-                        if (!segmentation) {
-                            segmentation = true;
+                        if (!segmented) {
+                            segmented = true;
 
                             reconnector.cancel();
                             reconnector.join();
