@@ -35,7 +35,6 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -84,6 +83,16 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             Marshaller marsh = new OptimizedMarshaller();
 
+            marsh.setContext(new MarshallerContext() {
+                @Override public boolean registerClass(int id, Class cls) {
+                    return true;
+                }
+
+                @Override public Class getClass(int id, ClassLoader ldr) {
+                    throw new UnsupportedOperationException();
+                }
+            });
+
             KEY_SIZE = marsh.marshal(1).length;
             ONE_KB_VAL_SIZE = marsh.marshal(new Value(new byte[1024])).length;
             TWO_KB_VAL_SIZE = marsh.marshal(new Value(new byte[2048])).length;
@@ -106,7 +115,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(mode);
-        cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
+        cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -129,7 +138,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = LOCAL;
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
+            IgniteCache<Integer, Value> cache = startGrid().cache(null);
 
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));
@@ -153,7 +162,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = REPLICATED;
 
         try {
-            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
+            IgniteCache<Integer, Value> cache = startGrid().cache(null);
 
             cache.put(1, new Value(new byte[1024]));
             cache.put(2, new Value(new byte[2048]));
@@ -188,7 +197,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                    if (grid(0).cluster().mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 
@@ -242,7 +251,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
                 while (true) {
                     key++;
 
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                    if (grid(0).cluster().mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
                             jcache(0).put(key, new Value(new byte[i * 1024]));
 
@@ -280,7 +289,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(GridCacheEntryEx<?, ?> entry) throws Exception {
+    private int extrasSize(GridCacheEntryEx entry) throws Exception {
         Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
 
         mthd.setAccessible(true);

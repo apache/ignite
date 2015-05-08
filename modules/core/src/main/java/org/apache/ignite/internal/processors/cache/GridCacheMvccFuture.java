@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 /**
  * Distributed future aware of MVCC locking.
  */
-public interface GridCacheMvccFuture<K, V, T> extends GridCacheFuture<T> {
+public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
     /**
      * @param entry Entry which received new owner.
      * @param owner Owner.
      * @return {@code True} if future cares about this entry.
      */
-    public boolean onOwnerChanged(GridCacheEntryEx<K,V> entry, GridCacheMvccCandidate<K> owner);
+    public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner);
 }

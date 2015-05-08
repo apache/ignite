@@ -30,7 +30,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Cache query internal keys self test.
@@ -56,8 +56,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setQueryIndexEnabled(false);
-        cc.setPreloadMode(SYNC);
+        cc.setRebalanceMode(SYNC);
 
         return cc;
     }
@@ -68,7 +67,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @SuppressWarnings("unchecked")
     public void testInternalKeysPreloading() throws Exception {
         try {
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             for (int i = 0; i < ENTRY_CNT; i++)
                 cache.put(new GridCacheQueueHeaderKey("queue" + i), 1);

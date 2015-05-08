@@ -32,7 +32,7 @@ import java.io.*;
  */
 public abstract class IgfsInputStreamJobAdapter extends IgfsJobAdapter {
     /** {@inheritDoc} */
-    @Override public final Object execute(IgniteFs igfs, IgfsFileRange range, IgfsInputStream in)
+    @Override public final Object execute(IgniteFileSystem igfs, IgfsFileRange range, IgfsInputStream in)
         throws IgniteException, IOException {
         in.seek(range.start());
 
@@ -48,5 +48,5 @@ public abstract class IgfsInputStreamJobAdapter extends IgfsJobAdapter {
      * @throws IgniteException If execution failed.
      * @throws IOException If IO exception encountered while working with stream.
      */
-    public abstract Object execute(IgniteFs igfs, IgfsRangeInputStream in) throws IgniteException, IOException;
+    public abstract Object execute(IgniteFileSystem igfs, IgfsRangeInputStream in) throws IgniteException, IOException;
 }

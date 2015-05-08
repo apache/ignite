@@ -103,7 +103,7 @@ class VisorCacheSwapCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) ignite.forNode(node.get) else ignite.forCacheNodes(cacheName)
+        val prj = if (node.isDefined) ignite.cluster.forNode(node.get) else ignite.cluster.forCacheNodes(cacheName)
 
         if (prj.nodes().isEmpty) {
             val msg =
@@ -122,7 +122,7 @@ class VisorCacheSwapCommand {
         val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
-            val r = ignite.compute(ignite.forNode(node))
+            val r = ignite.compute(ignite.cluster.forNode(node))
                 .withName("visor-cswap-task")
                 .withNoFailover()
                 .execute(classOf[VisorCacheSwapBackupsTask], toTaskArgument(node.id(), cacheSet))

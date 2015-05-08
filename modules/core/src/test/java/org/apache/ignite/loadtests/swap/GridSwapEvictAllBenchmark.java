@@ -83,7 +83,7 @@ public class GridSwapEvictAllBenchmark {
             });
 
             try {
-                IgniteCache<Object, Object> cache = g.jcache(null);
+                IgniteCache<Object, Object> cache = g.cache(null);
 
                 assert cache != null;
 
@@ -152,7 +152,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        IgniteCache<Object, Object> cache = G.ignite().jcache(null);
+        IgniteCache<Object, Object> cache = G.ignite().cache(null);
 
         assert cache != null;
 
@@ -247,10 +247,9 @@ public class GridSwapEvictAllBenchmark {
     /**
      * @param store Cache store.
      * @return Started grid.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private static Ignite start(CacheStore<Long, String> store) throws IgniteCheckedException {
+    private static Ignite start(CacheStore<Long, String> store) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
@@ -267,7 +266,7 @@ public class GridSwapEvictAllBenchmark {
 
         ccfg.setSwapEnabled(true);
         ccfg.setEvictSynchronized(false);
-        ccfg.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_PLC_SIZE));
+        ccfg.setEvictionPolicy(new FifoEvictionPolicy(EVICT_PLC_SIZE));
 
         if (store != null) {
             ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
@@ -290,7 +289,6 @@ public class GridSwapEvictAllBenchmark {
         cfg.setSwapSpaceSpi(swap);
 
         ccfg.setCacheMode(CacheMode.LOCAL);
-        ccfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Base class for all IGFS communication messages sent between nodes.
  */
-public abstract class IgfsCommunicationMessage extends MessageAdapter {
+public abstract class IgfsCommunicationMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,20 +52,28 @@ public abstract class IgfsCommunicationMessage extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
+        if (!reader.beforeMessageRead())
+            return false;
+
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 0;
     }
 }

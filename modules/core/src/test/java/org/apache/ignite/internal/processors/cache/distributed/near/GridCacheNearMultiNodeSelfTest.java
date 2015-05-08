@@ -24,6 +24,8 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -35,14 +37,12 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
@@ -68,7 +68,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Affinity based on node index mode. */
-    private CacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
+    private AffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
 
     /** Debug flag for mappings. */
     private boolean mapDebug = true;
@@ -95,7 +95,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setCacheStoreFactory(singletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
@@ -103,7 +103,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(aff);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(BACKUPS);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -198,13 +198,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @return Affinity.
      */
-    private CacheAffinity<Object> affinity(int idx) {
+    private Affinity<Object> affinity(int idx) {
         return grid(idx).affinity(null);
     }
 
     /** @param cnt Count. */
     private Map<UUID, T2<Set<Integer>, Set<Integer>>> mapKeys(int cnt) {
-        CacheAffinity<Object> aff = affinity(0);
+        Affinity<Object> aff = affinity(0);
 
         //Mapping primary and backup keys on node
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = new HashMap<>();
@@ -251,7 +251,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = mapKeys(cnt);
 
-        for (ClusterNode n : grid(0).nodes()) {
+        for (ClusterNode n : grid(0).cluster().nodes()) {
             Set<Integer> primary = map.get(n.id()).get1();
             Set<Integer> backups = map.get(n.id()).get2();
 
@@ -319,11 +319,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             backup = grid(0);
         }
 
-        assertEquals(String.valueOf(key), backup.jcache(null).get(key));
+        assertEquals(String.valueOf(key), backup.cache(null).get(key));
 
-        primary.jcache(null).put(key, "a");
+        primary.cache(null).put(key, "a");
 
-        assertEquals("a", backup.jcache(null).get(key));
+        assertEquals("a", backup.cache(null).get(key));
     }
 
     /** @throws Exception If failed. */
@@ -387,7 +387,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                GridDhtCacheEntry<Integer, String> entry = dht(primaryGrid(2)).peekExx(2);
+                GridDhtCacheEntry entry = (GridDhtCacheEntry)dht(primaryGrid(2)).peekEx(2);
 
                 if (entry != null)
                     assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
@@ -516,14 +516,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 assertEquals("3", s);
 
-                assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
+                assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
                 assertNotNull(dht(primaryGrid(3)).peek(3, F.asList(GLOBAL)));
-
-                // This assertion no longer makes sense as we bring the value over whenever
-                // there is a version mismatch.
-                // assertNull(dht(primaryGrid(2)).peek(2, new GridCachePeekMode[]{GLOBAL}));
 
                 tx.commit();
             }
@@ -627,8 +623,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param key Key.
      * @return Near entry.
      */
-    @Nullable private GridNearCacheEntry<Integer, String> nearEntry(int idx, int key) {
-        return this.<Integer, String>near(idx).peekExx(key);
+    @Nullable private GridNearCacheEntry nearEntry(int idx, int key) {
+        return (GridNearCacheEntry)near(idx).peekEx(key);
     }
 
     /**
@@ -668,9 +664,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         lock.lock();
 
         try {
-            long topVer = grid(0).topologyVersion();
+            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion());
 
-            GridNearCacheEntry<Integer, String> nearEntry1 = nearEntry(0, key);
+            GridNearCacheEntry nearEntry1 = nearEntry(0, key);
 
             info("Peeked entry after lock [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry1 + ']');
 
@@ -682,7 +678,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             cache.put(key, val);
 
-            GridNearCacheEntry<Integer, String> nearEntry2 = nearEntry(0, key);
+            GridNearCacheEntry nearEntry2 = nearEntry(0, key);
 
             info("Peeked entry after put [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry2 + ']');
 
@@ -695,7 +691,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals(val, dht(0).peek(key));
             assertEquals(val, dht(1).peek(key));
 
-            GridNearCacheEntry<Integer, String> nearEntry3 = nearEntry(0, key);
+            GridNearCacheEntry nearEntry3 = nearEntry(0, key);
 
             info("Peeked entry after peeks [hash=" + hash(nearEntry1) + ", nearEntry=" + nearEntry3 + ']');
 

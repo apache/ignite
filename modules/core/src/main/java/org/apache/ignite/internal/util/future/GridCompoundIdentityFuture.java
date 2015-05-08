@@ -22,8 +22,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-
 /**
  * Future composed of multiple inner futures.
  */
@@ -31,16 +29,11 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Empty constructor required for {@link Externalizable}. */
+    /**
+     *
+     */
     public GridCompoundIdentityFuture() {
         // No-op.
-    }
-
-    /**
-     * @param ctx Context.
-     */
-    public GridCompoundIdentityFuture(GridKernalContext ctx) {
-        super(ctx);
     }
 
     /**
@@ -48,7 +41,7 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
      * @param rdc Reducer.
      */
     public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc) {
-        super(ctx, rdc);
+        super(rdc);
     }
 
     /** {@inheritDoc} */

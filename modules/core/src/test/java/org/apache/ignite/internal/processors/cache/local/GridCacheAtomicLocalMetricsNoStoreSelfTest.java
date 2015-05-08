@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Local atomic cache metrics test.
  */
 public class GridCacheAtomicLocalMetricsNoStoreSelfTest extends GridCacheAtomicLocalMetricsSelfTest {
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return null; // Test cache without store.
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+
+        ccfg.setReadThrough(false);
+        ccfg.setWriteThrough(false);
+        ccfg.setCacheStoreFactory(null);
+
+        return ccfg;
     }
 }

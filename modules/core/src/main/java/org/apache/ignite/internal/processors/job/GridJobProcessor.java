@@ -33,8 +33,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.util.*;
@@ -47,11 +47,12 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Responsible for all grid job execution and communication.
  */
+@SkipDaemon
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
@@ -100,19 +101,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Needed for statistics. */
-    private final LongAdder canceledJobsCnt = new LongAdder();
+    private final LongAdder8 canceledJobsCnt = new LongAdder8();
 
     /** Needed for statistics. */
-    private final LongAdder finishedJobsCnt = new LongAdder();
+    private final LongAdder8 finishedJobsCnt = new LongAdder8();
 
     /** Needed for statistics. */
-    private final LongAdder startedJobsCnt = new LongAdder();
+    private final LongAdder8 startedJobsCnt = new LongAdder8();
 
     /** Needed for statistics. */
-    private final LongAdder rejectedJobsCnt = new LongAdder();
+    private final LongAdder8 rejectedJobsCnt = new LongAdder8();
 
     /** Total job execution time (unaccounted for in metrics). */
-    private final LongAdder finishedJobsTime = new LongAdder();
+    private final LongAdder8 finishedJobsTime = new LongAdder8();
 
     /** Maximum job execution time for finished jobs. */
     private final GridAtomicLong maxFinishedJobsTime = new GridAtomicLong();
@@ -146,14 +147,14 @@ public class GridJobProcessor extends GridProcessorAdapter {
     };
 
     /** Internal task flag. */
-    private final GridThreadLocal<Boolean> internal = new GridThreadLocal<Boolean>() {
+    private final ThreadLocal<Boolean> internal = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
         }
     };
 
     /** Current session. */
-    private final GridThreadLocal<ComputeTaskSession> currentSess = new GridThreadLocal<>();
+    private final ThreadLocal<ComputeTaskSession> currentSess = new ThreadLocal<>();
 
     /**
      * @param ctx Kernal context.

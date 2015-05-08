@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -40,7 +41,7 @@ public class VisorCache implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Default cache size sampling.  */
+    /** Default cache size sampling. */
     private static final int DFLT_CACHE_SIZE_SAMPLING = 10;
 
     /** Cache name. */
@@ -77,34 +78,35 @@ public class VisorCache implements Serializable {
     private long swapKeys;
 
     /** Number of partitions. */
-    private int partsCnt;
+    private int partitions;
 
     /** Primary partitions IDs with sizes. */
-    private Collection<IgnitePair<Integer>> primaryParts;
+    private Collection<IgnitePair<Integer>> primaryPartitions;
 
     /** Backup partitions IDs with sizes. */
-    private Collection<IgnitePair<Integer>> backupParts;
+    private Collection<IgnitePair<Integer>> backupPartitions;
 
     /** Cache metrics. */
     private VisorCacheMetrics metrics;
 
     /** Cache partitions states. */
-    private GridDhtPartitionMap partsMap;
+    private GridDhtPartitionMap partitionsMap;
 
     /**
      * @param ignite Grid.
-     * @param c Actual cache.
+     * @param cacheName Cache name.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite ignite, GridCache c, int sample) throws IgniteCheckedException {
+    public static VisorCache from(Ignite ignite, String cacheName, int sample) throws IgniteCheckedException {
         assert ignite != null;
-        assert c != null;
-
-        String cacheName = c.name();
 
         GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
+
+        // Cache was not started.
+        if (ca == null || !ca.context().started())
+            return null;
 
         long swapSize;
         long swapKeys;
@@ -126,8 +128,9 @@ public class VisorCache implements Serializable {
 
         CacheMode mode = cfg.getCacheMode();
 
+
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && cfg.getDistributionMode() != CacheDistributionMode.CLIENT_ONLY;
+            && ca.context().affinityNode();
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;
@@ -153,7 +156,7 @@ public class VisorCache implements Serializable {
 
                     int sz = part.size();
 
-                    if (part.primary(-1)) // Pass -1 as topology version in order not to wait for topology version.
+                    if (part.primary(AffinityTopologyVersion.NONE)) // Pass -1 as topology version in order not to wait for topology version.
                         pps.add(new IgnitePair<>(p, sz));
                     else
                         bps.add(new IgnitePair<>(p, sz));
@@ -209,22 +212,22 @@ public class VisorCache implements Serializable {
 
         VisorCache cache = new VisorCache();
 
-        cache.name(cacheName);
-        cache.mode(mode);
-        cache.memorySize(memSz);
-        cache.size(size);
-        cache.nearSize(near);
-        cache.dhtSize(size - near);
-        cache.primarySize(ca.primarySize());
-        cache.offHeapAllocatedSize(ca.offHeapAllocatedSize());
-        cache.offHeapEntriesCount(ca.offHeapEntriesCount());
-        cache.swapSize(swapSize);
-        cache.swapKeys(swapKeys);
-        cache.partitions(ca.affinity().partitions());
-        cache.primaryPartitions(pps);
-        cache.backupPartitions(bps);
-        cache.metrics(VisorCacheMetrics.from(ca));
-        cache.partitionMap(partsMap);
+        cache.name = cacheName;
+        cache.mode = mode;
+        cache.memorySize = memSz;
+        cache.size = size;
+        cache.nearSize = near;
+        cache.dhtSize = size - near;
+        cache.primarySize = ca.primarySize();
+        cache.offHeapAllocatedSize = ca.offHeapAllocatedSize();
+        cache.offHeapEntriesCnt = ca.offHeapEntriesCount();
+        cache.swapSize = swapSize;
+        cache.swapKeys = swapKeys;
+        cache.partitions = ca.affinity().partitions();
+        cache.primaryPartitions = pps;
+        cache.backupPartitions = bps;
+        cache.metrics = VisorCacheMetrics.from(ca);
+        cache.partitionsMap = partsMap;
 
         return cache;
     }
@@ -235,21 +238,21 @@ public class VisorCache implements Serializable {
     public VisorCache history() {
         VisorCache c = new VisorCache();
 
-        c.name(name);
-        c.mode(mode);
-        c.memorySize(memorySize);
-        c.size(size);
-        c.nearSize(nearSize);
-        c.dhtSize(dhtSize);
-        c.primarySize(primarySize);
-        c.offHeapAllocatedSize(offHeapAllocatedSize);
-        c.offHeapEntriesCount(offHeapEntriesCnt);
-        c.swapSize(swapSize);
-        c.swapKeys(swapKeys);
-        c.partitions(partsCnt);
-        c.primaryPartitions(Collections.<IgnitePair<Integer>>emptyList());
-        c.backupPartitions(Collections.<IgnitePair<Integer>>emptyList());
-        c.metrics(metrics);
+        c.name = name;
+        c.mode = mode;
+        c.memorySize = memorySize;
+        c.size = size;
+        c.nearSize = nearSize;
+        c.dhtSize = dhtSize;
+        c.primarySize = primarySize;
+        c.offHeapAllocatedSize = offHeapAllocatedSize;
+        c.offHeapEntriesCnt = offHeapEntriesCnt;
+        c.swapSize = swapSize;
+        c.swapKeys = swapKeys;
+        c.partitions = partitions;
+        c.primaryPartitions = Collections.emptyList();
+        c.backupPartitions = Collections.emptyList();
+        c.metrics = metrics;
 
         return c;
     }
@@ -262,24 +265,10 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param name New cache name.
-     */
-    public void name(String name) {
-        this.name = name;
-    }
-
-    /**
      * @return Cache mode.
      */
     public CacheMode mode() {
         return mode;
-    }
-
-    /**
-     * @param mode New cache mode.
-     */
-    public void mode(CacheMode mode) {
-        this.mode = mode;
     }
 
     /**
@@ -290,24 +279,10 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param memorySize New cache size in bytes.
-     */
-    public void memorySize(long memorySize) {
-        this.memorySize = memorySize;
-    }
-
-    /**
      * @return Number of all entries in cache.
      */
     public int size() {
         return size;
-    }
-
-    /**
-     * @param size New number of all entries in cache.
-     */
-    public void size(int size) {
-        this.size = size;
     }
 
     /**
@@ -318,24 +293,10 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param nearSize New number of all entries in near cache.
-     */
-    public void nearSize(int nearSize) {
-        this.nearSize = nearSize;
-    }
-
-    /**
      * @return Number of all entries in DHT cache.
      */
     public int dhtSize() {
         return dhtSize;
-    }
-
-    /**
-     * @param dhtSize New number of all entries in DHT cache.
-     */
-    public void dhtSize(int dhtSize) {
-        this.dhtSize = dhtSize;
     }
 
     /**
@@ -346,24 +307,10 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param primarySize New number of primary entries in cache.
-     */
-    public void primarySize(int primarySize) {
-        this.primarySize = primarySize;
-    }
-
-    /**
      * @return Memory size allocated in off-heap.
      */
     public long offHeapAllocatedSize() {
         return offHeapAllocatedSize;
-    }
-
-    /**
-     * @param offHeapAllocatedSize New memory size allocated in off-heap.
-     */
-    public void offHeapAllocatedSize(long offHeapAllocatedSize) {
-        this.offHeapAllocatedSize = offHeapAllocatedSize;
     }
 
     /**
@@ -374,24 +321,10 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param offHeapEntriesCnt New number of cache entries stored in off-heap memory.
-     */
-    public void offHeapEntriesCount(long offHeapEntriesCnt) {
-        this.offHeapEntriesCnt = offHeapEntriesCnt;
-    }
-
-    /**
      * @return Size in bytes for swap space.
      */
     public long swapSize() {
         return swapSize;
-    }
-
-    /**
-     * @param swapSize New size in bytes for swap space.
-     */
-    public void swapSize(long swapSize) {
-        this.swapSize = swapSize;
     }
 
     /**
@@ -402,52 +335,24 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param swapKeys New number of cache entries stored in swap space.
-     */
-    public void swapKeys(long swapKeys) {
-        this.swapKeys = swapKeys;
-    }
-
-    /**
      * @return Number of partitions.
      */
     public int partitions() {
-        return partsCnt;
-    }
-
-    /**
-     * @param partsCnt New number of partitions.
-     */
-    public void partitions(int partsCnt) {
-        this.partsCnt = partsCnt;
+        return partitions;
     }
 
     /**
      * @return Primary partitions IDs with sizes.
      */
     public Collection<IgnitePair<Integer>> primaryPartitions() {
-        return primaryParts;
-    }
-
-    /**
-     * @param primaryParts New primary partitions IDs with sizes.
-     */
-    public void primaryPartitions(Collection<IgnitePair<Integer>> primaryParts) {
-        this.primaryParts = primaryParts;
+        return primaryPartitions;
     }
 
     /**
      * @return Backup partitions IDs with sizes.
      */
     public Collection<IgnitePair<Integer>> backupPartitions() {
-        return backupParts;
-    }
-
-    /**
-     * @param backupParts New backup partitions IDs with sizes.
-     */
-    public void backupPartitions(Collection<IgnitePair<Integer>> backupParts) {
-        this.backupParts = backupParts;
+        return backupPartitions;
     }
 
     /**
@@ -458,24 +363,10 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @param metrics New cache metrics.
-     */
-    public void metrics(VisorCacheMetrics metrics) {
-        this.metrics = metrics;
-    }
-
-    /**
      * @return Cache partitions states.
      */
     @Nullable public GridDhtPartitionMap partitionMap() {
-        return partsMap;
-    }
-
-    /**
-     * @param partsMap New cache partitions states.
-     */
-    public void partitionMap(@Nullable GridDhtPartitionMap partsMap) {
-        this.partsMap = partsMap;
+        return partitionsMap;
     }
 
     /** {@inheritDoc} */

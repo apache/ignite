@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits.spi;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -219,7 +218,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
                     return new HashMap<>();
                 }
 
-                @Override public void onExchange(Map<Integer, Object> data) {
+                @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
                 }
             });
 
@@ -331,18 +330,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         getTestData().setDiscoverySpi(discoSpi);
 
         getTestResources().inject(discoSpi);
-
-        discoSpi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                return new GridSecurityContext(subj);
-            }
-
-            @Override public boolean isGlobalNodeAuthentication() {
-                return false;
-            }
-        });
 
         configure(discoSpi);
 
@@ -725,7 +712,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         @Nullable @Override public Collection<GridSecurityPermission> systemPermissions() {
             return null;
         }
-    };
+    }
 
     private static class GridSecuritySubjectImpl implements GridSecuritySubject {
         /** Node Id. */

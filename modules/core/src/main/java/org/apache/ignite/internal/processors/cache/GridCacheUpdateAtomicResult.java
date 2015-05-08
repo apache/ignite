@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -27,23 +28,23 @@ import javax.cache.processor.*;
 /**
  * Cache entry atomic update result.
  */
-public class GridCacheUpdateAtomicResult<K, V> {
+public class GridCacheUpdateAtomicResult {
     /** Success flag.*/
     private final boolean success;
 
     /** Old value. */
     @GridToStringInclude
-    private final V oldVal;
+    private final CacheObject oldVal;
 
     /** New value. */
     @GridToStringInclude
-    private final V newVal;
+    private final CacheObject newVal;
 
     /** New TTL. */
     private final long newTtl;
 
     /** Explicit DR expire time (if any). */
-    private final long drExpireTime;
+    private final long conflictExpireTime;
 
     /** Version for deferred delete. */
     @GridToStringInclude
@@ -51,13 +52,13 @@ public class GridCacheUpdateAtomicResult<K, V> {
 
     /** DR resolution result. */
     @GridToStringInclude
-    private final GridCacheVersionConflictContext<K, V> drRes;
+    private final GridCacheVersionConflictContext<?, ?> conflictRes;
 
     /** Whether update should be propagated to DHT node. */
     private final boolean sndToDht;
 
     /** Value computed by entry processor. */
-    private EntryProcessorResult<?> res;
+    private IgniteBiTuple<Object, Exception> res;
 
     /**
      * Constructor.
@@ -67,35 +68,35 @@ public class GridCacheUpdateAtomicResult<K, V> {
      * @param newVal New value.
      * @param res Value computed by the {@link EntryProcessor}.
      * @param newTtl New TTL.
-     * @param drExpireTime Explicit DR expire time (if any).
+     * @param conflictExpireTime Explicit DR expire time (if any).
      * @param rmvVer Version for deferred delete.
-     * @param drRes DR resolution result.
+     * @param conflictRes DR resolution result.
      * @param sndToDht Whether update should be propagated to DHT node.
      */
     public GridCacheUpdateAtomicResult(boolean success,
-        @Nullable V oldVal,
-        @Nullable V newVal,
-        @Nullable EntryProcessorResult<?> res,
+        @Nullable CacheObject oldVal,
+        @Nullable CacheObject newVal,
+        @Nullable IgniteBiTuple<Object, Exception> res,
         long newTtl,
-        long drExpireTime,
+        long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
-        @Nullable GridCacheVersionConflictContext<K, V> drRes,
+        @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
         boolean sndToDht) {
         this.success = success;
         this.oldVal = oldVal;
         this.newVal = newVal;
         this.res = res;
         this.newTtl = newTtl;
-        this.drExpireTime = drExpireTime;
+        this.conflictExpireTime = conflictExpireTime;
         this.rmvVer = rmvVer;
-        this.drRes = drRes;
+        this.conflictRes = conflictRes;
         this.sndToDht = sndToDht;
     }
 
     /**
      * @return Value computed by the {@link EntryProcessor}.
      */
-    @Nullable public EntryProcessorResult<?> computedResult() {
+    @Nullable public IgniteBiTuple<Object, Exception> computedResult() {
         return res;
     }
 
@@ -109,29 +110,30 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /**
      * @return Old value.
      */
-    @Nullable public V oldValue() {
+    @Nullable public CacheObject oldValue() {
         return oldVal;
     }
 
     /**
      * @return New value.
      */
-    @Nullable public V newValue() {
+    @Nullable public CacheObject newValue() {
         return newVal;
     }
 
     /**
-     * @return {@code -1} if TTL did not change, otherwise new TTL.
+     * @return {@link GridCacheUtils#TTL_NOT_CHANGED} if TTL did not change, otherwise new TTL.
      */
     public long newTtl() {
         return newTtl;
     }
 
     /**
-     * @return Explicit DR expire time (if any).
+     * @return Explicit conflict expire time (if any). Set only if it is necessary to propagate concrete expire time
+     * value to DHT node. Otherwise set to {@link GridCacheUtils#EXPIRE_TIME_CALCULATE}.
      */
-    public long drExpireTime() {
-        return drExpireTime;
+    public long conflictExpireTime() {
+        return conflictExpireTime;
     }
 
     /**
@@ -144,8 +146,8 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /**
      * @return DR conflict resolution context.
      */
-    @Nullable public GridCacheVersionConflictContext<K, V> drResolveResult() {
-        return drRes;
+    @Nullable public GridCacheVersionConflictContext<?, ?> conflictResolveResult() {
+        return conflictRes;
     }
 
     /**

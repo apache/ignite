@@ -82,6 +82,46 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testIgnitionStartDefault() throws Exception {
+        try (Ignite ignite = Ignition.start()) {
+            log.info("Started1: " + ignite.name());
+
+            try {
+                Ignition.start();
+
+                fail();
+            }
+            catch (IgniteException expected) {
+                // No-op.
+            }
+        }
+
+        try (Ignite ignite = Ignition.start()) {
+            log.info("Started2: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartFabricDefault() throws Exception {
+        try (Ignite ignite = Ignition.start("config/fabric/default-config.xml")) {
+            log.info("Started: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartDefault() throws Exception {
+        try (Ignite ignite = Ignition.start("config/default-config.xml")) {
+            log.info("Started: " + ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testStartGridWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
         String gridName = "grid_with_url_config";
@@ -177,10 +217,10 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         List<String> gridNames = bean.getGridNames();
 
-        assert evts.get(0) == LifecycleEventType.BEFORE_GRID_START : "Invalid lifecycle event: " + evts.get(0);
-        assert evts.get(1) == LifecycleEventType.AFTER_GRID_START : "Invalid lifecycle event: " + evts.get(1);
-        assert evts.get(2) == LifecycleEventType.BEFORE_GRID_STOP : "Invalid lifecycle event: " + evts.get(2);
-        assert evts.get(3) == LifecycleEventType.AFTER_GRID_STOP : "Invalid lifecycle event: " + evts.get(3);
+        assert evts.get(0) == LifecycleEventType.BEFORE_NODE_START : "Invalid lifecycle event: " + evts.get(0);
+        assert evts.get(1) == LifecycleEventType.AFTER_NODE_START : "Invalid lifecycle event: " + evts.get(1);
+        assert evts.get(2) == LifecycleEventType.BEFORE_NODE_STOP : "Invalid lifecycle event: " + evts.get(2);
+        assert evts.get(3) == LifecycleEventType.AFTER_NODE_STOP : "Invalid lifecycle event: " + evts.get(3);
 
         checkGridNameEquals(gridNames.get(0), gridName);
         checkGridNameEquals(gridNames.get(1), gridName);
@@ -535,6 +575,30 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testLoadBean() throws Exception {
+        final String path = "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml";
+
+        GridTestUtils.assertThrows(
+            log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Ignition.loadSpringBean(path, "wrongName");
+
+                    return null;
+                }
+            },
+            IgniteException.class,
+            null
+        );
+
+        CacheConfiguration cfg = Ignition.loadSpringBean(path, "cache-configuration");
+
+        assertEquals("TestDynamicCache", cfg.getName());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @Override protected void afterTest() throws Exception {
         G.stopAll(false);
     }
@@ -645,7 +709,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             try {
                 checkState(ignite.name(),
-                    evt == LifecycleEventType.AFTER_GRID_START || evt == LifecycleEventType.BEFORE_GRID_STOP);
+                    evt == LifecycleEventType.AFTER_NODE_START || evt == LifecycleEventType.BEFORE_NODE_STOP);
             }
             catch (Throwable e) {
                 log.error("Lifecycle bean failed state check: " + this, e);

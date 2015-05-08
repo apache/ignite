@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -129,38 +128,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         return spis;
     }
 
-    /** {@inheritDoc} */
-    @Override public final void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
-        for (T spi : spis) {
-            // Inject all spi resources.
-            ctx.resource().inject(spi);
-
-            // Inject SPI internal objects.
-            inject(spi);
-
-            try {
-                Map<String, Object> retval = spi.getNodeAttributes();
-
-                if (retval != null) {
-                    for (Map.Entry<String, Object> e : retval.entrySet()) {
-                        if (attrs.containsKey(e.getKey()))
-                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
-                                ", attr=" + e.getKey() + ']' +
-                                ". Attribute set by one SPI implementation has the same name (name collision) as " +
-                                "attribute set by other SPI implementation. Such overriding is not allowed. " +
-                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
-                                "attribute name collisions.");
-
-                        attrs.put(e.getKey(), e.getValue());
-                    }
-                }
-            }
-            catch (IgniteSpiException e) {
-                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
-            }
-        }
-    }
-
     /**
      * @param spi SPI whose internal objects need to be injected.
      * @throws IgniteCheckedException If injection failed.
@@ -189,6 +156,16 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onBeforeSpiStart() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAfterSpiStart() {
+        // No-op.
+    }
+
     /**
      * Starts wrapped SPI.
      *
@@ -198,6 +175,33 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
+            // Inject all spi resources.
+            ctx.resource().inject(spi);
+
+            // Inject SPI internal objects.
+            inject(spi);
+
+            try {
+                Map<String, Object> retval = spi.getNodeAttributes();
+
+                if (retval != null) {
+                    for (Map.Entry<String, Object> e : retval.entrySet()) {
+                        if (ctx.hasNodeAttribute(e.getKey()))
+                            throw new IgniteCheckedException("SPI attribute collision for attribute [spi=" + spi +
+                                ", attr=" + e.getKey() + ']' +
+                                ". Attribute set by one SPI implementation has the same name (name collision) as " +
+                                "attribute set by other SPI implementation. Such overriding is not allowed. " +
+                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
+                                "attribute name collisions.");
+
+                        ctx.addNodeAttribute(e.getKey(), e.getValue());
+                    }
+                }
+            }
+            catch (IgniteSpiException e) {
+                throw new IgniteCheckedException("Failed to get SPI attributes.", e);
+            }
+
             // Print-out all SPI parameters only in DEBUG mode.
             if (log.isDebugEnabled())
                 log.debug("Starting SPI: " + spi);
@@ -211,12 +215,16 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             if (log.isDebugEnabled())
                 log.debug("Starting SPI implementation: " + spi.getClass().getName());
 
+            onBeforeSpiStart();
+
             try {
                 spi.spiStart(ctx.gridName());
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to start SPI: " + spi, e);
             }
+
+            onAfterSpiStart();
 
             if (log.isDebugEnabled())
                 log.debug("SPI module started OK: " + spi.getClass().getName());
@@ -316,8 +324,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         A.notNull(topic, "topic");
 
                         try {
-                            if (msg instanceof MessageAdapter)
-                                ctx.io().send(node, topic, (MessageAdapter)msg, SYSTEM_POOL);
+                            if (msg instanceof Message)
+                                ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
                             else
                                 ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }
@@ -429,37 +437,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key,
-                        byte[] keyBytes, @Nullable ClassLoader ldr) {
-                        try {
-                            return ctx.offheap().getValue(spaceName, part, key, keyBytes, ldr);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
-                    @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-                        @Nullable byte[] keyBytes) {
-                        try {
-                            return ctx.offheap().removex(spaceName, part, key, keyBytes);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
-                    @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
-                        @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
-                        try {
-                            ctx.offheap().put(spaceName, part, key, keyBytes, valBytes != null ? valBytes :
-                                ctx.config().getMarshaller().marshal(val));
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw U.convertException(e);
-                        }
-                    }
-
                     @SuppressWarnings({"unchecked"})
                     @Nullable @Override public <T> T readFromSwap(String spaceName, SwapKey key,
                         @Nullable ClassLoader ldr) {
@@ -528,9 +505,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();
 
-                            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
+                            GridCacheSwapEntry e = cctx.swap().read(cctx.toCacheKeyObject(key), true, true);
 
-                            return e != null ? (V)e.value() : null;
+                            return e != null ? CU.<V>value(e.value(), cctx, true) : null;
                         }
                         catch (IgniteCheckedException e) {
                             throw U.convertException(e);
@@ -585,7 +562,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(Object data) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data) {
         // No-op.
     }
 

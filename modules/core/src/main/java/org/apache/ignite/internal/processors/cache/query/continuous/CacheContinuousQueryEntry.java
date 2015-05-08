@@ -18,143 +18,148 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheValueBytes.*;
+import javax.cache.event.*;
+import java.nio.*;
 
 /**
  * Continuous query entry.
  */
-class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externalizable {
+public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final EventType[] EVT_TYPE_VALS = EventType.values();
+
+    /**
+     * @param ord Event type ordinal value.
+     * @return Event type.
+     */
+    @Nullable public static EventType eventTypeFromOrdinal(int ord) {
+        return ord >= 0 && ord < EVT_TYPE_VALS.length ? EVT_TYPE_VALS[ord] : null;
+    }
+
+    /** */
+    private EventType evtType;
+
     /** Key. */
     @GridToStringInclude
-    private K key;
+    private KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
-    private V newVal;
+    private CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
-    private V oldVal;
-
-    /** Serialized key. */
-    @GridToStringExclude
-    private byte[] keyBytes;
-
-    /** Serialized value. */
-    @GridToStringExclude
-    private GridCacheValueBytes newValBytes;
-
-    /** Serialized value. */
-    @GridToStringExclude
-    private GridCacheValueBytes oldValBytes;
+    private CacheObject oldVal;
 
     /** Cache name. */
-    private String cacheName;
+    private int cacheId;
 
     /** Deployment info. */
     @GridToStringExclude
+    @GridDirectTransient
     private GridDeploymentInfo depInfo;
 
+    /**
+     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
+     */
     public CacheContinuousQueryEntry() {
         // No-op.
     }
 
-    CacheContinuousQueryEntry(K key, @Nullable V newVal, @Nullable GridCacheValueBytes newValBytes, @Nullable V oldVal,
-        @Nullable GridCacheValueBytes oldValBytes) {
-
+    /**
+     * @param cacheId Cache ID.
+     * @param evtType Event type.
+     * @param key Key.
+     * @param newVal New value.
+     * @param oldVal Old value.
+     */
+    CacheContinuousQueryEntry(
+        int cacheId,
+        EventType evtType,
+        KeyCacheObject key,
+        @Nullable CacheObject newVal,
+        @Nullable CacheObject oldVal) {
+        this.cacheId = cacheId;
+        this.evtType = evtType;
         this.key = key;
         this.newVal = newVal;
-        this.newValBytes = newValBytes;
         this.oldVal = oldVal;
-        this.oldValBytes = oldValBytes;
     }
 
     /**
-     * @param cacheName Cache name.
+     * @return Cache ID.
      */
-    void cacheName(String cacheName) {
-        this.cacheName = cacheName;
+    int cacheId() {
+        return cacheId;
     }
 
     /**
-     * @return cache name.
+     * @return Event type.
      */
-    String cacheName() {
-        return cacheName;
+    EventType eventType() {
+        return evtType;
     }
 
     /**
-     * @param marsh Marshaller.
+     * @param cctx Cache context.
      * @throws IgniteCheckedException In case of error.
      */
-    void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
-        assert marsh != null;
-
+    void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
         assert key != null;
 
-        keyBytes = marsh.marshal(key);
+        key.prepareMarshal(cctx.cacheObjectContext());
 
-        if (newValBytes == null || newValBytes.isNull())
-            newValBytes = newVal != null ?
-                newVal instanceof byte[] ? plain(newVal) : marshaled(marsh.marshal(newVal)) : null;
+        if (newVal != null)
+            newVal.prepareMarshal(cctx.cacheObjectContext());
 
-        if (oldValBytes == null || oldValBytes.isNull())
-            oldValBytes = oldVal != null ?
-                oldVal instanceof byte[] ? plain(oldVal) : marshaled(marsh.marshal(oldVal)) : null;
+        if (oldVal != null)
+            oldVal.prepareMarshal(cctx.cacheObjectContext());
     }
 
     /**
-     * @param marsh Marshaller.
+     * @param cctx Cache context.
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */
-    void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        assert marsh != null;
+    void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        assert key == null : "Key should be null: " + key;
-        assert newVal == null : "New value should be null: " + newVal;
-        assert oldVal == null : "Old value should be null: " + oldVal;
-        assert keyBytes != null;
+        if (newVal != null)
+            newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        key = marsh.unmarshal(keyBytes, ldr);
-
-        if (newValBytes != null && !newValBytes.isNull())
-            newVal = newValBytes.isPlain() ? (V)newValBytes.get() : marsh.<V>unmarshal(newValBytes.get(), ldr);
-
-        if (oldValBytes != null && !oldValBytes.isNull())
-            oldVal = oldValBytes.isPlain() ? (V)oldValBytes.get() : marsh.<V>unmarshal(oldValBytes.get(), ldr);
+        if (oldVal != null)
+            oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
     }
 
     /**
      * @return Key.
      */
-    K key() {
+    KeyCacheObject key() {
         return key;
     }
 
     /**
      * @return New value.
      */
-    V value() {
+    CacheObject value() {
         return newVal;
     }
 
     /**
      * @return Old value.
      */
-    V oldValue() {
+    CacheObject oldValue() {
         return oldVal;
     }
 
@@ -169,62 +174,117 @@ class CacheContinuousQueryEntry<K, V> implements GridCacheDeployable, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        boolean b = keyBytes != null;
-
-        out.writeBoolean(b);
-
-        if (b) {
-            U.writeByteArray(out, keyBytes);
-
-            if (newValBytes != null && !newValBytes.isNull()) {
-                out.writeBoolean(true);
-                out.writeBoolean(newValBytes.isPlain());
-                U.writeByteArray(out, newValBytes.get());
-            }
-            else
-                out.writeBoolean(false);
-
-            if (oldValBytes != null && !oldValBytes.isNull()) {
-                out.writeBoolean(true);
-                out.writeBoolean(oldValBytes.isPlain());
-                U.writeByteArray(out, oldValBytes.get());
-            }
-            else
-                out.writeBoolean(false);
-
-            U.writeString(out, cacheName);
-            out.writeObject(depInfo);
-        }
-        else {
-            out.writeObject(key);
-            out.writeObject(newVal);
-            out.writeObject(oldVal);
-        }
+    @Override public byte directType() {
+        return 96;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean b = in.readBoolean();
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
 
-        if (b) {
-            keyBytes = U.readByteArray(in);
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
 
-            if (in.readBoolean())
-                newValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
-
-            if (in.readBoolean())
-                oldValBytes = in.readBoolean() ? plain(U.readByteArray(in)) : marshaled(U.readByteArray(in));
-
-            cacheName = U.readString(in);
-            depInfo = (GridDeploymentInfo)in.readObject();
+            writer.onHeaderWritten();
         }
-        else {
-            key = (K)in.readObject();
-            newVal = (V)in.readObject();
-            oldVal = (V)in.readObject();
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeByte("evtType", evtType != null ? (byte)evtType.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeMessage("key", key))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeMessage("newVal", newVal))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeMessage("oldVal", oldVal))
+                    return false;
+
+                writer.incrementState();
+
         }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                byte evtTypeOrd;
+
+                evtTypeOrd = reader.readByte("evtType");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                evtType = eventTypeFromOrdinal(evtTypeOrd);
+
+                reader.incrementState();
+
+            case 2:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                newVal = reader.readMessage("newVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                oldVal = reader.readMessage("oldVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 5;
     }
 
     /** {@inheritDoc} */

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -34,7 +36,7 @@ import java.util.*;
  * Force keys request. This message is sent by node while preloading to force
  * another node to put given keys into the next batch of transmitting entries.
  */
-public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,17 +46,13 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /** Mini-future ID. */
     private IgniteUuid miniId;
 
-    /** Serialized keys. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> keyBytes;
-
     /** Keys to request. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<K> keys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private Collection<KeyCacheObject> keys;
 
     /** Topology version for which keys are requested. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * @param cacheId Cache ID.
@@ -67,8 +65,8 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        Collection<K> keys,
-        long topVer
+        Collection<KeyCacheObject> keys,
+        AffinityTopologyVersion topVer
     ) {
         assert futId != null;
         assert miniId != null;
@@ -96,7 +94,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /**
      * @param keys Collection of keys.
      */
-    public GridDhtForceKeysRequest(Collection<K> keys) {
+    public GridDhtForceKeysRequest(Collection<KeyCacheObject> keys) {
         assert !F.isEmpty(keys);
 
         this.keys = keys;
@@ -117,48 +115,43 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /**
-     * @return Collection of serialized keys.
-     */
-    public Collection<byte[]> keyBytes() {
-        return keyBytes;
-    }
-
-    /**
      * @return Keys.
      */
-    public Collection<K> keys() {
+    public Collection<KeyCacheObject> keys() {
         return keys;
     }
 
     /**
      * @return Topology version for which keys are requested.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (keyBytes == null)
-            keyBytes = marshalCollection(keys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(keys, cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (keys == null)
-            keys = unmarshalCollection(keyBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        finishUnmarshalCacheObjects(keys, cctx, ldr);
     }
 
     /**
      * @return Key count.
      */
     private int keyCount() {
-        return keyBytes == null ? keys.size() : keyBytes.size();
+        return keys.size();
     }
 
     /** {@inheritDoc} */
@@ -168,11 +161,11 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -183,7 +176,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("keyBytes", keyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -195,7 +188,7 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -206,28 +199,31 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
-                keyBytes = reader.readCollection("keyBytes", Type.BYTE_ARR);
+                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 miniId = reader.readIgniteUuid("miniId");
@@ -235,15 +231,15 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -253,6 +249,11 @@ public class GridDhtForceKeysRequest<K, V> extends GridCacheMessage<K, V> implem
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 42;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
     }
 
     /** {@inheritDoc} */

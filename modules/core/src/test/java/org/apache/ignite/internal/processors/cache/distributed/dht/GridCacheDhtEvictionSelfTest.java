@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -37,9 +36,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -70,20 +68,22 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setPreloadMode(NONE);
+        cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
-        cacheCfg.setEvictNearSynchronized(true);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
         cacheCfg.setBackups(1);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+        nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy(10000));
+        cacheCfg.setNearConfiguration(nearCfg);
 
         // Set eviction queue size explicitly.
         cacheCfg.setEvictMaxOverflowRatio(0);
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
-        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(10000));
-        cacheCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10000));
+        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(10000));
+
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -132,14 +132,6 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param node Node.
-     * @return Grid for the given node.
-     */
-    private Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
-    }
-
-    /**
      * @param g Grid.
      * @return Near cache.
      */
@@ -158,21 +150,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param idx Index.
-     * @return Affinity.
-     */
-    private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).getConfiguration(CacheConfiguration.class).getAffinity();
-    }
-
-    /**
      * @param key Key.
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        CacheConsistentHashAffinityFunction aff = affinity(0);
-
-        return aff.nodes(aff.partition(key), grid(0).nodes(), 1);
+        return grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
     }
 
     /**
@@ -234,8 +216,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         assertEquals(val, nearBackup.peek(key));
         assertEquals(val, dhtBackup.peek(key));
 
-        GridDhtCacheEntry<Integer, String> entryPrimary = dhtPrimary.peekExx(key);
-        GridDhtCacheEntry<Integer, String> entryBackup = dhtBackup.peekExx(key);
+        GridDhtCacheEntry entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
+        GridDhtCacheEntry entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
 
         assert entryPrimary != null;
         assert entryBackup != null;
@@ -251,7 +233,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         // Evict on primary node.
         // It should trigger dht eviction and eviction on backup node.
-        grid(primary).jcache(null).localEvict(Collections.<Object>singleton(key));
+        grid(primary).cache(null).localEvict(Collections.<Object>singleton(key));
 
         // Give 5 seconds for eviction event to occur on backup and primary node.
         futBackup.get(3000);
@@ -259,11 +241,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, nearPrimary.size());
 
-        assertNull(nearPrimary.peekExx(key));
-        assertNull(dhtPrimary.peekExx(key));
+        assertNull(nearPrimary.peekEx(key));
+        assertNull(dhtPrimary.peekEx(key));
 
-        assertNull(nearBackup.peekExx(key));
-        assertNull(dhtBackup.peekExx(key));
+        assertNull(nearBackup.peekEx(key));
+        assertNull(dhtBackup.peekEx(key));
     }
 
     /**
@@ -327,7 +309,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         // Evict on primary node.
         // Eviction of the last key should trigger queue processing.
         for (Integer key : keys)
-            primaryIgnite.jcache(null).localEvict(Collections.<Object>singleton(key));
+            primaryIgnite.cache(null).localEvict(Collections.<Object>singleton(key));
 
         // Give 5 seconds for eviction events to occur on backup and primary node.
         futBackup.get(3000);
@@ -344,8 +326,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
             assertNull(msg, nearBackup.peek(key));
             assertNull(msg, dhtBackup.peek(key));
-            assertNull(msg, nearBackup.peekExx(key));
-            assertNull(msg, dhtBackup.peekExx(key));
+            assertNull(msg, nearBackup.peekEx(key));
+            assertNull(msg, dhtBackup.peekEx(key));
         }
 
         for (Integer key : keys) {
@@ -353,8 +335,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
             assertNull(msg, nearPrimary.peek(key));
             assertNull(msg, dhtPrimary.peek(key));
-            assertNull(msg, nearPrimary.peekExx(key));
-            assertNull(dhtPrimary.peekExx(key));
+            assertNull(msg, nearPrimary.peekEx(key));
+            assertNull(dhtPrimary.peekEx(key));
         }
     }
 }

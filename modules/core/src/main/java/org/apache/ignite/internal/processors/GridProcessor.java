@@ -17,22 +17,13 @@
 
 package org.apache.ignite.internal.processors;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
-
-import java.util.*;
 
 /**
  * Interface for all processors.
  */
 @GridToStringExclude
 public interface GridProcessor extends GridComponent {
-    /**
-     * Adds attributes from this component to map of all node attributes.
-     *
-     * @param attrs Map of all attributes.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException;
+    // No-op.
 }

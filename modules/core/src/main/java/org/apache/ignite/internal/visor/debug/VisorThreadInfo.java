@@ -119,17 +119,17 @@ public class VisorThreadInfo implements Serializable {
         assert ti != null;
 
         VisorThreadLockInfo[] linfos = ti.getLockedSynchronizers() != null ?
-                new VisorThreadLockInfo[ti.getLockedSynchronizers().length] : null;
+            new VisorThreadLockInfo[ti.getLockedSynchronizers().length] : null;
 
         if (ti.getLockedSynchronizers() != null)
-            for (int i = 0; i < ti.getLockedSynchronizers().length; i ++)
+            for (int i = 0; i < ti.getLockedSynchronizers().length; i++)
                 linfos[i] = VisorThreadLockInfo.from(ti.getLockedSynchronizers()[i]);
 
         VisorThreadMonitorInfo[] minfos = ti.getLockedMonitors() != null ?
-                new VisorThreadMonitorInfo[ti.getLockedMonitors().length] : null;
+            new VisorThreadMonitorInfo[ti.getLockedMonitors().length] : null;
 
         if (ti.getLockedMonitors() != null)
-            for (int i = 0; i < ti.getLockedMonitors().length; i ++)
+            for (int i = 0; i < ti.getLockedMonitors().length; i++)
                 minfos[i] = VisorThreadMonitorInfo.from(ti.getLockedMonitors()[i]);
 
         return new VisorThreadInfo(ti.getThreadName(),
@@ -283,7 +283,7 @@ public class VisorThreadInfo implements Serializable {
 
         int maxFrames = Math.min(stackTrace.length, MAX_FRAMES);
 
-        for (int i = 0; i < maxFrames; i ++) {
+        for (int i = 0; i < maxFrames; i++) {
             StackTraceElement ste = stackTrace[i];
 
             sb.append("\tat ").append(ste.toString()).append('\n');
@@ -306,7 +306,7 @@ public class VisorThreadInfo implements Serializable {
                 }
             }
 
-            for (VisorThreadMonitorInfo mi: lockedMonitors) {
+            for (VisorThreadMonitorInfo mi : lockedMonitors) {
                 if (mi.stackDepth() == i)
                     sb.append("\t-  locked ").append(mi).append('\n');
             }
@@ -318,7 +318,7 @@ public class VisorThreadInfo implements Serializable {
         if (locks.length > 0) {
             sb.append("\n\tNumber of locked synchronizers = ").append(locks.length).append('\n');
 
-            for (VisorThreadLockInfo li: locks)
+            for (VisorThreadLockInfo li : locks)
                 sb.append("\t- ").append(li).append('\n');
         }
 

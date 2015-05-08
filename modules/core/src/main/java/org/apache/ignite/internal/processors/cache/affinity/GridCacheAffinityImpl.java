@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.affinity;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -30,7 +31,7 @@ import java.util.*;
 /**
  * Affinity interface implementation.
  */
-public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
+public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     /** Cache context. */
     private GridCacheContext<K, V> cctx;
 
@@ -83,7 +84,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
     @Override public int[] primaryPartitions(ClusterNode n) {
         A.notNull(n, "n");
 
-        long topVer = cctx.discovery().topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
         Set<Integer> parts = cctx.affinity().primaryPartitions(n.id(), topVer);
 
@@ -94,7 +95,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
     @Override public int[] backupPartitions(ClusterNode n) {
         A.notNull(n, "n");
 
-        long topVer = cctx.discovery().topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
         Set<Integer> parts = cctx.affinity().backupPartitions(n.id(), topVer);
 
@@ -107,7 +108,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
 
         Collection<Integer> parts = new HashSet<>();
 
-        long topVer = cctx.discovery().topologyVersion();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
 
         for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
             for (ClusterNode affNode : cctx.affinity().nodes(part, topVer)) {
@@ -147,14 +148,8 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
     @Override public Object affinityKey(K key) {
         A.notNull(key, "key");
 
-        if (cctx.portableEnabled()) {
-            try {
-                key = (K)cctx.marshalToPortable(key);
-            }
-            catch (IgniteException e) {
-                U.error(log, "Failed to marshal key to portable: " + key, e);
-            }
-        }
+        if (key instanceof CacheObject)
+            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
 
         return cctx.config().getAffinityMapper().affinityKey(key);
     }
@@ -170,7 +165,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
     @Override public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        long topVer = topologyVersion();
+        AffinityTopologyVersion topVer = topologyVersion();
 
         int nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();
 
@@ -215,7 +210,7 @@ public class GridCacheAffinityImpl<K, V> implements CacheAffinity<K> {
      *
      * @return Topology version.
      */
-    private long topologyVersion() {
+    private AffinityTopologyVersion topologyVersion() {
         return cctx.affinity().affinityTopologyVersion();
     }
 }

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -28,8 +29,8 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.event.*;
 import java.io.*;
@@ -43,7 +44,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.*;
 /**
  *
  */
-public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K, V> {
+public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Sets map. */
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
@@ -182,8 +183,8 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
             if (queueQryGuard.compareAndSet(false, true)) {
                 queueQryId = cctx.continuousQueries().executeInternalQuery(
-                    new CacheEntryUpdatedListener<K, V>() {
-                        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends K, ? extends V>> evts) {
+                    new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
                             if (!busyLock.enterBusy())
                                 return;
 
@@ -246,9 +247,11 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
      */
-    public void onEntryUpdated(K key, boolean rmv) {
-        if (key instanceof GridCacheSetItemKey)
-            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
+    public void onEntryUpdated(KeyCacheObject key, boolean rmv) {
+        Object key0 = key.value(cctx.cacheObjectContext(), false);
+
+        if (key0 instanceof GridCacheSetItemKey)
+            onSetItemUpdated((GridCacheSetItemKey)key0, rmv);
     }
 
     /**
@@ -357,7 +360,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(IgniteUuid setId, long topVer) throws IgniteCheckedException {
+    private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -408,7 +411,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
         if (!cctx.isLocal()) {
             while (true) {
-                long topVer = cctx.topologyVersionFuture().get();
+                AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
                 Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
 
@@ -446,14 +449,14 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         throw e;
                 }
 
-                if (cctx.topologyVersionFuture().get() == topVer)
+                if (topVer.equals(cctx.topologyVersionFuture().get()))
                     break;
             }
         }
         else {
             blockSet(id);
 
-            cctx.dataStructures().removeSetData(id, 0);
+            cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
         }
     }
 
@@ -529,7 +532,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     /**
      * Predicate for queue continuous query.
      */
-    private static class QueueHeaderPredicate<K, V> implements CacheEntryEventFilter<K, V>,
+    private static class QueueHeaderPredicate<K, V> implements CacheEntryEventSerializableFilter<K, V>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -641,7 +644,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         private IgniteUuid setId;
 
         /** */
-        private long topVer;
+        private AffinityTopologyVersion topVer;
 
         /**
          * Required by {@link Externalizable}.
@@ -655,7 +658,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
          * @param setId Set ID.
          * @param topVer Topology version.
          */
-        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, long topVer) {
+        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.setId = setId;
             this.topVer = topVer;
@@ -687,14 +690,14 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
             U.writeGridUuid(out, setId);
-            out.writeLong(topVer);
+            out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
             setId = U.readGridUuid(in);
-            topVer = in.readLong();
+            topVer = (AffinityTopologyVersion)in.readObject();
         }
 
         /** {@inheritDoc} */

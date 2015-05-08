@@ -26,9 +26,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -45,9 +45,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -111,13 +110,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
-            cc.setDistributionMode(PARTITIONED_ONLY);
-            cc.setEvictionPolicy(new CacheLruEvictionPolicy(1000));
+            cc.setEvictionPolicy(new LruEvictionPolicy(1000));
             cc.setEvictSynchronized(false);
-            cc.setEvictNearSynchronized(false);
             cc.setSwapEnabled(false);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setPreloadMode(NONE);
+            cc.setRebalanceMode(NONE);
 
             c.setCacheConfiguration(cc);
         }
@@ -425,14 +422,14 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @return Terminal ID.
          */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         public String terminalId() {
             return message().getTerminalId();
         }
 
         /** {@inheritDoc} */
         @Override public Object execute() {
-            ClusterNodeLocalMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
+            ConcurrentMap<String, T2<AtomicLong, AtomicLong>> nodeLoc = ignite.cluster().nodeLocalMap();
 
             T2<AtomicLong, AtomicLong> cntrs = nodeLoc.get("cntrs");
 
@@ -498,7 +495,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             t.set1(System.currentTimeMillis());
             t.set2(0L);
             t.set4(xid);
-            t.set5(key == null ? null : new CacheAffinityKey<String>(key, termId) {});
+            t.set5(key == null ? null : new AffinityKey<String>(key, termId) {});
         }
 
         /**
@@ -530,7 +527,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             if (lastPrint.get() + PRINT_FREQ < now && lastPrint.setIfGreater(now)) {
                 Map<String, Long> maxes = new HashMap<>();
 
-                Set<CacheAffinityKey<String>> keys = null;
+                Set<AffinityKey<String>> keys = null;
 
                 for (Map.Entry<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> e1 : timers.entrySet()) {
                     for (Map.Entry<String, T5<Long, Long, Long, IgniteUuid, Object>> e2 : e1.getValue().entrySet()) {
@@ -553,7 +550,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                                 ", duration=" + duration + ", ongoing=" + (end == 0) +
                                 ", thread=" + e1.getKey().getName() + ", xid=" + xid + ']');
 
-                            CacheAffinityKey<String> key = (CacheAffinityKey<String>)t.get5();
+                            AffinityKey<String> key = (AffinityKey<String>)t.get5();
 
                             if (key != null) {
                                 if (keys == null)
@@ -575,26 +572,26 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                 if (!F.isEmpty(keys)) {
                     for (Ignite g : G.allGrids()) {
                         if (g.name().contains("server")) {
-                            GridNearCacheAdapter<CacheAffinityKey<String>, Object> near =
-                                (GridNearCacheAdapter<CacheAffinityKey<String>, Object>)((IgniteKernal)g).
-                                    <CacheAffinityKey<String>, Object>internalCache();
-                            GridDhtCacheAdapter<CacheAffinityKey<String>, Object> dht = near.dht();
+                            GridNearCacheAdapter<AffinityKey<String>, Object> near =
+                                (GridNearCacheAdapter<AffinityKey<String>, Object>)((IgniteKernal)g).
+                                    <AffinityKey<String>, Object>internalCache();
+                            GridDhtCacheAdapter<AffinityKey<String>, Object> dht = near.dht();
 
-                            for (CacheAffinityKey<String> k : keys) {
-                                GridNearCacheEntry<?, ?> nearEntry = near.peekExx(k);
-                                GridDhtCacheEntry<?, ?> dhtEntry = dht.peekExx(k);
+                            for (AffinityKey<String> k : keys) {
+                                GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
+                                GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
                                 X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
                                 X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
 
-                                GridCacheMvccCandidate<?> nearCand =
+                                GridCacheMvccCandidate nearCand =
                                     nearEntry == null ? null : F.first(nearEntry.localCandidates());
 
                                 if (nearCand != null)
                                     X.println("Near futures: " +
                                         nearEntry.context().mvcc().futures(nearCand.version()));
 
-                                GridCacheMvccCandidate<?> dhtCand =
+                                GridCacheMvccCandidate dhtCand =
                                     dhtEntry == null ? null : F.first(dhtEntry.localCandidates());
 
                                 if (dhtCand != null)
@@ -658,16 +655,15 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     stopTimer("commit");
                 }
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
         /**
          * @return New ID.
-         * @throws IgniteCheckedException If failed.
          */
-        private long getId() throws IgniteCheckedException {
+        private long getId() {
             IgniteAtomicSequence seq = ignite.atomicSequence("ID", 0, true);
 
             return seq.incrementAndGet();
@@ -678,7 +674,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @return Request.
          */
         private Request findRequestWithMessageId(Long msgId) {
-            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).cache(null).projection(Object.class, Request.class);
+            CacheProjection<Object, Request> cache = ((IgniteKernal)ignite).getCache(null).projection(Object.class, Request.class);
 
             CacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
                 Request.class, "messageId = ?");
@@ -705,14 +701,13 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param o Object to put.
          * @param cacheKey Cache key.
          * @param terminalId Terminal ID.
-         * @throws IgniteCheckedException If failed.
          */
-        private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
-//            GridCache<CacheAffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+        private void put(Object o, String cacheKey, String terminalId) {
+//            GridCache<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
 //
-//            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
+//            AffinityKey<String> affinityKey = new AffinityKey<>(cacheKey, terminalId);
 //
-//            Entry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
+//            Entry<AffinityKey<String>, Object> entry = cache.entry(affinityKey);
 //
 //            entry.setx(o);
             assert false;
@@ -722,13 +717,12 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param cacheKey Cache key.
          * @param terminalId Terminal ID.
          * @return Cached object.
-         * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings({"RedundantCast"})
-        private <T> Object get(String cacheKey, String terminalId) throws IgniteCheckedException {
-            Object key = new CacheAffinityKey<>(cacheKey, terminalId);
+        private <T> Object get(String cacheKey, String terminalId) {
+            Object key = new AffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.jcache(null).get(key);
+            return (T) ignite.cache(null).get(key);
         }
     }
 
@@ -739,7 +733,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private Long id;
 
         /** */
@@ -811,7 +805,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private String terminalId;
 
         /**

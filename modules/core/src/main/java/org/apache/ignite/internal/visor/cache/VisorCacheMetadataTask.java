@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -61,7 +61,7 @@ public class VisorCacheMetadataTask extends VisorOneNodeTask<String, GridCacheSq
                 GridCache<Object, Object> cache = ignite.cachex(cacheName);
 
                 if (cache != null) {
-                    GridCacheQueriesEx<Object, Object> queries = (GridCacheQueriesEx<Object, Object>) cache.queries();
+                    GridCacheQueriesEx<Object, Object> queries = (GridCacheQueriesEx<Object, Object>)cache.queries();
 
                     return F.first(queries.sqlMetadata());
                 }

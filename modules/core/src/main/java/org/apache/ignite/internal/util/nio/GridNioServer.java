@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.thread.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 import sun.nio.ch.*;
 
 import java.io.*;
@@ -141,6 +141,10 @@ public class GridNioServer<T> {
     @GridToStringExclude
     private MessageFormatter formatter;
 
+    /** */
+    @GridToStringExclude
+    private IgnitePredicate<Message> skipRecoveryPred;
+
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
         // This is a workaround for JDK bug (NPE in Selector.open()).
@@ -169,6 +173,7 @@ public class GridNioServer<T> {
      * @param daemon Daemon flag to create threads.
      * @param metricsLsnr Metrics listener.
      * @param formatter Message formatter.
+     * @param skipRecoveryPred Skip recovery predicate.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -189,6 +194,7 @@ public class GridNioServer<T> {
         boolean daemon,
         GridNioMetricsListener metricsLsnr,
         MessageFormatter formatter,
+        IgnitePredicate<Message> skipRecoveryPred,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -254,6 +260,8 @@ public class GridNioServer<T> {
         this.directMode = directMode;
         this.metricsLsnr = metricsLsnr;
         this.formatter = formatter;
+
+        this.skipRecoveryPred = skipRecoveryPred != null ? skipRecoveryPred : F.<Message>alwaysFalse();
     }
 
     /**
@@ -346,12 +354,13 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, MessageAdapter msg) {
+    GridNioFuture<?> send(GridNioSession ses, Message msg) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
-        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg);
+        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
+            skipRecoveryPred.apply(msg));
 
         send0(impl, fut, false);
 
@@ -385,7 +394,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future.
      */
-    public GridNioFuture<?> sendSystem(GridNioSession ses, MessageAdapter msg) {
+    public GridNioFuture<?> sendSystem(GridNioSession ses, Message msg) {
         return sendSystem(ses, msg, null);
     }
 
@@ -398,16 +407,17 @@ public class GridNioServer<T> {
      * @return Future.
      */
     public GridNioFuture<?> sendSystem(GridNioSession ses,
-        MessageAdapter msg,
-        @Nullable IgniteInClosure<? super GridNioFuture<?>> lsnr) {
+        Message msg,
+        @Nullable IgniteInClosure<? super IgniteInternalFuture<?>> lsnr) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
-        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg);
+        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
+            skipRecoveryPred.apply(msg));
 
         if (lsnr != null) {
-            fut.listenAsync(lsnr);
+            fut.listen(lsnr);
 
             assert !fut.isDone();
         }
@@ -438,7 +448,7 @@ public class GridNioServer<T> {
             for (GridNioFuture<?> fut : futs) {
                 fut.messageThread(true);
 
-                ((NioOperationFuture)fut).resetMessage(ses0);
+                ((NioOperationFuture)fut).resetSession(ses0);
             }
 
             ses0.resend(futs);
@@ -880,7 +890,7 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    MessageAdapter msg;
+                    Message msg;
                     boolean finished = false;
 
                     if (req != null) {
@@ -1015,97 +1025,93 @@ public class GridNioServer<T> {
             if (writer == null)
                 ses.addMeta(MSG_WRITER.ordinal(), writer = formatter.writer());
 
+            if (req == null) {
+                req = (NioOperationFuture<?>)ses.pollFuture();
+
+                if (req == null && buf.position() == 0) {
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+
+                    return;
+                }
+            }
+
+            Message msg;
+            boolean finished = false;
+
+            if (req != null) {
+                msg = req.directMessage();
+
+                assert msg != null;
+
+                finished = msg.writeTo(buf, writer);
+
+                if (finished)
+                    writer.reset();
+            }
+
+            // Fill up as many messages as possible to write buffer.
             List<NioOperationFuture<?>> doneFuts = null;
 
-            while (true) {
-                if (req == null) {
-                    req = (NioOperationFuture<?>)ses.pollFuture();
+            while (finished) {
+                if (doneFuts == null)
+                    doneFuts = new ArrayList<>();
 
-                    if (req == null && buf.position() == 0) {
-                        key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                doneFuts.add(req);
 
-                        break;
-                    }
-                }
+                req = (NioOperationFuture<?>)ses.pollFuture();
 
-                MessageAdapter msg;
-                boolean finished = false;
-
-                if (req != null) {
-                    msg = req.directMessage();
-
-                    assert msg != null;
-
-                    finished = msg.writeTo(buf, writer);
-
-                    if (finished)
-                        writer.reset();
-                }
-
-                // Fill up as many messages as possible to write buffer.
-                while (finished) {
-                    if (doneFuts == null)
-                        doneFuts = new ArrayList<>();
-
-                    doneFuts.add(req);
-
-                    req = (NioOperationFuture<?>)ses.pollFuture();
-
-                    if (req == null)
-                        break;
-
-                    msg = req.directMessage();
-
-                    assert msg != null;
-
-                    finished = msg.writeTo(buf, writer);
-
-                    if (finished)
-                        writer.reset();
-                }
-
-                buf.flip();
-
-                assert buf.hasRemaining();
-
-                if (!skipWrite) {
-                    int cnt = sockCh.write(buf);
-
-                    if (!F.isEmpty(doneFuts)) {
-                        for (int i = 0; i < doneFuts.size(); i++)
-                            doneFuts.get(i).onDone();
-
-                        doneFuts.clear();
-                    }
-
-                    if (log.isTraceEnabled())
-                        log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
-
-                    if (metricsLsnr != null)
-                        metricsLsnr.onBytesSent(cnt);
-
-                    ses.bytesSent(cnt);
-                }
-                else {
-                    // For test purposes only (skipWrite is set to true in tests only).
-                    try {
-                        U.sleep(50);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IOException("Thread has been interrupted.", e);
-                    }
-                }
-
-                if (buf.hasRemaining()) {
-                    buf.compact();
-
-                    ses.addMeta(NIO_OPERATION.ordinal(), req);
-
+                if (req == null)
                     break;
-                }
-                else
-                    buf.clear();
+
+                msg = req.directMessage();
+
+                assert msg != null;
+
+                finished = msg.writeTo(buf, writer);
+
+                if (finished)
+                    writer.reset();
             }
+
+            buf.flip();
+
+            assert buf.hasRemaining();
+
+            if (!skipWrite) {
+                int cnt = sockCh.write(buf);
+
+                if (!F.isEmpty(doneFuts)) {
+                    for (int i = 0; i < doneFuts.size(); i++)
+                        doneFuts.get(i).onDone();
+
+                    doneFuts.clear();
+                }
+
+                if (log.isTraceEnabled())
+                    log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+                if (metricsLsnr != null)
+                    metricsLsnr.onBytesSent(cnt);
+
+                ses.bytesSent(cnt);
+            }
+            else {
+                // For test purposes only (skipWrite is set to true in tests only).
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IOException("Thread has been interrupted.", e);
+                }
+            }
+
+            if (buf.hasRemaining() || !finished) {
+                buf.compact();
+
+                ses.addMeta(NIO_OPERATION.ordinal(), req);
+            }
+            else
+                buf.clear();
         }
     }
 
@@ -1773,13 +1779,16 @@ public class GridNioServer<T> {
         private ByteBuffer msg;
 
         /** Direct message. */
-        private MessageAdapter commMsg;
+        private Message commMsg;
 
         /** */
         private boolean accepted;
 
         /** */
         private Map<Integer, ?> meta;
+
+        /** */
+        private boolean skipRecovery;
 
         /**
          * Creates registration request for a given socket channel.
@@ -1847,9 +1856,10 @@ public class GridNioServer<T> {
          * @param ses Session to change.
          * @param op Requested operation.
          * @param commMsg Direct message.
+         * @param skipRecovery Skip recovery flag.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
-            MessageAdapter commMsg) {
+            Message commMsg, boolean skipRecovery) {
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -1858,6 +1868,7 @@ public class GridNioServer<T> {
             this.ses = ses;
             this.op = op;
             this.commMsg = commMsg;
+            this.skipRecovery = skipRecovery;
         }
 
         /**
@@ -1877,17 +1888,15 @@ public class GridNioServer<T> {
         /**
          * @return Direct message.
          */
-        private MessageAdapter directMessage() {
+        private Message directMessage() {
             return commMsg;
         }
 
         /**
          * @param ses New session instance.
          */
-        private void resetMessage(GridSelectorNioSessionImpl ses) {
+        private void resetSession(GridSelectorNioSessionImpl ses) {
             assert commMsg != null;
-
-//            commMsg = commMsg.clone();
 
             this.ses = ses;
         }
@@ -1932,7 +1941,7 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
-            return commMsg != null && commMsg.skipRecovery();
+            return skipRecovery;
         }
 
         /** {@inheritDoc} */
@@ -1988,7 +1997,7 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    return send(ses, (MessageAdapter)msg);
+                    return send(ses, (Message)msg);
             }
             else
                 return send(ses, (ByteBuffer)msg);
@@ -2090,6 +2099,9 @@ public class GridNioServer<T> {
         /** Message formatter. */
         private MessageFormatter formatter;
 
+        /** Skip recovery predicate. */
+        private IgnitePredicate<Message> skipRecoveryPred;
+
         /**
          * Finishes building the instance.
          *
@@ -2114,6 +2126,7 @@ public class GridNioServer<T> {
                 daemon,
                 metricsLsnr,
                 formatter,
+                skipRecoveryPred,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -2313,6 +2326,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> messageFormatter(MessageFormatter formatter) {
             this.formatter = formatter;
+
+            return this;
+        }
+
+        /**
+         * @param skipRecoveryPred Skip recovery predicate.
+         * @return This for chaining.
+         */
+        public Builder<T> skipRecoveryPredicate(IgnitePredicate<Message> skipRecoveryPred) {
+            this.skipRecoveryPred = skipRecoveryPred;
 
             return this;
         }

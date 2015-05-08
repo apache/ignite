@@ -18,14 +18,19 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
  * Type metadata.
  */
-public class CacheTypeMetadata {
+public class CacheTypeMetadata implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Schema name in database. */
     private String dbSchema;
 
@@ -230,6 +235,15 @@ public class CacheTypeMetadata {
     }
 
     /**
+     * Sets value fields.
+     *
+     * @param valFields New value fields.
+     */
+    public void setValueFields(Collection<CacheTypeFieldMetadata> valFields) {
+        this.valFields = valFields;
+    }
+
+    /**
      * Gets query-enabled fields.
      *
      * @return Collection of fields available for query.
@@ -319,12 +333,8 @@ public class CacheTypeMetadata {
         this.grps = grps;
     }
 
-    /**
-     * Sets value fields.
-     *
-     * @param valFields New value fields.
-     */
-    public void setValueFields(Collection<CacheTypeFieldMetadata> valFields) {
-        this.valFields = valFields;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheTypeMetadata.class, this);
     }
 }

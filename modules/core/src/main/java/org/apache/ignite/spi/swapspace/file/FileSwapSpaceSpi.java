@@ -26,8 +26,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.nio.*;
@@ -94,7 +94,7 @@ import static org.apache.ignite.events.EventType.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.swapspace.SwapSpaceSpi
@@ -529,7 +529,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     private IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(
         final Iterator<Map.Entry<SwapKey, byte[]>> iter) {
         return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
-            @Override protected Map.Entry<byte[], byte[]> onNext() throws IgniteCheckedException {
+            @Override protected Map.Entry<byte[], byte[]> onNext() {
                 Map.Entry<SwapKey, byte[]> x = iter.next();
 
                 return new T2<>(keyBytes(x.getKey()), x.getValue());
@@ -581,7 +581,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         SwapSpaceSpiListener lsnr = evictLsnr;
 
         if (lsnr != null)
-            lsnr.onSwapEvent(evtType, spaceName, null);
+            lsnr.onSwapEvent(evtType, spaceName, null, null);
     }
 
     /**
@@ -718,8 +718,14 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             try {
                 res = ch.read(ByteBuffer.wrap(v), pos);
             }
-            catch (ClosedChannelException ignore) {
-                assert idx == DELETED;
+            catch (ClosedByInterruptException e) {
+                throw new IgniteSpiException("Operation was interrupted.", e);
+            }
+            catch (AsynchronousCloseException ignore) {
+                assert idx == DELETED; // We closed it ourselves.
+            }
+            catch (ClosedChannelException e) {
+                throw new IgniteSpiException("File channel was unexpectedly closed.", e);
             }
             catch (IOException e) {
                 throw new IgniteSpiException("Failed to read value.", e);

@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -214,6 +215,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         return spiCtx;
     }
 
+    /**
+     * Gets Exception registry.
+     *
+     * @return Exception registry.
+     */
+    public IgniteExceptionRegistry getExceptionRegistry() {
+        return IgniteExceptionRegistry.get();
+    }
+
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         return Collections.emptyMap();
@@ -356,15 +366,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
-     * @return {@code true} if this check is optional.
-     */
-    private boolean checkDaemon() {
-        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
-
-        return ann != null && ann.checkDaemon();
-    }
-
-    /**
      * @return {@code true} if this check is enabled.
      */
     private boolean checkEnabled() {
@@ -397,13 +398,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         throws IgniteSpiException {
         assert spiCtx != null;
         assert node != null;
-
-        if (node.isDaemon() && !checkDaemon()) {
-            if (log.isDebugEnabled())
-                log.debug("Skipping configuration consistency check for daemon node: " + node);
-
-            return;
-        }
 
         /*
          * Optional SPI means that we should not print warning if SPIs are different but
@@ -605,24 +599,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key, byte[] keyBytes,
-            @Nullable ClassLoader ldr) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public int partition(String cacheName, Object key) {
             return -1;
         }
@@ -648,8 +624,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override
-        public ClusterNode node(UUID nodeId) {
+        @Nullable @Override public ClusterNode node(UUID nodeId) {
             return null;
         }
 
@@ -704,6 +679,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             return null;
         }
 
+        /** {@inheritDoc} */
         @Override public MessageFormatter messageFormatter() {
             return null;
         }

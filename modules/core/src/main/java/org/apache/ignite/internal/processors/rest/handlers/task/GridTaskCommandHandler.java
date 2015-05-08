@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
+import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
  * Command handler for API requests.
@@ -136,7 +136,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute task command: " + req, e);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             if (log.isDebugEnabled())
@@ -159,7 +159,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         GridRestTaskRequest req0 = (GridRestTaskRequest) req;
 
-        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>(ctx);
+        final GridFutureAdapter<GridRestResponse> fut = new GridFutureAdapter<>();
 
         final GridRestResponse res = new GridRestResponse();
 
@@ -199,7 +199,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
-                    ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId()));
+                    ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(req.destinationId()));
 
                     ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
@@ -224,7 +224,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                taskFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                     @Override public void apply(IgniteInternalFuture<Object> taskFut) {
                         try {
                             TaskDescriptor desc;
@@ -256,8 +256,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                 if (desc.error() == null) {
                                     try {
                                         taskRestRes.setFinished(true);
-                                        taskRestRes.setResult(req.portableMode() ?
-                                            ctx.portable().marshalToPortable(desc.result()) : desc.result());
+                                        taskRestRes.setResult(desc.result());
 
                                         res.setResponse(taskRestRes);
                                         fut.onDone(res);
@@ -612,7 +611,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return g.compute(g.forSubjectId(clientId)).execute(
+            return g.compute(g.cluster().forSubjectId(clientId)).execute(
                 name,
                 !params.isEmpty() ? params.size() == 1 ? params.get(0) : params.toArray() : null);
         }

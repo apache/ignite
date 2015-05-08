@@ -17,15 +17,17 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.lang.{Integer => JavaInt}
+import java.util.ConcurrentModificationException
+import javax.cache.Cache
+
+import org.apache.ignite.IgniteCache
+import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
+import org.jsr166.ThreadLocalRandom8
 
-import org.jdk8.backport.ThreadLocalRandom8
-
-import javax.cache.Cache
-import java.util.ConcurrentModificationException
-
-import collection.JavaConversions._
+import scala.collection.JavaConversions._
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
@@ -38,44 +40,58 @@ import collection.JavaConversions._
  * `CacheMode#REPLICATED REPLICATED` caches and <i>facts</i> in much larger
  * `CacheMode#PARTITIONED PARTITIONED` caches you can freely execute distributed joins across
  * your whole in-memory data ignite cluster, thus querying your in memory data without any limitations.
- * <p>
+ * <p/>
  * In this example we have two <i>dimensions</i>, `DimProduct` and `DimStore` and
  * one <i>fact</i> - `FactPurchase`. Queries are executed by joining dimensions and facts
  * in various ways.
- * <p>
- * Remote nodes should always be started with configuration file which includes
- * cache: `'ignite.sh examples/config/example-cache.xml'`.
+ * <p/>
+ * Remote nodes should be started using `ExampleNodeStartup` which will
+ * start node with `examples/config/example-ignite.xml` configuration.
  */
 object ScalarSnowflakeSchemaExample {
+    /** Configuration file name. */
+    private val CONFIG = "examples/config/example-ignite.xml"
+
     /** Name of replicated cache specified in spring configuration. */
-    private val REPL_CACHE_NAME = "replicated"
+    private val REPL_NAME = "ScalarSnowflakeSchemaExampleReplicated"
 
     /** Name of partitioned cache specified in spring configuration. */
-    private val PART_CACHE_NAME = "partitioned"
+    private val PART_NAME = "ScalarSnowflakeSchemaExamplePartitioned"
 
     /** ID generator. */
-    private[this] val idGen = Stream.from(0).iterator
+    private[this] val idGen = Stream.from(System.currentTimeMillis.toInt).iterator
 
     /** DimStore data. */
-    private[this] val dataStore = scala.collection.mutable.Map[Integer, DimStore]()
+    private[this] val dataStore = scala.collection.mutable.Map[JavaInt, DimStore]()
 
     /** DimProduct data. */
-    private[this] val dataProduct = scala.collection.mutable.Map[Integer, DimProduct]()
+    private[this] val dataProduct = scala.collection.mutable.Map[JavaInt, DimProduct]()
 
     /**
      * Example entry point. No arguments required.
      */
     def main(args: Array[String]) {
-        scalar("examples/config/example-cache.xml") {
-            // Clean up caches on all nodes before run.
-            cache$(REPL_CACHE_NAME).get.clear()
-            cache$(PART_CACHE_NAME).get.clear()
+        scalar(CONFIG) {
+            val dimCache = createCache$[JavaInt, AnyRef](REPL_NAME, CacheMode.REPLICATED, Seq(classOf[JavaInt], classOf[DimStore],
+                classOf[JavaInt], classOf[DimProduct]))
 
-            populateDimensions()
-            populateFacts()
+            try {
+                val factCache = createCache$[JavaInt, FactPurchase](PART_NAME, indexedTypes = Seq(classOf[JavaInt], classOf[FactPurchase]))
 
-            queryStorePurchases()
-            queryProductPurchases()
+                try {
+                    populateDimensions(dimCache)
+                    populateFacts(factCache)
+
+                    queryStorePurchases()
+                    queryProductPurchases()
+                }
+                finally {
+                    factCache.close()
+                }
+            }
+            finally {
+                dimCache.close()
+            }
         }
     }
 
@@ -83,9 +99,7 @@ object ScalarSnowflakeSchemaExample {
      * Populate cache with `dimensions` which in our case are
      * `DimStore` and `DimProduct` instances.
      */
-    def populateDimensions() {
-        val dimCache = ignite$.jcache[Int, Object](REPL_CACHE_NAME)
-
+    def populateDimensions(dimCache: IgniteCache[JavaInt, AnyRef]) {
         val store1 = new DimStore(idGen.next(), "Store1", "12345", "321 Chilly Dr, NY")
         val store2 = new DimStore(idGen.next(), "Store2", "54321", "123 Windy Dr, San Francisco")
 
@@ -108,10 +122,7 @@ object ScalarSnowflakeSchemaExample {
     /**
      * Populate cache with `facts`, which in our case are `FactPurchase` objects.
      */
-    def populateFacts() {
-        val dimCache = ignite$.jcache[Int, Object](REPL_CACHE_NAME)
-        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
-
+    def populateFacts(factCache: IgniteCache[JavaInt, FactPurchase]) {
         for (i <- 1 to 100) {
             val store: DimStore = rand(dataStore.values)
             val prod: DimProduct = rand(dataProduct.values)
@@ -127,10 +138,10 @@ object ScalarSnowflakeSchemaExample {
      * `FactPurchase` objects stored in `partitioned` cache.
      */
     def queryStorePurchases() {
-        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
+        val factCache = ignite$.cache[JavaInt, FactPurchase](PART_NAME)
 
         val storePurchases = factCache.sql(
-            "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
+            "from \"" + REPL_NAME + "\".DimStore, \"" + PART_NAME + "\".FactPurchase " +
             "where DimStore.id=FactPurchase.storeId and DimStore.name=?", "Store1")
 
         printQueryResults("All purchases made at store1:", storePurchases.getAll)
@@ -143,7 +154,7 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
+        val factCache = ignite$.cache[JavaInt, FactPurchase](PART_NAME)
 
         // All purchases for certain product made at store2.
         // =================================================
@@ -154,7 +165,8 @@ object ScalarSnowflakeSchemaExample {
         println("IDs of products [p1=" + p1.id + ", p2=" + p2.id + ", p3=" + p3.id + ']')
 
         val prodPurchases = factCache.sql(
-            "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase " +
+            "from \"" + REPL_NAME + "\".DimStore, \"" + REPL_NAME + "\".DimProduct, \"" +
+                PART_NAME + "\".FactPurchase " +
             "where DimStore.id=FactPurchase.storeId and " +
                 "DimProduct.id=FactPurchase.productId and " +
                 "DimStore.name=? and DimProduct.id in(?, ?, ?)",
@@ -169,7 +181,7 @@ object ScalarSnowflakeSchemaExample {
      * @param msg Initial message.
      * @param res Results to print.
      */
-    private def printQueryResults[V](msg: String, res: Iterable[Cache.Entry[Int, V]]) {
+    private def printQueryResults[V](msg: String, res: Iterable[Cache.Entry[JavaInt, V]]) {
         println(msg)
 
         for (e <- res)

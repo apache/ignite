@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -29,8 +28,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.*;
@@ -40,7 +39,6 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -57,8 +55,6 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
-        commSpi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(commSpi);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -67,10 +63,12 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(1);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
+
+        cfg.setCommunicationSpi(new TestCommunicationSpi());
 
         cfg.setNetworkTimeout(3000);
 
@@ -82,6 +80,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         startGrids(GRID_CNT);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
@@ -114,7 +113,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(null);
         IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
@@ -152,7 +151,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testNearUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(null);
         IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
@@ -192,7 +191,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateRequestLost() throws Exception {
         Ignite ignite = grid(0);
 
-        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(null);
         IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
@@ -230,7 +229,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cache = ignite.cache(null);
         IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
@@ -268,7 +267,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     private int keyForTest() {
         int i = 0;
 
-        CacheAffinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(null);
 
         while (!aff.isPrimary(grid(1).localNode(), i) || !aff.isBackup(grid(2).localNode(), i))
             i++;
@@ -293,7 +292,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
         private boolean skipDhtResponse;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, Message msg)
             throws IgniteSpiException {
             if (!skipMessage((GridIoMessage)msg))
                 super.sendMessage(node, msg);

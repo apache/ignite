@@ -31,7 +31,6 @@ import org.apache.ignite.spi.swapspace.file.*;
 import javax.cache.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
 
@@ -61,8 +60,15 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
+    }
+
+    /**
+     * @return Has near cache flag.
+     */
+    protected boolean hasNearCache() {
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -75,10 +81,10 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
         ccfg.setBackups(1);
 
-        if (gridName.equals(getTestGridName(0)))
-            ccfg.setDistributionMode(NEAR_PARTITIONED);
+        if (hasNearCache())
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-        ccfg.setEvictionPolicy(new CacheFifoEvictionPolicy(HEAP_ENTRIES));
+        ccfg.setEvictionPolicy(new FifoEvictionPolicy(HEAP_ENTRIES));
 
         return ccfg;
     }
@@ -161,9 +167,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
                 cache0.put(key, val);
 
-                boolean hasNearCache = nodeIdx == 0 ;
-
-                if (hasNearCache) {
+                if (hasNearCache()) {
                     assertEquals(val, cache0.localPeek(key, NEAR));
                     assertEquals(val, cache0.localPeek(key, ALL));
                 }
@@ -176,7 +180,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertNull(cache0.localPeek(key, BACKUP));
             }
 
-            CacheAffinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(null);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -498,9 +502,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 for (Integer key : keys)
                     cache0.put(key, String.valueOf(key));
 
-                boolean hasNearCache = nodeIdx == 0 ;
-
-                if (hasNearCache) {
+                if (hasNearCache()) {
                     assertEquals(PUT_KEYS, cache0.localSize());
                     assertEquals(PUT_KEYS, cache0.localSize(ALL));
                     assertEquals(PUT_KEYS, cache0.localSize(NEAR));
@@ -535,7 +537,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             checkPrimarySize(PUT_KEYS);
 
-            CacheAffinity<Integer> aff = ignite(0).affinity(null);
+            Affinity<Integer> aff = ignite(0).affinity(null);
 
             for (int i = 0; i < gridCount(); i++) {
                 if (i == nodeIdx)
@@ -572,9 +574,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(PUT_KEYS - 1, cache0.localSize(BACKUP));
             }
             else {
-                boolean hasNearCache = nodeIdx == 0;
-
-                if (hasNearCache)
+                if (hasNearCache())
                     assertEquals(PUT_KEYS - 1, cache0.localSize());
                 else
                     assertEquals(0, cache0.localSize());
@@ -620,7 +620,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
         assertNotNull(it);
 
-        CacheAffinity aff = ignite(nodeIdx).affinity(null);
+        Affinity aff = ignite(nodeIdx).affinity(null);
 
         ClusterNode node = ignite(nodeIdx).cluster().localNode();
 
@@ -667,7 +667,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         else
             offheapIt = internalCache.context().swap().lazyOffHeapIterator();
 
-        CacheAffinity aff = ignite(nodeIdx).affinity(null);
+        Affinity aff = ignite(nodeIdx).affinity(null);
 
         ClusterNode node = ignite(nodeIdx).cluster().localNode();
 
@@ -1062,9 +1062,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             log.info("Keys [near=" + nearKeys + ", primary=" + primaryKeys + ", backup=" + backupKeys + ']');
 
-            boolean hasNearCache = nodeIdx == 0 && cacheMode() == PARTITIONED;
-
-            if (hasNearCache) {
+            if (hasNearCache()) {
                 checkLocalEntries(cache0.localEntries(), nearKeys, primaryKeys, backupKeys);
                 checkLocalEntries(cache0.localEntries(ALL), nearKeys, primaryKeys, backupKeys);
                 checkLocalEntries(cache0.localEntries(NEAR), nearKeys);

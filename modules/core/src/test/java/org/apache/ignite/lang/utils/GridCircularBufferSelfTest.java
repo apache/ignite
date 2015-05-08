@@ -19,7 +19,7 @@ package org.apache.ignite.lang.utils;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;

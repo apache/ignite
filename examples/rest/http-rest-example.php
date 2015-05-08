@@ -19,16 +19,18 @@
  */
 
 /**
- * To execute this script simply start up an instance of Ignite with cache enabled.
- * You can use any cache configuration from examples/config folder as follows:
+ * To execute this script you will have to enable optional `ignite-rest-http` module -
+ * copy `libs/optional/ignite-rest-http` folder into `libs` (one level up).
+ *
+ * After that start up an instance of Ignite with cache enabled.
+ * You can use configuration from examples/config folder as follows:
  * ----
  * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache.xml
  * ----
  *
  * Make sure you have correctly specified $CACHE_NAME script global variable
  * accordingly to your configuration. In mentioned above example-cache.xml we
- * have 3 caches configured. The names are the following: 'partitioned',
- * 'replicated' and 'local'. We have no default cache in this configuration.
+ * have only default cache configured.
  */
 
 // Make sure CURL is present.
@@ -41,9 +43,8 @@ if (!function_exists('json_decode'))
 
 $URL = 'http://localhost:8080/ignite?';
 
-// Cache name to use.
-// Null or empty string for default cache.
-$CACHE_NAME = "partitioned";
+// Cache name to use (null or empty string for default cache).
+$CACHE_NAME = null;
 
 /**
  * Creates URL parameters.

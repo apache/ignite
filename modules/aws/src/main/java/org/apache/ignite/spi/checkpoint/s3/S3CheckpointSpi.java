@@ -94,7 +94,7 @@ import java.util.*;
  * Choose another implementation of {@link org.apache.ignite.spi.checkpoint.CheckpointSpi} for local or
  * home network tests.
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
@@ -458,7 +458,11 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
             InputStream in = obj.getObjectContent();
 
             try {
-                return ignite.configuration().getMarshaller().unmarshal(in, U.gridClassLoader());
+                return S3CheckpointData.fromStream(in);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to unmarshal S3CheckpointData [bucketName=" +
+                    bucketName + ", key=" + key + ']', e);
             }
             finally {
                 U.closeQuiet(in);
@@ -486,7 +490,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
         if (log.isDebugEnabled())
             log.debug("Writing data to S3 [bucket=" + bucketName + ", key=" + data.getKey() + ']');
 
-        byte[] buf = ignite.configuration().getMarshaller().marshal(data);
+        byte[] buf = data.toBytes();
 
         ObjectMetadata meta = new ObjectMetadata();
 

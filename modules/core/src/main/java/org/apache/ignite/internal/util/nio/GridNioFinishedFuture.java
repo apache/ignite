@@ -17,86 +17,28 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
-import org.jetbrains.annotations.*;
-
-import java.io.*;
-import java.util.concurrent.*;
 
 /**
  * Future that represents already completed result.
  */
-public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
-    /** Future result. */
-    private R res;
-
-    /** Future exception. */
-    private Throwable err;
-
+public class GridNioFinishedFuture<R> extends GridFinishedFuture<R> implements GridNioFuture<R> {
     /** Message thread flag. */
     private boolean msgThread;
 
     /**
-     * Constructs a future which {@link #get()} method will return a given result.
-     *
-     * @param res Future result.
+     * @param res Result.
      */
     public GridNioFinishedFuture(R res) {
-        this.res = res;
+        super(res);
     }
 
     /**
-     * Constructs a future which {@link #get()} method will throw given exception.
-     *
-     * @param err Exception to be thrown.
+     * @param err Error.
      */
-    public GridNioFinishedFuture(@Nullable Throwable err) {
-        this.err = err;
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get() throws IOException, IgniteCheckedException {
-        if (err != null) {
-            if (err instanceof IOException)
-                throw (IOException)err;
-
-            throw U.cast(err);
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get(long timeout) throws IOException, IgniteCheckedException {
-        return get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public R get(long timeout, TimeUnit unit) throws IOException, IgniteCheckedException {
-        return get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cancel() throws IgniteCheckedException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDone() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isCancelled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void listenAsync(@Nullable IgniteInClosure<? super GridNioFuture<R>> lsnr) {
-        if (lsnr != null)
-            lsnr.apply(this);
+    public GridNioFinishedFuture(Throwable err) {
+        super(err);
     }
 
     /** {@inheritDoc} */
@@ -112,5 +54,10 @@ public class GridNioFinishedFuture<R> implements GridNioFuture<R> {
     /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNioFinishedFuture.class, this, super.toString());
     }
 }

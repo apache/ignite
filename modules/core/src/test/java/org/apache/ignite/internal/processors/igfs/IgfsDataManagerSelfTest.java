@@ -95,7 +95,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        IgfsConfiguration igfsCfg = new IgfsConfiguration();
+        FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setDataCacheName(DATA_CACHE_NAME);
@@ -103,7 +103,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(BLOCK_SIZE);
 
-        cfg.setIgfsConfiguration(igfsCfg);
+        cfg.setFileSystemConfiguration(igfsCfg);
 
         return cfg;
     }
@@ -118,7 +118,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setNearConfiguration(null);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(DATA_BLOCK_GROUP_CNT));
@@ -126,7 +126,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setQueryIndexEnabled(false);
 
         return cacheCfg;
     }
@@ -191,7 +190,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -279,7 +278,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -359,7 +358,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }

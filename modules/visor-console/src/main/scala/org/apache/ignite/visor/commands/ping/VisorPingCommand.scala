@@ -54,7 +54,7 @@ private case class Pinger(n: ClusterNode, res: Result) extends Runnable {
     assert(res != null)
 
     override def run() {
-        val ok = ignite.pingNode(n.id())
+        val ok = ignite.cluster.pingNode(n.id())
 
         res.synchronized {
             res.total += 1
@@ -133,7 +133,7 @@ class VisorPingCommand {
             var pings = List.empty[Pinger]
 
             if (argLst.isEmpty)
-                pings ++= ignite.nodes().map(Pinger(_, res))
+                pings ++= ignite.cluster.nodes().map(Pinger(_, res))
             else {
                 for (id8 <- argLst) {
                     if (id8._1 != null || id8._2 == null)
@@ -141,7 +141,7 @@ class VisorPingCommand {
                     else {
                         val ns = nodeById8(id8._2)
 
-                        if (ns.size() != 1)
+                        if (ns.size != 1)
                             scold("Unknown ID8: " + argName(id8))
                         else
                             pings +:= Pinger(ns.head, res)
@@ -224,5 +224,5 @@ object VisorPingCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromPing2Visor(vs: VisorTag) = cmd
+    implicit def fromPing2Visor(vs: VisorTag): VisorPingCommand = cmd
 }

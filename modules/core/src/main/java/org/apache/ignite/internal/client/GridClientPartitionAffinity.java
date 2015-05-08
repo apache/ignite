@@ -274,7 +274,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         nodeInfo = new NodeInfo(nodeId, hashIdRslvr == null ? nodeId : hashIdRslvr.getHashId(n));
 
         addedNodes.put(nodeId, nodeInfo);
-        nodeHash.addNode(nodeInfo, n.replicaCount());
+        nodeHash.addNode(nodeInfo, 1);
 
         return nodeInfo;
     }
@@ -349,12 +349,8 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         @Override public int compareTo(NodeInfo o) {
             int diff = nodeId.compareTo(o.nodeId);
 
-            if (diff == 0) {
-                int h1 = hashCode();
-                int h2 = o.hashCode();
-
-                diff = h1 == h2 ? 0 : (h1 < h2 ? -1 : 1);
-            }
+            if (diff == 0)
+                diff = Integer.compare(hashCode(), o.hashCode());
 
             return diff;
         }

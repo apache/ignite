@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cluster.*;
@@ -53,7 +54,7 @@ import org.jetbrains.annotations.*;
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link QuerySqlFunction}. Classes containing these methods must be registered in
- * {@link org.apache.ignite.configuration.QueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
+ * {@link org.apache.ignite.configuration.CacheConfiguration#setSqlFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
  * Ignite supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
@@ -83,7 +84,7 @@ import org.jetbrains.annotations.*;
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode or at least one side of the join is stored in
  *         {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache. Refer to
- *         {@link org.apache.ignite.cache.affinity.CacheAffinityKey} javadoc for more information about colocation.
+ *         {@link AffinityKey} javadoc for more information about colocation.
  *     </li>
  * </ul>
  * <h1 class="header">Query usage</h1>
@@ -187,11 +188,8 @@ import org.jetbrains.annotations.*;
  * </pre>
  */
 public interface CacheQuery<T> {
-    /** Default query page size. */
-    public static final int DFLT_PAGE_SIZE = 1024;
-
     /**
-     * Sets result page size. If not provided, {@link #DFLT_PAGE_SIZE} will be used.
+     * Sets result page size. If not provided, {@link Query#DFLT_PAGE_SIZE} will be used.
      * Results are returned from queried nodes one page at a tme.
      *
      * @param pageSize Page size.

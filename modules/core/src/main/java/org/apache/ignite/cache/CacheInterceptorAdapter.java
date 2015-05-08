@@ -20,33 +20,38 @@ package org.apache.ignite.cache;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+
 /**
  * Cache interceptor convenience adapter. It provides no-op implementations for all
  * interceptor callbacks.
  */
 public class CacheInterceptorAdapter<K, V> implements CacheInterceptor<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Nullable @Override public V onGet(K key, V val) {
         return val;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V onBeforePut(K key, @Nullable V oldVal, V newVal) {
+    @Nullable @Override public V onBeforePut(Cache.Entry<K, V> entry, V newVal) {
         return newVal;
     }
 
     /** {@inheritDoc} */
-    @Override public void onAfterPut(K key, V val) {
+    @Override public void onAfterPut(Cache.Entry<K, V> entry) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(K key, @Nullable V val) {
-        return new IgniteBiTuple<>(false, val);
+    @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
+        return new IgniteBiTuple<>(false, entry.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void onAfterRemove(K key, V val) {
+    @Override public void onAfterRemove(Cache.Entry<K, V> entry) {
         // No-op.
     }
 }

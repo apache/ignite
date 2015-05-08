@@ -57,7 +57,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSingleRequest() throws Exception {
-        testSingleRequest("/examples/config/example-cache.xml");
+        testSingleRequest("/modules/core/src/test/config/websession/example-cache.xml");
     }
 
     /**
@@ -86,7 +86,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String sesId = rdr.readLine();
 
-                IgniteCache<String, HttpSession> cache = G.ignite().jcache(getCacheName());
+                IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
                 assertNotNull(cache);
 

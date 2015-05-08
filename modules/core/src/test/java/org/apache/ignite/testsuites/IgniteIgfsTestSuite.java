@@ -21,7 +21,6 @@ import junit.framework.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.igfs.*;
 import org.apache.ignite.internal.processors.igfs.split.*;
-import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
@@ -36,7 +35,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
-//        suite.addTest(new TestSuite(IgfsSizeSelfTest.class)); TODO Enable after GG-9035
+        suite.addTest(new TestSuite(IgfsSizeSelfTest.class));
         suite.addTest(new TestSuite(IgfsAttributesSelfTest.class));
         suite.addTest(new TestSuite(IgfsFileInfoSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetaManagerSelfTest.class));
@@ -48,16 +47,17 @@ public class IgniteIgfsTestSuite extends TestSuite {
         if (U.isWindows())
             suite.addTest(new TestSuite(IgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest.class));
 
-        suite.addTest(new TestSuite(GridCacheIgfsPerBlockLruEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(IgfsCachePerBlockLruEvictionPolicySelfTest.class));
 
         suite.addTest(new TestSuite(IgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));
-        suite.addTest(new TestSuite(IpcServerEndpointDeserializerSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
         suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
         suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
+        suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
+        suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
 

@@ -37,6 +37,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  *
  */
+@SkipDaemon
 public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     /** */
     private Marshaller marsh;
@@ -50,11 +51,9 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         getSpi().setListener(new SwapSpaceSpiListener() {
-            @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes) {
+            @Override public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes,
+                @Nullable byte[] valBytes) {
                 if (ctx.event().isRecordable(evtType)) {
                     String msg = null;
 
@@ -100,9 +99,10 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
                 // Always notify grid cache processor.
                 if (evtType == EVT_SWAP_SPACE_DATA_EVICTED && spaceName != null) {
                     assert keyBytes != null;
+                    assert valBytes != null;
 
                     // Cache cannot use default swap space.
-                    ctx.cache().onEvictFromSwap(spaceName, keyBytes);
+                    ctx.cache().onEvictFromSwap(spaceName, keyBytes, valBytes);
                 }
             }
         });
@@ -370,7 +370,14 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets raw iterator over space entries.
+     *
+     * @param spaceName Space name.
+     * @param part Partition.
+     * @return Iterator over space entries or {@code null} if space is unknown.
+     * @throws IgniteCheckedException If failed.
+     */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(@Nullable String spaceName, int part)
         throws IgniteCheckedException{
         try {

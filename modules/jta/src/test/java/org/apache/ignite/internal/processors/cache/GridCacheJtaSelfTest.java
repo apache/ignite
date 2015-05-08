@@ -155,7 +155,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
 
         IgniteCache<String, Integer> cache1 = jcache();
 
-        IgniteCache<Object, Object> cache2 = ignite.jcache("cache-2");
+        IgniteCache<Object, Object> cache2 = ignite.cache("cache-2");
 
         assertNull(ignite.transactions().tx());
 

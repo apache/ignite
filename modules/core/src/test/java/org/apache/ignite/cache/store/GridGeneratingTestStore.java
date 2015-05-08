@@ -95,7 +95,7 @@ public class GridGeneratingTestStore implements CacheStore<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 }

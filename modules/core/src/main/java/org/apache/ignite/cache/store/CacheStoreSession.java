@@ -23,7 +23,13 @@ import org.apache.ignite.transactions.*;
 import java.util.*;
 
 /**
- * Session for the cache store operations.
+ * Session for the cache store operations. The main purpose of cache store session
+ * is to hold context between multiple store invocations whenever in transaction. For example,
+ * if using JDBC, you can store the ongoing database connection in the session {@link #properties()} map.
+ * You can then commit this connection in the {@link CacheStore#sessionEnd(boolean)} method.
+ * <p>
+ * {@code CacheStoreSession} can be injected into an implementation of {@link CacheStore} with
+ * {@link CacheStoreSessionResource @CacheStoreSessionResource} annotation.
  *
  * @see CacheStoreSessionResource
  */
@@ -35,6 +41,15 @@ public interface CacheStoreSession {
      * @return Transaction belonging to current session.
      */
     public Transaction transaction();
+
+    /**
+     * Returns {@code true} if performing store operation within a transaction,
+     * {@code false} otherwise. Analogous to calling {@code transaction() != null}.
+     *
+     * @return {@code True} if performing store operation within a transaction,
+     * {@code false} otherwise.
+     */
+    public boolean isWithinTransaction();
 
     /**
      * Gets current session properties. You can add properties directly to the

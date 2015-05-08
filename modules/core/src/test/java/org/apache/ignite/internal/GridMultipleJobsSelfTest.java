@@ -53,7 +53,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         startGrid(1);
         startGrid(2);
 
-        assertEquals(2, grid(1).nodes().size());
+        assertEquals(2, grid(1).cluster().nodes().size());
     }
 
     /** {@inheritDoc} */
@@ -157,8 +157,8 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);
 
-                    fut.listenAsync(new CIX1<IgniteFuture<Boolean>>() {
-                        @Override public void applyx(IgniteFuture<Boolean> f) throws IgniteCheckedException {
+                    fut.listen(new CIX1<IgniteFuture<Boolean>>() {
+                        @Override public void applyx(IgniteFuture<Boolean> f) {
                             try {
                                 assert f.get();
                             }
@@ -223,7 +223,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         /**
          * @return Affinity key.
          */
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         public String affinityKey() {
             return "key";
         }

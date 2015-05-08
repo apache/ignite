@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -43,7 +42,7 @@ public class GridCacheDhtAtomicRemoveFailureTest extends GridCacheAbstractRemove
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setDistributionMode(PARTITIONED_ONLY);
+        cfg.setNearConfiguration(null);
         cfg.setBackups(1);
 
         return cfg;

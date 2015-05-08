@@ -39,7 +39,7 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
 
         long start = System.nanoTime();
 
-        try (IgniteDataLoader<Object, Object> dataLdr = ignite().dataLoader(cache.getName())) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cache.getName())) {
             final int orgRange = args.range() / 10;
 
             // Populate organizations.
@@ -106,11 +106,11 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
 
         qry.setArgs(minSalary, maxSalary);
 
-        return cache.queryFields(qry).getAll();
+        return cache.query(qry).getAll();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().jcache("query");
+        return ignite().cache("query");
     }
 }

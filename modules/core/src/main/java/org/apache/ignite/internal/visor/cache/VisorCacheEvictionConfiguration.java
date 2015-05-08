@@ -54,9 +54,6 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     /** Synchronous evicts flag. */
     private boolean evictSynchronized;
 
-    /** Synchronous near evicts flag. */
-    private boolean nearSynchronized;
-
     /** Eviction max overflow ratio. */
     private float maxOverflowRatio;
 
@@ -67,17 +64,16 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     public static VisorCacheEvictionConfiguration from(CacheConfiguration ccfg) {
         VisorCacheEvictionConfiguration cfg = new VisorCacheEvictionConfiguration();
 
-        final CacheEvictionPolicy plc = ccfg.getEvictionPolicy();
+        final EvictionPolicy plc = ccfg.getEvictionPolicy();
 
-        cfg.policy(compactClass(plc));
-        cfg.policyMaxSize(evictionPolicyMaxSize(plc));
-        cfg.filter(compactClass(ccfg.getEvictionFilter()));
-        cfg.synchronizedConcurrencyLevel(ccfg.getEvictSynchronizedConcurrencyLevel());
-        cfg.synchronizedTimeout(ccfg.getEvictSynchronizedTimeout());
-        cfg.synchronizedKeyBufferSize(ccfg.getEvictSynchronizedKeyBufferSize());
-        cfg.evictSynchronized(ccfg.isEvictSynchronized());
-        cfg.nearSynchronized(ccfg.isEvictNearSynchronized());
-        cfg.maxOverflowRatio(ccfg.getEvictMaxOverflowRatio());
+        cfg.plc = compactClass(plc);
+        cfg.plcMaxSize = evictionPolicyMaxSize(plc);
+        cfg.filter = compactClass(ccfg.getEvictionFilter());
+        cfg.syncConcurrencyLvl = ccfg.getEvictSynchronizedConcurrencyLevel();
+        cfg.syncTimeout = ccfg.getEvictSynchronizedTimeout();
+        cfg.syncKeyBufSize = ccfg.getEvictSynchronizedKeyBufferSize();
+        cfg.evictSynchronized = ccfg.isEvictSynchronized();
+        cfg.maxOverflowRatio = ccfg.getEvictMaxOverflowRatio();
 
         return cfg;
     }
@@ -90,24 +86,10 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     }
 
     /**
-     * @param plc New eviction policy.
-     */
-    public void policy(String plc) {
-        this.plc = plc;
-    }
-
-    /**
      * @return Cache eviction policy max size.
      */
     @Nullable public Integer policyMaxSize() {
         return plcMaxSize;
-    }
-
-    /**
-     * @param plcMaxSize New cache eviction policy max size.
-     */
-    public void policyMaxSize(Integer plcMaxSize) {
-        this.plcMaxSize = plcMaxSize;
     }
 
     /**
@@ -118,24 +100,10 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     }
 
     /**
-     * @param filter New eviction filter to specify which entries should not be evicted.
-     */
-    public void filter(String filter) {
-        this.filter = filter;
-    }
-
-    /**
      * @return synchronized eviction concurrency level.
      */
     public int synchronizedConcurrencyLevel() {
         return syncConcurrencyLvl;
-    }
-
-    /**
-     * @param syncConcurrencyLvl New synchronized eviction concurrency level.
-     */
-    public void synchronizedConcurrencyLevel(int syncConcurrencyLvl) {
-        this.syncConcurrencyLvl = syncConcurrencyLvl;
     }
 
     /**
@@ -146,24 +114,10 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     }
 
     /**
-     * @param syncTimeout New synchronized eviction timeout.
-     */
-    public void synchronizedTimeout(long syncTimeout) {
-        this.syncTimeout = syncTimeout;
-    }
-
-    /**
      * @return Synchronized key buffer size.
      */
     public int synchronizedKeyBufferSize() {
         return syncKeyBufSize;
-    }
-
-    /**
-     * @param syncKeyBufSize New synchronized key buffer size.
-     */
-    public void synchronizedKeyBufferSize(int syncKeyBufSize) {
-        this.syncKeyBufSize = syncKeyBufSize;
     }
 
     /**
@@ -174,38 +128,10 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     }
 
     /**
-     * @param evictSynchronized New synchronous evicts flag.
-     */
-    public void evictSynchronized(boolean evictSynchronized) {
-        this.evictSynchronized = evictSynchronized;
-    }
-
-    /**
-     * @return Synchronous near evicts flag.
-     */
-    public boolean nearSynchronized() {
-        return nearSynchronized;
-    }
-
-    /**
-     * @param nearSynchronized New synchronous near evicts flag.
-     */
-    public void nearSynchronized(boolean nearSynchronized) {
-        this.nearSynchronized = nearSynchronized;
-    }
-
-    /**
      * @return Eviction max overflow ratio.
      */
     public float maxOverflowRatio() {
         return maxOverflowRatio;
-    }
-
-    /**
-     * @param maxOverflowRatio New eviction max overflow ratio.
-     */
-    public void maxOverflowRatio(float maxOverflowRatio) {
-        this.maxOverflowRatio = maxOverflowRatio;
     }
 
     /** {@inheritDoc} */

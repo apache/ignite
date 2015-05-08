@@ -378,11 +378,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         if (node == null)
             return 1;
 
-        if (internalOrder() == node.internalOrder())
+        int res = Long.compare(internalOrder(), node.internalOrder());
+
+        if (res == 0) {
             assert id().equals(node.id()) : "Duplicate order [this=" + this + ", other=" + node + ']';
 
-        return internalOrder() < node.internalOrder() ? -1 : internalOrder() > node.internalOrder() ? 1 :
-            id().compareTo(node.id());
+            res = id().compareTo(node.id());
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

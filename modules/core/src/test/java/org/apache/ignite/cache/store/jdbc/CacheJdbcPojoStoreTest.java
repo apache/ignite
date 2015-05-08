@@ -19,7 +19,6 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -28,34 +27,27 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.cache.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
 import org.h2.jdbcx.*;
-import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
-import javax.cache.*;
 import javax.cache.integration.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest.*;
 
 /**
  * Class for {@code PojoCacheStore} tests.
  */
-public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
+public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<CacheJdbcPojoStore<Object, Object>> {
     /** DB connection URL. */
     private static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Default config with mapping. */
-    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/Ignite.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-type-metadata.xml";
 
     /** Organization count. */
     protected static final int ORGANIZATION_CNT = 1000;
@@ -63,29 +55,16 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
     /** Person count. */
     protected static final int PERSON_CNT = 100000;
 
-    /** */
-    protected TestThreadLocalCacheSession ses = new TestThreadLocalCacheSession();
-
-    /** */
-    protected final CacheJdbcPojoStore store;
-
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
     public CacheJdbcPojoStoreTest() throws Exception {
-        super(false);
-
-        store = store();
-
-        inject(store);
+        // No-op.
     }
 
-    /**
-     * @return Store.
-     */
-    protected CacheJdbcPojoStore store() throws IgniteCheckedException {
-        CacheJdbcPojoStore store = new CacheJdbcPojoStore();
+    /** {@inheritDoc} */
+    @Override protected CacheJdbcPojoStore<Object, Object> store() {
+        CacheJdbcPojoStore<Object, Object> store = new CacheJdbcPojoStore<>();
 
 //        PGPoolingDataSource ds = new PGPoolingDataSource();
 //        ds.setUser("postgres");
@@ -101,18 +80,6 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
-        return store;
-    }
-
-    /**
-     * @param store Store.
-     * @throws Exception If failed.
-     */
-    protected void inject(CacheAbstractJdbcStore store) throws Exception {
-        getTestResources().inject(store);
-
-        GridTestUtils.setFieldValue(store, CacheAbstractJdbcStore.class, "ses", ses);
-
         URL cfgUrl;
 
         try {
@@ -123,7 +90,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
         }
 
         if (cfgUrl == null)
-            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
+            throw new IgniteException("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
 
         try {
             GenericApplicationContext springCtx = new GenericApplicationContext();
@@ -154,67 +121,84 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                throw new IgniteException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
                     "[springUrl=" + cfgUrl + ']', e);
             else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                throw new IgniteException("Failed to instantiate Spring XML application context [springUrl=" +
                     cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
+
+        return store;
     }
 
     /**
+     * @param store Store.
      * @throws Exception If failed.
      */
-    public void testWriteRetry() throws Exception {
-        // Special dialect that will skip updates, to test write retry.
-        BasicJdbcDialect dialect = new BasicJdbcDialect() {
-            /** {@inheritDoc} */
-            @Override public String updateQuery(String tblName, Collection<String> keyCols, Iterable<String> valCols) {
-                return super.updateQuery(tblName, keyCols, valCols) + " AND 1 = 0";
-            }
-        };
+    @Override protected void inject(CacheJdbcPojoStore<Object, Object> store) throws Exception {
+        getTestResources().inject(store);
 
-        store.setDialect(dialect);
+        GridTestUtils.setFieldValue(store, CacheAbstractJdbcStore.class, "ses", ses);
+    }
 
-        Map<String, Map<Object, CacheAbstractJdbcStore.EntryMapping>> cacheMappings =
-            GridTestUtils.getFieldValue(store, CacheAbstractJdbcStore.class, "cacheMappings");
-
-        CacheAbstractJdbcStore.EntryMapping em = cacheMappings.get(null).get(OrganizationKey.class);
-
-        CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, CacheAbstractJdbcStore.EntryMapping.class, "typeMeta");
-
-        cacheMappings.get(null).put(OrganizationKey.class,
-            new CacheAbstractJdbcStore.EntryMapping(null, dialect, typeMeta));
-
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         Connection conn = store.openConnection(false);
 
-        PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
+        Statement stmt = conn.createStatement();
 
-        orgStmt.setInt(1, 1);
-        orgStmt.setString(2, "name" + 1);
-        orgStmt.setString(3, "city" + 1);
+        try {
+            stmt.executeUpdate("delete from String_Entries");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
 
-        orgStmt.executeUpdate();
+        try {
+            stmt.executeUpdate("delete from UUID_Entries");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
 
-        U.closeQuiet(orgStmt);
+        try {
+            stmt.executeUpdate("delete from Organization");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
+
+        try {
+            stmt.executeUpdate("delete from Person");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
+
+        try {
+            stmt.executeUpdate("delete from Timestamp_Entries");
+        }
+        catch (SQLException ignore) {
+            // No-op.
+        }
+
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS String_Entries (key varchar(100) not null, val varchar(100), PRIMARY KEY(key))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS UUID_Entries (key binary(16) not null, val binary(16), PRIMARY KEY(key))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Timestamp_Entries (key timestamp not null, val integer, PRIMARY KEY(key))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person_Complex (id integer not null, org_id integer not null, city_id integer not null, name varchar(50), PRIMARY KEY(id))");
 
         conn.commit();
 
-        OrganizationKey k1 = new OrganizationKey(1);
-        Organization v1 = new Organization(1, "Name1", "City1");
+        U.closeQuiet(stmt);
 
-        ses.newSession(null);
+        U.closeQuiet(conn);
 
-        try {
-            store.write(new CacheEntryImpl<>(k1, v1));
-        }
-        catch (CacheWriterException e) {
-            if (!e.getMessage().startsWith("Failed insert entry in database, violate a unique index or primary key") ||
-                e.getSuppressed().length != 2)
-                throw e;
-        }
+        super.beforeTest();
     }
+
 
     /**
      * @throws Exception If failed.
@@ -336,428 +320,72 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testStore() throws Exception {
-        // Create dummy transaction
-        Transaction tx = new DummyTx();
+    public void testWriteRetry() throws Exception {
+        // Special dialect that will skip updates, to test write retry.
+        BasicJdbcDialect dialect = new BasicJdbcDialect() {
+            /** {@inheritDoc} */
+            @Override public String updateQuery(String tblName, Collection<String> keyCols, Iterable<String> valCols) {
+                return super.updateQuery(tblName, keyCols, valCols) + " AND 1 = 0";
+            }
+        };
 
-        ses.newSession(tx);
+        store.setDialect(dialect);
 
-        OrganizationKey k1 = new OrganizationKey(1);
-        Organization v1 = new Organization(1, "Name1", "City1");
+        Map<String, Map<Object, CacheAbstractJdbcStore.EntryMapping>> cacheMappings =
+            GridTestUtils.getFieldValue(store, CacheAbstractJdbcStore.class, "cacheMappings");
 
-        OrganizationKey k2 = new OrganizationKey(2);
-        Organization v2 = new Organization(2, "Name2", "City2");
+        CacheAbstractJdbcStore.EntryMapping em = cacheMappings.get(null).get(OrganizationKey.class);
 
-        store.write(new CacheEntryImpl<>(k1, v1));
-        store.write(new CacheEntryImpl<>(k2, v2));
+        CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, CacheAbstractJdbcStore.EntryMapping.class, "typeMeta");
 
-        store.txEnd(true);
+        cacheMappings.get(null).put(OrganizationKey.class,
+            new CacheAbstractJdbcStore.EntryMapping(null, dialect, typeMeta));
 
-        ses.newSession(null);
+        Connection conn = store.openConnection(false);
 
-        assertEquals(v1, store.load(k1));
-        assertEquals(v2, store.load(k2));
+        PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
-        ses.newSession(tx);
+        orgStmt.setInt(1, 1);
+        orgStmt.setString(2, "name" + 1);
+        orgStmt.setString(3, "city" + 1);
 
-        OrganizationKey k3 = new OrganizationKey(3);
+        orgStmt.executeUpdate();
 
-        assertNull(store.load(k3));
+        U.closeQuiet(orgStmt);
 
-        store.delete(k1);
-
-        store.txEnd(true);
-
-        assertNull(store.load(k1));
-        assertEquals(v2, store.load(k2));
-
-        ses.newSession(null);
-
-        assertNull(store.load(k3));
-
-        OrganizationKey k4 = new OrganizationKey(4);
-        Organization v4 = new Organization(4, null, "City4");
-
-        assertNull(store.load(k4));
-
-        store.write(new CacheEntryImpl<>(k4, v4));
-
-        assertEquals(v4, store.load(k4));
-    }
-
-    /**
-     * @throws IgniteCheckedException if failed.
-     */
-    public void testRollback() throws IgniteCheckedException {
-        Transaction tx = new DummyTx();
-
-        ses.newSession(tx);
+        conn.commit();
 
         OrganizationKey k1 = new OrganizationKey(1);
         Organization v1 = new Organization(1, "Name1", "City1");
 
-        // Put.
-        store.write(new CacheEntryImpl<>(k1, v1));
+        ses.newSession(null);
 
-        store.txEnd(false); // Rollback.
-
-        tx = new DummyTx();
-
-        ses.newSession(tx);
-
-        assertNull(store.load(k1));
-
-        OrganizationKey k2 = new OrganizationKey(2);
-        Organization v2 = new Organization(2, "Name2", "City2");
-
-        // Put all.
-        assertNull(store.load(k2));
-
-        Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
-
-        col.add(new CacheEntryImpl<>(k2, v2));
-
-        store.writeAll(col);
-
-        store.txEnd(false); // Rollback.
-
-        tx = new DummyTx();
-
-        ses.newSession(tx);
-
-        assertNull(store.load(k2));
-
-        OrganizationKey k3 = new OrganizationKey(3);
-        Organization v3 = new Organization(3, "Name3", "City3");
-
-        col = new ArrayList<>();
-
-        col.add(new CacheEntryImpl<>(k3, v3));
-
-        store.writeAll(col);
-
-        store.txEnd(true); // Commit.
-
-        tx = new DummyTx();
-
-        ses.newSession(tx);
-
-        assertEquals(v3, store.load(k3));
-
-        OrganizationKey k4 = new OrganizationKey(4);
-        Organization v4 = new Organization(4, "Name4", "City4");
-
-        store.write(new CacheEntryImpl<>(k4, v4));
-
-        store.txEnd(false); // Rollback.
-
-        tx = new DummyTx();
-
-        ses.newSession(tx);
-
-        assertNull(store.load(k4));
-
-        assertEquals(v3, store.load(k3));
-
-        // Remove.
-        store.delete(k3);
-
-        store.txEnd(false); // Rollback.
-
-        tx = new DummyTx();
-
-        ses.newSession(tx);
-
-        assertEquals(v3, store.load(k3));
-
-        store.deleteAll(Arrays.asList(new OrganizationKey(-100)));
-
-        // Remove all.
-        store.deleteAll(Arrays.asList(k3));
-
-        store.txEnd(false); // Rollback.
-
-        tx = new DummyTx();
-
-        ses.newSession(tx);
-
-        assertEquals(v3, store.load(k3));
-    }
-
-    /**
-     */
-    public void testAllOpsWithTXNoCommit() {
-        doTestAllOps(new DummyTx(), false);
-    }
-
-    /**
-     */
-    public void testAllOpsWithTXCommit() {
-        doTestAllOps(new DummyTx(), true);
-    }
-
-    /**
-     */
-    public void testAllOpsWithoutTX() {
-        doTestAllOps(null, false);
-    }
-
-    /**
-     * @param tx Transaction.
-     * @param commit Commit.
-     */
-    private void doTestAllOps(@Nullable Transaction tx, boolean commit) {
         try {
-            ses.newSession(tx);
-
-            final OrganizationKey k1 = new OrganizationKey(1);
-            final Organization v1 = new Organization(1, "Name1", "City1");
-
             store.write(new CacheEntryImpl<>(k1, v1));
-
-            if (tx != null && commit) {
-                store.txEnd(true);
-
-                tx = new DummyTx();
-
-                ses.newSession(tx);
-            }
-
-            if (tx == null || commit)
-                assertEquals(v1, store.load(k1));
-
-            Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
-
-            final OrganizationKey k2 = new OrganizationKey(2);
-            final Organization v2 = new Organization(2, "Name2", "City2");
-
-            final OrganizationKey k3 = new OrganizationKey(3);
-            final Organization v3 = new Organization(3, "Name3", "City3");
-
-            col.add(new CacheEntryImpl<>(k2, v2));
-            col.add(new CacheEntryImpl<>(k3, v3));
-
-            store.writeAll(col);
-
-            if (tx != null && commit) {
-                store.txEnd(true);
-
-                tx = new DummyTx();
-
-                ses.newSession(tx);
-            }
-
-            final AtomicInteger cntr = new AtomicInteger();
-
-            final OrganizationKey no_such_key = new OrganizationKey(4);
-
-            if (tx == null || commit) {
-                Map<Object, Object> loaded = store.loadAll(Arrays.asList(k1, k2, k3, no_such_key));
-
-                for (Map.Entry<Object, Object> e : loaded.entrySet()) {
-                    Object key = e.getKey();
-                    Object val = e.getValue();
-
-                    if (k1.equals(key))
-                        assertEquals(v1, val);
-
-                    if (k2.equals(key))
-                        assertEquals(v2, val);
-
-                    if (k3.equals(key))
-                        assertEquals(v3, val);
-
-                    if (no_such_key.equals(key))
-                        fail();
-
-                    cntr.incrementAndGet();
-                }
-
-                assertEquals(3, cntr.get());
-            }
-
-            store.deleteAll(Arrays.asList(k2, k3));
-
-            if (tx != null && commit) {
-                store.txEnd(true);
-
-                tx = new DummyTx();
-
-                ses.newSession(tx);
-            }
-
-            if (tx == null || commit) {
-                assertNull(store.load(k2));
-                assertNull(store.load(k3));
-                assertEquals(v1, store.load(k1));
-            }
-
-            store.delete(k1);
-
-            if (tx != null && commit) {
-                store.txEnd(true);
-
-                tx = new DummyTx();
-
-                ses.newSession(tx);
-            }
-
-            if (tx == null || commit)
-                assertNull(store.load(k1));
         }
-        finally {
-            if (tx != null)
-                store.txEnd(false);
+        catch (CacheWriterException e) {
+            if (!e.getMessage().startsWith("Failed insert entry in database, violate a unique index or primary key") ||
+                e.getSuppressed().length != 2)
+                throw e;
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleMultithreading() throws Exception {
-        final Random rnd = new Random();
+    public void testTimestamp() throws Exception {
+        Timestamp k = new Timestamp(System.currentTimeMillis());
 
-        final Queue<OrganizationKey> queue = new LinkedBlockingQueue<>();
+        ses.newSession(null);
 
-        multithreaded(new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                for (int i = 0; i < 1000; i++) {
-                    Transaction tx = rnd.nextBoolean() ? new DummyTx() : null;
+        Integer v = 5;
 
-                    ses.newSession(tx);
+        store.write(new CacheEntryImpl<>(k, v));
 
-                    int op = rnd.nextInt(10);
+        assertEquals(v, store.load(k));
 
-                    boolean queueEmpty = false;
+        store.delete(k);
 
-                    if (op < 4) { // Load.
-                        OrganizationKey key = queue.poll();
-
-                        if (key == null)
-                            queueEmpty = true;
-                        else {
-                            if (rnd.nextBoolean())
-                                assertNotNull(store.load(key));
-                            else {
-                                Map<Object, Object> loaded = store.loadAll(Collections.singleton(key));
-
-                                assertEquals(1, loaded.size());
-
-                                Map.Entry<Object, Object> e = loaded.entrySet().iterator().next();
-
-                                OrganizationKey k = (OrganizationKey)e.getKey();
-                                Organization v = (Organization)e.getValue();
-
-                                assertTrue(k.getId().equals(v.getId()));
-                            }
-
-                            if (tx != null)
-                                store.txEnd(true);
-
-                            queue.add(key);
-                        }
-                    }
-                    else if (op < 6) { // Remove.
-                        OrganizationKey key = queue.poll();
-
-                        if (key == null)
-                            queueEmpty = true;
-                        else {
-                            if (rnd.nextBoolean())
-                                store.delete(key);
-                            else
-                                store.deleteAll(Collections.singleton(key));
-
-                            if (tx != null)
-                                store.txEnd(true);
-                        }
-                    }
-                    else { // Update.
-                        OrganizationKey key = queue.poll();
-
-                        if (key == null)
-                            queueEmpty = true;
-                        else {
-                            Organization val =
-                                new Organization(key.getId(), "Name" + key.getId(), "City" + key.getId());
-
-                            Cache.Entry<OrganizationKey, Organization> entry = new CacheEntryImpl<>(key, val);
-
-                            if (rnd.nextBoolean())
-                                store.write(entry);
-                            else {
-                                Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
-
-                                col.add(entry);
-
-                                store.writeAll(col);
-                            }
-
-                            if (tx != null)
-                                store.txEnd(true);
-
-                            queue.add(key);
-                        }
-                    }
-
-                    if (queueEmpty) { // Add.
-                        OrganizationKey key = new OrganizationKey(rnd.nextInt());
-                        Organization val = new Organization(key.getId(), "Name" + key.getId(), "City" + key.getId());
-
-                        Cache.Entry<OrganizationKey, Organization> entry = new CacheEntryImpl<>(key, val);
-
-                        if (rnd.nextBoolean())
-                            store.write(entry);
-                        else {
-                            Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
-
-                            col.add(entry);
-
-                            store.writeAll(col);
-                        }
-
-                        if (tx != null)
-                            store.txEnd(true);
-
-                        queue.add(key);
-                    }
-                }
-
-                return null;
-            }
-        }, 37);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        Connection conn = store.openConnection(false);
-
-        Statement stmt = conn.createStatement();
-
-        try {
-            stmt.executeUpdate("delete from Organization");
-        }
-        catch (SQLException ignore) {
-            // no-op
-        }
-
-        try {
-            stmt.executeUpdate("delete from Person");
-        }
-        catch (SQLException ignore) {
-            // no-op
-        }
-
-        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
-        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
-        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person_Complex (id integer not null, org_id integer not null, city_id integer not null, name varchar(50), PRIMARY KEY(id))");
-
-        conn.commit();
-
-        U.closeQuiet(stmt);
-
-        U.closeQuiet(conn);
+        assertNull(store.load(k));
     }
 }

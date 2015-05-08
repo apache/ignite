@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -132,10 +131,10 @@ public class RestProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void populateCache() throws IgniteCheckedException {
-        IgniteCache<String, Object> cache = G.ignite().jcache(null);
+    private void populateCache() {
+        IgniteCache<String, Object> cache = G.ignite().cache(null);
 
         cache.put("int", intValue());
         cache.put("string", "cacheString");
@@ -152,9 +151,9 @@ public class RestProcessorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void deployTasks() throws IgniteCheckedException {
+    private void deployTasks() {
         G.ignite().compute().localDeployTask(TestTask1.class, TestTask1.class.getClassLoader());
         G.ignite().compute().localDeployTask(TestTask2.class, TestTask2.class.getClassLoader());
     }

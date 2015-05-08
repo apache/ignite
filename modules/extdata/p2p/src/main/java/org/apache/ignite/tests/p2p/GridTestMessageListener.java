@@ -18,11 +18,11 @@
 package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.resources.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -38,7 +38,7 @@ public class GridTestMessageListener implements P2<UUID, Object> {
         ignite.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() +
             ", msg=" + msg + ']');
 
-        ClusterNodeLocalMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
+        ConcurrentMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
 
         AtomicInteger cnt = map.get("msgCnt");
 

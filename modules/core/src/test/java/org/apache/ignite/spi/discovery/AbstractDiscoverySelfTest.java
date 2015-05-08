@@ -19,10 +19,8 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.*;
@@ -134,7 +132,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
         /** {@inheritDoc} */
         @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
-            Map<Long, Collection<ClusterNode>> topHist) {
+            Map<Long, Collection<ClusterNode>> topHist, Serializable data) {
             if (type == EVT_NODE_METRICS_UPDATED)
                 isMetricsUpdate = true;
         }
@@ -206,7 +204,8 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
             DiscoverySpiListener locHeartbeatLsnr = new DiscoverySpiListener() {
                 @Override public void onDiscovery(int type, long topVer, ClusterNode node,
-                    Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist) {
+                    Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
+                    Serializable data) {
                     // If METRICS_UPDATED came from local node
                     if (type == EVT_NODE_METRICS_UPDATED
                         && node.id().equals(spi.getLocalNode().id()))
@@ -370,7 +369,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                 spi.setListener(new DiscoverySpiListener() {
                     @SuppressWarnings({"NakedNotify"})
                     @Override public void onDiscovery(int type, long topVer, ClusterNode node,
-                        Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist) {
+                        Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist, Serializable data) {
                         info("Discovery event [type=" + type + ", node=" + node + ']');
 
                         synchronized (mux) {
@@ -381,26 +380,13 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
                     @Override public Map<Integer, Object> collect(UUID nodeId) {
-                        return new HashMap<Integer, Object>();
+                        return new HashMap<>();
                     }
 
-                    @Override public void onExchange(Map<Integer, Object> data) {
+                    @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data) {
                         // No-op.
                     }
                 });
-
-                spi.setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-                    @Override public GridSecurityContext authenticateNode(ClusterNode n, GridSecurityCredentials cred) {
-                        GridSecuritySubject subj = getGridSecuritySubject(GridSecuritySubjectType.REMOTE_NODE, n.id());
-
-                        return new GridSecurityContext(subj);
-                    }
-
-                    @Override public boolean isGlobalNodeAuthentication() {
-                        return false;
-                    }
-                });
-
 
                 spi.spiStart(getTestGridName() + i);
 
@@ -468,7 +454,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      * @throws IOException If write failed.
      */
     private void writeObject(ClusterNode node) throws Exception {
-
         Marshaller marshaller = getTestResources().getMarshaller();
 
         OutputStream out = new NullOutputStream();

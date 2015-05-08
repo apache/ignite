@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
 
@@ -66,7 +65,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(GRID_CNT - 1);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(NEAR_PARTITIONED);
+        cc.setNearConfiguration(new NearCacheConfiguration());
 
         c.setCacheConfiguration(cc);
 
@@ -91,10 +90,10 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         Integer key = 0;
 
-        while (grid(idx).mapKeyToNode(null, key).id().equals(grid(0).localNode().id()))
+        while (grid(idx).cluster().mapKeyToNode(null, key).id().equals(grid(0).localNode().id()))
             key++;
 
-        ClusterNode node = grid(idx).mapKeyToNode(null, key);
+        ClusterNode node = grid(idx).cluster().mapKeyToNode(null, key);
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 

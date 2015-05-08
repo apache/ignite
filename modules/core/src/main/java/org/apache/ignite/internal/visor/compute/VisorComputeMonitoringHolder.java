@@ -48,7 +48,7 @@ public class VisorComputeMonitoringHolder {
      * @param visorKey unique Visor instance key.
      */
     public void startCollect(IgniteEx ignite, String visorKey) {
-        synchronized(listenVisor) {
+        synchronized (listenVisor) {
             if (cleanupStopped) {
                 scheduleCleanupJob(ignite);
 
@@ -85,7 +85,7 @@ public class VisorComputeMonitoringHolder {
      * @param visorKey Unique Visor instance key.
      */
     public void stopCollect(IgniteEx g, String visorKey) {
-        synchronized(listenVisor) {
+        synchronized (listenVisor) {
             listenVisor.remove(visorKey);
 
             tryDisableEvents(g);
@@ -95,17 +95,17 @@ public class VisorComputeMonitoringHolder {
     /**
      * Schedule cleanup process for events monitoring.
      *
-     * @param g grid.
+     * @param ignite grid.
      */
-    private void scheduleCleanupJob(final IgniteEx g) {
-        ((IgniteKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
+    private void scheduleCleanupJob(final IgniteEx ignite) {
+        ignite.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
             @Override public void onTimeout() {
-                synchronized(listenVisor) {
-                    if (tryDisableEvents(g)) {
+                synchronized (listenVisor) {
+                    if (tryDisableEvents(ignite)) {
                         for (String visorKey : listenVisor.keySet())
                             listenVisor.put(visorKey, false);
 
-                        scheduleCleanupJob(g);
+                        scheduleCleanupJob(ignite);
                     }
                     else
                         cleanupStopped = true;

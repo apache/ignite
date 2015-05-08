@@ -290,13 +290,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            IgniteCache<Long, Object> cache1 = ignite1.jcache(null);
+            IgniteCache<Long, Object> cache1 = ignite1.cache(null);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final IgniteCache<Long, Object> cache2 = ignite2.jcache(null);
+            final IgniteCache<Long, Object> cache2 = ignite2.cache(null);
 
             assertNotNull(cache2);
 
@@ -304,7 +304,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             // cache is REPLICATED. This happens asynchronously, we
             // need to use condition wait.
             assert GridTestUtils.waitForCondition(new PAX() {
-                @Override public boolean applyx() throws IgniteCheckedException {
+                @Override public boolean applyx() {
                     return cache2.get(1L) != null;
                 }
             }, getConditionTimeout());
@@ -316,7 +316,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = ignite1.jcache(null);
+            cache1 = ignite1.cache(null);
 
             assertNotNull(cache1);
 
@@ -326,7 +326,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             // At this point, old version of test resource should be undeployed
             // and removed from cache asynchronously.
             assert GridTestUtils.waitForCondition(new PAX() {
-                @Override public boolean applyx() throws IgniteCheckedException {
+                @Override public boolean applyx() {
                     return cache2.get(1L) == null;
                 }
             }, getConditionTimeout()) : "2nd condition failed [entries1=" + toSet(cache1.iterator()) +

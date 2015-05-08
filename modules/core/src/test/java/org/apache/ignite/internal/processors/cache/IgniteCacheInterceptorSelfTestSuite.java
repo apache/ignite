@@ -51,6 +51,11 @@ public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheInterceptorReplicatedSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorReplicatedWithStoreSelfTest.class);
 
+        suite.addTestSuite(GridCacheOnCopyFlagTxPartitionedSelfTest.class);
+        suite.addTestSuite(GridCacheOnCopyFlagReplicatedSelfTest.class);
+        suite.addTestSuite(GridCacheOnCopyFlagLocalSelfTest.class);
+        suite.addTestSuite(GridCacheOnCopyFlagAtomicSelfTest.class);
+
         return suite;
     }
 }

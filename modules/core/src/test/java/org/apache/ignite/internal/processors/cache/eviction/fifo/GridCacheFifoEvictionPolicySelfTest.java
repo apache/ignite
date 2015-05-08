@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 public class GridCacheFifoEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<CacheFifoEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<FifoEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -45,7 +45,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
             MockEntry e4 = new MockEntry("4", "4");
             MockEntry e5 = new MockEntry("5", "5");
 
-            CacheFifoEvictionPolicy<String, String> p = policy();
+            FifoEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(3);
 
@@ -163,7 +163,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            CacheFifoEvictionPolicy<String, String> p = policy();
+            FifoEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -190,7 +190,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            CacheFifoEvictionPolicy<String, String> p = policy();
+            FifoEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -248,7 +248,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             MockEntry e5 = new MockEntry("5");
 
-            CacheFifoEvictionPolicy<String, String> p = policy();
+            FifoEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -294,7 +294,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            IgniteCache<Object, Object> cache = ignite.jcache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(null);
 
             int cnt = 500;
 
@@ -348,13 +348,13 @@ public class GridCacheFifoEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheFifoEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new CacheFifoEvictionPolicy<>(plcMax);
+    @Override protected FifoEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new FifoEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheFifoEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new CacheFifoEvictionPolicy<>(nearMax);
+    @Override protected FifoEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new FifoEvictionPolicy<>(nearMax);
     }
 
     /** {@inheritDoc} */

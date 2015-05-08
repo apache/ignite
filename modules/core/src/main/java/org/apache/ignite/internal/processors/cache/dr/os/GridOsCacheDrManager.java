@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.dr.os;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -27,14 +28,14 @@ import org.jetbrains.annotations.*;
 /**
  * No-op implementation for {@link GridCacheDrManager}.
  */
-public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
+public class GridOsCacheDrManager implements GridCacheDrManager {
     /** {@inheritDoc} */
     @Override public boolean enabled() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {
+    @Override public void start(GridCacheContext cctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -69,10 +70,8 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void replicate(K key,
-        @Nullable byte[] keyBytes,
-        @Nullable V val,
-        @Nullable byte[] valBytes,
+    @Override public void replicate(KeyCacheObject key,
+        @Nullable CacheObject val,
         long ttl,
         long expireTime,
         GridCacheVersion ver,
@@ -81,7 +80,7 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(long topVer, boolean left) throws IgniteCheckedException {
+    @Override public void beforeExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException {
         // No-op.
     }
 

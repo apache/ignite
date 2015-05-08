@@ -24,6 +24,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -462,24 +463,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T readFromOffheap(String spaceName, int part, Object key, byte[] keyBytes,
-        @Nullable ClassLoader ldr) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-        @Nullable byte[] keyBytes) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes,
-        Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public int partition(String cacheName, Object key) {
         return -1;
     }
@@ -519,8 +502,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
                     return new DirectMessageWriter();
                 }
 
-                @Override public MessageReader reader() {
-                    return new DirectMessageReader(messageFactory());
+                @Override public MessageReader reader(MessageFactory factory) {
+                    return new DirectMessageReader(factory, this);
                 }
             };
         }
@@ -531,7 +514,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new GridIoMessageFactory(messageFormatter(), null);
+            factory = new GridIoMessageFactory(null);
 
         return factory;
     }

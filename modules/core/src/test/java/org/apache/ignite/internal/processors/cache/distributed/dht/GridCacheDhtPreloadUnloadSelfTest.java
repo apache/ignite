@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
@@ -46,13 +46,13 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     private static final int DFLT_PARTITIONS = 521;
 
     /** Preload batch size. */
-    private static final int DFLT_BATCH_SIZE = DFLT_PRELOAD_BATCH_SIZE;
+    private static final int DFLT_BATCH_SIZE = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Number of key backups. Each test method can set this value as required. */
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private CachePreloadMode preloadMode = ASYNC;
+    private CacheRebalanceMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -83,10 +83,10 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setPreloadBatchSize(preloadBatchSize);
+        cc.setRebalanceBatchSize(preloadBatchSize);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setPreloadMode(preloadMode);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
+        cc.setRebalanceMode(preloadMode);
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
         cc.setAtomicityMode(TRANSACTIONAL);
 
@@ -125,7 +125,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             int cnt = 1000;
 
-            populate(grid(0).<Integer, String>jcache(null), cnt);
+            populate(grid(0).<Integer, String>cache(null), cnt);
 
             int gridCnt = 2;
 
@@ -152,7 +152,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             int cnt = 1000;
 
-            populate(grid(0).<Integer, String>jcache(null), cnt);
+            populate(grid(0).<Integer, String>cache(null), cnt);
 
             int gridCnt = 2;
 
@@ -167,10 +167,10 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             Thread.sleep(wait);
 
             for (int i = 0; i < gridCnt; i++)
-                info("Grid size [i=" + i + ", size=" + grid(i).jcache(null).localSize() + ']');
+                info("Grid size [i=" + i + ", size=" + grid(i).cache(null).localSize() + ']');
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).jcache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 // Nothing should be unloaded since nodes are backing up each other.
                 assertEquals(cnt, c.localSize());
@@ -197,7 +197,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             boolean err = false;
 
             for (int i = 0; i < gridCnt; i++) {
-                IgniteCache<Integer, String> c = grid(i).jcache(null);
+                IgniteCache<Integer, String> c = grid(i).cache(null);
 
                 if (c.localSize() >= cnt)
                     err = true;
@@ -210,10 +210,10 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < gridCnt; i++)
-            info("Grid size [i=" + i + ", size=" + grid(i).jcache(null).localSize() + ']');
+            info("Grid size [i=" + i + ", size=" + grid(i).cache(null).localSize() + ']');
 
         for (int i = 0; i < gridCnt; i++) {
-            IgniteCache<Integer, String> c = grid(i).jcache(null);
+            IgniteCache<Integer, String> c = grid(i).cache(null);
 
             assert c.localSize() < cnt;
         }
@@ -231,7 +231,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
             int cnt = 1000;
 
-            populate(grid(0).<Integer, String>jcache(null), cnt);
+            populate(grid(0).<Integer, String>cache(null), cnt);
 
             int gridCnt = 3;
 
@@ -239,7 +239,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
                 for (int j = 0; j <= i; j++)
-                    info("Grid size [i=" + i + ", size=" + grid(j).jcache(null).localSize() + ']');
+                    info("Grid size [i=" + i + ", size=" + grid(j).cache(null).localSize() + ']');
             }
 
             long wait = 3000;
@@ -264,11 +264,11 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) {
-                    if (evt == LifecycleEventType.AFTER_GRID_START) {
-                        IgniteCache<Integer, String> c = ignite.jcache(null);
+                    if (evt == LifecycleEventType.AFTER_NODE_START) {
+                        IgniteCache<Integer, String> c = ignite.cache(null);
 
                         if (c.putIfAbsent(-1, "true")) {
-                            populate(ignite.<Integer, String>jcache(null), cnt);
+                            populate(ignite.<Integer, String>cache(null), cnt);
 
                             info(">>> POPULATED GRID <<<");
                         }
@@ -282,7 +282,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 startGrid(i);
 
                 for (int j = 0; j < i; j++)
-                    info("Grid size [i=" + i + ", size=" + grid(j).jcache(null).localSize() + ']');
+                    info("Grid size [i=" + i + ", size=" + grid(j).cache(null).localSize() + ']');
             }
 
             long wait = 3000;

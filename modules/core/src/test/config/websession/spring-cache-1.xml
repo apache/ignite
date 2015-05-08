@@ -40,13 +40,11 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
                     <property name="backups" value="1"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -58,13 +56,11 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="distributionMode" value="PARTITIONED_ONLY"/>
-
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
                     <property name="backups" value="1"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -78,7 +74,7 @@
 
                     <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
-                    <property name="preloadMode" value="SYNC"/>
+                    <property name="rebalanceMode" value="SYNC"/>
                 </bean>
             </list>
         </property>

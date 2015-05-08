@@ -69,12 +69,6 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
-
-        qcfg.setIndexPrimitiveKey(true);
-
-        cacheCfg.setQueryConfiguration(qcfg);
-
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
@@ -89,7 +83,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         GridCache<String, Integer> cache = cache(0);
 
         CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
-            .projection(grid(0));
+            .projection(grid(0).cluster());
 
         // Execute query.
         qry.execute().get();
@@ -131,7 +125,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         GridCache<String, Integer> cache = cache(0);
 
         CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
-            .projection(grid(0));
+            .projection(grid(0).cluster());
 
         // Execute.
         qry.execute().get();

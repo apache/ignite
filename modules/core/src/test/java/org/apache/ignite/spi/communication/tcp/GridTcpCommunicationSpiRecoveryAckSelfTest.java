@@ -57,8 +57,8 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      *
      */
     static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
-            @Override public MessageAdapter apply() {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
+            @Override public Message apply() {
                 return new GridTestMessage();
             }
         });
@@ -73,7 +73,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
     /** */
     @SuppressWarnings({"deprecation"})
-    private class TestListener implements CommunicationListener<MessageAdapter> {
+    private class TestListener implements CommunicationListener<Message> {
         /** */
         private ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
 
@@ -81,7 +81,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         private AtomicInteger rcvCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             info("Test listener received message: " + msg);
 
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
@@ -318,7 +318,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     protected TcpCommunicationSpi getSpi(int ackCnt, int idleTimeout, int queueLimit) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(idleTimeout);
         spi.setTcpNoDelay(true);
@@ -417,7 +416,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
-        for (CommunicationSpi<MessageAdapter> spi : spis) {
+        for (CommunicationSpi<Message> spi : spis) {
             spi.onContextDestroyed();
 
             spi.setListener(null);

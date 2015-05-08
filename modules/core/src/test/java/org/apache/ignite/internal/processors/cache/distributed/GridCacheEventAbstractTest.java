@@ -30,8 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -108,7 +106,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     private void waitForEvents(int gridIdx, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         if (!F.isEmpty(evtCnts))
             try {
-                TestEventListener.waitForEventCount(((IgniteKernal)grid(0)).context(), evtCnts);
+                TestEventListener.waitForEventCount(evtCnts);
             }
             catch (IgniteCheckedException e) {
                 printEventCounters(gridIdx, evtCnts);
@@ -135,10 +133,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
     /**
      * Clear caches without generating events.
-     *
-     * @throws IgniteCheckedException If failed to clear caches.
      */
-    private void clearCaches() throws IgniteCheckedException {
+    private void clearCaches() {
         for (int i = 0; i < gridCnt; i++) {
             IgniteCache<String, Integer> cache = jcache(i);
 
@@ -633,8 +629,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -664,8 +660,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -700,8 +696,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                CacheEntryPredicate noPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+                CacheEntryPredicate hasPeekVal = new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -824,17 +820,16 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         /**
          * Waits for event count.
          *
-         * @param ctx Kernal context.
          * @param evtCnts Array of tuples with values: V1 - event type, V2 - expected event count.
          * @throws IgniteCheckedException If failed to wait.
          */
-        private static void waitForEventCount(GridKernalContext ctx,
-            IgniteBiTuple<Integer, Integer>... evtCnts) throws IgniteCheckedException {
+        private static void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts)
+            throws IgniteCheckedException {
             if (F.isEmpty(evtCnts))
                 return;
 
             // Create future that aggregates all required event types.
-            GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>(ctx);
+            GridCompoundIdentityFuture<Object> cf = new GridCompoundIdentityFuture<>();
 
             for (IgniteBiTuple<Integer, Integer> t : evtCnts) {
                 Integer evtType = t.get1();
@@ -842,7 +837,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert expCnt != null && expCnt > 0;
 
-                EventTypeFuture fut = new EventTypeFuture(ctx, evtType, expCnt, partitioned);
+                EventTypeFuture fut = new EventTypeFuture(evtType, expCnt, partitioned);
 
                 futs.add(fut);
 
@@ -883,21 +878,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         private boolean partitioned;
 
         /**
-         * For {@link Externalizable}.
-         */
-        public EventTypeFuture() {
-            // No-op.
-        }
-
-        /**
-         * @param ctx Kernal context.
          * @param evtType Event type.
          * @param expCnt Expected count.
          * @param partitioned Partitioned flag.
          */
-        EventTypeFuture(GridKernalContext ctx, int evtType, int expCnt, boolean partitioned) {
-            super(ctx);
-
+        EventTypeFuture(int evtType, int expCnt, boolean partitioned) {
             assert expCnt > 0;
 
             this.evtType = evtType;

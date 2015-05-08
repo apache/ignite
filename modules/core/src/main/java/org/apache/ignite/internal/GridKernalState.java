@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 /**
  * Kernal life cycle states.
  */
-enum GridKernalState {
+public enum GridKernalState {
     /** Kernal is started. */
     STARTED,
 

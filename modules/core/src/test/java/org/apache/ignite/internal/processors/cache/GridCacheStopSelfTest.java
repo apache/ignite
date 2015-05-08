@@ -62,7 +62,6 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(atomic ? ATOMIC : TRANSACTIONAL);
 
-        ccfg.setQueryIndexEnabled(true);
         ccfg.setSwapEnabled(true);
 
         cfg.setCacheConfiguration(ccfg);
@@ -130,7 +129,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch readyLatch = new CountDownLatch(PUT_THREADS);
 
-            final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+            final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
             assertNotNull(cache);
 

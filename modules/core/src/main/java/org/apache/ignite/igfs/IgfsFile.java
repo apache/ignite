@@ -77,7 +77,7 @@ public interface IgfsFile {
     /**
      * Gets file last access time. File last access time is not updated automatically due to
      * performance considerations and can be updated on demand with
-     * {@link org.apache.ignite.IgniteFs#setTimes(IgfsPath, long, long)} method.
+     * {@link org.apache.ignite.IgniteFileSystem#setTimes(IgfsPath, long, long)} method.
      * <p>
      * By default last access time equals file creation time.
      *

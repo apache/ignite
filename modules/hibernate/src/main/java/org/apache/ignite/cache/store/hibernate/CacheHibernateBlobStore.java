@@ -140,7 +140,7 @@ import java.util.concurrent.atomic.*;
  *     ...
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
@@ -298,7 +298,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      */
     private void rollback(SharedSessionContract ses, Transaction tx) {
         // Rollback only if there is no cache transaction,
-        // otherwise txEnd() will do all required work.
+        // otherwise sessionEnd() will do all required work.
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
@@ -315,7 +315,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      */
     private void end(Session ses, Transaction tx) {
         // Commit only if there is no cache transaction,
-        // otherwise txEnd() will do all required work.
+        // otherwise sessionEnd() will do all required work.
         if (tx == null) {
             org.hibernate.Transaction hTx = ses.getTransaction();
 
@@ -327,7 +327,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         init();
 
         Transaction tx = transaction();

@@ -73,64 +73,64 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         assertEquals(4, seq.getAndAdd(3));
         assertEquals(9, seq.addAndGet(2));
 
-        assertEquals(9L, U.field(seq, "locVal"));
-        assertEquals(9L, U.field(seq, "upBound"));
+        assertEquals(new Long(9L), U.field(seq, "locVal"));
+        assertEquals(new Long(9L), U.field(seq, "upBound"));
 
         // Cache calls.
         assertEquals(10, seq.incrementAndGet());
 
-        assertEquals(10L, U.field(seq, "locVal"));
-        assertEquals(19L, U.field(seq, "upBound"));
+        assertEquals(new Long(10L), U.field(seq, "locVal"));
+        assertEquals(new Long(19L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
-        assertEquals(19L, U.field(seq, "locVal"));
-        assertEquals(19L, U.field(seq, "upBound"));
+        assertEquals(new Long(19L), U.field(seq, "locVal"));
+        assertEquals(new Long(19L), U.field(seq, "upBound"));
 
         assertEquals(20L, seq.incrementAndGet());
 
-        assertEquals(20L, U.field(seq, "locVal"));
-        assertEquals(29L, U.field(seq, "upBound"));
+        assertEquals(new Long(20L), U.field(seq, "locVal"));
+        assertEquals(new Long(29L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
-        assertEquals(29L, U.field(seq, "locVal"));
-        assertEquals(29L, U.field(seq, "upBound"));
+        assertEquals(new Long(29L), U.field(seq, "locVal"));
+        assertEquals(new Long(29L), U.field(seq, "upBound"));
 
         assertEquals(29, seq.getAndIncrement());
 
-        assertEquals(30L, U.field(seq, "locVal"));
-        assertEquals(39L, U.field(seq, "upBound"));
+        assertEquals(new Long(30L), U.field(seq, "locVal"));
+        assertEquals(new Long(39L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
-        assertEquals(39L, U.field(seq, "locVal"));
-        assertEquals(39L, U.field(seq, "upBound"));
+        assertEquals(new Long(39L), U.field(seq, "locVal"));
+        assertEquals(new Long(39L), U.field(seq, "upBound"));
 
         assertEquals(39L, seq.getAndIncrement());
 
-        assertEquals(40L, U.field(seq, "locVal"));
-        assertEquals(49L, U.field(seq, "upBound"));
+        assertEquals(new Long(40L), U.field(seq, "locVal"));
+        assertEquals(new Long(49L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
-        assertEquals(49L, U.field(seq, "locVal"));
-        assertEquals(49L, U.field(seq, "upBound"));
+        assertEquals(new Long(49L), U.field(seq, "locVal"));
+        assertEquals(new Long(49L), U.field(seq, "upBound"));
 
         assertEquals(50, seq.addAndGet(1));
 
-        assertEquals(50L, U.field(seq, "locVal"));
-        assertEquals(59L, U.field(seq, "upBound"));
+        assertEquals(new Long(50L), U.field(seq, "locVal"));
+        assertEquals(new Long(59L), U.field(seq, "upBound"));
 
         seq.addAndGet(9);
 
-        assertEquals(59L, U.field(seq, "locVal"));
-        assertEquals(59L, U.field(seq, "upBound"));
+        assertEquals(new Long(59L), U.field(seq, "locVal"));
+        assertEquals(new Long(59L), U.field(seq, "upBound"));
 
         assertEquals(59, seq.getAndAdd(1));
 
-        assertEquals(60L, U.field(seq, "locVal"));
-        assertEquals(69L, U.field(seq, "upBound"));
+        assertEquals(new Long(60L), U.field(seq, "locVal"));
+        assertEquals(new Long(69L), U.field(seq, "upBound"));
     }
 
     /** @throws Exception If failed. */
@@ -151,7 +151,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.incrementAndGet();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -167,7 +167,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.incrementAndGet();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -183,7 +183,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndIncrement();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -199,7 +199,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndIncrement();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -215,7 +215,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.addAndGet(5);
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -231,7 +231,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndAdd(5);
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -247,7 +247,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.incrementAndGet();
                 t.getAndIncrement();
                 t.incrementAndGet();
@@ -268,7 +268,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
         final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0L, true);
 
         runSequenceClosure(new GridInUnsafeClosure<IgniteAtomicSequence>() {
-            @Override public void apply(IgniteAtomicSequence t) throws IgniteCheckedException {
+            @Override public void apply(IgniteAtomicSequence t) {
                 t.getAndAdd(2);
                 t.addAndGet(3);
                 t.addAndGet(5);

@@ -30,7 +30,7 @@ import java.util.*;
  */
 @SuppressWarnings( {"TypeMayBeWeakened"})
 public class GridCacheLruEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<CacheLruEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<LruEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -44,7 +44,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
             MockEntry e4 = new MockEntry("4", "4");
             MockEntry e5 = new MockEntry("5", "5");
 
-            CacheLruEvictionPolicy<String, String> p = policy();
+            LruEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(3);
 
@@ -164,7 +164,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
         startGrid();
 
         try {
-            CacheLruEvictionPolicy<String, String> p = policy();
+            LruEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -191,7 +191,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
         startGrid();
 
         try {
-            CacheLruEvictionPolicy<String, String> p = policy();
+            LruEvictionPolicy<String, String> p = policy();
 
             int max = 8;
 
@@ -240,7 +240,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
         startGrid();
 
         try {
-            CacheLruEvictionPolicy<String, String> p = policy();
+            LruEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -296,7 +296,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
 
             MockEntry e5 = new MockEntry("5");
 
-            CacheLruEvictionPolicy<String, String> p = policy();
+            LruEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -342,7 +342,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            IgniteCache<Integer, Integer> cache = ignite.jcache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
             int cnt = 500;
 
@@ -394,12 +394,12 @@ public class GridCacheLruEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheLruEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new CacheLruEvictionPolicy<>(plcMax);
+    @Override protected LruEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new LruEvictionPolicy<>(plcMax);
     }
 
-    @Override protected CacheLruEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new CacheLruEvictionPolicy<>(nearMax);
+    @Override protected LruEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new LruEvictionPolicy<>(nearMax);
     }
 
     /** {@inheritDoc} */

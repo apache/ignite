@@ -31,17 +31,13 @@ import java.util.*;
 /**
  * DHT cache unlock request.
  */
-public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, V> {
+public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Near keys. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> nearKeyBytes;
-
-    /** */
-    @GridDirectTransient
-    private List<K> nearKeys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> nearKeys;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -61,14 +57,7 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /**
      * @return Near keys.
      */
-    public List<byte[]> nearKeyBytes() {
-        return nearKeyBytes != null ? nearKeyBytes : Collections.<byte[]>emptyList();
-    }
-
-    /**
-     * @return Near keys.
-     */
-    public List<K> nearKeys() {
+    public List<KeyCacheObject> nearKeys() {
         return nearKeys;
     }
 
@@ -76,26 +65,29 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
      * Adds a Near key.
      *
      * @param key Key.
-     * @param keyBytes Key bytes.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(K key, byte[] keyBytes, GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        if (ctx.deploymentEnabled())
-            prepareObject(key, ctx);
+    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
+        throws IgniteCheckedException {
+        if (nearKeys == null)
+            nearKeys = new ArrayList<>();
 
-        if (nearKeyBytes == null)
-            nearKeyBytes = new ArrayList<>();
-
-        nearKeyBytes.add(keyBytes);
+        nearKeys.add(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (nearKeyBytes != null)
-            nearKeys = unmarshalCollection(nearKeyBytes, ctx, ldr);
+        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
     }
 
     /** {@inheritDoc} */
@@ -110,16 +102,16 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
             case 9:
-                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -130,20 +122,23 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 9:
-                nearKeyBytes = reader.readCollection("nearKeyBytes", Type.BYTE_ARR);
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -153,5 +148,10 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 36;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 10;
     }
 }

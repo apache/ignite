@@ -39,7 +39,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -91,7 +91,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
 
         return cacheCfg;
     }
@@ -114,8 +114,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         // Now, grid1 is always primary node for key 1.
-        final IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
-        final IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
+        final IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+        final IgniteCache<Integer, String> cache2 = ignite2.cache(null);
 
         info(">>> Primary: " + ignite1.cluster().localNode().id());
         info(">>>  Backup: " + ignite2.cluster().localNode().id());
@@ -259,7 +259,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
          * @param obj Message being  sent.
          * @param srcNodeId Sender node id.
          */
-        private void checkAwaitMessageType(MessageAdapter obj, UUID srcNodeId) {
+        private void checkAwaitMessageType(Message obj, UUID srcNodeId) {
             try {
                 GridIoMessage plainMsg = (GridIoMessage)obj;
 
@@ -277,7 +277,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, Message msg,
             IgniteRunnable msgC) {
             checkAwaitMessageType(msg, sndId);
 

@@ -25,7 +25,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.eventstorage.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 
@@ -84,7 +84,7 @@ import static org.apache.ignite.events.EventType.*;
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see org.apache.ignite.spi.eventstorage.EventStorageSpi

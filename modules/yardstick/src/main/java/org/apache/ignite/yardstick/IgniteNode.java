@@ -18,9 +18,9 @@
 package org.apache.ignite.yardstick;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.springframework.beans.*;
@@ -32,7 +32,7 @@ import org.yardstickframework.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
@@ -77,8 +77,10 @@ public class IgniteNode implements BenchmarkServer {
             CacheDistributionMode distroMode = args.distributionMode() == CLIENT_ONLY && !clientMode ?
                 PARTITIONED_ONLY : args.distributionMode();
 
+            if (distroMode == CLIENT_ONLY)
+                c.setClientMode(true);
+
             cc.setWriteSynchronizationMode(args.syncMode());
-            cc.setDistributionMode(distroMode);
 
             if (args.orderMode() != null)
                 cc.setAtomicWriteOrderMode(args.orderMode());
@@ -102,7 +104,7 @@ public class IgniteNode implements BenchmarkServer {
                 if (args.isOffheapValues())
                     cc.setMemoryMode(OFFHEAP_VALUES);
                 else
-                    cc.setEvictionPolicy(new CacheLruEvictionPolicy(50000));
+                    cc.setEvictionPolicy(new LruEvictionPolicy(50000));
             }
 
             cc.setReadThrough(args.isStoreEnabled());

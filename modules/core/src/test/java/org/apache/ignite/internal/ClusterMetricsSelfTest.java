@@ -68,7 +68,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyProjection() throws Exception {
         try {
-            grid(0).forPredicate(F.<ClusterNode>alwaysFalse()).metrics();
+            grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse()).metrics();
 
             assert false;
         }
@@ -136,6 +136,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"FloatingPointEquality"})
     private void checkMetrics(ClusterMetrics m) {
+        assert m.getTotalNodes() == NODES_CNT;
+
         assert m.getMaximumActiveJobs() == 0;
         assert m.getAverageActiveJobs() == 0;
 

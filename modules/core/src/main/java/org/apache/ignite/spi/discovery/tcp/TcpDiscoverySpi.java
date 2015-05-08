@@ -20,7 +20,9 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -34,10 +36,14 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.io.*;
 import java.net.*;
@@ -59,7 +65,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * done across it.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
- * {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} about self start (stops when send succeeds)
+ * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
  * and then this info goes to coordinator. When coordinator processes join request
  * and issues node added messages and all other nodes then receive info about new node.
  * <h1 class="header">Configuration</h1>
@@ -69,14 +75,14 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * The following configuration parameters are optional:
  * <ul>
  * <li>IP finder to share info about nodes IP addresses
- * (see {@link #setIpFinder(org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder)}).
+ * (see {@link #setIpFinder(TcpDiscoveryIpFinder)}).
  * See the following IP finder implementations for details on configuration:
  * <ul>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder}</li>
+ * <li>{@link TcpDiscoverySharedFsIpFinder}</li>
  * <li>{@ignitelink org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder}</li>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder}</li>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}</li>
- * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} - default</li>
+ * <li>{@link TcpDiscoveryJdbcIpFinder}</li>
+ * <li>{@link TcpDiscoveryVmIpFinder}</li>
+ * <li>{@link TcpDiscoveryMulticastIpFinder} - default</li>
  * </ul>
  * </li>
  * </ul>
@@ -132,10 +138,10 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * &lt;/bean&gt;
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * @see org.apache.ignite.spi.discovery.DiscoverySpi
+ * @see DiscoverySpi
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
@@ -372,7 +378,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @param joinTimeout Join timeout ({@code 0} means wait forever).
      *
-     * @see org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()
+     * @see TcpDiscoveryIpFinder#isShared()
      */
     @IgniteSpiConfiguration(optional = true)
     public void setJoinTimeout(long joinTimeout) {
@@ -636,17 +642,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleRemoteNodes());
+        return F.upcast(ring.visibleRemoteNodes());
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Object> injectables() {
-        Collection<Object> res = new LinkedList<>();
-
-        if (ipFinder != null)
-            res.add(ipFinder);
-
-        return res;
+        return F.<Object>asList(ipFinder);
     }
 
     /** {@inheritDoc} */
@@ -658,7 +659,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * Starts or restarts SPI after stop (to reconnect).
      *
      * @param restart {@code True} if SPI is restarted after stop.
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private void spiStart0(boolean restart) throws IgniteSpiException {
         if (!restart)
@@ -709,17 +710,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             metricsProvider,
             locNodeVer);
 
-        try {
-            Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
-                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
-                    locNode.discoveryPort());
+        Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
+            U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
+                locNode.discoveryPort());
 
-            if (extAddrs != null)
-                locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
-        }
+        if (extAddrs != null)
+            locNodeAttrs.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
 
         locNode.setAttributes(locNodeAttrs);
 
@@ -776,7 +772,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     @SuppressWarnings("BusyWait")
     private void registerLocalNodeAddress() throws IgniteSpiException {
@@ -807,7 +803,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private void onSpiStart() throws IgniteSpiException {
         startStopwatch();
@@ -908,7 +904,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * Stops SPI finally or stops SPI for restart.
      *
      * @param disconnect {@code True} if SPI is being disconnected.
-     * @throws org.apache.ignite.spi.IgniteSpiException If failed.
+     * @throws IgniteSpiException If failed.
      */
     private void spiStop0(boolean disconnect) throws IgniteSpiException {
         if (ctxInitLatch.getCount() > 0)
@@ -1020,20 +1016,21 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             DiscoverySpiListener lsnr = this.lsnr;
 
             if (lsnr != null) {
-                Collection<ClusterNode> processed = new LinkedList<>();
+                Set<ClusterNode> processed = new HashSet<>();
 
                 for (TcpDiscoveryNode n : rmts) {
                     assert n.visible();
 
                     processed.add(n);
 
-                    Collection<ClusterNode> top = F.viewReadOnly(rmts, F.<ClusterNode>identity(), F.notIn(processed));
+                    List<ClusterNode> top = U.arrayList(rmts, F.notIn(processed));
 
                     topVer++;
 
-                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
+                    Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
+                        Collections.unmodifiableList(top));
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist);
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
                 }
             }
         }
@@ -1063,7 +1060,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      * @return {@code true} if IP finder contains local address.
      */
     private boolean ipFinderHasLocalAddress() throws IgniteSpiException {
@@ -1079,8 +1076,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     if (resolved.equals(locAddr))
                         return true;
                 }
-                catch (UnknownHostException ignored) {
-                    // No-op.
+                catch (UnknownHostException e) {
+                    onException(e.getMessage(), e);
                 }
         }
 
@@ -1144,6 +1141,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']');
 
+                onException("Failed to ping node [node=" + node + ", err=" + e.getMessage() + ']', e);
                 // continue;
             }
         }
@@ -1156,7 +1154,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @param addr Address of the node.
      * @return ID of the remote node if node alive.
-     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
+     * @throws IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
         throws IgniteCheckedException {
@@ -1167,7 +1165,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         if (F.contains(locNodeAddrs, addr))
             return F.t(ignite.configuration().getNodeId(), false);
 
-        GridFutureAdapterEx<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapterEx<>();
+        GridFutureAdapter<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapter<>();
 
         IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
 
@@ -1246,10 +1244,15 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         this.nodeAuth = nodeAuth;
     }
 
+    /** {@inheritDoc} */
+    @Override public void sendCustomEvent(Serializable evt) {
+        msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt));
+    }
+
     /**
      * Tries to join this node to topology.
      *
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     private void joinTopology() throws IgniteSpiException {
         synchronized (mux) {
@@ -1269,23 +1272,25 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                // Authenticate local node.
-                try {
-                    GridSecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
+                if (nodeAuth != null) {
+                    // Authenticate local node.
+                    try {
+                        SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
 
-                    if (subj == null)
-                        throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
+                        if (subj == null)
+                            throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
 
-                    Map<String, Object> attrs = new HashMap<>(locNode.attributes());
+                        Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-                    attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
-                        ignite.configuration().getMarshaller().marshal(subj));
-                    attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                        attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
+                            ignite.configuration().getMarshaller().marshal(subj));
+                        attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
-                    locNode.setAttributes(attrs);
-                }
-                catch (IgniteException | IgniteCheckedException e) {
-                    throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                        locNode.setAttributes(attrs);
+                    }
+                    catch (IgniteException | IgniteCheckedException e) {
+                        throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+                    }
                 }
 
                 locNode.order(1);
@@ -1374,11 +1379,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * Tries to send join request message to a random node presenting in topology.
-     * Address is provided by {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is
+     * Address is provided by {@link TcpDiscoveryIpFinder} and message is
      * sent to first node connection succeeded to.
      *
      * @return {@code true} if send succeeded.
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     @SuppressWarnings({"BusyWait"})
     private boolean sendJoinRequestMessage() throws IgniteSpiException {
@@ -1395,63 +1400,81 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 return false;
 
             boolean retry = false;
-            IgniteCheckedException errs = null;
+            Collection<Exception> errs = new ArrayList<>();
 
-            for (InetSocketAddress addr : addrs) {
-                try {
-                    Integer res = sendMessageDirectly(joinReq, addr);
+            try (SocketMultiConnector multiConnector = new SocketMultiConnector(addrs, 2)) {
+                GridTuple3<InetSocketAddress, Socket, Exception> tuple;
 
-                    assert res != null;
+                while ((tuple = multiConnector.next()) != null) {
+                    InetSocketAddress addr = tuple.get1();
+                    Socket sock = tuple.get2();
+                    Exception ex = tuple.get3();
 
-                    noResAddrs.remove(addr);
+                    if (ex == null) {
+                        assert sock != null;
 
-                    // Address is responsive, reset period start.
-                    noResStart = 0;
+                        try {
+                            Integer res = sendMessageDirectly(joinReq, addr, sock);
 
-                    switch (res) {
-                        case RES_WAIT:
-                            // Concurrent startup, try sending join request again or wait if no success.
-                            retry = true;
+                            assert res != null;
 
-                            break;
-                        case RES_OK:
-                            if (log.isDebugEnabled())
-                                log.debug("Join request message has been sent to address [addr=" + addr +
-                                    ", req=" + joinReq + ']');
+                            noResAddrs.remove(addr);
 
-                            // Join request sending succeeded, wait for response from topology.
-                            return true;
+                            // Address is responsive, reset period start.
+                            noResStart = 0;
 
-                        default:
-                            // Concurrent startup, try next node.
-                            if (res == RES_CONTINUE_JOIN) {
-                                if (!fromAddrs.contains(addr))
+                            switch (res) {
+                                case RES_WAIT:
+                                    // Concurrent startup, try sending join request again or wait if no success.
                                     retry = true;
+
+                                    break;
+                                case RES_OK:
+                                    if (log.isDebugEnabled())
+                                        log.debug("Join request message has been sent to address [addr=" + addr +
+                                            ", req=" + joinReq + ']');
+
+                                    // Join request sending succeeded, wait for response from topology.
+                                    return true;
+
+                                default:
+                                    // Concurrent startup, try next node.
+                                    if (res == RES_CONTINUE_JOIN) {
+                                        if (!fromAddrs.contains(addr))
+                                            retry = true;
+                                    }
+                                    else {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Unexpected response to join request: " + res);
+
+                                        retry = true;
+                                    }
+
+                                    break;
                             }
-                            else {
-                                if (log.isDebugEnabled())
-                                    log.debug("Unexpected response to join request: " + res);
+                        }
+                        catch (IgniteSpiException e) {
+                            e.printStackTrace();
 
-                                retry = true;
-                            }
-
-                            break;
-                    }
-                }
-                catch (IgniteSpiException e) {
-                    if (errs == null)
-                        errs = new IgniteCheckedException("Multiple connection attempts failed.");
-
-                    errs.addSuppressed(e);
-
-                    if (log.isDebugEnabled()) {
-                        IOException ioe = X.cause(e, IOException.class);
-
-                        log.debug("Failed to send join request message [addr=" + addr +
-                            ", msg=" + ioe != null ? ioe.getMessage() : e.getMessage() + ']');
+                            ex = e;
+                        }
                     }
 
-                    noResAddrs.add(addr);
+                    if (ex != null) {
+                        errs.add(ex);
+
+                        if (log.isDebugEnabled()) {
+                            IOException ioe = X.cause(ex, IOException.class);
+
+                            log.debug("Failed to send join request message [addr=" + addr +
+                                ", msg=" + ioe != null ? ioe.getMessage() : ex.getMessage() + ']');
+
+                            onException("Failed to send join request message [addr=" + addr +
+                                ", msg=" + ioe != null ? ioe.getMessage() : ex.getMessage() + ']', ioe);
+                        }
+
+                        noResAddrs.add(addr);
+                    }
                 }
             }
 
@@ -1467,7 +1490,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
             }
             else if (!ipFinder.isShared() && !ipFinderHasLocAddr) {
-                if (errs != null && X.hasCause(errs, ConnectException.class))
+                IgniteCheckedException e = null;
+
+                if (!errs.isEmpty()) {
+                    e = new IgniteCheckedException("Multiple connection attempts failed.");
+
+                    for (Exception err : errs)
+                        e.addSuppressed(err);
+                }
+
+                if (e != null && X.hasCause(e, ConnectException.class))
                     LT.warn(log, null, "Failed to connect to any address from IP finder " +
                         "(make sure IP finder addresses are correct and firewalls are disabled on all host machines): " +
                         addrs);
@@ -1480,14 +1512,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             "Failed to connect to any address from IP finder within join timeout " +
                                 "(make sure IP finder addresses are correct, and operating system firewalls are disabled " +
                                 "on all host machines, or consider increasing 'joinTimeout' configuration property): " +
-                                addrs, errs);
+                                addrs, e);
                 }
 
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw new IgniteSpiException("Thread has been interrupted.", e);
+                catch (IgniteInterruptedCheckedException ex) {
+                    throw new IgniteSpiException("Thread has been interrupted.", ex);
                 }
             }
             else
@@ -1503,16 +1535,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param msg Message to send.
      * @param addr Address to send message to.
      * @return Response read from the recipient or {@code null} if no response is supposed.
-     * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
+     * @throws IgniteSpiException If an error occurs.
      */
-    @Nullable private Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr)
+    @Nullable private Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr, Socket sock)
         throws IgniteSpiException {
         assert msg != null;
         assert addr != null;
 
         Collection<Throwable> errs = null;
-
-        Socket sock = null;
 
         long ackTimeout0 = ackTimeout;
 
@@ -1532,7 +1562,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 long tstamp = U.currentTimeMillis();
 
-                sock = openSocket(addr);
+                if (sock == null)
+                    sock = openSocket(addr);
 
                 openSock = true;
 
@@ -1578,6 +1609,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     U.error(log, "Class cast exception on direct send: " + addr, e);
 
+                onException("Class cast exception on direct send: " + addr, e);
+
                 if (errs == null)
                     errs = new ArrayList<>();
 
@@ -1586,6 +1619,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (IOException | IgniteCheckedException e) {
                 if (log.isDebugEnabled())
                     log.error("Exception on direct send: " + e.getMessage(), e);
+
+                onException("Exception on direct send: " + e.getMessage(), e);
 
                 if (errs == null)
                     errs = new ArrayList<>();
@@ -1612,6 +1647,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             }
             finally {
                 U.closeQuiet(sock);
+
+                sock = null;
             }
         }
 
@@ -1634,7 +1671,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
      *
      * @param node Node to marshall credentials for.
-     * @throws org.apache.ignite.spi.IgniteSpiException If marshalling failed.
+     * @throws IgniteSpiException If marshalling failed.
      */
     private void marshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
         try {
@@ -1656,7 +1693,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @param node Node to unmarshall credentials for.
      * @return Security credentials.
-     * @throws org.apache.ignite.spi.IgniteSpiException If unmarshal fails.
+     * @throws IgniteSpiException If unmarshal fails.
      */
     private GridSecurityCredentials unmarshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
         try {
@@ -1692,7 +1729,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * Notify external listener on discovery event.
      *
-     * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
+     * @param type Discovery event type. See {@link DiscoveryEvent} for more details.
      * @param topVer Topology version.
      * @param node Remote node this event is connected with.
      */
@@ -1713,7 +1750,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
-            lsnr.onDiscovery(type, topVer, node, top, hist);
+            lsnr.onDiscovery(type, topVer, node, top, hist, null);
         }
         else if (log.isDebugEnabled())
             log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
@@ -1742,6 +1779,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             return new TreeMap<>(topHist);
         }
+    }
+
+    /**
+     * @param msg Error message.
+     * @param e Exception.
+     */
+    private void onException(String msg, Exception e){
+        getExceptionRegistry().onException(msg, e);
     }
 
     /**
@@ -2195,7 +2240,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * Thread that sends status check messages to next node if local node has not
-     * been receiving heartbeats ({@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage})
+     * been receiving heartbeats ({@link TcpDiscoveryHeartbeatMessage})
      * for {@link TcpDiscoverySpi#getMaxMissedHeartbeats()} *
      * {@link TcpDiscoverySpi#getHeartbeatFrequency()}.
      */
@@ -2261,7 +2306,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * addresses of the nodes that has left the topology.
      * <p>
      * This thread should run only on coordinator node and will clean IP finder
-     * if and only if {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()} is {@code true}.
+     * if and only if {@link TcpDiscoveryIpFinder#isShared()} is {@code true}.
      */
     private class IpFinderCleaner extends IgniteSpiThread {
         /**
@@ -2550,6 +2595,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             else if (msg instanceof TcpDiscoveryDiscardMessage)
                 processDiscardMessage((TcpDiscoveryDiscardMessage)msg);
 
+            else if (msg instanceof TcpDiscoveryCustomEventMessage)
+                processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
+
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
@@ -2732,6 +2780,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to connect to next node [msg=" + msg + ", err=" + e + ']');
 
+                                onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
+
                                 if (!openSock)
                                     break; // Don't retry if we can not establish connection.
 
@@ -2853,6 +2903,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (log.isDebugEnabled())
                                 U.error(log, "Failed to send message to next node [next=" + next.id() + ", msg=" + msg +
                                     ", err=" + e + ']', e);
+
+                            onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
+                                e);
 
                             if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
                                 ackTimeout0 *= 2;
@@ -3016,6 +3069,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (log.isDebugEnabled())
                             log.debug("Failed to send loopback problem message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send loopback problem message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
                     }
 
                     // Ignore join request.
@@ -3046,6 +3102,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 log.debug("Failed to send duplicate ID message to node " +
                                     "[node=" + node + ", existingNode=" + existingNode +
                                     ", err=" + e.getMessage() + ']');
+
+                            onException("Failed to send duplicate ID message to node " +
+                                "[node=" + node + ", existingNode=" + existingNode + ']', e);
                         }
 
                         // Output warning.
@@ -3062,51 +3121,25 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                // Authenticate node first.
-                try {
-                    GridSecurityCredentials cred = unmarshalCredentials(node);
+                if (nodeAuth != null) {
+                    // Authenticate node first.
+                    try {
+                        GridSecurityCredentials cred = unmarshalCredentials(node);
 
-                    GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                        SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
-                    if (subj == null) {
-                        // Node has not pass authentication.
-                        LT.warn(log, null,
-                            "Authentication failed [nodeId=" + node.id() +
-                                ", addrs=" + U.addressesAsString(node) + ']',
-                            "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
-                                U.addressesAsString(node) + ']');
-
-                        // Always output in debug.
-                        if (log.isDebugEnabled())
-                            log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                                U.addressesAsString(node));
-
-                        try {
-                            trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send unauthenticated message to node " +
-                                    "[node=" + node + ", err=" + e.getMessage() + ']');
-                        }
-
-                        // Ignore join request.
-                        return;
-                    }
-                    else {
-                        if (!(subj instanceof Serializable)) {
+                        if (subj == null) {
                             // Node has not pass authentication.
                             LT.warn(log, null,
-                                "Authentication subject is not Serializable [nodeId=" + node.id() +
+                                "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']',
-                                "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
-                                    ", addrs=" +
+                                "Authentication failed [nodeId=" + U.id8(node.id()) + ", addrs=" +
                                     U.addressesAsString(node) + ']');
 
                             // Always output in debug.
                             if (log.isDebugEnabled())
-                                log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
-                                    ", addrs=" + U.addressesAsString(node));
+                                log.debug("Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                                    U.addressesAsString(node));
 
                             try {
                                 trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
@@ -3115,31 +3148,65 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to send unauthenticated message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                onException("Failed to send unauthenticated message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
                             }
 
                             // Ignore join request.
                             return;
                         }
+                        else {
+                            if (!(subj instanceof Serializable)) {
+                                // Node has not pass authentication.
+                                LT.warn(log, null,
+                                    "Authentication subject is not Serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node) + ']',
+                                    "Authentication subject is not Serializable [nodeId=" + U.id8(node.id()) +
+                                        ", addrs=" +
+                                        U.addressesAsString(node) + ']');
 
-                        // Stick in authentication subject to node (use security-safe attributes for copy).
-                        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                        ", addrs=" + U.addressesAsString(node));
 
-                        attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
-                            ignite.configuration().getMarshaller().marshal(subj));
+                                try {
+                                    trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId, locHost));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send unauthenticated message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+                                }
 
-                        node.setAttributes(attrs);
+                                // Ignore join request.
+                                return;
+                            }
+
+                            // Stick in authentication subject to node (use security-safe attributes for copy).
+                            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
+                                ignite.configuration().getMarshaller().marshal(subj));
+
+                            node.setAttributes(attrs);
+                        }
                     }
-                }
-                catch (IgniteException | IgniteCheckedException e) {
-                    LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
-                        U.addressesAsString(node) + ']');
+                    catch (IgniteException | IgniteCheckedException e) {
+                        LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
+                            U.addressesAsString(node) + ']');
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
-                            ", err=" + e + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to authenticate node (will ignore join request) [node=" + node +
+                                ", err=" + e + ']');
 
-                    // Ignore join request.
-                    return;
+                        onException("Failed to authenticate node (will ignore join request) [node=" + node +
+                            ", err=" + e + ']', e);
+
+                        // Ignore join request.
+                        return;
+                    }
                 }
 
                 IgniteSpiNodeValidationResult err = getSpiContext().validateNode(node);
@@ -3171,6 +3238,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (log.isDebugEnabled())
                             log.debug("Failed to send hash ID resolver validation failed message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send hash ID resolver validation failed message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
                     }
 
                     // Ignore join request.
@@ -3214,6 +3284,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                            onException("Failed to send version check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']', e);
                         }
 
                         // Ignore join request.
@@ -3268,6 +3341,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send version check failed message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                            onException("Failed to send version check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']', e);
                         }
 
                         // Ignore join request.
@@ -3309,6 +3385,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (log.isDebugEnabled())
                             log.debug("Failed to send marshaller check failed message to node " +
                                 "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send marshaller check failed message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
                     }
 
                     // Ignore join request.
@@ -3337,7 +3416,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          * @param node Node to send message to.
          * @param msg Message.
-         * @throws org.apache.ignite.spi.IgniteSpiException Last failure if all attempts failed.
+         * @throws IgniteSpiException Last failure if all attempts failed.
          */
         private void trySendMessageDirectly(TcpDiscoveryNode node, TcpDiscoveryAbstractMessage msg)
             throws IgniteSpiException {
@@ -3358,7 +3437,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             for (InetSocketAddress addr : getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
-                    sendMessageDirectly(msg, addr);
+                    sendMessageDirectly(msg, addr, null);
 
                     ex = null;
 
@@ -3492,7 +3571,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     return;
                 }
 
-                if (!isLocalNodeCoordinator() && nodeAuth.isGlobalNodeAuthentication()) {
+                if (!isLocalNodeCoordinator() && nodeAuth != null && nodeAuth.isGlobalNodeAuthentication()) {
                     boolean authFailed = true;
 
                     try {
@@ -3510,10 +3589,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             authFailed = false;
                         }
                         else {
-                            GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                            SecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
-                            GridSecurityContext coordSubj = ignite.configuration().getMarshaller().unmarshal(
-                                node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());
+                            SecurityContext coordSubj = ignite.configuration().getMarshaller().unmarshal(
+                                node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
+                                U.gridClassLoader());
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -3545,6 +3625,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to send unauthenticated message to node " +
                                         "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                onException("Failed to send unauthenticated message to node " +
+                                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
                             }
 
                             addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
@@ -3564,9 +3647,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        exchange.onExchange(data);
+                        exchange.onExchange(node.id(), node.id(), data);
 
-                    msg.addDiscoveryData(exchange.collect(node.id()));
+                    msg.addDiscoveryData(locNodeId, exchange.collect(node.id()));
                 }
 
                 if (log.isDebugEnabled())
@@ -3576,7 +3659,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Collection<Map<Integer, Object>> dataList;
+                Map<UUID, Map<Integer, Object>> dataMap;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -3601,7 +3684,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            dataList = msg.oldNodesDiscoveryData();
+                            dataMap = msg.oldNodesDiscoveryData();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -3634,9 +3717,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 }
 
                 // Notify outside of synchronized block.
-                if (dataList != null) {
-                    for (Map<Integer, Object> discoData : dataList)
-                        exchange.onExchange(discoData);
+                if (dataMap != null) {
+                    for (Map.Entry<UUID, Map<Integer, Object>> entry : dataMap.entrySet())
+                        exchange.onExchange(node.id(), entry.getKey(), entry.getValue());
                 }
             }
 
@@ -3699,7 +3782,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             boolean fireEvt = false;
 
-            if (node != null && msg.verified()) {
+            if (msg.verified()) {
                 assert topVer > 0 : "Invalid topology version: " + msg;
 
                 if (node.order() == 0)
@@ -3745,6 +3828,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     if (log.isDebugEnabled())
                         log.debug("Failed to register new node address [node=" + node +
                             ", err=" + e.getMessage() + ']');
+
+                    onException("Failed to register new node address [node=" + node +
+                        ", err=" + e.getMessage() + ']', e);
                 }
             }
 
@@ -3873,9 +3959,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         try {
                             ipFinder.unregisterAddresses(leftNode.socketAddresses());
                         }
-                        catch (IgniteSpiException ignored) {
+                        catch (IgniteSpiException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister left node address: " + leftNode);
+
+                            onException("Failed to unregister left node address: " + leftNode, e);
                         }
                     }
 
@@ -3916,6 +4004,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (log.isDebugEnabled())
                             log.debug("Failed to send verified node left message to leaving node [msg=" + msg +
                                 ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send verified node left message to leaving node [msg=" + msg +
+                            ", err=" + e.getMessage() + ']', e);
                     }
                     finally {
                         forceSndPending = true;
@@ -4051,6 +4142,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (log.isDebugEnabled())
                                 log.debug("Failed to unregister failed node address [node=" + node +
                                     ", err=" + e.getMessage() + ']');
+
+                            onException("Failed to unregister failed node address [node=" + node +
+                                ", err=" + e.getMessage() + ']', e);
                         }
                     }
 
@@ -4153,6 +4247,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                     log.debug("Failed to respond to status check message (connection refused) " +
                                         "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']');
                                 }
+
+                                onException("Failed to respond to status check message (connection refused) " +
+                                    "[recipient=" + msg.creatorNodeId() + ", status=" + msg.status() + ']', e);
                             }
                             else {
                                 if (pingNode(msg.creatorNode())) {
@@ -4367,6 +4464,49 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (ring.hasRemoteNodes())
                 sendMessageAcrossRing(msg);
         }
+
+        /**
+         * @param msg Message.
+         */
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+            if (isLocalNodeCoordinator()) {
+                if (msg.verified()) {
+                    stats.onRingMessageReceived(msg);
+
+                    addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
+
+                    return;
+                }
+
+                msg.verify(getLocalNodeId());
+                msg.topologyVersion(ring.topologyVersion());
+            }
+
+            if (msg.verified()) {
+                DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+
+                TcpDiscoverySpiState spiState = spiStateCopy();
+
+                Map<Long, Collection<ClusterNode>> hist;
+
+                synchronized (mux) {
+                    hist = new TreeMap<>(topHist);
+                }
+
+                Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
+
+                if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING))
+                    lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
+                        msg.topologyVersion(),
+                        ring.node(msg.creatorNodeId()),
+                        snapshot,
+                        hist,
+                        msg.message());
+            }
+
+            if (ring.hasRemoteNodes())
+                sendMessageAcrossRing(msg);
+        }
     }
 
     /**
@@ -4385,7 +4525,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * Constructor.
          *
-         * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+         * @throws IgniteSpiException In case of error.
          */
         TcpServer() throws IgniteSpiException {
             super(ignite.name(), "tcp-disco-srvr", log);
@@ -4403,6 +4543,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (log.isDebugEnabled())
                             log.debug("Failed to bind to local port (will try next port within range) " +
                                 "[port=" + port + ", localHost=" + locHost + ']');
+
+                        onException("Failed to bind to local port. " +
+                            "[port=" + port + ", localHost=" + locHost + ']', e);
                     }
                     else {
                         throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
@@ -4441,6 +4584,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Failed to accept TCP connection.", e);
+
+                onException("Failed to accept TCP connection.", e);
 
                 if (!isInterrupted()) {
                     if (U.isMacInvalidArgumentError(e))
@@ -4529,7 +4674,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         }
                     }
 
-                    if (!U.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
+                    if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?) " +
@@ -4619,11 +4764,15 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
                     }
 
+                    onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
+
                     return;
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
+
+                    onException("Caught exception on handshake [err=" + e +", sock=" + sock + ']', e);
 
                     if (e.hasCause(SocketTimeoutException.class))
                         LT.warn(log, null, "Socket operation timed out on handshake " +
@@ -4835,6 +4984,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             U.error(log, "Caught exception on message read [sock=" + sock +
                                 ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
 
+                        onException("Caught exception on message read [sock=" + sock +
+                            ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
+
                         if (isInterrupted() || sock.isClosed())
                             return;
 
@@ -4869,6 +5021,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         if (err)
                             LT.error(log, e, "Failed to send receipt on message [sock=" + sock +
                                 ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']');
+
+                        onException("Caught exception on message read [sock=" + sock + ", locNodeId=" + locNodeId +
+                            ", rmtNodeId=" + nodeId + ']', e);
 
                         return;
                     }
@@ -5090,6 +5245,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
                         + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+
+                onException("Client connection failed [sock=" + sock + ", locNodeId="
+                    + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
 
                 U.interrupt(clientMsgWorkers.remove(nodeId));
 

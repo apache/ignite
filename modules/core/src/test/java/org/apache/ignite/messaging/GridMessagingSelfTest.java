@@ -20,6 +20,7 @@ package org.apache.ignite.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -167,6 +168,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        ignite1 = null;
+        ignite2 = null;
     }
 
     /** {@inheritDoc} */
@@ -190,7 +194,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testSendReceiveMessage() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -351,7 +355,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testSendReceiveMessageWithStringTopic() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -474,7 +478,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testSendReceiveMessageWithEnumTopic() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
@@ -593,12 +597,12 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests simple message sending-receiving with the use of
-     * remoteListenAsync() method.
+     * remoteListen() method.
      *
      * @throws Exception If error occurs.
      */
-    public void testRemoteListenAsync() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+    public void testRemoteListen() throws Exception {
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final CountDownLatch rcvLatch = new CountDownLatch(4);
 
@@ -723,25 +727,24 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests simple message sending-receiving with the use of
-     * remoteListenAsync() method.
+     * remoteListen() method.
      *
      * @throws Exception If error occurs.
      */
-    public void testRemoteListenAsyncOrderedMessages() throws Exception {
+    public void testRemoteListenOrderedMessages() throws Exception {
         List<TestMessage> msgs = Arrays.asList(
             new TestMessage(MSG_1),
             new TestMessage(MSG_2, 3000),
             new TestMessage(MSG_3));
 
-        final Collection<Object> rcvMsgs = new ArrayList<>(msgs.size());
+        final Collection<Object> rcvMsgs = new ConcurrentLinkedDeque<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
         final CountDownLatch rcvLatch = new CountDownLatch(3);
 
         ignite2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
-            @Override
-            public boolean apply(UUID nodeId, Object msg) {
+            @Override public boolean apply(UUID nodeId, Object msg) {
                 try {
                     log.info("Received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
@@ -778,12 +781,12 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
     /**
      * Tests simple message sending-receiving with the use of
-     * remoteListenAsync() method and topics.
+     * remoteListen() method and topics.
      *
      * @throws Exception If error occurs.
      */
-    public void testRemoteListenAsyncWithIntTopic() throws Exception {
-        final Collection<Object> rcvMsgs = new HashSet<>();
+    public void testRemoteListenWithIntTopic() throws Exception {
+        final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 

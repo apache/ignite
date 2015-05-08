@@ -97,7 +97,6 @@
                     <!-- LOCAL cache mode. -->
                     <property name="cacheMode" value="LOCAL"/>
 
-                    <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
                 <!--
@@ -114,20 +113,19 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
                     <!-- Enable near cache to cache recently accessed data. -->
-                    <property name="distributionMode" value="NEAR_PARTITIONED"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
+                    </property>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
                             <constructor-arg value="1"/>
                         </bean>
                     </property>
 
                     <property name="portableEnabled" value="true"/>
-
-                    <!-- Enable queries for partitioned cache -->
-                    <property name="queryIndexEnabled" value="true"/>
 
                     <property name="typeMetadata">
                         <list>

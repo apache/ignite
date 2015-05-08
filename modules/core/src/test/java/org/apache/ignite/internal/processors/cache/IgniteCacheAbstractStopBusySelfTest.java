@@ -25,7 +25,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -66,13 +65,6 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
     protected AtomicReference<Class> bannedMessage = new AtomicReference<>();
 
     /**
-     * @return Cache distribution mode.
-     */
-    protected CacheDistributionMode cacheDistributionMode() {
-        return CacheDistributionMode.PARTITIONED_ONLY;
-    }
-
-    /**
      * @return Cache mode.
      */
     protected CacheMode cacheMode(){
@@ -99,9 +91,9 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
         commSpi.setTcpNoDelay(true);
 
         if (gridName.endsWith(String.valueOf(CLN_GRD)))
-            cacheCfg.setDistributionMode(CacheDistributionMode.CLIENT_ONLY);
+            cfg.setClientMode(true);
 
-        cacheCfg.setPreloadMode(CachePreloadMode.SYNC);
+        cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -322,7 +314,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @return Client cache.
      */
     private IgniteCache<Object, Object> clientCache() {
-        return grid(CLN_GRD).jcache(CACHE_NAME);
+        return grid(CLN_GRD).cache(CACHE_NAME);
     }
 
     /**
@@ -337,7 +329,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
 
         cfg.setAtomicityMode(atomicityMode());
 
-        cfg.setDistributionMode(cacheDistributionMode());
+        cfg.setNearConfiguration(null);
 
         cfg.setName(cacheName);
 
@@ -349,7 +341,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      */
     private class TestTpcCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, MessageAdapter msg) throws IgniteSpiException {
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             if (suspended.get()) {
                 assert bannedMessage.get() != null;
 

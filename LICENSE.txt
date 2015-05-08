@@ -203,27 +203,36 @@
 
 
 
-For the use of pcollections library (https://github.com/blackdrag/pcollections)
-licensed under the MIT license
 ==============================================================================
-The MIT License (MIT)
+Apache Ignite (incubating) Subcomponents:
 
-Copyright (c) <year> <copyright holders>
+The Apache Ignite project contains subcomponents with separate copyright
+notices and license terms. Your use of the source code for the these
+subcomponents is subject to the terms and conditions of the following
+licenses.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+==============================================================================
+For SnapTree:
+==============================================================================
+This product bundles SnapTree, which is available under a
+"3-clause BSD" license.  For details, see
+https://github.com/nbronson/snaptree/blob/master/LICENSE.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+==============================================================================
+For JSR 166 classes in "org.jsr166" package
+==============================================================================
+This product bundles JSR-166 classes which are donated to public domain.
+For details, see CC0 1.0 Universal (1.0), Public Domain Dedication,
+http://creativecommons.org/publicdomain/zero/1.0/
+
+==============================================================================
+For books used for tests in "org.apache.ignite.internal.processors.hadoop.books"
+==============================================================================
+This code bundles book text files used for testing purposes which contain
+the following header:
+
+This eBook is for the use of anyone anywhere at no cost and with
+almost no restrictions whatsoever.  You may copy it, give it away or
+re-use it under the terms of the Project Gutenberg License included
+with this eBook or online at www.gutenberg.org

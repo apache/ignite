@@ -68,7 +68,7 @@ public class GridDsiRequest implements Serializable {
 
         /** */
         @SuppressWarnings("UnusedDeclaration")
-        @CacheAffinityKeyMapped
+        @AffinityKeyMapped
         private String terminalId;
 
         /**

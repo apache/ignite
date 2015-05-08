@@ -33,7 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.jdk8.backport.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -114,7 +114,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder msgCntr = new LongAdder();
+        final LongAdder8 msgCntr = new LongAdder8();
 
         final String topic = "test-topic";
 
@@ -123,7 +123,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     try {
-                        rcv.send(sndNode, topic, (MessageAdapter)msg, PUBLIC_POOL);
+                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -206,7 +206,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();
 
-        final LongAdder msgCntr = new LongAdder();
+        final LongAdder8 msgCntr = new LongAdder8();
 
         final Integer topic = 1;
 
@@ -217,7 +217,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     try {
-                        rcv.send(sndNode, topic, (MessageAdapter)msg, PUBLIC_POOL);
+                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -306,7 +306,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder msgCntr = new LongAdder();
+        final LongAdder8 msgCntr = new LongAdder8();
 
         final String topic = "test-topic";
 
@@ -317,7 +317,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg) {
                     try {
-                        rcv.send(sndNode, topic, (MessageAdapter)msg, PUBLIC_POOL);
+                        rcv.send(sndNode, topic, (Message)msg, PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         error("Failed to send message.", e);
@@ -454,7 +454,6 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setTcpNoDelay(true);
-        spi.setSharedMemoryPort(-1);
         spi.setConnectionBufferSize(0);
 
         info("Comm SPI: " + spi);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -394,7 +395,8 @@ public class VisorCacheMetrics implements Serializable {
         return txXidMapSize;
     }
 
-    /** Committed transaction queue size.
+    /**
+     * Committed transaction queue size.
      */
     public int txCommitQueueSize() {
         return txCommitQueueSize;

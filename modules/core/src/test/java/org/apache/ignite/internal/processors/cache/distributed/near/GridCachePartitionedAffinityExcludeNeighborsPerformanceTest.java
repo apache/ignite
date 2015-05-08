@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Partitioned affinity test.
@@ -69,11 +69,11 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
 
         cc.setBackups(2);
 
-        CacheAffinityFunction aff = new CacheConsistentHashAffinityFunction(excNeighbores);
+        AffinityFunction aff = new RendezvousAffinityFunction(excNeighbores);
 
         cc.setAffinity(aff);
 
-        cc.setPreloadMode(NONE);
+        cc.setRebalanceMode(NONE);
 
         c.setCacheConfiguration(cc);
 
@@ -89,7 +89,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param ignite Grid.
      * @return Affinity.
      */
-    static CacheAffinity<Object> affinity(Ignite ignite) {
+    static Affinity<Object> affinity(Ignite ignite) {
         return ignite.affinity(null);
     }
 
@@ -98,7 +98,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(Affinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -166,7 +166,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @throws Exception If failed.
      */
     private long checkCountPerformance0(Ignite g, int cnt) throws Exception {
-        CacheAffinity<Object> aff = affinity(g);
+        Affinity<Object> aff = affinity(g);
 
         GridTimer timer = new GridTimer("test");
 
@@ -217,7 +217,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         try {
             Ignite g = grid(0);
 
-            CacheAffinity<Object> aff = affinity(g);
+            Affinity<Object> aff = affinity(g);
 
             // Warmup.
             checkCountPerformance0(g, 10000);

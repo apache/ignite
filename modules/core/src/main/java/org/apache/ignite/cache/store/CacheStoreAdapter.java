@@ -39,7 +39,7 @@ import java.util.*;
 public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
     /**
      * Default empty implementation. This method needs to be overridden only if
-     * {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method
+     * {@link org.apache.ignite.IgniteCache#loadCache(IgniteBiPredicate, Object...)} method
      * is explicitly called.
      *
      * @param clo {@inheritDoc}
@@ -88,7 +88,7 @@ public abstract class CacheStoreAdapter<K, V> implements CacheStore<K, V> {
      *
      * @param commit {@inheritDoc}
      */
-    @Override public void txEnd(boolean commit) {
+    @Override public void sessionEnd(boolean commit) {
         // No-op.
     }
 }

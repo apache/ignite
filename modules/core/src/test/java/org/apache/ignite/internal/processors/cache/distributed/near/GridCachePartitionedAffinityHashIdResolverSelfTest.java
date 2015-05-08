@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -40,11 +40,11 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Hash ID resolver. */
-    private CacheAffinityNodeHashResolver rslvr;
+    private AffinityNodeHashResolver rslvr;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
+        RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
         aff.setHashIdResolver(rslvr);
 
@@ -76,11 +76,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testDuplicateId() throws Exception {
-        rslvr = new CacheAffinityNodeHashResolver() {
-            @Override public Object resolve(ClusterNode node) {
-                return 1;
-            }
-        };
+        rslvr = new BogusHashResolver();
 
         startGrid(0);
 
@@ -92,5 +88,15 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
             }
         }, IgniteCheckedException.class, "Failed to start manager: GridManagerAdapter [enabled=true, name=" +
             "org.apache.ignite.internal.managers.discovery.GridDiscoveryManager]");
+    }
+
+    /**
+     *
+     */
+    private static class BogusHashResolver implements AffinityNodeHashResolver {
+        /** {@inheritDoc} */
+        @Override public Object resolve(ClusterNode node) {
+            return 1;
+        }
     }
 }

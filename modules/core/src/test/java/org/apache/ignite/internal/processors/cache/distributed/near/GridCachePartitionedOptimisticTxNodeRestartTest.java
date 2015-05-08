@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.transactions.*;
@@ -42,9 +42,9 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_ASYNC);
         cc.setStartSize(20);
-        cc.setPreloadMode(preloadMode);
-        cc.setPreloadBatchSize(preloadBatchSize);
-        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
+        cc.setRebalanceMode(preloadMode);
+        cc.setRebalanceBatchSize(preloadBatchSize);
+        cc.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cc.setBackups(backups);
 
         c.setCacheConfiguration(cc);

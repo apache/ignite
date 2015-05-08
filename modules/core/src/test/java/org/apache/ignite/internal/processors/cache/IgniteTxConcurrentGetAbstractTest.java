@@ -95,9 +95,9 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
 
         final Ignite ignite = grid();
 
-        ignite.jcache(null).put(key, "val");
+        ignite.cache(null).put(key, "val");
 
-        GridCacheEntryEx<String,Integer> dhtEntry = dht(ignite).peekEx(key);
+        GridCacheEntryEx dhtEntry = dht(ignite).peekEx(key);
 
         if (DEBUG)
             info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", entry=" + dhtEntry + ']');
@@ -123,13 +123,13 @@ public abstract class IgniteTxConcurrentGetAbstractTest extends GridCommonAbstra
      */
     private String txGet(Ignite ignite, String key) throws Exception {
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            GridCacheEntryEx<String, Integer> dhtEntry = dht(ignite).peekEx(key);
+            GridCacheEntryEx dhtEntry = dht(ignite).peekEx(key);
 
             if (DEBUG)
                 info("DHT entry [hash=" + System.identityHashCode(dhtEntry) + ", xid=" + tx.xid() +
                     ", entry=" + dhtEntry + ']');
 
-            String val = ignite.<String, String>jcache(null).get(key);
+            String val = ignite.<String, String>cache(null).get(key);
 
             assertNotNull(val);
             assertEquals("val", val);

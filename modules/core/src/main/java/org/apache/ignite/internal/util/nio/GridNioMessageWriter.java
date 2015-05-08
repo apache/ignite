@@ -34,7 +34,7 @@ public interface GridNioMessageWriter {
      * @param buf Buffer.
      * @return Whether message was fully written.
      */
-    public boolean write(@Nullable UUID nodeId, MessageAdapter msg, ByteBuffer buf);
+    public boolean write(@Nullable UUID nodeId, Message msg, ByteBuffer buf);
 
     /**
      * @param nodeId Node ID.
@@ -44,6 +44,6 @@ public interface GridNioMessageWriter {
      * @return Number of bytes written.
      * @throws IOException In case of error.
      */
-    public int writeFully(@Nullable UUID nodeId, MessageAdapter msg, OutputStream out,
+    public int writeFully(@Nullable UUID nodeId, Message msg, OutputStream out,
         ByteBuffer buf) throws IOException;
 }

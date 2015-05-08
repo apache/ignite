@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
@@ -47,8 +46,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     /** Write closure. */
     private final CIX1<IgniteCache<Integer, Integer>> writeClos =
         new CIX1<IgniteCache<Integer, Integer>>() {
-        @Override public void applyx(IgniteCache<Integer, Integer> cache)
-            throws IgniteCheckedException {
+        @Override public void applyx(IgniteCache<Integer, Integer> cache) {
             for (int i = 0; i < operationsPerTx; i++) {
                 int kv = RAND.nextInt(KEY_RANGE);
 
@@ -65,8 +63,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     /** Read closure. */
     private final CIX1<IgniteCache<Integer, Integer>> readClos =
         new CIX1<IgniteCache<Integer, Integer>>() {
-        @Override public void applyx(IgniteCache<Integer, Integer> cache)
-            throws IgniteCheckedException {
+        @Override public void applyx(IgniteCache<Integer, Integer> cache) {
             for (int i = 0; i < operationsPerTx; i++) {
                 int k = RAND.nextInt(KEY_RANGE);
 
@@ -102,7 +99,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private void memoryTest() {
         Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, byte[]> cache = ignite.jcache(null);
+        final IgniteCache<Integer, byte[]> cache = ignite.cache(null);
 
         assert cache != null;
 
@@ -152,7 +149,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
             if (LOAD)
                 test.loadTest(test.writeClos, test.readClos);
 
-            G.ignite().jcache(null).clear();
+            G.ignite().cache(null).clear();
 
             System.gc();
 

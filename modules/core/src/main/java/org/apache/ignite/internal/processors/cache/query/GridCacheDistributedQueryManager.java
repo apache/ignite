@@ -28,10 +28,9 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -70,11 +69,14 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private Collection<Long> cancelled = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
 
     /** Query response handler. */
-    private IgniteBiInClosure<UUID,GridCacheQueryResponse<K,V>> resHnd = new CI2<UUID, GridCacheQueryResponse<K, V>>() {
-        @Override public void apply(UUID nodeId, GridCacheQueryResponse<K, V> res) {
+    private IgniteBiInClosure<UUID,GridCacheQueryResponse> resHnd = new CI2<UUID, GridCacheQueryResponse>() {
+        @Override public void apply(UUID nodeId, GridCacheQueryResponse res) {
             processQueryResponse(nodeId, res);
         }
     };
+
+    /** Event listener. */
+    private GridLocalEventListener lsnr;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -82,20 +84,29 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         assert cctx.config().getCacheMode() != LOCAL;
 
-        cctx.io().addHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest<K, V>>() {
-            @Override public void apply(UUID nodeId, GridCacheQueryRequest<K, V> req) {
+        cctx.io().addHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
+            @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
                 processQueryRequest(nodeId, req);
             }
         });
 
-        cctx.events().addListener(new GridLocalEventListener() {
+        lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());
             }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        };
+
+        cctx.events().addListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        super.onKernalStop0(cancel);
+
+        cctx.events().removeListener(lsnr);
     }
 
     /** {@inheritDoc} */
@@ -193,13 +204,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      * @return Query info.
-     * @throws ClassNotFoundException If class not found.
      */
-    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
-        throws ClassNotFoundException {
-        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = req.projectionFilter() == null ?
-            F.<Cache.Entry<Object, Object>>alwaysTrue() : req.projectionFilter();
-
+    @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest req) {
         IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = req.transformer();
 
@@ -211,7 +217,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         GridCacheQueryAdapter<?> qry =
             new GridCacheQueryAdapter<>(
                 cctx,
-                prjPred,
                 req.type(),
                 log,
                 req.pageSize(),
@@ -231,7 +236,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         return new GridCacheQueryInfo(
             false,
-            prjPred,
             trans,
             rdc,
             qry,
@@ -252,7 +256,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param timeout Message timeout.
      * @return {@code true} if response was sent, {@code false} otherwise.
      */
-    private boolean sendQueryResponse(UUID nodeId, GridCacheQueryResponse<K, V> res, long timeout) {
+    private boolean sendQueryResponse(UUID nodeId, GridCacheQueryResponse res, long timeout) {
         ClusterNode node = cctx.node(nodeId);
 
         if (node == null)
@@ -338,7 +342,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (fut != null)
             if (res.fields())
                 ((GridCacheDistributedFieldsQueryFuture)fut).onPage(
-                    sndId, res.metadata(), res.data(), res.error(), res.isFinished());
+                    sndId,
+                    res.metadata(),
+                    (Collection<Map<String, Object>>)((Collection)res.data()),
+                    res.error(),
+                    res.isFinished());
             else
                 fut.onPage(sndId, res.data(), res.error(), res.isFinished());
         else if (!cancelled.contains(res.requestId()))
@@ -395,7 +403,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 fut.onPage(null, null, e, true);
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse<K, V>(cctx.cacheId(), qryInfo.requestId(), e),
+                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e),
                     qryInfo.query().timeout());
 
             return true;
@@ -404,7 +412,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (loc)
             fut.onPage(null, data, null, finished);
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(cctx.cacheId(), qryInfo.requestId(),
+            GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
                 /*finished*/false, /*fields*/false);
 
             res.data(data);
@@ -434,7 +442,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse<K, V>(cctx.cacheId(), qryInfo.requestId(), e),
+                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e),
                     qryInfo.query().timeout());
 
             return true;
@@ -446,7 +454,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, metadata, data, null, finished);
         }
         else {
-            GridCacheQueryResponse<K, V> res = new GridCacheQueryResponse<>(cctx.cacheId(), qryInfo.requestId(),
+            GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
                 finished, qryInfo.reducer() == null);
 
             res.metadata(metadata);
@@ -507,7 +515,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 clsName,
                 qry.query().scanFilter(),
-                qry.query().projectionFilter(),
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -524,7 +531,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             cctx.io().addOrderedHandler(topic, resHnd);
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
@@ -550,7 +557,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         assert fut != null;
 
         try {
-            GridCacheQueryRequest<K, V> req = new GridCacheQueryRequest<>(
+            GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
                 id,
                 cctx.name(),
@@ -616,7 +623,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().clause(),
                 null,
                 null,
-                qry.query().projectionFilter(),
                 qry.reducer(),
                 qry.transform(),
                 qry.query().pageSize(),
@@ -633,7 +639,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             cctx.io().addOrderedHandler(topic, resHnd);
 
-            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(topic);
                 }
@@ -659,7 +665,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @SuppressWarnings("unchecked")
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
-        final GridCacheQueryRequest<K, V> req,
+        final GridCacheQueryRequest req,
         Collection<ClusterNode> nodes
     ) throws IgniteCheckedException {
         assert fut != null;
@@ -741,10 +747,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         /** {@inheritDoc} */
         @Override public int compareTo(CancelMessageId m) {
-            if (m.reqId == reqId)
-                return m.nodeId.compareTo(nodeId);
+            int res = Long.compare(reqId, m.reqId);
 
-            return reqId < m.reqId ? -1 : 1;
+            if (res == 0)
+                res = m.nodeId.compareTo(nodeId);
+
+            return res;
         }
 
         /** {@inheritDoc} */

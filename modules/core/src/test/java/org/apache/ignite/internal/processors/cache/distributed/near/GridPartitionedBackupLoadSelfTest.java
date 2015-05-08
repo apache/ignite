@@ -27,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -81,7 +80,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cfg.setCacheStoreFactory(singletonFactory(store));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
         cfg.setLoadPreviousValue(true);
@@ -104,7 +103,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBackupLoad() throws Exception {
-        grid(0).jcache(null).put(1, 1);
+        grid(0).cache(null).put(1, 1);
 
         assert store.get(1) == 1;
 

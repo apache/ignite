@@ -69,9 +69,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K, V>cacheEntry2Key(), filter), CU.<K, V>empty());
-
-        map.clear();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -84,7 +82,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
         map.remove(o);
 
-        ctx.grid().jcache(ctx.name()).remove(e.getKey());
+        ctx.grid().cache(ctx.name()).remove(e.getKey());
 
         return true;
     }

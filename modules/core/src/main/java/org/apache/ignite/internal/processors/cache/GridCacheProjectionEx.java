@@ -23,10 +23,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -49,10 +49,10 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      *
      * @return Filter on which this projection is based on.
      */
-    @Nullable public IgnitePredicate<Cache.Entry<K, V>> predicate();
+    @Nullable public CacheEntryPredicate predicate();
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -62,11 +62,11 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    @Nullable public V put(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -75,11 +75,11 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -89,11 +89,11 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    public boolean putx(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
@@ -102,8 +102,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx entry, long ttl,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Store DR data.
@@ -112,7 +112,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void putAllDr(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public void putAllConflict(Map<KeyCacheObject, GridCacheDrInfo> drMap) throws IgniteCheckedException;
 
     /**
      * Store DR data asynchronously.
@@ -122,10 +122,11 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> drMap)
+        throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
@@ -133,19 +134,19 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    @Nullable public V remove(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Optional cached entry.
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Removes DR data.
@@ -154,7 +155,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Removes DR data asynchronously.
@@ -164,10 +165,10 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
@@ -175,19 +176,19 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    public boolean removex(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
-     * Internal method that is called from {@link GridCacheEntryImpl}.
+     * Internal method that is called from {@link CacheEntryImpl}.
      *
      * @param key Key to remove.
      * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx entry,
+        @Nullable CacheEntryPredicate... filter);
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
@@ -196,7 +197,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -212,7 +213,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<GridCacheReturn> replacexAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -221,7 +222,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * This method will return {@code true} if value is stored in cache and {@code false} otherwise.
      * <p>
      * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
-     * via {@link CacheStore#put(Transaction, Object, Object)} method.
+     * via {@link CacheStore#write(javax.cache.Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -237,13 +238,13 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If replace operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
+    public GridCacheReturn replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
     /**
      * Removes given key mapping from cache if one exists and value is equal to the passed in value.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via {@link CacheStore#delete(Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -258,7 +259,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException;
+    public GridCacheReturn removex(K key, V val) throws IgniteCheckedException;
 
     /**
      * Asynchronously removes given key mapping from cache if one exists and value is equal to the passed in value.
@@ -267,7 +268,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * provided filters have passed and there was something to remove, {@code false} otherwise.
      * <p>
      * If write-through is enabled, the value will be removed from {@link CacheStore}
-     * via {@link CacheStore#remove(Transaction, Object)} method.
+     * via {@link CacheStore#delete(Object)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -282,7 +283,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val);
+    public IgniteInternalFuture<GridCacheReturn> removexAsync(K key, V val);
 
     /**
      * @param key Key to retrieve the value for.
@@ -292,8 +293,8 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
-        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException;
+    @Nullable public V get(K key, @Nullable GridCacheEntryEx entry, boolean deserializePortable,
+        @Nullable CacheEntryPredicate... filter) throws IgniteCheckedException;
 
     /**
      * Gets value from cache. Will go to primary node even if this is a backup.
@@ -372,7 +373,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<Cache.Entry<K, V>> entrySetx(IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
 
     /**
      * Gets set of primary entries containing internal entries.
@@ -380,7 +381,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Primary entry set.
      */
-    public Set<Cache.Entry<K, V>> primaryEntrySetx(IgnitePredicate<Cache.Entry<K, V>>... filter);
+    public Set<Cache.Entry<K, V>> primaryEntrySetx(CacheEntryPredicate... filter);
 
     /**
      * @return {@link ExpiryPolicy} associated with this projection.
@@ -458,4 +459,51 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @return Context.
      */
     public GridCacheContext<K, V> context();
+
+    /**
+     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
+     * to load state from the underlying persistent storage. The loaded values
+     * will then be given to the optionally passed in predicate, and, if the predicate returns
+     * {@code true}, will be stored in cache. If predicate is {@code null}, then
+     * all loaded values will be stored in cache.
+     * <p>
+     * Note that this method does not receive keys as a parameter, so it is up to
+     * {@link CacheStore} implementation to provide all the data to be loaded.
+     * <p>
+     * This method is not transactional and may end up loading a stale value into
+     * cache if another thread has updated the value immediately after it has been
+     * loaded. It is mostly useful when pre-loading the cache from underlying
+     * data store before start, or for read-only caches.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
+     * @throws IgniteCheckedException If loading failed.
+     */
+    public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+        throws IgniteCheckedException;
+
+    /**
+     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
+     * to reload state from the underlying persistent storage. The reloaded values
+     * will then be given to the optionally passed in predicate, and if the predicate returns
+     * {@code true}, will be stored in cache. If predicate is {@code null}, then
+     * all reloaded values will be stored in cache.
+     * <p>
+     * Note that this method does not receive keys as a parameter, so it is up to
+     * {@link CacheStore} implementation to provide all the data to be loaded.
+     * <p>
+     * This method is not transactional and may end up loading a stale value into
+     * cache if another thread has updated the value immediately after it has been
+     * loaded. It is mostly useful when pre-loading the cache from underlying
+     * data store before start, or for read-only caches.
+     *
+     * @param p Optional predicate (may be {@code null}). If provided, will be used to
+     *      filter values to be put into cache.
+     * @param args Optional user arguments to be passed into
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
+     * @return Future to be completed whenever loading completes.
+     */
+    public IgniteInternalFuture<?> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args);
 }

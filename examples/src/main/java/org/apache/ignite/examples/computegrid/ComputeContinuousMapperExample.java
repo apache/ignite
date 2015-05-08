@@ -33,17 +33,17 @@ import java.util.concurrent.atomic.*;
  * initial {@link ComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
- * of {@link ContinuousMapperTask}. As an outcome, participating
+ * of {@link ComputeContinuousMapperExample.ContinuousMapperTask}. As an outcome, participating
  * nodes will print out a single word from the passed in string and return
  * number of characters in that word. However, to demonstrate continuous
  * mapping, next word will be mapped to a node only after the result from
  * previous word has been received.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-compute.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
+ * with {@code examples/config/example-ignite.xml} configuration.
  */
 public class ComputeContinuousMapperExample {
     /**
@@ -56,7 +56,7 @@ public class ComputeContinuousMapperExample {
         System.out.println();
         System.out.println(">>> Compute continuous mapper example started.");
 
-        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             int phraseLen = ignite.compute().execute(ContinuousMapperTask.class, "Hello Continuous Mapper");
 
             System.out.println();

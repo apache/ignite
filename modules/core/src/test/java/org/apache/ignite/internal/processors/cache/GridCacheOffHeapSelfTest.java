@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -63,6 +62,9 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** PeerClassLoadingLocalClassPathExclude enable. */
+    private boolean excluded;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -77,19 +79,24 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setOffHeapMaxMemory(1024L * 1024L * 1024L);
+        cacheCfg.setIndexedTypes(
+            Integer.class, CacheValue.class
+        );
 
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setDeploymentMode(SHARED);
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
-            CacheValue.class.getName());
+
+        if (excluded)
+            cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
+                CacheValue.class.getName());
 
         return cfg;
     }
@@ -108,10 +115,13 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     public void testOffHeapDeployment() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
+
+            excluded = true;
+
             Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
-            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).cache(null);
+            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).getCache(null);
+            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).getCache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -224,7 +234,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
 
-            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             populate(cache);
             evictAll(cache);
@@ -287,7 +297,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);
@@ -561,15 +571,15 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Integer, CacheValue> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = entry.rawGet();
+            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assertNotNull("Value null for key: " + i, val);
-            assertEquals(entry.key(), (Integer)val.value());
+            assertEquals(entry.key().value(entry.context().cacheObjectContext(), false), (Integer)val.value());
 
             assertEquals(entry.version(), versions.get(i));
         }

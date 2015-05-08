@@ -34,8 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -88,9 +87,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
-        cacheCfg.setPreloadMode(SYNC);
+        cacheCfg.setRebalanceMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
         return cacheCfg;
     }
@@ -105,8 +103,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
 
-        cache1 = ignite1.jcache(null);
-        cache2 = ignite2.jcache(null);
+        cache1 = ignite1.cache(null);
+        cache2 = ignite2.cache(null);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +120,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         info("Before 1st removeAll().");
 
+        cache1.clear();
         cache1.removeAll();
 
         // Fix for tests where mapping was removed at primary node
@@ -136,6 +135,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         info("Before 2nd removeAll().");
 
+        cache2.clear();
         cache2.removeAll();
 
         // Fix for tests where mapping was removed at primary node

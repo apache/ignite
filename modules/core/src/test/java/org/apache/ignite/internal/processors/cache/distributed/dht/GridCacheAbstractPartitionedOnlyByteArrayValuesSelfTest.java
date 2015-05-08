@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.spi.swapspace.file.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.junit.Assert.*;
 
 /**
@@ -88,8 +86,8 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -104,9 +102,9 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
         cachesAtomicOffheapTiered = new IgniteCache[gridCnt];
 
         for (int i = 0; i < gridCount(); i++) {
-            cachesAtomic[i] = ignites[i].jcache(CACHE_ATOMIC);
-            cachesAtomicOffheap[i] = ignites[i].jcache(CACHE_ATOMIC_OFFHEAP);
-            cachesAtomicOffheapTiered[i] = ignites[i].jcache(CACHE_ATOMIC_OFFHEAP_TIERED);
+            cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
+            cachesAtomicOffheap[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP);
+            cachesAtomicOffheapTiered[i] = ignites[i].cache(CACHE_ATOMIC_OFFHEAP_TIERED);
         }
     }
 

@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -92,7 +92,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     private final GridUnsafeLru lru;
 
     /** Total entry count. */
-    private final LongAdder totalCnt;
+    private final LongAdder8 totalCnt;
 
     /** Event listener. */
     private GridOffHeapEventListener evtLsnr;
@@ -128,7 +128,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
         if (lru != null)
             this.evictLsnr = evictLsnr;
 
-        totalCnt = new LongAdder();
+        totalCnt = new LongAdder8();
 
         // Find power-of-two sizes best matching arguments
         int shift = 0;
@@ -186,7 +186,7 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
      * @param lruPoller LRU poller.
      */
     @SuppressWarnings("unchecked")
-    GridUnsafeMap(int part, int concurrency, float load, long initCap, LongAdder totalCnt, GridUnsafeMemory mem,
+    GridUnsafeMap(int part, int concurrency, float load, long initCap, LongAdder8 totalCnt, GridUnsafeMemory mem,
         GridUnsafeLru lru, @Nullable GridOffHeapEvictListener evictLsnr, GridUnsafeLruPoller lruPoller) {
         this.part = part;
         this.concurrency = concurrency > MAX_CONCURRENCY ? MAX_CONCURRENCY : concurrency;

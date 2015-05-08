@@ -56,10 +56,10 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(backups);
-        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        ccfg.setNearConfiguration(null);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
-        ccfg.setPreloadPartitionedDelay(-1);
+        ccfg.setRebalanceDelay(-1);
 
         return ccfg;
     }
@@ -74,11 +74,11 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                ((IgniteKernal)grid(i)).cache(null).forceRepartition().get();
+                grid(i).cache(null).rebalance().get();
 
             startGrid(GRID_CNT - 1);
 
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             final int keyCnt = 100;
 
@@ -102,8 +102,8 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
                 for (int i = 0; i < keyCnt; i++) {
                     if (cacheAdapter.isNear()) {
-                        GridDhtCacheEntry<Object, Object> entry = ((GridNearCacheAdapter<Object, Object>)cacheAdapter)
-                            .dht().peekExx(i);
+                        GridDhtCacheEntry entry = (GridDhtCacheEntry)
+                            ((GridNearCacheAdapter<Object, Object>)cacheAdapter).dht().peekEx(i);
 
                         if (entry != null) {
                             assertFalse(entry.lockedByAny());
@@ -112,7 +112,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
                         }
                     }
 
-                    GridCacheEntryEx<Object, Object> entry = cacheAdapter.peekEx(i);
+                    GridCacheEntryEx entry = cacheAdapter.peekEx(i);
 
                     if (entry != null) {
                         assertFalse(entry.lockedByAny());

@@ -36,6 +36,9 @@ public interface GridComponent {
         CONTINUOUS_PROC,
 
         /** */
+        CACHE_PROC,
+
+        /** */
         PLUGIN
     }
 
@@ -83,11 +86,11 @@ public interface GridComponent {
     /**
      * Receives discovery data object from remote nodes (called
      * on new node during discovery process).
-     *
+     * @param joiningNodeId Joining node ID.
+     * @param rmtNodeId Remote node ID for which data is provided.
      * @param data Discovery data object or {@code null} if nothing was
-     *      sent for this component.
      */
-    public void onDiscoveryDataReceived(Object data);
+    public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data);
 
     /**
      * Prints memory statistics (sizes of internal structures, etc.).

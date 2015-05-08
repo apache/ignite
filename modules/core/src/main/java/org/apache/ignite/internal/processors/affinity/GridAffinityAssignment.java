@@ -31,7 +31,7 @@ class GridAffinityAssignment implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    private final long topVer;
+    private final AffinityTopologyVersion topVer;
 
     /** Collection of calculated affinity nodes. */
     private List<List<ClusterNode>> assignment;
@@ -47,7 +47,7 @@ class GridAffinityAssignment implements Serializable {
      *
      * @param topVer Topology version.
      */
-    GridAffinityAssignment(long topVer) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
@@ -57,7 +57,7 @@ class GridAffinityAssignment implements Serializable {
      * @param topVer Topology version.
      * @param assignment Assignment.
      */
-    GridAffinityAssignment(long topVer, List<List<ClusterNode>> assignment) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
         this.topVer = topVer;
         this.assignment = assignment;
 
@@ -77,7 +77,7 @@ class GridAffinityAssignment implements Serializable {
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -152,7 +152,7 @@ class GridAffinityAssignment implements Serializable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return (int)(topVer ^ (topVer >>> 32));
+        return topVer.hashCode();
     }
 
     /** {@inheritDoc} */
@@ -164,7 +164,7 @@ class GridAffinityAssignment implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        return topVer == ((GridAffinityAssignment)o).topVer;
+        return topVer.equals(((GridAffinityAssignment)o).topVer);
     }
 
     /** {@inheritDoc} */

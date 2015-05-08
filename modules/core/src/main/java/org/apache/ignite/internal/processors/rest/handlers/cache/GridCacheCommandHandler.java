@@ -153,7 +153,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             switch (cmd) {
                 case CACHE_GET: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetCommand(key), req.portableMode());
+                        new GetCommand(key));
 
                     break;
                 }
@@ -175,7 +175,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     }
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new GetAllCommand(keys0), req.portableMode());
+                        new GetAllCommand(keys0));
 
                     break;
                 }
@@ -187,7 +187,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key, new
-                        PutCommand(key, ttl, val), req.portableMode());
+                        PutCommand(key, ttl, val));
 
                     break;
                 }
@@ -199,7 +199,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new AddCommand(key, ttl, val), req.portableMode());
+                        new AddCommand(key, ttl, val));
 
                     break;
                 }
@@ -222,14 +222,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     map = new HashMap<>(map);
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new PutAllCommand(map), req.portableMode());
+                        new PutAllCommand(map));
 
                     break;
                 }
 
                 case CACHE_REMOVE: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new RemoveCommand(key), req.portableMode());
+                        new RemoveCommand(key));
 
                     break;
                 }
@@ -241,7 +241,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new RemoveAllCommand(keys), req.portableMode());
+                        new RemoveAllCommand(keys));
 
                     break;
                 }
@@ -253,7 +253,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new ReplaceCommand(key, ttl, val), req.portableMode());
+                        new ReplaceCommand(key, ttl, val));
 
                     break;
                 }
@@ -263,21 +263,21 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val2 = req0.value2();
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new CasCommand(val2, val1, key), req.portableMode());
+                        new CasCommand(val2, val1, key));
 
                     break;
                 }
 
                 case CACHE_APPEND: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new AppendCommand(key, req0), req.portableMode());
+                        new AppendCommand(key, req0));
 
                     break;
                 }
 
                 case CACHE_PREPEND: {
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, flags, key,
-                        new PrependCommand(key, req0), req.portableMode());
+                        new PrependCommand(key, req0));
 
                     break;
                 }
@@ -297,12 +297,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         catch (IgniteException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
-            return new GridFinishedFuture<>(ctx, e);
+            return new GridFinishedFuture<>(e);
         }
         finally {
             if (log.isDebugEnabled())
@@ -321,7 +321,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param flags Cache flags.
      * @param key Key to set affinity mapping in the response.
      * @param op Operation to perform.
-     * @param keepPortable Keep portable flag.
      * @return Operation result in future.
      * @throws IgniteCheckedException If failed
      */
@@ -331,8 +330,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         final String cacheName,
         final CacheFlag[] flags,
         final Object key,
-        final CacheProjectionCommand op,
-        final boolean keepPortable) throws IgniteCheckedException {
+        final CacheProjectionCommand op) throws IgniteCheckedException {
 
         final boolean locExec =
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
@@ -340,19 +338,16 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (locExec) {
             CacheProjection<?,?> prj = localCache(cacheName).forSubjectId(clientId).flagsOn(flags);
 
-            if (keepPortable)
-                prj = prj.keepPortable();
-
             return op.apply((CacheProjection<Object, Object>)prj, ctx).
                 chain(resultWrapper((CacheProjection<Object, Object>)prj, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
             return ctx.closure().callAsync(BALANCE,
-                new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable),
+                new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key),
                 prj.nodes());
         }
     }
@@ -385,7 +380,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
         else {
-            ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
+            ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
@@ -537,8 +532,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Used for test purposes.
-     *
      * @param cacheName Name of the cache.
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
@@ -560,7 +553,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ((IgniteKernal)ignite).cache(cacheName);
+        GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(
@@ -640,9 +633,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private final Object key;
 
         /** */
-        private final boolean keepPortable;
-
-        /** */
         @IgniteInstanceResource
         private Ignite g;
 
@@ -652,24 +642,22 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
          * @param flags Flags.
          * @param op Operation.
          * @param key Key.
-         * @param keepPortable Keep portable flag.
          */
-        private FlaggedCacheOperationCallable(UUID clientId, String cacheName, CacheFlag[] flags,
-            CacheProjectionCommand op, Object key, boolean keepPortable) {
+        private FlaggedCacheOperationCallable(UUID clientId,
+            String cacheName,
+            CacheFlag[] flags,
+            CacheProjectionCommand op,
+            Object key) {
             this.clientId = clientId;
             this.cacheName = cacheName;
             this.flags = flags;
             this.op = op;
             this.key = key;
-            this.keepPortable = keepPortable;
         }
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
             CacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).flagsOn(flags);
-
-            if (keepPortable)
-                prj = prj.keepPortable();
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
@@ -1043,7 +1031,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             assert metrics != null;
 
-            return new GridFinishedFuture<Object>(ctx, new GridCacheRestMetrics(
+            return new GridFinishedFuture<Object>(new GridCacheRestMetrics(
                 (int)metrics.getCacheGets(),
                 (int)(metrics.getCacheRemovals() + metrics.getCachePuts()),
                 (int)metrics.getCacheHits(),

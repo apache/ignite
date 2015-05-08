@@ -17,21 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  * Exchange ID.
  */
-public class GridDhtPartitionExchangeId extends MessageAdapter implements Comparable<GridDhtPartitionExchangeId>,
-    Externalizable {
+public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPartitionExchangeId>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,17 +46,18 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     private int evt;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * @param nodeId Node ID.
      * @param evt Event.
      * @param topVer Topology version.
      */
-    public GridDhtPartitionExchangeId(UUID nodeId, int evt, long topVer) {
+    public GridDhtPartitionExchangeId(UUID nodeId, int evt, @NotNull AffinityTopologyVersion topVer) {
         assert nodeId != null;
-        assert evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED || evt == EVT_NODE_JOINED;
-        assert topVer > 0;
+        assert evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED || evt == EVT_NODE_JOINED ||
+            evt == EVT_DISCOVERY_CUSTOM_EVT;
+        assert topVer.topologyVersion() > 0;
 
         this.nodeId = nodeId;
         this.evt = evt;
@@ -85,7 +88,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     /**
      * @return Order.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -106,14 +109,14 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeUuid(out, nodeId);
-        out.writeLong(topVer);
+        out.writeObject(topVer);
         out.writeInt(evt);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         nodeId = U.readUuid(in);
-        topVer = in.readLong();
+        topVer = (AffinityTopologyVersion)in.readObject();
         evt = in.readInt();
     }
 
@@ -122,7 +125,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
         if (o == this)
             return 0;
 
-        return topVer < o.topVer ? -1 : topVer == o.topVer ? 0 : 1;
+        return topVer.compareTo(o.topVer);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +133,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
         int res = nodeId.hashCode();
 
         res = 31 * res + evt;
-        res = 31 * res + (int)(topVer ^ (topVer >>> 32));
+        res = 31 * res + topVer.hashCode();
 
         return res;
     }
@@ -142,18 +145,18 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
 
         GridDhtPartitionExchangeId id = (GridDhtPartitionExchangeId)o;
 
-        return evt == id.evt && topVer == id.topVer && nodeId.equals(id.nodeId);
+        return evt == id.evt && topVer.equals(id.topVer) && nodeId.equals(id.nodeId);
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -170,7 +173,7 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -181,17 +184,20 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        switch (readState) {
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
             case 0:
                 evt = reader.readInt("evt");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 1:
                 nodeId = reader.readUuid("nodeId");
@@ -199,15 +205,15 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 2:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -217,6 +223,11 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 87;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
     }
 
     /** {@inheritDoc} */

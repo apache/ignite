@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -66,6 +66,9 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean swapEnabled = true;
 
+    /** PeerClassLoading excluded. */
+    private boolean excluded;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -78,17 +81,22 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setSwapEnabled(swapEnabled);
+        cacheCfg.setIndexedTypes(
+            Integer.class, CacheValue.class
+        );
 
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setDeploymentMode(SHARED);
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
-            CacheValue.class.getName());
+
+        if (excluded)
+            cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
+                CacheValue.class.getName());
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
@@ -147,10 +155,13 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     public void testSwapDeployment() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
+
+            excluded = true;
+
             Ignite ignite2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).cache(null);
-            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).cache(null);
+            GridCache<Integer, Object> cache1 = ((IgniteKernal)ignite1).getCache(null);
+            GridCache<Integer, Object> cache2 = ((IgniteKernal)ignite2).getCache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -264,7 +275,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED, EVT_SWAP_SPACE_DATA_EVICTED);
 
-            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             for (int i = 0; i< 20; i++) {
                 cache.put(i, new CacheValue(i));
@@ -324,7 +335,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
-            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, CacheValue> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             populate(cache);
             evictAll(cache);
@@ -372,7 +383,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)grid(0)).getCache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);
@@ -635,15 +646,15 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             cache.promote(i);
 
-            GridCacheEntryEx<Integer, CacheValue> entry = dht(cache).entryEx(i);
+            GridCacheEntryEx entry = dht(cache).entryEx(i);
 
             assert entry != null;
             assert entry.key() != null;
 
-            CacheValue val = entry.rawGet();
+            CacheValue val = CU.value(entry.rawGet(), entry.context(), false);
 
             assert val != null;
-            assert entry.key() == val.value();
+            assertEquals(CU.value(entry.key(), entry.context(), false), new Integer(val.value()));
             assert entry.version().equals(versions.get(i));
         }
     }

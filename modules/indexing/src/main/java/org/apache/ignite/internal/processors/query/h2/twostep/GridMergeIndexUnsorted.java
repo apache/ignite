@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.*;
 import org.h2.index.*;
 import org.h2.result.*;
 import org.h2.table.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  */
 public class GridMergeIndexUnsorted extends GridMergeIndex {
     /** */
-    private final BlockingQueue<GridResultPage<?>> queue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
 
     /**
      * @param tbl  Table.
@@ -43,8 +43,14 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void addPage0(GridResultPage<?> page) {
-        queue.add(page);
+    @Override protected void addPage0(GridResultPage page) {
+        if (!page.rows().isEmpty() || page.isLast() || queue.isEmpty())
+            queue.add(page);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Cursor findAllFetched(List<Row> fetched, @Nullable SearchRow first, @Nullable SearchRow last) {
+        return new IteratorCursor(fetched.iterator());
     }
 
     /** {@inheritDoc} */
@@ -54,29 +60,23 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
             Iterator<Value[]> iter = Collections.emptyIterator();
 
             @Override public boolean hasNext() {
-                if (iter.hasNext())
-                    return true;
+                while (!iter.hasNext()){
+                    GridResultPage page;
 
-                GridResultPage<?> page;
+                    try {
+                        page = queue.take();
+                    }
+                    catch (InterruptedException e) {
+                        throw new CacheException("Query execution was interrupted.", e);
+                    }
 
-                try {
-                    page = queue.take();
+                    if (page.isLast())
+                        return false; // We are done.
+
+                    fetchNextPage(page);
+
+                    iter = page.rows().iterator();
                 }
-                catch (InterruptedException e) {
-                    throw new IgniteException("Query execution was interrupted.", e);
-                }
-
-                if (page == END) {
-                    assert queue.isEmpty() : "It must be the last page: " + queue;
-
-                    return false; // We are done.
-                }
-
-                page.fetchNextPage();
-
-                iter = page.response().rows().iterator();
-
-                assert iter.hasNext();
 
                 return true;
             }

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.collision.*;
@@ -36,10 +36,12 @@ import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cacheobject.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.processors.cluster.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
@@ -47,22 +49,17 @@ import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
-import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.securesession.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
-import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.nodestart.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -79,7 +76,6 @@ import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
 import java.lang.reflect.*;
-import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -87,10 +83,9 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.GridKernalState.*;
-import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
-import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
@@ -99,15 +94,15 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, IgniteMXBean {
+public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Compatible versions. */
-    private static final String COMPATIBLE_VERS = GridProperties.get("ignite.compatible.vers");
+    private static final String COMPATIBLE_VERS = IgniteProperties.get("ignite.compatible.vers");
 
     /** Ignite site that is shown in log messages. */
-    static final String SITE = "www.gridgain.com";
+    static final String SITE = "ignite.incubator.apache.org";
 
     /** System line separator. */
     private static final String NL = U.nl();
@@ -120,6 +115,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** Periodic starvation check interval. */
     private static final long PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
+
+    /** */
+    @GridToStringExclude
+    private GridKernalContextImpl ctx;
 
     /** */
     private IgniteConfiguration cfg;
@@ -182,10 +181,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @GridToStringExclude
     private boolean errOnStop;
 
-    /** Node local store. */
-    @GridToStringExclude
-    private ClusterNodeLocalMap nodeLoc;
-
     /** Scheduler. */
     @GridToStringExclude
     private IgniteScheduler scheduler;
@@ -217,8 +212,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param rsrcCtx Optional Spring application context.
      */
     public IgniteKernal(@Nullable GridSpringResourceContext rsrcCtx) {
-        super(null, null, null, (IgnitePredicate<ClusterNode>)null);
-
         this.rsrcCtx = rsrcCtx;
 
         String[] compatibleVers = COMPATIBLE_VERS.split(",");
@@ -230,13 +223,43 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCluster cluster() {
-        return this;
+    @Override public IgniteClusterEx cluster() {
+        return ctx.cluster().get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterNode localNode() {
+        return ctx.cluster().get().localNode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCompute compute() {
+        return ctx.cluster().get().compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteMessaging message() {
+        return ctx.cluster().get().message();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEvents events() {
+        return ctx.cluster().get().events();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteServices services() {
+        return ctx.cluster().get().services();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService executorService() {
+        return ctx.cluster().get().executorService();
     }
 
     /** {@inheritDoc} */
     @Override public final IgniteCompute compute(ClusterGroup grp) {
-        return ((ClusterGroupAdapter) grp).compute();
+        return ((ClusterGroupAdapter)grp).compute();
     }
 
     /** {@inheritDoc} */
@@ -251,12 +274,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** {@inheritDoc} */
     @Override public IgniteServices services(ClusterGroup grp) {
-        return ((ClusterGroupAdapter) grp).services();
+        return ((ClusterGroupAdapter)grp).services();
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
-        return ((ClusterGroupAdapter) grp).executorService();
+        return ((ClusterGroupAdapter)grp).executorService();
     }
 
     /** {@inheritDoc} */
@@ -373,6 +396,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
+    @Override public void printLastErrors() {
+        ctx.exceptionRegistry().printErrors(log);
+    }
+
+    /** {@inheritDoc} */
     @Override public String getVmName() {
         return ManagementFactory.getRuntimeMXBean().getName();
     }
@@ -422,8 +450,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
-            @Override public String apply(Map.Entry<String,?> e) {
+        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
+            @Override
+            public String apply(Map.Entry<String, ?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });
@@ -444,16 +473,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * @param attrs Current attributes.
      * @param name  New attribute name.
      * @param val New attribute value.
      * @throws IgniteCheckedException If duplicated SPI name found.
      */
-    private void add(Map<String, Object> attrs, String name, @Nullable Serializable val) throws IgniteCheckedException {
-        assert attrs != null;
+    private void add(String name, @Nullable Serializable val) throws IgniteCheckedException {
         assert name != null;
 
-        if (attrs.put(name, val) != null) {
+        if (ctx.addNodeAttribute(name, val) != null) {
             if (name.endsWith(ATTR_SPI_CLASS))
                 // User defined duplicated names for the different SPIs.
                 throw new IgniteCheckedException("Failed to set SPI attribute. Duplicated SPI name found: " +
@@ -503,20 +530,30 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * @param cfg Grid configuration to use.
+     * @param cfg Configuration to use.
      * @param utilityCachePool Utility cache pool.
-     * @param execSvc
-     * @param sysExecSvc
-     * @param p2pExecSvc
-     * @param mgmtExecSvc
-     * @param igfsExecSvc
-     * @param errHnd Error handler to use for notification about startup problems.  @throws IgniteCheckedException Thrown in case of any errors.
+     * @param execSvc Executor service.
+     * @param sysExecSvc System executor service.
+     * @param p2pExecSvc P2P executor service.
+     * @param mgmtExecSvc Management executor service.
+     * @param igfsExecSvc IGFS executor service.
+     * @param restExecSvc Reset executor service.
+     * @param errHnd Error handler to use for notification about startup problems.
+     * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, final ExecutorService execSvc,
-        final ExecutorService sysExecSvc, ExecutorService p2pExecSvc, ExecutorService mgmtExecSvc,
-        ExecutorService igfsExecSvc, ExecutorService restExecSvc, GridAbsClosure errHnd)
-        throws IgniteCheckedException {
+    public void start(final IgniteConfiguration cfg,
+        ExecutorService utilityCachePool,
+        ExecutorService marshCachePool,
+        final ExecutorService execSvc,
+        final ExecutorService sysExecSvc,
+        ExecutorService p2pExecSvc,
+        ExecutorService mgmtExecSvc,
+        ExecutorService igfsExecSvc,
+        ExecutorService restExecSvc,
+        GridAbsClosure errHnd)
+        throws IgniteCheckedException
+    {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -589,7 +626,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         if (notifyEnabled) {
             try {
-                verChecker = new GridUpdateNotifier(gridName, VER_STR, SITE, gw, false);
+                verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, false);
 
                 verChecker.checkForNewVersion(execSvc, log);
             }
@@ -619,20 +656,28 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         // Ack configuration.
         ackSpis();
 
-        Map<String, Object> attrs = createNodeAttributes(cfg, BUILD_TSTAMP_STR);
-
         // Spin out SPIs & managers.
         try {
-            GridKernalContextImpl ctx =
-                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, execSvc, sysExecSvc, p2pExecSvc,
-                    mgmtExecSvc, igfsExecSvc, restExecSvc);
+            ctx = new GridKernalContextImpl(log,
+                this,
+                cfg,
+                gw,
+                utilityCachePool,
+                marshCachePool,
+                execSvc,
+                sysExecSvc,
+                p2pExecSvc,
+                mgmtExecSvc,
+                igfsExecSvc,
+                restExecSvc);
 
-            nodeLoc = new ClusterNodeLocalMapImpl(ctx);
+            cfg.getMarshaller().setContext(ctx.marshallerContext());
+
+            startProcessor(new ClusterProcessor(ctx));
+
+            fillNodeAttributes();
 
             U.onGridStart();
-
-            // Set context into rich adapter.
-            setKernalContext(ctx);
 
             // Start and configure resource processor first as it contains resources used
             // by all other managers and processors.
@@ -642,86 +687,92 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             scheduler = new IgniteSchedulerImpl(ctx);
 
-            startProcessor(ctx, rsrcProc, attrs);
+            startProcessor(rsrcProc);
 
             // Inject resources into lifecycle beans.
-            if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null)
-                for (LifecycleBean bean : cfg.getLifecycleBeans())
+            if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
+                for (LifecycleBean bean : cfg.getLifecycleBeans()) {
                     if (bean != null)
                         rsrcProc.inject(bean);
+                }
+            }
 
             // Lifecycle notification.
-            notifyLifecycleBeans(BEFORE_GRID_START);
+            notifyLifecycleBeans(BEFORE_NODE_START);
 
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
 
-            addHelper(ctx, IGFS_HELPER.create(F.isEmpty(cfg.getIgfsConfiguration())));
+            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
-            startProcessor(ctx, new IgnitePluginProcessor(ctx, cfg), attrs);
+            startProcessor(new IgnitePluginProcessor(ctx, cfg));
 
             // Off-heap processor has no dependencies.
-            startProcessor(ctx, new GridOffHeapProcessor(ctx), attrs);
+            startProcessor(new GridOffHeapProcessor(ctx));
 
             // Closure processor should be started before all others
             // (except for resource processor), as many components can depend on it.
-            startProcessor(ctx, new GridClosureProcessor(ctx), attrs);
+            startProcessor(new GridClosureProcessor(ctx));
 
             // Start some other processors (order & place is important).
-            startProcessor(ctx, new GridPortProcessor(ctx), attrs);
-            startProcessor(ctx, new GridJobMetricsProcessor(ctx), attrs);
+            startProcessor(new GridPortProcessor(ctx));
+            startProcessor(new GridJobMetricsProcessor(ctx));
 
             // Timeout processor needs to be started before managers,
             // as managers may depend on it.
-            startProcessor(ctx, new GridTimeoutProcessor(ctx), attrs);
+            startProcessor(new GridTimeoutProcessor(ctx));
 
             // Start security processors.
-            startProcessor(ctx, createComponent(GridSecurityProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridSecureSessionProcessor.class, ctx), attrs);
+            startProcessor(createComponent(GridSecurityProcessor.class, ctx));
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
-            startManager(ctx, new GridIoManager(ctx), attrs);
-            startManager(ctx, new GridCheckpointManager(ctx), attrs);
+            startManager(new GridIoManager(ctx));
+            startManager(new GridCheckpointManager(ctx));
 
-            startManager(ctx, new GridEventStorageManager(ctx), attrs);
-            startManager(ctx, new GridDeploymentManager(ctx), attrs);
-            startManager(ctx, new GridLoadBalancerManager(ctx), attrs);
-            startManager(ctx, new GridFailoverManager(ctx), attrs);
-            startManager(ctx, new GridCollisionManager(ctx), attrs);
-            startManager(ctx, new GridSwapSpaceManager(ctx), attrs);
-            startManager(ctx, new GridIndexingManager(ctx), attrs);
+            startManager(new GridEventStorageManager(ctx));
+            startManager(new GridDeploymentManager(ctx));
+            startManager(new GridLoadBalancerManager(ctx));
+            startManager(new GridFailoverManager(ctx));
+            startManager(new GridCollisionManager(ctx));
+            startManager(new GridSwapSpaceManager(ctx));
+            startManager(new GridIndexingManager(ctx));
 
-            ackSecurity(ctx);
+            ackSecurity();
+
+            // Assign discovery manager to context before other processors start so they
+            // are able to register custom event listener.
+            GridManager discoMgr = new GridDiscoveryManager(ctx);
+
+            ctx.add(discoMgr, false);
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
-            startProcessor(ctx, new GridClockSyncProcessor(ctx), attrs);
-            startProcessor(ctx, new GridAffinityProcessor(ctx), attrs);
-            startProcessor(ctx, createComponent(GridSegmentationProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
-            startProcessor(ctx, new GridQueryProcessor(ctx), attrs);
-            startProcessor(ctx, new GridCacheProcessor(ctx), attrs);
-            startProcessor(ctx, new GridTaskSessionProcessor(ctx), attrs);
-            startProcessor(ctx, new GridJobProcessor(ctx), attrs);
-            startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
-            startProcessor(ctx, new GridRestProcessor(ctx), attrs);
-            startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
-            startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getIgfsConfiguration())), attrs);
-            startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
-            startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
+            startProcessor(new GridClockSyncProcessor(ctx));
+            startProcessor(new GridAffinityProcessor(ctx));
+            startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
+            startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
+            startProcessor(new GridQueryProcessor(ctx));
+            startProcessor(new GridCacheProcessor(ctx));
+            startProcessor(new GridTaskSessionProcessor(ctx));
+            startProcessor(new GridJobProcessor(ctx));
+            startProcessor(new GridTaskProcessor(ctx));
+            startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
+            startProcessor(new GridRestProcessor(ctx));
+            startProcessor(new DataStreamProcessor(ctx));
+            startProcessor((GridProcessor) IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
+            startProcessor(new GridContinuousProcessor(ctx));
+            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
-            startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
-            startProcessor(ctx, new DataStructuresProcessor(ctx), attrs);
+                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
+            startProcessor(new GridServiceProcessor(ctx));
+            startProcessor(new DataStructuresProcessor(ctx));
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
                 ctx.add(new GridPluginComponent(provider));
 
-                provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
+                provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
 
             gw.writeLock();
@@ -730,7 +781,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 gw.setState(STARTED);
 
                 // Start discovery manager last to make sure that grid is fully initialized.
-                startManager(ctx, new GridDiscoveryManager(ctx), attrs);
+                startManager(discoMgr);
             }
             finally {
                 gw.writeUnlock();
@@ -740,7 +791,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             checkPhysicalRam();
 
             // Suggest configuration optimizations.
-            suggestOptimizations(ctx, cfg);
+            suggestOptimizations(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
@@ -758,7 +809,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 if (comp instanceof GridIoManager)
                     continue;
 
-                comp.onKernalStart();
+                if (!skipDaemon(comp))
+                    comp.onKernalStart();
             }
 
             // Register MBeans.
@@ -767,7 +819,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
 
             // Lifecycle bean notifications.
-            notifyLifecycleBeans(AFTER_GRID_START);
+            notifyLifecycleBeans(AFTER_NODE_START);
         }
         catch (Throwable e) {
             IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
@@ -806,7 +858,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Setup periodic version check.
             updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
                 @Override public void safeRun() throws InterruptedException {
-                    verChecker0.topologySize(nodes().size());
+                    verChecker0.topologySize(cluster().nodes().size());
 
                     verChecker0.checkForNewVersion(execSvc, log);
 
@@ -835,12 +887,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 private long lastCompletedCnt;
 
                 @Override protected void safeRun() {
-                    ExecutorService e = execSvc;
-
-                    if (!(e instanceof ThreadPoolExecutor))
+                    if (!(execSvc instanceof ThreadPoolExecutor))
                         return;
 
-                    ThreadPoolExecutor exec = (ThreadPoolExecutor)e;
+                    ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
                     long completedCnt = exec.getCompletedTaskCount();
 
@@ -867,7 +917,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
                 @Override protected void safeRun() {
                     if (log.isInfoEnabled()) {
-                        ClusterMetrics m = localNode().metrics();
+                        ClusterMetrics m = cluster().localNode().metrics();
 
                         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
                         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
@@ -886,12 +936,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         int cpus = 0;
 
                         try {
-                            ClusterMetrics metrics = metrics();
+                            ClusterMetrics metrics = cluster().metrics();
 
-                            Collection<ClusterNode> nodes0 = nodes();
+                            Collection<ClusterNode> nodes0 = cluster().nodes();
 
                             hosts = U.neighborhood(nodes0).size();
-                            nodes = nodes0.size();
+                            nodes = metrics.getTotalNodes();
                             cpus = metrics.getTotalCpus();
                         }
                         catch (IgniteException ignore) {
@@ -902,10 +952,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         int pubPoolIdleThreads = 0;
                         int pubPoolQSize = 0;
 
-                        ExecutorService pubExec = execSvc;
-
-                        if (pubExec instanceof ThreadPoolExecutor) {
-                            ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
+                        if (execSvc instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
                             int poolSize = exec.getPoolSize();
 
@@ -918,10 +966,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         int sysPoolIdleThreads = 0;
                         int sysPoolQSize = 0;
 
-                        ExecutorService sysExec = sysExecSvc;
-
-                        if (sysExec instanceof ThreadPoolExecutor) {
-                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;
+                        if (sysExecSvc instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExecSvc;
 
                             int poolSize = exec.getPoolSize();
 
@@ -950,8 +996,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
 
         ctx.performance().logSuggestions(log, gridName);
-
-        ackBenchmarks();
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
@@ -1026,10 +1070,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * @param ctx Context.
      * @param cfg Configuration to check for possible performance issues.
      */
-    private void suggestOptimizations(GridKernalContext ctx, IgniteConfiguration cfg) {
+    private void suggestOptimizations(IgniteConfiguration cfg) {
         GridPerformanceSuggestions perf = ctx.performance();
 
         if (ctx.collision().enabled())
@@ -1055,25 +1098,21 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /**
      * Creates attributes map and fills it in.
      *
-     * @param cfg Grid configuration.
-     * @param build Build string.
-     * @return Map of all node attributes.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private Map<String, Object> createNodeAttributes(IgniteConfiguration cfg, String build) throws IgniteCheckedException {
-        Map<String, Object> attrs = new HashMap<>();
-
+    private void fillNodeAttributes() throws IgniteCheckedException {
         final String[] incProps = cfg.getIncludeProperties();
 
         try {
             // Stick all environment settings into node attributes.
-            attrs.putAll(F.view(System.getenv(), new P1<String>() {
-                @Override public boolean apply(String name) {
-                    return incProps == null || U.containsStringArray(incProps, name, true) ||
-                        U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name);
-                }
-            }));
+            for (Map.Entry<String, String> sysEntry : System.getenv().entrySet()) {
+                String name = sysEntry.getKey();
+
+                if (incProps == null || U.containsStringArray(incProps, name, true) ||
+                    U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name))
+                    ctx.addNodeAttribute(name, sysEntry.getValue());
+            }
 
             if (log.isDebugEnabled())
                 log.debug("Added environment properties to node attributes.");
@@ -1086,21 +1125,18 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             // Stick all system properties into node's attributes overwriting any
             // identical names from environment properties.
-            for (Map.Entry<Object, Object> e : F.view(System.getProperties(), new P1<Object>() {
-                @Override public boolean apply(Object o) {
-                    String name = (String)o;
+            for (Map.Entry<Object, Object> e : snapshot().entrySet()) {
+                String key = (String)e.getKey();
 
-                    return incProps == null || U.containsStringArray(incProps, name, true) ||
-                        U.isVisorRequiredProperty(name);
+                if (incProps == null || U.containsStringArray(incProps, key, true) ||
+                    U.isVisorRequiredProperty(key)) {
+                    Object val = ctx.nodeAttribute(key);
+
+                    if (val != null && !val.equals(e.getValue()))
+                        U.warn(log, "System property will override environment variable with the same name: " + key);
+
+                    ctx.addNodeAttribute(key, e.getValue());
                 }
-            }).entrySet()) {
-                Object val = attrs.get(e.getKey());
-
-                if (val != null && !val.equals(e.getValue()))
-                    U.warn(log, "System property will override environment variable with the same name: "
-                        + e.getKey());
-
-                attrs.put((String)e.getKey(), e.getValue());
             }
 
             if (log.isDebugEnabled())
@@ -1128,23 +1164,25 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 "Ignite is starting on loopback address...");
 
         // Stick in network context into attributes.
-        add(attrs, ATTR_IPS, (ips.isEmpty() ? "" : ips));
-        add(attrs, ATTR_MACS, (macs.isEmpty() ? "" : macs));
+        add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
+        add(ATTR_MACS, (macs.isEmpty() ? "" : macs));
 
         // Stick in some system level attributes
-        add(attrs, ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
-        add(attrs, ATTR_BUILD_VER, VER_STR);
-        add(attrs, ATTR_BUILD_DATE, build);
-        add(attrs, ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
-        add(attrs, ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
-        add(attrs, ATTR_USER_NAME, System.getProperty("user.name"));
-        add(attrs, ATTR_GRID_NAME, gridName);
+        add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
+        add(ATTR_BUILD_VER, VER_STR);
+        add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
+        add(ATTR_COMPATIBLE_VERS, (Serializable)compatibleVersions());
+        add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
+        add(ATTR_USER_NAME, System.getProperty("user.name"));
+        add(ATTR_GRID_NAME, gridName);
 
-        add(attrs, ATTR_PEER_CLASSLOADING, cfg.isPeerClassLoadingEnabled());
-        add(attrs, ATTR_DEPLOYMENT_MODE, cfg.getDeploymentMode());
-        add(attrs, ATTR_LANG_RUNTIME, getLanguage());
+        add(ATTR_PEER_CLASSLOADING, cfg.isPeerClassLoadingEnabled());
+        add(ATTR_DEPLOYMENT_MODE, cfg.getDeploymentMode());
+        add(ATTR_LANG_RUNTIME, getLanguage());
 
-        add(attrs, ATTR_JVM_PID, U.jvmPid());
+        add(ATTR_JVM_PID, U.jvmPid());
+
+        add(ATTR_CLIENT_MODE, cfg.isClientMode());
 
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);
@@ -1158,11 +1196,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             jvmArgs.a(arg);
         }
         // Add it to attributes.
-        add(attrs, ATTR_JVM_ARGS, jvmArgs.toString());
+        add(ATTR_JVM_ARGS, jvmArgs.toString());
 
         // Check daemon system property and override configuration if it's set.
         if (isDaemon())
-            add(attrs, ATTR_DAEMON, "true");
+            add(ATTR_DAEMON, "true");
 
         // In case of the parsing error, JMX remote disabled or port not being set
         // node attribute won't be set.
@@ -1171,7 +1209,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             if (portStr != null)
                 try {
-                    add(attrs, ATTR_JMX_PORT, Integer.parseInt(portStr));
+                    add(ATTR_JMX_PORT, Integer.parseInt(portStr));
                 }
                 catch (NumberFormatException ignore) {
                     // No-op.
@@ -1179,49 +1217,46 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
 
         // Whether restart is enabled and stick the attribute.
-        add(attrs, ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
+        add(ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
 
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getConnectorConfiguration() != null)
-            add(attrs, ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
+            add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
         // Stick in SPI versions and classes attributes.
-        addAttributes(attrs, cfg.getCollisionSpi());
-        addAttributes(attrs, cfg.getSwapSpaceSpi());
-        addAttributes(attrs, cfg.getDiscoverySpi());
-        addAttributes(attrs, cfg.getFailoverSpi());
-        addAttributes(attrs, cfg.getCommunicationSpi());
-        addAttributes(attrs, cfg.getEventStorageSpi());
-        addAttributes(attrs, cfg.getCheckpointSpi());
-        addAttributes(attrs, cfg.getLoadBalancingSpi());
-        addAttributes(attrs, cfg.getDeploymentSpi());
+        addSpiAttributes(cfg.getCollisionSpi());
+        addSpiAttributes(cfg.getSwapSpaceSpi());
+        addSpiAttributes(cfg.getDiscoverySpi());
+        addSpiAttributes(cfg.getFailoverSpi());
+        addSpiAttributes(cfg.getCommunicationSpi());
+        addSpiAttributes(cfg.getEventStorageSpi());
+        addSpiAttributes(cfg.getCheckpointSpi());
+        addSpiAttributes(cfg.getLoadBalancingSpi());
+        addSpiAttributes(cfg.getDeploymentSpi());
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
             for (Map.Entry<String, ?> e : cfg.getUserAttributes().entrySet()) {
-                if (attrs.containsKey(e.getKey()))
+                if (ctx.hasNodeAttribute(e.getKey()))
                     U.warn(log, "User or internal attribute has the same name as environment or system " +
                         "property and will take precedence: " + e.getKey());
 
-                attrs.put(e.getKey(), e.getValue());
+                ctx.addNodeAttribute(e.getKey(), e.getValue());
             }
         }
-
-        return attrs;
     }
 
     /**
      * Add SPI version and class attributes into node attributes.
      *
-     * @param attrs Node attributes map to add SPI attributes to.
      * @param spiList Collection of SPIs to get attributes from.
      * @throws IgniteCheckedException Thrown if was unable to set up attribute.
      */
-    private void addAttributes(Map<String, Object> attrs, IgniteSpi... spiList) throws IgniteCheckedException {
+    private void addSpiAttributes(IgniteSpi... spiList) throws IgniteCheckedException {
         for (IgniteSpi spi : spiList) {
             Class<? extends IgniteSpi> spiCls = spi.getClass();
 
-            add(attrs, U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
+            add(U.spiAttribute(spi, ATTR_SPI_CLASS), spiCls.getName());
         }
     }
 
@@ -1338,27 +1373,17 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * @param ctx Kernal context.
      * @param mgr Manager to start.
-     * @param attrs SPI attributes to set.
      * @throws IgniteCheckedException Throw in case of any errors.
      */
-    private void startManager(GridKernalContextImpl ctx, GridManager mgr, Map<String, Object> attrs)
-        throws IgniteCheckedException {
-        mgr.addSpiAttributes(attrs);
-
-        // Set all node attributes into discovery manager,
-        // so they can be distributed to all nodes.
-        if (mgr instanceof GridDiscoveryManager)
-            ((GridDiscoveryManager)mgr).setNodeAttributes(attrs, VER);
-
-        // Add manager to registry before it starts to avoid
-        // cases when manager is started but registry does not
-        // have it yet.
+    private void startManager(GridManager mgr) throws IgniteCheckedException {
+        // Add manager to registry before it starts to avoid cases when manager is started
+        // but registry does not have it yet.
         ctx.add(mgr);
 
         try {
-            mgr.start();
+            if (!skipDaemon(mgr))
+                mgr.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
@@ -1366,19 +1391,15 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * @param ctx Kernal context.
      * @param proc Processor to start.
-     * @param attrs Attributes.
      * @throws IgniteCheckedException Thrown in case of any error.
      */
-    private void startProcessor(GridKernalContextImpl ctx, GridProcessor proc, Map<String, Object> attrs)
-        throws IgniteCheckedException {
+    private void startProcessor(GridProcessor proc) throws IgniteCheckedException {
         ctx.add(proc);
 
         try {
-            proc.start();
-
-            proc.addAttributes(attrs);
+            if (!skipDaemon(proc))
+                proc.start();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
@@ -1388,10 +1409,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /**
      * Add helper.
      *
-     * @param ctx Context.
      * @param helper Helper.
      */
-    private void addHelper(GridKernalContextImpl ctx, Object helper) {
+    private void addHelper(Object helper) {
         ctx.addHelper(helper);
     }
 
@@ -1465,14 +1485,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * Acks benchmarking instructions.
-     */
-    private void ackBenchmarks() {
-        if (!isDaemon())
-            U.quietAndInfo(log, "If running benchmarks, see http://bit.ly/GridGain-Benchmarking");
-    }
-
-    /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
     private void ackAsciiLogo() {
@@ -1489,7 +1501,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 U.quiet(false,
                     "   __________  ________________ ",
                     "  /  _/ ___/ |/ /  _/_  __/ __/ ",
-                    " _/ // (_ /    // /  / / / _/   ",
+                    " _/ // (7 7    // /  / / / _/   ",
                     "/___/\\___/_/|_/___/ /_/ /___/  ",
                     " ",
                     ver,
@@ -1507,13 +1519,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             if (log.isInfoEnabled()) {
                 log.info(NL + NL +
-                    ">>>    __________  ________________  " + NL +
-                    ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
-                    ">>>  _/ // (_ /    // /  / / / _/    " + NL +
-                    ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
-                    ">>> " + NL +
-                    ">>> " + ver + NL +
-                    ">>> " + COPYRIGHT + NL
+                        ">>>    __________  ________________  " + NL +
+                        ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                        ">>>  _/ // (7 7    // /  / / / _/    " + NL +
+                        ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
+                        ">>> " + NL +
+                        ">>> " + ver + NL +
+                        ">>> " + COPYRIGHT + NL
                 );
             }
         }
@@ -1525,9 +1537,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param rtBean Java runtime bean.
      */
     private void ackStart(RuntimeMXBean rtBean) {
+        ClusterNode locNode = localNode();
+
         if (log.isQuiet()) {
             U.quiet(false, "");
-            U.quiet(false, "Ignite node started OK (id=" + U.id8(localNode().id()) +
+            U.quiet(false, "Ignite node started OK (id=" + U.id8(locNode.id()) +
                 (F.isEmpty(gridName) ? "" : ", grid=" + gridName) + ')');
         }
 
@@ -1549,18 +1563,18 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     ">>> " + ack + NL +
                     ">>> " + dash + NL +
                     ">>> OS name: " + U.osString() + NL +
-                    ">>> CPU(s): " + localNode().metrics().getTotalCpus() + NL +
-                    ">>> Heap: " + U.heapSize(localNode(), 2) + "GB" + NL +
+                    ">>> CPU(s): " + locNode.metrics().getTotalCpus() + NL +
+                    ">>> Heap: " + U.heapSize(locNode, 2) + "GB" + NL +
                     ">>> VM name: " + rtBean.getName() + NL +
                     ">>> Grid name: " + gridName + NL +
                     ">>> Local node [" +
-                    "ID=" + localNode().id().toString().toUpperCase() +
-                    ", order=" + localNode().order() +
+                    "ID=" + locNode.id().toString().toUpperCase() +
+                    ", order=" + locNode.order() +
                     "]" + NL +
-                    ">>> Local node addresses: " + U.addressesAsString(localNode()) + NL +
+                    ">>> Local node addresses: " + U.addressesAsString(locNode) + NL +
                     ">>> Local ports: " + sb + NL;
 
-            str += ">>> Ignite documentation: http://" + SITE + "/documentation" + NL;
+            str += ">>> Ignite documentation: http://" + SITE + NL;
 
             log.info(str);
         }
@@ -1660,9 +1674,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param cancel Whether or not to cancel running jobs.
      */
     private void stop0(boolean cancel) {
-        String nid = getLocalNodeId().toString().toUpperCase();
-        String nid8 = U.id8(getLocalNodeId()).toUpperCase();
-
         gw.compareAndSet(null, new GridKernalGatewayImpl(gridName));
 
         GridKernalGateway gw = this.gw.get();
@@ -1684,7 +1695,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 if (log.isDebugEnabled())
                     log.debug("Notifying lifecycle beans.");
 
-                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
+                notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
             GridCacheProcessor cacheProcessor = ctx.cache();
@@ -1697,7 +1708,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 GridComponent comp = it.previous();
 
                 try {
-                    comp.onKernalStop(cancel);
+                    if (!skipDaemon(comp))
+                        comp.onKernalStop(cancel);
                 }
                 catch (Throwable e) {
                     errOnStop = true;
@@ -1724,7 +1736,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     if (gw.tryWriteLock(10))
                         break;
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignored) {
                     // Preserve interrupt status & ignore.
                     // Note that interrupted flag is cleared.
                     interrupted = true;
@@ -1740,13 +1752,17 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 Thread.currentThread().interrupt();
 
             try {
+                GridCacheProcessor cache = ctx.cache();
+
+                if (cache != null)
+                    cache.blockGateways();
+
                 assert gw.getState() == STARTED || gw.getState() == STARTING;
 
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);
 
-                // Clear node local store.
-                nodeLoc.clear();
+                ctx.cluster().get().clearNodeMap();
 
                 if (log.isDebugEnabled())
                     log.debug("Grid " + (gridName == null ? "" : '\'' + gridName + "' ") + "is stopping.");
@@ -1772,10 +1788,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 GridComponent comp = it.previous();
 
                 try {
-                    comp.stop(cancel);
+                    if (!skipDaemon(comp)) {
+                        comp.stop(cancel);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Component stopped: " + comp);
+                        if (log.isDebugEnabled())
+                            log.debug("Component stopped: " + comp);
+                    }
                 }
                 catch (Throwable e) {
                     errOnStop = true;
@@ -1788,10 +1806,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             U.stopLifecycleAware(log, lifecycleAwares(cfg));
 
             // Lifecycle notification.
-            notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
+            notifyLifecycleBeansEx(LifecycleEventType.AFTER_NODE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            OptimizedMarshaller.clearCache();
+            U.clearClassCache();
             MarshallerExclusions.clearCache();
             GridEnumCache.clear();
 
@@ -1849,7 +1867,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         NL);
                 }
 
-            U.onGridStop();
+            try {
+                U.onGridStop();
+            }
+            catch (InterruptedException e) {
+                // Preserve interrupt status.
+                Thread.currentThread().interrupt();
+            }
         }
         else {
             // Proper notification.
@@ -1904,8 +1928,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         assert log != null;
 
         if (log.isDebugEnabled())
-            for (Object key : U.asIterable(System.getProperties().keys()))
-                log.debug("System property [" + key + '=' + System.getProperty((String) key) + ']');
+            for (Map.Entry<Object, Object> entry : snapshot().entrySet())
+                log.debug("System property [" + entry.getKey() + '=' + entry.getValue() + ']');
     }
 
     /**
@@ -1966,10 +1990,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /**
      * Whether or not node restart is enabled. Node restart us supported when this node was started
      * with {@code bin/ignite.{sh|bat}} script using {@code -r} argument. Node can be
-     * programmatically restarted using {@link org.apache.ignite.Ignition#restart(boolean)}} method.
+     * programmatically restarted using {@link Ignition#restart(boolean)}} method.
      *
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
-     * @see org.apache.ignite.Ignition#restart(boolean)
+     * @see Ignition#restart(boolean)
      */
     @Override public boolean isRestartEnabled() {
         return System.getProperty(IGNITE_SUCCESS_FILE) != null;
@@ -2040,15 +2064,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * Prints security status.
-     *
-     * @param ctx Kernal context.
      */
-    private void ackSecurity(GridKernalContext ctx) {
+    private void ackSecurity() {
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ", " +
-                "secure-session=" + onOff(ctx.secureSession().enabled()) + ']');
+            log.info("Security status [authentication=" + onOff(ctx.security().enabled()) + ']');
     }
 
     /**
@@ -2084,7 +2105,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * @param cfg Grid configuration.
-     * @return Components provided in configuration which can implement {@link org.apache.ignite.lifecycle.LifecycleAware} interface.
+     * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();
@@ -2132,31 +2153,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Override public boolean pingNode(String nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        return pingNode(UUID.fromString(nodeId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> topology(long topVer) {
-        guard();
-
-        try {
-            return ctx.discovery().topology(topVer);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long topologyVersion() {
-        guard();
-
-        try {
-            return ctx.discovery().topologyVersion();
-        }
-        finally {
-            unguard();
-        }
+        return cluster().pingNode(UUID.fromString(nodeId));
     }
 
     /** {@inheritDoc} */
@@ -2175,7 +2172,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @SuppressWarnings("unchecked")
     @Override public String executeTask(String taskName, String arg) throws JMException {
         try {
-            return compute().<String, String>execute(taskName, arg);
+            return compute().execute(taskName, arg);
         }
         catch (IgniteException e) {
             throw U.jmException(e);
@@ -2187,346 +2184,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         guard();
 
         try {
-            for (ClusterNode n : nodes())
+            for (ClusterNode n : cluster().nodes())
                 if (n.addresses().contains(host))
                     return ctx.discovery().pingNode(n.id());
 
             return false;
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClusterNode localNode() {
-        guard();
-
-        try {
-            ClusterNode node = ctx.discovery().localNode();
-
-            assert node != null;
-
-            return node;
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public <K, V> ClusterNodeLocalMap<K, V> nodeLocalMap() {
-        guard();
-
-        try {
-            return nodeLoc;
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean pingNode(UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
-        guard();
-
-        try {
-            return ctx.discovery().pingNode(nodeId);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
-        boolean restart,
-        int timeout,
-        int maxConn) {
-        try {
-            return startNodesAsync(file, restart, timeout, maxConn).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /**
-     * @param file Configuration file.
-     * @param restart Whether to stop existing nodes.
-     * @param timeout Connection timeout.
-     * @param maxConn Number of parallel SSH connections to one host.
-     * @return Future with results.
-     * @see {@link IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
-     */
-    IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file,
-        boolean restart,
-        int timeout,
-        int maxConn)
-    {
-        A.notNull(file, "file");
-        A.ensure(file.exists(), "file doesn't exist.");
-        A.ensure(file.isFile(), "file is a directory.");
-
-        try {
-            IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
-
-            return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCluster withAsync() {
-        return new IgniteClusterAsyncImpl(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new IllegalStateException("Asynchronous mode is not enabled.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
-        Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts,
-        boolean restart,
-        int timeout,
-        int maxConn)
-    {
-        try {
-            return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /**
-     * @param hosts Startup parameters.
-     * @param dflts Default values.
-     * @param restart Whether to stop existing nodes
-     * @param timeout Connection timeout in milliseconds.
-     * @param maxConn Number of parallel SSH connections to one host.
-     * @return Future with results.
-     * @see {@link IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
-     */
-    IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
-        Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts,
-        boolean restart,
-        int timeout,
-        int maxConn)
-    {
-        A.notNull(hosts, "hosts");
-
-        guard();
-
-        try {
-            IgniteSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
-
-            Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
-
-            Map<String, ConcurrentLinkedQueue<IgniteNodeCallable>> runMap = new HashMap<>();
-
-            int nodeCallCnt = 0;
-
-            for (String host : specsMap.keySet()) {
-                InetAddress addr;
-
-                try {
-                    addr = InetAddress.getByName(host);
-                }
-                catch (UnknownHostException e) {
-                    throw new IgniteCheckedException("Invalid host name: " + host, e);
-                }
-
-                Collection<? extends ClusterNode> neighbors = null;
-
-                if (addr.isLoopbackAddress())
-                    neighbors = neighbors();
-                else {
-                    for (Collection<ClusterNode> p : U.neighborhood(nodes()).values()) {
-                        ClusterNode node = F.first(p);
-
-                        if (node.<String>attribute(ATTR_IPS).contains(addr.getHostAddress())) {
-                            neighbors = p;
-
-                            break;
-                        }
-                    }
-                }
-
-                int startIdx = 1;
-
-                if (neighbors != null) {
-                    if (restart && !neighbors.isEmpty()) {
-                        try {
-                            compute(forNodes(neighbors)).execute(GridKillTask.class, false);
-                        }
-                        catch (ClusterGroupEmptyException ignored) {
-                            // No-op, nothing to restart.
-                        }
-                    }
-                    else
-                        startIdx = neighbors.size() + 1;
-                }
-
-                ConcurrentLinkedQueue<IgniteNodeCallable> nodeRuns = new ConcurrentLinkedQueue<>();
-
-                runMap.put(host, nodeRuns);
-
-                for (IgniteRemoteStartSpecification spec : specsMap.get(host)) {
-                    assert spec.host().equals(host);
-
-                    for (int i = startIdx; i <= spec.nodes(); i++) {
-                        nodeRuns.add(sshProcessor.nodeStartCallable(spec, timeout));
-
-                        nodeCallCnt++;
-                    }
-                }
-            }
-
-            // If there is nothing to start, return finished future with empty result.
-            if (nodeCallCnt == 0)
-                return new GridFinishedFuture<Collection<GridTuple3<String, Boolean, String>>>(
-                    ctx, Collections.<GridTuple3<String, Boolean, String>>emptyList());
-
-            // Exceeding max line width for readability.
-            GridCompoundFuture<GridTuple3<String, Boolean, String>, Collection<GridTuple3<String, Boolean, String>>>
-                fut = new GridCompoundFuture<>(
-                    ctx,
-                    CU.<GridTuple3<String, Boolean, String>>objectsReducer()
-                );
-
-            AtomicInteger cnt = new AtomicInteger(nodeCallCnt);
-
-            // Limit maximum simultaneous connection number per host.
-            for (ConcurrentLinkedQueue<IgniteNodeCallable> queue : runMap.values()) {
-                for (int i = 0; i < maxConn; i++) {
-                    if (!runNextNodeCallable(queue, fut, cnt))
-                        break;
-                }
-            }
-
-            return fut;
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /**
-     * Gets the all grid nodes that reside on the same physical computer as local grid node.
-     * Local grid node is excluded.
-     * <p>
-     * Detection of the same physical computer is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
-     * physical computer.
-     * @return Grid nodes that reside on the same physical computer as local grid node.
-     */
-    private Collection<ClusterNode> neighbors() {
-        Collection<ClusterNode> neighbors = new ArrayList<>(1);
-
-        String macs = localNode().attribute(ATTR_MACS);
-
-        assert macs != null;
-
-        for (ClusterNode n : forOthers(localNode()).nodes()) {
-            if (macs.equals(n.attribute(ATTR_MACS)))
-                neighbors.add(n);
-        }
-
-        return neighbors;
-    }
-
-    /**
-     * Runs next callable from host node start queue.
-     *
-     * @param queue Queue of tasks to poll from.
-     * @param comp Compound future that comprise all started node tasks.
-     * @param cnt Atomic counter to check if all futures are added to compound future.
-     * @return {@code True} if task was started, {@code false} if queue was empty.
-     */
-    private boolean runNextNodeCallable(final ConcurrentLinkedQueue<IgniteNodeCallable> queue,
-        final GridCompoundFuture<GridTuple3<String, Boolean, String>,
-        Collection<GridTuple3<String, Boolean, String>>> comp, final AtomicInteger cnt) {
-        IgniteNodeCallable call = queue.poll();
-
-        if (call == null)
-            return false;
-
-        IgniteInternalFuture<GridTuple3<String, Boolean, String>> fut = ctx.closure().callLocalSafe(call, true);
-
-        comp.add(fut);
-
-        if (cnt.decrementAndGet() == 0)
-            comp.markInitialized();
-
-        fut.listenAsync(new CI1<IgniteInternalFuture<GridTuple3<String, Boolean, String>>>() {
-            @Override public void apply(IgniteInternalFuture<GridTuple3<String, Boolean, String>> f) {
-                runNextNodeCallable(queue, comp, cnt);
-            }
-        });
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stopNodes() {
-        guard();
-
-        try {
-            compute().execute(GridKillTask.class, false);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stopNodes(Collection<UUID> ids) {
-        guard();
-
-        try {
-            compute(forNodeIds(ids)).execute(GridKillTask.class, false);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void restartNodes() {
-        guard();
-
-        try {
-            compute().execute(GridKillTask.class, true);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void restartNodes(Collection<UUID> ids) {
-        guard();
-
-        try {
-            compute(forNodeIds(ids)).execute(GridKillTask.class, true);
         }
         finally {
             unguard();
@@ -2575,7 +2237,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param name Cache name.
      * @return Cache.
      */
-    public <K, V> GridCache<K, V> cache(@Nullable String name) {
+    public <K, V> GridCache<K, V> getCache(@Nullable String name) {
         guard();
 
         try {
@@ -2587,7 +2249,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
+    @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         guard();
 
         try {
@@ -2598,10 +2260,152 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createCache(
+        CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg
+    ) {
+        A.notNull(cacheCfg, "cacheCfg");
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
+        NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(cacheCfg, "cacheCfg");
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false).get();
+
+            return ctx.cache().publicJCache(cacheCfg.getName());
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
+        NearCacheConfiguration<K, V> nearCfg) {
+        A.notNull(nearCfg, "nearCfg");
+
+        guard();
+
+        try {
+            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false).get();
+
+            return ctx.cache().publicJCache(cacheName);
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        guard();
+
+        IgniteInternalFuture<?> stopFut;
+
+        try {
+            stopFut = ctx.cache().dynamicStopCache(cacheName);
+        }
+        finally {
+            unguard();
+        }
+
+        try {
+            stopFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw CU.convertToCacheException(e);
+        }
+    }
+
     /**
      * @return Public caches.
      */
-    public Collection<GridCache<?, ?>> caches() {
+    public Collection<IgniteCacheProxy<?, ?>> caches() {
         guard();
 
         try {
@@ -2662,11 +2466,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName) {
+    @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
         guard();
 
         try {
-            return ctx.<K, V>dataLoad().dataLoader(cacheName);
+            return ctx.<K, V>dataStream().dataStreamer(cacheName);
         }
         finally {
             unguard();
@@ -2674,11 +2478,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs fileSystem(String name) {
+    @Override public IgniteFileSystem fileSystem(String name) {
         guard();
 
         try{
-            IgniteFs fs = ctx.igfs().igfs(name);
+            IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
                 throw new IllegalArgumentException("IGFS is not configured: " + name);
@@ -2691,7 +2495,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFs igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
         guard();
 
         try {
@@ -2703,7 +2507,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFs> fileSystems() {
+    @Override public Collection<IgniteFileSystem> fileSystems() {
         guard();
 
         try {
@@ -2715,7 +2519,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
+    @Override public Hadoop hadoop() {
         guard();
 
         try {
@@ -2738,91 +2542,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(String cacheName,
-        @Nullable Collection<? extends K> keys) {
-        if (F.isEmpty(keys))
-            return Collections.emptyMap();
-
-        guard();
-
-        try {
-            return ctx.affinity().mapKeysToNodes(cacheName, keys);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(String cacheName, K key) {
-        A.notNull(key, "key");
-
-        guard();
-
-        try {
-            return ctx.affinity().mapKeyToNode(cacheName, key);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        guard();
-
-        try {
-            ctx.jobMetric().reset();
-            ctx.io().resetMetrics();
-            ctx.task().resetMetrics();
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStreamer streamer(@Nullable String name) {
-        guard();
-
-        try {
-            return ctx.stream().streamer(name);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteStreamer> streamers() {
-        guard();
-
-        try {
-            return ctx.stream().streamers();
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClusterGroup forLocal() {
-        ctx.gateway().readLock();
-
-        try {
-            return new ClusterGroupAdapter(this, ctx, null, Collections.singleton(cfg.getNodeId()));
-        }
-        finally {
-            ctx.gateway().readUnlock();
-        }
-    }
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
         return VER;
@@ -2856,7 +2575,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <K> CacheAffinity<K> affinity(String cacheName) {
+    @Override public <K> Affinity<K> affinity(String cacheName) {
         GridCacheAdapter<K, ?> cache = ctx.cache().internalCache(cacheName);
 
         if (cache != null)
@@ -2987,6 +2706,24 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
+     * <tt>ctx.gateway().readLock()</tt>
+     */
+    private void guard() {
+        assert ctx != null;
+
+        ctx.gateway().readLock();
+    }
+
+    /**
+     * <tt>ctx.gateway().readUnlock()</tt>
+     */
+    private void unguard() {
+        assert ctx != null;
+
+        ctx.gateway().readUnlock();
+    }
+
+    /**
      * Creates optional component.
      *
      * @param cls Component interface.
@@ -3003,23 +2740,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (comp != null)
             return comp;
 
-        // TODO 9341: get rid of ent/os after moving ent code to plugin.
+        if (cls.equals(IgniteCacheObjectProcessor.class))
+            return (T)new IgniteCacheObjectProcessorImpl(ctx);
+
         Class<T> implCls = null;
 
         try {
-            implCls = (Class<T>)Class.forName(enterpriseClassName(cls));
+            implCls = (Class<T>)Class.forName(componentClassName(cls));
         }
         catch (ClassNotFoundException ignore) {
             // No-op.
-        }
-
-        if (implCls == null) {
-            try {
-                implCls = (Class<T>)Class.forName(openSourceClassName(cls));
-            }
-            catch (ClassNotFoundException ignore) {
-                // No-op.
-            }
         }
 
         if (implCls == null)
@@ -3049,18 +2779,42 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * @param cls Component interface.
-     * @return Name of component implementation class for enterprise edition.
+     * @return Name of component implementation class for open source edition.
      */
-    private static String enterpriseClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".ent." + cls.getSimpleName().replace("Grid", "GridEnt");
+    private static String componentClassName(Class<?> cls) {
+        return cls.getPackage().getName() + ".os." + cls.getSimpleName().replace("Grid", "GridOs");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        gridName = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeString(out, gridName);
     }
 
     /**
-     * @param cls Component interface.
-     * @return Name of component implementation class for open source edition.
+     * @return IgniteKernal instance.
+     *
+     * @throws ObjectStreamException If failed.
      */
-    private static String openSourceClassName(Class<?> cls) {
-        return cls.getPackage().getName() + ".os." + cls.getSimpleName().replace("Grid", "GridOs");
+    protected Object readResolve() throws ObjectStreamException {
+        try {
+            return IgnitionEx.gridx(gridName);
+        }
+        catch (IllegalStateException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+    }
+
+    /**
+     * @param comp Grid component.
+     * @return {@code true} if node running in daemon mode and component marked by {@code SkipDaemon} annotation.
+     */
+    private boolean skipDaemon(GridComponent comp) {
+        return ctx.isDaemon() && U.hasAnnotation(comp.getClass(), SkipDaemon.class);
     }
 
     /** {@inheritDoc} */

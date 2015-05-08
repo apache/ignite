@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.*;
@@ -36,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Partition topology for node which does not have any local partitions.
  */
 @GridToStringExclude
-public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopology<K, V> {
+public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -44,7 +45,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     private static final boolean FULL_MAP_DEBUG = false;
 
     /** Cache shared context. */
-    private GridCacheSharedContext<K, V> cctx;
+    private GridCacheSharedContext cctx;
 
     /** Cache ID. */
     private int cacheId;
@@ -62,7 +63,10 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     private GridDhtPartitionExchangeId lastExchangeId;
 
     /** */
-    private long topVer = -1;
+    private AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
+
+    /** */
+    private volatile boolean stopping;
 
     /** A future that will be completed when topology with version topVer will be ready to use. */
     private GridDhtTopologyFuture topReadyFut;
@@ -76,18 +80,21 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     /**
      * @param cctx Context.
      * @param cacheId Cache ID.
-     * @param exchId Exchange ID.
+     * @param exchFut Exchange ID.
      */
-    public GridClientPartitionTopology(GridCacheSharedContext<K, V> cctx, int cacheId,
-        GridDhtPartitionExchangeId exchId) {
+    public GridClientPartitionTopology(
+        GridCacheSharedContext cctx,
+        int cacheId,
+        GridDhtPartitionsExchangeFuture exchFut
+    ) {
         this.cctx = cctx;
         this.cacheId = cacheId;
 
-        topVer = exchId.topologyVersion();
+        topVer = exchFut.topologyVersion();
 
         log = cctx.logger(getClass());
 
-        beforeExchange(exchId);
+        beforeExchange(exchFut);
     }
 
     /**
@@ -126,15 +133,23 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTopologyVersion(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture<K, V> exchFut) {
+    @Override public void updateTopologyVersion(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut,
+        long updSeq,
+        boolean stopping
+    ) {
         lock.writeLock().lock();
 
         try {
-            assert exchId.topologyVersion() > topVer : "Invalid topology version [topVer=" + topVer +
+            assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
                 ", exchId=" + exchId + ']';
 
+            this.stopping = stopping;
+
             topVer = exchId.topologyVersion();
+
+            updateSeq.setIfGreater(updSeq);
 
             topReadyFut = exchFut;
         }
@@ -144,11 +159,11 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         lock.readLock().lock();
 
         try {
-            assert topVer > 0;
+            assert topVer.topologyVersion() > 0;
 
             return topVer;
         }
@@ -172,13 +187,23 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionExchangeId exchId) {
+    @Override public boolean stopping() {
+        return stopping;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) {
         ClusterNode loc = cctx.localNode();
 
         lock.writeLock().lock();
 
         try {
-            assert topVer == exchId.topologyVersion() : "Invalid topology version [topVer=" +
+            if (stopping)
+                return;
+
+            GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
+
+            assert topVer.equals(exchId.topologyVersion()) : "Invalid topology version [topVer=" +
                 topVer + ", exchId=" + exchId + ']';
 
             if (!exchId.isJoined())
@@ -193,7 +218,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
             long updateSeq = this.updateSeq.incrementAndGet();
 
             // If this is the oldest node.
-            if (oldest.id().equals(loc.id())) {
+            if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cacheId)) {
                 if (node2part == null) {
                     node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq);
 
@@ -229,17 +254,17 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterExchange(GridDhtPartitionExchangeId exchId) throws IgniteCheckedException {
-        long topVer = exchId.topologyVersion();
+    @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         lock.writeLock().lock();
 
         try {
-            assert topVer == exchId.topologyVersion() : "Invalid topology version [topVer=" +
-                topVer + ", exchId=" + exchId + ']';
+            assert topVer.equals(exchFut.topologyVersion()) : "Invalid topology version [topVer=" +
+                topVer + ", exchId=" + exchFut.exchangeId() + ']';
 
             if (log.isDebugEnabled())
-                log.debug("Partition map before afterExchange [exchId=" + exchId + ", fullMap=" +
+                log.debug("Partition map before afterExchange [exchId=" + exchFut.exchangeId() + ", fullMap=" +
                     fullMapString() + ']');
 
             updateSeq.incrementAndGet();
@@ -254,7 +279,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridDhtLocalPartition<K, V> localPartition(int p, long topVer, boolean create)
+    @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException {
         if (!create)
             return null;
@@ -264,29 +289,29 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> localPartition(K key, boolean create) {
-        return localPartition(1, -1, create);
+    @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
+        return localPartition(1, AffinityTopologyVersion.NONE, create);
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridDhtLocalPartition<K, V>> localPartitions() {
+    @Override public List<GridDhtLocalPartition> localPartitions() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition<K, V>> currentLocalPartitions() {
+    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition<K, V> onAdded(long topVer, GridDhtCacheEntry<K, V> e) {
+    @Override public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e) {
         assert false : "Entry should not be added to client topology: " + e;
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onRemoved(GridDhtCacheEntry<K, V> e) {
+    @Override public void onRemoved(GridDhtCacheEntry e) {
         assert false : "Entry should not be removed from client topology: " + e;
     }
 
@@ -304,7 +329,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(int p, long topVer) {
+    @Override public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
         lock.readLock().lock();
 
         try {
@@ -319,7 +344,7 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
                 for (UUID nodeId : nodeIds) {
                     ClusterNode n = cctx.discovery().node(nodeId);
 
-                    if (n != null && (topVer < 0 || n.order() <= topVer)) {
+                    if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
                         if (nodes == null)
                             nodes = new ArrayList<>();
 
@@ -342,8 +367,8 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p, long topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = topVer > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
+    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+        Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
 
@@ -362,13 +387,13 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
             List<ClusterNode> nodes = new ArrayList<>(size);
 
             for (UUID id : nodeIds) {
-                if (topVer > 0 && !allIds.contains(id))
+                if (topVer.topologyVersion() > 0 && !allIds.contains(id))
                     continue;
 
                 if (hasState(p, id, state, states)) {
                     ClusterNode n = cctx.discovery().node(id);
 
-                    if (n != null && (topVer < 0 || n.order() <= topVer))
+                    if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion()))
                         nodes.add(n);
                 }
             }
@@ -381,18 +406,18 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public List<ClusterNode> owners(int p, long topVer) {
+    @Override public List<ClusterNode> owners(int p, AffinityTopologyVersion topVer) {
         return nodes(p, topVer, OWNING);
     }
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> owners(int p) {
-        return owners(p, -1);
+        return owners(p, AffinityTopologyVersion.NONE);
     }
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> moving(int p) {
-        return nodes(p, -1, MOVING);
+        return nodes(p, AffinityTopologyVersion.NONE, MOVING);
     }
 
     /**
@@ -400,13 +425,27 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
      * @param topVer Topology version.
      * @return List of nodes in state OWNING or MOVING.
      */
-    private List<ClusterNode> ownersAndMoving(int p, long topVer) {
+    private List<ClusterNode> ownersAndMoving(int p, AffinityTopologyVersion topVer) {
         return nodes(p, topVer, OWNING, MOVING);
     }
 
     /** {@inheritDoc} */
     @Override public long updateSequence() {
         return updateSeq.get();
+    }
+
+    /**
+     * @return Last update sequence.
+     */
+    public long lastUpdateSequence() {
+        lock.writeLock().lock();
+
+        try {
+            return updateSeq.incrementAndGet();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -534,6 +573,9 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return null;
+
             if (lastExchangeId != null && exchId != null && lastExchangeId.compareTo(exchId) > 0) {
                 if (log.isDebugEnabled())
                     log.debug("Stale exchange id for single partition map update (will ignore) [lastExchId=" +
@@ -709,19 +751,22 @@ public class GridClientPartitionTopology<K, V> implements GridDhtPartitionTopolo
     }
 
     /** {@inheritDoc} */
-    @Override public boolean own(GridDhtLocalPartition<K, V> part) {
+    @Override public boolean own(GridDhtLocalPartition part) {
         assert false : "Client topology should never own a partition: " + part;
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void onEvicted(GridDhtLocalPartition<K, V> part, boolean updateSeq) {
+    @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 
         lock.writeLock().lock();
 
         try {
+            if (stopping)
+                return;
+
             assert part.state() == EVICTED;
 
             long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();

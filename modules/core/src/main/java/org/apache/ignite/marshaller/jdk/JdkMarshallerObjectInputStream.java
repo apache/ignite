@@ -17,6 +17,8 @@
 
 package org.apache.ignite.marshaller.jdk;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -47,7 +49,7 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
         // Must have 'Class.forName()' instead of clsLoader.loadClass()
         // due to weird ClassNotFoundExceptions for arrays of classes
         // in certain cases.
-        return Class.forName(desc.getName(), true, clsLdr);
+        return U.forName(desc.getName(), clsLdr);
     }
 
     /** {@inheritDoc} */

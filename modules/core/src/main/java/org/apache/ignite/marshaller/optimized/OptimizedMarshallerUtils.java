@@ -17,10 +17,11 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -30,187 +31,234 @@ import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallable.*;
-
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
 class OptimizedMarshallerUtils {
-    /** Unsafe. */
+    /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** {@code Null} object reference. */
-    static final byte NULL = (byte)0x70;
+    /** */
+    static final long HASH_SET_MAP_OFF;
 
-    /** Handle reference. */
-    static final byte HANDLE = (byte)0x71;
+    /** */
+    static final byte JDK = -2;
 
-    /** Object reference. */
-    static final byte OBJECT = (byte)0x72;
+    /** */
+    static final byte HANDLE = -1;
+
+    /** */
+    static final byte NULL = 0;
+
+    /** */
+    static final byte BYTE = 1;
+
+    /** */
+    static final byte SHORT = 2;
+
+    /** */
+    static final byte INT = 3;
+
+    /** */
+    static final byte LONG = 4;
+
+    /** */
+    static final byte FLOAT = 5;
+
+    /** */
+    static final byte DOUBLE = 6;
+
+    /** */
+    static final byte CHAR = 7;
+
+    /** */
+    static final byte BOOLEAN = 8;
+
+    /** */
+    static final byte BYTE_ARR = 9;
+
+    /** */
+    static final byte SHORT_ARR = 10;
+
+    /** */
+    static final byte INT_ARR = 11;
+
+    /** */
+    static final byte LONG_ARR = 12;
+
+    /** */
+    static final byte FLOAT_ARR = 13;
+
+    /** */
+    static final byte DOUBLE_ARR = 14;
+
+    /** */
+    static final byte CHAR_ARR = 15;
+
+    /** */
+    static final byte BOOLEAN_ARR = 16;
+
+    /** */
+    static final byte OBJ_ARR = 17;
+
+    /** */
+    static final byte STR = 18;
+
+    /** */
+    static final byte UUID = 19;
+
+    /** */
+    static final byte PROPS = 20;
+
+    /** */
+    static final byte ARRAY_LIST = 21;
+
+    /** */
+    static final byte HASH_MAP = 22;
+
+    /** */
+    static final byte HASH_SET = 23;
+
+    /** */
+    static final byte LINKED_LIST = 24;
+
+    /** */
+    static final byte LINKED_HASH_MAP = 25;
+
+    /** */
+    static final byte LINKED_HASH_SET = 26;
+
+    /** */
+    static final byte DATE = 27;
+
+    /** */
+    static final byte CLS = 28;
+
+    /** */
+    static final byte ENUM = 100;
+
+    /** */
+    static final byte EXTERNALIZABLE = 101;
+
+    /** */
+    static final byte SERIALIZABLE = 102;
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
-    /** Class descriptors cache. */
-    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> CLS_DESC_CACHE =
-        new ConcurrentHashMap8<>(256);
+    /** JDK marshaller. */
+    static final JdkMarshaller JDK_MARSH = new JdkMarshaller();
 
-    /** Classes cache by name. */
-    private static final ConcurrentHashMap8<ClassLoader, ConcurrentHashMap8<String, Class<?>>> CLS_BY_NAME_CACHE =
-        new ConcurrentHashMap8<>();
+    static {
+        try {
+            HASH_SET_MAP_OFF = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
+        }
+        catch (NoSuchFieldException e) {
+            throw new IgniteException("Initialization failure.", e);
+        }
+    }
 
     /**
-     * Suppresses default constructor, ensuring non-instantiability.
      */
     private OptimizedMarshallerUtils() {
         // No-op.
     }
 
     /**
-     * Gets class for given name and class loader.
-     *
-     * @param name Class name.
-     * @param ldr Class loader.
-     * @return Class.
-     * @throws ClassNotFoundException If class was not found.
-     */
-    static Class<?> forName(String name, ClassLoader ldr) throws ClassNotFoundException {
-        assert ldr != null;
-        assert name != null;
-
-        ConcurrentHashMap8<String, Class<?>> cache = CLS_BY_NAME_CACHE.get(ldr);
-
-        Class<?> cls = null;
-
-        if (cache == null) {
-            cache = new ConcurrentHashMap8<>();
-
-            ConcurrentHashMap8<String, Class<?>> old = CLS_BY_NAME_CACHE.putIfAbsent(ldr, cache);
-
-            if (old != null) {
-                cache = old;
-
-                cls = cache.get(name);
-            }
-        }
-        else
-            cls = cache.get(name);
-
-        if (cls == null) {
-            cls = Class.forName(name, true, ldr);
-
-            cache.put(name, cls);
-        }
-
-        return cls;
-    }
-
-    /**
      * Gets descriptor for provided class.
      *
+     * @param clsMap Class descriptors by class map.
      * @param cls Class.
-     * @param obj Object.
+     * @param ctx Context.
+     * @param mapper ID mapper.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(Class<?> cls, @Nullable Object obj) throws IOException {
-        if (obj != null) {
-            if (obj instanceof OptimizedMarshallable) {
-                OptimizedMarshallable m = (OptimizedMarshallable)obj;
-
-                Object clsId = m.ggClassId();
-
-                if (clsId != null && !(clsId instanceof OptimizedClassDescriptor))
-                    throw new IOException("Method '" + obj.getClass().getName() + ".ggClassId() must return " +
-                        "the value of the field '" + CLS_ID_FIELD_NAME + "'.");
-
-                OptimizedClassDescriptor desc = (OptimizedClassDescriptor)clsId;
-
-                if (desc == null) {
-                    desc = new OptimizedClassDescriptor(cls);
-
-                    try {
-                        Field field = obj.getClass().getDeclaredField(CLS_ID_FIELD_NAME);
-
-                        field.setAccessible(true);
-
-                        Object o = field.get(null);
-
-                        if (o == null) {
-                            if ((field.getModifiers() & Modifier.STATIC) == 0)
-                                throw new IOException("Field '" + CLS_ID_FIELD_NAME + "' must be declared static: " +
-                                    obj.getClass().getName());
-
-                            field.set(null, desc);
-
-                            if (m.ggClassId() == null)
-                                throw new IOException( "Method '" + obj.getClass().getName() + ".ggClassId() must " +
-                                    "return the value of the field '" + CLS_ID_FIELD_NAME + "': "
-                                    + obj.getClass().getName());
-                        }
-                        else if (!(o instanceof OptimizedClassDescriptor))
-                            throw new IOException("Field '" + CLS_ID_FIELD_NAME + "' must be declared with " +
-                                "null value: " + obj.getClass().getName());
-                    }
-                    catch (NoSuchFieldException e) {
-                        throw new IOException("GridOptimizedMarshallable classes must have static field declared " +
-                            "[fieldName=" + CLS_ID_FIELD_NAME + ", cls=" + obj.getClass().getName() + ']', e);
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new IOException("Failed to set field '" + CLS_ID_FIELD_NAME + "' on '" +
-                            obj.getClass().getName() + "' class.", e);
-                    }
-                }
-
-                return desc;
-            }
-        }
-
-        OptimizedClassDescriptor desc = CLS_DESC_CACHE.get(cls);
+    static OptimizedClassDescriptor classDescriptor(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        Class cls,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper)
+        throws IOException
+    {
+        OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null) {
-            OptimizedClassDescriptor existing = CLS_DESC_CACHE.putIfAbsent(cls,
-                desc = new OptimizedClassDescriptor(cls));
+            int typeId = resolveTypeId(cls.getName(), mapper);
 
-            if (existing != null)
-                desc = existing;
+            boolean registered;
+
+            try {
+                registered = ctx.registerClass(typeId, cls);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IOException("Failed to register class: " + cls.getName(), e);
+            }
+
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper);
+
+            if (registered) {
+                OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
+
+                if (old != null)
+                    desc = old;
+            }
         }
 
         return desc;
     }
 
     /**
-     * Undeployment callback.
-     *
-     * @param ldr Undeployed class loader.
+     * @param clsName Class name.
+     * @param mapper Mapper.
+     * @return Type ID.
      */
-    public static void onUndeploy(ClassLoader ldr) {
-        CLS_BY_NAME_CACHE.remove(ldr);
+    private static int resolveTypeId(String clsName, OptimizedMarshallerIdMapper mapper) {
+        int typeId;
 
-        for (Class<?> cls : CLS_DESC_CACHE.keySet()) {
-            if (ldr.equals(cls.getClassLoader()))
-                CLS_DESC_CACHE.remove(cls);
+        if (mapper != null) {
+            typeId = mapper.typeId(clsName);
+
+            if (typeId == 0)
+                typeId = clsName.hashCode();
         }
+        else
+            typeId = clsName.hashCode();
+
+        return typeId;
     }
 
     /**
-     * Intended for test purposes only.
-     */
-    public static void clearCache() {
-        CLS_BY_NAME_CACHE.clear();
-        CLS_DESC_CACHE.clear();
-    }
-
-    /**
+     * Gets descriptor for provided ID.
      *
+     * @param clsMap Class descriptors by class map.
+     * @param id ID.
+     * @param ldr Class loader.
+     * @param ctx Context.
+     * @param mapper ID mapper.
+     * @return Descriptor.
+     * @throws IOException In case of error.
+     * @throws ClassNotFoundException If class was not found.
      */
-    public static void printMemoryStats() {
-        X.println(">>>");
-        X.println(">>> GridOptimizedMarshallerUtils memory stats:");
-        X.println(" Cache size: " + CLS_DESC_CACHE.size());
+    static OptimizedClassDescriptor classDescriptor(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        int id,
+        ClassLoader ldr,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
+        Class cls = ctx.getClass(id, ldr);
 
-        for (Map.Entry<Class<?>, OptimizedClassDescriptor> e : CLS_DESC_CACHE.entrySet())
-            X.println(" " + e.getKey() + " : " + e.getValue());
+        OptimizedClassDescriptor desc = clsMap.get(cls);
+
+        if (desc == null) {
+            OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
+                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+
+            if (old != null)
+                desc = old;
+        }
+
+        return desc;
     }
 
     /**
@@ -223,9 +271,9 @@ class OptimizedMarshallerUtils {
      * @throws IOException If failed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    static Long computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
+    static short computeSerialVersionUid(Class cls, List<Field> fields) throws IOException {
         if (Serializable.class.isAssignableFrom(cls) && !Enum.class.isAssignableFrom(cls))
-            return ObjectStreamClass.lookup(cls).getSerialVersionUID();
+            return (short)ObjectStreamClass.lookup(cls).getSerialVersionUID();
 
         MessageDigest md;
 
@@ -255,7 +303,7 @@ class OptimizedMarshallerUtils {
         for (int i = Math.min(hashBytes.length, 8) - 1; i >= 0; i--)
             hash = (hash << 8) | (hashBytes[i] & 0xFF);
 
-        return hash;
+        return (short)hash;
     }
 
     /**

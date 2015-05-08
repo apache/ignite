@@ -115,7 +115,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         commSpi.setLocalAddress("127.0.0.1");
         commSpi.setLocalPort(commLocPort);
         commSpi.setLocalPortRange(1);
-        commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -149,8 +148,8 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(0);
             Ignite g2 = startGrid(1)
         ) {
-            assertEquals(2, grid(0).nodes().size());
-            assertEquals(2, grid(1).nodes().size());
+            assertEquals(2, grid(0).cluster().nodes().size());
+            assertEquals(2, grid(1).cluster().nodes().size());
 
             Collection<Integer> t = g1.compute().broadcast(new IgniteCallable<Integer>() {
                 @Override public Integer call() throws Exception {

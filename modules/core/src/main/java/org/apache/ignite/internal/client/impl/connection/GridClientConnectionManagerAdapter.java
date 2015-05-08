@@ -40,8 +40,8 @@ import java.util.concurrent.*;
 import java.util.logging.*;
 
 import static java.util.logging.Level.*;
-import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
 
 /**
  * Cached connections manager.

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -33,7 +34,7 @@ import java.util.*;
 /**
  * Information about partitions of all nodes in topology.
  */
-public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
+public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +47,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     private byte[] partsBytes;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -60,11 +61,11 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
      * @param lastVer Last version.
      */
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, @Nullable GridCacheVersion lastVer,
-        long topVer) {
+        @NotNull AffinityTopologyVersion topVer) {
         super(id, lastVer);
 
         assert parts != null;
-        assert id == null || topVer == id.topologyVersion();
+        assert id == null || topVer.equals(id.topologyVersion());
 
         this.topVer = topVer;
     }
@@ -81,12 +82,13 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
      * @param fullMap Full partitions map.
      */
     public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
-        parts.put(cacheId, fullMap);
+        if (!parts.containsKey(cacheId))
+            parts.put(cacheId, fullMap);
     }
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (parts != null)
@@ -96,19 +98,19 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /**
      * @return Topology version.
      */
-    @Override public long topologyVersion() {
+    @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
     /**
      * @param topVer Topology version.
      */
-    public void topologyVersion(long topVer) {
+    public void topologyVersion(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null)
@@ -122,11 +124,11 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -137,7 +139,7 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -148,28 +150,31 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 5:
                 partsBytes = reader.readByteArray("partsBytes");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -179,6 +184,11 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 46;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
     }
 
     /** {@inheritDoc} */

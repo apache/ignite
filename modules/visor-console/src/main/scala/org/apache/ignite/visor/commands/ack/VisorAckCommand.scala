@@ -22,9 +22,9 @@ import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import java.util.{HashSet => JavaHashSet}
 
-import org.apache.ignite.visor.{VisorTag, visor}
 import org.apache.ignite.visor.commands.VisorConsoleCommand
-import visor._
+import org.apache.ignite.visor.visor._
+import org.apache.ignite.visor.{VisorTag, visor}
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -105,9 +105,9 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try {
-                val nodeIds = ignite.nodes().map(_.id())
+                val nodeIds = ignite.cluster().nodes().map(_.id())
 
-                ignite.compute(ignite.forNodeIds(nodeIds))
+                ignite.compute(ignite.cluster().forNodeIds(nodeIds))
                     .withName("visor-ack")
                     .withNoFailover()
                     .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))
@@ -157,5 +157,5 @@ object VisorAckCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromAck2Visor(vs: VisorTag) = cmd
+    implicit def fromAck2Visor(vs: VisorTag): VisorAckCommand = cmd
 }

@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Force keys response. Contains absent keys.
  */
-public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> implements GridCacheDeployable {
+public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,22 +42,15 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** Mini-future ID. */
     private IgniteUuid miniId;
 
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> missedKeyBytes;
-
     /** Missed (not found) keys. */
     @GridToStringInclude
-    @GridDirectTransient
-    private Collection<K> missedKeys;
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
-    @GridDirectTransient
-    private List<GridCacheEntryInfo<K, V>> infos;
-
-    /** */
-    private byte[] infosBytes;
+    @GridDirectCollection(GridCacheEntryInfo.class)
+    private List<GridCacheEntryInfo> infos;
 
     /**
      * Required by {@link Externalizable}.
@@ -88,15 +81,15 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @return Keys.
      */
-    public Collection<K> missedKeys() {
-        return missedKeys == null ? Collections.<K>emptyList() : missedKeys;
+    public Collection<KeyCacheObject> missedKeys() {
+        return missedKeys == null ? Collections.<KeyCacheObject>emptyList() : missedKeys;
     }
 
     /**
      * @return Forced entries.
      */
-    public Collection<GridCacheEntryInfo<K, V>> forcedInfos() {
-        return infos == null ? Collections.<GridCacheEntryInfo<K,V>>emptyList() : infos;
+    public Collection<GridCacheEntryInfo> forcedInfos() {
+        return infos == null ? Collections.<GridCacheEntryInfo>emptyList() : infos;
     }
 
     /**
@@ -116,7 +109,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @param key Key.
      */
-    public void addMissed(K key) {
+    public void addMissed(KeyCacheObject key) {
         if (missedKeys == null)
             missedKeys = new ArrayList<>();
 
@@ -126,7 +119,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /**
      * @param info Entry info to add.
      */
-    public void addInfo(GridCacheEntryInfo<K, V> info) {
+    public void addInfo(GridCacheEntryInfo info) {
         assert info != null;
 
         if (infos == null)
@@ -137,30 +130,32 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (missedKeys != null && missedKeyBytes == null)
-            missedKeyBytes = marshalCollection(missedKeys, ctx);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        if (missedKeys != null)
+            prepareMarshalCacheObjects(missedKeys, cctx);
 
         if (infos != null) {
-            marshalInfos(infos, ctx);
-
-            infosBytes = ctx.marshaller().marshal(infos);
+            for (GridCacheEntryInfo info : infos)
+                info.marshal(cctx);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (missedKeys == null && missedKeyBytes != null)
-            missedKeys = unmarshalCollection(missedKeyBytes, ctx, ldr);
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (infosBytes != null) {
-            infos = ctx.marshaller().unmarshal(infosBytes, ldr);
+        if (missedKeys != null)
+            finishUnmarshalCacheObjects(missedKeys, cctx, ldr);
 
-            unmarshalInfos(infos, ctx.cacheContext(cacheId()), ldr);
+        if (infos != null) {
+            for (GridCacheEntryInfo info : infos)
+                info.unmarshal(cctx, ldr);
         }
     }
 
@@ -171,11 +166,11 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (!writer.isTypeWritten()) {
-            if (!writer.writeByte(null, directType()))
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
                 return false;
 
-            writer.onTypeWritten();
+            writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
@@ -186,7 +181,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeByteArray("infosBytes", infosBytes))
+                if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -198,7 +193,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, Type.BYTE_ARR))
+                if (!writer.writeCollection("missedKeys", missedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -209,28 +204,31 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf) {
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!super.readFrom(buf))
+        if (!reader.beforeMessageRead())
             return false;
 
-        switch (readState) {
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 4:
-                infosBytes = reader.readByteArray("infosBytes");
+                infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 5:
                 miniId = reader.readIgniteUuid("miniId");
@@ -238,15 +236,15 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
             case 6:
-                missedKeyBytes = reader.readCollection("missedKeyBytes", Type.BYTE_ARR);
+                missedKeys = reader.readCollection("missedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
 
-                readState++;
+                reader.incrementState();
 
         }
 
@@ -256,6 +254,11 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 43;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 7;
     }
 
     /** {@inheritDoc} */

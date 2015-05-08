@@ -18,16 +18,16 @@
 package org.apache.ignite.internal.processors.cache.query.jdbc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -44,13 +44,21 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     /** Marshaller. */
     private static final Marshaller MARSHALLER = new JdkMarshaller();
 
+    /** */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable String cacheName) {
         Map<JdbcDriverMetadataJob, ClusterNode> map = new HashMap<>();
 
+        IgniteKernal kernal = (IgniteKernal)ignite;
+
+        GridDiscoveryManager discoMgr = kernal.context().discovery();
+
         for (ClusterNode n : subgrid)
-            if (U.hasCache(n, cacheName)) {
+            if (discoMgr.cacheAffinityNode(n, cacheName)) {
                 map.put(new JdbcDriverMetadataJob(cacheName), n);
 
                 break;
@@ -67,13 +75,9 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements OptimizedMarshallable {
+    private static class JdbcDriverMetadataJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** */
-        @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
-        private static Object GG_CLASS_ID;
 
         /** Cache name. */
         private final String cacheName;
@@ -91,11 +95,6 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
          */
         private JdbcDriverMetadataJob(@Nullable String cacheName) {
             this.cacheName = cacheName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object ggClassId() {
-            return GG_CLASS_ID;
         }
 
         /** {@inheritDoc} */

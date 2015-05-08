@@ -17,29 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable {
+public class GridCacheReturn implements Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "JavaAbbreviationUsage", "UnusedDeclaration"})
-    private static Object GG_CLASS_ID;
-
     /** Value. */
     @GridToStringInclude
-    private volatile V v;
+    @GridDirectTransient
+    private volatile Object v;
+
+    /** */
+    private CacheObject cacheObj;
+
+    /** */
+    @GridDirectCollection(CacheInvokeDirectResult.class)
+    private Collection<CacheInvokeDirectResult> invokeResCol;
 
     /** Success flag. */
     private volatile boolean success;
@@ -47,49 +54,63 @@ public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable
     /** */
     private volatile boolean invokeRes;
 
+    /** Local result flag, if non local then do not need unwrap cache objects. */
+    @GridDirectTransient
+    private transient boolean loc;
+
+    /** */
+    private int cacheId;
+
     /**
      * Empty constructor.
      */
     public GridCacheReturn() {
-        // No-op.
+        loc = true;
     }
 
     /**
-     *
+     * @param loc {@code True} if created on the node initiated cache operation.
+     */
+    public GridCacheReturn(boolean loc) {
+        this.loc = loc;
+    }
+
+    /**
+     * @param loc {@code True} if created on the node initiated cache operation.
      * @param success Success flag.
      */
-    public GridCacheReturn(boolean success) {
+    public GridCacheReturn(boolean loc, boolean success) {
+        this.loc = loc;
         this.success = success;
     }
 
     /**
-     *
+     * @param cctx Cache context.
+     * @param loc {@code True} if created on the node initiated cache operation.
      * @param v Value.
      * @param success Success flag.
      */
-    public GridCacheReturn(V v, boolean success) {
-        this.v = v;
+    public GridCacheReturn(GridCacheContext cctx, boolean loc, Object v, boolean success) {
+        this.loc = loc;
         this.success = success;
-    }
 
-    /**
-     *
-     * @param v Value.
-     * @param success Success flag.
-     */
-    public GridCacheReturn(V v, boolean success, boolean invokeRes) {
-        assert !invokeRes || v instanceof Map;
+        if (v != null) {
+            if (v instanceof CacheObject)
+                initValue(cctx, (CacheObject)v);
+            else {
+                assert loc;
 
-        this.v = v;
-        this.success = success;
-        this.invokeRes = invokeRes;
+                this.v = v;
+            }
+        }
     }
 
     /**
      * @return Value.
      */
-    @Nullable public V value() {
-        return v;
+    @SuppressWarnings("unchecked")
+    @Nullable public <V> V value() {
+        return (V)v;
     }
 
     /**
@@ -116,11 +137,12 @@ public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable
     }
 
     /**
+     * @param cctx Cache context.
      * @param v Value.
      * @return This instance for chaining.
      */
-    public GridCacheReturn<V> value(V v) {
-        this.v = v;
+    public GridCacheReturn value(GridCacheContext cctx, CacheObject v) {
+        initValue(cctx, v);
 
         return this;
     }
@@ -133,56 +155,109 @@ public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable
     }
 
     /**
-     * @param v Value to set.
+     * @param cctx Cache context.
+     * @param cacheObj Value to set.
      * @param success Success flag to set.
      * @return This instance for chaining.
      */
-    public GridCacheReturn<V> set(@Nullable V v, boolean success) {
-        this.v = v;
+    public GridCacheReturn set(GridCacheContext cctx, @Nullable CacheObject cacheObj, boolean success) {
         this.success = success;
 
+        initValue(cctx, cacheObj);
+
         return this;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param cacheObj Cache object.
+     */
+    private void initValue(GridCacheContext cctx, @Nullable CacheObject cacheObj) {
+        if (loc)
+            v = CU.value(cacheObj, cctx, true);
+        else {
+            assert cacheId == 0 || cacheId == cctx.cacheId();
+
+            cacheId = cctx.cacheId();
+
+            this.cacheObj = cacheObj;
+        }
     }
 
     /**
      * @param success Success flag.
      * @return This instance for chaining.
      */
-    public GridCacheReturn<V> success(boolean success) {
+    public GridCacheReturn success(boolean success) {
         this.success = success;
 
         return this;
     }
 
     /**
+     * @param cctx Context.
      * @param key Key.
+     * @param key0 Key value.
      * @param res Result.
+     * @param err Error.
      */
     @SuppressWarnings("unchecked")
-    public synchronized void addEntryProcessResult(Object key, EntryProcessorResult<?> res) {
+    public synchronized void addEntryProcessResult(
+        GridCacheContext cctx,
+        KeyCacheObject key,
+        @Nullable Object key0,
+        @Nullable Object res,
+        @Nullable Exception err) {
         assert v == null || v instanceof Map : v;
         assert key != null;
-        assert res != null;
+        assert res != null || err != null;
 
         invokeRes = true;
 
-        HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
+        if (loc) {
+            HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
 
-        if (resMap == null) {
-            resMap = new HashMap<>();
+            if (resMap == null) {
+                resMap = new HashMap<>();
 
-            v = (V)resMap;
+                v = resMap;
+            }
+
+            CacheInvokeResult res0 = err == null ? new CacheInvokeResult(res) : new CacheInvokeResult(err);
+
+            resMap.put(key0 != null ? key0 : CU.value(key, cctx, true), res0);
         }
+        else {
+            assert v == null;
+            assert cacheId == 0 || cacheId == cctx.cacheId();
 
-        resMap.put(key, res);
+            cacheId = cctx.cacheId();
+
+            if (invokeResCol == null)
+                invokeResCol = new ArrayList<>();
+
+            CacheInvokeDirectResult res0 = err == null ?
+                new CacheInvokeDirectResult(key, cctx.toCacheObject(res)) : new CacheInvokeDirectResult(key, err);
+
+            invokeResCol.add(res0);
+        }
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
     }
 
     /**
      * @param other Other result to merge with.
      */
-    public synchronized void mergeEntryProcessResults(GridCacheReturn<V> other) {
+    @SuppressWarnings("unchecked")
+    public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
         assert invokeRes || v == null : "Invalid state to merge: " + this;
         assert other.invokeRes;
+        assert loc == other.loc : loc;
 
         if (other.v == null)
             return;
@@ -194,30 +269,178 @@ public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable
         if (resMap == null) {
             resMap = new HashMap<>();
 
-            v = (V)resMap;
+            v = resMap;
         }
 
         resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
     }
 
+    /**
+     * @param ctx Cache context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+        assert !loc;
+
+        if (cacheObj != null)
+            cacheObj.prepareMarshal(ctx.cacheObjectContext());
+
+        if (invokeRes && invokeResCol != null) {
+            for (CacheInvokeDirectResult res : invokeResCol)
+                res.prepareMarshal(ctx);
+        }
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        loc = true;
+
+        if (cacheObj != null) {
+            cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+
+            v = cacheObj.value(ctx.cacheObjectContext(), false);
+        }
+
+        if (invokeRes && invokeResCol != null) {
+            for (CacheInvokeDirectResult res : invokeResCol)
+                res.finishUnmarshal(ctx, ldr);
+
+            Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
+
+            for (CacheInvokeDirectResult res : invokeResCol) {
+                CacheInvokeResult<?> res0 = res.error() == null ?
+                    new CacheInvokeResult<>(CU.value(res.result(), ctx, false)) : new CacheInvokeResult<>(res.error());
+
+                map0.put(res.key().value(ctx.cacheObjectContext(), false), res0);
+            }
+
+            v = map0;
+        }
+    }
+
     /** {@inheritDoc} */
-    @Override public Object ggClassId() {
-        return GG_CLASS_ID;
+    @Override public byte directType() {
+        return 88;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeInt("cacheId", cacheId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeMessage("cacheObj", cacheObj))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeBoolean("invokeRes", invokeRes))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeCollection("invokeResCol", invokeResCol, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeBoolean("success", success))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                cacheObj = reader.readMessage("cacheObj");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                invokeRes = reader.readBoolean("invokeRes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                invokeResCol = reader.readCollection("invokeResCol", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                success = reader.readBoolean("success");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 5;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(success);
-        out.writeObject(v);
-        out.writeBoolean(invokeRes);
+        assert false;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        success = in.readBoolean();
-        v = (V)in.readObject();
-        invokeRes = in.readBoolean();
+        assert false;
     }
 
     /** {@inheritDoc} */

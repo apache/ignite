@@ -37,12 +37,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>javax.cache</groupId>
-            <artifactId>cache-api</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
@@ -52,6 +46,14 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>2.11.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -164,6 +166,12 @@
                                     <replacetoken>location.replace("package.html")</replacetoken>
                                     <replacevalue>location.replace("org/apache/ignite/scalar/scalar$.html")</replacevalue>
                                     <include name="**/index.js"/>
+                                </replace>
+
+                                <replace dir="target/site/scaladocs">
+                                    <replacetoken>docs.scala-lang.org/overviews/scaladoc/usage.html#members</replacetoken>
+                                    <replacevalue>docs.scala-lang.org/overviews/scaladoc/interface.html</replacevalue>
+                                    <fileset dir="target/site/scaladocs"/>
                                 </replace>
 
                                 <replaceregexp byline="true" flags="im" encoding="UTF-8">
