@@ -60,15 +60,15 @@ public class IgniteScheduler implements Scheduler {
     @Override public void resourceOffers(SchedulerDriver schedulerDriver, List<Protos.Offer> offers) {
         log.info("resourceOffers() with {} offers", offers.size());
 
-        List<Protos.OfferID> offerIDs = new ArrayList<>(offers.size());
-        List<Protos.TaskInfo> tasks = new ArrayList<>(offers.size());
-
         for (Protos.Offer offer : offers) {
             Pair<Double, Double> cpuMem = checkOffer(offer);
 
-            //
-            if (cpuMem == null)
+            // Decline offer which doesn't match by mem or cpu.
+            if (cpuMem == null) {
+                schedulerDriver.declineOffer(offer.getId());
+
                 continue;
+            }
 
             // Generate a unique task ID.
             Protos.TaskID taskId = Protos.TaskID.newBuilder()
@@ -103,11 +103,10 @@ public class IgniteScheduler implements Scheduler {
                 .setCommand(Protos.CommandInfo.newBuilder().setShell(false))
                 .build();
 
-            offerIDs.add(offer.getId());
-            tasks.add(task);
+            schedulerDriver.launchTasks(Collections.singletonList(offer.getId()),
+                Collections.singletonList(task),
+                Protos.Filters.newBuilder().setRefuseSeconds(1).build());
         }
-
-        schedulerDriver.launchTasks(offerIDs, tasks, Protos.Filters.newBuilder().setRefuseSeconds(1).build());
     }
 
     /**
