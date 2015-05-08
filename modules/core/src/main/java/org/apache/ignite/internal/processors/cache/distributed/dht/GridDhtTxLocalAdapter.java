@@ -887,7 +887,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     protected abstract void clearPrepareFuture(GridDhtTxPrepareFuture fut);
 
     /**
-     * @return {@code True} if transaction if finished on prepare step.
+     * @return {@code True} if transaction is finished on prepare step.
      */
     protected final boolean commitOnPrepare() {
         return onePhaseCommit() && !near();
