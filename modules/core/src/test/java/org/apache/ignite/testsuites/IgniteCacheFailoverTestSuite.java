@@ -61,9 +61,10 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
         suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
-        suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
+        // TODO IGNITE-882.
+        //suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
+        //suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
+        //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
 
         return suite;
     }
