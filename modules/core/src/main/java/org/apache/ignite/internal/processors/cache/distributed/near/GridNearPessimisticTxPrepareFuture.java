@@ -41,7 +41,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  *
  */
-public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepareFuture {
+public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter {
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -72,7 +72,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepar
             MiniFuture f = (MiniFuture)fut;
 
             if (f.node().id().equals(nodeId)) {
-                f.onError(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
+                f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
 
                 found = true;
             }
@@ -222,8 +222,10 @@ public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepar
                 try {
                     cctx.io().send(node, req, tx.ioPolicy());
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    fut.onNodeLeft(e);
+                }
                 catch (IgniteCheckedException e) {
-                    // Fail the whole thing.
                     fut.onError(e);
                 }
             }
@@ -242,7 +244,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepar
         if (err == null)
             tx.state(PREPARED);
 
-        if (super.onDone(res, err)) {
+        if (super.onDone(tx, err)) {
             cctx.mvcc().removeFuture(this);
 
             return true;
@@ -253,7 +255,15 @@ public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepar
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearPessimisticTxPrepareFuture.class, this, super.toString());
+        Collection<String> pendingFuts = F.viewReadOnly(pending(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                return "[node=" + ((MiniFuture)f).node().id() + ", loc=" + ((MiniFuture)f).node().isLocal() + "]";
+            }
+        });
+
+        return S.toString(GridNearPessimisticTxPrepareFuture.class, this,
+            "pendingFuts", pendingFuts,
+            "super", super.toString());
     }
 
     /**
@@ -306,8 +316,25 @@ public class GridNearPessimisticTxPrepareFuture extends GridAbstractNearTxPrepar
         /**
          * @param e Error.
          */
+        void onNodeLeft(ClusterTopologyCheckedException e) {
+            onError(e);
+        }
+
+        /**
+         * @param e Error.
+         */
         void onError(Throwable e) {
-            err.compareAndSet(null, e);
+            if (isDone()) {
+                U.warn(log, "Received error when future is done [fut=" + this + ", err=" + e + ", tx=" + tx + ']');
+
+                return;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Error on tx prepare [fut=" + this + ", err=" + e + ", tx=" + tx +  ']');
+
+            if (err.compareAndSet(null, e))
+                tx.setRollbackOnly();
 
             onDone(e);
         }

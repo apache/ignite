@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -350,7 +349,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
-        GridAbstractNearTxPrepareFuture fut = (GridAbstractNearTxPrepareFuture)ctx.mvcc()
+        GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
             .<IgniteInternalTx>future(res.version(), res.futureId());
 
         if (fut == null) {

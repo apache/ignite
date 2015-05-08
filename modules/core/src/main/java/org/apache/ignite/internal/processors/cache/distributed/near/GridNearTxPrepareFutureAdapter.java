@@ -39,10 +39,23 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  * Common code for tx prepare in optimistic and pessimistic modes.
  */
-public abstract class GridAbstractNearTxPrepareFuture extends GridCompoundIdentityFuture<IgniteInternalTx>
+public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundIdentityFuture<IgniteInternalTx>
     implements GridCacheFuture<IgniteInternalTx> {
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** */
+    private static final IgniteReducer<IgniteInternalTx, IgniteInternalTx> REDUCER =
+        new IgniteReducer<IgniteInternalTx, IgniteInternalTx>() {
+            @Override public boolean collect(IgniteInternalTx e) {
+                return true;
+            }
+
+            @Override public IgniteInternalTx reduce() {
+                // Nothing to aggregate.
+                return null;
+            }
+        };
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -71,17 +84,8 @@ public abstract class GridAbstractNearTxPrepareFuture extends GridCompoundIdenti
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridAbstractNearTxPrepareFuture(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
-        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx, IgniteInternalTx>() {
-            @Override public boolean collect(IgniteInternalTx e) {
-                return true;
-            }
-
-            @Override public IgniteInternalTx reduce() {
-                // Nothing to aggregate.
-                return tx;
-            }
-        });
+    public GridNearTxPrepareFutureAdapter(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
+        super(cctx.kernalContext(), REDUCER);
 
         assert cctx != null;
         assert tx != null;
@@ -92,7 +96,7 @@ public abstract class GridAbstractNearTxPrepareFuture extends GridCompoundIdenti
         futId = IgniteUuid.randomUuid();
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridAbstractNearTxPrepareFuture.class);
+            log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
     }
 
     /** {@inheritDoc} */

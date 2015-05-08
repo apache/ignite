@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  *
  */
-public class GridNearOptimisticTxPrepareFuture extends GridAbstractNearTxPrepareFuture
+public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter
     implements GridCacheMvccFuture<IgniteInternalTx> {
     /** */
     private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
@@ -397,8 +397,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridAbstractNearTxPrepare
 
         txMapping = new GridDhtTxMapping();
 
-        ConcurrentLinkedDeque8<GridDistributedTxMapping> mappings =
-            new ConcurrentLinkedDeque8<>();
+        ConcurrentLinkedDeque8<GridDistributedTxMapping> mappings = new ConcurrentLinkedDeque8<>();
 
         if (!F.isEmpty(reads) || !F.isEmpty(writes)) {
             for (int cacheId : tx.activeCacheIds()) {
@@ -647,7 +646,15 @@ public class GridNearOptimisticTxPrepareFuture extends GridAbstractNearTxPrepare
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearOptimisticTxPrepareFuture.class, this, super.toString());
+        Collection<String> pendingFuts = F.viewReadOnly(pending(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                return "[node=" + ((MiniFuture)f).node().id() + ", loc=" + ((MiniFuture)f).node().isLocal() + "]";
+            }
+        });
+
+        return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
+            "pendingFuts", pendingFuts,
+            "super", super.toString());
     }
 
     /**
