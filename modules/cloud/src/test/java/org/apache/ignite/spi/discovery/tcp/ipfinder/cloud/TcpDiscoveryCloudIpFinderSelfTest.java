@@ -107,8 +107,6 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
 
         Collection<InetSocketAddress> addresses = ipFinder.getRegisteredAddresses();
 
-        assert addresses.size() > 0;
-
         for (InetSocketAddress addr : addresses)
             info("Registered instance: " + addr.getAddress().getHostAddress() + ":" + addr.getPort());
 
