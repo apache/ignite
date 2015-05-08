@@ -646,14 +646,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        Collection<String> pendingFuts = F.viewReadOnly(pending(), new C1<IgniteInternalFuture<?>, String>() {
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() + ", loc=" + ((MiniFuture)f).node().isLocal() + "]";
+                return "[node=" + ((MiniFuture)f).node().id() +
+                    ", loc=" + ((MiniFuture)f).node().isLocal() +
+                    ", done=" + f.isDone() + "]";
             }
         });
 
         return S.toString(GridNearOptimisticTxPrepareFuture.class, this,
-            "pendingFuts", pendingFuts,
+            "futs", futs,
             "super", super.toString());
     }
 
