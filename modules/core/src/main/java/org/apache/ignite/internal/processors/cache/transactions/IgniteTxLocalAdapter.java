@@ -330,7 +330,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable @Override public <K, V> GridTuple<CacheObject> peek(
+    @Nullable @Override public GridTuple<CacheObject> peek(
         GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key,
@@ -2040,7 +2040,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             for (Object key : keys) {
                 if (key == null) {
-                    setRollbackOnly();
+                    rollback();
 
                     throw new NullPointerException("Null key.");
                 }
@@ -2191,7 +2191,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 drVer,
                                 skipStore);
 
-                            if (!implicit() && readCommitted())
+                            if (!implicit() && readCommitted() && !cacheCtx.offheapTiered())
                                 cacheCtx.evicts().touch(entry, topologyVersion());
 
                             if (groupLock() && !lockOnly)
@@ -2934,19 +2934,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     assert loadFut.isDone();
 
                     return nonInterruptable(commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
-                        @Override
-                        public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
                             throws IgniteCheckedException {
                             txFut.get();
 
-                            return (GridCacheReturn)implicitRes;
+                            return implicitRes;
                         }
                     }));
                 }
                 else
                     return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Set<KeyCacheObject>>, GridCacheReturn>() {
-                        @Override
-                        public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f)
+                        @Override public GridCacheReturn applyx(IgniteInternalFuture<Set<KeyCacheObject>> f)
                             throws IgniteCheckedException {
                             f.get();
 

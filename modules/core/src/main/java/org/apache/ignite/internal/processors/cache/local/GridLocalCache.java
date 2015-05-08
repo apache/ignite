@@ -146,6 +146,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                     try {
                         entry = entryExx(key);
 
+                        entry.unswap(false);
+
                         if (!ctx.isAll(entry, filter)) {
                             fut.onFailed();
 
@@ -197,12 +199,6 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
                 ctx.evicts().touch(entry, topVer);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void removeAll() throws IgniteCheckedException {
-        removeAll(keySet());
     }
 
     /** {@inheritDoc} */

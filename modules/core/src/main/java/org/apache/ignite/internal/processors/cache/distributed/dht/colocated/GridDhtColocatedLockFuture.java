@@ -786,6 +786,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                         catch (GridCacheEntryRemovedException ignored) {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
+
+                            entry = null;
                         }
                     }
 
