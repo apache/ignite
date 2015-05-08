@@ -15,18 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * Tests replicated cache with values being stored off-heap.
+ * Tests colocated cache with off-heap tiered mode.
  */
-public class GridCacheReplicatedOffHeapFullApiSelfTest extends GridCacheReplicatedFullApiSelfTest {
+public class GridCachePartitionedNearDisabledOffHeapTieredAtomicFullApiSelfTest extends
+    GridCachePartitionedFullApiSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean txEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean lockingEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode memoryMode() {
-        return OFFHEAP_VALUES;
+        return OFFHEAP_TIERED;
     }
 }

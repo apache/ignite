@@ -22,11 +22,12 @@ import org.apache.ignite.cache.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * Tests replicated cache with values being stored off-heap.
+ * Tests replicated cache with off-heap tiered mode.
  */
-public class GridCacheReplicatedOffHeapFullApiSelfTest extends GridCacheReplicatedFullApiSelfTest {
+public class GridCacheReplicatedOffHeapTieredFullApiSelfTest extends
+    GridCacheReplicatedOffHeapFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode memoryMode() {
-        return OFFHEAP_VALUES;
+        return OFFHEAP_TIERED;
     }
 }
