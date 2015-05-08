@@ -2705,7 +2705,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         clientMsgWorker.addMessage(msgClone);
                     }
                     catch (IgniteCheckedException e) {
-                        log.error("Failed to marshal message: " + msg, e);
+                        U.error(log, "Failed to marshal message: " + msg, e);
 
                         msgClone = msg;
                     }
