@@ -48,6 +48,13 @@ public class GridQueryRequest implements Message {
     @GridDirectCollection(GridCacheSqlQuery.class)
     private Collection<GridCacheSqlQuery> qrys;
 
+    /** Topology version. */
+    private long topVer;
+
+    /** */
+    @GridDirectCollection(String.class)
+    private Collection<String> extraSpaces;
+
     /**
      * Default constructor.
      */
@@ -60,13 +67,32 @@ public class GridQueryRequest implements Message {
      * @param pageSize Page size.
      * @param space Space.
      * @param qrys Queries.
+     * @param topVer Topology version.
+     * @param extraSpaces All space names participating in query other than {@code space}.
      */
-    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys) {
+    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys, long topVer,
+        List<String> extraSpaces) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
 
         this.qrys = qrys;
+        this.topVer = topVer;
+        this.extraSpaces = extraSpaces;
+    }
+
+    /**
+     * @return All extra space names participating in query other than {@link #space()}.
+     */
+    public Collection<String> extraSpaces() {
+        return extraSpaces;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -138,6 +164,17 @@ public class GridQueryRequest implements Message {
 
                 writer.incrementState();
 
+            case 4:
+                if (!writer.writeLong("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeCollection("extraSpaces", extraSpaces, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -183,6 +220,21 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                extraSpaces = reader.readCollection("extraSpaces", MessageCollectionItemType.STRING);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
@@ -195,6 +247,6 @@ public class GridQueryRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 6;
     }
 }

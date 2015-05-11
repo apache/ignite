@@ -1120,11 +1120,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space name.
      * @return Schema name.
      */
-    private static String schema(@Nullable String space) {
+    public static String schema(@Nullable String space) {
         if (space == null)
             return "";
 
         return space;
+    }
+
+    /**
+     * @param schema Schema.
+     * @return Space name.
+     */
+    public static String space(String schema) {
+        assert schema != null;
+
+        return "".equals(schema) ? null : schema;
     }
 
     /** {@inheritDoc} */

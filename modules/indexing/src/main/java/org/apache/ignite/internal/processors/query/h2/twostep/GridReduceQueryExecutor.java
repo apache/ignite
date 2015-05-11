@@ -335,7 +335,9 @@ public class GridReduceQueryExecutor {
                     mapQry.marshallParams(m);
             }
 
-            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys));
+            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys,
+                ctx.cluster().get().topologyVersion(),
+                extraSpaces(space, qry.spaces())));
 
             r.latch.await();
 
@@ -372,6 +374,25 @@ public class GridReduceQueryExecutor {
 
             curFunTbl.remove();
         }
+    }
+
+    /**
+     * @param mainSpace Main space.
+     * @param allSpaces All spaces.
+     * @return List of all extra spaces or {@code null} if none.
+     */
+    private List<String> extraSpaces(String mainSpace, Set<String> allSpaces) {
+        if (F.isEmpty(allSpaces) || (allSpaces.size() == 1 && allSpaces.contains(mainSpace)))
+            return null;
+
+        ArrayList<String> res = new ArrayList<>(allSpaces.size());
+
+        for (String space : allSpaces) {
+            if (!F.eq(space, mainSpace))
+                res.add(space);
+        }
+
+        return res;
     }
 
     /**
