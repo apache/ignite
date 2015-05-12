@@ -36,8 +36,6 @@
     <packaging>pom</packaging>
 
     <properties>
-        <ignite.site>scp://localhost:/home</ignite.site>
-        <ignite.site.folder>${project.artifactId}-${project.version}</ignite.site.folder>
         <!--fix <attachartifact>...< /> at apache-release profile if changed-->
         <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}</ignite.zip.pattern>
     </properties>
@@ -48,13 +46,6 @@
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
-
-    <distributionManagement>
-        <site>
-            <id>ignite-site</id>
-            <url>${ignite.site}/${ignite.site.folder}</url>
-        </site>
-    </distributionManagement>
 
     <modules>
         <module>modules/tools</module>
@@ -595,30 +586,6 @@
                                         </copy>
                                         <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
                                     </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-site-plugin</artifactId>
-                        <version>3.4</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.maven.wagon</groupId>
-                                <artifactId>wagon-ssh</artifactId>
-                                <version>2.8</version>
-                            </dependency>
-                        </dependencies>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                                <phase>deploy</phase>
-                                <configuration>
-                                    <inputDirectory>${basedir}/target/site</inputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
