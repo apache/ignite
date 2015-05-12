@@ -32,17 +32,22 @@ public class VisorQueryArg implements Serializable {
     /** Query text. */
     private final String qryTxt;
 
+    /** Flag whether to execute query locally. */
+    private final boolean local;
+
     /** Result batch size. */
     private final int pageSize;
 
     /**
      * @param cacheName Cache name for query.
      * @param qryTxt Query text.
+     * @param local Flag whether to execute query locally.
      * @param pageSize Result batch size.
      */
-    public VisorQueryArg(String cacheName, String qryTxt, int pageSize) {
+    public VisorQueryArg(String cacheName, String qryTxt, boolean local, int pageSize) {
         this.cacheName = cacheName;
         this.qryTxt = qryTxt;
+        this.local = local;
         this.pageSize = pageSize;
     }
 
@@ -58,6 +63,13 @@ public class VisorQueryArg implements Serializable {
      */
     public String queryTxt() {
         return qryTxt;
+    }
+
+    /**
+     * @return {@code true} if query should be executed locally.
+     */
+    public boolean local() {
+        return local;
     }
 
     /**

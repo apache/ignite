@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> {
     /** Maximum size for delete queue. */
-    private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
+    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
 
     /** Static logger to avoid re-creation. */

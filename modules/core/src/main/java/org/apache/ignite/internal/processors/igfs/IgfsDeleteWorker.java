@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.future.*;
@@ -154,6 +155,9 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         try {
             info = meta.info(TRASH_ID);
+        }
+        catch(ClusterTopologyServerNotFoundException e) {
+            LT.warn(log, e, "Server nodes not found.");
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Cannot obtain trash directory info.", e);
