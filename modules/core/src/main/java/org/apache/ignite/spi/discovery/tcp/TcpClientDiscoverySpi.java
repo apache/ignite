@@ -1109,6 +1109,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
             else if (msg instanceof TcpDiscoveryClientPingResponse)
                 processClientPingResponse((TcpDiscoveryClientPingResponse)msg);
+            else if (msg instanceof TcpDiscoveryPingRequest)
+                processPingRequest((TcpDiscoveryPingRequest)msg);
 
             stats.onMessageProcessingFinished(msg);
         }
@@ -1413,6 +1415,15 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
             if (fut != null)
                 fut.onDone(msg.result());
+        }
+
+        /**
+         * Router want to ping this client.
+         *
+         * @param msg Message.
+         */
+        private void processPingRequest(TcpDiscoveryPingRequest msg) {
+            sockWriter.sendMessage(new TcpDiscoveryPingResponse(getLocalNodeId()));
         }
 
         /**
