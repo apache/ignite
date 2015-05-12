@@ -573,7 +573,7 @@
                                                 <include name="**/*" />
                                             </fileset>
                                         </copy>
-                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
+                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false"/>
                                     </target>
                                 </configuration>
                             </execution>
