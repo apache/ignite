@@ -562,59 +562,63 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Cursor.
      */
-    public <K,V> Iterator<Cache.Entry<K,V>> queryLocal(GridCacheContext<?,?> cctx, SqlQuery qry) {
+    public <K,V> Iterator<Cache.Entry<K,V>> queryLocal(final GridCacheContext<?,?> cctx, final SqlQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            String space = cctx.name();
-            String type = qry.getType();
-            String sqlQry = qry.getSql();
-            Object[] params = qry.getArgs();
+            return executeQuery(cctx, new IgniteOutClosureX<Iterator<Cache.Entry<K, V>>>() {
+                @Override public Iterator<Cache.Entry<K, V>> applyx() throws IgniteCheckedException {
+                    String space = cctx.name();
+                    String type = qry.getType();
+                    String sqlQry = qry.getSql();
+                    Object[] params = qry.getArgs();
 
-            TypeDescriptor typeDesc = typesByName.get(new TypeName(space, type));
+                    TypeDescriptor typeDesc = typesByName.get(new TypeName(space, type));
 
-            if (typeDesc == null || !typeDesc.registered())
-                throw new CacheException("Failed to find SQL table for type: " + type);
+                    if (typeDesc == null || !typeDesc.registered())
+                        throw new CacheException("Failed to find SQL table for type: " + type);
 
-            final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params), typeDesc,
-                idx.backupFilter());
+                    final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params),
+                        typeDesc, idx.backupFilter());
 
-            if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                ctx.event().record(new CacheQueryExecutedEvent<>(
-                    ctx.discovery().localNode(),
-                    "SQL query executed.",
-                    EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SQL.name(),
-                    null,
-                    null,
-                    sqlQry,
-                    null,
-                    null,
-                    params,
-                    null,
-                    null));
-            }
+                    if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            ctx.discovery().localNode(),
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            null,
+                            null,
+                            sqlQry,
+                            null,
+                            null,
+                            params,
+                            null,
+                            null));
+                    }
 
-            return new ClIter<Cache.Entry<K,V>>() {
-                @Override public void close() throws Exception {
-                    i.close();
+                    return new ClIter<Cache.Entry<K,V>>() {
+                        @Override public void close() throws Exception {
+                            i.close();
+                        }
+
+                        @Override public boolean hasNext() {
+                            return i.hasNext();
+                        }
+
+                        @Override public Cache.Entry<K,V> next() {
+                            IgniteBiTuple<K,V> t = i.next();
+
+                            return new CacheEntryImpl<>(t.getKey(), t.getValue());
+                        }
+
+                        @Override public void remove() {
+                            throw new UnsupportedOperationException();
+                        }
+                    };
                 }
-
-                @Override public boolean hasNext() {
-                    return i.hasNext();
-                }
-
-                @Override public Cache.Entry<K,V> next() {
-                    IgniteBiTuple<K,V> t = i.next();
-
-                    return new CacheEntryImpl<>(t.getKey(), t.getValue());
-                }
-
-                @Override public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            };
+            });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -636,39 +640,43 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Iterator.
      */
-    public QueryCursor<List<?>> queryLocalFields(GridCacheContext<?,?> cctx, SqlFieldsQuery qry) {
+    public QueryCursor<List<?>> queryLocalFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            String space = cctx.name();
-            String sql = qry.getSql();
-            Object[] args = qry.getArgs();
+            return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
+                @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                    String space = cctx.name();
+                    String sql = qry.getSql();
+                    Object[] args = qry.getArgs();
 
-            GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
+                    GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
 
-            if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                ctx.event().record(new CacheQueryExecutedEvent<>(
-                        ctx.discovery().localNode(),
-                        "SQL query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL.name(),
-                        null,
-                        null,
-                        sql,
-                        null,
-                        null,
-                        args,
-                        null,
-                        null));
-            }
+                    if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                        ctx.event().record(new CacheQueryExecutedEvent<>(
+                            ctx.discovery().localNode(),
+                            "SQL query executed.",
+                            EVT_CACHE_QUERY_EXECUTED,
+                            CacheQueryType.SQL.name(),
+                            null,
+                            null,
+                            sql,
+                            null,
+                            null,
+                            args,
+                            null,
+                            null));
+                    }
 
-            QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
-                new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepPortable()));
+                    QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
+                        new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepPortable()));
 
-            cursor.fieldsMeta(res.metaData());
+                    cursor.fieldsMeta(res.metaData());
 
-            return cursor;
+                    return cursor;
+                }
+            });
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -770,7 +778,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Field rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridQueryFieldsResult queryFields(@Nullable String space, String clause, Collection<Object> params,
+    public GridQueryFieldsResult queryFields(@Nullable String space, String clause, Collection<Object> params,
         IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
@@ -1291,13 +1299,67 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            Method method = dataTypeCls.getMethod("isGeometryClass", Class.class);
+            Method mtd = dataTypeCls.getMethod("isGeometryClass", Class.class);
 
-            return (Boolean)method.invoke(null, cls);
+            return (Boolean)mtd.invoke(null, cls);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
         }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param clo Closure.
+     */
+    private <R> R executeQuery(GridCacheContext<?,?> cctx, IgniteOutClosureX<R> clo)
+        throws IgniteCheckedException {
+        final long start = U.currentTimeMillis();
+
+        Throwable err = null;
+        
+        R res = null;
+
+        try {
+            res = clo.apply();
+            
+            return res;
+        }
+        catch (GridClosureException e) {
+            err = e.unwrap();
+
+            throw (IgniteCheckedException)err;
+        }
+        finally {
+            GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.cache().queries().metrics();
+
+            onExecuted(cctx, metrics, res, err, start, U.currentTimeMillis() - start, log);
+        }
+    }
+
+    /**
+     * @param cctx Cctx.
+     * @param metrics Metrics.
+     * @param res Result.
+     * @param err Err.
+     * @param startTime Start time.
+     * @param duration Duration.
+     * @param log Logger.
+     */
+    public static void onExecuted(GridCacheContext<?, ?> cctx, GridCacheQueryMetricsAdapter metrics,
+        Object res, Throwable err, long startTime, long duration, IgniteLogger log) {
+        boolean fail = err != null;
+
+        // Update own metrics.
+        metrics.onQueryExecute(duration, fail);
+
+        // Update metrics in query manager.
+        cctx.queries().onMetricsUpdate(duration, fail);
+
+        if (log.isTraceEnabled())
+            log.trace("Query execution finished [startTime=" + startTime +
+                ", duration=" + duration + ", fail=" + (err != null) + ", res=" + res + ']');
+
     }
 
     /**

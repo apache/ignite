@@ -348,17 +348,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param duration Duration.
      */
     public void onExecuted(Object res, Throwable err, long startTime, long duration) {
-        boolean fail = err != null;
-
-        // Update own metrics.
-        metrics.onQueryExecute(duration, fail);
-
-        // Update metrics in query manager.
-        cctx.queries().onMetricsUpdate(duration, fail);
-
-        if (log.isDebugEnabled())
-            log.debug("Query execution finished [qry=" + this + ", startTime=" + startTime +
-                ", duration=" + duration + ", fail=" + fail + ", res=" + res + ']');
+        GridQueryProcessor.onExecuted(cctx, metrics, res, err, startTime, duration, log);
     }
 
     /** {@inheritDoc} */
@@ -376,10 +366,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return execute(null, rmtTransform, args);
     }
 
+    /** {@inheritDoc} */
     @Override public QueryMetrics metrics() {
         return metrics.copy();
     }
 
+    /** {@inheritDoc} */
     @Override public void resetMetrics() {
         metrics = new GridCacheQueryMetricsAdapter();
     }
