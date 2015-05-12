@@ -275,7 +275,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/target-classpath.sh(\s*#.*)?" />
+                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/build-classpath.sh(\s*#.*)?" />
                                             <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh" />
@@ -283,7 +283,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\target-classpath.bat&quot;(\s*&amp;::.*)?" />
+                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?" />
                                             <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat" />
