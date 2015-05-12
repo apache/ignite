@@ -8807,6 +8807,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
      * Returns comparator that sorts remote node addresses. If remote node resides on the same host, then put
      * loopback addresses first, last otherwise.
      *
