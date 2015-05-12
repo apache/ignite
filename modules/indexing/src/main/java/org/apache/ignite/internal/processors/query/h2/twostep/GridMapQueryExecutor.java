@@ -23,7 +23,9 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
@@ -36,6 +38,7 @@ import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.store.*;
 import org.h2.value.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
@@ -198,6 +201,16 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return Cache context or {@code null} if none.
+     */
+    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName) {
+        GridCacheAdapter<?,?> cache = ctx.cache().internalCache(cacheName);
+
+        return cache == null ? null : cache.context();
+    }
+
+    /**
      * Executing queries locally.
      *
      * @param node Node.
@@ -206,32 +219,75 @@ public class GridMapQueryExecutor {
     private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
         ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
 
-        Collection<GridCacheSqlQuery> qrys;
+        QueryResults qr = null;
+
+        List<GridDhtLocalPartition> reserved = new ArrayList<>();
 
         try {
-            qrys = req.queries();
+            Collection<GridCacheSqlQuery> qrys;
 
-            if (!node.isLocal()) {
-                Marshaller m = ctx.config().getMarshaller();
+            try {
+                qrys = req.queries();
 
-                for (GridCacheSqlQuery qry : qrys)
-                    qry.unmarshallParams(m);
+                if (!node.isLocal()) {
+                    Marshaller m = ctx.config().getMarshaller();
+
+                    for (GridCacheSqlQuery qry : qrys)
+                        qry.unmarshallParams(m);
+                }
             }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
 
-        GridCacheContext<?,?> cctx = ctx.cache().internalCache(req.space()).context();
+            List<GridCacheContext<?,?>> cctxs = new ArrayList<>();
 
-        QueryResults qr = new QueryResults(req.requestId(), qrys.size(), cctx);
+            for (String cacheName : F.concat(true, req.space(), req.extraSpaces())) {
+                GridCacheContext<?,?> cctx = cacheContext(cacheName);
 
-        if (nodeRess.put(req.requestId(), qr) != null)
-            throw new IllegalStateException();
+                if (cctx == null) { // Cache was not deployed yet.
+                    sendRetry(node, req.requestId());
 
-        h2.setFilters(h2.backupFilter());
+                    return;
+                }
+                else
+                    cctxs.add(cctx);
+            }
 
-        try {
+            for (GridCacheContext<?,?> cctx : cctxs) { // Lock primary partitions.
+                // TODO how to get all partitions for topology version consistently?
+                List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+                AffinityTopologyVersion affTopVer = cctx.topology().topologyVersion();
+
+                if (affTopVer.topologyVersion() != req.topologyVersion()) {
+                    sendRetry(node, req.requestId());
+
+                    return;
+                }
+
+                for (GridDhtLocalPartition part : parts) {
+                    if (!part.primary(affTopVer))
+                        continue;
+
+                    if (!part.reserve()) {
+                        sendRetry(node, req.requestId());
+
+                        return;
+                    }
+
+                    reserved.add(part);
+                }
+            }
+
+            GridCacheContext<?,?> cctx = cctxs.get(0); // Main cache context.
+
+            qr = new QueryResults(req.requestId(), qrys.size(), cctx);
+
+            if (nodeRess.put(req.requestId(), qr) != null)
+                throw new IllegalStateException();
+
+            h2.setFilters(h2.backupFilter());
+
             // TODO Prepare snapshots for all the needed tables before the run.
 
             // Run queries.
@@ -276,9 +332,11 @@ public class GridMapQueryExecutor {
             }
         }
         catch (Throwable e) {
-            nodeRess.remove(req.requestId(), qr);
+            if (qr != null) {
+                nodeRess.remove(req.requestId(), qr);
 
-            qr.cancel();
+                qr.cancel();
+            }
 
             U.error(log, "Failed to execute local query: " + req, e);
 
@@ -289,6 +347,9 @@ public class GridMapQueryExecutor {
         }
         finally {
             h2.setFilters(null);
+
+            for (GridDhtLocalPartition part : reserved)
+                part.release();
         }
     }
 
@@ -372,6 +433,24 @@ public class GridMapQueryExecutor {
 
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param node Node.
+     * @param reqId Request ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void sendRetry(ClusterNode node, long reqId) throws IgniteCheckedException {
+        boolean loc = node.isLocal();
+
+        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId,
+            /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
+            loc ? null : Collections.<Message>emptyList(),
+            loc ? Collections.<Value[]>emptyList() : null);
+
+        msg.code(GridQueryNextPageResponse.CODE_RETRY);
+
+        ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
     }
 
     /**

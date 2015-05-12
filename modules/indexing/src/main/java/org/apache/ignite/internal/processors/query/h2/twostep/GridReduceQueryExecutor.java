@@ -260,6 +260,9 @@ public class GridReduceQueryExecutor {
 
         idx.addPage(page);
 
+        if (msg.code() == GridQueryNextPageResponse.CODE_RETRY)
+            r.retry = true;
+
         if (msg.allRows() != -1) // Only the first page contains row count.
             r.latch.countDown();
     }
@@ -270,109 +273,123 @@ public class GridReduceQueryExecutor {
      * @return Cursor.
      */
     public QueryCursor<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
-        long qryReqId = reqIdGen.incrementAndGet();
+        for (int attempt = 0;; attempt++) {
+            long qryReqId = reqIdGen.incrementAndGet();
 
-        QueryRun r = new QueryRun();
+            QueryRun r = new QueryRun();
 
-        r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
+            r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
 
-        r.tbls = new ArrayList<>(qry.mapQueries().size());
+            r.tbls = new ArrayList<>(qry.mapQueries().size());
 
-        String space = cctx.name();
+            String space = cctx.name();
 
-        r.conn = (JdbcConnection)h2.connectionForSpace(space);
+            r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
-        // TODO Add topology version.
-        ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
+            final long topVer = ctx.cluster().get().topologyVersion();
 
-        if (cctx.isReplicated() || qry.explain()) {
-            assert qry.explain() || dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
+            // TODO get projection for this topology version.
+            ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
 
-            // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-            dataNodes = dataNodes.forRandom();
-        }
+            if (cctx.isReplicated() || qry.explain()) {
+                assert qry.explain() || dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
 
-        final Collection<ClusterNode> nodes = dataNodes.nodes();
+                // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
+                dataNodes = dataNodes.forRandom();
+            }
 
-        for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
-            GridMergeTable tbl;
+            final Collection<ClusterNode> nodes = dataNodes.nodes();
+
+            for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+                GridMergeTable tbl;
+
+                try {
+                    tbl = createFunctionTable(r.conn, mapQry, qry.explain()); // createTable(r.conn, mapQry); TODO
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                GridMergeIndex idx = tbl.getScanIndex(null);
+
+                for (ClusterNode node : nodes)
+                    idx.addSource(node.id());
+
+                r.tbls.add(tbl);
+
+                curFunTbl.set(tbl);
+            }
+
+            r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
+
+            runs.put(qryReqId, r);
 
             try {
-                tbl = createFunctionTable(r.conn, mapQry, qry.explain()); // createTable(r.conn, mapQry); TODO
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+                Collection<GridCacheSqlQuery> mapQrys = qry.mapQueries();
 
-            GridMergeIndex idx = tbl.getScanIndex(null);
+                if (qry.explain()) {
+                    mapQrys = new ArrayList<>(qry.mapQueries().size());
 
-            for (ClusterNode node : nodes)
-                idx.addSource(node.id());
+                    for (GridCacheSqlQuery mapQry : qry.mapQueries())
+                        mapQrys.add(new GridCacheSqlQuery(mapQry.alias(), "EXPLAIN " + mapQry.query(), mapQry.parameters()));
+                }
 
-            r.tbls.add(tbl);
+                if (nodes.size() != 1 || !F.first(nodes).isLocal()) { // Marshall params for remotes.
+                    Marshaller m = ctx.config().getMarshaller();
 
-            curFunTbl.set(tbl);
-        }
+                    for (GridCacheSqlQuery mapQry : mapQrys)
+                        mapQry.marshallParams(m);
+                }
 
-        r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
+                send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer,
+                    extraSpaces(space, qry.spaces())));
 
-        runs.put(qryReqId, r);
+                U.await(r.latch);
 
-        try {
-            Collection<GridCacheSqlQuery> mapQrys = qry.mapQueries();
+                if (r.rmtErr != null)
+                    throw new CacheException("Failed to run map query remotely.", r.rmtErr);
 
-            if (qry.explain()) {
-                mapQrys = new ArrayList<>(qry.mapQueries().size());
+                ResultSet res = null;
 
-                for (GridCacheSqlQuery mapQry : qry.mapQueries())
-                    mapQrys.add(new GridCacheSqlQuery(mapQry.alias(), "EXPLAIN " + mapQry.query(), mapQry.parameters()));
-            }
+                if (!r.retry) {
+                    if (qry.explain())
+                        return explainPlan(r.conn, space, qry);
 
-            if (nodes.size() != 1 || !F.first(nodes).isLocal()) { // Marshall params for remotes.
-                Marshaller m = ctx.config().getMarshaller();
+                    GridCacheSqlQuery rdc = qry.reduceQuery();
 
-                for (GridCacheSqlQuery mapQry : mapQrys)
-                    mapQry.marshallParams(m);
-            }
+                    res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
+                }
 
-            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys,
-                ctx.cluster().get().topologyVersion(),
-                extraSpaces(space, qry.spaces())));
-
-            r.latch.await();
-
-            if (r.rmtErr != null)
-                throw new CacheException("Failed to run map query remotely.", r.rmtErr);
-
-            if (qry.explain())
-                return explainPlan(r.conn, space, qry);
-
-            GridCacheSqlQuery rdc = qry.reduceQuery();
-
-            final ResultSet res = h2.executeSqlQueryWithTimer(space, r.conn, rdc.query(), F.asList(rdc.parameters()));
-
-            for (GridMergeTable tbl : r.tbls) {
-                if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
-                    send(nodes, new GridQueryCancelRequest(qryReqId));
+                for (GridMergeTable tbl : r.tbls) {
+                    if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
+                        send(nodes, new GridQueryCancelRequest(qryReqId));
 
 //                dropTable(r.conn, tbl.getName()); TODO
+                }
+
+                if (r.retry) {
+                    if (attempt > 0)
+                        U.sleep(attempt * 10);
+
+                    continue;
+                }
+
+                return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
             }
+            catch (IgniteCheckedException | RuntimeException e) {
+                U.closeQuiet(r.conn);
 
-            return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
-        }
-        catch (IgniteCheckedException | InterruptedException | RuntimeException e) {
-            U.closeQuiet(r.conn);
+                if (e instanceof CacheException)
+                    throw (CacheException)e;
 
-            if (e instanceof CacheException)
-                throw (CacheException)e;
+                throw new CacheException("Failed to run reduce query locally.", e);
+            }
+            finally {
+                if (!runs.remove(qryReqId, r))
+                    U.warn(log, "Query run was already removed: " + qryReqId);
 
-            throw new CacheException("Failed to run reduce query locally.", e);
-        }
-        finally {
-            if (!runs.remove(qryReqId, r))
-                U.warn(log, "Query run was already removed: " + qryReqId);
-
-            curFunTbl.remove();
+                curFunTbl.remove();
+            }
         }
     }
 
@@ -680,6 +697,9 @@ public class GridReduceQueryExecutor {
 
         /** */
         private volatile CacheException rmtErr;
+
+        /** */
+        private volatile boolean retry;
     }
 
     /**

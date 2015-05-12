@@ -33,6 +33,12 @@ public class GridQueryNextPageResponse implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
+    public static final byte CODE_OK = 0;
+
+    /** */
+    public static final byte CODE_RETRY = -1;
+
+    /** */
     private long qryReqId;
 
     /** */
@@ -54,6 +60,9 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     @GridDirectTransient
     private transient Collection<?> plainRows;
+
+    /** Response code. */
+    private byte code = CODE_OK;
 
     /**
      * For {@link Externalizable}.
@@ -83,6 +92,20 @@ public class GridQueryNextPageResponse implements Message {
         this.cols = cols;
         this.vals = vals;
         this.plainRows = plainRows;
+    }
+
+    /**
+     * @return Response code.
+     */
+    public byte code() {
+        return code;
+    }
+
+    /**
+     * @param code Response code.
+     */
+    public void code(byte code) {
+        this.code = code;
     }
 
     /**
@@ -186,6 +209,12 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 writer.incrementState();
+
+            case 6:
+                if (!writer.writeByte("code", code))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -247,6 +276,14 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
+            case 6:
+                code = reader.readByte("code");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -259,6 +296,6 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 }
