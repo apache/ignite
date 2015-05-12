@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -74,6 +75,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
+
+    /** Remote nodes. */
+    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> pingFuts = new ConcurrentHashMap8<>();
 
     /** Socket writer. */
     private SocketWriter sockWriter;
@@ -316,6 +320,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             }
         }
 
+        for (GridFutureAdapter<Boolean> fut : pingFuts.values())
+            fut.onDone(false);
+
         rmtNodes.clear();
 
         U.interrupt(sockTimeoutWorker);
@@ -359,15 +366,46 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean pingNode(UUID nodeId) {
-        assert nodeId != null;
+    @Override public boolean pingNode(@NotNull final UUID nodeId) {
+        if (getSpiContext().isStopping())
+            return false;
 
         if (nodeId.equals(getLocalNodeId()))
             return true;
 
         TcpDiscoveryNode node = rmtNodes.get(nodeId);
 
-        return node != null && node.visible();
+        if (node == null || !node.visible())
+            return false;
+
+        GridFutureAdapter<Boolean> fut = pingFuts.get(nodeId);
+
+        if (fut == null) {
+            fut = new GridFutureAdapter<>();
+
+            GridFutureAdapter<Boolean> oldFut = pingFuts.putIfAbsent(nodeId, fut);
+
+            if (oldFut != null)
+                fut = oldFut;
+            else
+                sockWriter.sendMessage(new TcpDiscoveryClientPingRequest(getLocalNodeId(), nodeId));
+        }
+
+        final GridFutureAdapter<Boolean> finalFut = fut;
+
+        timer.schedule(new TimerTask() {
+            @Override public void run() {
+                if (pingFuts.remove(nodeId, finalFut))
+                    finalFut.onDone(false);
+            }
+        }, netTimeout);
+
+        try {
+            return fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException(e); // Should newer occur
+        }
     }
 
     /** {@inheritDoc} */
@@ -1069,6 +1107,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
                 processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
+            else if (msg instanceof TcpDiscoveryClientPingResponse)
+                processClientPingResponse((TcpDiscoveryClientPingResponse)msg);
 
             stats.onMessageProcessingFinished(msg);
         }
@@ -1363,6 +1403,16 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         log.debug("Received metrics from unknown node: " + nodeId);
                 }
             }
+        }
+
+        /**
+         * @param msg Message.
+         */
+        private void processClientPingResponse(TcpDiscoveryClientPingResponse msg) {
+            GridFutureAdapter<Boolean> fut = pingFuts.remove(msg.nodeToPing());
+
+            if (fut != null)
+                fut.onDone(msg.result());
         }
 
         /**

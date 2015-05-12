@@ -353,6 +353,36 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPingFailedNodeFromClient() throws Exception {
+        startServerNodes(2);
+        startClientNodes(1);
+
+        Ignite srv0 = G.ignite("server-0");
+        Ignite srv1 = G.ignite("server-1");
+        Ignite client = G.ignite("client-0");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(new IgniteInClosure<Socket>() {
+            @Override public void apply(Socket sock) {
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        assert ((IgniteEx)client).context().discovery().pingNode(srv0.cluster().localNode().id());
+        assert !((IgniteEx)client).context().discovery().pingNode(srv1.cluster().localNode().id());
+
+        latch.countDown();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientReconnectOnRouterFail() throws Exception {
         clientsPerSrv = 1;
 

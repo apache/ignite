@@ -203,6 +203,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
 
+    /** */
+    private final ThreadPoolExecutor utilityPool = new ThreadPoolExecutor(0, 10, 2000, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>());
+
     /** Nodes ring. */
     @GridToStringExclude
     private final TcpDiscoveryNodesRing ring = new TcpDiscoveryNodesRing();
@@ -283,6 +287,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /** */
     private final CopyOnWriteArrayList<IgniteInClosure<TcpDiscoveryAbstractMessage>> sendMsgLsnrs =
+        new CopyOnWriteArrayList<>();
+
+    /** */
+    private final CopyOnWriteArrayList<IgniteInClosure<Socket>> incomeConnLsnrs =
         new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
@@ -2034,15 +2042,29 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
-    public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> msg) {
-        sendMsgLsnrs.add(msg);
+    public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
+        sendMsgLsnrs.add(lsnr);
     }
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
-    public void removeSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> msg) {
-        sendMsgLsnrs.remove(msg);
+    public void removeSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
+        sendMsgLsnrs.remove(lsnr);
+    }
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     */
+    public void addIncomeConnectionListener(IgniteInClosure<Socket> lsnr) {
+        incomeConnLsnrs.add(lsnr);
+    }
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     */
+    public void removeIncomeConnectionListener(IgniteInClosure<Socket> lsnr) {
+        incomeConnLsnrs.remove(lsnr);
     }
 
     /**
@@ -2633,6 +2655,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
                 processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
+
+            else if (msg instanceof TcpDiscoveryClientPingRequest)
+                processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
@@ -4448,6 +4473,32 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @param msg Message.
          */
+        private void processClientPingRequest(final TcpDiscoveryClientPingRequest msg) {
+            utilityPool.execute(new Runnable() {
+                @Override public void run() {
+                    boolean res = pingNode(msg.nodeToPing());
+
+                    final ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                    if (worker == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Ping request from dead client node, will be skipped: " + msg.creatorNodeId());
+                    }
+                    else {
+                        TcpDiscoveryClientPingResponse pingRes = new TcpDiscoveryClientPingResponse(
+                            getLocalNodeId(), msg.nodeToPing(), res);
+
+                        pingRes.verify(getLocalNodeId());
+
+                        worker.addMessage(pingRes);
+                    }
+                }
+            });
+        }
+
+        /**
+         * @param msg Message.
+         */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
             if (isLocalNodeCoordinator()) {
                 if (msg.verified()) {
@@ -4642,6 +4693,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     int timeout = sock.getSoTimeout();
 
                     sock.setSoTimeout((int)netTimeout);
+
+                    for (IgniteInClosure<Socket> connLsnr : incomeConnLsnrs)
+                        connLsnr.apply(sock);
 
                     in = new BufferedInputStream(sock.getInputStream());
 
