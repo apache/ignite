@@ -22,6 +22,7 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -272,27 +273,26 @@ class GridResourceIoc {
 
             for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Field field : cls0.getDeclaredFields()) {
-                    Annotation[] fieldAnns = field.getAnnotations();
+                    InjectRecursively injectRecursively = field.getAnnotation(InjectRecursively.class);
 
-                    for (Annotation ann : fieldAnns) {
-                        T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
-
-                        if (t2 == null) {
-                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
-
-                            annMap.put(ann.annotationType(), t2);
-                        }
-
-                        t2.get1().add(new GridResourceField(field, ann));
-                    }
-
-                    if (allowImplicitInjection
-                        && fieldAnns.length == 0
-                        && GridResourceUtils.mayRequireResources(field)) {
-                        // Account for anonymous inner classes.
+                    if (injectRecursively != null
+                        || (allowImplicitInjection && field.getName().startsWith("this$")
+                            || field.getName().startsWith("val$")))
                         recursiveFieldsList.add(field);
+                    else {
+                        for (Annotation ann : field.getAnnotations()) {
+                            T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
+
+                            if (t2 == null) {
+                                t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
+                                    new ArrayList<GridResourceField>(),
+                                    new ArrayList<GridResourceMethod>());
+
+                                annMap.put(ann.annotationType(), t2);
+                            }
+
+                            t2.get1().add(new GridResourceField(field, ann));
+                        }
                     }
                 }
 
