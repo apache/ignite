@@ -405,6 +405,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         }
         catch (Throwable e) {
             onPageError(nodeId, e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
     }
 

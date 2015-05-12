@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
 import org.xml.sax.*;
@@ -28,6 +29,7 @@ import org.xml.sax.*;
 import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static java.net.URLEncoder.*;
@@ -57,6 +59,9 @@ class GridUpdateNotifier {
     /** Latest version. */
     private volatile String latestVer;
 
+    /** Download url for latest version. */
+    private volatile String downloadUrl;
+
     /** HTML parsing helper. */
     private final DocumentBuilder documentBuilder;
 
@@ -72,6 +77,8 @@ class GridUpdateNotifier {
     /** System properties */
     private final String vmProps;
 
+    private final Map<String, String> pluginVers;
+
     /** Kernal gateway */
     private final GridKernalGateway gw;
 
@@ -83,12 +90,13 @@ class GridUpdateNotifier {
      *
      * @param gridName gridName
      * @param ver Compound Ignite version.
-     * @param reportOnlyNew Whether or not to report only new version.
      * @param gw Kernal gateway.
+     * @param pluginProviders Kernal gateway.
+     * @param reportOnlyNew Whether or not to report only new version.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, boolean reportOnlyNew)
-        throws IgniteCheckedException {
+    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+        boolean reportOnlyNew) throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
@@ -108,8 +116,14 @@ class GridUpdateNotifier {
             url = "http://tiny.cc/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
-            this.reportOnlyNew = reportOnlyNew;
             this.gw = gw;
+
+            pluginVers = U.newHashMap(pluginProviders.size());
+
+            for (PluginProvider provider : pluginProviders)
+                pluginVers.put(provider.name() + "-plugin-version", provider.version());
+
+            this.reportOnlyNew = reportOnlyNew;
 
             vmProps = getSystemProperties();
         }
@@ -197,6 +211,9 @@ class GridUpdateNotifier {
         U.cancel(checker);
 
         String latestVer = this.latestVer;
+        String downloadUrl = this.downloadUrl;
+
+        downloadUrl = downloadUrl != null ? downloadUrl : IgniteKernal.SITE;
 
         if (latestVer != null)
             if (latestVer.equals(ver)) {
@@ -204,7 +221,7 @@ class GridUpdateNotifier {
                     throttle(log, false, "Your version is up to date.");
             }
             else
-                throttle(log, true, "New version is available at " + IgniteKernal.SITE + ": " + latestVer);
+                throttle(log, true, "New version is available at " + downloadUrl + ": " + latestVer);
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");
@@ -262,12 +279,18 @@ class GridUpdateNotifier {
             try {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
+                SB plugins = new SB();
+
+                for (Map.Entry<String, String> p : pluginVers.entrySet())
+                    plugins.a("&").a(p.getKey()).a("=").a(encode(p.getValue(), CHARSET));
+
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
-                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "");
+                    (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
+                    plugins.toString();
 
                 URLConnection conn = new URL(url).openConnection();
 
@@ -311,8 +334,11 @@ class GridUpdateNotifier {
                             log.debug("Failed to connect to Ignite update server. " + e.getMessage());
                     }
 
-                    if (dom != null)
+                    if (dom != null) {
                         latestVer = obtainVersionFrom(dom);
+
+                        downloadUrl = obtainDownloadUrlFrom(dom);
+                    }
                 }
             }
             catch (Exception e) {
@@ -327,7 +353,7 @@ class GridUpdateNotifier {
          * @param node W3C DOM node.
          * @return Version or {@code null} if one's not found.
          */
-        @Nullable private String obtainVersionFrom(Node node) {
+        @Nullable private String obtainMeta(String metaName, Node node) {
             assert node != null;
 
             if (node instanceof Element && "meta".equals(node.getNodeName().toLowerCase())) {
@@ -335,7 +361,7 @@ class GridUpdateNotifier {
 
                 String name = meta.getAttribute("name");
 
-                if (("version").equals(name)) {
+                if (metaName.equals(name)) {
                     String content = meta.getAttribute("content");
 
                     if (content != null && !content.isEmpty())
@@ -346,13 +372,33 @@ class GridUpdateNotifier {
             NodeList childNodes = node.getChildNodes();
 
             for (int i = 0; i < childNodes.getLength(); i++) {
-                String ver = obtainVersionFrom(childNodes.item(i));
+                String ver = obtainMeta(metaName, childNodes.item(i));
 
                 if (ver != null)
                     return ver;
             }
 
             return null;
+        }
+
+        /**
+         * Gets the version from the current {@code node}, if one exists.
+         *
+         * @param node W3C DOM node.
+         * @return Version or {@code null} if one's not found.
+         */
+        @Nullable private String obtainVersionFrom(Node node) {
+            return obtainMeta("version", node);
+        }
+
+        /**
+         * Gets the download url from the current {@code node}, if one exists.
+         *
+         * @param node W3C DOM node.
+         * @return download url or {@code null} if one's not found.
+         */
+        @Nullable private String obtainDownloadUrlFrom(Node node) {
+            return obtainMeta("downloadUrl", node);
         }
     }
 }

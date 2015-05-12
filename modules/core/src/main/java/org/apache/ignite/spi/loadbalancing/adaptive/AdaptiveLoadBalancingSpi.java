@@ -179,7 +179,7 @@ import static org.apache.ignite.events.EventType.*;
  * <p>
  * <h1 class="header">Configuration</h1>
  * In order to use this load balancer, you should configure your grid instance
- * to use {@code GridJobsLoadBalancingSpi} either from Spring XML file or
+ * to use {@code JobsLoadBalancingSpi} either from Spring XML file or
  * directly. The following configuration parameters are supported:
  * <h2 class="header">Mandatory</h2>
  * This SPI has no mandatory configuration parameters.
@@ -196,14 +196,14 @@ import static org.apache.ignite.events.EventType.*;
  * <p>
  * Below is Java configuration example:
  * <pre name="code" class="java">
- * GridAdaptiveLoadBalancingSpi spi = new GridAdaptiveLoadBalancingSpi();
+ * AdaptiveLoadBalancingSpi spi = new AdaptiveLoadBalancingSpi();
  *
  * // Configure probe to use latest job execution time vs. average.
- * GridAdaptiveProcessingTimeLoadProbe probe = new GridAdaptiveProcessingTimeLoadProbe(false);
+ * AdaptiveProcessingTimeLoadProbe probe = new AdaptiveProcessingTimeLoadProbe(false);
  *
  * spi.setLoadProbe(probe);
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default load balancing SPI.
  * cfg.setLoadBalancingSpi(spi);
@@ -214,9 +214,9 @@ import static org.apache.ignite.events.EventType.*;
  * Here is how you can configure {@code GridJobsLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.AdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;
- *             &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveProcessingTimeLoadProbe"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.AdaptiveProcessingTimeLoadProbe"&gt;
  *                 &lt;constructor-arg value="false"/&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;

@@ -226,10 +226,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
 
-        // Warn on odd heartbeat frequency.
-        if (hbFreq < 2000)
-            U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
-
         registerMBean(gridName, this, TcpClientDiscoverySpiMBean.class);
 
         try {
@@ -378,6 +374,18 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(Serializable evt) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void failNode(UUID nodeId) {
+        ClusterNode node = rmtNodes.get(nodeId);
+
+        if (node != null) {
+            TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
+                node.id(), node.order());
+
+            sockRdr.addMessage(msg);
+        }
     }
 
     /**

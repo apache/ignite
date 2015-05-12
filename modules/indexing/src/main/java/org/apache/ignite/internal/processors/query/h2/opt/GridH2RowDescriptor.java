@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
+import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -40,7 +42,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(Object key, @Nullable Object val, long expirationTime)
+    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
         throws IgniteCheckedException;
 
     /**
@@ -97,4 +99,14 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Guard.
      */
     public GridUnsafeGuard guard();
+
+    /**
+     * Wraps object to respective {@link Value}.
+     *
+     * @param o Object.
+     * @param type Value type.
+     * @return Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Value wrap(Object o, int type) throws IgniteCheckedException;
 }

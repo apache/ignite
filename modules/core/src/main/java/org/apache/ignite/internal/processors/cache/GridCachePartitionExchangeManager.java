@@ -409,7 +409,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param ver Topology version.
      * @return Future or {@code null} is future is already completed.
      */
-    @Nullable IgniteInternalFuture<?> affinityReadyFuture(AffinityTopologyVersion ver) {
+    public @Nullable IgniteInternalFuture<?> affinityReadyFuture(AffinityTopologyVersion ver) {
         GridDhtPartitionsExchangeFuture lastInitializedFut0 = lastInitializedFut;
 
         if (lastInitializedFut0 != null && lastInitializedFut0.topologyVersion().compareTo(ver) >= 0) {
@@ -471,9 +471,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Exchange futures.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public List<IgniteInternalFuture<?>> exchangeFutures() {
-        return (List<IgniteInternalFuture<?>>)(List)exchFuts.values();
+    public List<GridDhtPartitionsExchangeFuture> exchangeFutures() {
+        return exchFuts.values();
     }
 
     /**
@@ -746,6 +745,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             int skipped = 0;
 
             for (GridDhtPartitionsExchangeFuture fut : exchFuts0.values()) {
+                if (exchFut.exchangeId().topologyVersion().compareTo(fut.exchangeId().topologyVersion()) < 0)
+                    continue;
+
                 skipped++;
 
                 if (skipped == EXCH_FUT_CLEANUP_HISTORY_SIZE) {

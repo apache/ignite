@@ -73,6 +73,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
 
+    /** Nodes where transactions were started on lock step. */
+    private Set<ClusterNode> lockTxNodes;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -121,6 +124,26 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         threadId = Thread.currentThread().getId();
         dhtThreadId = threadId;
+    }
+
+    /**
+     * @param node Node.
+     */
+    public void addLockTransactionNode(ClusterNode node) {
+        assert node != null;
+        assert !node.isLocal();
+
+        if (lockTxNodes == null)
+            lockTxNodes = new HashSet<>();
+
+        lockTxNodes.add(node);
+    }
+
+    /**
+     * @return Nodes where transactions were started on lock step.
+     */
+    @Nullable public Set<ClusterNode> lockTransactionNodes() {
+        return lockTxNodes;
     }
 
     /**
@@ -530,6 +553,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param msgId Message ID.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
+     * @param needRetVal Return value flag.
+     * @param skipStore Skip store flag.
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -540,7 +565,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long msgId,
         final boolean read,
         final boolean needRetVal,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore
     ) {
         try {
             checkValid();
@@ -591,7 +617,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         false,
                         -1L,
                         -1L,
-                        null);
+                        null,
+                        skipStore);
 
                     if (read)
                         txEntry.ttl(accessTtl);
@@ -621,7 +648,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);
 
-            return obtainLockAsync(cacheCtx, ret, passedKeys, read, needRetVal, skipped, accessTtl, null);
+            return obtainLockAsync(cacheCtx,
+                ret,
+                passedKeys,
+                read,
+                needRetVal,
+                skipped,
+                accessTtl,
+                null,
+                skipStore);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -635,9 +670,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param ret Return value.
      * @param passedKeys Passed keys.
      * @param read {@code True} if read.
+     * @param needRetVal Return value flag.
      * @param skipped Skipped keys.
      * @param accessTtl TTL for read operation.
      * @param filter Entry write filter.
+     * @param skipStore Skip store flag.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -648,7 +685,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final boolean needRetVal,
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter) {
+        @Nullable final CacheEntryPredicate[] filter,
+        boolean skipStore) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');
@@ -666,7 +704,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             needRetVal,
             isolation,
             accessTtl,
-            CU.empty0());
+            CU.empty0(),
+            skipStore);
 
         return new GridEmbeddedFuture<>(
             fut,

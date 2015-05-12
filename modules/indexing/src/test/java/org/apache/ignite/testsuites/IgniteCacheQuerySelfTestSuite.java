@@ -59,6 +59,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLargeResultSelfTest.class);
         suite.addTestSuite(GridCacheQueryInternalKeysSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryMultiThreadedOffHeapTiredSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryOffheapMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest.class);
@@ -67,15 +68,17 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
 //        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class); TODO IGNITE-484
         suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
+        suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
+
 
         // Fields queries.
         suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest.class);
         suite.addTestSuite(IgniteCachePartitionedFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
-        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest.class);
         suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
 
         // Continuous queries.
@@ -106,6 +109,11 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // Ignite cache and H2 comparison.
         suite.addTestSuite(BaseH2CompareQueryTest.class);
         suite.addTestSuite(H2CompareBigQueryTest.class);
+
+        suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
+
+        //Unmarshallig query test.
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
 
         return suite;
     }

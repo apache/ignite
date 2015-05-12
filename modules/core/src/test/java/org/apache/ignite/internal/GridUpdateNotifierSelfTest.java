@@ -18,10 +18,13 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.h2.constant.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -29,6 +32,8 @@ import java.util.concurrent.*;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
+    private String updateStatusParams;
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 30 * 1000;
@@ -39,6 +44,12 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "true");
+
+        Properties props = U.field(IgniteProperties.class, "PROPS");
+
+        updateStatusParams = props.getProperty("ignite.update.status.params");
+
+        props.setProperty("ignite.update.status.params", "ver=" + IgniteProperties.get("ignite.version"));
     }
 
     /** {@inheritDoc} */
@@ -46,14 +57,20 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
 
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
+
+        Properties props = U.field(IgniteProperties.class, "PROPS");
+
+        props.setProperty("ignite.update.status.params", updateStatusParams);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNotifier() throws Exception {
-        GridUpdateNotifier ntf = new GridUpdateNotifier(null, IgniteProperties.get("ignite.version"),
-            TEST_GATEWAY, false);
+        String nodeVer = IgniteProperties.get("ignite.version");
+
+        GridUpdateNotifier ntf = new GridUpdateNotifier(null, nodeVer,
+            TEST_GATEWAY, Collections.<PluginProvider>emptyList(), false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 
@@ -62,6 +79,13 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
         info("Latest version: " + ver);
 
         assertNotNull("Ignite latest version has not been detected.", ver);
+
+        byte nodeMaintenance = IgniteProductVersion.fromString(nodeVer).maintenance();
+
+        byte lastMaintenance = IgniteProductVersion.fromString(ver).maintenance();
+
+        assertTrue("Wrong latest version.", (nodeMaintenance == 0 && lastMaintenance == 0) ||
+            (nodeMaintenance > 0 && lastMaintenance > 0));
 
         ntf.reportStatus(log);
     }
