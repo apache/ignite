@@ -606,7 +606,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (typeDesc == null || !typeDesc.registered())
                         throw new CacheException("Failed to find SQL table for type: " + type);
 
-                    final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params),
+                    final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.query(space, sqlQry, F.asList(params),
                         typeDesc, idx.backupFilter());
 
                     if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -625,7 +625,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             null));
                     }
 
-                    return new ClIter<Cache.Entry<K,V>>() {
+                    return new ClIter<Cache.Entry<K, V>>() {
                         @Override public void close() throws Exception {
                             i.close();
                         }
@@ -634,8 +634,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             return i.hasNext();
                         }
 
-                        @Override public Cache.Entry<K,V> next() {
-                            IgniteBiTuple<K,V> t = i.next();
+                        @Override public Cache.Entry<K, V> next() {
+                            IgniteBiTuple<K, V> t = i.next();
 
                             return new CacheEntryImpl<>(t.getKey(), t.getValue());
                         }
@@ -1376,7 +1376,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw (IgniteCheckedException)err;
         }
         finally {
-            GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.cache().queries().metrics();
+            GridCacheQueryMetricsAdapter metrics = (GridCacheQueryMetricsAdapter)cctx.queries().metrics();
 
             onExecuted(cctx, metrics, res, err, start, U.currentTimeMillis() - start, log);
         }
