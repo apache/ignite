@@ -119,7 +119,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public boolean put(K key, V val, CacheEntryPredicate[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
-        return (Boolean)updateAllInternal(UPDATE,
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        boolean res = (Boolean)updateAllInternal(UPDATE,
             Collections.singleton(key),
             Collections.singleton(val),
             null,
@@ -129,6 +133,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             filter,
             ctx.writeThrough(),
             ctx.readThrough());
+
+        if (statsEnabled)
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -268,6 +277,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> m) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         updateAllInternal(UPDATE,
             m.keySet(),
             m.values(),
@@ -278,6 +291,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             CU.empty0(),
             ctx.writeThrough(),
             ctx.readThrough());
+
+        if (statsEnabled)
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -727,7 +743,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         final ExpiryPolicy expiry = expiryPerCall();
 
-        return asyncOp(new Callable<Object>() {
+        IgniteInternalFuture fut = asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return updateAllInternal(op,
                     keys,
@@ -741,6 +757,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     readThrough);
             }
         });
+
+        if (ctx.config().isStatisticsEnabled())
+            fut.listen(new UpdatePutTimeStatClosure(metrics0(), System.nanoTime()));
+
+        return fut;
     }
 
     /**
