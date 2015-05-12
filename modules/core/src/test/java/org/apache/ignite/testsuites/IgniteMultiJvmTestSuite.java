@@ -48,41 +48,41 @@ public class IgniteMultiJvmTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicNearEnabledMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearEnabledPrimaryWriteOrderMultiJvmFullApiSelfTest.class);
 
-        suite.addTestSuite(GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheNearOnlyMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedFairAffinityMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledFairAffinityMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicFairAffinityMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearEnabledFairAffinityMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFairAffinityMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiJvmFullApiSelfTest.class);
-
-        // TODO create multi Jvm tests
-//        suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
-//        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest.class);
-        suite.addTestSuite(GridCacheNearTxMultiJvmSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMultiJvmCounterSelfTest.class);
-
-        // Multi-node with off-heap values.
-        suite.addTestSuite(GridCacheReplicatedOffHeapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedOffHeapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicOffHeapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapMultiJvmFullApiSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedNearDisabledMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedNearDisabledMultiJvmP2PDisabledFullApiSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheNearOnlyMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicClientOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicNearOnlyMultiJvmP2PDisabledFullApiSelfTest.class);
+//
+//        suite.addTestSuite(GridCachePartitionedFairAffinityMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedNearDisabledFairAffinityMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicFairAffinityMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicNearEnabledFairAffinityMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFairAffinityMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiJvmFullApiSelfTest.class);
+//
+//        // TODO create multi Jvm tests
+////        suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
+////        suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
+////        suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
+////        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest.class);
+//        suite.addTestSuite(GridCacheNearTxMultiJvmSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedMultiJvmCounterSelfTest.class);
+//
+//        // Multi-node with off-heap values.
+//        suite.addTestSuite(GridCacheReplicatedOffHeapMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedOffHeapMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicOffHeapMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapMultiJvmFullApiSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapMultiJvmFullApiSelfTest.class);
 
         // Private cache API.
         // TODO create multi Jvm tests
