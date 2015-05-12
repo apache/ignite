@@ -39,17 +39,19 @@ public class GridMetadataAwareAdapterSelfTest extends GridCommonAbstractTest {
     public void test() {
         GridMetadataAwareAdapter ma = new GridMetadataAwareAdapter();
 
-        int attr1 = GridMetadataAwareAdapter.nextUniqueKey();
-        int attr2 = GridMetadataAwareAdapter.nextUniqueKey();
-        int attr3 = GridMetadataAwareAdapter.nextUniqueKey();
-        int attr4 = GridMetadataAwareAdapter.nextUniqueKey();
-        int attr156 = GridMetadataAwareAdapter.nextUniqueKey();
-        int k1 = GridMetadataAwareAdapter.nextUniqueKey();
-        int k2 = GridMetadataAwareAdapter.nextUniqueKey();
-        int k3 = GridMetadataAwareAdapter.nextUniqueKey();
-        int a1 = GridMetadataAwareAdapter.nextUniqueKey();
-        int a2 = GridMetadataAwareAdapter.nextUniqueKey();
-        int a3 = GridMetadataAwareAdapter.nextUniqueKey();
+        int cnt = 0;
+
+        int attr1 = cnt++;
+        int attr2 = cnt++;
+        int attr3 = cnt++;
+        int attr4 = cnt++;
+        int attr156 = cnt++;
+        int k1 = cnt++;
+        int k2 = cnt++;
+        int k3 = cnt++;
+        int a1 = cnt++;
+        int a2 = cnt++;
+        int a3 = cnt++;
 
         // addMeta(name, val).
         assert ma.addMeta(attr1, "val1") == null;

@@ -26,7 +26,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Convenient adapter for working with metadata. <h2 class="header">Thread Safety</h2> This class provides necessary
@@ -34,12 +33,45 @@ import java.util.concurrent.atomic.*;
  */
 @SuppressWarnings({"SynchronizeOnNonFinalField"})
 public class GridMetadataAwareAdapter {
+    /**
+     * Enum stored predefined keys.
+     */
+    public enum EntryKey {//keys sorted by usage rate, descending.
+        /** Predefined key. */
+        CACHE_EVICTABLE_ENTRY_KEY(0),
+
+        /** Predefined key. */
+        CACHE_MOCK_ENTRY_KEY(1),
+
+        /** Predefined key. */
+        CACHE_STORE_MANAGER_KEY(2),
+
+        /** Predefined key. */
+        CACHE_EVICTION_MANAGER_KEY(3);
+
+        /** key. */
+        private int key;
+
+        /**
+         * @param key key
+         */
+        EntryKey(int key) {
+            this.key = key;
+        }
+
+        /**
+         * Returns key.
+         *
+         * @return key.
+         */
+        public int key() {
+            return key;
+        }
+    }
+
     /** Attributes. */
     @GridToStringInclude
     private Object[] data = null;
-
-    /** UID key generator. */
-    private static final AtomicInteger keyGen = new AtomicInteger();
 
     /** Serializable mutex. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -50,15 +82,6 @@ public class GridMetadataAwareAdapter {
      */
     public GridMetadataAwareAdapter() {
         mux = new GridMutex();
-    }
-
-    /**
-     * Provides next UID.
-     *
-     * @return uid.
-     */
-    public static int nextUniqueKey() {
-        return keyGen.getAndIncrement();
     }
 
     /**

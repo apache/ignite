@@ -64,7 +64,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
 
     /** Attribute name used to queue node in entry metadata. */
-    private static final int META_KEY = GridMetadataAwareAdapter.nextUniqueKey();
+    private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTION_MANAGER_KEY.key();
 
     /** Eviction policy. */
     private EvictionPolicy plc;

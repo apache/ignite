@@ -32,7 +32,7 @@ import java.util.*;
  */
 public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>, EvictableEntry<K, V> {
     /** */
-    private static final int META_KEY = GridMetadataAwareAdapter.nextUniqueKey();
+    private static final int META_KEY = EntryKey.CACHE_MOCK_ENTRY_KEY.key();
 
     /** */
     @GridToStringInclude
