@@ -97,16 +97,6 @@ public class GridCacheUtils {
     /** Skip store flag bit mask. */
     public static final int SKIP_STORE_FLAG_MASK = 0x1;
 
-    /** Per-thread generated UID store. */
-    private static final ThreadLocal<Integer> UIDS = new ThreadLocal<Integer>() {
-        @Override protected Integer initialValue() {
-            return uidGen.getAndIncrement();
-        }
-    };
-
-    /** Generates uid. */
-    private static final AtomicInteger uidGen = new GridAtomicInteger();
-
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
@@ -250,15 +240,6 @@ public class GridCacheUtils {
      */
     protected GridCacheUtils() {
         // No-op.
-    }
-
-    /**
-     * Gets per-thread-unique ID for this thread.
-     *
-     * @return ID for this thread.
-     */
-    public static int uid() {
-        return UIDS.get();
     }
 
     /**
