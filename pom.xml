@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.1.0-incubating</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -573,7 +573,7 @@
                                                 <include name="**/*" />
                                             </fileset>
                                         </copy>
-                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false"/>
+                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false" />
                                     </target>
                                 </configuration>
                             </execution>
