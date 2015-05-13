@@ -551,7 +551,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      *
      * @return Future for prepare step.
      */
-    public IgniteInternalFuture<IgniteInternalTx> prepareAsync();
+    public IgniteInternalFuture<?> prepareAsync();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -580,7 +580,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Future for transaction prepare if prepare is in progress.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture();
+    @Nullable public IgniteInternalFuture<?> currentPrepareFuture();
 
     /**
      * @param state Transaction state.

@@ -1008,7 +1008,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture<IgniteInternalTx> currentPrepareFuture() {
+    @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
         return null;
     }
 
