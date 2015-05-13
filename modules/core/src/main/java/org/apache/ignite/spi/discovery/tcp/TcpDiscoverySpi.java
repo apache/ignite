@@ -1132,10 +1132,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * Pings the remote node by its address to see if it's alive.
+     * Pings the node by its address to see if it's alive.
      *
      * @param addr Address of the node.
-     * @return ID of the remote node if node alive.
+     * @return ID of the remote node and "client exists" flag if node alive.
      * @throws IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
