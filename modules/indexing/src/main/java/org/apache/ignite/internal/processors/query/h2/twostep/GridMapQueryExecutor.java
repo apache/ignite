@@ -220,13 +220,45 @@ public class GridMapQueryExecutor {
      * @throws IgniteCheckedException If failed.
      */
     private void awaitForCacheAffinity(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        if (topVer == null)
-            return; // Backward compatibility.
-
         IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
 
         if (fut != null)
             fut.get();
+    }
+
+    /**
+     * @param cacheNames Cache names.
+     * @param topVer Topology version.
+     * @param reserved Reserved list.
+     * @return {@code true} If all the needed partitions succesfuly reserved.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean reservePartitions(Collection<String> cacheNames,  AffinityTopologyVersion topVer,
+        List<GridDhtLocalPartition> reserved) throws IgniteCheckedException {
+        for (String cacheName : cacheNames) {
+            GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
+
+            Set<Integer> partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+
+            for (int partId : partIds) {
+                GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
+
+                if (part != null) {
+                    // Await for owning state.
+                    part.owningFuture().get();
+
+                    if (part.reserve()) {
+                        reserved.add(part);
+
+                        continue;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -243,12 +275,6 @@ public class GridMapQueryExecutor {
         List<GridDhtLocalPartition> reserved = new ArrayList<>();
 
         try {
-            // Topology version can be null in rolling restart with previous version!
-            final AffinityTopologyVersion topVer = req.topologyVersion();
-
-            // Await all caches to be deployed on this node and all the needed topology changes to arrive.
-            awaitForCacheAffinity(topVer);
-
             // Unmarshall query params.
             Collection<GridCacheSqlQuery> qrys;
 
@@ -263,35 +289,21 @@ public class GridMapQueryExecutor {
                 }
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw new CacheException(e);
             }
 
-            // Reserve primary partitions.
+            // Topology version can be null in rolling restart with previous version!
+            final AffinityTopologyVersion topVer = req.topologyVersion();
+
             if (topVer != null) {
-                for (String cacheName : F.concat(true, req.space(), req.extraSpaces())) {
-                    GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
+                // Await all caches to be deployed on this node and all the needed topology changes to arrive.
+                awaitForCacheAffinity(topVer);
 
-                    Set<Integer> partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+                // Reserve primary partitions.
+                if (!reservePartitions(F.concat(true, req.space(), req.extraSpaces()), topVer, reserved)) {
+                    sendRetry(node, req.requestId());
 
-                    for (int partId : partIds) {
-                        GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
-
-                        if (part != null) {
-                            // Await for owning state.
-                            part.owningFuture().get();
-
-                            if (part.reserve()) {
-                                reserved.add(part);
-
-                                continue;
-                            }
-                        }
-
-                        // Failed to reserve the partition.
-                        sendRetry(node, req.requestId());
-
-                        return;
-                    }
+                    return;
                 }
             }
 
