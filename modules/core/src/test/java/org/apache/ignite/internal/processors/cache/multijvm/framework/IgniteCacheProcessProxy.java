@@ -47,13 +47,30 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** Grid id. */
     private final UUID gridId;
 
+    /** With async. */
+    private final boolean isAsync;
+
+    /** Ignite proxy. */
+    private final transient IgniteExProcessProxy igniteProxy;
+
     /**
      * @param name Name.
      * @param proxy Ignite Process Proxy.
      */
     public IgniteCacheProcessProxy(String name, IgniteExProcessProxy proxy) {
+        this(name, false, proxy);
+    }
+
+    /**
+     * @param name Name.
+     * @param async
+     * @param proxy Ignite Process Proxy.
+     */
+    public IgniteCacheProcessProxy(String name, boolean async, IgniteExProcessProxy proxy) {
         cacheName = name;
+        isAsync = async;
         gridId = proxy.getId();
+        igniteProxy = proxy;
 
         ClusterGroup grp = proxy.localJvmGrid().cluster().forNodeId(proxy.getId());
 
@@ -62,47 +79,47 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAsync() {
-        return null; // TODO: CODE: implement.
+        return new IgniteCacheProcessProxy<>(cacheName, true, igniteProxy);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        return false; // TODO: CODE: implement.
+        return isAsync;
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Entry<K, V> randomEntry() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -116,22 +133,22 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public Lock lock(K key) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(Collection<? extends K> keys) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -149,12 +166,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public QueryMetrics queryMetrics() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -168,7 +185,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void localPromote(Set<? extends K> keys) throws CacheException {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -192,7 +209,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** {@inheritDoc} */
     @Override  public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -228,7 +245,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override  public void loadAll(Set<? extends K> keys, boolean replaceExistingValues, CompletionListener completionListener) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -435,7 +452,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public CacheManager getCacheManager() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
@@ -458,47 +475,47 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override  public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override  public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<Entry<K, V>> iterator() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> rebalance() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics(ClusterGroup grp) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 }
