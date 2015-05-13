@@ -19,7 +19,7 @@
 # Target class path resolver.
 #
 # Can be used like:
-#       . "${IGNITE_HOME}"/bin/include/target-classpath.sh
+#       . "${IGNITE_HOME}"/bin/include/build-classpath.sh
 # in other scripts to set classpath using libs from target folder.
 #
 # Will be excluded in release.
