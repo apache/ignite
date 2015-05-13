@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Contains {@link org.apache.ignite.stream.socket.IgniteSocketStreamer} usage examples.
+ * Contains {@link org.apache.ignite.stream.socket.SocketStreamer} usage examples.
  */
 package org.apache.ignite.examples.streaming.socket;

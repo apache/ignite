@@ -26,7 +26,7 @@ import javax.cache.expiry.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
- * Configuration for the streaming cache to store the stream of random numbers.
+ * Configuration for the streaming cache to store the stream of words.
  * This cache is configured with sliding window of 1 second, which means that
  * data older than 1 second will be automatically removed from the cache.
  */

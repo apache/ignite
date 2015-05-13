@@ -27,7 +27,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.stream.adapters.*;
+import org.apache.ignite.stream.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import org.jetbrains.annotations.*;
@@ -40,9 +40,9 @@ import java.util.concurrent.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
- * Tests {@link IgniteSocketStreamer}.
+ * Tests {@link SocketStreamer}.
  */
-public class IgniteSocketStreamerSelfTest extends GridCommonAbstractTest {
+public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -233,14 +233,14 @@ public class IgniteSocketStreamerSelfTest extends GridCommonAbstractTest {
      */
     private void test(@Nullable SocketMessageConverter<Tuple> converter, @Nullable byte[] delim, Runnable r) throws Exception
     {
-        IgniteSocketStreamer<Tuple, Integer, String> sockStmr = null;
+        SocketStreamer<Tuple, Integer, String> sockStmr = null;
 
         try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(null)) {
 
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
-            sockStmr = new IgniteSocketStreamer<>();
+            sockStmr = new SocketStreamer<>();
 
             IgniteCache<Integer, String> cache = ignite.cache(null);
 

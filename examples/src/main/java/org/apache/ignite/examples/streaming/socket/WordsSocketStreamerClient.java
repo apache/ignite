@@ -17,84 +17,41 @@
 
 package org.apache.ignite.examples.streaming.socket;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.streaming.wordcount.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.stream.adapters.*;
 import org.apache.ignite.stream.socket.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 /**
- * Stream words into Ignite cache through socket using {@link IgniteSocketStreamer} and message size based protocol.
+ * Sends words to socket server based on {@link SocketStreamer} using message size based protocol.
  * <p>
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start streaming using {@link SocketStreamerExample}.</li>
- *     <li>Start querying popular numbers using {@link QueryWords}.</li>
+ *     <li>Start socket server using {@link WordsSocketStreamerServer}.</li>
+ *     <li>Start a few socket clients using {@link WordsSocketStreamerClient}.</li>
+ *     <li>Start querying popular words using {@link QueryWords}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class SocketStreamerExample {
+public class WordsSocketStreamerClient {
     /** Port. */
     private static final int PORT = 5555;
 
     /**
      * @param args Args.
      */
-    public static void main(String[] args) throws InterruptedException, IOException {
-        // Mark this cluster member as client.
-        Ignition.setClientMode(true);
+    public static void main(String[] args) throws IOException {
+        InetAddress addr = InetAddress.getLocalHost();
 
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
-            // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
-
-            try (IgniteDataStreamer<AffinityUuid, String> stmr = ignite.dataStreamer(stmCache.getName())) {
-                InetAddress addr = InetAddress.getLocalHost();
-
-                // Configure socket streamer
-                IgniteSocketStreamer<String, AffinityUuid, String> sockStmr = new IgniteSocketStreamer<>();
-
-                sockStmr.setAddr(addr);
-
-                sockStmr.setPort(PORT);
-
-                sockStmr.setIgnite(ignite);
-
-                sockStmr.setStreamer(stmr);
-
-                sockStmr.setTupleExtractor(new StreamTupleExtractor<String, AffinityUuid, String>() {
-                    @Override public Map.Entry<AffinityUuid, String> extract(String word) {
-                        // By using AffinityUuid we ensure that identical
-                        // words are processed on the same cluster node.
-                        return new IgniteBiTuple<>(new AffinityUuid(word), word);
-                    }
-                });
-
-                sockStmr.start();
-
-                sendData(addr, PORT);
-            }
-        }
-    }
-
-    /**
-     * @param addr Address.
-     * @param port Port.
-     */
-    private static void sendData(InetAddress addr, int port) throws IOException, InterruptedException {
-        try (Socket sock = new Socket(addr, port);
+        try (Socket sock = new Socket(addr, PORT);
              OutputStream oos = new BufferedOutputStream(sock.getOutputStream())) {
+
+            System.out.println("Words streaming started.");
+
             while (true) {
                 try (InputStream in = StreamWords.class.getResourceAsStream("../wordcount/alice-in-wonderland.txt");
                      LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in))) {
@@ -124,5 +81,6 @@ public class SocketStreamerExample {
                 }
             }
         }
+
     }
 }

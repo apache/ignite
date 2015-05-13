@@ -22,7 +22,8 @@ import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.stream.adapters.*;
+import org.apache.ignite.stream.*;
+
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -41,7 +42,7 @@ import java.nio.*;
  * can be customized via user defined {@link SocketMessageConverter} (e.g. in order to convert messages from
  * non Java clients).
  */
-public class IgniteSocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
+public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
     /** Default threads. */
     private static final int DFLT_THREADS = Runtime.getRuntime().availableProcessors();
 

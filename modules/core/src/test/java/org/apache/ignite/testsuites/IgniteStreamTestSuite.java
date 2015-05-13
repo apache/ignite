@@ -32,7 +32,7 @@ public class IgniteStreamTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Stream Test Suite");
 
-        suite.addTest(new TestSuite(IgniteSocketStreamerSelfTest.class));
+        suite.addTest(new TestSuite(SocketStreamerSelfTest.class));
 
         return suite;
     }

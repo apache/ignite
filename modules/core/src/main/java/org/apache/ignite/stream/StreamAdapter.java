@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.adapters;
+package org.apache.ignite.stream;
 
 import org.apache.ignite.*;
 
