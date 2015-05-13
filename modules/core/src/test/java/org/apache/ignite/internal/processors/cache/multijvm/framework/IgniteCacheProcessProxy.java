@@ -221,8 +221,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         });
     }
 
+    /**
+     * Returns cache instance. Method to be called from closure at another JVM.
+     *
+     * @return Cache.
+     */
     private IgniteCache<Object, Object> cache() {
-        return Ignition.ignite(gridId).cache(cacheName);
+        IgniteCache cache = Ignition.ignite(gridId).cache(cacheName);
+
+        if (isAsync)
+            cache = cache.withAsync();
+
+        return cache;
     }
 
     /** {@inheritDoc} */
