@@ -261,10 +261,13 @@ public class GridReduceQueryExecutor {
 
         idx.addPage(page);
 
-        if (msg.code() == GridQueryNextPageResponse.CODE_RETRY)
-            r.retry = true;
+        if (msg.retry() != null) {
+            r.retry = msg.retry();
 
-        if (msg.allRows() != -1) // Only the first page contains row count.
+            while (r.latch.getCount() != 0)
+                r.latch.countDown();
+        }
+        else if (msg.allRows() != -1) // Only the first page contains row count.
             r.latch.countDown();
     }
 
@@ -274,7 +277,7 @@ public class GridReduceQueryExecutor {
      * @return Cursor.
      */
     public QueryCursor<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
-        for (int attempt = 0;; attempt++) {
+        for (;;) {
             long qryReqId = reqIdGen.incrementAndGet();
 
             QueryRun r = new QueryRun();
@@ -349,7 +352,9 @@ public class GridReduceQueryExecutor {
 
                 ResultSet res = null;
 
-                if (!r.retry) {
+                AffinityTopologyVersion retry = r.retry;
+
+                if (retry == null) {
                     if (qry.explain())
                         return explainPlan(r.conn, space, qry);
 
@@ -365,9 +370,8 @@ public class GridReduceQueryExecutor {
 //                dropTable(r.conn, tbl.getName()); TODO
                 }
 
-                if (r.retry) {
-                    if (attempt > 0)
-                        U.sleep(attempt * 10);
+                if (retry != null) {
+                    h2.awaitForCacheAffinity(retry);
 
                     continue;
                 }
@@ -697,7 +701,7 @@ public class GridReduceQueryExecutor {
         private volatile CacheException rmtErr;
 
         /** */
-        private volatile boolean retry;
+        private volatile AffinityTopologyVersion retry;
     }
 
     /**

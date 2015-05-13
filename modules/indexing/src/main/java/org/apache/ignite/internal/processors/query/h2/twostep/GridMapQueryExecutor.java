@@ -216,21 +216,10 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param topVer Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void awaitForCacheAffinity(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
-
-        if (fut != null)
-            fut.get();
-    }
-
-    /**
      * @param cacheNames Cache names.
      * @param topVer Topology version.
      * @param reserved Reserved list.
-     * @return {@code true} If all the needed partitions succesfuly reserved.
+     * @return {@code true} If all the needed partitions successfully reserved.
      * @throws IgniteCheckedException If failed.
      */
     private boolean reservePartitions(Collection<String> cacheNames,  AffinityTopologyVersion topVer,
@@ -297,7 +286,7 @@ public class GridMapQueryExecutor {
 
             if (topVer != null) {
                 // Await all caches to be deployed on this node and all the needed topology changes to arrive.
-                awaitForCacheAffinity(topVer);
+                h2.awaitForCacheAffinity(topVer);
 
                 // Reserve primary partitions.
                 if (!reservePartitions(F.concat(true, req.space(), req.extraSpaces()), topVer, reserved)) {
@@ -476,7 +465,7 @@ public class GridMapQueryExecutor {
             loc ? null : Collections.<Message>emptyList(),
             loc ? Collections.<Value[]>emptyList() : null);
 
-        msg.code(GridQueryNextPageResponse.CODE_RETRY);
+        msg.retry(ctx.discovery().topologyVersionEx());
 
         ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
     }
