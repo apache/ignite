@@ -61,6 +61,14 @@ public class IgniteNodeRunner {
         }
     }
 
+    /**
+     * Stores {@link IgniteConfiguration} to file as xml.
+     *
+     * @param cfg Ignite Configuration.
+     * @return A name of file where the configuration was stored.
+     * @throws IOException If failed.
+     * @see #readCfgFromFileAndDeleteFile(String)
+     */
     public static String storeToFile(IgniteConfiguration cfg) throws IOException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
@@ -68,6 +76,7 @@ public class IgniteNodeRunner {
             cfg.setMBeanServer(null);
             cfg.setMarshaller(null);
             cfg.setDiscoverySpi(null);
+            cfg.setGridLogger(null);
 
             new XStream().toXML(cfg, out);
         }
@@ -75,6 +84,14 @@ public class IgniteNodeRunner {
         return fileName;
     }
 
+    /**
+     * Reads configuration from given file and delete the file after.
+     *
+     * @param fileName File name.
+     * @return Readed configuration.
+     * @throws IOException If failed.
+     * @see #storeToFile(IgniteConfiguration)
+     */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName) throws IOException {
         try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
