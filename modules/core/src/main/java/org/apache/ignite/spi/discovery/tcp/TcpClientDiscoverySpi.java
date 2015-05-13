@@ -392,18 +392,18 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     return false;
                 }
 
+                final GridFutureAdapter<Boolean> finalFut = fut;
+
+                timer.schedule(new TimerTask() {
+                    @Override public void run() {
+                        if (pingFuts.remove(nodeId, finalFut))
+                            finalFut.onDone(false);
+                    }
+                }, netTimeout);
+
                 sockWriter.sendMessage(new TcpDiscoveryClientPingRequest(getLocalNodeId(), nodeId));
             }
         }
-
-        final GridFutureAdapter<Boolean> finalFut = fut;
-
-        timer.schedule(new TimerTask() {
-            @Override public void run() {
-                if (pingFuts.remove(nodeId, finalFut))
-                    finalFut.onDone(false);
-            }
-        }, netTimeout);
 
         try {
             return fut.get();
