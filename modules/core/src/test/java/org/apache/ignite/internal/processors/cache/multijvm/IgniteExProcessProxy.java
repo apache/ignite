@@ -66,10 +66,11 @@ public class IgniteExProcessProxy implements IgniteEx {
      * @param log Logger.
      * @param locJvmGrid Local jvm grid.
      */
-    public IgniteExProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid) throws Exception {
+    public IgniteExProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid)
+        throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = log.getLogger("jvm-" + id);
+        this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
         IgniteNodeRunner.storeToFile(cfg.getCacheConfiguration()[0]);
 

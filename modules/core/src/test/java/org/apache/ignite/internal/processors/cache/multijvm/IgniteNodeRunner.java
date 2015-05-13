@@ -90,6 +90,8 @@ public class IgniteNodeRunner {
         IgniteConfiguration cfg = GridAbstractTest.getConfiguration0(gridName, new IgniteTestResources(),
             GridCachePartitionedMultiJvmFullApiSelfTest.class, false);
 
+        cfg.setGridLogger(null);
+
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
 //        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
