@@ -199,7 +199,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
             commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-            IgniteInternalFuture<IgniteInternalTx> prepFut = txEx.prepareAsync();
+            IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
 
             waitPrepared(ignite(1));
 
@@ -360,7 +360,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
         commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-        IgniteInternalFuture<IgniteInternalTx> prepFut = txEx.prepareAsync();
+        IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
 
         waitPrepared(ignite(1));
 

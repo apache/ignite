@@ -1281,25 +1281,18 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                         GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
-                        try {
-                            if (res.dhtVersion(i) == null) {
-                                onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
-                                    "(will fail the lock): " + res));
-
-                                return;
-                            }
-
-                            // Set value to detached entry.
-                            entry.resetFromPrimary(newVal, dhtVer);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
+                        if (res.dhtVersion(i) == null) {
+                            onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
+                                "(will fail the lock): " + res));
 
                             return;
                         }
+
+                        // Set value to detached entry.
+                        entry.resetFromPrimary(newVal, dhtVer);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                     }
                     else
                         cctx.mvcc().markExplicitOwner(k, threadId);

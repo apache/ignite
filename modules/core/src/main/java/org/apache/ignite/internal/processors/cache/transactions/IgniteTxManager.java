@@ -1816,7 +1816,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (nearVer.equals(tx.nearXidVersion())) {
                 TransactionState state = tx.state();
 
-                IgniteInternalFuture<IgniteInternalTx> prepFut = tx.currentPrepareFuture();
+                IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                 if (prepFut != null && !prepFut.isDone()) {
                     if (log.isDebugEnabled())
@@ -1828,8 +1828,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     final Collection<GridCacheVersion> processedVers0 = processedVers;
 
-                    prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> prepFut) {
+                    prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> prepFut) {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction prepare future finished: " + tx);
 
@@ -2029,11 +2029,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (tx.state() == PREPARED)
                                 commitIfPrepared(tx);
                             else {
-                                IgniteInternalFuture<IgniteInternalTx> prepFut = tx.currentPrepareFuture();
+                                IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
                                 if (prepFut != null) {
-                                    prepFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                    prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                        @Override public void apply(IgniteInternalFuture<?> fut) {
                                             if (tx.state() == PREPARED)
                                                 commitIfPrepared(tx);
                                             else if (tx.setRollbackOnly())

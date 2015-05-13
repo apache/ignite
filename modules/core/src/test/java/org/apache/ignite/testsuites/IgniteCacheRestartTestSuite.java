@@ -35,10 +35,10 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
 
-        // TODO: IGNITE-157.
-        // suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        // suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
-        // suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+        // TODO IGNITE-882.
+        //suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+        //suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
+        //suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
         // suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class); // TODO IGNITE-747
