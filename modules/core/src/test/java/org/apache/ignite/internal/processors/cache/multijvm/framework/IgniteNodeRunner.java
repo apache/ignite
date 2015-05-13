@@ -75,20 +75,21 @@ public class IgniteNodeRunner {
         return fileName;
     }
 
-    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName) throws FileNotFoundException {
-        BufferedReader cfgReader = new BufferedReader(new FileReader(fileName));
+    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName) throws IOException {
+        try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
+            IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
 
-        IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
+            cfg.setMarshaller(new OptimizedMarshaller(false));
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+            TcpDiscoverySpi disco = new TcpDiscoverySpi();
+            disco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
+            cfg.setDiscoverySpi(disco);
 
-        cfg.setDiscoverySpi(disco);
-
-        new File(fileName).delete();
-
-        return cfg;
+            return cfg;
+        }
+        finally {
+            new File(fileName).delete();
+        }
     }
 }
