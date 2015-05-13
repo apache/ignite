@@ -66,7 +66,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Ip finder for TCP discovery. */
-    public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
