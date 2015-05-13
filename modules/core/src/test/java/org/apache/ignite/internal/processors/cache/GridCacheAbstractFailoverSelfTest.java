@@ -25,12 +25,12 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
@@ -69,6 +69,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
+
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+        discoSpi.setSocketTimeout(10_000);
+        discoSpi.setAckTimeout(10_000);
+        discoSpi.setNetworkTimeout(10_000);
 
         return cfg;
     }

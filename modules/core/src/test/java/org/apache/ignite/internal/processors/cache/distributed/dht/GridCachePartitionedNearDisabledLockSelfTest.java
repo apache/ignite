@@ -15,24 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
  *
  */
-public class GridCacheAtomicReplicatedFailoverSelfTest extends GridCacheAtomicFailoverSelfTest {
+public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration ccfg = super.cacheConfiguration();
+
+        assertNotNull(ccfg.getNearConfiguration());
+
+        ccfg.setNearConfiguration(null);
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+    @Override protected boolean isPartitioned() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testLockReentrancy() throws Throwable {
+        fail("https://issues.apache.org/jira/browse/IGNITE-835");
     }
 }
