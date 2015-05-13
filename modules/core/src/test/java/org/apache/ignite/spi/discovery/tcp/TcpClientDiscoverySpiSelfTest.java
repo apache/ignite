@@ -128,7 +128,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 if (addr.startsWith("/"))
                     addr = addr.substring(1);
 
-                ipFinder.setAddresses(Arrays.asList(addr));
+                ipFinder.setAddresses(Collections.singletonList(addr));
             }
 
             disco.setIpFinder(ipFinder);
@@ -503,8 +503,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-//        setClientRouter(2, 2);
-
         srvFailedLatch = new CountDownLatch(2 + 2);
         clientFailedLatch = new CountDownLatch(2 + 2);
 
@@ -776,7 +774,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         long startTime = -1;
 
         for (Ignite g : G.allGrids()) {
-            IgniteEx kernal = (IgniteKernal)g;
+            IgniteEx kernal = (IgniteEx)g;
 
             assertTrue(kernal.context().discovery().gridStartTime() > 0);
 
@@ -802,7 +800,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         if (addr.startsWith("/"))
             addr = addr.substring(1);
 
-        ipFinder.setAddresses(Arrays.asList(addr));
+        ipFinder.setAddresses(Collections.singletonList(addr));
     }
 
     /**
@@ -992,6 +990,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class MessageListener implements IgniteBiPredicate<UUID, Object> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
