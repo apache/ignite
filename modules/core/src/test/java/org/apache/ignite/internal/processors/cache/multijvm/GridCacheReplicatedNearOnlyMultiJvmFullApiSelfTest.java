@@ -24,6 +24,11 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
  */
 public class GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest extends GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("Hangs after commit: \"fix todo with sleep.\"");
+    }
+
+    /** {@inheritDoc} */
     protected boolean isMultiJvm() {
         return true;
     }
