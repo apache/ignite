@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -61,6 +62,9 @@ public class IgniteExProcessProxy implements IgniteEx {
     /** Compute. */
     private transient final IgniteCompute compute;
 
+    /** Remote ignite instance started latch. */
+    private transient final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
+
     /**
      * @param cfg Configuration.
      * @param log Logger.
@@ -83,6 +87,15 @@ public class IgniteExProcessProxy implements IgniteEx {
                 filteredJvmArgs.add(arg);
         }
 
+        locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+            @Override public boolean applyx(Event e) {
+                if (((DiscoveryEvent)e).eventNode().id().equals(id))
+                    rmtNodeStartedLatch.countDown();
+
+                return true;
+            }
+        }, EventType.EVT_NODE_JOINED);
+
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
             cfgFileName, // Params.
@@ -98,8 +111,7 @@ public class IgniteExProcessProxy implements IgniteEx {
             System.getProperty("surefire.test.class.path")
         );
 
-        // TODO: delete sleep.
-        U.sleep(3_000);
+        assert rmtNodeStartedLatch.await(3, TimeUnit.SECONDS);
 
         gridProxies.put(cfg.getGridName(), this);
 
