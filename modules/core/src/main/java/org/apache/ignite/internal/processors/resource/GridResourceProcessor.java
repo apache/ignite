@@ -278,16 +278,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             log.debug("Injecting resources: " + job);
 
         // Unwrap Proxy object.
-        Object obj = unwrapTarget(unwrapJob(job));
+        Object obj = unwrapTarget(job);
 
         injectToJob(dep, taskCls, obj, ses, jobCtx);
-
-        if (obj instanceof GridInternalWrapper) {
-            Object usrObj = ((GridInternalWrapper)obj).userObject();
-
-            if (usrObj != null)
-                injectToJob(dep, taskCls, usrObj, ses, jobCtx);
-        }
     }
 
     /**
@@ -326,19 +319,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 }
             }
         }
-    }
-
-    /**
-     * Gets rid of job wrapper, if any.
-     *
-     * @param job Job to unwrap.
-     * @return Unwrapped job.
-     */
-    private ComputeJob unwrapJob(ComputeJob job) {
-        if (job instanceof GridComputeJobWrapper)
-            return ((GridComputeJobWrapper)job).wrappedJob();
-
-        return job;
     }
 
     /**

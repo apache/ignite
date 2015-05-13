@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -142,9 +144,9 @@ class GridResourceIoc {
 
         boolean injected = false;
 
-        for (GridResourceField field : descr.recursiveFields()) {
+        for (Field field : descr.recursiveFields()) {
             try {
-                Object obj = field.getField().get(target);
+                Object obj = field.get(target);
 
                 if (obj != null) {
                     assert checkedObjs != null;
@@ -153,7 +155,7 @@ class GridResourceIoc {
                 }
             }
             catch (IllegalAccessException e) {
-                throw new IgniteCheckedException("Failed to inject resource [field=" + field.getField().getName() +
+                throw new IgniteCheckedException("Failed to inject resource [field=" + field.getName() +
                     ", target=" + target + ']', e);
             }
         }
@@ -253,7 +255,7 @@ class GridResourceIoc {
      */
     private static class ClassDescriptor {
         /** */
-        private final GridResourceField[] recursiveFields;
+        private final Field[] recursiveFields;
 
         /** */
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
@@ -265,33 +267,35 @@ class GridResourceIoc {
             Map<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> annMap
                 = new HashMap<>();
 
-            Collection<GridResourceField> recursiveFieldsList = new ArrayList<>();
+            List<Field> recursiveFieldsList = new ArrayList<>();
 
             boolean allowImplicitInjection = !GridNoImplicitInjection.class.isAssignableFrom(cls);
 
             for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Field field : cls0.getDeclaredFields()) {
-                    Annotation[] fieldAnns = field.getAnnotations();
+                    InjectRecursively injectRecursively = field.getAnnotation(InjectRecursively.class);
 
-                    for (Annotation ann : fieldAnns) {
-                        T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
+                    if (injectRecursively != null
+                        || (allowImplicitInjection && field.getName().startsWith("this$")
+                            || field.getName().startsWith("val$"))) {
+                        field.setAccessible(true);
 
-                        if (t2 == null) {
-                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                new ArrayList<GridResourceField>(),
-                                new ArrayList<GridResourceMethod>());
-
-                            annMap.put(ann.annotationType(), t2);
-                        }
-
-                        t2.get1().add(new GridResourceField(field, ann));
+                        recursiveFieldsList.add(field);
                     }
+                    else {
+                        for (Annotation ann : field.getAnnotations()) {
+                            T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
 
-                    if (allowImplicitInjection
-                        && fieldAnns.length == 0
-                        && GridResourceUtils.mayRequireResources(field)) {
-                        // Account for anonymous inner classes.
-                        recursiveFieldsList.add(new GridResourceField(field, null));
+                            if (t2 == null) {
+                                t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
+                                    new ArrayList<GridResourceField>(),
+                                    new ArrayList<GridResourceMethod>());
+
+                                annMap.put(ann.annotationType(), t2);
+                            }
+
+                            t2.get1().add(new GridResourceField(field, ann));
+                        }
                     }
                 }
 
@@ -312,7 +316,8 @@ class GridResourceIoc {
                 }
             }
 
-            recursiveFields = GridResourceField.toArray(recursiveFieldsList);
+            recursiveFields = recursiveFieldsList.isEmpty() ? U.EMPTY_FIELDS
+                : recursiveFieldsList.toArray(new Field[recursiveFieldsList.size()]);
 
             this.annMap = IgniteUtils.limitedMap(annMap.size());
 
@@ -328,7 +333,7 @@ class GridResourceIoc {
         /**
          * @return Recursive fields.
          */
-        public GridResourceField[] recursiveFields() {
+        public Field[] recursiveFields() {
             return recursiveFields;
         }
 
