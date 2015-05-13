@@ -72,7 +72,7 @@ public class IgniteExProcessProxy implements IgniteEx {
         this.locJvmGrid = locJvmGrid;
         this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        IgniteNodeRunner.storeToFile(cfg.setNodeId(id));
+        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id));
 
         List<String> jvmArgs = U.jvmArgs();
 
@@ -85,7 +85,7 @@ public class IgniteExProcessProxy implements IgniteEx {
 
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
-            IgniteNodeRunner.asParams(id, cfg), // Params.
+            cfgFileName, // Params.
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {

@@ -36,7 +36,7 @@ import java.util.*;
 public class IgniteNodeRunner {
     /** */
     private static final String IGNITE_CONFIGURATION_FILE = System.getProperty("java.io.tmpdir") +
-        File.separator + "igniteConfiguration.tmp";
+        File.separator + "igniteConfiguration.tmp_";
 
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
@@ -50,7 +50,7 @@ public class IgniteNodeRunner {
 
             X.println("Starting Ignite Node... Args" + Arrays.toString(args));
 
-            IgniteConfiguration cfg = readFromFile();
+            IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
 
             Ignition.start(cfg);
         }
@@ -61,37 +61,34 @@ public class IgniteNodeRunner {
         }
     }
 
-    /**
-     * @param id Grid id.
-     * @param cfg Configuration.
-     * @return Given paramethers as command line string arguments.
-     */
-    public static String asParams(UUID id, IgniteConfiguration cfg) {
-        return id.toString() + ' ' + cfg.getGridName();
-    }
+    public static String storeToFile(IgniteConfiguration cfg) throws IOException {
+        String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
-    public static void storeToFile(IgniteConfiguration cfg) throws IOException {
-        try(OutputStream out = new BufferedOutputStream(new FileOutputStream(IGNITE_CONFIGURATION_FILE))) {
+        try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             cfg.setMBeanServer(null);
             cfg.setMarshaller(null);
             cfg.setDiscoverySpi(null);
 
             new XStream().toXML(cfg, out);
         }
+
+        return fileName;
     }
 
-    private static IgniteConfiguration readFromFile() throws FileNotFoundException {
-        BufferedReader cfgReader = new BufferedReader(new FileReader(IGNITE_CONFIGURATION_FILE));
-        
+    private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName) throws FileNotFoundException {
+        BufferedReader cfgReader = new BufferedReader(new FileReader(fileName));
+
         IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
-        
+
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
-        
+
         cfg.setDiscoverySpi(disco);
-        
+
+        new File(fileName).delete();
+
         return cfg;
     }
 }
