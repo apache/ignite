@@ -252,8 +252,9 @@ public class GridSqlQuerySplitter {
         assert from != null;
 
         if (from instanceof GridSqlJoin) {
-            for (int i = 0; i < from.size(); i++)
-                collectAllSpacesInFrom(from.child(i), spaces);
+            // Left and right.
+            collectAllSpacesInFrom(from.child(0), spaces);
+            collectAllSpacesInFrom(from.child(1), spaces);
         }
         else if (from instanceof GridSqlTable) {
             String schema = ((GridSqlTable)from).schema();
@@ -266,7 +267,7 @@ public class GridSqlQuerySplitter {
         else if (from instanceof GridSqlAlias)
             collectAllSpacesInFrom(from.child(), spaces);
         else if (!(from instanceof GridSqlFunction))
-            throw new IllegalStateException(from.getClass().getName());
+            throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
     }
 
     /**
