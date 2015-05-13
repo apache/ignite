@@ -109,7 +109,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public V getAndPutIfAbsent(final K key, final V val) throws CacheException {
         return (V)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).getAndPutIfAbsent(key, val);
+                return cache().getAndPutIfAbsent(key, val);
             }
         });
     }
@@ -161,7 +161,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public V localPeek(final K key, final CachePeekMode... peekModes) {
         return (V)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).localPeek(key, peekModes);
+                return cache().localPeek(key, peekModes);
             }
         });
     }
@@ -175,7 +175,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public int size(final CachePeekMode... peekModes) throws CacheException {
         return (int)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).size(peekModes);
+                return cache().size(peekModes);
             }
         });
     }
@@ -184,7 +184,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public int localSize(final CachePeekMode... peekModes) {
         return (int)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).localSize(peekModes);
+                return cache().localSize(peekModes);
             }
         });
     }
@@ -199,16 +199,20 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public V get(final K key) {
         return (V)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).get(key);
+                return cache().get(key);
             }
         });
+    }
+
+    private IgniteCache<Object, Object> cache() {
+        return Ignition.ignite(gridId).cache(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(final Set<? extends K> keys) {
         return (Map<K, V>)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).getAll(keys);
+                return cache().getAll(keys);
             }
         });
     }
@@ -217,7 +221,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean containsKey(final K key) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).containsKey(key);
+                return cache().containsKey(key);
             }
         });
     }
@@ -231,7 +235,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean containsKeys(final Set<? extends K> keys) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).containsKeys(keys);
+                return cache().containsKeys(keys);
             }
         });
     }
@@ -240,7 +244,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void put(final K key, final V val) {;
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).put(key, val);
+                cache().put(key, val);
             }
         });
     }
@@ -249,7 +253,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public V getAndPut(final K key, final V val) {
         return (V)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).getAndPut(key, val);
+                return cache().getAndPut(key, val);
             }
         });
     }
@@ -258,7 +262,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void putAll(final Map<? extends K, ? extends V> map) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).putAll(map);
+                cache().putAll(map);
             }
         });
     }
@@ -267,7 +271,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean putIfAbsent(final K key, final V val) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).putIfAbsent(key, val);
+                return cache().putIfAbsent(key, val);
             }
         });
     }
@@ -276,7 +280,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean remove(final K key) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).remove(key);
+                return cache().remove(key);
             }
         });
     }
@@ -285,7 +289,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean remove(final K key, final V oldVal) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).remove(key, oldVal);
+                return cache().remove(key, oldVal);
             }
         });
     }
@@ -294,7 +298,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public V getAndRemove(final K key) {
         return (V)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).getAndRemove(key);
+                return cache().getAndRemove(key);
             }
         });
     }
@@ -303,7 +307,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean replace(final K key, final V oldVal, final V newVal) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).replace(key, oldVal, newVal);
+                return cache().replace(key, oldVal, newVal);
             }
         });
     }
@@ -312,7 +316,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean replace(final K key, final V val) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).replace(key, val);
+                return cache().replace(key, val);
             }
         });
     }
@@ -321,7 +325,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public V getAndReplace(final K key, final V val) {
         return (V)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).getAndReplace(key, val);
+                return cache().getAndReplace(key, val);
             }
         });
     }
@@ -330,7 +334,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void removeAll(final Set<? extends K> keys) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).removeAll(keys);
+                cache().removeAll(keys);
             }
         });
     }
@@ -339,7 +343,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void removeAll() {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).removeAll();
+                cache().removeAll();
             }
         });
     }
@@ -348,7 +352,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void clear() {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).clear();
+                cache().clear();
             }
         });
     }
@@ -357,7 +361,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void clear(final K key) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).clear(key);
+                cache().clear(key);
             }
         });
     }
@@ -366,7 +370,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void clearAll(final Set<? extends K> keys) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).clearAll(keys);
+                cache().clearAll(keys);
             }
         });
     }
@@ -375,7 +379,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void localClear(final K key) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).localClear(key);
+                cache().localClear(key);
             }
         });
     }
@@ -384,7 +388,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void localClearAll(final Set<? extends K> keys) {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).localClearAll(keys);
+                cache().localClearAll(keys);
             }
         });
     }
@@ -393,7 +397,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public <T> T invoke(final K key, final EntryProcessor<K, V, T> entryProcessor, final Object... arguments) {
         return (T)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).invoke(key,
+                return cache().invoke(key,
                     (EntryProcessor<Object, Object, Object>)entryProcessor, arguments);
             }
         });
@@ -403,7 +407,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public <T> T invoke(final K key, final CacheEntryProcessor<K, V, T> entryProcessor, final Object... arguments) {
         return (T)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).invoke(key,
+                return cache().invoke(key,
                     (CacheEntryProcessor<Object, Object, Object>)entryProcessor, arguments);
             }
         });
@@ -414,7 +418,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         final Object... args) {
         return (Map<K, EntryProcessorResult<T>>)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).invokeAll(keys,
+                return cache().invokeAll(keys,
                     (EntryProcessor<Object, Object, Object>)entryProcessor, args);
             }
         });
@@ -424,7 +428,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public String getName() {
         return (String)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).getName();
+                return cache().getName();
             }
         });
     }
@@ -438,7 +442,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void close() {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                Ignition.ignite(gridId).cache(cacheName).close();
+                cache().close();
             }
         });
     }
@@ -447,7 +451,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public boolean isClosed() {
         return (boolean)compute.call(new IgniteCallable<Object>() {
             @Override public Object call() throws Exception {
-                return Ignition.ignite(gridId).cache(cacheName).isClosed();
+                return cache().isClosed();
             }
         });
     }
