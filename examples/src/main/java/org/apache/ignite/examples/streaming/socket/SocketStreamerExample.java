@@ -18,36 +18,30 @@
 package org.apache.ignite.examples.streaming.socket;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.streaming.numbers.*;
+import org.apache.ignite.examples.streaming.wordcount.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.stream.*;
 import org.apache.ignite.stream.adapters.*;
 import org.apache.ignite.stream.socket.*;
 
-import javax.cache.processor.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * Streams random numbers into the streaming cache using {@link IgniteSocketStreamer}.
+ * Stream words into Ignite cache through socket using {@link IgniteSocketStreamer} and message size based protocol.
+ * <p>
  * To start the example, you should:
  * <ul>
- *      <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *      <li>Start streaming using {@link SocketStreamerExample}.</li>
- *      <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start streaming using {@link SocketStreamerExample}.</li>
+ *     <li>Start querying popular numbers using {@link QueryWords}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class SocketStreamerExample {
-    /** Random number generator. */
-    private static final Random RAND = new Random();
-
-    /** Range within which to generate numbers. */
-    private static final int RANGE = 1000;
-
     /** Port. */
     private static final int PORT = 5555;
 
@@ -63,27 +57,13 @@ public class SocketStreamerExample {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
+            IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
 
-            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                // Allow data updates.
-                stmr.allowOverwrite(true);
-
-                // Configure data transformation to count instances of the same word.
-                stmr.receiver(new StreamTransformer<Integer, Long>() {
-                    @Override public Object process(MutableEntry<Integer, Long> e, Object... objects)
-                        throws EntryProcessorException {
-                        Long val = e.getValue();
-
-                        e.setValue(val == null ? 1L : val + 1);
-
-                        return null;
-                    }
-                });
-
+            try (IgniteDataStreamer<AffinityUuid, String> stmr = ignite.dataStreamer(stmCache.getName())) {
                 InetAddress addr = InetAddress.getLocalHost();
 
-                IgniteSocketStreamer<Tuple, Integer, Long> sockStmr = new IgniteSocketStreamer<>();
+                // Configure socket streamer
+                IgniteSocketStreamer<String, AffinityUuid, String> sockStmr = new IgniteSocketStreamer<>();
 
                 sockStmr.setAddr(addr);
 
@@ -93,9 +73,11 @@ public class SocketStreamerExample {
 
                 sockStmr.setStreamer(stmr);
 
-                sockStmr.setTupleExtractor(new StreamTupleExtractor<Tuple, Integer, Long>() {
-                    @Override public Map.Entry<Integer, Long> extract(Tuple tuple) {
-                        return new IgniteBiTuple<>(tuple.key, tuple.cnt);
+                sockStmr.setTupleExtractor(new StreamTupleExtractor<String, AffinityUuid, String>() {
+                    @Override public Map.Entry<AffinityUuid, String> extract(String word) {
+                        // By using AffinityUuid we ensure that identical
+                        // words are processed on the same cluster node.
+                        return new IgniteBiTuple<>(new AffinityUuid(word), word);
                     }
                 });
 
@@ -114,45 +96,33 @@ public class SocketStreamerExample {
         try (Socket sock = new Socket(addr, port);
              OutputStream oos = new BufferedOutputStream(sock.getOutputStream())) {
             while (true) {
-                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                     ObjectOutputStream out = new ObjectOutputStream(bos)) {
-                    Tuple tuple = new Tuple(RAND.nextInt(RANGE), 1L);
+                try (InputStream in = StreamWords.class.getResourceAsStream("../wordcount/alice-in-wonderland.txt");
+                     LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in))) {
+                    for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
+                        for (String word : line.split(" ")) {
+                            if (!word.isEmpty()) {
+                                // Stream words into Ignite through socket.
+                                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                                     ObjectOutputStream out = new ObjectOutputStream(bos)) {
 
-                    out.writeObject(tuple);
+                                    // Write message
+                                    out.writeObject(word);
 
-                    byte[] arr = bos.toByteArray();
+                                    byte[] arr = bos.toByteArray();
 
-                    oos.write(arr.length >>> 24);
-                    oos.write(arr.length >>> 16);
-                    oos.write(arr.length >>> 8);
-                    oos.write(arr.length);
+                                    // Write message length
+                                    oos.write(arr.length >>> 24);
+                                    oos.write(arr.length >>> 16);
+                                    oos.write(arr.length >>> 8);
+                                    oos.write(arr.length);
 
-                    oos.write(arr);
+                                    oos.write(arr);
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-
-    /**
-     * Tuple.
-     */
-    private static class Tuple implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0;
-
-        /** Key. */
-        private final int key;
-
-        /** Count. */
-        private final long cnt;
-
-        /**
-         * @param key Key.
-         * @param cnt Count.
-         */
-        public Tuple(int key, long cnt) {
-            this.key = key;
-            this.cnt = cnt;
         }
     }
 }

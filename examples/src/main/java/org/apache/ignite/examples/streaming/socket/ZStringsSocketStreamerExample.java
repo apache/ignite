@@ -18,40 +18,34 @@
 package org.apache.ignite.examples.streaming.socket;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.examples.streaming.numbers.*;
+import org.apache.ignite.examples.streaming.wordcount.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.stream.*;
 import org.apache.ignite.stream.adapters.*;
 import org.apache.ignite.stream.socket.*;
 
-import javax.cache.processor.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * Stream random numbers into the streaming cache using {@link IgniteSocketStreamer}.
+ * Stream words into Ignite cache through socket using {@link IgniteSocketStreamer} and message delimiter based
+ * protocol.
  * <p>
  * Example illustrates usage of TCP socket streamer in case of non-Java clients. In this example client streams
  * zero-terminated strings.
  * <p>
  * To start the example, you should:
  * <ul>
- *      <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *      <li>Start streaming using {@link ZStringsSocketStreamerExample}.</li>
- *      <li>Start querying popular numbers using {@link QueryPopularNumbers}.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start streaming using {@link ZStringsSocketStreamerExample}.</li>
+ *     <li>Start querying popular numbers using {@link QueryWords}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class ZStringsSocketStreamerExample {
-    /** Random number generator. */
-    private static final Random RAND = new Random();
-
-    /** Range within which to generate numbers. */
-    private static final int RANGE = 1000;
-
     /** Port. */
     private static final int PORT = 5555;
 
@@ -70,27 +64,13 @@ public class ZStringsSocketStreamerExample {
                 return;
 
             // The cache is configured with sliding window holding 1 second of the streaming data.
-            IgniteCache<Integer, Long> stmCache = ignite.getOrCreateCache(CacheConfig.randomNumbersCache());
+            IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
 
-            try (IgniteDataStreamer<Integer, Long> stmr = ignite.dataStreamer(stmCache.getName())) {
-                // Allow data updates.
-                stmr.allowOverwrite(true);
-
-                // Configure data transformation to count instances of the same word.
-                stmr.receiver(new StreamTransformer<Integer, Long>() {
-                    @Override public Object process(MutableEntry<Integer, Long> e, Object... objects)
-                        throws EntryProcessorException {
-                        Long val = e.getValue();
-
-                        e.setValue(val == null ? 1L : val + 1);
-
-                        return null;
-                    }
-                });
-
+            try (IgniteDataStreamer<AffinityUuid, String> stmr = ignite.dataStreamer(stmCache.getName())) {
                 InetAddress addr = InetAddress.getLocalHost();
 
-                IgniteSocketStreamer<String, Integer, Long> sockStmr = new IgniteSocketStreamer<>();
+                // Configure socket streamer
+                IgniteSocketStreamer<String, AffinityUuid, String> sockStmr = new IgniteSocketStreamer<>();
 
                 sockStmr.setAddr(addr);
 
@@ -114,10 +94,11 @@ public class ZStringsSocketStreamerExample {
                     }
                 });
 
-                sockStmr.setTupleExtractor(new StreamTupleExtractor<String, Integer, Long>() {
-                    @Override public Map.Entry<Integer, Long> extract(String input) {
-                        String[] pair = input.split("=");
-                        return new IgniteBiTuple<>(Integer.parseInt(pair[0]), Long.parseLong(pair[1]));
+                sockStmr.setTupleExtractor(new StreamTupleExtractor<String, AffinityUuid, String>() {
+                    @Override public Map.Entry<AffinityUuid, String> extract(String word) {
+                        // By using AffinityUuid we ensure that identical
+                        // words are processed on the same cluster node.
+                        return new IgniteBiTuple<>(new AffinityUuid(word), word);
                     }
                 });
 
@@ -137,14 +118,23 @@ public class ZStringsSocketStreamerExample {
              OutputStream oos = new BufferedOutputStream(sock.getOutputStream())) {
 
             while (true) {
-                int key = RAND.nextInt(RANGE);
+                try (InputStream in = StreamWords.class.getResourceAsStream("../wordcount/alice-in-wonderland.txt");
+                     LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in))) {
+                    for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
+                        for (String word : line.split(" ")) {
+                            if (!word.isEmpty()) {
+                                // Stream words into Ignite through socket.
+                                byte[] arr = word.getBytes("ASCII");
 
-                String str = key + "=1";
+                                // Write message
+                                oos.write(arr);
 
-                byte[] arr = str.getBytes("ASCII");
-
-                oos.write(arr);
-                oos.write(DELIM);
+                                // Write message delimiter
+                                oos.write(DELIM);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
