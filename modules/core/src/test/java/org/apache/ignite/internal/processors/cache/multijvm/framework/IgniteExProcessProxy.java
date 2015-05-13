@@ -89,8 +89,11 @@ public class IgniteExProcessProxy implements IgniteEx {
 
         locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
             @Override public boolean applyx(Event e) {
-                if (((DiscoveryEvent)e).eventNode().id().equals(id))
+                if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
                     rmtNodeStartedLatch.countDown();
+
+                    return false;
+                }
 
                 return true;
             }

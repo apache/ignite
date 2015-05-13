@@ -119,7 +119,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** All nodes join latch (for multi JVM mode). */
     private CountDownLatch allNodesJoinLatch;
 
-    /** /** Node join listener (for multi JVM mode). */
+    /** Node join listener (for multi JVM mode). */
     private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
         @Override public boolean apply(Event evt) {
             allNodesJoinLatch.countDown();
@@ -262,17 +262,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return IgnitionEx.start(optimize(cfg), ctx);
         }
 
-        startingGrid.set(gridName);
-
-        try {
-            IgniteConfiguration cfg = optimize(getConfiguration(gridName));
-
-            return new IgniteExProcessProxy(cfg, log, grid(0));
-        }
-        finally {
-            startingGrid.set(null);
-        }
-
+        return new IgniteExProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
     }
 
     /** {@inheritDoc} */
@@ -280,9 +270,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (!isMultiJvm() || idx == 0)
             return super.grid(idx);
 
-        String name = getTestGridName(idx);
-
-        return IgniteExProcessProxy.get(name);
+        return IgniteExProcessProxy.get(getTestGridName(idx));
     }
 
     /**
@@ -294,9 +282,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (!isMultiJvm() || idx == 0)
             return super.jcache(idx);
 
-        String name = getTestGridName(idx);
-
-        return IgniteExProcessProxy.get(name).cache(null);
+        return IgniteExProcessProxy.get(getTestGridName(idx)).cache(null);
     }
 
     /** {@inheritDoc} */

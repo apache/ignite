@@ -1053,7 +1053,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Path for specific marshaller.
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    private static String getDefaultCheckpointPath(Marshaller marshaller) {
+    protected String getDefaultCheckpointPath(Marshaller marshaller) {
         if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
@@ -1085,11 +1085,6 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
-        return getConfiguration0(gridName, rsrcs, getClass(), isDebug());
-    }
-
-    public static IgniteConfiguration getConfiguration0(String gridName, IgniteTestResources rsrcs,
-        Class<? extends GridAbstractTest> cls, boolean isDebug) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
@@ -1105,14 +1100,14 @@ public abstract class GridAbstractTest extends TestCase {
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
-        commSpi.setLocalPort(GridTestUtils.getNextCommPort(cls));
+        commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         commSpi.setTcpNoDelay(true);
 
         cfg.setCommunicationSpi(commSpi);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        if (isDebug) {
+        if (isDebug()) {
             discoSpi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
             cfg.setNetworkTimeout(Long.MAX_VALUE);
         }
@@ -1127,13 +1122,13 @@ public abstract class GridAbstractTest extends TestCase {
         // Set heartbeat interval to 1 second to speed up tests.
         discoSpi.setHeartbeatFrequency(1000);
 
-        String mcastAddr = GridTestUtils.getNextMulticastGroup(cls);
+        String mcastAddr = GridTestUtils.getNextMulticastGroup(getClass());
 
         if (!F.isEmpty(mcastAddr)) {
             TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
 
             ipFinder.setMulticastGroup(mcastAddr);
-            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(cls));
+            ipFinder.setMulticastPort(GridTestUtils.getNextMulticastPort(getClass()));
 
             discoSpi.setIpFinder(ipFinder);
         }

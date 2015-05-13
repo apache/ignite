@@ -22,7 +22,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.*;
 /**
  * Multy Jvm tests.
  */
-public class GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest extends GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest {
+public class GridCacheAtomicClientOnlyMultiJvmFullApiSelfTest extends 
+    GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     protected boolean isMultiJvm() {
         return true;

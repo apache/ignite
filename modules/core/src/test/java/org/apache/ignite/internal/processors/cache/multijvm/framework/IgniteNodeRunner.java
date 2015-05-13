@@ -48,7 +48,7 @@ public class IgniteNodeRunner {
         try {
             X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
-            X.println("Starting Ignite Node... Args" + Arrays.toString(args));
+            X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
             IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
 
