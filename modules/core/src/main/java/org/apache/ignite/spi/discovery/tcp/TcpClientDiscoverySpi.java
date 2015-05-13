@@ -1286,6 +1286,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         leaveLatch.countDown();
                     }
                 }
+
                 return;
             }
 

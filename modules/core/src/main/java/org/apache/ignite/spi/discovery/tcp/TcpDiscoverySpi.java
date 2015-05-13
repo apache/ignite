@@ -1068,7 +1068,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         assert nodeId != null;
 
         if (log.isDebugEnabled())
-            log.debug("Ping node. NodeId: [" + nodeId + "].");
+            log.debug("Pinging node: " + nodeId + "].");
 
         if (nodeId == getLocalNodeId())
             return true;
