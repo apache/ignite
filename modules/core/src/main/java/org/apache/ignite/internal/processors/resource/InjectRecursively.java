@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.resources;
+package org.apache.ignite.internal.processors.resource;
 
 import java.lang.annotation.*;
 
