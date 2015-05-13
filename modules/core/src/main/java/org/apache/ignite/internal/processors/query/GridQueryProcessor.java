@@ -609,21 +609,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final GridCloseableIterator<IgniteBiTuple<K, V>> i = idx.query(space, sqlQry, F.asList(params),
                         typeDesc, idx.backupFilter());
 
-                    if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        ctx.event().record(new CacheQueryExecutedEvent<>(
-                            ctx.discovery().localNode(),
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            null,
-                            null,
-                            sqlQry,
-                            null,
-                            null,
-                            params,
-                            null,
-                            null));
-                    }
+                    sendQueryExecutedEvent(sqlQry, params);
 
                     return new ClIter<Cache.Entry<K, V>>() {
                         @Override public void close() throws Exception {
@@ -652,6 +638,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param sqlQry Sql query.
+     * @param params Params.
+     */
+    private void sendQueryExecutedEvent(String sqlQry, Object[] params) {
+        if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            ctx.event().record(new CacheQueryExecutedEvent<>(
+                ctx.discovery().localNode(),
+                "SQL query executed.",
+                EVT_CACHE_QUERY_EXECUTED,
+                CacheQueryType.SQL.name(),
+                null,
+                null,
+                sqlQry,
+                null,
+                null,
+                params,
+                null,
+                null));
         }
     }
 
@@ -687,21 +695,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
 
-                    if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        ctx.event().record(new CacheQueryExecutedEvent<>(
-                            ctx.discovery().localNode(),
-                            "SQL query executed.",
-                            EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL.name(),
-                            null,
-                            null,
-                            sql,
-                            null,
-                            null,
-                            args,
-                            null,
-                            null));
-                    }
+                    sendQueryExecutedEvent(sql, args);
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
                         new GridQueryCacheObjectsIterator(res.iterator(), cctx, cctx.keepPortable()));
