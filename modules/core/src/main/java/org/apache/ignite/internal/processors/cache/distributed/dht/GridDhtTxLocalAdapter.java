@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -884,6 +885,32 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param fut Expected future.
      */
     protected abstract void clearPrepareFuture(GridDhtTxPrepareFuture fut);
+
+    /**
+     * @return {@code True} if transaction is finished on prepare step.
+     */
+    protected final boolean commitOnPrepare() {
+        return onePhaseCommit() && !near();
+    }
+
+    /**
+     * @param prepFut Prepare future.
+     * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
+     */
+    protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
+        final GridDhtTxPrepareFuture prepFut) {
+        if (commitOnPrepare()) {
+            return finishFuture().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridNearTxPrepareResponse>() {
+                @Override public GridNearTxPrepareResponse applyx(IgniteInternalFuture<IgniteInternalTx> finishFut)
+                    throws IgniteCheckedException
+                {
+                    return prepFut.get();
+                }
+            });
+        }
+
+        return prepFut;
+    }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws IgniteCheckedException {

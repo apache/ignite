@@ -76,6 +76,7 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedEventSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedLockSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedNearDisabledLockSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMultiNodeLockSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMultiThreadedPutGetSelfTest.class));
