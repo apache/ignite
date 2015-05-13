@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -60,9 +61,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
-    /** Default open connection. */
-    public static final long DFLT_OPEN_CONN_TIMEOUT = 5000;
-
     /** */
     private static final Object JOIN_TIMEOUT = "JOIN_TIMEOUT";
 
@@ -78,6 +76,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
 
+    /** Remote nodes. */
+    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> pingFuts = new ConcurrentHashMap8<>();
+
     /** Socket writer. */
     private SocketWriter sockWriter;
 
@@ -85,7 +86,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private SocketReader sockReader;
 
     /** */
-    private boolean segmentation;
+    private boolean segmented;
 
     /** Last message ID. */
     private volatile IgniteUuid lastMsgId;
@@ -107,9 +108,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** */
     private final Timer timer = new Timer("TcpClientDiscoverySpi.timer");
-
-    /** */
-    private long openConnTimeout = DFLT_OPEN_CONN_TIMEOUT;
 
     /** */
     private MessageWorker msgWorker;
@@ -142,20 +140,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** {@inheritDoc} */
     @Override public long getNetworkTimeout() {
         return netTimeout;
-    }
-
-    /**
-     * @return Timeout for opening socket.
-     */
-    public long getOpenConnectionTimeout() {
-        return openConnTimeout;
-    }
-
-    /**
-     * @param openConnTimeout Timeout for opening socket
-     */
-    public void setOpenConnectionTimeout(long openConnTimeout) {
-        this.openConnTimeout = openConnTimeout;
     }
 
     /** {@inheritDoc} */
@@ -233,7 +217,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         assertParameter(ackTimeout > 0, "ackTimeout > 0");
         assertParameter(hbFreq > 0, "heartbeatFreq > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
-        assertParameter(openConnTimeout > 0, "openConnectionTimeout > 0");
+        assertParameter(joinTimeout >= 0, "joinTimeout >= 0");
 
         try {
             locHost = U.resolveLocalHost(locAddr);
@@ -336,6 +320,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             }
         }
 
+        for (GridFutureAdapter<Boolean> fut : pingFuts.values())
+            fut.onDone(false);
+
         rmtNodes.clear();
 
         U.interrupt(sockTimeoutWorker);
@@ -379,15 +366,46 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean pingNode(UUID nodeId) {
-        assert nodeId != null;
+    @Override public boolean pingNode(@NotNull final UUID nodeId) {
+        if (getSpiContext().isStopping())
+            return false;
 
         if (nodeId.equals(getLocalNodeId()))
             return true;
 
         TcpDiscoveryNode node = rmtNodes.get(nodeId);
 
-        return node != null && node.visible();
+        if (node == null || !node.visible())
+            return false;
+
+        GridFutureAdapter<Boolean> fut = pingFuts.get(nodeId);
+
+        if (fut == null) {
+            fut = new GridFutureAdapter<>();
+
+            GridFutureAdapter<Boolean> oldFut = pingFuts.putIfAbsent(nodeId, fut);
+
+            if (oldFut != null)
+                fut = oldFut;
+            else
+                sockWriter.sendMessage(new TcpDiscoveryClientPingRequest(getLocalNodeId(), nodeId));
+        }
+
+        final GridFutureAdapter<Boolean> finalFut = fut;
+
+        timer.schedule(new TimerTask() {
+            @Override public void run() {
+                if (pingFuts.remove(nodeId, finalFut))
+                    finalFut.onDone(false);
+            }
+        }, netTimeout);
+
+        try {
+            return fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException(e); // Should newer occur
+        }
     }
 
     /** {@inheritDoc} */
@@ -433,7 +451,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /**
      * @return Opened socket or {@code null} if timeout.
-     * @see #openConnTimeout
+     * @see #joinTimeout
      */
     @SuppressWarnings("BusyWait")
     @Nullable private Socket joinTopology(boolean recon) throws IgniteSpiException, InterruptedException {
@@ -455,7 +473,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 else {
                     U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + ipFinder);
 
-                    if ((U.currentTimeMillis() - startTime) > openConnTimeout)
+                    if ((U.currentTimeMillis() - startTime) > joinTimeout)
                         return null;
 
                     Thread.sleep(2000);
@@ -529,7 +547,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
 
-                if ((U.currentTimeMillis() - startTime) > openConnTimeout)
+                if ((U.currentTimeMillis() - startTime) > joinTimeout)
                     return null;
 
                 Thread.sleep(2000);
@@ -741,7 +759,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         private Socket sock;
 
         /** */
-        private final Queue<TcpDiscoveryAbstractMessage> queue = new LinkedList<>();
+        private final Queue<TcpDiscoveryAbstractMessage> queue = new ArrayDeque<>();
 
         /**
          *
@@ -824,7 +842,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Failed to send message: " + msg, e);
+                    U.error(log, "Failed to send message: " + msg, e);
 
                     msg = null;
                 }
@@ -857,7 +875,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            assert !segmentation;
+            assert !segmented;
 
             boolean success = false;
 
@@ -865,7 +883,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 sock = joinTopology(true);
 
                 if (sock == null) {
-                    log.error("Failed to reconnect to cluster: timeout.");
+                    U.error(log, "Failed to reconnect to cluster: timeout.");
 
                     return;
                 }
@@ -899,7 +917,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 }
             }
             catch (IOException | IgniteCheckedException e) {
-                log.error("Failed to reconnect", e);
+                U.error(log, "Failed to reconnect", e);
             }
             finally {
                 if (!success) {
@@ -1000,7 +1018,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 joinLatch.countDown();
                             }
                             else {
-                                if (getSpiContext().isStopping() || segmentation)
+                                if (getSpiContext().isStopping() || segmented)
                                     leaveLatch.countDown();
                                 else {
                                     assert reconnector == null;
@@ -1018,8 +1036,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         }
                     }
                     else if (msg == SPI_RECONNECT_FAILED || msg == RECONNECT_TIMEOUT) {
-                        if (!segmentation) {
-                            segmentation = true;
+                        if (!segmented) {
+                            segmented = true;
 
                             reconnector.cancel();
                             reconnector.join();
@@ -1092,6 +1110,10 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
                 processCustomMessage((TcpDiscoveryCustomEventMessage)msg);
+            else if (msg instanceof TcpDiscoveryClientPingResponse)
+                processClientPingResponse((TcpDiscoveryClientPingResponse)msg);
+            else if (msg instanceof TcpDiscoveryPingRequest)
+                processPingRequest((TcpDiscoveryPingRequest)msg);
 
             stats.onMessageProcessingFinished(msg);
         }
@@ -1267,6 +1289,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         leaveLatch.countDown();
                     }
                 }
+
                 return;
             }
 
@@ -1386,6 +1409,25 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         log.debug("Received metrics from unknown node: " + nodeId);
                 }
             }
+        }
+
+        /**
+         * @param msg Message.
+         */
+        private void processClientPingResponse(TcpDiscoveryClientPingResponse msg) {
+            GridFutureAdapter<Boolean> fut = pingFuts.remove(msg.nodeToPing());
+
+            if (fut != null)
+                fut.onDone(msg.result());
+        }
+
+        /**
+         * Router want to ping this client.
+         *
+         * @param msg Message.
+         */
+        private void processPingRequest(TcpDiscoveryPingRequest msg) {
+            sockWriter.sendMessage(new TcpDiscoveryPingResponse(getLocalNodeId()));
         }
 
         /**

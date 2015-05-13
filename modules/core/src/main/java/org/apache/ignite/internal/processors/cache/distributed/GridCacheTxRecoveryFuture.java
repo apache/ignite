@@ -35,11 +35,9 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Future verifying that all remote transactions related to some
- * optimistic transaction were prepared.
+ * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
-public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompoundIdentityFuture<Boolean>
-    implements GridCacheFuture<Boolean> {
+public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolean> implements GridCacheFuture<Boolean> {
     /** */         
     private static final long serialVersionUID = 0L;
     
@@ -53,7 +51,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     private boolean trackable = true;
 
     /** Context. */
-    private final GridCacheSharedContext<K, V> cctx;
+    private final GridCacheSharedContext<?, ?> cctx;
 
     /** Future ID. */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
@@ -70,6 +68,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
     /** Transaction nodes mapping. */
     private final Map<UUID, Collection<UUID>> txNodes;
 
+    /** */
+    private final boolean nearTxCheck;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -77,8 +78,11 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param txNodes Transaction mapping.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCacheOptimisticCheckPreparedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx tx,
-        UUID failedNodeId, Map<UUID, Collection<UUID>> txNodes) {
+    public GridCacheTxRecoveryFuture(GridCacheSharedContext<?, ?> cctx,
+        IgniteInternalTx tx,
+         UUID failedNodeId,
+        Map<UUID, Collection<UUID>> txNodes)
+    {
         super(cctx.kernalContext(), CU.boolReducer());
 
         this.cctx = cctx;
@@ -87,7 +91,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
         this.failedNodeId = failedNodeId;
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheOptimisticCheckPreparedTxFuture.class);
+            log = U.logger(cctx.kernalContext(), logRef, GridCacheTxRecoveryFuture.class);
 
         nodes = new GridLeanMap<>();
 
@@ -114,6 +118,10 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 }
             }
         }
+
+        UUID nearNodeId = tx.eventNodeId();
+
+        nearTxCheck = !failedNodeId.equals(nearNodeId) && cctx.discovery().alive(nearNodeId);
     }
 
     /**
@@ -121,6 +129,51 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      */
     @SuppressWarnings("ConstantConditions")
     public void prepare() {
+        if (nearTxCheck) {
+            UUID nearNodeId = tx.eventNodeId();
+
+            if (cctx.localNodeId().equals(nearNodeId)) {
+                IgniteInternalFuture<Boolean> fut = cctx.tm().txCommitted(tx.nearXidVersion());
+
+                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
+                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        try {
+                            onDone(fut.get());
+                        }
+                        catch (IgniteCheckedException e) {
+                            onDone(e);
+                        }
+                    }
+                });
+            }
+            else {
+                MiniFuture fut = new MiniFuture(tx.eventNodeId());
+
+                add(fut);
+
+                GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(
+                    tx,
+                    0,
+                    true,
+                    futureId(),
+                    fut.futureId());
+
+                try {
+                    cctx.io().send(nearNodeId, req, tx.ioPolicy());
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    fut.onNodeLeft();
+                }
+                catch (IgniteCheckedException e) {
+                    fut.onError(e);
+                }
+
+                markInitialized();
+            }
+
+            return;
+        }
+
         // First check transactions on local node.
         int locTxNum = nodeTransactions(cctx.localNodeId());
 
@@ -204,8 +257,9 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                     add(fut);
 
-                    GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(tx,
+                    GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(tx,
                         nodeTransactions(id),
+                        false,
                         futureId(),
                         fut.futureId());
 
@@ -227,8 +281,12 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                 add(fut);
 
-                GridCacheOptimisticCheckPreparedTxRequest req = new GridCacheOptimisticCheckPreparedTxRequest(
-                    tx, nodeTransactions(nodeId), futureId(), fut.futureId());
+                GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(
+                    tx,
+                    nodeTransactions(nodeId),
+                    false,
+                    futureId(),
+                    fut.futureId());
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
@@ -271,7 +329,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
      * @param nodeId Node ID.
      * @param res Response.
      */
-    public void onResult(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse res) {
+    public void onResult(UUID nodeId, GridCacheTxRecoveryResponse res) {
         if (!isDone()) {
             for (IgniteInternalFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
@@ -338,14 +396,21 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
             if (err == null) {
                 assert res != null;
 
-                cctx.tm().finishOptimisticTxOnRecovery(tx, res);
+                cctx.tm().finishTxOnRecovery(tx, res);
             }
             else {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to check prepared transactions, " +
-                        "invalidating transaction [err=" + err + ", tx=" + tx + ']');
+                if (err instanceof ClusterTopologyCheckedException && nearTxCheck) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to check transaction on near node, " +
+                            "ignoring [err=" + err + ", tx=" + tx + ']');
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to check prepared transactions, " +
+                            "invalidating transaction [err=" + err + ", tx=" + tx + ']');
 
-                cctx.tm().salvageTx(tx);
+                    cctx.tm().salvageTx(tx);
+                }
             }
         }
 
@@ -363,7 +428,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheOptimisticCheckPreparedTxFuture.class, this, "super", super.toString());
+        return S.toString(GridCacheTxRecoveryFuture.class, this, "super", super.toString());
     }
 
     /**
@@ -416,13 +481,20 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
             if (log.isDebugEnabled())
                 log.debug("Transaction node left grid (will ignore) [fut=" + this + ']');
 
-            onDone(true);
+            if (nearTxCheck) {
+                // Near and originating nodes left, need initiate tx check.
+                cctx.tm().commitIfPrepared(tx);
+
+                onDone(new ClusterTopologyCheckedException("Transaction node left grid (will ignore)."));
+            }
+            else
+                onDone(true);
         }
 
         /**
          * @param res Result callback.
          */
-        private void onResult(GridCacheOptimisticCheckPreparedTxResponse res) {
+        private void onResult(GridCacheTxRecoveryResponse res) {
             onDone(res.success());
         }
 

@@ -21,7 +21,7 @@
     POM file.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-<modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
@@ -32,28 +32,20 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
-        <ignite.site>scp://localhost:/home</ignite.site>
-        <!--fix <attachartifact>...</> at apache-release profile if changed-->
-        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}-incubating</ignite.zip.pattern>
+        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
+        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}</ignite.zip.pattern>
     </properties>
 
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/incubator-ignite</url>
-        <connection>scm:git:git://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
+        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</connection>
         <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/incubator-ignite</developerConnection>
         <tag>HEAD</tag>
     </scm>
-
-    <distributionManagement>
-        <site>
-            <id>ignite-site</id>
-            <url>${ignite.site}/${project.artifactId}-${project.version}</url>
-        </site>
-    </distributionManagement>
 
     <modules>
         <module>modules/tools</module>
@@ -116,30 +108,9 @@
             <id>dev-libs</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
             </activation>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-clean-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>clean</phase>
-                                <goals>
-                                    <goal>clean</goal>
-                                </goals>
-                                <configuration>
-                                    <filesets>
-                                        <fileset>
-                                            <directory>libs</directory>
-                                        </fileset>
-                                    </filesets>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
@@ -275,7 +246,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/target-classpath.sh(\s*#.*)?" />
+                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/build-classpath.sh(\s*#.*)?" />
                                             <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh" />
@@ -283,7 +254,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\target-classpath.bat&quot;(\s*&amp;::.*)?" />
+                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?" />
                                             <substitution expression="" />
                                             <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat" />
@@ -488,7 +459,7 @@
                                         <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
                                     </descriptorRefs>
                                     <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>incubator-ignite-${project.version}-src</finalName>
+                                    <finalName>ignite-${project.version}-src</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
@@ -508,14 +479,8 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <attachartifact
-                                            file="${basedir}/target/bin/ignite-fabric-${project.version}-incubating.zip"
-                                            classifier="fabric"
-                                            type="zip"/>
-                                        <attachartifact
-                                            file="${basedir}/target/bin/ignite-hadoop-${project.version}-incubating.zip"
-                                            classifier="hadoop"
-                                            type="zip"/>
+                                        <attachartifact file="${basedir}/target/bin/ignite-fabric-${project.version}.zip" classifier="fabric" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip" classifier="hadoop" type="zip" />
                                     </target>
                                 </configuration>
                             </execution>
@@ -562,7 +527,7 @@
                                 <fileSet>
                                     <directory>${basedir}/target</directory>
                                     <includes>
-                                        <include>incubator-ignite-${project.version}-src.zip</include>
+                                        <include>ignite-${project.version}-src.zip</include>
                                         <include>bin/*.zip</include>
                                     </includes>
                                 </fileSet>
@@ -590,41 +555,17 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <mkdir dir="${basedir}/target/site" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip.asc" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.asc" failonerror="false" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip.md5" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.md5" failonerror="false" />
-                                        <copy file="${basedir}/target/incubator-ignite-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/incubator-ignite-${project.version}-src.zip.sha1" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip" tofile="${basedir}/target/site/ignite-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.asc" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.asc" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.md5" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.md5" failonerror="false" />
+                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.sha1" failonerror="false" />
                                         <copy todir="${basedir}/target/site">
                                             <fileset dir="${basedir}/target/bin">
                                                 <include name="**/*" />
                                             </fileset>
                                         </copy>
-                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" />
+                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false"/>
                                     </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-site-plugin</artifactId>
-                        <version>3.4</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.maven.wagon</groupId>
-                                <artifactId>wagon-ssh</artifactId>
-                                <version>2.8</version>
-                            </dependency>
-                        </dependencies>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                                <phase>deploy</phase>
-                                <configuration>
-                                    <inputDirectory>${basedir}/target/site</inputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
@@ -746,4 +687,28 @@
             </build>
         </profile>
     </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>libs</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

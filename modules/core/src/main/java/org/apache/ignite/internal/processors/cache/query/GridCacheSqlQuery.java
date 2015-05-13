@@ -64,7 +64,7 @@ public class GridCacheSqlQuery implements Message {
      * @param qry Query.
      * @param params Query parameters.
      */
-    GridCacheSqlQuery(String alias, String qry, Object[] params) {
+    public GridCacheSqlQuery(String alias, String qry, Object[] params) {
         A.ensure(!F.isEmpty(qry), "qry must not be empty");
 
         this.alias = alias;

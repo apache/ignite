@@ -165,8 +165,8 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridDhtTxFinishRequest.class);
 //        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 //
-//        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxRequest.class);
-//        gen.generateAndWrite(GridCacheOptimisticCheckPreparedTxResponse.class);
+//        gen.generateAndWrite(GridCacheTxRecoveryRequest.class);
+//        gen.generateAndWrite(GridCacheTxRecoveryResponse.class);
 
 //        gen.generateAndWrite(GridQueryCancelRequest.class);
 //        gen.generateAndWrite(GridQueryFailResponse.class);

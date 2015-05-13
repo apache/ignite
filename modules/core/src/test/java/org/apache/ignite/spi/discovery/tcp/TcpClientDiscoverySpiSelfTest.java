@@ -48,7 +48,7 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Client-based discovery tests.
  */
-public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
+public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -94,6 +94,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryVmIpFinder clientIpFinder;
 
+    /** */
+    private long joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -109,6 +112,8 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         }
         else if (gridName.startsWith("client")) {
             TcpClientDiscoverySpi disco = new TestTcpClientDiscovery();
+
+            disco.setJoinTimeout(joinTimeout);
 
             TcpDiscoveryVmIpFinder ipFinder;
 
@@ -166,6 +171,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         nodeId = null;
         clientIpFinder = null;
+        joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
 
         assert G.allGrids().isEmpty();
     }
@@ -174,8 +180,9 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception
      */
-    public void testNodeJoinedTimeout() throws Exception {
+    public void testJoinTimeout() throws Exception {
         clientIpFinder = new TcpDiscoveryVmIpFinder();
+        joinTimeout = 1000;
 
         try {
             startClientNodes(1);
@@ -346,6 +353,60 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPingFailedNodeFromClient() throws Exception {
+        startServerNodes(2);
+        startClientNodes(1);
+
+        Ignite srv0 = G.ignite("server-0");
+        Ignite srv1 = G.ignite("server-1");
+        Ignite client = G.ignite("client-0");
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        ((TcpDiscoverySpi)srv1.configuration().getDiscoverySpi()).addIncomeConnectionListener(new IgniteInClosure<Socket>() {
+            @Override public void apply(Socket sock) {
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        assert ((IgniteEx)client).context().discovery().pingNode(srv0.cluster().localNode().id());
+        assert !((IgniteEx)client).context().discovery().pingNode(srv1.cluster().localNode().id());
+
+        latch.countDown();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPingFailedClientNode() throws Exception {
+        startServerNodes(2);
+        startClientNodes(1);
+
+        Ignite srv0 = G.ignite("server-0");
+        Ignite srv1 = G.ignite("server-1");
+        Ignite client = G.ignite("client-0");
+
+        ((TcpDiscoverySpiAdapter)srv0.configuration().getDiscoverySpi()).setAckTimeout(1000);
+
+        ((TestTcpClientDiscovery)client.configuration().getDiscoverySpi()).pauseSocketWrite();
+
+        assert !((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
+        assert !((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
+
+        ((TestTcpClientDiscovery)client.configuration().getDiscoverySpi()).resumeAll();
+
+        assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
+        assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientReconnectOnRouterFail() throws Exception {
         clientsPerSrv = 1;
 
@@ -424,7 +485,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
 
         clientLeftLatch = new CountDownLatch(1);
 
-        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).resume();
+        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).resumeAll();
 
         await(clientLeftLatch);
 
@@ -670,7 +731,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    public void testJoinTimeout() throws Exception {
+    public void testTimeoutWaitingNodeAddedMessage() throws Exception {
         startServerNodes(2);
 
         final CountDownLatch cnt = new CountDownLatch(1);
@@ -1005,7 +1066,14 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         /**
          *
          */
-        private void pauseAll() {
+        public void pauseSocketWrite() {
+            pauseResumeOperation(true, writeLock);
+        }
+
+        /**
+         *
+         */
+        public void pauseAll() {
             pauseResumeOperation(true, openSockLock, writeLock);
 
             brokeConnection();
@@ -1014,7 +1082,7 @@ public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
         /**
          *
          */
-        private void resume() {
+        public void resumeAll() {
             pauseResumeOperation(false, openSockLock, writeLock);
         }
     }

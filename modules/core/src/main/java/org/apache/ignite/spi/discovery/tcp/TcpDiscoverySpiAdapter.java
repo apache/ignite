@@ -60,6 +60,9 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Default network timeout in milliseconds (value is <tt>5,000ms</tt>). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
 
+    /** Default timeout for joining topology (value is <tt>0</tt>). */
+    public static final long DFLT_JOIN_TIMEOUT = 0;
+
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
@@ -92,6 +95,10 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
 
     /** Network timeout. */
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
+
+    /** Join timeout. */
+    @SuppressWarnings("RedundantFieldInitialization")
+    protected long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** Thread priority for all threads started by SPI. */
     protected int threadPri = DFLT_THREAD_PRI;
@@ -246,6 +253,38 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     @IgniteSpiConfiguration(optional = true)
     public void setNetworkTimeout(long netTimeout) {
         this.netTimeout = netTimeout;
+    }
+
+    /**
+     * Join timeout.
+     * <p>
+     * If non-shared IP finder is used and node fails to connect to
+     * any address from IP finder, node keeps trying to join within this
+     * timeout. If all addresses are still unresponsive, exception is thrown
+     * and node startup fails.
+     * @return Join timeout in milliseconds, ({@code 0} means wait forever).
+     */
+    public long getJoinTimeout() {
+        return joinTimeout;
+    }
+
+    /**
+     * Sets join timeout.
+     * <p>
+     * If non-shared IP finder is used and node fails to connect to
+     * any address from IP finder, node keeps trying to join within this
+     * timeout. If all addresses are still unresponsive, exception is thrown
+     * and node startup fails.
+     * <p>
+     * If not specified, default is {@link #DFLT_JOIN_TIMEOUT}.
+     *
+     * @param joinTimeout Join timeout ({@code 0} means wait forever).
+     *
+     * @see TcpDiscoveryIpFinder#isShared()
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setJoinTimeout(long joinTimeout) {
+        this.joinTimeout = joinTimeout;
     }
 
     /**
