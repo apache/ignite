@@ -277,8 +277,11 @@ class GridResourceIoc {
 
                     if (injectRecursively != null
                         || (allowImplicitInjection && field.getName().startsWith("this$")
-                            || field.getName().startsWith("val$")))
+                            || field.getName().startsWith("val$"))) {
+                        field.setAccessible(true);
+
                         recursiveFieldsList.add(field);
+                    }
                     else {
                         for (Annotation ann : field.getAnnotations()) {
                             T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
