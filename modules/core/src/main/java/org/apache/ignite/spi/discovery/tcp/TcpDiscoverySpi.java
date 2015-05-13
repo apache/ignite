@@ -288,6 +288,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ConcurrentLinkedDeque<String> debugLog;
 
+    /** */
+    private final CopyOnWriteArrayList<IgniteInClosure<TcpDiscoveryAbstractMessage>> sendMsgLsnrs =
+        new CopyOnWriteArrayList<>();
+
     /** {@inheritDoc} */
     @IgniteInstanceResource
     @Override public void injectResources(Ignite ignite) {
@@ -852,10 +856,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         // Warn on odd network timeout.
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
-
-        // Warn on odd heartbeat frequency.
-        if (hbFreq < 2000)
-            U.warn(log, "Heartbeat frequency is too high (at least 2000 ms recommended): " + hbFreq);
 
         registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
 
@@ -2068,13 +2068,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
-     * This method is intended for test purposes only.
-     *
-     * @param msg Message.
      */
-    void onBeforeMessageSentAcrossRing(Serializable msg) {
-        // No-op.
+    public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> msg) {
+        sendMsgLsnrs.add(msg);
+    }
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     */
+    public void removeSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> msg) {
+        sendMsgLsnrs.remove(msg);
     }
 
     /**
@@ -2683,11 +2686,32 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             assert ring.hasRemoteNodes();
 
-            onBeforeMessageSentAcrossRing(msg);
+            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : sendMsgLsnrs)
+                msgLsnr.apply(msg);
 
             if (redirectToClients(msg)) {
-                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values())
-                    clientMsgWorker.addMessage(msg);
+                byte[] marshalledMsg = null;
+
+                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
+                    // Send a clone to client to avoid ConcurrentModificationException
+                    TcpDiscoveryAbstractMessage msgClone;
+
+                    try {
+                        if (marshalledMsg == null)
+                            marshalledMsg = marsh.marshal(msg);
+
+                        msgClone = marsh.unmarshal(marshalledMsg, null);
+
+                        clientMsgWorker.addMessage(msgClone);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to marshal message: " + msg, e);
+
+                        msgClone = msg;
+                    }
+
+                    clientMsgWorker.addMessage(msgClone);
+                }
             }
 
             Collection<TcpDiscoveryNode> failedNodes;

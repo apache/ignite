@@ -1047,7 +1047,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             if (e != null && e.deleted()) {
                 assertEquals(0, e.ttl());
 
-                assertTrue(!cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
+                assertFalse(cache.affinity().isPrimaryOrBackup(grid.localNode(), key));
 
                 continue;
             }

@@ -341,7 +341,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             updateNear(singleReq, res);
 
             if (res.error() != null)
-                onDone(addFailedKeys(res.failedKeys(), res.error()));
+                onDone(res.failedKeys() != null ? addFailedKeys(res.failedKeys(), res.error()) : res.error());
             else {
                 if (op == TRANSFORM) {
                     if (ret != null)
