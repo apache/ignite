@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.multijvm.*;
+import org.apache.ignite.internal.processors.cache.multijvm.framework.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -35,6 +35,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -62,6 +64,9 @@ import static org.apache.ignite.transactions.TransactionState.*;
  * Full API cache test.
  */
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
+    /** Ip finder for TCP discovery. */
+    public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
@@ -147,7 +152,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         if (isMultiJvm()) {
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IgniteNodeRunner.ipFinder);
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
             cfg.setLocalEventListeners(new HashMap<IgnitePredicate<? extends Event>, int[]>() {{
                 put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});

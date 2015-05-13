@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.multijvm;
+package org.apache.ignite.internal.processors.cache.multijvm.framework;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
