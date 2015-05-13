@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
- * Test cases for multi-threaded tests.
+ *
  */
-public class GridCacheReplicatedLockSelfTest extends GridCacheLockAbstractTest {
+public class GridCachePartitionedNearDisabledLockSelfTest extends GridCachePartitionedLockSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration ccfg = super.cacheConfiguration();
+
+        assertNotNull(ccfg.getNearConfiguration());
+
+        ccfg.setNearConfiguration(null);
+
+        return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isPartitioned() {
+        return false;
     }
 
     /** {@inheritDoc} */

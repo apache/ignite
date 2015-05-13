@@ -501,8 +501,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Throwable If failed.
      */
     public void testLockReentrancy() throws Throwable {
-        fail("https://issues.apache.org/jira/browse/IGNITE-835");
-
         Affinity<Integer> aff = ignite1.affinity(null);
 
         for (int i = 10; i < 100; i++) {
