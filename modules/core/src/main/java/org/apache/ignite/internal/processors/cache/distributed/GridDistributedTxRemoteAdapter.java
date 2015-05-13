@@ -206,7 +206,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
+    @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key,
         CacheEntryPredicate[] filter)

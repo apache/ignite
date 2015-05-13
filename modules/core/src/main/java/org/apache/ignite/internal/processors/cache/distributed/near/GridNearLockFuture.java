@@ -1450,11 +1450,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                             // Replace old entry with new one.
                             entries.set(i, (GridDistributedCacheEntry)cctx.cache().entryEx(entry.key()));
                         }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-
-                            return;
-                        }
                     }
 
                     i++;

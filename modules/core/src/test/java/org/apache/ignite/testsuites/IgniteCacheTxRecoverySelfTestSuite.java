@@ -33,6 +33,10 @@ public class IgniteCacheTxRecoverySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache tx recovery test suite");
 
+        suite.addTestSuite(IgniteCachePartitionedPrimaryNodeFailureRecoveryTest.class);
+        suite.addTestSuite(IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest.class);
+        suite.addTestSuite(IgniteCachePartitionedTwoBackupsPrimaryNodeFailureRecoveryTest.class);
+
         suite.addTestSuite(GridCachePartitionedTxOriginatingNodeFailureSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxOriginatingNodeFailureSelfTest.class);

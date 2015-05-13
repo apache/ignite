@@ -293,6 +293,23 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets iterator over contents of the given space.
+     *
+     * @param spaceName Space name.
+     * @param c Key/value closure.
+     * @param part Partition.
+     * @return Iterator.
+     */
+    public <T> GridCloseableIterator<T> iterator(@Nullable String spaceName,
+        CX2<T2<Long, Integer>, T2<Long, Integer>, T> c, int part) {
+        assert c != null;
+
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m == null ? new GridEmptyCloseableIterator<T>() : m.iterator(c, part);
+    }
+
+    /**
      * Gets number of elements in the given space.
      *
      * @param spaceName Space name. Optional.

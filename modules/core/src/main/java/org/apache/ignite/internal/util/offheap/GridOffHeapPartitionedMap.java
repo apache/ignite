@@ -201,6 +201,15 @@ public interface GridOffHeapPartitionedMap {
     public <T> GridCloseableIterator<T> iterator(CX2<T2<Long, Integer>, T2<Long, Integer>, T> c);
 
     /**
+     * Gets iterator over the partition.
+     *
+     * @param c Key/value closure.
+     * @param part Partition.
+     * @return Iterator over the partition.
+     */
+    public <T> GridCloseableIterator<T> iterator(CX2<T2<Long, Integer>, T2<Long, Integer>, T> c, int part);
+
+    /**
      * Gets iterator over certain partition.
      *
      * @param p Partition.
