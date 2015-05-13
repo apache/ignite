@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -49,7 +50,7 @@ public class GridQueryRequest implements Message {
     private Collection<GridCacheSqlQuery> qrys;
 
     /** Topology version. */
-    private long topVer;
+    private AffinityTopologyVersion topVer;
 
     /** */
     @GridDirectCollection(String.class)
@@ -70,7 +71,12 @@ public class GridQueryRequest implements Message {
      * @param topVer Topology version.
      * @param extraSpaces All space names participating in query other than {@code space}.
      */
-    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys, long topVer,
+    public GridQueryRequest(
+        long reqId,
+        int pageSize,
+        String space,
+        Collection<GridCacheSqlQuery> qrys,
+        AffinityTopologyVersion topVer,
         List<String> extraSpaces) {
         this.reqId = reqId;
         this.pageSize = pageSize;
@@ -91,7 +97,7 @@ public class GridQueryRequest implements Message {
     /**
      * @return Topology version.
      */
-    public long topologyVersion() {
+    public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
@@ -165,7 +171,7 @@ public class GridQueryRequest implements Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLong("topVer", topVer))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -221,7 +227,7 @@ public class GridQueryRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                topVer = reader.readLong("topVer");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;

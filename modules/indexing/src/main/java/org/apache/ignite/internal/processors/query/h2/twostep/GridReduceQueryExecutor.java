@@ -24,6 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -286,19 +287,16 @@ public class GridReduceQueryExecutor {
 
             r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
-            final long topVer = ctx.cluster().get().topologyVersion();
+            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
-            // TODO get projection for this topology version.
-            ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
+            Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(space, topVer);
 
             if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
+                assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
-                dataNodes = dataNodes.forRandom();
+                nodes = Collections.singleton(F.rand(nodes));
             }
-
-            final Collection<ClusterNode> nodes = dataNodes.nodes();
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeTable tbl;

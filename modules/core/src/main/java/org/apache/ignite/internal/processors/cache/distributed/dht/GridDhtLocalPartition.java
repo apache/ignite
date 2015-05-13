@@ -70,6 +70,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     @GridToStringExclude
     private final GridFutureAdapter<?> rent;
 
+    /** Rent future. */
+    @GridToStringExclude
+    private final GridFutureAdapter<?> own;
+
     /** Entries map. */
     private final ConcurrentMap<KeyCacheObject, GridDhtCacheEntry> map;
 
@@ -108,6 +112,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         rent = new GridFutureAdapter<Object>() {
             @Override public String toString() {
                 return "PartitionRentFuture [part=" + GridDhtLocalPartition.this + ", map=" + map + ']';
+            }
+        };
+
+        own = new GridFutureAdapter<Object>() {
+            @Override public String toString() {
+                return "PartitionOwnFuture [part=" + GridDhtLocalPartition.this + ", map=" + map + ']';
             }
         };
 
@@ -385,6 +395,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
                 // No need to keep history any more.
                 evictHist = null;
 
+                own.onDone();
+
                 return true;
             }
         }
@@ -416,6 +428,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         }
 
         return rent;
+    }
+
+    /**
+     * @return The future which will be completed when partition will have state {@link GridDhtPartitionState#OWNING}.
+     */
+    public IgniteInternalFuture<?> owningFuture() {
+        return own;
     }
 
     /**

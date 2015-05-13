@@ -202,12 +202,31 @@ public class GridMapQueryExecutor {
 
     /**
      * @param cacheName Cache name.
+     * @param topVer Topology version.
      * @return Cache context or {@code null} if none.
      */
-    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName) {
+    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName, AffinityTopologyVersion topVer) {
         GridCacheAdapter<?,?> cache = ctx.cache().internalCache(cacheName);
 
-        return cache == null ? null : cache.context();
+        if (cache == null) // Since we've waited for for cache affinity updates, this must be a misconfiguration.
+            throw new CacheException("Cache does not exist on current node: [nodeId=" + ctx.localNodeId() +
+                ", cache=" + cacheName + ", topVer=" + topVer + "]");
+
+        return cache.context();
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void awaitForCacheAffinity(AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        if (topVer == null)
+            return; // Backward compatibility.
+
+        IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
+
+        if (fut != null)
+            fut.get();
     }
 
     /**
@@ -224,6 +243,13 @@ public class GridMapQueryExecutor {
         List<GridDhtLocalPartition> reserved = new ArrayList<>();
 
         try {
+            // Topology version can be null in rolling restart with previous version!
+            final AffinityTopologyVersion topVer = req.topologyVersion();
+
+            // Await all caches to be deployed on this node and all the needed topology changes to arrive.
+            awaitForCacheAffinity(topVer);
+
+            // Unmarshall query params.
             Collection<GridCacheSqlQuery> qrys;
 
             try {
@@ -240,48 +266,39 @@ public class GridMapQueryExecutor {
                 throw new IgniteException(e);
             }
 
-            List<GridCacheContext<?,?>> cctxs = new ArrayList<>();
+            // Reserve primary partitions.
+            if (topVer != null) {
+                for (String cacheName : F.concat(true, req.space(), req.extraSpaces())) {
+                    GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
 
-            for (String cacheName : F.concat(true, req.space(), req.extraSpaces())) {
-                GridCacheContext<?,?> cctx = cacheContext(cacheName);
+                    Set<Integer> partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
-                if (cctx == null) { // Cache was not deployed yet.
-                    sendRetry(node, req.requestId());
+                    for (int partId : partIds) {
+                        GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                    return;
-                }
-                else
-                    cctxs.add(cctx);
-            }
+                        if (part != null) {
+                            // Await for owning state.
+                            part.owningFuture().get();
 
-            for (GridCacheContext<?,?> cctx : cctxs) { // Lock primary partitions.
-                // TODO how to get all partitions for topology version consistently?
-                List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
-                AffinityTopologyVersion affTopVer = cctx.topology().topologyVersion();
+                            if (part.reserve()) {
+                                reserved.add(part);
 
-                if (affTopVer.topologyVersion() != req.topologyVersion()) {
-                    sendRetry(node, req.requestId());
+                                continue;
+                            }
+                        }
 
-                    return;
-                }
-
-                for (GridDhtLocalPartition part : parts) {
-                    if (!part.primary(affTopVer))
-                        continue;
-
-                    if (!part.reserve()) {
+                        // Failed to reserve the partition.
                         sendRetry(node, req.requestId());
 
                         return;
                     }
-
-                    reserved.add(part);
                 }
             }
 
-            GridCacheContext<?,?> cctx = cctxs.get(0); // Main cache context.
+            // Prepare to run queries.
+            GridCacheContext<?,?> mainCctx = cacheContext(req.space(), topVer);
 
-            qr = new QueryResults(req.requestId(), qrys.size(), cctx);
+            qr = new QueryResults(req.requestId(), qrys.size(), mainCctx);
 
             if (nodeRess.put(req.requestId(), qr) != null)
                 throw new IllegalStateException();
@@ -293,10 +310,8 @@ public class GridMapQueryExecutor {
             // Run queries.
             int i = 0;
 
-            String space = req.space();
-
             for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(space, h2.connectionForSpace(space), qry.query(),
+                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(), h2.connectionForSpace(req.space()), qry.query(),
                     F.asList(qry.parameters()));
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -305,7 +320,7 @@ public class GridMapQueryExecutor {
                         "SQL query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
                         CacheQueryType.SQL.name(),
-                        cctx.namex(),
+                        mainCctx.namex(),
                         null,
                         qry.query(),
                         null,
@@ -348,6 +363,7 @@ public class GridMapQueryExecutor {
         finally {
             h2.setFilters(null);
 
+            // Release reserved partitions.
             for (GridDhtLocalPartition part : reserved)
                 part.release();
         }
