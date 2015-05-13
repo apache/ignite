@@ -367,9 +367,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public boolean pingNode(@NotNull final UUID nodeId) {
-        if (getSpiContext().isStopping())
-            return false;
-
         if (nodeId.equals(getLocalNodeId()))
             return true;
 
@@ -387,8 +384,16 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
             if (oldFut != null)
                 fut = oldFut;
-            else
+            else {
+                if (getSpiContext().isStopping()) {
+                    if (pingFuts.remove(nodeId, fut))
+                        fut.onDone(false);
+
+                    return false;
+                }
+
                 sockWriter.sendMessage(new TcpDiscoveryClientPingRequest(getLocalNodeId(), nodeId));
+            }
         }
 
         final GridFutureAdapter<Boolean> finalFut = fut;
