@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -66,7 +66,9 @@ import static org.apache.ignite.transactions.TransactionState.*;
  */
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Ip finder for TCP discovery. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
+    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
+        setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
+    }};
 
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
@@ -153,7 +155,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         if (isMultiJvm()) {
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
             cfg.setLocalEventListeners(new HashMap<IgnitePredicate<? extends Event>, int[]>() {{
                 put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});

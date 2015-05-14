@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache.multijvm.framework;
 import com.thoughtworks.xstream.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 
 import java.io.*;
 import java.util.*;
@@ -99,8 +99,7 @@ public class IgniteNodeRunner {
             cfg.setMarshaller(new OptimizedMarshaller(false));
 
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
-            disco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
-
+            disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
             cfg.setDiscoverySpi(disco);
 
             return cfg;
