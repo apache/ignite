@@ -91,7 +91,7 @@ if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in release.
+call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in the binary release.
 set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_HOME%\bin\include\schema-import\*;%IGNITE_LIBS%
 
 ::

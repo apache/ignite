@@ -53,7 +53,7 @@ setIgniteHome
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in release.
+. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
 CP="${IGNITE_HOME}/bin/include/visor-common/*${SEP}${IGNITE_HOME}/bin/include/visorcmd/*${SEP}${IGNITE_LIBS}"
 
 #
