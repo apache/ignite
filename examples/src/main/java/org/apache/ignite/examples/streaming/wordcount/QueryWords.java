@@ -28,12 +28,10 @@ import java.util.*;
  * Periodically query popular numbers from the streaming cache.
  * To start the example, you should:
  * <ul>
- *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
  *     <li>Start streaming using {@link StreamWords}.</li>
  *     <li>Start querying popular words using {@link QueryWords}.</li>
  * </ul>
- * <p>
- * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class QueryWords {
     /**

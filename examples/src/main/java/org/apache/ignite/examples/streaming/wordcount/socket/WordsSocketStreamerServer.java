@@ -30,19 +30,20 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Receives words through socket using {@link SocketStreamer} and message delimiter based protocol
+ * Example demonstrates streaming of data from external components into Ignite cache.
+ * <p>
+ * {@code WordsSocketStreamerServer} is simple socket streaming server implementation that
+ * receives words from socket using {@link SocketStreamer} and message delimiter based protocol
  * and streams them into Ignite cache. Example illustrates usage of TCP socket streamer in case of non-Java clients.
  * In this example words are zero-terminated strings.
  * <p>
  * To start the example, you should:
  * <ul>
- *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
  *     <li>Start socket server using {@link WordsSocketStreamerServer}.</li>
  *     <li>Start a few socket clients using {@link WordsSocketStreamerClient}.</li>
  *     <li>Start querying popular words using {@link QueryWords}.</li>
  * </ul>
- * <p>
- * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class WordsSocketStreamerServer {
     /** Port. */
@@ -52,9 +53,12 @@ public class WordsSocketStreamerServer {
     private static final byte[] DELIM = new byte[] {0};
 
     /**
-     * @param args Args.
+     * Starts socket streaming server.
+     *
+     * @param args Command line arguments (none required).
+     * @throws Exception If failed.
      */
-    public static void main(String[] args) throws InterruptedException, IOException {
+    public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
 
@@ -106,6 +110,15 @@ public class WordsSocketStreamerServer {
             }
         });
 
-        sockStmr.start();
+        try {
+            sockStmr.start();
+        }
+        catch (IgniteException e) {
+            System.out.println("Streaming server didn't start due to an error: ");
+
+            e.printStackTrace();
+
+            ignite.close();
+        }
     }
 }

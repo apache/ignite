@@ -25,19 +25,19 @@ import java.io.*;
 import java.net.*;
 
 /**
- * Sends words to socket server based on {@link SocketStreamer} using message delimiter based protocol.
- * Example illustrates usage of TCP socket streamer in case of non-Java clients.
- * In this example words are zero-terminated strings.
+ * Example demonstrates streaming of data from external components into Ignite cache.
+ * <p>
+ * {@code WordsSocketStreamerClient} is simple socket streaming client implementation that sends words to socket server
+ * based on {@link SocketStreamer} using message delimiter based protocol. Example illustrates usage of TCP socket
+ * streamer in case of non-Java clients. In this example words are zero-terminated strings.
  * <p>
  * To start the example, you should:
  * <ul>
- *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
+ *     <li>Start a few nodes using {@link ExampleNodeStartup}.</li>
  *     <li>Start socket server using {@link WordsSocketStreamerServer}.</li>
  *     <li>Start a few socket clients using {@link WordsSocketStreamerClient}.</li>
  *     <li>Start querying popular words using {@link QueryWords}.</li>
  * </ul>
- * <p>
- * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class WordsSocketStreamerClient {
     /** Port. */
@@ -59,7 +59,7 @@ public class WordsSocketStreamerClient {
             System.out.println("Words streaming started.");
 
             while (true) {
-                try (InputStream in = StreamWords.class.getResourceAsStream("../wordcount/alice-in-wonderland.txt");
+                try (InputStream in = WordsSocketStreamerClient.class.getResourceAsStream("../alice-in-wonderland.txt");
                      LineNumberReader rdr = new LineNumberReader(new InputStreamReader(in))) {
                     for (String line = rdr.readLine(); line != null; line = rdr.readLine()) {
                         for (String word : line.split(" ")) {
