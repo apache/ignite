@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.lang._
 import org.apache.ignite.lang._
 import org.apache.ignite.scalar.scalar._
 import org.junit.runner.RunWith
-import org.scalatest.FlatSpec
+import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.matchers.ShouldMatchers
 
@@ -31,10 +31,10 @@ import java.util.concurrent.atomic._
  *
  */
 @RunWith(classOf[JUnitRunner])
-class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
-    behavior of "Scalar mixin"
+class ScalarConversionsSpec extends FunSpec with ShouldMatchers {
+    describe("Scalar mixin") {
 
-    it should "convert reducer" in {
+    it("should convert reducer") {
         val r = new IgniteReducer[Int, Int] {
             var sum = 0
 
@@ -52,7 +52,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(r.scala.apply(Seq(1, 2, 3)) == 6)
     }
 
-    it should "convert reducer 2" in {
+    it("should convert reducer 2") {
         val r = new IgniteReducer2[Int, Int, Int] {
             var sum = 0
 
@@ -70,7 +70,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(r.scala.apply(Seq(1, 2), Seq(3, 4)) == 21)
     }
 
-    it should "convert reducer 3" in {
+    it("should convert reducer 3") {
         val r = new IgniteReducer3[Int, Int, Int, Int] {
             var sum = 0
 
@@ -88,14 +88,14 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(r.scala.apply(Seq(1, 2), Seq(1, 2), Seq(1, 2)) == 27)
     }
 
-    it should "convert tuple 2" in {
+    it("should convert tuple 2") {
         val t = new IgniteBiTuple[Int, Int](1, 2)
 
         assert(t.scala._1 == 1)
         assert(t.scala._2 == 2)
     }
 
-    it should "convert tuple 3" in {
+    it("should convert tuple 3") {
         val t = new GridTuple3[Int, Int, Int](1, 2, 3)
 
         assert(t.scala._1 == 1)
@@ -103,7 +103,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(t.scala._3 == 3)
     }
 
-    it should "convert tuple 4" in {
+    it("should convert tuple 4") {
         val t = new GridTuple4[Int, Int, Int, Int](1, 2, 3, 4)
 
         assert(t.scala._1 == 1)
@@ -112,7 +112,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(t.scala._4 == 4)
     }
 
-    it should "convert tuple 5" in {
+    it("should convert tuple 5") {
         val t = new GridTuple5[Int, Int, Int, Int, Int](1, 2, 3, 4, 5)
 
         assert(t.scala._1 == 1)
@@ -122,7 +122,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(t.scala._5 == 5)
     }
 
-    it should "convert in closure" in {
+    it("should convert in closure") {
         val i = new AtomicInteger()
 
         val f = new IgniteInClosure[Int] {
@@ -136,7 +136,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(i.get == 9)
     }
 
-    it should "convert in closure 2" in {
+    it("should convert in closure 2") {
         val i = new AtomicInteger()
 
         val f = new IgniteBiInClosure[Int, Int] {
@@ -150,7 +150,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(i.get == 6)
     }
 
-    it should "convert in closure 3" in {
+    it("should convert in closure 3") {
         val i = new AtomicInteger()
 
         val f = new GridInClosure3[Int, Int, Int] {
@@ -164,7 +164,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(i.get == 9)
     }
 
-    it should "convert absolute closure" in {
+    it("should convert absolute closure") {
         val i = new AtomicInteger()
 
         val f = new GridAbsClosure {
@@ -178,7 +178,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(i.get == 3)
     }
 
-    it should "convert absolute predicate" in {
+    it("should convert absolute predicate") {
         val i = new AtomicInteger()
 
         val p = new GridAbsPredicate {
@@ -195,7 +195,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(p.scala.apply())
     }
 
-    it should "convert predicate" in {
+    it("should convert predicate") {
         val p = new IgnitePredicate[Int] {
             override def apply(e: Int): Boolean =
                 e > 5
@@ -205,7 +205,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(p.scala.apply(6))
     }
 
-    it should "convert predicate 2" in {
+    it("should convert predicate 2") {
         val p = new IgniteBiPredicate[Int, Int] {
             override def apply(e1: Int, e2: Int): Boolean =
                 e1 + e2 > 5
@@ -215,7 +215,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(p.scala.apply(3, 3))
     }
 
-    it should "convert predicate 3" in {
+    it("should convert predicate 3") {
         val p = new GridPredicate3[Int, Int, Int] {
             override def apply(e1: Int, e2: Int, e3: Int): Boolean =
                 e1 + e2 + e3 > 5
@@ -225,7 +225,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(p.scala.apply(2, 2, 2))
     }
 
-    it should "convert closure" in {
+    it("should convert closure") {
         val f = new IgniteClosure[Int, Int] {
             override def apply(e: Int): Int =
                 e * 3
@@ -234,7 +234,7 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(f.scala.apply(3) == 9)
     }
 
-    it should "convert closure 2" in {
+    it("should convert closure 2") {
         val f = new IgniteBiClosure[Int, Int, Int] {
             override def apply(e1: Int, e2: Int): Int =
                 e1 + e2
@@ -243,12 +243,13 @@ class ScalarConversionsSpec extends FlatSpec with ShouldMatchers {
         assert(f.scala.apply(3, 3) == 6)
     }
 
-    it should "convert closure 3" in {
+    it("should convert closure 3") {
         val f = new GridClosure3[Int, Int, Int, Int] {
             override def apply(e1: Int, e2: Int, e3: Int): Int =
                 e1 + e2 + e3
         }
 
         assert(f.scala.apply(3, 3, 3) == 9)
+    }
     }
 }
