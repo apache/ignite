@@ -205,7 +205,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private int reconCnt = DFLT_RECONNECT_CNT;
 
     /** */
-    private final Executor utilityPool = new ThreadPoolExecutor(0, 10, 2000, TimeUnit.MILLISECONDS,
+    private final Executor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>());
 
     /** Nodes ring. */
@@ -271,6 +271,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
     /** Mutex. */
     private final Object mux = new Object();
+
+    /** Discovery state. */
+    protected TcpDiscoverySpiState spiState = DISCONNECTED;
 
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
@@ -1132,10 +1135,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * Pings the remote node by its address to see if it's alive.
+     * Pings the node by its address to see if it's alive.
      *
      * @param addr Address of the node.
-     * @return ID of the remote node if node alive.
+     * @return ID of the remote node and "client exists" flag if node alive.
      * @throws IgniteSpiException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
@@ -2712,8 +2715,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             marshalledMsg = marsh.marshal(msg);
 
                         msgClone = marsh.unmarshal(marshalledMsg, null);
-
-                        clientMsgWorker.addMessage(msgClone);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to marshal message: " + msg, e);

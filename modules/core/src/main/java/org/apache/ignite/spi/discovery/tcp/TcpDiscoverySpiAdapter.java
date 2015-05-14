@@ -42,8 +42,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.*;
-
 /**
  * Base class for TCP discovery SPIs.
  */
@@ -135,9 +133,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
 
     /** Socket timeout worker. */
     protected SocketTimeoutWorker sockTimeoutWorker;
-
-    /** Discovery state. */
-    protected TcpDiscoverySpiState spiState = DISCONNECTED;
 
     /** Start time of the very first grid node. */
     protected volatile long gridStartTime;

@@ -15,24 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.visor.commands.ping
-
-import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
-import org.apache.ignite.visor.commands.ping.VisorPingCommand._
+package org.apache.ignite.internal.processors.cache.datastructures;
 
 /**
- * Unit test for 'ping' command.
+ *
  */
-class VisorPingCommandSpec extends VisorRuntimeBaseSpec(2) {
-    describe("A 'ping' visor command") {
-        it("should properly execute") {
-            visor.ping()
-        }
-
-        it("should print error message when not connected") {
-            closeVisorQuiet()
-
-            visor.ping()
-        }
+public class IgniteClientDiscoveryDataStructuresTest extends IgniteClientDataStructuresAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected boolean clientDiscovery() {
+        return true;
     }
 }

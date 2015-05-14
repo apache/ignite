@@ -128,7 +128,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 if (addr.startsWith("/"))
                     addr = addr.substring(1);
 
-                ipFinder.setAddresses(Arrays.asList(addr));
+                ipFinder.setAddresses(Collections.singletonList(addr));
             }
 
             disco.setIpFinder(ipFinder);
@@ -503,8 +503,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         checkNodes(3, 3);
 
-//        setClientRouter(2, 2);
-
         srvFailedLatch = new CountDownLatch(2 + 2);
         clientFailedLatch = new CountDownLatch(2 + 2);
 
@@ -520,6 +518,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         };
         G.addListener(lsnr);
 
+        final TcpClientDiscoverySpi client2Disco = (TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi();
+
         try {
             failServer(2);
 
@@ -533,6 +533,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         finally {
             G.removeListener(lsnr);
         }
+
+        assert client2Disco.getRemoteNodes().isEmpty();
     }
 
     /**
@@ -590,6 +592,39 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         await(srvFailedLatch);
 
         checkNodes(1, 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientAndRouterFail() throws Exception {
+        startServerNodes(2);
+        startClientNodes(2);
+
+        checkNodes(2, 2);
+
+        srvFailedLatch = new CountDownLatch(2);
+        clientFailedLatch = new CountDownLatch(2);
+
+        attachListeners(1, 1);
+
+        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+            @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                try {
+                    Thread.sleep(1000000);
+                }
+                catch (InterruptedException ignored) {
+                    Thread.interrupted();
+                }
+            }
+        });
+        failClient(1);
+        failServer(1);
+
+        await(srvFailedLatch);
+        await(clientFailedLatch);
+
+        checkNodes(1, 1);
     }
 
     /**
@@ -776,7 +811,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         long startTime = -1;
 
         for (Ignite g : G.allGrids()) {
-            IgniteEx kernal = (IgniteKernal)g;
+            IgniteEx kernal = (IgniteEx)g;
 
             assertTrue(kernal.context().discovery().gridStartTime() > 0);
 
@@ -802,7 +837,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         if (addr.startsWith("/"))
             addr = addr.substring(1);
 
-        ipFinder.setAddresses(Arrays.asList(addr));
+        ipFinder.setAddresses(Collections.singletonList(addr));
     }
 
     /**
@@ -992,6 +1027,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class MessageListener implements IgniteBiPredicate<UUID, Object> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
