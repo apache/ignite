@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -118,7 +119,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOverflowSize() {
         try {
-            return cctx.cache().overflowSize();
+            GridCacheAdapter<?, ?> cache = cctx.cache();
+
+            return cache != null ? cache.overflowSize() : -1;
         }
         catch (IgniteCheckedException ignored) {
             return -1;
@@ -127,34 +130,47 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return cctx.cache().offHeapEntriesCount();
+        GridCacheAdapter<?, ?> cache = cctx.cache();
+
+        return cache != null ? cache.offHeapEntriesCount() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
-        return cctx.cache().offHeapAllocatedSize();
+        GridCacheAdapter<?, ?> cache = cctx.cache();
+
+        return cache != null ? cache.offHeapAllocatedSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return cctx.cache().size();
+        GridCacheAdapter<?, ?> cache = cctx.cache();
+
+        return cache != null ? cache.size() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return cctx.cache().size();
+        return getSize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return cctx.cache().isEmpty();
+        GridCacheAdapter<?, ?> cache = cctx.cache();
+
+        return cache == null || cache.isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        return cctx.isNear() ?
-                dhtCtx != null ? dhtCtx.evicts().evictQueueSize() : -1
-                : cctx.evicts().evictQueueSize();
+        GridCacheContext<?, ?> ctx = cctx.isNear() ? dhtCtx : cctx;
+
+        if (ctx == null)
+            return -1;
+
+        GridCacheEvictionManager evictMgr = ctx.evicts();
+
+        return evictMgr != null ? evictMgr.evictQueueSize() : -1;
     }
 
     /** {@inheritDoc} */
@@ -548,37 +564,51 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public String getKeyType() {
-        return cctx.config().getKeyType().getName();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null ? ccfg.getKeyType().getName() : null;
     }
 
     /** {@inheritDoc} */
     @Override public String getValueType() {
-        return cctx.config().getValueType().getName();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null ? ccfg.getValueType().getName() : null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isReadThrough() {
-        return cctx.config().isReadThrough();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null && ccfg.isReadThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
-        return cctx.config().isWriteThrough();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null && ccfg.isWriteThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
-        return cctx.config().isStoreByValue();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null && ccfg.isStoreByValue();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        return cctx.config().isStatisticsEnabled();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null && ccfg.isStatisticsEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isManagementEnabled() {
-        return cctx.config().isManagementEnabled();
+        CacheConfiguration ccfg = cctx.config();
+
+        return ccfg != null && ccfg.isManagementEnabled();
     }
 
     /** {@inheritDoc} */
