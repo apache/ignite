@@ -2015,7 +2015,7 @@ public class IgnitionEx {
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-            cache.setNodeFilter(CacheConfiguration.SERVER_NODES);
+            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
             cache.setStartSize(300);
 
             return cache;
@@ -2036,7 +2036,7 @@ public class IgnitionEx {
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
-            cache.setNodeFilter(CacheConfiguration.SERVER_NODES);
+            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
 
             return cache;
         }
@@ -2056,7 +2056,7 @@ public class IgnitionEx {
             ccfg.setRebalanceMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
-            ccfg.setNodeFilter(CacheConfiguration.SERVER_NODES);
+            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
             ccfg.setNearConfiguration(new NearCacheConfiguration());
 
             if (cfg.getCacheMode() == PARTITIONED)

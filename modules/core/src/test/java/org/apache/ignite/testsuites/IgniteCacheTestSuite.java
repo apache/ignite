@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
@@ -85,6 +86,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteFairAffinityDynamicCacheSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
         suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
+        suite.addTestSuite(IgniteClientNodeAffinityTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);

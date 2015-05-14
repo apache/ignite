@@ -2515,7 +2515,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return !node.isDaemon() && cacheFilter.apply(node);
+            return !node.isDaemon() && !CU.clientModeNode(node) && cacheFilter.apply(node);
         }
 
         /**
@@ -2523,8 +2523,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !node.isClient() && !node.isDaemon() &&
-                (cacheFilter.apply(node) || clientNodes.containsKey(node.id()));
+            return !node.isDaemon() &&
+                ((!CU.clientModeNode(node) && cacheFilter.apply(node)) || clientNodes.containsKey(node.id()));
         }
 
         /**

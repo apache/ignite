@@ -1799,4 +1799,15 @@ public class GridCacheUtils {
 
         return res;
     }
+    /**
+     * @param node Node.
+     * @return {@code True} if flag {@link IgniteConfiguration#isClientMode()} is set given node.
+     */
+    public static boolean clientModeNode(ClusterNode node) {
+        Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+        assert clientModeAttr != null : node;
+
+        return clientModeAttr != null && clientModeAttr;
+    }
 }
