@@ -450,7 +450,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
-        if (segmentation)
+        if (segmented)
             throw new IgniteException("Failed to send custom message: client is disconnected");
 
         try {
