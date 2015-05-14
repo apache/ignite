@@ -272,29 +272,29 @@ class GridResourceIoc {
 
             for (Class cls0 = cls; !cls0.equals(Object.class); cls0 = cls0.getSuperclass()) {
                 for (Field field : cls0.getDeclaredFields()) {
-                    InjectRecursively injectRecursively = field.getAnnotation(InjectRecursively.class);
+                    Annotation[] fieldAnns = field.getAnnotations();
 
-                    if (injectRecursively != null
-                        || (allowImplicitInjection && field.getName().startsWith("this$")
-                            || field.getName().startsWith("val$"))) {
+                    for (Annotation ann : fieldAnns) {
+                        T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
+
+                        if (t2 == null) {
+                            t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
+                                new ArrayList<GridResourceField>(),
+                                new ArrayList<GridResourceMethod>());
+
+                            annMap.put(ann.annotationType(), t2);
+                        }
+
+                        t2.get1().add(new GridResourceField(field, ann));
+                    }
+
+                    if (allowImplicitInjection
+                        && fieldAnns.length == 0
+                        && GridResourceUtils.mayRequireResources(field)) {
                         field.setAccessible(true);
 
+                        // Account for anonymous inner classes.
                         recursiveFieldsList.add(field);
-                    }
-                    else {
-                        for (Annotation ann : field.getAnnotations()) {
-                            T2<List<GridResourceField>, List<GridResourceMethod>> t2 = annMap.get(ann.annotationType());
-
-                            if (t2 == null) {
-                                t2 = new T2<List<GridResourceField>, List<GridResourceMethod>>(
-                                    new ArrayList<GridResourceField>(),
-                                    new ArrayList<GridResourceMethod>());
-
-                                annMap.put(ann.annotationType(), t2);
-                            }
-
-                            t2.get1().add(new GridResourceField(field, ann));
-                        }
                     }
                 }
 

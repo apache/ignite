@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.resource;
-
-import java.lang.annotation.*;
+package org.apache.ignite.internal;
 
 /**
- * Indicates that resource injection should be performed for field value too.
+ * Internal wrapper interface for custom resource injection logic.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface InjectRecursively {
-    // No-op.
+public interface GridInternalWrapper<T> {
+    /**
+     * Get user object where resources must be injected.
+     *
+     * @return User object.
+     */
+    public T userObject();
 }

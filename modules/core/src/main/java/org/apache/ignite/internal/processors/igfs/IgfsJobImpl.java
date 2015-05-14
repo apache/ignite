@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.igfs.mapreduce.*;
-import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
 
 import java.io.*;
@@ -29,12 +29,11 @@ import java.io.*;
 /**
  * IGFS job implementation.
  */
-public class IgfsJobImpl implements ComputeJob {
+public class IgfsJobImpl implements ComputeJob, GridInternalWrapper<IgfsJob> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** IGFS job. */
-    @InjectRecursively
     private IgfsJob job;
 
     /** IGFS name. */
@@ -109,5 +108,10 @@ public class IgfsJobImpl implements ComputeJob {
     /** {@inheritDoc} */
     @Override public void cancel() {
         job.cancel();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgfsJob userObject() {
+        return job;
     }
 }

@@ -1584,12 +1584,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C1<T, R> implements ComputeJob, Externalizable {
+    private static class C1<T, R> implements ComputeJob, Externalizable, GridNoImplicitInjection,
+        GridInternalWrapper<IgniteClosure> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        @InjectRecursively
         protected IgniteClosure<T, R> job;
 
         /** */
@@ -1635,6 +1635,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteClosure userObject() {
+            return job;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C1.class, this);
         }
@@ -1676,12 +1681,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C2<R> implements ComputeJob, Externalizable {
+    private static class C2<R> implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Callable> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        @InjectRecursively
         protected Callable<R> c;
 
         /**
@@ -1724,6 +1728,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public Callable userObject() {
+            return c;
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C2.class, this);
         }
@@ -1763,12 +1772,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C4 implements ComputeJob, Externalizable {
+    private static class C4 implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
-        @InjectRecursively
         protected Runnable r;
 
         /**
@@ -1805,6 +1813,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             r = (Runnable)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Runnable userObject() {
+            return r;
         }
 
         /** {@inheritDoc} */

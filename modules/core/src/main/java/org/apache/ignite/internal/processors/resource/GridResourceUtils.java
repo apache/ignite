@@ -88,4 +88,19 @@ final class GridResourceUtils {
                 ", target=" + target + ", rsrc=" + rsrc + ']', e);
         }
     }
+
+    /**
+     * Checks if specified field requires recursive inspection to find resource annotations.
+     *
+     * @param f Field.
+     * @return {@code true} if requires, {@code false} if doesn't.
+     */
+    static boolean mayRequireResources(Field f) {
+        assert f != null;
+
+        // Need to inspect anonymous classes, callable and runnable instances.
+        return f.getName().startsWith("this$") || f.getName().startsWith("val$") ||
+            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
+            IgniteClosure.class.isAssignableFrom(f.getType());
+    }
 }

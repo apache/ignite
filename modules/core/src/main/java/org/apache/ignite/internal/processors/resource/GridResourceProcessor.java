@@ -23,7 +23,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
@@ -281,6 +280,13 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         Object obj = unwrapTarget(job);
 
         injectToJob(dep, taskCls, obj, ses, jobCtx);
+
+        if (obj instanceof GridInternalWrapper) {
+            Object usrObj = ((GridInternalWrapper)obj).userObject();
+
+            if (usrObj != null)
+                injectToJob(dep, taskCls, usrObj, ses, jobCtx);
+        }
     }
 
     /**
