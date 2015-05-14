@@ -986,6 +986,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Ignite g = G.ignite("client-" + i);
 
+            ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
+
             assertTrue(clientNodeIds.contains(g.cluster().localNode().id()));
 
             assertTrue(g.cluster().localNode().isClient());

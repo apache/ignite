@@ -670,6 +670,22 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     }
 
     /**
+     * FOR TEST PURPOSE ONLY!
+     */
+    public void waitForMessagePrecessed() {
+        Object last = msgWorker.queue.peekLast();
+
+        while (last != null && msgWorker.queue.contains(last)) {
+            try {
+                Thread.sleep(10);
+            }
+            catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
      * Heartbeat sender.
      */
     private class HeartbeatSender extends TimerTask {
