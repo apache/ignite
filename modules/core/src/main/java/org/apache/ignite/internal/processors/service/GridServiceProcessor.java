@@ -128,10 +128,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
             cfgQryId = cache.context().continuousQueries().executeInternalQuery(
-                new DeploymentListener(), null, true, true);
+                new DeploymentListener(), null, !ctx.config().isClientMode(), true);
 
             assignQryId = cache.context().continuousQueries().executeInternalQuery(
-                new AssignmentListener(), null, true, true);
+                new AssignmentListener(), null, !ctx.config().isClientMode(), true);
         }
         finally {
             if (ctx.deploy().enabled())
