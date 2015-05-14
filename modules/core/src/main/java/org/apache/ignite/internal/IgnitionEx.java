@@ -2062,7 +2062,7 @@ public class IgnitionEx {
             ccfg.setRebalanceMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
-            ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
+            ccfg.setNodeFilter(CacheConfiguration.SERVER_NODES);
             ccfg.setNearConfiguration(new NearCacheConfiguration());
 
             if (cfg.getCacheMode() == PARTITIONED)
