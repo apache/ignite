@@ -597,6 +597,39 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testClientAndRouterFail() throws Exception {
+        startServerNodes(2);
+        startClientNodes(2);
+
+        checkNodes(2, 2);
+
+        srvFailedLatch = new CountDownLatch(2);
+        clientFailedLatch = new CountDownLatch(2);
+
+        attachListeners(1, 1);
+
+        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+            @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                try {
+                    Thread.sleep(1000000);
+                }
+                catch (InterruptedException ignored) {
+                    Thread.interrupted();
+                }
+            }
+        });
+        failClient(1);
+        failServer(1);
+
+        await(srvFailedLatch);
+        await(clientFailedLatch);
+
+        checkNodes(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMetrics() throws Exception {
         startServerNodes(3);
         startClientNodes(3);
