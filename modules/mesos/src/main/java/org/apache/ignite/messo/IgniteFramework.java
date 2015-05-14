@@ -28,6 +28,8 @@ public class IgniteFramework {
      * @param args Args
      */
     public static void main(String[] args) {
+        checkArgs(args);
+
         final int frameworkFailoverTimeout = 0;
 
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
@@ -41,7 +43,7 @@ public class IgniteFramework {
         }
 
         // create the scheduler
-        final Scheduler scheduler = new IgniteScheduler();
+        final Scheduler scheduler = createIgniteScheduler(args);
 
         // create the driver
         MesosSchedulerDriver driver;
@@ -79,5 +81,28 @@ public class IgniteFramework {
         driver.stop();
 
         System.exit(status);
+    }
+
+    /**
+     * @param args Arguments.
+     * @return Ignite scheduler.
+     */
+    private static IgniteScheduler createIgniteScheduler(String args[]) {
+        if (args.length >= 3 && args[1].equals(IgniteAmazonScheduler.AMAZON))
+            return new IgniteAmazonScheduler(args[2], args[3]);
+        else
+            return new IgniteScheduler();
+    }
+
+    /**
+     * Check input arguments.
+     *
+     * @param args Arguments.
+     */
+    private static void checkArgs(String[] args) {
+        if (args.length == 0)
+            throw new IllegalArgumentException("Illegal arguments.");
+
+        // TODO: add more
     }
 }

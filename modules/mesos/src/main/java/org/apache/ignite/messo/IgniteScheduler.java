@@ -30,6 +30,9 @@ public class IgniteScheduler implements Scheduler {
     /** Docker image name. */
     public static final String IMAGE = "apacheignite/ignite-docker";
 
+    /** Startup sctipt path. */
+    public static final String STARTUP_SCRIPT = "/home/ignite/startup.sh";
+
     /** Cpus. */
     public static final String CPUS = "cpus";
 
@@ -76,37 +79,51 @@ public class IgniteScheduler implements Scheduler {
 
             log.info("Launching task {}", taskId.getValue());
 
-            // Docker image info.
-            Protos.ContainerInfo.DockerInfo.Builder docker = Protos.ContainerInfo.DockerInfo.newBuilder()
-                .setImage(IMAGE)
-                .setNetwork(Protos.ContainerInfo.DockerInfo.Network.HOST);
-
-            // Container info.
-            Protos.ContainerInfo.Builder cont = Protos.ContainerInfo.newBuilder();
-            cont.setType(Protos.ContainerInfo.Type.DOCKER);
-            cont.setDocker(docker.build());
-
             // Create task to run.
-            Protos.TaskInfo task = Protos.TaskInfo.newBuilder()
-                .setName("task " + taskId.getValue())
-                .setTaskId(taskId)
-                .setSlaveId(offer.getSlaveId())
-                .addResources(Protos.Resource.newBuilder()
-                    .setName(CPUS)
-                    .setType(Protos.Value.Type.SCALAR)
-                    .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._1)))
-                .addResources(Protos.Resource.newBuilder()
-                    .setName(MEM)
-                    .setType(Protos.Value.Type.SCALAR)
-                    .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._2)))
-                .setContainer(cont)
-                .setCommand(Protos.CommandInfo.newBuilder().setShell(false))
-                .build();
+            Protos.TaskInfo task = createTask(offer, cpuMem, taskId);
 
             schedulerDriver.launchTasks(Collections.singletonList(offer.getId()),
                 Collections.singletonList(task),
                 Protos.Filters.newBuilder().setRefuseSeconds(1).build());
         }
+    }
+
+    /**
+     * Create Task.
+     * @param offer Offer.
+     * @param cpuMem Cpu and mem on slave.
+     * @param taskId Task id.
+     * @return Task.
+     */
+    protected Protos.TaskInfo createTask(Protos.Offer offer, Pair<Double, Double> cpuMem, Protos.TaskID taskId) {
+        // Docker image info.
+        Protos.ContainerInfo.DockerInfo.Builder docker = Protos.ContainerInfo.DockerInfo.newBuilder()
+                .setImage(IMAGE)
+                .setNetwork(Protos.ContainerInfo.DockerInfo.Network.HOST);
+
+        // Container info.
+        Protos.ContainerInfo.Builder cont = Protos.ContainerInfo.newBuilder();
+        cont.setType(Protos.ContainerInfo.Type.DOCKER);
+        cont.setDocker(docker.build());
+
+        return Protos.TaskInfo.newBuilder()
+            .setName("task " + taskId.getValue())
+            .setTaskId(taskId)
+            .setSlaveId(offer.getSlaveId())
+            .addResources(Protos.Resource.newBuilder()
+                .setName(CPUS)
+                .setType(Protos.Value.Type.SCALAR)
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._1)))
+            .addResources(Protos.Resource.newBuilder()
+                .setName(MEM)
+                .setType(Protos.Value.Type.SCALAR)
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._2)))
+            .setContainer(cont)
+            .setCommand(Protos.CommandInfo.newBuilder()
+                .setShell(false)
+                .addArguments(STARTUP_SCRIPT)
+                .addArguments(String.valueOf(cpuMem._2.intValue())))
+            .build();
     }
 
     /**
