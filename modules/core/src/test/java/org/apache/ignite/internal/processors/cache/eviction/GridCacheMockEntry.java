@@ -25,13 +25,12 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 
-
 /**
  * Mock cache entry.
  */
 public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>, EvictableEntry<K, V> {
     /** */
-    private static final int META_KEY = EntryKey.CACHE_MOCK_ENTRY_KEY.key();
+    private static final int META_KEY = EntryKey.values().length; //+1 to maximum value
 
     /** */
     @GridToStringInclude
@@ -82,7 +81,6 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /**
-     *
      * @return Evicted or not.
      */
     public boolean isEvicted() {
@@ -116,12 +114,12 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public <T> boolean replaceMeta(T curVal, T newVal) {
-        return replaceMeta(META_KEY,curVal, newVal);
+        return replaceMeta(META_KEY, curVal, newVal);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
-        if(clazz.isAssignableFrom(getClass()))
+        if (clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
         throw new IllegalArgumentException();

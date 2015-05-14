@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -38,16 +36,13 @@ public class GridMetadataAwareAdapter {
      */
     public enum EntryKey {//keys sorted by usage rate, descending.
         /** Predefined key. */
-        CACHE_EVICTABLE_ENTRY_KEY(0),
+        CACHE_STORE_MANAGER_KEY(0),
 
         /** Predefined key. */
-        CACHE_MOCK_ENTRY_KEY(1),
+        CACHE_EVICTABLE_ENTRY_KEY(1),
 
         /** Predefined key. */
-        CACHE_STORE_MANAGER_KEY(2),
-
-        /** Predefined key. */
-        CACHE_EVICTION_MANAGER_KEY(3);
+        CACHE_EVICTION_MANAGER_KEY(2);
 
         /** key. */
         private int key;
@@ -73,16 +68,6 @@ public class GridMetadataAwareAdapter {
     @GridToStringInclude
     private Object[] data = null;
 
-    /** Serializable mutex. */
-    private GridMutex mux;
-
-    /**
-     * Default constructor.
-     */
-    public GridMetadataAwareAdapter() {
-        mux = new GridMutex();
-    }
-
     /**
      * Copies all metadata from another instance.
      *
@@ -100,9 +85,9 @@ public class GridMetadataAwareAdapter {
      * @param data Map to copy metadata from.
      */
     public void copyMeta(Object[] data) {
-        A.notNull(data, "data");
+        assert data != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (this.data.length < data.length)
                 this.data = Arrays.copyOf(this.data, data.length);
 
@@ -123,9 +108,9 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <V> V addMeta(int key, V val) {
-        A.notNull(key, "key", val, "val");
+        assert val != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (this.data == null)
                 this.data = new Object[key + 1];
             else if (this.data.length <= key)
@@ -148,9 +133,7 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <V> V meta(int key) {
-        A.notNull(key, "key");
-
-        synchronized (mux) {
+        synchronized (this) {
             return data != null && data.length > key ? (V)data[key] : null;
         }
     }
@@ -164,9 +147,7 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <V> V removeMeta(int key) {
-        A.notNull(key, "key");
-
-        synchronized (mux) {
+        synchronized (this) {
             if (data == null || data.length <= key)
                 return null;
 
@@ -188,9 +169,9 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     public <V> boolean removeMeta(int key, V val) {
-        A.notNull(key, "key", val, "val");
+        assert val != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (data == null || data.length <= key)
                 return false;
 
@@ -215,7 +196,7 @@ public class GridMetadataAwareAdapter {
     public <V> Object[] allMeta() {
         Object[] cp;
 
-        synchronized (mux) {
+        synchronized (this) {
             cp = Arrays.copyOf(data, data.length);
         }
 
@@ -226,7 +207,7 @@ public class GridMetadataAwareAdapter {
      * Removes all meta.
      */
     public void removeAllMeta() {
-        synchronized (mux) {
+        synchronized (this) {
             data = null;
         }
     }
@@ -248,8 +229,6 @@ public class GridMetadataAwareAdapter {
      * @return Whether or not given metadata is set.
      */
     public <V> boolean hasMeta(int key, V val) {
-        A.notNull(key, "key");
-
         Object v = meta(key);
 
         return v != null && v.equals(val);
@@ -265,9 +244,9 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <V> V putMetaIfAbsent(int key, V val) {
-        A.notNull(key, "key", val, "val");
+        assert val != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             V v = (V)meta(key);
 
             if (v == null)
@@ -288,9 +267,9 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     public <V> V addMetaIfAbsent(int key, V val) {
-        A.notNull(key, "key", val, "val");
+        assert val != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             V v = (V)meta(key);
 
             if (v == null)
@@ -313,9 +292,9 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public <V> V addMetaIfAbsent(int key, @Nullable Callable<V> c) {
-        A.notNull(key, "key", c, "c");
+        assert c != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             V v = (V)meta(key);
 
             if (v == null && c != null)
@@ -341,9 +320,10 @@ public class GridMetadataAwareAdapter {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     public <V> boolean replaceMeta(int key, V curVal, V newVal) {
-        A.notNull(key, "key", newVal, "newVal", curVal, "curVal");
+        assert newVal != null;
+        assert curVal != null;
 
-        synchronized (mux) {
+        synchronized (this) {
             if (hasMeta(key)) {
                 V val = this.<V>meta(key);
 
@@ -370,7 +350,7 @@ public class GridMetadataAwareAdapter {
         Object[] cp;
 
         // Avoid code warning (suppressing is bad here, because we need this warning for other places).
-        synchronized (mux) {
+        synchronized (this) {
             cp = Arrays.copyOf(this.data, this.data.length);
         }
 
@@ -390,7 +370,7 @@ public class GridMetadataAwareAdapter {
     protected void readExternalMeta(ObjectInput in) throws IOException, ClassNotFoundException {
         Object[] cp = (Object[])in.readObject();
 
-        synchronized (mux) {
+        synchronized (this) {
             this.data = cp;
         }
     }
@@ -400,8 +380,6 @@ public class GridMetadataAwareAdapter {
     @Override public Object clone() {
         try {
             GridMetadataAwareAdapter clone = (GridMetadataAwareAdapter)super.clone();
-
-            clone.mux = (GridMutex)mux.clone();
 
             clone.copyMeta(this);
 
