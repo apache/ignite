@@ -1822,20 +1822,14 @@ public class IgnitionEx {
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            boolean clientDisco = cfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
+            cacheCfgs.add(marshallerSystemCache());
 
-            // Add marshaller and utility caches.
-            if (!clientDisco) {
-                cacheCfgs.add(marshallerSystemCache());
-
-                cacheCfgs.add(utilitySystemCache());
-            }
+            cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
 
-            if (cfg.getAtomicConfiguration() != null && !clientDisco)
-                cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
+            cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
 
             CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
 
@@ -2021,7 +2015,7 @@ public class IgnitionEx {
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 20));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+            cache.setNodeFilter(CacheConfiguration.SERVER_NODES);
             cache.setStartSize(300);
 
             return cache;
@@ -2042,7 +2036,7 @@ public class IgnitionEx {
             cache.setRebalanceMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
             cache.setAffinity(new RendezvousAffinityFunction(false, 100));
-            cache.setNodeFilter(CacheConfiguration.ALL_NODES);
+            cache.setNodeFilter(CacheConfiguration.SERVER_NODES);
 
             return cache;
         }

@@ -35,8 +35,9 @@ public interface IgniteEx extends Ignite {
      * Gets utility cache.
      *
      * @return Utility cache.
+     * @throws IgniteCheckedException If failed.
      */
-    public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache();
+    public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() throws IgniteCheckedException;
 
     /**
      * Gets the cache instance for the given name if one is configured or

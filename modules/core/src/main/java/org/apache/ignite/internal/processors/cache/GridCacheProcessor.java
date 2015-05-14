@@ -733,13 +733,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartedLatch.countDown();
         }
 
-        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+        if (marshallerCache() == null) {
+            assert ctx.config().isClientMode() : "Marshaller cache is missed on server node.";
 
-        marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
-            @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
-                ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
-            }
-        });
+            IgniteInternalFuture<?> fut = startCacheAsync(CU.MARSH_CACHE_NAME, true);
+
+            assert fut != null;
+
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    try {
+                        marshallerCacheCallbacks();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to initialize marshaller context.", e);
+                    }
+                }
+            });
+        }
+        else
+            marshallerCacheCallbacks();
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -786,6 +799,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.cacheObjects().onCacheProcessorStarted();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void marshallerCacheCallbacks() throws IgniteCheckedException {
+        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+
+        marshallerCache().context().preloader().syncFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+            @Override
+            public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
+                ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -2499,18 +2526,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Gets utility cache.
      *
      * @return Utility cache.
+     * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCacheAdapter<K, V> utilityCache() {
-        return internalCache(CU.UTILITY_CACHE_NAME);
-    }
+    public <K, V> GridCacheAdapter<K, V> utilityCache() throws IgniteCheckedException {
+        GridCacheAdapter<K, V> cache = internalCache(CU.UTILITY_CACHE_NAME);
 
-    /**
-     * Gets utility cache for atomic data structures.
-     *
-     * @return Utility cache for atomic data structures.
-     */
-    public <K, V> IgniteInternalCache<K, V> atomicsCache() {
-        return cache(CU.ATOMICS_CACHE_NAME);
+        if (cache != null)
+            return cache;
+
+        assert ctx.config().isClientMode() : "Utility cache is missed on server node.";
+
+        getOrStartCache(CU.UTILITY_CACHE_NAME);
+
+        return internalCache(CU.UTILITY_CACHE_NAME);
     }
 
     /**
@@ -2590,6 +2618,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private IgniteCache startJCache(String cacheName, boolean failIfNotStarted) throws IgniteCheckedException {
+        IgniteInternalFuture<?> fut = startCacheAsync(cacheName, failIfNotStarted);
+
+        if (fut != null) {
+            fut.get();
+
+            String masked = maskNull(cacheName);
+
+            IgniteCache cache = jCacheProxies.get(masked);
+
+            if (cache == null && failIfNotStarted)
+                throw new IllegalArgumentException("Cache is not started: " + cacheName);
+
+            return cache;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
+     *        otherwise returns {@code null} in this case.
+     * @return Future.
+     */
+    @Nullable private IgniteInternalFuture<?> startCacheAsync(String cacheName, boolean failIfNotStarted) {
         String masked = maskNull(cacheName);
 
         DynamicCacheDescriptor desc = registeredCaches.get(masked);
@@ -2617,14 +2670,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.clientStartOnly(true);
 
-        F.first(initiateCacheChanges(F.asList(req))).get();
-
-        IgniteCache cache = jCacheProxies.get(masked);
-
-        if (cache == null && failIfNotStarted)
-            throw new IllegalArgumentException("Cache is not started: " + cacheName);
-
-        return cache;
+        return F.first(initiateCacheChanges(F.asList(req)));
     }
 
     /**

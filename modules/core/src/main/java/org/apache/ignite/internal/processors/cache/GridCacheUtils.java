@@ -651,7 +651,7 @@ public class GridCacheUtils {
      * @return Oldest node for the given topology version.
      */
     public static ClusterNode oldest(GridCacheSharedContext cctx, AffinityTopologyVersion topOrder) {
-        ClusterNode oldest = null;
+        ClusterNode oldest = oldest(aliveCacheNodes(cctx, topOrder));
 
         for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
             if (oldest == null || n.order() < oldest.order())
@@ -660,6 +660,21 @@ public class GridCacheUtils {
 
         assert oldest != null : "Failed to find oldest node with caches: " + topOrder;
         assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
+
+        return oldest;
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @return Oldest node for the given topology version.
+     */
+    @Nullable public static ClusterNode oldest(Collection<ClusterNode> nodes) {
+        ClusterNode oldest = null;
+
+        for (ClusterNode n : nodes) {
+            if (oldest == null || n.order() < oldest.order())
+                oldest = n;
+        }
 
         return oldest;
     }
@@ -1451,13 +1466,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Cache ID for utility cache.
-     */
-    public static int utilityCacheId() {
-        return cacheId(UTILITY_CACHE_NAME);
-    }
-
-    /**
+     * @param cacheName Cache name.
      * @return Cache ID.
      */
     public static int cacheId(String cacheName) {
