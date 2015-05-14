@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.streaming.socket;
+package org.apache.ignite.examples.streaming.wordcount.socket;
 
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.streaming.wordcount.*;
@@ -32,14 +32,14 @@ import java.net.*;
  * To start the example, you should:
  * <ul>
  *     <li>Start a few nodes using {@link ExampleNodeStartup} or by starting remote nodes as specified below.</li>
- *     <li>Start socket server using {@link ZWordsSocketStreamerServer}.</li>
- *     <li>Start a few socket clients using {@link ZWordsSocketStreamerClient}.</li>
+ *     <li>Start socket server using {@link WordsSocketStreamerServer}.</li>
+ *     <li>Start a few socket clients using {@link WordsSocketStreamerClient}.</li>
  *     <li>Start querying popular words using {@link QueryWords}.</li>
  * </ul>
  * <p>
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
-public class ZWordsSocketStreamerClient {
+public class WordsSocketStreamerClient {
     /** Port. */
     private static final int PORT = 5555;
 
@@ -52,9 +52,10 @@ public class ZWordsSocketStreamerClient {
     public static void main(String[] args) throws IOException {
         InetAddress addr = InetAddress.getLocalHost();
 
-        try (Socket sock = new Socket(addr, PORT);
-             OutputStream oos = new BufferedOutputStream(sock.getOutputStream())) {
-
+        try (
+            Socket sock = new Socket(addr, PORT);
+            OutputStream oos = new BufferedOutputStream(sock.getOutputStream())
+        ) {
             System.out.println("Words streaming started.");
 
             while (true) {

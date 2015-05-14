@@ -35,6 +35,12 @@ import java.io.*;
  * You should start remote nodes by running {@link ExampleNodeStartup} in another JVM.
  */
 public class StreamWords {
+    /**
+     * Starts words streaming.
+     *
+     * @param args Command line arguments (none required).
+     * @throws Exception If failed.
+     */
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);

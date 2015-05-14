@@ -18,4 +18,4 @@
 /**
  * Contains {@link org.apache.ignite.stream.socket.SocketStreamer} usage examples.
  */
-package org.apache.ignite.examples.streaming.socket;
+package org.apache.ignite.examples.streaming.wordcount.socket;
