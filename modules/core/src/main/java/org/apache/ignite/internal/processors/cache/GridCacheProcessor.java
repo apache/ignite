@@ -736,7 +736,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (marshallerCache() == null) {
             assert ctx.config().isClientMode() : "Marshaller cache is missed on server node.";
 
-            IgniteInternalFuture<?> fut = startCacheAsync(CU.MARSH_CACHE_NAME, true);
+            DynamicCacheDescriptor desc = registeredCaches.get(CU.MARSH_CACHE_NAME);
+
+            assert desc != null && desc.cacheConfiguration() != null && desc.cacheType().equals(CacheType.MARSHALLER);
+
+            // On client node user near-only marshaller cache.
+            IgniteInternalFuture<?> fut = dynamicStartCache(desc.cacheConfiguration(),
+                CU.MARSH_CACHE_NAME, new NearCacheConfiguration(), desc.cacheType(), false);
 
             assert fut != null;
 
@@ -2539,6 +2545,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         getOrStartCache(CU.UTILITY_CACHE_NAME);
 
         return internalCache(CU.UTILITY_CACHE_NAME);
+    }
+
+    /**
+     * @return Utility cache start future.
+     */
+    public IgniteInternalFuture<?> utilityCacheAsync() {
+        if (internalCache(CU.UTILITY_CACHE_NAME) != null)
+            return new GridFinishedFuture<>();
+
+        return startCacheAsync(CU.UTILITY_CACHE_NAME, true);
     }
 
     /**

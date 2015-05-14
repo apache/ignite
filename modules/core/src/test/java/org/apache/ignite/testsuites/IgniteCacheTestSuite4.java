@@ -125,6 +125,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteExchangeFutureHistoryTest.class);
 
         suite.addTestSuite(CacheNoValueClassOnServerNodeTest.class);
+        suite.addTestSuite(IgniteSystemCacheOnClientTest.class);
 
         return suite;
     }
