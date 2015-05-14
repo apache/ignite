@@ -272,6 +272,9 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Mutex. */
     private final Object mux = new Object();
 
+    /** Discovery state. */
+    protected TcpDiscoverySpiState spiState = DISCONNECTED;
+
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
