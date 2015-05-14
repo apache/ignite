@@ -734,12 +734,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (marshallerCache() == null) {
-            assert ctx.config().isClientMode() : "Marshaller cache is missed on server node.";
-
-            // On client node use near-only marshaller cache.
-            IgniteInternalFuture<?> fut = startCacheAsync(CU.MARSH_CACHE_NAME, new NearCacheConfiguration(), false);
-
-            assert fut != null;
+            IgniteInternalFuture<?> fut = marshallerCacheAsync();
 
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -790,12 +785,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Wait for caches in SYNC preload mode.
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            CacheConfiguration cfg = cache.configuration();
+            if (cache.context().started()) {
+                CacheConfiguration cfg = cache.configuration();
 
-            if (cfg.getRebalanceMode() == SYNC) {
-                if (cfg.getCacheMode() == REPLICATED ||
-                    (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                    cache.preloader().syncFuture().get();
+                if (cfg.getRebalanceMode() == SYNC) {
+                    if (cfg.getCacheMode() == REPLICATED ||
+                        (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                        cache.preloader().syncFuture().get();
+                }
             }
         }
 
@@ -2550,6 +2547,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>();
 
         return startCacheAsync(CU.UTILITY_CACHE_NAME, null, true);
+    }
+
+    /**
+     * @return Utility cache start future.
+     */
+    public IgniteInternalFuture<?> marshallerCacheAsync() {
+        if (internalCache(CU.MARSH_CACHE_NAME) != null)
+            return new GridFinishedFuture<>();
+
+        assert ctx.config().isClientMode() : "Marshaller cache is missed on server node.";
+
+        // On client node use near-only marshaller cache.
+        return startCacheAsync(CU.MARSH_CACHE_NAME, new NearCacheConfiguration(), false);
     }
 
     /**
