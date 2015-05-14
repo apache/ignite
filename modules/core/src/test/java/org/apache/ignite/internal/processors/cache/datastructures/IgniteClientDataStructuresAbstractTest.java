@@ -230,6 +230,51 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testQueue() throws Exception {
+        Ignite clientNode = clientIgnite();
+
+        final Ignite srvNode = serverNode();
+
+        CollectionConfiguration colCfg = new CollectionConfiguration();
+
+        assertNull(clientNode.queue("q1", 0, null));
+
+        try (IgniteQueue<Integer> queue = clientNode.queue("q1", 0, colCfg)) {
+            assertNotNull(queue);
+
+            queue.add(1);
+
+            assertEquals(1, queue.poll().intValue());
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    U.sleep(1000);
+
+                    IgniteQueue<Integer> queue0 = srvNode.queue("q1", 0, null);
+
+                    assertEquals(0, queue0.size());
+
+                    log.info("Add in queue.");
+
+                    queue0.add(2);
+
+                    return null;
+                }
+            });
+
+            log.info("Try take.");
+
+            assertEquals(2, queue.take().intValue());
+
+            log.info("Finished take.");
+
+            fut.get();
+        }
+    }
+
+    /**
      * @return Client node.
      */
     private Ignite clientIgnite() {
