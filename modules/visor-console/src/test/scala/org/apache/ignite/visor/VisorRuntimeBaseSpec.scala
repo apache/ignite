@@ -24,7 +24,7 @@ import org.scalatest._
 /**
  * Base abstract class for unit tests requiring Visor runtime.
  */
-abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FlatSpec with Matchers
+abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FunSpec with Matchers
     with BeforeAndAfterAll with BeforeAndAfterEach {
     assert(num >= 1)
 

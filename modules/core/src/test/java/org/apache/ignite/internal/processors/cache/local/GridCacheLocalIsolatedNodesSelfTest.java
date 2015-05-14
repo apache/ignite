@@ -40,7 +40,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrids(2);
+        startGrids(3);
     }
 
     /** {@inheritDoc} */
@@ -59,7 +59,11 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         Ignite g2 = grid(1);
         UUID nid2 = g2.cluster().localNode().id();
 
+        Ignite g3 = grid(2);
+        UUID nid3 = g3.cluster().localNode().id();
+
         assert !nid1.equals(nid2);
+        assert !nid1.equals(nid3);
 
         // Local cache on first node only.
         CacheConfiguration<String, String> ccfg1 = new CacheConfiguration<>("A");
@@ -77,8 +81,20 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         IgniteCache<String, String> c2 = g2.createCache(ccfg2);
         c2.put("g2", "c2");
 
+        // Local cache on third node only.
+        CacheConfiguration<String, String> ccfg3 = new CacheConfiguration<>("A");
+        ccfg3.setCacheMode(LOCAL);
+        ccfg3.setNodeFilter(new NodeIdFilter(nid3));
+
+        IgniteCache<String, String> c3 = g3.createCache(ccfg3);
+        c3.put("g3", "c3");
+
         assertNull(c1.get("g2"));
+        assertNull(c1.get("g3"));
         assertNull(c2.get("g1"));
+        assertNull(c2.get("g3"));
+        assertNull(c3.get("g1"));
+        assertNull(c3.get("g2"));
     }
 
     /** Filter by node ID. */
