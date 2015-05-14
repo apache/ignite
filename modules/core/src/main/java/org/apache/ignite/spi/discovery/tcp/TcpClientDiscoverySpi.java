@@ -65,9 +65,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private static final Object JOIN_TIMEOUT = "JOIN_TIMEOUT";
 
     /** */
-    private static final Object RECONNECT_TIMEOUT = "RECONNECT_TIMEOUT";
-
-    /** */
     private static final Object SPI_STOP = "SPI_STOP";
 
     /** */
@@ -1025,19 +1022,20 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 else {
                                     assert reconnector == null;
 
-                                    reconnector = new Reconnector();
+                                    final Reconnector reconnector = new Reconnector();
+                                    this.reconnector = reconnector;
                                     reconnector.start();
 
                                     timer.schedule(new TimerTask() {
                                         @Override public void run() {
-                                            msgWorker.addMessage(RECONNECT_TIMEOUT);
+                                            reconnector.cancel();
                                         }
                                     }, netTimeout);
                                 }
                             }
                         }
                     }
-                    else if (msg == SPI_RECONNECT_FAILED || msg == RECONNECT_TIMEOUT) {
+                    else if (msg == SPI_RECONNECT_FAILED) {
                         if (!segmented) {
                             segmented = true;
 
