@@ -74,7 +74,6 @@ public class GridMetadataAwareAdapter {
     private Object[] data = null;
 
     /** Serializable mutex. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private GridMutex mux;
 
     /**
@@ -90,7 +89,7 @@ public class GridMetadataAwareAdapter {
      * @param from Metadata aware instance to copy metadata from.
      */
     public void copyMeta(GridMetadataAwareAdapter from) {
-        A.notNull(from, "from");
+        assert from != null;
 
         copyMeta(from.allMeta());
     }
