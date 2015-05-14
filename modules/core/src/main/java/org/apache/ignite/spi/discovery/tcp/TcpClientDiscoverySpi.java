@@ -73,6 +73,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
 
+    /** Topology history. */
+    private final NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
+
     /** Remote nodes. */
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> pingFuts = new ConcurrentHashMap8<>();
 
@@ -345,11 +348,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.view(U.<TcpDiscoveryNode, ClusterNode>arrayList(rmtNodes.values(), new P1<TcpDiscoveryNode>() {
-            @Override public boolean apply(TcpDiscoveryNode node) {
-                return node.visible();
-            }
-        }));
+        return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
     }
 
     /** {@inheritDoc} */
@@ -419,6 +418,29 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         U.join(msgWorker, log);
         U.join(sockWriter, log);
         U.join(sockReader, log);
+
+        leaveLatch.countDown();
+        joinLatch.countDown();
+
+        getSpiContext().deregisterPorts();
+
+        Collection<ClusterNode> rmts = getRemoteNodes();
+
+        // This is restart/disconnection and remote nodes are not empty.
+        // We need to fire FAIL event for each.
+        DiscoverySpiListener lsnr = this.lsnr;
+
+        if (lsnr != null) {
+            for (ClusterNode n : rmts) {
+                rmtNodes.remove(n.id());
+
+                Collection<ClusterNode> top = updateTopologyHistory(topVer + 1);
+
+                lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null);
+            }
+        }
+
+        rmtNodes.clear();
     }
 
     /** {@inheritDoc} */
@@ -552,6 +574,47 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 Thread.sleep(2000);
             }
         }
+    }
+
+    /**
+     * @param topVer New topology version.
+     * @return Latest topology snapshot.
+     */
+    private NavigableSet<ClusterNode> updateTopologyHistory(long topVer) {
+        this.topVer = topVer;
+
+        NavigableSet<ClusterNode> allNodes = allVisibleNodes();
+
+        if (!topHist.containsKey(topVer)) {
+            assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
+                "lastVer=" + topHist.lastKey() + ", newVer=" + topVer;
+
+            topHist.put(topVer, allNodes);
+
+            if (topHist.size() > topHistSize)
+                topHist.pollFirstEntry();
+
+            assert topHist.lastKey() == topVer;
+            assert topHist.size() <= topHistSize;
+        }
+
+        return allNodes;
+    }
+
+    /**
+     * @return All nodes.
+     */
+    private NavigableSet<ClusterNode> allVisibleNodes() {
+        NavigableSet<ClusterNode> allNodes = new TreeSet<>();
+
+        for (TcpDiscoveryNode node : rmtNodes.values()) {
+            if (node.visible())
+                allNodes.add(node);
+        }
+
+        allNodes.add(locNode);
+
+        return allNodes;
     }
 
     /**
@@ -932,9 +995,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
      * Message worker.
      */
     private class MessageWorker extends IgniteSpiThread {
-        /** Topology history. */
-        private final NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
-
         /** Message queue. */
         private final BlockingDeque<Object> queue = new LinkedBlockingDeque<>();
 
@@ -1042,7 +1102,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                             reconnector.cancel();
                             reconnector.join();
 
-                            notifyDiscovery(EVT_NODE_SEGMENTED, topVer, locNode, allNodes());
+                            notifyDiscovery(EVT_NODE_SEGMENTED, topVer, locNode, allVisibleNodes());
                         }
                     }
                     else {
@@ -1113,7 +1173,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             else if (msg instanceof TcpDiscoveryClientPingResponse)
                 processClientPingResponse((TcpDiscoveryClientPingResponse)msg);
             else if (msg instanceof TcpDiscoveryPingRequest)
-                processPingRequest((TcpDiscoveryPingRequest)msg);
+                processPingRequest();
 
             stats.onMessageProcessingFinished(msg);
         }
@@ -1223,7 +1283,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 if (locNodeVer.equals(node.version()))
                     node.version(locNodeVer);
 
-                Collection<ClusterNode> top = updateTopologyHistory(topVer);
+                NavigableSet<ClusterNode> top = updateTopologyHistory(topVer);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1261,7 +1321,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     return;
                 }
 
-                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
+                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1303,7 +1363,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     return;
                 }
 
-                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
+                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1399,7 +1459,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         try {
                             Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
-                            notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allNodes(), msgObj);
+                            notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to unmarshal discovery custom message.", e);
@@ -1423,10 +1483,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
         /**
          * Router want to ping this client.
-         *
-         * @param msg Message.
          */
-        private void processPingRequest(TcpDiscoveryPingRequest msg) {
+        private void processPingRequest() {
             sockWriter.sendMessage(new TcpDiscoveryPingResponse(getLocalNodeId()));
         }
 
@@ -1453,51 +1511,10 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                 node.lastUpdateTime(tstamp);
 
-                notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, allNodes());
+                notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, allVisibleNodes());
             }
             else if (log.isDebugEnabled())
                 log.debug("Received metrics from unknown node: " + nodeId);
-        }
-
-        /**
-         * @param topVer New topology version.
-         * @return Latest topology snapshot.
-         */
-        private Collection<ClusterNode> updateTopologyHistory(long topVer) {
-            TcpClientDiscoverySpi.this.topVer = topVer;
-
-            Collection<ClusterNode> allNodes = allNodes();
-
-            if (!topHist.containsKey(topVer)) {
-                assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
-                    "lastVer=" + topHist.lastKey() + ", newVer=" + topVer;
-
-                topHist.put(topVer, allNodes);
-
-                if (topHist.size() > topHistSize)
-                    topHist.pollFirstEntry();
-
-                assert topHist.lastKey() == topVer;
-                assert topHist.size() <= topHistSize;
-            }
-
-            return allNodes;
-        }
-
-        /**
-         * @return All nodes.
-         */
-        private Collection<ClusterNode> allNodes() {
-            Collection<ClusterNode> allNodes = new TreeSet<>();
-
-            for (TcpDiscoveryNode node : rmtNodes.values()) {
-                if (node.visible())
-                    allNodes.add(node);
-            }
-
-            allNodes.add(locNode);
-
-            return allNodes;
         }
 
         /**
@@ -1506,7 +1523,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param node Node.
          * @param top Topology snapshot.
          */
-        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top) {
+        private void notifyDiscovery(int type, long topVer, ClusterNode node, NavigableSet<ClusterNode> top) {
             notifyDiscovery(type, topVer, node, top, null);
         }
 
@@ -1516,7 +1533,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param node Node.
          * @param top Topology snapshot.
          */
-        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top,
+        private void notifyDiscovery(int type, long topVer, ClusterNode node, NavigableSet<ClusterNode> top,
             @Nullable Serializable data) {
             DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
 

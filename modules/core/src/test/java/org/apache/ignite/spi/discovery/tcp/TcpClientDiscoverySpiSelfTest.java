@@ -518,6 +518,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         };
         G.addListener(lsnr);
 
+        final TcpClientDiscoverySpi client2Disco = (TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi();
+
         try {
             failServer(2);
 
@@ -531,6 +533,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         finally {
             G.removeListener(lsnr);
         }
+
+        assert client2Disco.getRemoteNodes().isEmpty();
     }
 
     /**
