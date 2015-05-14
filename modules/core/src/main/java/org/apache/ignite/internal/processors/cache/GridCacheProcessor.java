@@ -127,6 +127,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Count down latch for caches. */
     private final CountDownLatch cacheStartedLatch = new CountDownLatch(1);
 
+    /** */
+    private final GridFutureAdapter<Object> sysCacheStartFut = new GridFutureAdapter<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -661,6 +664,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
+        DynamicCacheDescriptor marshCacheDesc = null;
+        DynamicCacheDescriptor utilityCacheDesc = null;
+        DynamicCacheDescriptor atomicsCacheDesc = null;
+
         try {
             if (ctx.config().isDaemon())
                 return;
@@ -727,17 +734,34 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
+
+                if (CU.MARSH_CACHE_NAME.equals(ccfg.getName()))
+                    marshCacheDesc = desc;
+                else if (CU.UTILITY_CACHE_NAME.equals(ccfg.getName()))
+                    utilityCacheDesc = desc;
+                else if (CU.ATOMICS_CACHE_NAME.equals(ccfg.getName()))
+                    atomicsCacheDesc = desc;
             }
         }
         finally {
             cacheStartedLatch.countDown();
         }
 
-        if (marshallerCache() == null) {
-            IgniteInternalFuture<?> fut = marshallerCacheAsync();
+        if (ctx.config().isClientMode()) {
+            assert marshCacheDesc != null;
+            assert utilityCacheDesc != null;
+            assert atomicsCacheDesc != null;
 
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
+            Collection<DynamicCacheChangeRequest> reqs = new ArrayList<>();
+
+            reqs.add(clientSystemCacheRequest(marshCacheDesc, new NearCacheConfiguration()));
+            reqs.add(clientSystemCacheRequest(utilityCacheDesc, null));
+            reqs.add(clientSystemCacheRequest(atomicsCacheDesc, new NearCacheConfiguration()));
+
+            startClientSystemCaches(reqs);
+
+            sysCacheStartFut.listen(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
                     try {
                         marshallerCacheCallbacks();
                     }
@@ -747,8 +771,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             });
         }
-        else
+        else {
+            sysCacheStartFut.onDone();
+
             marshallerCacheCallbacks();
+        }
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -797,6 +824,51 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.cacheObjects().onCacheProcessorStarted();
+    }
+
+    /**
+     * @param reqs Start requests.
+     */
+    private void startClientSystemCaches(Collection<DynamicCacheChangeRequest> reqs) {
+        assert !F.isEmpty(reqs) : reqs;
+
+        GridCompoundFuture<Object, Object> fut = new GridCompoundFuture<>();
+
+        for (DynamicCacheStartFuture startFut : initiateCacheChanges(reqs))
+            fut.add(startFut);
+
+        fut.markInitialized();
+
+        fut.listen(new CI1<IgniteInternalFuture<Object>>() {
+            @Override public void apply(IgniteInternalFuture<Object> fut) {
+                sysCacheStartFut.onDone();
+            }
+        });
+    }
+
+    /**
+     * @param cacheDesc Cache descriptor.
+     * @return Cache change request.
+     */
+    private DynamicCacheChangeRequest clientSystemCacheRequest(
+        DynamicCacheDescriptor cacheDesc,
+        @Nullable NearCacheConfiguration nearCfg)
+    {
+        DynamicCacheChangeRequest desc = new DynamicCacheChangeRequest(
+            cacheDesc.cacheConfiguration().getName(),
+            ctx.localNodeId());
+
+        desc.clientStartOnly(true);
+
+        desc.nearCacheConfiguration(nearCfg);
+
+        desc.deploymentId(cacheDesc.deploymentId());
+
+        desc.startCacheConfiguration(cacheDesc.cacheConfiguration());
+
+        desc.cacheType(cacheDesc.cacheType());
+
+        return desc;
     }
 
     /**
@@ -855,6 +927,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     @Override public void onKernalStop(boolean cancel) {
         cacheStartedLatch.countDown();
+
+        sysCacheStartFut.onDone();
 
         if (ctx.config().isDaemon())
             return;
@@ -2534,7 +2608,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         assert ctx.config().isClientMode() : "Utility cache is missed on server node.";
 
-        getOrStartCache(CU.UTILITY_CACHE_NAME);
+        sysCacheStartFut.get();
 
         return internalCache(CU.UTILITY_CACHE_NAME);
     }
@@ -2542,24 +2616,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Utility cache start future.
      */
-    public IgniteInternalFuture<?> utilityCacheAsync() {
-        if (internalCache(CU.UTILITY_CACHE_NAME) != null)
-            return new GridFinishedFuture<>();
-
-        return startCacheAsync(CU.UTILITY_CACHE_NAME, null, true);
-    }
-
-    /**
-     * @return Utility cache start future.
-     */
-    public IgniteInternalFuture<?> marshallerCacheAsync() {
-        if (internalCache(CU.MARSH_CACHE_NAME) != null)
-            return new GridFinishedFuture<>();
-
-        assert ctx.config().isClientMode() : "Marshaller cache is missed on server node.";
-
-        // On client node use near-only marshaller cache.
-        return startCacheAsync(CU.MARSH_CACHE_NAME, new NearCacheConfiguration(), false);
+    public IgniteInternalFuture<?> systemCachesStartFuture() {
+        return sysCacheStartFut;
     }
 
     /**
@@ -2639,35 +2697,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private IgniteCache startJCache(String cacheName, boolean failIfNotStarted) throws IgniteCheckedException {
-        IgniteInternalFuture<?> fut = startCacheAsync(cacheName, null, failIfNotStarted);
-
-        if (fut != null) {
-            fut.get();
-
-            String masked = maskNull(cacheName);
-
-            IgniteCache cache = jCacheProxies.get(masked);
-
-            if (cache == null && failIfNotStarted)
-                throw new IllegalArgumentException("Cache is not started: " + cacheName);
-
-            return cache;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param nearCfg Near cache configuration.
-     * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
-     *        otherwise returns {@code null} in this case.
-     * @return Future.
-     */
-    @Nullable public IgniteInternalFuture<?> startCacheAsync(String cacheName,
-        @Nullable NearCacheConfiguration nearCfg,
-        boolean failIfNotStarted)
-    {
         String masked = maskNull(cacheName);
 
         DynamicCacheDescriptor desc = registeredCaches.get(masked);
@@ -2695,9 +2724,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.clientStartOnly(true);
 
-        req.nearCacheConfiguration(nearCfg);
+        F.first(initiateCacheChanges(F.asList(req))).get();
 
-        return F.first(initiateCacheChanges(F.asList(req)));
+        IgniteCache cache = jCacheProxies.get(masked);
+
+        if (cache == null && failIfNotStarted)
+            throw new IllegalArgumentException("Cache is not started: " + cacheName);
+
+        return cache;
     }
 
     /**

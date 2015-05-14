@@ -128,7 +128,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (atomicsCache == null) {
                 assert ctx.config().isClientMode() : "Atomics cache is missed on server node.";
 
-                ctx.cache().startCacheAsync(CU.ATOMICS_CACHE_NAME, new NearCacheConfiguration(), true).get();
+                ctx.cache().systemCachesStartFuture().get();
 
                 atomicsCache = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME);
             }
