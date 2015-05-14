@@ -736,13 +736,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (marshallerCache() == null) {
             assert ctx.config().isClientMode() : "Marshaller cache is missed on server node.";
 
-            DynamicCacheDescriptor desc = registeredCaches.get(CU.MARSH_CACHE_NAME);
-
-            assert desc != null && desc.cacheConfiguration() != null && desc.cacheType().equals(CacheType.MARSHALLER);
-
-            // On client node user near-only marshaller cache.
-            IgniteInternalFuture<?> fut = dynamicStartCache(desc.cacheConfiguration(),
-                CU.MARSH_CACHE_NAME, new NearCacheConfiguration(), desc.cacheType(), false);
+            // On client node use near-only marshaller cache.
+            IgniteInternalFuture<?> fut = startCacheAsync(CU.MARSH_CACHE_NAME, new NearCacheConfiguration(), false);
 
             assert fut != null;
 
@@ -2554,7 +2549,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (internalCache(CU.UTILITY_CACHE_NAME) != null)
             return new GridFinishedFuture<>();
 
-        return startCacheAsync(CU.UTILITY_CACHE_NAME, true);
+        return startCacheAsync(CU.UTILITY_CACHE_NAME, null, true);
     }
 
     /**
@@ -2634,7 +2629,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private IgniteCache startJCache(String cacheName, boolean failIfNotStarted) throws IgniteCheckedException {
-        IgniteInternalFuture<?> fut = startCacheAsync(cacheName, failIfNotStarted);
+        IgniteInternalFuture<?> fut = startCacheAsync(cacheName, null, failIfNotStarted);
 
         if (fut != null) {
             fut.get();
@@ -2654,11 +2649,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
+     * @param nearCfg Near cache configuration.
      * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
      *        otherwise returns {@code null} in this case.
      * @return Future.
      */
-    @Nullable private IgniteInternalFuture<?> startCacheAsync(String cacheName, boolean failIfNotStarted) {
+    @Nullable public IgniteInternalFuture<?> startCacheAsync(String cacheName,
+        @Nullable NearCacheConfiguration nearCfg,
+        boolean failIfNotStarted)
+    {
         String masked = maskNull(cacheName);
 
         DynamicCacheDescriptor desc = registeredCaches.get(masked);
@@ -2685,6 +2684,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.cacheType(desc.cacheType());
 
         req.clientStartOnly(true);
+
+        req.nearCacheConfiguration(nearCfg);
 
         return F.first(initiateCacheChanges(F.asList(req)));
     }
