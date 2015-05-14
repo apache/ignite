@@ -657,8 +657,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         U.join(sockWriter, log);
         U.join(msgWorker, log);
         U.join(sockTimeoutWorker, log);
-
-        timer.cancel();
     }
 
     /**
