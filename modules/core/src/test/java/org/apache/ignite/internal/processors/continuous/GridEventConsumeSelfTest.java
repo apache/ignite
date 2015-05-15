@@ -102,17 +102,18 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
         assertEquals(GRID_CNT, grid(0).cluster().nodes().size());
 
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteKernal grid = (IgniteKernal)grid(i);
+            IgniteEx grid = grid(i);
 
             GridContinuousProcessor proc = grid.context().continuous();
 
-            if (noAutoUnsubscribe) {
-                localRoutines(proc).clear();
-
+            try {
+                if (!noAutoUnsubscribe)
+                    assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
+            }
+            finally {
                 U.<Map>field(proc, "rmtInfos").clear();
             }
 
-            assertEquals(0, localRoutines(proc).size());
             assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
             assertEquals(0, U.<Map>field(proc, "startFuts").size());
             assertEquals(0, U.<Map>field(proc, "stopFuts").size());
