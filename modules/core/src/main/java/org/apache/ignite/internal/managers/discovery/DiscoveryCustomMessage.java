@@ -33,7 +33,9 @@ public interface DiscoveryCustomMessage extends Serializable {
     public boolean forwardMinorVersion();
 
     /**
-     * Called when message passed the ring.
+     * Called when custom message has been handled by all nodes.
+     *
+     * @return Ack message or {@code null} if ack is not required.
      */
-    @Nullable public DiscoveryCustomMessage newMessageOnRingEnd();
+    @Nullable public DiscoveryCustomMessage ackMessage();
 }

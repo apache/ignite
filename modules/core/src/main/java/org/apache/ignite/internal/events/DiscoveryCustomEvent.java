@@ -22,15 +22,13 @@ import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Custom event.
  */
 public class DiscoveryCustomEvent extends DiscoveryEvent {
     /** */
     private static final long serialVersionUID = 0L;
-    
+
     /**
      * Built-in event type: custom event sent.
      * <br>

@@ -84,7 +84,7 @@ public class StartRoutineDiscoveryMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public DiscoveryCustomMessage newMessageOnRingEnd() {
+    @Override public DiscoveryCustomMessage ackMessage() {
         return new StartRoutineAckDiscoveryMessage(routineId, errs);
     }
 

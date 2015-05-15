@@ -39,7 +39,7 @@ class CustomMessageWrapper implements DiscoverySpiCustomMessage {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage newMessageOnRingEnd() {
-        DiscoveryCustomMessage res = delegate.newMessageOnRingEnd();
+        DiscoveryCustomMessage res = delegate.ackMessage();
 
         return res == null ? null : new CustomMessageWrapper(res);
     }

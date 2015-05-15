@@ -80,7 +80,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage newMessageOnRingEnd() {
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 }
