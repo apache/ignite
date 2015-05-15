@@ -532,7 +532,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     TcpDiscoveryAbstractMessage msg = recon ?
                         new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId,
                             lastMsgId) :
-                        new TcpDiscoveryJoinRequestMessage(locNode, null);
+                        new TcpDiscoveryJoinRequestMessage(locNode, collectExchangeData(getLocalNodeId()));
 
                     msg.client(true);
 
@@ -675,7 +675,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     public void waitForMessagePrecessed() {
         Object last = msgWorker.queue.peekLast();
 
-        while (last != null && msgWorker.queue.contains(last)) {
+        while (last != null && msgWorker.isAlive() && msgWorker.queue.contains(last)) {
             try {
                 Thread.sleep(10);
             }

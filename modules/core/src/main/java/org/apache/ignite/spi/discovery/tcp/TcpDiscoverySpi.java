@@ -2235,34 +2235,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @param nodeId Node ID.
-     * @return Marshalled exchange data.
-     */
-    private Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
-        Map<Integer, Serializable> data = exchange.collect(nodeId);
-
-        Map<Integer, byte[]> data0 = null;
-
-        if (data != null) {
-            data0 = U.newHashMap(data.size());
-
-            for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
-                try {
-                    byte[] bytes = marsh.marshal(entry.getValue());
-
-                    data0.put(entry.getKey(), bytes);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to marshal discovery data " +
-                        "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
-                }
-            }
-        }
-
-        return data0;
-    }
-
-    /**
      * @param msg Message.
      * @param nodeId Node ID.
      */

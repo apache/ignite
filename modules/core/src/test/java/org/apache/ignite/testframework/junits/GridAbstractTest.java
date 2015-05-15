@@ -1389,6 +1389,22 @@ public abstract class GridAbstractTest extends TestCase {
 
     /**
      * @param obj Object that should be wrap proxy
+     * @return Created proxy.
+     */
+    protected <T> T notSerializableProxy(final T obj) {
+        Class<T> cls = (Class<T>)obj.getClass();
+
+        Class<T>[] interfaces = (Class<T>[])cls.getInterfaces();
+
+        assert interfaces.length > 0;
+
+        Class<T> lastItf = interfaces[interfaces.length - 1];
+
+        return notSerializableProxy(obj, lastItf, Arrays.copyOf(interfaces, interfaces.length - 1));
+    }
+
+    /**
+     * @param obj Object that should be wrap proxy
      * @param itfCls Interface that should be implemented by proxy
      * @param itfClses Interfaces that should be implemented by proxy (vararg parameter)
      * @return Created proxy.
