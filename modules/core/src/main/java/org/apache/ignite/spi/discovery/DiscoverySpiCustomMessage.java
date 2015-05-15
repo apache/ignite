@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,30 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.spi.discovery;
 
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
- * Continuous processor message types.
+ * Message to send across ring.
+ *
+ * @see org.apache.ignite.internal.managers.discovery.GridDiscoveryManager#sendCustomEvent(
+ * org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage)
  */
-enum GridContinuousMessageType {
-    /** Remote event notification. */
-    MSG_EVT_NOTIFICATION,
-
-    /** Event notification acknowledgement for synchronous events. */
-    MSG_EVT_ACK;
-
-    /** Enumerated values. */
-    private static final GridContinuousMessageType[] VALS = values();
-
+public interface DiscoverySpiCustomMessage extends Serializable {
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * Called when message passed the ring.
      */
-    @Nullable public static GridContinuousMessageType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    @Nullable public DiscoverySpiCustomMessage ackMessage();
 }

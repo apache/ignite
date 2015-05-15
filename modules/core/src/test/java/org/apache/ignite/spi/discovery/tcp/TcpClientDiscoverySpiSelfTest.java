@@ -448,7 +448,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 3);
 
-        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brokeConnection();
+        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brakeConnection();
 
         G.ignite("client-2").message().remoteListen(null, new MessageListener()); // Send some discovery message.
 
@@ -719,7 +719,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         try {
             id = msg.remoteListen(null, new MessageListener());
 
-            msgLatch = new CountDownLatch(4);
+            msgLatch = new CountDownLatch(2);
 
             msg.send(null, "Message 1");
 
@@ -730,7 +730,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             checkNodes(3, 3);
 
-            msgLatch = new CountDownLatch(6);
+            msgLatch = new CountDownLatch(3);
 
             msg.send(null, "Message 2");
 
@@ -986,6 +986,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Ignite g = G.ignite("client-" + i);
 
+            ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
+
             assertTrue(clientNodeIds.contains(g.cluster().localNode().id()));
 
             assertTrue(g.cluster().localNode().isClient());
@@ -1112,7 +1114,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void pauseAll() {
             pauseResumeOperation(true, openSockLock, writeLock);
 
-            brokeConnection();
+            brakeConnection();
         }
 
         /**

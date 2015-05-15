@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.security.*;
@@ -37,11 +37,11 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -1253,7 +1253,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(Serializable evt) {
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
             msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(evt)));
         }
@@ -1771,7 +1771,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<ClusterNode> top = F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -2237,9 +2237,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * @param nodeId Node ID.
      * @return Marshalled exchange data.
-     * @throws IgniteSpiException If failed.
      */
-    private Map<Integer, byte[]> collectExchangeData(UUID nodeId) throws IgniteSpiException {
+    private Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
         Map<Integer, Serializable> data = exchange.collect(nodeId);
 
         Map<Integer, byte[]> data0 = null;
@@ -2256,8 +2255,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
-
-                    throw new IgniteSpiException("Failed to marshal discovery data.", e);
                 }
             }
         }
@@ -4556,38 +4553,72 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
             if (isLocalNodeCoordinator()) {
-                if (msg.verified()) {
+                boolean sndNext;
+
+                if (!msg.verified()) {
+                    msg.verify(getLocalNodeId());
+                    msg.topologyVersion(ring.topologyVersion());
+
+                    notifyDiscoveryListener(msg);
+
+                    sndNext = true;
+                }
+                else
+                    sndNext = false;
+
+                if (sndNext && ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+                else {
                     stats.onRingMessageReceived(msg);
 
+                    try {
+                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+
+                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
+
+                        if (nextMsg != null)
+                            addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                    }
+
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
-
-                    return;
                 }
+            }
+            else {
+                if (msg.verified())
+                    notifyDiscoveryListener(msg);
 
-                msg.verify(getLocalNodeId());
-                msg.topologyVersion(ring.topologyVersion());
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+            }
+        }
+
+        /**
+         * @param msg Custom message.
+         */
+        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg) {
+            DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+
+            TcpDiscoverySpiState spiState = spiStateCopy();
+
+            Map<Long, Collection<ClusterNode>> hist;
+
+            synchronized (mux) {
+                hist = new TreeMap<>(topHist);
             }
 
-            if (msg.verified()) {
-                DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+            Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
-                TcpDiscoverySpiState spiState = spiStateCopy();
+            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+                assert msg.messageBytes() != null;
 
-                Map<Long, Collection<ClusterNode>> hist;
+                TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-                synchronized (mux) {
-                    hist = new TreeMap<>(topHist);
-                }
-
-                Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
-
-                if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                    assert msg.messageBytes() != null;
-
-                    TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
-
+                if (node != null) {
                     try {
-                        Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -4595,15 +4626,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             snapshot,
                             hist,
                             msgObj);
+
+                        msg.messageBytes(marsh.marshal(msgObj));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
                 }
             }
-
-            if (ring.hasRemoteNodes())
-                sendMessageAcrossRing(msg);
         }
     }
 
@@ -5297,7 +5327,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private volatile ClusterMetrics metrics;
 
         /** */
-        private final AtomicReference<SettableFuture<Boolean>> pingFut = new AtomicReference<>();
+        private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
         /**
          * @param sock Socket.
@@ -5373,10 +5403,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          */
         public void pingResult(boolean res) {
-            SettableFuture<Boolean> fut = pingFut.getAndSet(null);
+            GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
 
             if (fut != null)
-                fut.set(res);
+                fut.onDone(res);
         }
 
         /**
@@ -5386,7 +5416,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (isNodeStopping())
                 return false;
 
-            SettableFuture<Boolean> fut;
+            GridFutureAdapter<Boolean> fut;
 
             while (true) {
                 fut = pingFut.get();
@@ -5394,7 +5424,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (fut != null)
                     break;
 
-                fut = new SettableFuture<>();
+                fut = new GridFutureAdapter<>();
 
                 if (pingFut.compareAndSet(null, fut)) {
                     TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), nodeId);
@@ -5410,14 +5440,17 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 return fut.get(ackTimeout, TimeUnit.MILLISECONDS);
             }
-            catch (ExecutionException e) {
-                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
+            catch (IgniteInterruptedCheckedException ignored) {
+                throw new InterruptedException();
             }
-            catch (TimeoutException ignored) {
+            catch (IgniteFutureTimeoutCheckedException ignored) {
                 if (pingFut.compareAndSet(fut, null))
-                    fut.set(false);
+                    fut.onDone(false);
 
                 return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
             }
         }
 

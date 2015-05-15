@@ -102,23 +102,21 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
         assertEquals(GRID_CNT, grid(0).cluster().nodes().size());
 
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteKernal grid = (IgniteKernal)grid(i);
+            IgniteEx grid = grid(i);
 
             GridContinuousProcessor proc = grid.context().continuous();
 
-            if (noAutoUnsubscribe) {
-                localRoutines(proc).clear();
-
+            try {
+                if (!noAutoUnsubscribe)
+                    assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
+            }
+            finally {
                 U.<Map>field(proc, "rmtInfos").clear();
             }
 
-            assertEquals(0, localRoutines(proc).size());
             assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
             assertEquals(0, U.<Map>field(proc, "startFuts").size());
-            assertEquals(0, U.<Map>field(proc, "waitForStartAck").size());
             assertEquals(0, U.<Map>field(proc, "stopFuts").size());
-            assertEquals(0, U.<Map>field(proc, "waitForStopAck").size());
-            assertEquals(0, U.<Map>field(proc, "pending").size());
         }
     }
 
@@ -505,28 +503,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
         }
         finally {
             grid(0).events().stopRemoteListen(consumeId);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEmptyProjection() throws Exception {
-        try {
-            events(grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse())).remoteListen(
-                new P2<UUID, Event>() {
-                    @Override public boolean apply(UUID nodeId, Event evt) {
-                        return true;
-                    }
-                },
-                null
-            );
-
-            assert false : "Exception was not thrown.";
-        }
-        catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith(
-                "Failed to register remote continuous listener (projection is empty)."));
         }
     }
 
