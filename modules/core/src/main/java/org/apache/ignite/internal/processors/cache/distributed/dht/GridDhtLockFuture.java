@@ -833,8 +833,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         cnt,
                         0,
                         inTx() ? tx.size() : cnt,
-                        inTx() ? tx.groupLockKey() : null,
-                        inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
                         inTx() ? tx.taskNameHash() : 0,
                         read ? accessTtl : -1L,

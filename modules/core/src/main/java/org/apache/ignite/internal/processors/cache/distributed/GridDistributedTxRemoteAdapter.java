@@ -95,7 +95,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      */
@@ -112,7 +111,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -128,7 +126,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             isolation,
             timeout,
             txSize,
-            grpLockKey,
             subjId,
             taskNameHash);
 
@@ -193,16 +190,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public void seal() {
         // No-op.
-    }
-
-    /**
-     * Adds group lock key to remote transaction.
-     *
-     * @param key Key.
-     */
-    public void groupLockKey(IgniteTxKey key) {
-        if (grpLockKey == null)
-            grpLockKey = key;
     }
 
     /** {@inheritDoc} */
@@ -350,7 +337,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             entry.op(e.op());
             entry.ttl(e.ttl());
             entry.explicitVersion(e.explicitVersion());
-            entry.groupLockEntry(e.groupLockEntry());
 
             // Conflict resolution stuff.
             entry.conflictVersion(e.conflictVersion());
@@ -446,7 +432,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
-                        if (!txEntry.groupLockEntry() && !Entry.lockedBy(ver)) {
+                        if (!Entry.lockedBy(ver)) {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction does not own lock for entry (will wait) [entry=" + Entry +
                                     ", tx=" + this + ']');
@@ -607,10 +593,6 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     }
                                     // No-op.
                                     else {
-                                        assert !groupLock() || txEntry.groupLockEntry() || ownsLock(txEntry.cached()):
-                                            "Transaction does not own lock for group lock entry during  commit [tx=" +
-                                                this + ", txEntry=" + txEntry + ']';
-
                                         if (conflictCtx == null || !conflictCtx.isUseOld()) {
                                             if (txEntry.ttl() != CU.TTL_NOT_CHANGED)
                                                 cached.updateTtl(null, txEntry.ttl());
