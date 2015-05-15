@@ -2538,8 +2538,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (node.isDaemon())
                 return false;
 
-            if (nearEnabled && CU.affinityNode(node, cacheFilter))
-                return true;
+            if (CU.affinityNode(node, cacheFilter))
+                return nearEnabled;
 
             Boolean near = clientNodes.get(node.id());
 

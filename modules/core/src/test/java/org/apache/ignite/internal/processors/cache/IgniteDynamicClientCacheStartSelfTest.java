@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheMode.*;
+
 /**
  * Tests that cache specified in configuration start on client nodes.
  */
@@ -150,6 +152,74 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
         }, IgniteException.class, null);
 
         checkCache(ignite1, cacheName, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedCacheClient() throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(REPLICATED);
+
+        final String cacheName = null;
+
+        Ignite ignite0 = startGrid(0);
+
+        checkCache(ignite0, cacheName, true, false);
+
+        client = true;
+
+        final Ignite ignite1 = startGrid(1);
+
+        checkCache(ignite1, cacheName, false, false);
+
+        ccfg.setNearConfiguration(new NearCacheConfiguration());
+
+        Ignite ignite2 = startGrid(2);
+
+        checkCache(ignite2, cacheName, false, true);
+
+        ccfg = null;
+
+        Ignite ignite3 = startGrid(3);
+
+        checkNoCache(ignite3, cacheName);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReplicatedWithNearCacheClient() throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setNearConfiguration(new NearCacheConfiguration());
+
+        ccfg.setCacheMode(REPLICATED);
+
+        final String cacheName = null;
+
+        Ignite ignite0 = startGrid(0);
+
+        checkCache(ignite0, cacheName, true, false);
+
+        client = true;
+
+        final Ignite ignite1 = startGrid(1);
+
+        checkCache(ignite1, cacheName, false, true);
+
+        ccfg.setNearConfiguration(null);
+
+        Ignite ignite2 = startGrid(2);
+
+        checkCache(ignite2, cacheName, false, false);
+
+        ccfg = null;
+
+        Ignite ignite3 = startGrid(3);
+
+        checkNoCache(ignite3, cacheName);
     }
 
     /**
