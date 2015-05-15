@@ -631,14 +631,9 @@ public class GridCacheUtils {
      * @return Oldest node for the given topology version.
      */
     public static ClusterNode oldest(GridCacheContext cctx, AffinityTopologyVersion topOrder) {
-        Collection<ClusterNode> aliveCacheNodes = aliveNodes(cctx, topOrder);
-
-        if (aliveCacheNodes.isEmpty())
-            return cctx.localNode();
-
         ClusterNode oldest = null;
 
-        for (ClusterNode n : aliveCacheNodes)
+        for (ClusterNode n : aliveNodes(cctx, topOrder))
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
@@ -656,14 +651,9 @@ public class GridCacheUtils {
      * @return Oldest node for the given topology version.
      */
     public static ClusterNode oldest(GridCacheSharedContext cctx, AffinityTopologyVersion topOrder) {
-        Collection<ClusterNode> aliveCacheNodes = aliveCacheNodes(cctx, topOrder);
-
-        if (aliveCacheNodes.isEmpty())
-            return cctx.localNode();
-
         ClusterNode oldest = null;
 
-        for (ClusterNode n : aliveCacheNodes) {
+        for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
         }
