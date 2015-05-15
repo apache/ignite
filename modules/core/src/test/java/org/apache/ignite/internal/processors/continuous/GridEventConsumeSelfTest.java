@@ -509,28 +509,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
     /**
      * @throws Exception If failed.
      */
-    public void testEmptyProjection() throws Exception {
-        try {
-            events(grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse())).remoteListen(
-                new P2<UUID, Event>() {
-                    @Override public boolean apply(UUID nodeId, Event evt) {
-                        return true;
-                    }
-                },
-                null
-            );
-
-            assert false : "Exception was not thrown.";
-        }
-        catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith(
-                "Failed to register remote continuous listener (projection is empty)."));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testStopByCallback() throws Exception {
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
