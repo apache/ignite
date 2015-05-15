@@ -532,22 +532,6 @@ public class IgnitionEx {
     }
 
     /**
-     * Start Grid passing a closure which will modify configuration before it is passed to start routine.
-     *
-     * @param springCfgPath Spring config path.
-     * @param gridName Grid name.
-     * @param cfgClo Configuration closure.
-     * @return Started Grid.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static Ignite startWithClosure(@Nullable String springCfgPath, @Nullable String gridName,
-        IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo) throws IgniteCheckedException {
-        URL url = U.resolveSpringUrl(springCfgPath);
-
-        return start(url, gridName, null, cfgClo);
-    }
-
-    /**
      * Loads all grid configurations specified within given Spring XML configuration file.
      * <p>
      * Usually Spring XML configuration file will contain only one Grid definition. Note that
@@ -734,7 +718,40 @@ public class IgnitionEx {
      */
     public static Ignite start(URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
-        return start(springCfgUrl, gridName, springCtx, null);
+        A.notNull(springCfgUrl, "springCfgUrl");
+
+        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
+
+        IgniteBiTuple<Object, Object> t = null;
+
+        if (isLog4jUsed) {
+            try {
+                t = U.addLog4jNoOpLogger();
+            }
+            catch (IgniteCheckedException ignore) {
+                isLog4jUsed = false;
+            }
+        }
+
+        Collection<Handler> savedHnds = null;
+
+        if (!isLog4jUsed)
+            savedHnds = U.addJavaNoOpLogger();
+
+        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
+
+        try {
+            cfgMap = loadConfigurations(springCfgUrl);
+        }
+        finally {
+            if (isLog4jUsed && t != null)
+                U.removeLog4jNoOpLogger(t);
+
+            if (!isLog4jUsed)
+                U.removeJavaNoOpLogger(savedHnds);
+        }
+
+        return startConfigurations(cfgMap, springCfgUrl, gridName, springCtx);
     }
 
     /**
@@ -780,73 +797,6 @@ public class IgnitionEx {
      */
     public static Ignite start(InputStream springCfgStream, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
-        return start(springCfgStream, gridName, springCtx, null);
-    }
-
-    /**
-     * Internal Spring-based start routine.
-     *
-     * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
-     * @param springCtx Optional Spring application context.
-     * @param cfgClo Optional closure to change configuration before it is used to start the grid.
-     * @return Started grid.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static Ignite start(final URL springCfgUrl, @Nullable String gridName,
-        @Nullable GridSpringResourceContext springCtx,
-        @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
-        throws IgniteCheckedException {
-        A.notNull(springCfgUrl, "springCfgUrl");
-
-        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
-
-        IgniteBiTuple<Object, Object> t = null;
-
-        if (isLog4jUsed) {
-            try {
-                t = U.addLog4jNoOpLogger();
-            }
-            catch (IgniteCheckedException ignore) {
-                isLog4jUsed = false;
-            }
-        }
-
-        Collection<Handler> savedHnds = null;
-
-        if (!isLog4jUsed)
-            savedHnds = U.addJavaNoOpLogger();
-
-        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
-
-        try {
-            cfgMap = loadConfigurations(springCfgUrl);
-        }
-        finally {
-            if (isLog4jUsed && t != null)
-                U.removeLog4jNoOpLogger(t);
-
-            if (!isLog4jUsed)
-                U.removeJavaNoOpLogger(savedHnds);
-        }
-
-        return startConfigurations(cfgMap, springCfgUrl, gridName, springCtx, cfgClo);
-    }
-
-    /**
-     * Internal Spring-based start routine.
-     *
-     * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
-     * @param springCtx Optional Spring application context.
-     * @param cfgClo Optional closure to change configuration before it is used to start the grid.
-     * @return Started grid.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static Ignite start(final InputStream springCfgStream, @Nullable String gridName,
-        @Nullable GridSpringResourceContext springCtx,
-        @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
-        throws IgniteCheckedException {
         A.notNull(springCfgStream, "springCfgUrl");
 
         boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
@@ -880,7 +830,7 @@ public class IgnitionEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
-        return startConfigurations(cfgMap, null, gridName, springCtx, cfgClo);
+        return startConfigurations(cfgMap, null, gridName, springCtx);
     }
 
     /**
@@ -890,7 +840,6 @@ public class IgnitionEx {
      * @param springCfgUrl Spring XML configuration file URL.
      * @param gridName Grid name that will override default.
      * @param springCtx Optional Spring application context.
-     * @param cfgClo Optional closure to change configuration before it is used to start the grid.
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
@@ -898,8 +847,7 @@ public class IgnitionEx {
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap,
         URL springCfgUrl,
         @Nullable String gridName,
-        @Nullable GridSpringResourceContext springCtx,
-        @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
+        @Nullable GridSpringResourceContext springCtx)
         throws IgniteCheckedException {
         List<IgniteNamedInstance> grids = new ArrayList<>(cfgMap.size());
 
@@ -909,12 +857,6 @@ public class IgnitionEx {
 
                 if (cfg.getGridName() == null && !F.isEmpty(gridName))
                     cfg.setGridName(gridName);
-
-                if (cfgClo != null) {
-                    cfg = cfgClo.apply(cfg);
-
-                    assert cfg != null;
-                }
 
                 // Use either user defined context or our one.
                 IgniteNamedInstance grid = start0(
@@ -1600,9 +1542,9 @@ public class IgnitionEx {
                     igfsExecSvc, restExecSvc,
                     new CA() {
                         @Override public void apply() {
-                        startLatch.countDown();
-                    }
-                });
+                            startLatch.countDown();
+                        }
+                    });
 
                 state = STARTED;
 
