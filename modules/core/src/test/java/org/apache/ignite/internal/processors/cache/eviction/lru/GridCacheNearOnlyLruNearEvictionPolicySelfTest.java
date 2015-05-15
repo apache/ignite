@@ -66,17 +66,18 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
 
         if (cnt == 0)
             c.setClientMode(true);
+        else {
+            CacheConfiguration cc = new CacheConfiguration();
 
-        CacheConfiguration cc = new CacheConfiguration();
+            cc.setAtomicityMode(atomicityMode);
+            cc.setCacheMode(cacheMode);
+            cc.setWriteSynchronizationMode(PRIMARY_SYNC);
+            cc.setRebalanceMode(SYNC);
+            cc.setStartSize(100);
+            cc.setBackups(0);
 
-        cc.setAtomicityMode(atomicityMode);
-        cc.setCacheMode(cacheMode);
-        cc.setWriteSynchronizationMode(PRIMARY_SYNC);
-        cc.setRebalanceMode(SYNC);
-        cc.setStartSize(100);
-        cc.setBackups(0);
-
-        c.setCacheConfiguration(cc);
+            c.setCacheConfiguration(cc);
+        }
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
