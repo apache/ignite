@@ -871,7 +871,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
 
         stopGrid("anotherGrid");
 
-        latch.await();
+        assert latch.await(3000, MILLISECONDS);
     }
 
     /**
@@ -917,7 +917,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
 
         stopGrid("anotherGrid");
 
-        discoLatch.await();
+        discoLatch.await(3000, MILLISECONDS);
 
         grid(0).compute().broadcast(F.noop());
 

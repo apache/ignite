@@ -97,7 +97,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60 * 1000;
+        return 2 * 60 * 1000;
     }
 
     /**
