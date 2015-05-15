@@ -675,7 +675,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     public void waitForMessagePrecessed() {
         Object last = msgWorker.queue.peekLast();
 
-        while (last != null && msgWorker.queue.contains(last)) {
+        while (last != null && msgWorker.isAlive() && msgWorker.queue.contains(last)) {
             try {
                 Thread.sleep(10);
             }
