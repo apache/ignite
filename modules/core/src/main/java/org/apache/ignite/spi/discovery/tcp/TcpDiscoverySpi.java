@@ -4574,7 +4574,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     try {
                         DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
-                        DiscoverySpiCustomMessage nextMsg = msgObj.newMessageOnRingEnd();
+                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
 
                         if (nextMsg != null)
                             addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));

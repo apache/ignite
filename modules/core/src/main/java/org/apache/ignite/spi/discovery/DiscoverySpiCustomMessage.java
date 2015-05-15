@@ -22,11 +22,14 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
+ * Message to send across ring.
  *
+ * @see org.apache.ignite.internal.managers.discovery.GridDiscoveryManager#sendCustomEvent(
+ * org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage)
  */
 public interface DiscoverySpiCustomMessage extends Serializable {
     /**
      * Called when message passed the ring.
      */
-    @Nullable public DiscoverySpiCustomMessage newMessageOnRingEnd();
+    @Nullable public DiscoverySpiCustomMessage ackMessage();
 }
