@@ -168,8 +168,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final MetricsUpdater metricsUpdater = new MetricsUpdater();
 
     /** Custom event listener. */
-    private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs
-        = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
+        new ConcurrentHashMap8<>();
 
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
