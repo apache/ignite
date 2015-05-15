@@ -113,7 +113,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteDataStructureUniqueNameTest.class));
 
         suite.addTest(new TestSuite(IgniteClientDataStructuresTest.class));
-        suite.addTest(new TestSuite(IgniteClientDiscoveryDataStructuresTest.class));
+        // suite.addTest(new TestSuite(IgniteClientDiscoveryDataStructuresTest.class));
 
         return suite;
     }
