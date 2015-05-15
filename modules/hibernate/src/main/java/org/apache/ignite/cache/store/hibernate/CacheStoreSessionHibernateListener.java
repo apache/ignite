@@ -26,7 +26,7 @@ import javax.cache.integration.*;
 import java.util.*;
 
 /**
- * TODO
+ * Cache store session listener based on Hibernate session.
  */
 public class CacheStoreSessionHibernateListener implements CacheStoreSessionListener {
     /** Session key for JDBC connection. */

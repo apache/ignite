@@ -26,7 +26,7 @@ import org.springframework.transaction.support.*;
 import javax.cache.integration.*;
 
 /**
- * TODO
+ * Cache store session listener based on Spring cache manager.
  */
 public class CacheStoreSessionSpringListener implements CacheStoreSessionListener {
     /** Session key for transaction status. */

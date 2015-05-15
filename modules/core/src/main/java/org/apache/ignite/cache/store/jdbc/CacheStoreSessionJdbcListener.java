@@ -27,7 +27,7 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * TODO
+ * Cache store session listener based on JDBC connection.
  */
 public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener {
     /** Session key for JDBC connection. */

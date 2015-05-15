@@ -18,10 +18,21 @@
 package org.apache.ignite.cache.store;
 
 /**
- * TODO
+ * Store session listener.
  */
 public interface CacheStoreSessionListener {
+    /**
+     * On session start callback.
+     *
+     * @param ses Current session.
+     */
     public void onSessionStart(CacheStoreSession ses);
 
+    /**
+     * On session end callback.
+     *
+     * @param ses Current session.
+     * @param commit {@code True} if transaction should commit, {@code false} for rollback.
+     */
     public void onSessionEnd(CacheStoreSession ses, boolean commit);
 }
