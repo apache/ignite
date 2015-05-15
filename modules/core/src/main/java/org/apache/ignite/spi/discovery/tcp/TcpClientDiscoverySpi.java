@@ -1223,16 +1223,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         if (msg.topologyHistory() != null)
                             topHist.putAll(msg.topologyHistory());
-
-                        Map<UUID, Map<Integer, byte[]>> dataMap = msg.oldNodesDiscoveryData();
-
-                        if (dataMap != null) {
-                            for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                                onExchange(newNodeId, entry.getKey(), entry.getValue(), null);
-                        }
-
-                        locNode.setAttributes(node.attributes());
-                        locNode.visible(true);
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Discarding node added message with empty topology: " + msg);
@@ -1265,6 +1255,16 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
             if (getLocalNodeId().equals(msg.nodeId())) {
                 if (joinLatch.getCount() > 0) {
+                    Map<UUID, Map<Integer, byte[]>> dataMap = msg.clientDiscoData();
+
+                    if (dataMap != null) {
+                        for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
+                            onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(), null);
+                    }
+
+                    locNode.setAttributes(msg.clientNodeAttributes());
+                    locNode.visible(true);
+
                     long topVer = msg.topologyVersion();
 
                     locNode.order(topVer);

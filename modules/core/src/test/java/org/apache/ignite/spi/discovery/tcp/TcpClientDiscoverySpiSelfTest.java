@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
@@ -714,11 +715,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         IgniteMessaging msg = grid(masterName).message();
 
-        UUID id = null;
+        UUID id = msg.remoteListen(null, new MessageListener());
 
         try {
-            id = msg.remoteListen(null, new MessageListener());
-
             msgLatch = new CountDownLatch(2);
 
             msg.send(null, "Message 1");
@@ -737,10 +736,39 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             await(msgLatch);
         }
         finally {
-            if (id != null)
-                msg.stopRemoteListen(id);
+            msg.stopRemoteListen(id);
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataExchangeFromServer2() throws Exception {
+        startServerNodes(2);
+
+        IgniteMessaging msg = grid("server-1").message();
+
+        UUID id = msg.remoteListen(null, new MessageListener());
+
+        try {
+            startClientNodes(1);
+
+            assertEquals(G.ignite("server-0").cluster().localNode().id(), ((TcpDiscoveryNode)G.ignite("client-0")
+                .cluster().localNode()).clientRouterNodeId());
+
+            checkNodes(2, 1);
+
+            msgLatch = new CountDownLatch(3);
+
+            msg.send(null, "Message");
+
+            await(msgLatch);
+        }
+        finally {
+            msg.stopRemoteListen(id);
+        }
+    }
+
 
     /**
      * @throws Exception If any error occurs.
