@@ -1086,7 +1086,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                                     timer.schedule(new TimerTask() {
                                         @Override public void run() {
-                                            reconnector.cancel();
+                                            if (reconnector.isAlive())
+                                                reconnector.cancel();
                                         }
                                     }, netTimeout);
                                 }
