@@ -59,7 +59,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
             new ContinuousQueryListener(log, workDir),
             null,
-            true,
+            !ctx.config().isClientMode(),
             true
         );
     }
