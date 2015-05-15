@@ -437,7 +437,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public boolean storeUsed() {
-        return storeEnabled() && store() != null;
+        if (!storeEnabled())
+            return false;
+
+        Collection<CacheStoreManager> stores = stores();
+
+        return stores != null && !stores.isEmpty();
     }
 
     /**
@@ -445,13 +450,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      *
      * @return Store manager.
      */
-    protected CacheStoreManager store() {
-        if (!activeCacheIds().isEmpty()) {
-            int cacheId = F.first(activeCacheIds());
+    protected Collection<CacheStoreManager> stores() {
+        Collection<Integer> cacheIds = activeCacheIds();
 
-            CacheStoreManager store = cctx.cacheContext(cacheId).store();
+        if (!cacheIds.isEmpty()) {
+            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
 
-            return store.configured() ? store : null;
+            for (int cacheId : cacheIds) {
+                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+
+                if (store.configured())
+                    stores.add(store);
+            }
+
+            return stores;
         }
 
         return null;

@@ -18,10 +18,13 @@
 package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.transactions.*;
+import org.h2.jdbcx.*;
 
 import javax.cache.configuration.*;
 import java.util.*;
@@ -70,6 +73,17 @@ public class CacheJdbcStoreExample {
 
             // Configure JDBC store.
             cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheJdbcPersonStore.class));
+
+            // Configure JDBC session listener.
+            cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
+                @Override public CacheStoreSessionListener create() {
+                    CacheStoreSessionJdbcListener lsnr = new CacheStoreSessionJdbcListener();
+
+                    lsnr.setDataSource(JdbcConnectionPool.create("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1", "", ""));
+
+                    return lsnr;
+                }
+            });
 
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);

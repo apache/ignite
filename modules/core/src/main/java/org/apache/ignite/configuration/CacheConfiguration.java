@@ -316,6 +316,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache topology validator. */
     private TopologyValidator topValidator;
 
+    /** Cache store session listeners. */
+    private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -389,6 +392,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
+        storeSesLsnrs = cc.getCacheStoreSessionListenerFactories();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
         topValidator = cc.getTopologyValidator();
@@ -1730,6 +1734,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration setTopologyValidator(TopologyValidator topValidator) {
         this.topValidator = topValidator;
+
+        return this;
+    }
+
+    /**
+     * Gets cache store session listener factories.
+     *
+     * @return Cache store session listener factories.
+     */
+    public Factory<? extends CacheStoreSessionListener>[] getCacheStoreSessionListenerFactories() {
+        return storeSesLsnrs;
+    }
+
+    /**
+     * Cache store session listener factories.
+     *
+     * @param storeSesLsnrs Cache store session listener factories.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration setCacheStoreSessionListenerFactories(
+        Factory<? extends CacheStoreSessionListener>... storeSesLsnrs) {
+        this.storeSesLsnrs = storeSesLsnrs;
 
         return this;
     }

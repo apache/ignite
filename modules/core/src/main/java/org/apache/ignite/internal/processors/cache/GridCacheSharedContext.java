@@ -441,10 +441,6 @@ public class GridCacheSharedContext<K, V> {
                 if (activeCacheCtx.cacheId() != cacheCtx.cacheId())
                     return false;
             }
-
-            // Check that caches have the same store.
-            if (activeCacheCtx.store().store() != cacheCtx.store().store())
-                return false;
         }
 
         return true;

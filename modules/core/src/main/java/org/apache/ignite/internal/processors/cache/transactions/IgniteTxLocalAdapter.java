@@ -496,17 +496,24 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     @SuppressWarnings({"CatchGenericClass"})
     protected void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
-        CacheStoreManager store = store();
+        if (!storeEnabled() || (internal() && !groupLock()))
+            return;
 
-        if (store != null && store.isWriteThrough() && storeEnabled() &&
-            (!internal() || groupLock()) && (near() || store.isWriteToStoreFromDht())) {
+        Collection<CacheStoreManager> stores = stores();
+
+        if (stores == null || stores.isEmpty())
+            return;
+
+        boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+
+        if (near() || isWriteToStoreFromDht) {
             try {
                 if (writeEntries != null) {
                     Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
                     List<Object> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
-                    boolean skipNear = near() && store.isWriteToStoreFromDht();
+                    boolean skipNear = near() && isWriteToStoreFromDht;
 
                     for (IgniteTxEntry e : writeEntries) {
                         if ((skipNear && e.cached().isNear()) || e.skipStore())
@@ -560,12 +567,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
                             }
 
-                            if (putMap == null)
-                                putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
+                            if (writeStore == null)
+                                writeStore = cacheCtx.store();
 
-                            putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                            if (writeStore.isWriteThrough()) {
+                                if (putMap == null)
+                                    putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                            writeStore = cacheCtx.store();
+                                putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                            }
                         }
                         else if (op == DELETE) {
                             // Batch-process all puts if needed.
@@ -597,12 +607,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     continue;
                             }
 
-                            if (rmvCol == null)
-                                rmvCol = new ArrayList<>();
+                            if (writeStore == null)
+                                writeStore = cacheCtx.store();
 
-                            rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
+                            if (writeStore.isWriteThrough()) {
+                                if (rmvCol == null)
+                                    rmvCol = new ArrayList<>();
 
-                            writeStore = cacheCtx.store();
+                                rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
+                            }
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Ignoring NOOP entry for batch store commit: " + e);
@@ -626,7 +639,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
 
                 // Commit while locks are held.
-                store.sessionEnd(this, true);
+                for (CacheStoreManager store : stores)
+                    store.sessionEnd(this, true);
             }
             catch (IgniteCheckedException ex) {
                 commitError(ex);
@@ -994,11 +1008,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             }
         }
         else {
-            CacheStoreManager store = store();
+            Collection<CacheStoreManager> stores = stores();
 
-            if (store != null && (!internal() || groupLock())) {
+            if (stores != null && !stores.isEmpty() && (!internal() || groupLock())) {
                 try {
-                    store.sessionEnd(this, true);
+                    for (CacheStoreManager store : stores)
+                        store.sessionEnd(this, true);
                 }
                 catch (IgniteCheckedException e) {
                     commitError(e);
@@ -1099,11 +1114,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 cctx.tm().rollbackTx(this);
 
-                CacheStoreManager store = store();
+                Collection<CacheStoreManager> stores = stores();
 
-                if (store != null && (near() || store.isWriteToStoreFromDht())) {
-                    if (!internal() || groupLock())
-                        store.sessionEnd(this, false);
+                if (stores != null && !stores.isEmpty() && (near() || F.first(stores).isWriteToStoreFromDht())) {
+                    if (!internal() || groupLock()) {
+                        for (CacheStoreManager store : stores)
+                            store.sessionEnd(this, false);
+                    }
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {

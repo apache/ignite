@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -129,6 +130,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheRemoveAllSelfTest.class);
 
         suite.addTestSuite(CacheOffheapMapEntrySelfTest.class);
+
+        suite.addTestSuite(CacheStoreSessionJdbcListenerSelfTest.class);
 
         return suite;
     }
