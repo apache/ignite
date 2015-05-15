@@ -448,7 +448,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 3);
 
-        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brokeConnection();
+        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brakeConnection();
 
         G.ignite("client-2").message().remoteListen(null, new MessageListener()); // Send some discovery message.
 
@@ -1114,7 +1114,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void pauseAll() {
             pauseResumeOperation(true, openSockLock, writeLock);
 
-            brokeConnection();
+            brakeConnection();
         }
 
         /**

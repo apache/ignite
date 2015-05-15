@@ -665,7 +665,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /**
      * FOR TEST PURPOSE ONLY!
      */
-    public void brokeConnection() {
+    public void brakeConnection() {
         U.closeQuiet(msgWorker.currSock);
     }
 
