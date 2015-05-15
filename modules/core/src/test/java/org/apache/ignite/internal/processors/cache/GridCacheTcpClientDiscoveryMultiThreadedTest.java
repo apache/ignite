@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -96,7 +97,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 2 * 60 * 1000;
+        return 60 * 1000;
     }
 
     /**
