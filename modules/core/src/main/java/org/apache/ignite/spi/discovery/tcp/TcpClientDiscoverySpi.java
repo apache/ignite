@@ -758,60 +758,58 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 }
 
                 try {
-                    try {
-                        InputStream in = new BufferedInputStream(sock.getInputStream());
+                    InputStream in = new BufferedInputStream(sock.getInputStream());
 
-                        sock.setKeepAlive(true);
-                        sock.setTcpNoDelay(true);
+                    sock.setKeepAlive(true);
+                    sock.setTcpNoDelay(true);
 
-                        while (!isInterrupted()) {
-                            TcpDiscoveryAbstractMessage msg;
+                    while (!isInterrupted()) {
+                        TcpDiscoveryAbstractMessage msg;
 
-                            try {
-                                msg = marsh.unmarshal(in, U.gridClassLoader());
-                            }
-                            catch (IgniteCheckedException e) {
-                                if (log.isDebugEnabled())
-                                    U.error(log, "Failed to read message [sock=" + sock + ", " +
-                                        "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
-
-                                IOException ioEx = X.cause(e, IOException.class);
-
-                                if (ioEx != null)
-                                    throw ioEx;
-
-                                ClassNotFoundException clsNotFoundEx = X.cause(e, ClassNotFoundException.class);
-
-                                if (clsNotFoundEx != null)
-                                    LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
-                                        "(make sure same versions of all classes are available on all nodes) " +
-                                        "[rmtNodeId=" + rmtNodeId + ", err=" + clsNotFoundEx.getMessage() + ']');
-                                else
-                                    LT.error(log, e, "Failed to read message [sock=" + sock + ", locNodeId=" +
-                                        getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']');
-
-                                continue;
-                            }
-
-                            msg.senderNodeId(rmtNodeId);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Message has been received: " + msg);
-
-                            stats.onMessageReceived(msg);
-
-                            if (ensured(msg))
-                                lastMsgId = msg.id();
-
-                            msgWorker.addMessage(msg);
+                        try {
+                            msg = marsh.unmarshal(in, U.gridClassLoader());
                         }
-                    }
-                    catch (IOException e) {
-                        msgWorker.addMessage(new SocketClosedMessage(sock));
+                        catch (IgniteCheckedException e) {
+                            if (log.isDebugEnabled())
+                                U.error(log, "Failed to read message [sock=" + sock + ", " +
+                                    "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
+
+                            IOException ioEx = X.cause(e, IOException.class);
+
+                            if (ioEx != null)
+                                throw ioEx;
+
+                            ClassNotFoundException clsNotFoundEx = X.cause(e, ClassNotFoundException.class);
+
+                            if (clsNotFoundEx != null)
+                                LT.warn(log, null, "Failed to read message due to ClassNotFoundException " +
+                                    "(make sure same versions of all classes are available on all nodes) " +
+                                    "[rmtNodeId=" + rmtNodeId + ", err=" + clsNotFoundEx.getMessage() + ']');
+                            else
+                                LT.error(log, e, "Failed to read message [sock=" + sock + ", locNodeId=" +
+                                    getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']');
+
+                            continue;
+                        }
+
+                        msg.senderNodeId(rmtNodeId);
 
                         if (log.isDebugEnabled())
-                            U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
+                            log.debug("Message has been received: " + msg);
+
+                        stats.onMessageReceived(msg);
+
+                        if (ensured(msg))
+                            lastMsgId = msg.id();
+
+                        msgWorker.addMessage(msg);
                     }
+                }
+                catch (IOException e) {
+                    msgWorker.addMessage(new SocketClosedMessage(sock));
+
+                    if (log.isDebugEnabled())
+                        U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
                     U.closeQuiet(sock);
