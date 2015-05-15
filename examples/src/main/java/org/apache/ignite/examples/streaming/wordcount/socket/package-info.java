@@ -16,6 +16,6 @@
  */
 
 /**
- * Demonstrates usage of data streamer.
+ * Contains {@link org.apache.ignite.stream.socket.SocketStreamer} usage examples.
  */
-package org.apache.ignite.examples.streaming;
+package org.apache.ignite.examples.streaming.wordcount.socket;

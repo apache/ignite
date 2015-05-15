@@ -15,7 +15,17 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.stream.socket;
+
 /**
- * Demonstrates usage of data streamer.
+ * Socket message converter.
  */
-package org.apache.ignite.examples.streaming;
+public interface SocketMessageConverter<T> {
+    /**
+     * Converter message represented by array of bytes to object.
+     *
+     * @param msg Message.
+     * @return Converted object.
+     */
+    public T convert(byte[] msg);
+}

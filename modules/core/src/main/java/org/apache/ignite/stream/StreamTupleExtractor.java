@@ -15,7 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.stream;
+
+import java.util.*;
+
 /**
- * Demonstrates usage of data streamer.
+ * Stream tuple extractor to convert messages to Ignite key-value tuples.
  */
-package org.apache.ignite.examples.streaming;
+public interface StreamTupleExtractor<T, K, V> {
+    /**
+     * Extracts a key-value tuple from a message.
+     *
+     * @param msg Message.
+     * @return Key-value tuple.
+     */
+    public Map.Entry<K, V> extract(T msg);
+}

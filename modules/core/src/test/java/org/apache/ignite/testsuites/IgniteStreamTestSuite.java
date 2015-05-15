@@ -15,7 +15,25 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.testsuites;
+
+import org.apache.ignite.stream.socket.*;
+
+import junit.framework.*;
+
 /**
- * Demonstrates usage of data streamer.
+ * Stream test suite.
  */
-package org.apache.ignite.examples.streaming;
+public class IgniteStreamTestSuite extends TestSuite {
+    /**
+     * @return Stream tests suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Stream Test Suite");
+
+        suite.addTest(new TestSuite(SocketStreamerSelfTest.class));
+
+        return suite;
+    }
+}

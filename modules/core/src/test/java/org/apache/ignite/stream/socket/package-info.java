@@ -16,6 +16,6 @@
  */
 
 /**
- * Demonstrates usage of data streamer.
+ * Contains tests for socket streamer.
  */
-package org.apache.ignite.examples.streaming;
+package org.apache.ignite.stream.socket;
