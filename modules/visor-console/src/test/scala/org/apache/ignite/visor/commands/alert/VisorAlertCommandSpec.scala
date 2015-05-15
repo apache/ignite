@@ -100,54 +100,54 @@ class VisorAlertCommandSpec extends VisorRuntimeBaseSpec(1) {
         }
     }
 
-    behavior of "An 'alert' visor command"
+    describe("An 'alert' visor command") {
+        it("should print not connected error message") {
+            visor.close()
 
-    it should "print not connected error message" in {
-        visor.close()
+            checkOut(visor.alert("-r -t=5 -cc=gte4"), "Visor is disconnected.")
 
-        checkOut(visor.alert("-r -t=5 -cc=gte4"), "Visor is disconnected.")
-
-        checkOut(visor.alert(), "No alerts are registered.")
-    }
-
-    it should "register new alert" in {
-        try {
             checkOut(visor.alert(), "No alerts are registered.")
-
-            matchOut(visor.alert("-r -t=5 -cc=gte4"), "Alert.+registered.")
-
-            checkOut(visor.alert(), "No alerts are registered.", false)
         }
-        finally {
-            visor.alert("-u -a")
+
+        it("should register new alert") {
+            try {
+                checkOut(visor.alert(), "No alerts are registered.")
+
+                matchOut(visor.alert("-r -t=5 -cc=gte4"), "Alert.+registered.")
+
+                checkOut(visor.alert(), "No alerts are registered.", false)
+            }
+            finally {
+                visor.alert("-u -a")
+            }
         }
-    }
 
-    it should "print error messages on incorrect alerts" in {
-        try {
-            matchOut(visor.alert("-r -t=5"), "Alert.+registered.")
+        it("should print error messages on incorrect alerts") {
+            try {
+                matchOut(visor.alert("-r -t=5"), "Alert.+registered.")
 
-            checkOut(visor.alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
+                checkOut(visor.alert("-r -UNKNOWN_KEY=lt20"), "Invalid argument")
 
-            checkOut(visor.alert("-r -cc=UNKNOWN_OPERATION20"), "Invalid expression")
+                checkOut(visor.alert("-r -cc=UNKNOWN_OPERATION20"), "Invalid expression")
+            }
+            finally {
+                visor.alert("-u -a")
+            }
         }
-        finally {
-            visor.alert("-u -a")
-        }
-    }
 
-    it should "write alert to log" in {
-        try {
-            matchOut(visor.alert("-r -nc=gte1"), "Alert.+registered.")
+        it("should write alert to log") {
+            try {
+                matchOut(visor.alert("-r -nc=gte1"), "Alert.+registered.")
 
-            Ignition.start(config("node-2"))
+                Ignition.start(config("node-2"))
 
-            Ignition.stop("node-2", false)
+                Ignition.stop("node-2", false)
 
-            checkOut(visor.alert(), "No alerts are registered.", false)
-        }
-        finally {
-            visor.alert("-u -a")
+                checkOut(visor.alert(), "No alerts are registered.", false)
+            }
+            finally {
+                visor.alert("-u -a")
+            }
         }
     }
 }
