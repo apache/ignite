@@ -115,10 +115,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest implements 
             assertEquals(0, localRoutines(proc).size());
             assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
             assertEquals(0, U.<Map>field(proc, "startFuts").size());
-            assertEquals(0, U.<Map>field(proc, "waitForStartAck").size());
             assertEquals(0, U.<Map>field(proc, "stopFuts").size());
-            assertEquals(0, U.<Map>field(proc, "waitForStopAck").size());
-            assertEquals(0, U.<Map>field(proc, "pending").size());
         }
     }
 
