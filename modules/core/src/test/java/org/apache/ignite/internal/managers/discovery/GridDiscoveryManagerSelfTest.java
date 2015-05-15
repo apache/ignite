@@ -66,14 +66,15 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         if (gridName.equals(getTestGridName(1)))
             cfg.setClientMode(true);
+        else {
+            ccfg1.setNearConfiguration(null);
+            ccfg2.setNearConfiguration(null);
 
-        ccfg1.setNearConfiguration(null);
-        ccfg2.setNearConfiguration(null);
+            ccfg1.setCacheMode(PARTITIONED);
+            ccfg2.setCacheMode(PARTITIONED);
 
-        ccfg1.setCacheMode(PARTITIONED);
-        ccfg2.setCacheMode(PARTITIONED);
-
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+            cfg.setCacheConfiguration(ccfg1, ccfg2);
+        }
 
         return cfg;
     }
