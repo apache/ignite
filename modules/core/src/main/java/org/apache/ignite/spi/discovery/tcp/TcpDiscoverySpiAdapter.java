@@ -782,6 +782,33 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     }
 
     /**
+     * @param nodeId Node ID.
+     * @return Marshalled exchange data.
+     */
+    protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
+        Map<Integer, Serializable> data = exchange.collect(nodeId);
+
+        if (data == null)
+            return null;
+
+        Map<Integer, byte[]> data0 = U.newHashMap(data.size());
+
+        for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
+            try {
+                byte[] bytes = marsh.marshal(entry.getValue());
+
+                data0.put(entry.getKey(), bytes);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to marshal discovery data " +
+                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+            }
+        }
+
+        return data0;
+    }
+
+    /**
      * @param joiningNodeID Joining node ID.
      * @param nodeId Remote node ID for which data is provided.
      * @param data Collection of marshalled discovery data objects from different components.

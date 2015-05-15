@@ -532,7 +532,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     TcpDiscoveryAbstractMessage msg = recon ?
                         new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId,
                             lastMsgId) :
-                        new TcpDiscoveryJoinRequestMessage(locNode, null);
+                        new TcpDiscoveryJoinRequestMessage(locNode, collectExchangeData(getLocalNodeId()));
 
                     msg.client(true);
 
