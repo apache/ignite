@@ -5327,7 +5327,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private volatile ClusterMetrics metrics;
 
         /** */
-        private final AtomicReference<SettableFuture<Boolean>> pingFut = new AtomicReference<>();
+        private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
         /**
          * @param sock Socket.
@@ -5403,10 +5403,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          */
         public void pingResult(boolean res) {
-            SettableFuture<Boolean> fut = pingFut.getAndSet(null);
+            GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
 
             if (fut != null)
-                fut.set(res);
+                fut.onDone(res);
         }
 
         /**
@@ -5416,7 +5416,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (isNodeStopping())
                 return false;
 
-            SettableFuture<Boolean> fut;
+            GridFutureAdapter<Boolean> fut;
 
             while (true) {
                 fut = pingFut.get();
@@ -5424,7 +5424,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (fut != null)
                     break;
 
-                fut = new SettableFuture<>();
+                fut = new GridFutureAdapter<>();
 
                 if (pingFut.compareAndSet(null, fut)) {
                     TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), nodeId);
@@ -5440,14 +5440,17 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 return fut.get(ackTimeout, TimeUnit.MILLISECONDS);
             }
-            catch (ExecutionException e) {
-                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
+            catch (IgniteInterruptedCheckedException ignored) {
+                throw new InterruptedException();
             }
-            catch (TimeoutException ignored) {
+            catch (IgniteFutureTimeoutCheckedException ignored) {
                 if (pingFut.compareAndSet(fut, null))
-                    fut.set(false);
+                    fut.onDone(false);
 
                 return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
             }
         }
 
