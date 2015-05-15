@@ -824,10 +824,6 @@ public class GridDhtPartitionDemandPool<K, V> {
                         log.debug("Waiting for marshaller cache preload [cacheName=" + cctx.name() + ']');
 
                     try {
-                        cctx.kernalContext().cache().systemCachesStartFuture().get();
-
-                        cctx.kernalContext().cache().marshallerCache().context().awaitStarted();
-
                         cctx.kernalContext().cache().marshallerCache().preloader().syncFuture().get();
                     }
                     catch (IgniteInterruptedCheckedException ignored) {

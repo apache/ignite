@@ -55,9 +55,6 @@ public class IgniteClientNodeAffinityTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE4 = "cache4";
 
-    /** */
-    private static final String CACHE5 = "cache5";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

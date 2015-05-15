@@ -76,7 +76,7 @@ public class IgniteSystemCacheOnClientTest extends GridCommonAbstractTest {
 
         assertNotNull(marshCache);
 
-        assertTrue("Marshaller cache on client should have near cache", marshCache.context().isNear());
+        assertFalse(marshCache.context().isNear());
 
         marshCache = ((IgniteKernal)ignite(0)).internalCache(CU.MARSH_CACHE_NAME);
 

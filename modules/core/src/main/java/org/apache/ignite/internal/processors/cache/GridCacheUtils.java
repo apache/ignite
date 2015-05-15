@@ -1697,7 +1697,7 @@ public class GridCacheUtils {
     /**
      * @param aff Affinity.
      * @param n Node.
-     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     * @return Predicate that evaluates to {@code true} if entry is primary for node.
      */
     public static CacheEntryPredicate cachePrimary(
         final Affinity aff,
@@ -1799,15 +1799,19 @@ public class GridCacheUtils {
 
         return res;
     }
+
     /**
      * @param node Node.
-     * @return {@code True} if flag {@link IgniteConfiguration#isClientMode()} is set given node.
+     * @param filter Node filter.
+     * @return {@code True} if node is not client node and pass given filter.
      */
-    public static boolean clientModeNode(ClusterNode node) {
+    public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
         Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
         assert clientModeAttr != null : node;
 
-        return clientModeAttr != null && clientModeAttr;
+        boolean clientMode = clientModeAttr != null && clientModeAttr;
+
+        return !clientMode && filter.apply(node);
     }
 }

@@ -214,6 +214,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheName Cache name.
      * @param filter Cache filter.
+     * @param nearEnabled Near enabled flag.
      * @param loc {@code True} if cache is local.
      */
     public void setCacheFilter(
@@ -240,12 +241,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param cacheName Cache name.
      * @param clientNodeId Near node ID.
+     * @param nearEnabled Near enabled flag.
      */
     public void addClientNode(String cacheName, UUID clientNodeId, boolean nearEnabled) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        if (predicate != null)
-            predicate.addClientNode(clientNodeId, nearEnabled);
+        if (pred != null)
+            pred.addClientNode(clientNodeId, nearEnabled);
     }
 
     /**
@@ -1256,9 +1258,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node is a cache data node.
      */
     public boolean cacheAffinityNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.dataNode(node);
+        return pred != null && pred.dataNode(node);
     }
 
     /**
@@ -1267,9 +1269,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has near cache enabled.
      */
     public boolean cacheNearNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.nearNode(node);
+        return pred != null && pred.nearNode(node);
     }
 
     /**
@@ -1278,9 +1280,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if node has client cache (without near cache).
      */
     public boolean cacheClientNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.clientNode(node);
+        return pred != null && pred.clientNode(node);
     }
 
     /**
@@ -1289,9 +1291,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return If cache with the given name is accessible on the given node.
      */
     public boolean cacheNode(ClusterNode node, String cacheName) {
-        CachePredicate predicate = registeredCaches.get(cacheName);
+        CachePredicate pred = registeredCaches.get(cacheName);
 
-        return predicate != null && predicate.cacheNode(node);
+        return pred != null && pred.cacheNode(node);
     }
 
     /**
@@ -2480,11 +2482,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private boolean loc;
 
         /** Collection of client near nodes. */
-        private Map<UUID, Boolean> clientNodes;
+        private ConcurrentHashMap<UUID, Boolean> clientNodes;
 
         /**
          * @param cacheFilter Cache filter.
          * @param nearEnabled Near enabled flag.
+         * @param loc {@code True} if cache is local.
          */
         private CachePredicate(IgnitePredicate<ClusterNode> cacheFilter, boolean nearEnabled, boolean loc) {
             assert cacheFilter != null;
@@ -2498,9 +2501,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /**
          * @param nodeId Near node ID to add.
+         * @param nearEnabled Near enabled flag.
          */
         public void addClientNode(UUID nodeId, boolean nearEnabled) {
-            clientNodes.put(nodeId, nearEnabled);
+            clientNodes.putIfAbsent(nodeId, nearEnabled);
         }
 
         /**
@@ -2515,7 +2519,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return !node.isDaemon() && !CU.clientModeNode(node) && cacheFilter.apply(node);
+            return !node.isDaemon() && CU.affinityNode(node, cacheFilter);
         }
 
         /**
@@ -2523,8 +2527,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !node.isDaemon() &&
-                ((!CU.clientModeNode(node) && cacheFilter.apply(node)) || clientNodes.containsKey(node.id()));
+            return !node.isDaemon() && (CU.affinityNode(node, cacheFilter) || clientNodes.containsKey(node.id()));
         }
 
         /**
@@ -2535,7 +2538,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (node.isDaemon())
                 return false;
 
-            if (nearEnabled && cacheFilter.apply(node))
+            if (nearEnabled && CU.affinityNode(node, cacheFilter))
                 return true;
 
             Boolean near = clientNodes.get(node.id());
