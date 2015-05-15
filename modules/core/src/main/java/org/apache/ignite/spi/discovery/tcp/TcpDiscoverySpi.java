@@ -3574,7 +3574,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    processNodeAddFinishedMessage(new TcpDiscoveryNodeAddFinishedMessage(locNodeId, node.id()));
+                    TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
+                        node.id());
+
+                    if (node.isClient()) {
+                        addFinishMsg.clientDiscoData(msg.oldNodesDiscoveryData());
+
+                        addFinishMsg.clientNodeAttributes(node.attributes());
+                    }
+
+                    processNodeAddFinishedMessage(addFinishMsg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
