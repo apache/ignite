@@ -42,6 +42,7 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.event.*;
 import javax.cache.integration.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -57,7 +58,7 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*
 /**
  * Continuous queries tests.
  */
-public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommonAbstractTest implements Serializable {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -177,10 +178,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(String.valueOf(i), 3, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "startFuts")).size());
-            assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStartAck")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "stopFuts")).size());
-            assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "waitForStopAck")).size());
-            assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "pending")).size());
 
             CacheContinuousQueryManager mgr = grid(i).context().cache().internalCache().context().continuousQueries();
 

@@ -15,50 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.tcp.messages;
+package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import org.apache.ignite.spi.discovery.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Wrapped for custom message.
+ *
  */
-@TcpDiscoveryRedirectToClient
-@TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage {
+class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private byte[] msgBytes;
+    private final DiscoveryCustomMessage delegate;
 
     /**
-     * @param creatorNodeId Creator node id.
-     * @param msgBytes Serialized message.
+     * @param delegate Delegate.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, byte[] msgBytes) {
-        super(creatorNodeId);
+    CustomMessageWrapper(DiscoveryCustomMessage delegate) {
+        this.delegate = delegate;
+    }
 
-        this.msgBytes = msgBytes;
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoverySpiCustomMessage newMessageOnRingEnd() {
+        DiscoveryCustomMessage res = delegate.ackMessage();
+
+        return res == null ? null : new CustomMessageWrapper(res);
     }
 
     /**
-     * @return Serialized message.
+     * @return Delegate.
      */
-    public byte[] messageBytes() {
-        return msgBytes;
-    }
-
-    /**
-     * @param msgBytes New message bytes.
-     */
-    public void messageBytes(byte[] msgBytes) {
-        this.msgBytes = msgBytes;
+    public DiscoveryCustomMessage delegate() {
+        return delegate;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
+        return delegate.toString();
     }
 }

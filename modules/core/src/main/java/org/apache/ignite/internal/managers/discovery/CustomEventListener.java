@@ -15,30 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.internal.managers.discovery;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cluster.*;
 
 /**
- * Continuous processor message types.
+ * Listener interface.
  */
-enum GridContinuousMessageType {
-    /** Remote event notification. */
-    MSG_EVT_NOTIFICATION,
-
-    /** Event notification acknowledgement for synchronous events. */
-    MSG_EVT_ACK;
-
-    /** Enumerated values. */
-    private static final GridContinuousMessageType[] VALS = values();
-
+public interface CustomEventListener<T extends DiscoveryCustomMessage> {
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @param snd Sender.
+     * @param msg Message.
      */
-    @Nullable public static GridContinuousMessageType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    public void onCustomEvent(ClusterNode snd, T msg);
 }

@@ -15,30 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.internal.managers.discovery;
 
 import org.jetbrains.annotations.*;
 
+import java.io.*;
+
 /**
- * Continuous processor message types.
+ *
  */
-enum GridContinuousMessageType {
-    /** Remote event notification. */
-    MSG_EVT_NOTIFICATION,
-
-    /** Event notification acknowledgement for synchronous events. */
-    MSG_EVT_ACK;
-
-    /** Enumerated values. */
-    private static final GridContinuousMessageType[] VALS = values();
+public interface DiscoveryCustomMessage extends Serializable {
+    /**
+     * Whether or not minor version of topology should be increased on message receive.
+     *
+     * @return {@code true} if minor topology version should be increased.
+     */
+    public boolean forwardMinorVersion();
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Called when custom message has been handled by all nodes.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @return Ack message or {@code null} if ack is not required.
      */
-    @Nullable public static GridContinuousMessageType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    @Nullable public DiscoveryCustomMessage ackMessage();
 }

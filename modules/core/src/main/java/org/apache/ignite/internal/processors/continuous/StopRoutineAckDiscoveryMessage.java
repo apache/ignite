@@ -17,28 +17,42 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
+import org.apache.ignite.internal.managers.discovery.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
- * Continuous processor message types.
+ *
  */
-enum GridContinuousMessageType {
-    /** Remote event notification. */
-    MSG_EVT_NOTIFICATION,
+public class StopRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Event notification acknowledgement for synchronous events. */
-    MSG_EVT_ACK;
-
-    /** Enumerated values. */
-    private static final GridContinuousMessageType[] VALS = values();
+    /** Routine ID. */
+    private final UUID routineId;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @param routineId Routine id.
      */
-    @Nullable public static GridContinuousMessageType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public StopRoutineAckDiscoveryMessage(UUID routineId) {
+        this.routineId = routineId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean forwardMinorVersion() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
+
+    /**
+     * @return Routine ID.
+     */
+    public UUID routineId() {
+        return routineId;
     }
 }

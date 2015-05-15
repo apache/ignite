@@ -719,7 +719,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         try {
             id = msg.remoteListen(null, new MessageListener());
 
-            msgLatch = new CountDownLatch(4);
+            msgLatch = new CountDownLatch(2);
 
             msg.send(null, "Message 1");
 
@@ -730,7 +730,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             checkNodes(3, 3);
 
-            msgLatch = new CountDownLatch(6);
+            msgLatch = new CountDownLatch(3);
 
             msg.send(null, "Message 2");
 
@@ -985,6 +985,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < clientCnt; i++) {
             Ignite g = G.ignite("client-" + i);
+
+            ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
 
             assertTrue(clientNodeIds.contains(g.cluster().localNode().id()));
 
