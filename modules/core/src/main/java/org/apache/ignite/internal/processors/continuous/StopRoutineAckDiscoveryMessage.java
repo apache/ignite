@@ -40,7 +40,7 @@ public class StopRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean forwardMinorVersion() {
+    @Override public boolean incrementMinorTopologyVersion() {
         return false;
     }
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -41,7 +40,7 @@ public class StopRoutineDiscoveryMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean forwardMinorVersion() {
+    @Override public boolean incrementMinorTopologyVersion() {
         return false;
     }
 

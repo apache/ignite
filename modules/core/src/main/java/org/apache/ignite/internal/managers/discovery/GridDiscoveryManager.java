@@ -359,7 +359,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
                 else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    if (customMsg != null && customMsg.forwardMinorVersion()) {
+                    if (customMsg != null && customMsg.incrementMinorTopologyVersion()) {
                         minorTopVer++;
 
                         verChanged = true;

@@ -75,7 +75,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean forwardMinorVersion() {
+    @Override public boolean incrementMinorTopologyVersion() {
         return true;
     }
 

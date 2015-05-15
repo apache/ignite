@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.processors.affinity.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -29,8 +30,9 @@ public interface DiscoveryCustomMessage extends Serializable {
      * Whether or not minor version of topology should be increased on message receive.
      *
      * @return {@code true} if minor topology version should be increased.
+     * @see AffinityTopologyVersion#minorTopVer
      */
-    public boolean forwardMinorVersion();
+    public boolean incrementMinorTopologyVersion();
 
     /**
      * Called when custom message has been handled by all nodes.
