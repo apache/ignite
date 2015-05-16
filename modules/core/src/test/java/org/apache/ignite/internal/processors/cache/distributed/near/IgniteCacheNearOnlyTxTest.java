@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -77,7 +78,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         ignite1.createNearCache(null, new NearCacheConfiguration<>());
 
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+        GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgniteCache cache = ignite1.cache(null);
 
@@ -136,5 +137,54 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
                 return null;
             }
         }, 5, "put-thread");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentTx() throws Exception {
+        final Ignite ignite1 = ignite(1);
+
+        assertTrue(ignite1.configuration().isClientMode());
+
+        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                IgniteCache cache = ignite1.cache(null);
+
+                int key = 1;
+
+                for (int i = 0; i < 100; i++)
+                    cache.put(key, 1);
+
+                return null;
+            }
+        }, 5, "put1-thread");
+
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                IgniteCache cache = ignite1.cache(null);
+
+                int key = 1;
+
+                IgniteTransactions txs = ignite1.transactions();
+
+                for (int i = 0; i < 100; i++) {
+                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.get(key);
+
+                        cache.put(key, 1);
+
+                        tx.commit();
+                    }
+                }
+
+                return null;
+            }
+        }, 5, "put2-thread");
+
+        fut1.get();
+        fut2.get();
     }
 }
