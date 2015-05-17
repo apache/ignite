@@ -55,8 +55,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>200ms</tt>). */
     public static final long DFLT_ACK_TIMEOUT = 200;
 
-    /** Default network timeout in milliseconds (value is <tt>200ms</tt>). */
-    public static final long DFLT_NETWORK_TIMEOUT = 200;
+    /** Default network timeout in milliseconds (value is <tt>5000ms</tt>). */
+    public static final long DFLT_NETWORK_TIMEOUT = 5000;
 
     /** Default timeout for joining topology (value is <tt>0</tt>). */
     public static final long DFLT_JOIN_TIMEOUT = 0;
