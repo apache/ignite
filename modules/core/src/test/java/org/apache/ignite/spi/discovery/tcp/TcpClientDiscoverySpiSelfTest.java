@@ -814,6 +814,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             });
 
         try {
+            joinTimeout = 500;
+
             startGrid("client-0");
 
             assert false;
