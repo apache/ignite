@@ -118,7 +118,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private GridKernalContextImpl ctx;
 
-    /** */
+    /** Configuration. */
     private IgniteConfiguration cfg;
 
     /** */
