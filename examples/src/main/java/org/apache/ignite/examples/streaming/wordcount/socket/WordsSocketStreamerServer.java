@@ -114,7 +114,7 @@ public class WordsSocketStreamerServer {
             sockStmr.start();
         }
         catch (IgniteException e) {
-            System.out.println("Streaming server didn't start due to an error: ");
+            System.err.println("Streaming server didn't start due to an error: ");
 
             e.printStackTrace();
 
