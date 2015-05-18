@@ -44,10 +44,7 @@ class GridResourceField {
      * @param field Field where resource should be injected.
      * @param ann Resource annotation.
      */
-    GridResourceField(Field field, @Nullable Annotation ann) {
-        assert field != null;
-        assert ann != null || GridResourceUtils.mayRequireResources(field);
-
+    GridResourceField(@NotNull Field field, @NotNull Annotation ann) {
         this.field = field;
         this.ann = ann;
 

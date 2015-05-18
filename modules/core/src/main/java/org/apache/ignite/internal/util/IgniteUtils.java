@@ -113,6 +113,9 @@ public abstract class IgniteUtils {
     /** Empty  longs. */
     public static final long[] EMPTY_LONGS = new long[0];
 
+    /** Empty  longs. */
+    public static final Field[] EMPTY_FIELDS = new Field[0];
+
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
 

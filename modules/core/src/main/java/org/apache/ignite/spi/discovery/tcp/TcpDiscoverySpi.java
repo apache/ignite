@@ -2701,8 +2701,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             marshalledMsg = marsh.marshal(msg);
 
                         msgClone = marsh.unmarshal(marshalledMsg, null);
-
-                        clientMsgWorker.addMessage(msgClone);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to marshal message: " + msg, e);
@@ -3954,18 +3952,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 long topVer;
 
                 if (locNodeCoord) {
-                    if (!msg.client() && ipFinder.isShared()) {
-                        try {
-                            ipFinder.unregisterAddresses(leftNode.socketAddresses());
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to unregister left node address: " + leftNode);
-
-                            onException("Failed to unregister left node address: " + leftNode, e);
-                        }
-                    }
-
                     topVer = ring.incrementTopologyVersion();
 
                     msg.topologyVersion(topVer);
@@ -4133,20 +4119,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 long topVer;
 
                 if (locNodeCoord) {
-                    if (!node.isClient() && ipFinder.isShared()) {
-                        try {
-                            ipFinder.unregisterAddresses(node.socketAddresses());
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to unregister failed node address [node=" + node +
-                                    ", err=" + e.getMessage() + ']');
-
-                            onException("Failed to unregister failed node address [node=" + node +
-                                ", err=" + e.getMessage() + ']', e);
-                        }
-                    }
-
                     topVer = ring.incrementTopologyVersion();
 
                     msg.topologyVersion(topVer);

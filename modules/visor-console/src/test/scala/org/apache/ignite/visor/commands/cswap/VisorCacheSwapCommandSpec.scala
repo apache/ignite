@@ -69,21 +69,21 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
         cfg
     }
 
-    behavior of "An 'cswap' visor command"
+    describe("An 'cswap' visor command") {
+        it("should show correct result for default cache") {
+            Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-    it should "show correct result for default cache" in {
-        Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+            visor.cache("-swap -c=<default>")
+        }
 
-        visor.cache("-swap -c=<default>")
-    }
+        it("should show correct result for named cache") {
+            Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-    it should "show correct result for named cache" in {
-        Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
+            visor.cache("-swap -c=cache")
+        }
 
-        visor.cache("-swap -c=cache")
-    }
-
-    it should "show empty projection error message" in {
-        visor.cache("-swap -c=wrong")
+        it("should show empty projection error message") {
+            visor.cache("-swap -c=wrong")
+        }
     }
 }

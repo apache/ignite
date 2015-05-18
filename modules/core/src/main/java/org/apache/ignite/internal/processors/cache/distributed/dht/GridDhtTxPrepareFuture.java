@@ -414,8 +414,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        Iterable<IgniteTxEntry> checkEntries = tx.groupLock() ?
-            Collections.singletonList(tx.groupLockEntry()) : writes;
+        Iterable<IgniteTxEntry> checkEntries = writes;
 
         for (IgniteTxEntry txEntry : checkEntries) {
             GridCacheContext cacheCtx = txEntry.context();
@@ -431,10 +430,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 txEntry.cached(entry);
             }
 
-            if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
-                    lockKeys.add(txEntry.txKey());
-            }
+            if (tx.optimistic() && txEntry.explicitVersion() == null)
+                lockKeys.add(txEntry.txKey());
 
             while (true) {
                 try {
@@ -803,8 +800,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         tx,
                         dhtWrites,
                         nearWrites,
-                        tx.groupLockKey(),
-                        tx.partitionLock(),
                         txNodes,
                         tx.nearXidVersion(),
                         true,
@@ -823,9 +818,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             if (entry.explicitVersion() == null) {
                                 GridCacheMvccCandidate added = cached.candidate(version());
 
-                                assert added != null || entry.groupLockEntry() :
-                                    "Null candidate for non-group-lock entry " +
-                                        "[added=" + added + ", entry=" + entry + ']';
                                 assert added == null || added.dhtLocal() :
                                     "Got non-dht-local candidate for prepare future " +
                                         "[added=" + added + ", entry=" + entry + ']';
@@ -906,8 +898,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             tx,
                             null,
                             nearMapping.writes(),
-                            tx.groupLockKey(),
-                            tx.partitionLock(),
                             tx.transactionNodes(),
                             tx.nearXidVersion(),
                             true,
@@ -920,8 +910,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 if (entry.explicitVersion() == null) {
                                     GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                    assert added != null || entry.groupLockEntry() : "Null candidate for non-group-lock entry " +
-                                        "[added=" + added + ", entry=" + entry + ']';
                                     assert added == null || added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
                                         "[added=" + added + ", entry=" + entry + ']';
 

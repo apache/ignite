@@ -85,9 +85,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                                 tCfg.getDefaultTxIsolation(),
                                 tCfg.getDefaultTxTimeout(),
                                 /*store enabled*/true,
-                                /*tx size*/0,
-                                /*group lock keys*/null,
-                                /*partition lock*/false
+                                /*tx size*/0
                             );
                         }
 

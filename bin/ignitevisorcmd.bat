@@ -100,7 +100,7 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
-call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in release.
+call "%SCRIPTS_HOME%\include\build-classpath.bat" &:: Will be removed in the binary release.
 set CP=%IGNITE_HOME%\bin\include\visor-common\*;%IGNITE_HOME%\bin\include\visorcmd\*;%IGNITE_LIBS%
 
 ::

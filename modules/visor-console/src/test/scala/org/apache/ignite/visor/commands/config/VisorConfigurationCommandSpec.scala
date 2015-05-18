@@ -42,9 +42,9 @@ class VisorConfigurationCommandSpec extends VisorRuntimeBaseSpec(1) {
         cfg
     }
 
-    behavior of "A 'config' visor command"
-
-    it should "print configuration for first node" in {
-        visor.config("-id8=@n0")
+    describe("A 'config' visor command") {
+        it("should print configuration for first node") {
+            visor.config("-id8=@n0")
+        }
     }
 }
