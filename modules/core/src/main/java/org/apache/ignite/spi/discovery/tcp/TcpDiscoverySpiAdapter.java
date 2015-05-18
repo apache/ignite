@@ -150,7 +150,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(sockTimeout > 0, "sockTimeout > 0");
         assertParameter(ackTimeout > 0, "ackTimeout > 0");
-        assertParameter(joinTimeout >= 0, "joinTimeout >= 0");
     }
 
     /**

@@ -507,7 +507,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 else {
                     U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + ipFinder);
 
-                    if ((U.currentTimeMillis() - startTime) > joinTimeout)
+                    if (joinTimeout > 0 && (U.currentTimeMillis() - startTime) > joinTimeout)
                         return null;
 
                     Thread.sleep(2000);
@@ -581,7 +581,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
 
-                if ((U.currentTimeMillis() - startTime) > joinTimeout)
+                if (joinTimeout > 0 && (U.currentTimeMillis() - startTime) > joinTimeout)
                     return null;
 
                 Thread.sleep(2000);
