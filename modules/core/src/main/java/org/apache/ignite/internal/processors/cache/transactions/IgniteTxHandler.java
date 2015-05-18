@@ -271,8 +271,6 @@ public class IgniteTxHandler {
                 req.isInvalidate(),
                 false,
                 req.txSize(),
-                req.groupLockKey(),
-                req.partitionLock(),
                 req.transactionNodes(),
                 req.subjectId(),
                 req.taskNameHash()
@@ -554,8 +552,6 @@ public class IgniteTxHandler {
                             req.isInvalidate(),
                             req.storeEnabled(),
                             req.txSize(),
-                            req.groupLockKey(),
-                            false,
                             null,
                             req.subjectId(),
                             req.taskNameHash()));
@@ -1002,7 +998,6 @@ public class IgniteTxHandler {
                     req.isInvalidate(),
                     req.timeout(),
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
-                    req.groupLockKey(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
                     req.subjectId(),
@@ -1136,7 +1131,6 @@ public class IgniteTxHandler {
                     req.timeout(),
                     req.nearWrites(),
                     req.txSize(),
-                    req.groupLockKey(),
                     req.subjectId(),
                     req.taskNameHash()
                 );

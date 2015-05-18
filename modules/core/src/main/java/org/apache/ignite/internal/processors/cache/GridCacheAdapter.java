@@ -3906,9 +3906,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
                 !ctx.skipStore(),
-                0,
-                /** group lock keys */null,
-                /** partition lock */false
+                0
             );
 
             assert tx != null;
@@ -3977,9 +3975,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
                 !ctx.skipStore(),
-                0,
-                null,
-                false);
+                0);
 
         return asyncOp(tx, op);
     }
