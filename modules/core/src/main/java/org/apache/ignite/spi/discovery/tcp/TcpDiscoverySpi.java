@@ -4899,24 +4899,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     try {
                         TcpDiscoveryAbstractMessage msg = marsh.unmarshal(in, U.gridClassLoader());
 
-                        UUID destClientNodeId = msg.destinationClientNodeId();
-
-                        if (destClientNodeId != null) {
-                            ClientMessageWorker wrk = clientMsgWorkers.get(destClientNodeId);
-
-                            if (wrk != null) {
-                                msg.senderNodeId(locNodeId);
-
-                                wrk.addMessage(msg);
-
-                                writeToSocket(sock, RES_OK);
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Discarding routed message because client has already left: " + msg);
-
-                            continue;
-                        }
-
                         msg.senderNodeId(nodeId);
 
                         if (log.isDebugEnabled())
