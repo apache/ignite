@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Base class for TCP discovery SPIs.
  */
-abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
+public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
