@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.h2.command.*;
 import org.h2.command.ddl.*;
 import org.h2.command.dml.Query;
 import org.h2.engine.*;
@@ -152,9 +152,6 @@ public class GridReduceQueryExecutor {
                 }
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
-
-        h2.executeStatement("PUBLIC", "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
-            " NOBUFFER FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
     }
 
     /**
@@ -166,6 +163,9 @@ public class GridReduceQueryExecutor {
             assert msg != null;
 
             ClusterNode node = ctx.discovery().node(nodeId);
+
+            if (node == null)
+                return; // Node left, ignore.
 
             boolean processed = true;
 
@@ -280,15 +280,16 @@ public class GridReduceQueryExecutor {
 
         String space = cctx.name();
 
-        r.conn = h2.connectionForSpace(space);
+        r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
         // TODO Add topology version.
         ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
 
-        if (cctx.isReplicated()) {
-            assert dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
+        if (cctx.isReplicated() || qry.explain()) {
+            assert qry.explain() || dataNodes.node(ctx.localNodeId()) == null : "We must be on a client node.";
 
-            dataNodes = dataNodes.forRandom(); // Select random data node to run query on a replicated data.
+            // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
+            dataNodes = dataNodes.forRandom();
         }
 
         final Collection<ClusterNode> nodes = dataNodes.nodes();
@@ -297,7 +298,7 @@ public class GridReduceQueryExecutor {
             GridMergeTable tbl;
 
             try {
-                tbl = createFunctionTable((JdbcConnection)r.conn, mapQry); // createTable(r.conn, mapQry); TODO
+                tbl = createFunctionTable(r.conn, mapQry, qry.explain()); // createTable(r.conn, mapQry); TODO
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -318,19 +319,31 @@ public class GridReduceQueryExecutor {
         runs.put(qryReqId, r);
 
         try {
+            Collection<GridCacheSqlQuery> mapQrys = qry.mapQueries();
+
+            if (qry.explain()) {
+                mapQrys = new ArrayList<>(qry.mapQueries().size());
+
+                for (GridCacheSqlQuery mapQry : qry.mapQueries())
+                    mapQrys.add(new GridCacheSqlQuery(mapQry.alias(), "EXPLAIN " + mapQry.query(), mapQry.parameters()));
+            }
+
             if (nodes.size() != 1 || !F.first(nodes).isLocal()) { // Marshall params for remotes.
                 Marshaller m = ctx.config().getMarshaller();
 
-                for (GridCacheSqlQuery mapQry : qry.mapQueries())
+                for (GridCacheSqlQuery mapQry : mapQrys)
                     mapQry.marshallParams(m);
             }
 
-            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, qry.mapQueries()));
+            send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys));
 
             r.latch.await();
 
             if (r.rmtErr != null)
                 throw new CacheException("Failed to run map query remotely.", r.rmtErr);
+
+            if (qry.explain())
+                return explainPlan(r.conn, space, qry);
 
             GridCacheSqlQuery rdc = qry.reduceQuery();
 
@@ -358,6 +371,55 @@ public class GridReduceQueryExecutor {
                 U.warn(log, "Query run was already removed: " + qryReqId);
 
             curFunTbl.remove();
+        }
+    }
+
+    /**
+     * @param c Connection.
+     * @param space Space.
+     * @param qry Query.
+     * @return Cursor for plans.
+     * @throws IgniteCheckedException if failed.
+     */
+    private QueryCursor<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
+        throws IgniteCheckedException {
+        List<List<?>> lists = new ArrayList<>();
+
+        for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + mapQry.alias(), null);
+
+            lists.add(F.asList(getPlan(rs)));
+        }
+
+        for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
+            GridMergeTable tbl = createFunctionTable(c, mapQry, false);
+
+            curFunTbl.set(tbl); // Now it will be only a single table.
+        }
+
+        GridCacheSqlQuery rdc = qry.reduceQuery();
+
+        ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "EXPLAIN " + rdc.query(), F.asList(rdc.parameters()));
+
+        lists.add(F.asList(getPlan(rs)));
+
+        return new QueryCursorImpl<>(lists.iterator());
+    }
+
+    /**
+     * @param rs Result set.
+     * @return Plan.
+     * @throws IgniteCheckedException If failed.
+     */
+    private String getPlan(ResultSet rs) throws IgniteCheckedException {
+        try {
+            if (!rs.next())
+                throw new IllegalStateException();
+
+            return rs.getString(1);
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -502,10 +564,12 @@ public class GridReduceQueryExecutor {
     /**
      * @param conn Connection.
      * @param qry Query.
+     * @param explain Explain.
      * @return Table.
      * @throws IgniteCheckedException
      */
-    private GridMergeTable createFunctionTable(JdbcConnection conn, GridCacheSqlQuery qry) throws IgniteCheckedException {
+    private GridMergeTable createFunctionTable(JdbcConnection conn, GridCacheSqlQuery qry, boolean explain)
+        throws IgniteCheckedException {
         try {
             Session ses = (Session)conn.getSession();
 
@@ -515,17 +579,21 @@ public class GridReduceQueryExecutor {
             data.schema = ses.getDatabase().getSchema(ses.getCurrentSchemaName());
             data.create = true;
 
-            Query prepare = (Query)ses.prepare(qry.query(), false);
+            if (!explain) {
+                Prepared prepare = ses.prepare(qry.query(), false);
 
-            List<org.h2.expression.Parameter> parsedParams = prepare.getParameters();
+                List<org.h2.expression.Parameter> parsedParams = prepare.getParameters();
 
-            for (int i = Math.min(parsedParams.size(), qry.parameters().length); --i >= 0; ) {
-                Object val = qry.parameters()[i];
+                for (int i = Math.min(parsedParams.size(), qry.parameters().length); --i >= 0; ) {
+                    Object val = qry.parameters()[i];
 
-                parsedParams.get(i).setValue(DataType.convertToValue(ses, val, Value.UNKNOWN));
+                    parsedParams.get(i).setValue(DataType.convertToValue(ses, val, Value.UNKNOWN));
+                }
+
+                data.columns = generateColumnsFromQuery((Query)prepare);
             }
-
-            data.columns = generateColumnsFromQuery(prepare);
+            else
+                data.columns = planColumns();
 
             return new GridMergeTable(data);
         }
@@ -534,6 +602,17 @@ public class GridReduceQueryExecutor {
 
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * @return Columns.
+     */
+    private static ArrayList<Column> planColumns() {
+        ArrayList<Column> res = new ArrayList<>(1);
+
+        res.add(new Column("PLAN", Value.STRING));
+
+        return res;
     }
 
     /**
@@ -573,7 +652,7 @@ public class GridReduceQueryExecutor {
         private CountDownLatch latch;
 
         /** */
-        private Connection conn;
+        private JdbcConnection conn;
 
         /** */
         private int pageSize;

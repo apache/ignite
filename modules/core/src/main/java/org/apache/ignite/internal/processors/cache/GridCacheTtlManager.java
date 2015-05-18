@@ -30,7 +30,8 @@ import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 /**
- * Eagerly removes expired entries from cache when {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
+ * Eagerly removes expired entries from cache when
+ * {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
@@ -87,41 +88,26 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
     /**
      * Expires entries by TTL.
-     *
-     * @param sizeLimited Size limited.
      */
-    public void expire(boolean sizeLimited) {
+    public void expire() {
         long now = U.currentTimeMillis();
 
         GridCacheVersion obsoleteVer = null;
 
-        // Make sure that worker thread (e.g. sys pool) or user thread
-        // will not be trapped.
-        int size = Math.min(pendingEntries.sizex(), 1024);
+        for (int size = pendingEntries.sizex(); size > 0; size--) {
+            EntryWrapper e = pendingEntries.firstx();
 
-        while (!sizeLimited || size-- > 0) {
-            EntryWrapper e = pendingEntries.pollFirst();
+            if (e == null || e.expireTime > now)
+                return;
 
-            if (e == null)
-                break;
+            if (pendingEntries.remove(e)) {
+                if (obsoleteVer == null)
+                    obsoleteVer = cctx.versions().next();
 
-            if (e.expireTime > now) {
-                pendingEntries.add(e);
+                if (log.isTraceEnabled())
+                    log.trace("Trying to remove expired entry from cache: " + e);
 
-                break;
-            }
-
-            if (obsoleteVer == null)
-                obsoleteVer = cctx.versions().next();
-
-            if (log.isDebugEnabled())
-                log.debug("Trying to remove expired entry from cache: " + e);
-
-            if (e.entry.onTtlExpired(obsoleteVer)) {
-                e.entry.context().cache().removeEntry(e.entry);
-
-                if (e.entry.context().cache().configuration().isStatisticsEnabled())
-                    e.entry.context().cache().metrics0().onEvict();
+                e.entry.onTtlExpired(obsoleteVer);
             }
         }
     }
@@ -140,7 +126,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                expire(false);
+                expire();
 
                 EntryWrapper first = pendingEntries.firstx();
 

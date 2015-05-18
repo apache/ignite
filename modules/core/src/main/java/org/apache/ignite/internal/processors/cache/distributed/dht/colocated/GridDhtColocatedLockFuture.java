@@ -754,8 +754,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncCommit(),
-                                        inTx() ? tx.groupLockKey() : null,
-                                        inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? accessTtl : -1L,
@@ -786,6 +784,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                         catch (GridCacheEntryRemovedException ignored) {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
+
+                            entry = null;
                         }
                     }
 
@@ -1088,10 +1088,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             // If primary node left the grid before lock acquisition, fail the whole future.
             throw newTopologyException(null, primary.id());
 
-        if (inTx() && tx.groupLock() && !primary.isLocal())
-            throw new IgniteCheckedException("Failed to start group lock transaction (local node is not primary for " +
-                " key) [key=" + key + ", primaryNodeId=" + primary.id() + ']');
-
         if (mapping == null || !primary.id().equals(mapping.node().id()))
             mapping = new GridNearLockMapping(primary, key);
         else
@@ -1279,25 +1275,18 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                         GridDhtDetachedCacheEntry entry = (GridDhtDetachedCacheEntry)txEntry.cached();
 
-                        try {
-                            if (res.dhtVersion(i) == null) {
-                                onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
-                                    "(will fail the lock): " + res));
-
-                                return;
-                            }
-
-                            // Set value to detached entry.
-                            entry.resetFromPrimary(newVal, dhtVer);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
+                        if (res.dhtVersion(i) == null) {
+                            onDone(new IgniteCheckedException("Failed to receive DHT version from remote node " +
+                                "(will fail the lock): " + res));
 
                             return;
                         }
+
+                        // Set value to detached entry.
+                        entry.resetFromPrimary(newVal, dhtVer);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                     }
                     else
                         cctx.mvcc().markExplicitOwner(k, threadId);

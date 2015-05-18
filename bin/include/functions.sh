@@ -34,7 +34,7 @@
 checkJava() {
     # Check JAVA_HOME.
     if [ "$JAVA_HOME" = "" ]; then
-        JAVA=`which java`
+        JAVA=`type -p java`
         RETCODE=$?
 
         if [ $RETCODE -ne 0 ]; then

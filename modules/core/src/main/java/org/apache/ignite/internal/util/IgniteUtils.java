@@ -108,10 +108,13 @@ public abstract class IgniteUtils {
     private static final int[] GRID_EVTS;
 
     /** Empty integers array. */
-    private static final int[] EMPTY_INTS = new int[0];
+    public static final int[] EMPTY_INTS = new int[0];
 
     /** Empty  longs. */
-    private static final long[] EMPTY_LONGS = new long[0];
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Empty  longs. */
+    public static final Field[] EMPTY_FIELDS = new Field[0];
 
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
@@ -8804,6 +8807,21 @@ public abstract class IgniteUtils {
      */
     public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
         return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
     }
 
     /**

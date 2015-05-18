@@ -393,8 +393,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) throws Exception {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP) : cache.localPeek(key,
-            CachePeekMode.ONHEAP);
+        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
+            cache.localPeek(key, CachePeekMode.ONHEAP);
     }
 
     /**

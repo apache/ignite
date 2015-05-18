@@ -34,6 +34,8 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setNearConfiguration(null);
+
         cc.setAtomicityMode(atomicityMode());
 
         cc.setName(CACHE_NAME);
@@ -51,5 +53,85 @@ public class GridCacheReplicatedNodeRestartSelfTest extends GridCacheAbstractNod
         c.setCacheConfiguration(cc);
 
         return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutTwoNodesNoBackups() throws Throwable {
+        super.testRestartWithPutTwoNodesNoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutTwoNodesOneBackup() throws Throwable {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutFourNodesOneBackups() throws Throwable {
+        super.testRestartWithPutFourNodesOneBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutFourNodesNoBackups() throws Throwable {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutSixNodesTwoBackups() throws Throwable {
+        super.testRestartWithPutSixNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutEightNodesTwoBackups() throws Throwable {
+        super.testRestartWithPutEightNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithPutTenNodesTwoBackups() throws Throwable {
+        super.testRestartWithPutTenNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxTwoNodesNoBackups() throws Throwable {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxTwoNodesOneBackup() throws Throwable {
+        super.testRestartWithTxTwoNodesOneBackup();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxFourNodesOneBackups() throws Throwable {
+        super.testRestartWithTxFourNodesOneBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxFourNodesNoBackups() throws Throwable {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxSixNodesTwoBackups() throws Throwable {
+        super.testRestartWithTxSixNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxEightNodesTwoBackups() throws Throwable {
+        super.testRestartWithTxEightNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxTenNodesTwoBackups() throws Throwable {
+        super.testRestartWithTxTenNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxPutAllTenNodesTwoBackups() throws Throwable {
+        super.testRestartWithTxPutAllTenNodesTwoBackups();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testRestartWithTxPutAllFourNodesTwoBackups() throws Throwable {
+        super.testRestartWithTxPutAllFourNodesTwoBackups();
     }
 }
