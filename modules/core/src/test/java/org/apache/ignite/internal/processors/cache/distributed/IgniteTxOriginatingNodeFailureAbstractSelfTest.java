@@ -156,7 +156,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 TransactionProxyImpl tx = (TransactionProxyImpl)txIgniteNode.transactions().txStart();
 
-                IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
+                IgniteInternalTx txEx = tx.tx();
 
                 assertTrue(txEx.optimistic());
 

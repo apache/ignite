@@ -166,12 +166,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 16:
-                msg = new GridCacheOptimisticCheckPreparedTxRequest();
+                msg = new GridCacheTxRecoveryRequest();
 
                 break;
 
             case 17:
-                msg = new GridCacheOptimisticCheckPreparedTxResponse();
+                msg = new GridCacheTxRecoveryResponse();
 
                 break;
 
