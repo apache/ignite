@@ -138,6 +138,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheNearPrimarySyncSelfTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedPrimarySyncSelfTest.class));
 
+        suite.addTest(new TestSuite(IgniteCacheClientNodeExchangeTest.class));
+
         return suite;
     }
 }

@@ -103,6 +103,32 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * @param node Node.
+     * @param topVer Topology version.
+     */
+    public void clientNodeTopologyChange(ClusterNode node, AffinityTopologyVersion topVer) {
+        GridAffinityAssignment assignment = head.get();
+
+        assert assignment.primaryPartitions(node.id()).isEmpty() : node;
+        assert assignment.backupPartitions(node.id()).isEmpty() : node;
+
+        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, assignment.assignment());
+
+        affCache.put(topVer, assignmentCpy);
+        head.set(assignmentCpy);
+
+        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey().compareTo(topVer) <= 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Completing topology ready future (use previous affinity) " +
+                        "[locNodeId=" + ctx.localNodeId() + ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+
+                entry.getValue().onDone(topVer);
+            }
+        }
+    }
+
+    /**
      * Initializes affinity with given topology version and assignment. The assignment is calculated on remote nodes
      * and brought to local node on partition map exchange.
      *
@@ -422,6 +448,7 @@ public class GridAffinityAssignmentCache {
 
         /**
          *
+         * @param reqTopVer Required topology version.
          */
         private AffinityReadyFuture(AffinityTopologyVersion reqTopVer) {
             this.reqTopVer = reqTopVer;
