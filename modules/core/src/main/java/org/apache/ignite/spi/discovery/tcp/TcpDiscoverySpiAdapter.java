@@ -219,7 +219,8 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
      * Note that when running Ignite on Amazon EC2, socket timeout must be set to a value
      * significantly greater than the default (e.g. to {@code 30000}).
      * <p>
-     * If not specified, default is {@link #DFLT_SOCK_TIMEOUT}.
+     * If not specified, default is {@link TcpDiscoverySpi#DFLT_SOCK_TIMEOUT},
+     * {@link TcpClientDiscoverySpi#DFLT_SOCK_TIMEOUT}.
      *
      * @param sockTimeout Socket connection timeout.
      */
@@ -234,7 +235,8 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
      * If acknowledgement is not received within this timeout, sending is considered as failed
      * and SPI tries to repeat message sending.
      * <p>
-     * If not specified, default is {@link #DFLT_ACK_TIMEOUT}.
+     * If not specified, default is {@link TcpDiscoverySpi#DFLT_ACK_TIMEOUT},
+     * {@link TcpClientDiscoverySpi#DFLT_ACK_TIMEOUT}.
      *
      * @param ackTimeout Acknowledgement timeout.
      */
@@ -1106,7 +1108,7 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
     }
 
     /**
-     *
+     * Allow to connect to addresses parallel.
      */
     protected class SocketMultiConnector implements AutoCloseable {
         /** */
