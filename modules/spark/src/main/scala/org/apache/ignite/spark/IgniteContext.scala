@@ -17,10 +17,6 @@
 
 package org.apache.ignite.spark
 
-import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.rdd.RDD
+class IgniteContext {
 
-class IgniteRDD[T](
-    sc: SparkContext
-) {
 }

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.spark
 
-import org.apache.spark.{TaskContext, Partition, SparkContext}
-import org.apache.spark.rdd.RDD
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.spark.Partition
 
-class IgniteRDD[T](
-    sc: SparkContext
-) {
+class IgnitePartition(
+    ic: IgniteContext,
+    cacheName: String,
+    idx: Int) extends Partition {
+    override def index: Int = idx
+
+    def nodes(): Seq[ClusterNode] = ???
 }
