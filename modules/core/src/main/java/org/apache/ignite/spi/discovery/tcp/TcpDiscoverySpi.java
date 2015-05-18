@@ -2636,21 +2636,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryHeartbeatMessage) {
-                if (msg.client()) {
-                    ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+            else if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
+                processClientHeartbeatMessage((TcpDiscoveryClientHeartbeatMessage)msg);
 
-                    if (wrk != null) {
-                        msg.verify(getLocalNodeId());
+            else if (msg instanceof TcpDiscoveryHeartbeatMessage)
+                processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
 
-                        wrk.addMessage(msg);
-                    }
-                    else if (log.isDebugEnabled())
-                        log.debug("Received heartbeat message from unknown client node: " + msg);
-                }
-                else
-                    processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
-            }
             else if (msg instanceof TcpDiscoveryStatusCheckMessage)
                 processStatusCheckMessage((TcpDiscoveryStatusCheckMessage)msg);
 
@@ -4313,6 +4304,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private void processHeartbeatMessage(TcpDiscoveryHeartbeatMessage msg) {
             assert msg != null;
 
+            assert !msg.client();
+
             UUID locNodeId = getLocalNodeId();
 
             if (ring.node(msg.creatorNodeId()) == null) {
@@ -4412,6 +4405,22 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
             }
+        }
+
+        /**
+         * Processes client heartbeat message.
+         *
+         * @param msg Heartbeat message.
+         */
+        private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
+            assert msg.client();
+
+            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+
+            if (wrk != null)
+                wrk.metrics(msg.metrics());
+            else if (log.isDebugEnabled())
+                log.debug("Received heartbeat message from unknown client node: " + msg);
         }
 
         /**
@@ -5266,7 +5275,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      */
     private class ClientMessageWorker extends MessageWorkerAdapter {
         /** Node ID. */
-        private final UUID nodeId;
+        private final UUID clientNodeId;
 
         /** Socket. */
         private final Socket sock;
@@ -5279,13 +5288,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         /**
          * @param sock Socket.
-         * @param nodeId Node ID.
+         * @param clientNodeId Node ID.
          */
-        protected ClientMessageWorker(Socket sock, UUID nodeId) {
+        protected ClientMessageWorker(Socket sock, UUID clientNodeId) {
             super("tcp-disco-client-message-worker");
 
             this.sock = sock;
-            this.nodeId = nodeId;
+            this.clientNodeId = clientNodeId;
         }
 
         /**
@@ -5295,22 +5304,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             return metrics;
         }
 
-        /** {@inheritDoc} */
-        @Override void addMessage(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryHeartbeatMessage) {
-                TcpDiscoveryHeartbeatMessage hbMsg = (TcpDiscoveryHeartbeatMessage)msg;
-
-                if (hbMsg.creatorNodeId().equals(nodeId)) {
-                    metrics = hbMsg.metrics().get(nodeId).metrics();
-
-                    removeMetrics(hbMsg, nodeId);
-
-                    assert !hbMsg.hasMetrics();
-                    assert !hbMsg.hasCacheMetrics();
-                }
-            }
-
-            super.addMessage(msg);
+        /**
+         * @param metrics New current client metrics.
+         */
+        void metrics(ClusterMetrics metrics) {
+            this.metrics = metrics;
         }
 
         /** {@inheritDoc} */
@@ -5320,10 +5318,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 if (log.isDebugEnabled())
                     log.debug("Redirecting message to client [sock=" + sock + ", locNodeId="
-                        + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+                        + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
 
                 try {
-                    prepareNodeAddedMessage(msg, nodeId, null, null);
+                    prepareNodeAddedMessage(msg, clientNodeId, null, null);
 
                     writeToSocket(sock, msg);
                 }
@@ -5334,12 +5332,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
-                        + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                        + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
 
                 onException("Client connection failed [sock=" + sock + ", locNodeId="
-                    + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                    + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
 
-                clientMsgWorkers.remove(nodeId, this);
+                clientMsgWorkers.remove(clientNodeId, this);
 
                 U.interrupt(this);
 
@@ -5375,7 +5373,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 fut = new GridFutureAdapter<>();
 
                 if (pingFut.compareAndSet(null, fut)) {
-                    TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), nodeId);
+                    TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), clientNodeId);
 
                     pingReq.verify(getLocalNodeId());
 

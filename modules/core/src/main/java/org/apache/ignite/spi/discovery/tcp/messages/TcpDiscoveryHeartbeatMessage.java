@@ -214,20 +214,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
-     * @param metrics Metrics.
-     * @return Serialized metrics.
-     */
-    private static byte[] serializeMetrics(ClusterMetrics metrics) {
-        assert metrics != null;
-
-        byte[] buf = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
-
-        ClusterMetricsSnapshot.serialize(buf, 0, metrics);
-
-        return buf;
-    }
-
-    /**
      * @param nodeId Node ID.
      * @param metrics Metrics.
      * @return Serialized metrics.
@@ -271,7 +257,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         public MetricsSet(ClusterMetrics metrics) {
             assert metrics != null;
 
-            this.metrics = serializeMetrics(metrics);
+            this.metrics = ClusterMetricsSnapshot.serialize(metrics);
         }
 
         /**

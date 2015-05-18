@@ -702,13 +702,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         /** {@inheritDoc} */
         @Override public void run() {
             if (!getSpiContext().isStopping() && sockWriter.isOnline()) {
-                TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(getLocalNodeId());
-
-                UUID nodeId = ignite.configuration().getNodeId();
-
-                msg.setMetrics(nodeId, metricsProvider.metrics());
-
-                msg.setCacheMetrics(nodeId, metricsProvider.cacheMetrics());
+                TcpDiscoveryClientHeartbeatMessage msg = new TcpDiscoveryClientHeartbeatMessage(getLocalNodeId(),
+                    metricsProvider.metrics());
 
                 msg.client(true);
 

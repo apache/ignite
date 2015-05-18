@@ -1247,6 +1247,20 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /**
      * Serializes node metrics into byte array.
      *
+     * @param metrics Node metrics to serialize.
+     * @return New offset.
+     */
+    public static byte[] serialize(ClusterMetrics metrics) {
+        byte[] buf = new byte[METRICS_SIZE];
+
+        serialize(buf, 0, metrics);
+
+        return buf;
+    }
+
+    /**
+     * Serializes node metrics into byte array.
+     *
      * @param data Byte array.
      * @param off Offset into byte array.
      * @param metrics Node metrics to serialize.
