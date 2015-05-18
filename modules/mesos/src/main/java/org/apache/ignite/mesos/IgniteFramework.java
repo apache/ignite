@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.messo;
+package org.apache.ignite.mesos;
 
 import com.google.protobuf.*;
 import org.apache.mesos.*;
@@ -43,7 +43,7 @@ public class IgniteFramework {
         }
 
         // create the scheduler
-        final Scheduler scheduler = createIgniteScheduler(args);
+        final Scheduler scheduler = new IgniteScheduler();
 
         // create the driver
         MesosSchedulerDriver driver;
@@ -81,17 +81,6 @@ public class IgniteFramework {
         driver.stop();
 
         System.exit(status);
-    }
-
-    /**
-     * @param args Arguments.
-     * @return Ignite scheduler.
-     */
-    private static IgniteScheduler createIgniteScheduler(String args[]) {
-        if (args.length >= 3 && args[1].equals(IgniteAmazonScheduler.AMAZON))
-            return new IgniteAmazonScheduler(args[2], args[3]);
-        else
-            return new IgniteScheduler();
     }
 
     /**

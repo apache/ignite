@@ -19,4 +19,4 @@
  * <!-- Package description. -->
  * Messo Framework.
  */
-package org.apache.ignite.messo;
+package org.apache.ignite.mesos;

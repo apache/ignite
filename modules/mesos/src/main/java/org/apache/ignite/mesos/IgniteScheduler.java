@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.messo;
+package org.apache.ignite.mesos;
 
 import org.apache.mesos.*;
 import org.slf4j.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -39,6 +40,12 @@ public class IgniteScheduler implements Scheduler {
     /** Mem. */
     public static final String MEM = "mem";
 
+    /** Default port range. */
+    public static final String DEFAULT_PORT = ":47500..47510";
+
+    /** Delimiter to use in IP names. */
+    public static final String DELIM = ",";
+
     /** ID generator. */
     private AtomicInteger taskIdGenerator = new AtomicInteger();
 
@@ -47,6 +54,12 @@ public class IgniteScheduler implements Scheduler {
 
     /** Min of memory required. */
     public static final int MIN_MEMORY = 256;
+
+    /** Mutex. */
+    private static final Object mux = new Object();
+
+    /** Task on host. */
+    private ConcurrentMap<String, String> tasks = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void registered(SchedulerDriver schedulerDriver, Protos.FrameworkID frameworkID,
@@ -61,35 +74,40 @@ public class IgniteScheduler implements Scheduler {
 
     /** {@inheritDoc} */
     @Override public void resourceOffers(SchedulerDriver schedulerDriver, List<Protos.Offer> offers) {
-        log.info("resourceOffers() with {} offers", offers.size());
+        synchronized (mux) {
+            log.info("resourceOffers() with {} offers", offers.size());
 
-        for (Protos.Offer offer : offers) {
-            Tuple<Double, Double> cpuMem = checkOffer(offer);
+            for (Protos.Offer offer : offers) {
+                Tuple<Double, Double> cpuMem = checkOffer(offer);
 
-            // Decline offer which doesn't match by mem or cpu.
-            if (cpuMem == null) {
-                schedulerDriver.declineOffer(offer.getId());
+                // Decline offer which doesn't match by mem or cpu.
+                if (cpuMem == null) {
+                    schedulerDriver.declineOffer(offer.getId());
 
-                continue;
+                    continue;
+                }
+
+                // Generate a unique task ID.
+                Protos.TaskID taskId = Protos.TaskID.newBuilder()
+                    .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
+
+                log.info("Launching task {}", taskId.getValue());
+
+                // Create task to run.
+                Protos.TaskInfo task = createTask(offer, cpuMem, taskId);
+
+                schedulerDriver.launchTasks(Collections.singletonList(offer.getId()),
+                    Collections.singletonList(task),
+                    Protos.Filters.newBuilder().setRefuseSeconds(1).build());
+
+                tasks.put(taskId.getValue(), offer.getHostname());
             }
-
-            // Generate a unique task ID.
-            Protos.TaskID taskId = Protos.TaskID.newBuilder()
-                .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
-
-            log.info("Launching task {}", taskId.getValue());
-
-            // Create task to run.
-            Protos.TaskInfo task = createTask(offer, cpuMem, taskId);
-
-            schedulerDriver.launchTasks(Collections.singletonList(offer.getId()),
-                Collections.singletonList(task),
-                Protos.Filters.newBuilder().setRefuseSeconds(1).build());
         }
     }
 
     /**
      * Create Task.
+     *
      * @param offer Offer.
      * @param cpuMem Cpu and mem on slave.
      * @param taskId Task id.
@@ -113,7 +131,7 @@ public class IgniteScheduler implements Scheduler {
             .addResources(Protos.Resource.newBuilder()
                 .setName(CPUS)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get2())))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get1())))
             .addResources(Protos.Resource.newBuilder()
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
@@ -122,8 +140,24 @@ public class IgniteScheduler implements Scheduler {
             .setCommand(Protos.CommandInfo.newBuilder()
                 .setShell(false)
                 .addArguments(STARTUP_SCRIPT)
-                .addArguments(String.valueOf(cpuMem.get2().intValue())))
+                .addArguments(String.valueOf(cpuMem.get2().intValue()))
+                .addArguments(getAddress()))
             .build();
+    }
+
+    /**
+     * @return Address running nodes.
+     */
+    protected String getAddress() {
+        if (tasks.isEmpty())
+            return "";
+
+        StringBuilder sb = new StringBuilder();
+
+        for (String host : tasks.values())
+            sb.append(host).append(DEFAULT_PORT).append(DELIM);
+
+        return sb.substring(0, sb.length() - 1);
     }
 
     /**
@@ -178,7 +212,16 @@ public class IgniteScheduler implements Scheduler {
 
     /** {@inheritDoc} */
     @Override public void statusUpdate(SchedulerDriver schedulerDriver, Protos.TaskStatus taskStatus) {
-        log.info("statusUpdate() task {} ", taskStatus);
+        final String taskId = taskStatus.getTaskId().getValue();
+
+        log.info("statusUpdate() task {} is in state {}", taskId, taskStatus.getState());
+
+        switch (taskStatus.getState()) {
+            case TASK_FAILED:
+            case TASK_FINISHED:
+                tasks.remove(taskId);
+                break;
+        }
     }
 
     /** {@inheritDoc} */
