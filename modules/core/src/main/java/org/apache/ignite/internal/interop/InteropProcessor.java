@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.interop;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Interop processor.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface InteropProcessor {
     /**
-     * Initializes the filter.
+     * Get stop runnable to perform cleanup when interop is not longer used.
+     * <p/>
+     * <b>NOTE!</b> This runnable is called when current instance of interop processor is eligible for garbage
+     * collection. Therefore you should <b>never</b> store any references to Ignite internal inside it. Otherwise
+     * this runnable will never be called.
      *
-     * @param ctx Kernal context.
+     * @return Stop runnable. If {@code null} is returned, then no cleanup is expected.
      */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
-     */
-    public void close();
+    @Nullable public Runnable cleanupCallback();
 }

@@ -203,7 +203,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final int DFLT_ACK_SND_THRESHOLD = 16;
 
     /** Default socket write timeout. */
-    public static final long DFLT_SOCK_WRITE_TIMEOUT = GridNioServer.DFLT_SES_WRITE_TIMEOUT;
+    public static final long DFLT_SOCK_WRITE_TIMEOUT = 200;
 
     /** No-op runnable. */
     private static final IgniteRunnable NOOP = new IgniteRunnable() {

@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.interop;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import java.io.*;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Interop bootstrap factory.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface InteropBootstrapFactory extends Serializable {
     /**
-     * Initializes the filter.
+     * Get bootstrap factory ID.
      *
-     * @param ctx Kernal context.
+     * @return ID.
      */
-    public void initialize(GridKernalContext ctx);
+    public int id();
 
     /**
-     * Closes the filter.
+     * Create bootstrap instance.
+     *
+     * @return Bootstrap instance.
      */
-    public void close();
+    public InteropBootstrap create();
 }

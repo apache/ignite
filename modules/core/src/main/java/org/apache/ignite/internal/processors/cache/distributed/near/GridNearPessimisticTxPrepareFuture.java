@@ -178,8 +178,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 tx,
                 m.reads(),
                 m.writes(),
-                /*grp lock key*/null,
-                /*part lock*/false,
                 m.near(),
                 txMapping.transactionNodes(),
                 true,

@@ -15,24 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.interop;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Interop bootstrap. Responsible for starting Ignite node in interop mode.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface InteropBootstrap {
     /**
-     * Initializes the filter.
+     * Start Ignite node.
      *
-     * @param ctx Kernal context.
+     * @param cfg Configuration.
+     * @param envPtr Environment pointer.
+     * @return Ignite node.
      */
-    public void initialize(GridKernalContext ctx);
-
-    /**
-     * Closes the filter.
-     */
-    public void close();
+    public InteropProcessor start(IgniteConfiguration cfg, long envPtr);
 }
