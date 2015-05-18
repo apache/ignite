@@ -22,8 +22,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.util.*;
-
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
@@ -41,22 +39,8 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
-        if (client) {
-            TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder();
-
-            String addr = new ArrayList<>(ipFinder.getRegisteredAddresses()).iterator().next().toString();
-
-            if (addr.startsWith("/"))
-                addr = addr.substring(1);
-
-            clientIpFinder.setAddresses(Arrays.asList(addr));
-
-            TcpClientDiscoverySpi discoSpi = new TcpClientDiscoverySpi();
-
-            discoSpi.setIpFinder(clientIpFinder);
-
-            cfg.setDiscoverySpi(discoSpi);
-        }
+        if (client)
+            cfg.setDiscoverySpi(createClientDiscovery(ipFinder));
         else {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

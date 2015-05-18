@@ -19,11 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-
-import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -41,21 +37,8 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cfg.isClientMode() != null && cfg.isClientMode()) {
-            TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
-
-            String firstSrvAddr = F.first(ipFinder.getRegisteredAddresses()).toString();
-
-            if (firstSrvAddr.startsWith("/"))
-                firstSrvAddr = firstSrvAddr.substring(1);
-
-            clientFinder.setAddresses(Collections.singletonList(firstSrvAddr));
-
-            TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
-            discoverySpi.setIpFinder(clientFinder);
-
-            cfg.setDiscoverySpi(discoverySpi);
-        }
+        if (cfg.isClientMode() != null && cfg.isClientMode())
+            cfg.setDiscoverySpi(createClientDiscovery(ipFinder));
 
         cfg.setLocalHost("127.0.0.1");
 
