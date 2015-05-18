@@ -36,7 +36,11 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
         cfg.getCacheConfiguration()[0].setEvictMaxOverflowRatio(0);
         cfg.getCacheConfiguration()[0].setEvictSynchronized(true);
         cfg.getCacheConfiguration()[0].setEvictSynchronizedKeyBufferSize(1);
-        cfg.getCacheConfiguration()[0].setEvictionPolicy(new FifoEvictionPolicy(1));
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(1);
+
+        cfg.getCacheConfiguration()[0].setEvictionPolicy(plc);
 
         return cfg;
     }

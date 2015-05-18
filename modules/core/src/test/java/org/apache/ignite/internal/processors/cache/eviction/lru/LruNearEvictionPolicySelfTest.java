@@ -26,55 +26,49 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.util.*;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * LRU near eviction tests for NEAR_ONLY distribution mode (GG-8884).
+ * LRU near eviction tests (GG-8884).
  */
-public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
+public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** Grid count. */
-    private static final int GRID_COUNT = 2;
 
     /** Maximum size for near eviction policy. */
     private static final int EVICTION_MAX_SIZE = 10;
 
-    /** Node count. */
-    private int cnt;
-
-    /** Caching mode specified by test. */
-    private CacheMode cacheMode;
+    /** Grid count. */
+    private static final int GRID_COUNT = 2;
 
     /** Cache atomicity mode specified by test. */
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cnt = 0;
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        if (cnt == 0)
-            c.setClientMode(true);
 
         CacheConfiguration cc = new CacheConfiguration();
 
         cc.setAtomicityMode(atomicityMode);
-        cc.setCacheMode(cacheMode);
+        cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setStartSize(100);
         cc.setBackups(0);
+
+        NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(EVICTION_MAX_SIZE);
+
+        nearCfg.setNearEvictionPolicy(plc);
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 
@@ -84,17 +78,14 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
 
         c.setDiscoverySpi(disco);
 
-        cnt++;
-
         return c;
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedAtomicNearEvictionMaxSize() throws Exception {
+    public void testAtomicNearEvictionMaxSize() throws Exception {
         atomicityMode = ATOMIC;
-        cacheMode = PARTITIONED;
 
         checkNearEvictionMaxSize();
     }
@@ -102,29 +93,8 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPartitionedTransactionalNearEvictionMaxSize() throws Exception {
+    public void testTransactionalNearEvictionMaxSize() throws Exception {
         atomicityMode = TRANSACTIONAL;
-        cacheMode = PARTITIONED;
-
-        checkNearEvictionMaxSize();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedAtomicNearEvictionMaxSize() throws Exception {
-        atomicityMode = ATOMIC;
-        cacheMode = REPLICATED;
-
-        checkNearEvictionMaxSize();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplicatedTransactionalNearEvictionMaxSize() throws Exception {
-        atomicityMode = TRANSACTIONAL;
-        cacheMode = REPLICATED;
 
         checkNearEvictionMaxSize();
     }
@@ -133,36 +103,35 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     private void checkNearEvictionMaxSize() throws Exception {
-        startGrids(GRID_COUNT);
+        startGridsMultiThreaded(GRID_COUNT);
 
         try {
-            NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-            nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(EVICTION_MAX_SIZE));
-
-            grid(0).createNearCache(null, nearCfg);
+            Random rand = new Random(0);
 
             int cnt = 1000;
 
             info("Inserting " + cnt + " keys to cache.");
 
-            try (IgniteDataStreamer<Integer, String> ldr = grid(1).dataStreamer(null)) {
+            try (IgniteDataStreamer<Integer, String> ldr = grid(0).dataStreamer(null)) {
                 for (int i = 0; i < cnt; i++)
                     ldr.addData(i, Integer.toString(i));
             }
 
-            assertTrue("Near cache size " + near(0).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
-                near(0).nearSize() <= EVICTION_MAX_SIZE);
+            for (int i = 0; i < GRID_COUNT; i++)
+                assertTrue("Near cache size " + near(i).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
+                    near(i).nearSize() <= EVICTION_MAX_SIZE);
 
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(0).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }
 
-            assertTrue("Near cache size " + near(0).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
-                near(0).nearSize() <= EVICTION_MAX_SIZE);
+            for (int i = 0; i < GRID_COUNT; i++)
+                assertTrue("Near cache size " + near(i).nearSize() + ", but eviction maximum size " + EVICTION_MAX_SIZE,
+                    near(i).nearSize() <= EVICTION_MAX_SIZE);
         }
         finally {
             stopAllGrids();

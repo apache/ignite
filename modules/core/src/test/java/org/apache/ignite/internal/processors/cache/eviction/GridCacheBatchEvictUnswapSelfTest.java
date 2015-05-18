@@ -90,7 +90,10 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
 
-        cacheCfg.setEvictionPolicy(new FifoEvictionPolicy(EVICT_PLC_SIZE));
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(EVICT_PLC_SIZE);
+
+        cacheCfg.setEvictionPolicy(plc);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setEvictSynchronized(false);
         cacheCfg.setNearConfiguration(null);

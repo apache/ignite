@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import org.junit.*;
 
 import java.util.*;
@@ -81,6 +82,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * Returns cache configuration.
+     *
+     * @return cache configuration.
+     */
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -89,7 +95,16 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setSwapEnabled(swapEnabled);
         cacheCfg.setCacheMode(mode);
         cacheCfg.setMemoryMode(memoryMode);
-        cacheCfg.setEvictionPolicy(maxOnheapSize == Integer.MAX_VALUE ? null : new LruEvictionPolicy(maxOnheapSize));
+
+        LruEvictionPolicy plc = null;
+
+        if (maxOnheapSize != Integer.MAX_VALUE) {
+            plc = new LruEvictionPolicy();
+            plc.setMaxSize(maxOnheapSize);
+        }
+
+        cacheCfg.setEvictionPolicy(plc);
+
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
 
@@ -199,7 +214,8 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @param swapEmpty Swap is empty.
      * @throws Exception If failed.
      */
-    private void doTestPutAndPutAll(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty) throws Exception {
+    private void doTestPutAndPutAll(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty)
+        throws Exception {
         final int all = cache + offheapSwap;
 
         // put
@@ -231,7 +247,8 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @param x Cache modifier.
      * @throws IgniteCheckedException If failed.
      */
-    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<IgniteCache<String, Integer>> x) throws Exception {
+    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty,
+        CIX1<IgniteCache<String, Integer>> x) throws Exception {
         ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         startGrid();

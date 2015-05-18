@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.sorted.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -33,7 +32,7 @@ import java.util.concurrent.atomic.*;
 /**
  * {@link SortedEvictionPolicy} performance test.
  */
-public class GridCacheSortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest {
+public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest {
     /** Threads. */
     private static final int THREADS = 8;
 
@@ -48,9 +47,6 @@ public class GridCacheSortedEvictionPolicyPerformanceTest extends GridCommonAbst
 
     /** Get probability. */
     private static final int P_GET = 30;
-
-    /** Measurement count. */
-    private static final int MEASUREMENT_CNT = 100;
 
     /** Rnd. */
     private static final ThreadLocalRandom8 RND = ThreadLocalRandom8.current();
@@ -77,9 +73,12 @@ public class GridCacheSortedEvictionPolicyPerformanceTest extends GridCommonAbst
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setNearConfiguration(null);
-        ccfg.setEvictionPolicy(new SortedEvictionPolicy(MAX_SIZE));
-//        ccfg.setEvictionPolicy(new FifoEvictionPolicy(MAX_SIZE));
-       ccfg.setEvictSynchronized(false);
+
+        SortedEvictionPolicy plc = new SortedEvictionPolicy();
+        plc.setMaxSize(MAX_SIZE);
+
+        ccfg.setEvictionPolicy(plc);
+        ccfg.setEvictSynchronized(false);
 
         cfg.setPeerClassLoadingEnabled(false);
 

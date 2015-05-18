@@ -65,7 +65,10 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
         cacheCfg.setStartSize(10);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cacheCfg.setEvictionPolicy(new LruEvictionPolicy(100000));
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(100000);
+
+        cacheCfg.setEvictionPolicy(plc);
         cacheCfg.setBackups(1);
 
         cacheCfg.setRebalanceMode(SYNC);
