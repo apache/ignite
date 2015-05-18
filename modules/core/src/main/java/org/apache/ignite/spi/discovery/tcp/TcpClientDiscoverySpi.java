@@ -61,6 +61,12 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Default disconnect check interval. */
     public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
 
+    /** Default socket operations timeout in milliseconds (value is <tt>700ms</tt>). */
+    public static final long DFLT_SOCK_TIMEOUT = 700;
+
+    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>700ms</tt>). */
+    public static final long DFLT_ACK_TIMEOUT = 700;
+
     /** */
     private static final Object JOIN_TIMEOUT = "JOIN_TIMEOUT";
 
@@ -111,6 +117,14 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** */
     private MessageWorker msgWorker;
+
+    /**
+     * Default constructor.
+     */
+    public TcpClientDiscoverySpi() {
+        ackTimeout = DFLT_ACK_TIMEOUT;
+        sockTimeout = DFLT_SOCK_TIMEOUT;
+    }
 
     /** {@inheritDoc} */
     @Override public long getDisconnectCheckInterval() {
@@ -211,13 +225,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
         startStopwatch();
 
-        assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(netTimeout > 0, "networkTimeout > 0");
-        assertParameter(sockTimeout > 0, "sockTimeout > 0");
-        assertParameter(ackTimeout > 0, "ackTimeout > 0");
-        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        checkParameters();
+
         assertParameter(threadPri > 0, "threadPri > 0");
-        assertParameter(joinTimeout >= 0, "joinTimeout >= 0");
 
         try {
             locHost = U.resolveLocalHost(locAddr);

@@ -49,12 +49,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
-    /** Default socket operations timeout in milliseconds (value is <tt>200ms</tt>). */
-    public static final long DFLT_SOCK_TIMEOUT = 200;
-
-    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>200ms</tt>). */
-    public static final long DFLT_ACK_TIMEOUT = 200;
-
     /** Default network timeout in milliseconds (value is <tt>5000ms</tt>). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
 
@@ -86,10 +80,10 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected TcpDiscoveryIpFinder ipFinder;
 
     /** Socket operations timeout. */
-    protected long sockTimeout = DFLT_SOCK_TIMEOUT;
+    protected long sockTimeout; // Must be initialized in the constructor of child class.
 
     /** Message acknowledgement timeout. */
-    protected long ackTimeout = DFLT_ACK_TIMEOUT;
+    protected long ackTimeout; // Must be initialized in the constructor of child class.
 
     /** Network timeout. */
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
@@ -146,6 +140,18 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Logger. */
     @LoggerResource
     protected IgniteLogger log;
+
+    /**
+     * Check parameters set to this SPI.
+     */
+    protected void checkParameters() {
+        assertParameter(ipFinder != null, "ipFinder != null");
+        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        assertParameter(netTimeout > 0, "networkTimeout > 0");
+        assertParameter(sockTimeout > 0, "sockTimeout > 0");
+        assertParameter(ackTimeout > 0, "ackTimeout > 0");
+        assertParameter(joinTimeout >= 0, "joinTimeout >= 0");
+    }
 
     /**
      * Inject resources

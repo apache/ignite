@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.ref.*;
 import java.net.*;
 import java.security.*;
 import java.util.*;
@@ -52,9 +53,19 @@ public class InteropIgnition {
 
         InteropBootstrap bootstrap = bootstrap(factoryId);
 
-        return bootstrap.start(cfg, envPtr);
+        InteropProcessor proc = bootstrap.start(cfg, envPtr);
+
+        trackFinalization(proc);
+
+        return proc;
     }
 
+    /**
+     * Create configuration.
+     *
+     * @param springCfgPath Path to Spring XML.
+     * @return Configuration.
+     */
     private static IgniteConfiguration configuration(@Nullable String springCfgPath) {
         try {
             URL url = springCfgPath == null ? U.resolveIgniteUrl(IgnitionEx.DFLT_CFG) :
@@ -92,6 +103,58 @@ public class InteropIgnition {
             throw new IgniteException("Interop factory is not found (did you put into the classpath?): " + factoryId);
 
         return factory.create();
+    }
+
+    /**
+     * Track processor finalization.
+     *
+     * @param proc Processor.
+     */
+    private static void trackFinalization(InteropProcessor proc) {
+        Thread thread = new Thread(new Finalizer(proc));
+
+        thread.setDaemon(true);
+
+        thread.start();
+    }
+
+    /**
+     * Finalizer runnable.
+     */
+    private static class Finalizer implements Runnable {
+        /** Queue where we expect notification to appear. */
+        private final ReferenceQueue<InteropProcessor> queue;
+
+        /** Phantom reference to processor.  */
+        private final PhantomReference<InteropProcessor> proc;
+
+        /** Cleanup runnable. */
+        private final Runnable cleanup;
+
+        /**
+         * Constructor.
+         *
+         * @param proc Processor.
+         */
+        public Finalizer(InteropProcessor proc) {
+            queue = new ReferenceQueue<>();
+
+            this.proc = new PhantomReference<>(proc, queue);
+
+            cleanup = proc.cleanupCallback();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                queue.remove(0);
+
+                cleanup.run();
+            }
+            catch (InterruptedException ignore) {
+                // No-op.
+            }
+        }
     }
 
     /**

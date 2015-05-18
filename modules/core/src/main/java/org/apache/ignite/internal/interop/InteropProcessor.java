@@ -17,9 +17,20 @@
 
 package org.apache.ignite.internal.interop;
 
+import org.jetbrains.annotations.*;
+
 /**
  * Interop processor.
  */
 public interface InteropProcessor {
-    // No-op.
+    /**
+     * Get stop runnable to perform cleanup when interop is not longer used.
+     * <p/>
+     * <b>NOTE!</b> This runnable is called when current instance of interop processor is eligible for garbage
+     * collection. Therefore you should <b>never</b> store any references to Ignite internal inside it. Otherwise
+     * this runnable will never be called.
+     *
+     * @return Stop runnable. If {@code null} is returned, then no cleanup is expected.
+     */
+    @Nullable public Runnable cleanupCallback();
 }

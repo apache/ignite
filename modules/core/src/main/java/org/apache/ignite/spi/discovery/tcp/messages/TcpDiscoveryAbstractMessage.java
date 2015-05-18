@@ -52,9 +52,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** Topology version. */
     private long topVer;
 
-    /** Destination client node ID. */
-    private UUID destClientNodeId;
-
     /** Flags. */
     @GridToStringExclude
     private int flags;
@@ -175,20 +172,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     public void client(boolean client) {
         setFlag(CLIENT_FLAG_POS, client);
-    }
-
-    /**
-     * @return Destination client node ID.
-     */
-    public UUID destinationClientNodeId() {
-        return destClientNodeId;
-    }
-
-    /**
-     * @param destClientNodeId Destination client node ID.
-     */
-    public void destinationClientNodeId(UUID destClientNodeId) {
-        this.destClientNodeId = destClientNodeId;
     }
 
     /**

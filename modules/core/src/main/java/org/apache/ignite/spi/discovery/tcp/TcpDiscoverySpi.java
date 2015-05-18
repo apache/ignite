@@ -171,6 +171,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default socket operations timeout in milliseconds (value is <tt>200ms</tt>). */
+    public static final long DFLT_SOCK_TIMEOUT = 200;
+
+    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>200ms</tt>). */
+    public static final long DFLT_ACK_TIMEOUT = 200;
+
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -296,6 +302,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** */
     private final CopyOnWriteArrayList<IgniteInClosure<Socket>> incomeConnLsnrs =
         new CopyOnWriteArrayList<>();
+
+    /**
+     * Default constructor.
+     */
+    public TcpDiscoverySpi() {
+        ackTimeout = DFLT_ACK_TIMEOUT;
+        sockTimeout = DFLT_SOCK_TIMEOUT;
+    }
 
     /** {@inheritDoc} */
     @IgniteInstanceResource
@@ -794,17 +808,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private void onSpiStart() throws IgniteSpiException {
         startStopwatch();
 
-        assertParameter(ipFinder != null, "ipFinder != null");
+        checkParameters();
+
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
         assertParameter(locPortRange >= 0, "localPortRange >= 0");
         assertParameter(locPort + locPortRange <= 0xffff, "locPort + locPortRange <= 0xffff");
-        assertParameter(netTimeout > 0, "networkTimeout > 0");
-        assertParameter(sockTimeout > 0, "sockTimeout > 0");
-        assertParameter(ackTimeout > 0, "ackTimeout > 0");
         assertParameter(maxAckTimeout > ackTimeout, "maxAckTimeout > ackTimeout");
         assertParameter(reconCnt > 0, "reconnectCnt > 0");
-        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
         assertParameter(maxMissedHbs > 0, "maxMissedHeartbeats > 0");
         assertParameter(maxMissedClientHbs > 0, "maxMissedClientHeartbeats > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
@@ -4887,24 +4898,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 while (!isInterrupted()) {
                     try {
                         TcpDiscoveryAbstractMessage msg = marsh.unmarshal(in, U.gridClassLoader());
-
-                        UUID destClientNodeId = msg.destinationClientNodeId();
-
-                        if (destClientNodeId != null) {
-                            ClientMessageWorker wrk = clientMsgWorkers.get(destClientNodeId);
-
-                            if (wrk != null) {
-                                msg.senderNodeId(locNodeId);
-
-                                wrk.addMessage(msg);
-
-                                writeToSocket(sock, RES_OK);
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Discarding routed message because client has already left: " + msg);
-
-                            continue;
-                        }
 
                         msg.senderNodeId(nodeId);
 
