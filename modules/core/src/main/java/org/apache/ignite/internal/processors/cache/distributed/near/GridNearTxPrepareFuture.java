@@ -1023,10 +1023,16 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
 
                     if (!m.empty()) {
-                        // Register DHT version.
-                        tx.addDhtVersion(m.node().id(), res.dhtVersion());
+                        GridCacheVersion writeVer = res.writeVersion();
 
-                        m.dhtVersion(res.dhtVersion());
+                        // Backward compatibility.
+                        if (writeVer == null)
+                            writeVer = res.dhtVersion();
+
+                        // Register DHT version.
+                        tx.addDhtVersion(m.node().id(), res.dhtVersion(), writeVer);
+
+                        m.dhtVersion(res.dhtVersion(), writeVer);
 
                         if (m.near())
                             tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());

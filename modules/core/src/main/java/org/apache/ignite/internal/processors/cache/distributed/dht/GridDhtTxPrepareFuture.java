@@ -586,6 +586,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
             nearMiniId == null ? tx.xid() : nearMiniId,
             tx.xidVersion(),
+            tx.writeVersion(),
             tx.invalidPartitions(),
             ret,
             prepErr);

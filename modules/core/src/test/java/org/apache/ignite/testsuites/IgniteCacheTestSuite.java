@@ -446,6 +446,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheNoValueClassOnServerNodeTest.class);
 
+        suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
+
         return suite;
     }
 }

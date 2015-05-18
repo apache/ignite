@@ -301,7 +301,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         else {
             CacheObject val0 = valueBytesUnlocked();
 
-            return F.t(ver, val0);
+            return F.t(dhtVer, val0);
         }
     }
 
