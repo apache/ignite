@@ -1078,9 +1078,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
-            assert msg != null;
-
-            if (msg instanceof TcpDiscoveryHeartbeatMessage)
+            if (msg.highPriority())
                 queue.addFirst(msg);
             else
                 queue.add(msg);

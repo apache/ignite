@@ -215,6 +215,13 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
             flags &= ~mask;
     }
 
+    /**
+     * @return {@code true} if message must be added to head of queue.
+     */
+    public boolean highPriority() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public final boolean equals(Object obj) {
         if (this == obj)
