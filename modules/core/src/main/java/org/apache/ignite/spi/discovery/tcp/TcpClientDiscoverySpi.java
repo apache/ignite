@@ -229,13 +229,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
         assertParameter(threadPri > 0, "threadPri > 0");
 
-        try {
-            locHost = U.resolveLocalHost(locAddr);
-        }
-        catch (IOException e) {
-            throw new IgniteSpiException("Unknown local address: " + locAddr, e);
-        }
-
         if (log.isDebugEnabled()) {
             log.debug(configInfo("localHost", locHost.getHostAddress()));
             log.debug(configInfo("threadPri", threadPri));
