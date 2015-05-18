@@ -44,7 +44,7 @@ public class IgniteAmazonScheduler extends IgniteScheduler {
     }
 
     /** {@inheritDoc} */
-    @Override protected Protos.TaskInfo createTask(Protos.Offer offer, Pair<Double, Double> cpuMem,
+    @Override protected Protos.TaskInfo createTask(Protos.Offer offer, Tuple<Double, Double> cpuMem,
         Protos.TaskID taskId) {
         // Docker image info.
         Protos.ContainerInfo.DockerInfo.Builder docker = Protos.ContainerInfo.DockerInfo.newBuilder()
@@ -63,16 +63,16 @@ public class IgniteAmazonScheduler extends IgniteScheduler {
             .addResources(Protos.Resource.newBuilder()
                 .setName(CPUS)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._1)))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get1())))
             .addResources(Protos.Resource.newBuilder()
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._2)))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get2())))
             .setContainer(cont)
             .setCommand(Protos.CommandInfo.newBuilder()
                 .setShell(false)
                 .addArguments(STARTUP_SCRIPT)
-                .addArguments(String.valueOf(cpuMem._2.intValue()))
+                .addArguments(String.valueOf(cpuMem.get2().intValue()))
                 .addArguments(AMAZON)
                 .addArguments(accessKey)
                 .addArguments(secretKey))

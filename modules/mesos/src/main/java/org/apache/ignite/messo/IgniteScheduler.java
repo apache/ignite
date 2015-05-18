@@ -64,7 +64,7 @@ public class IgniteScheduler implements Scheduler {
         log.info("resourceOffers() with {} offers", offers.size());
 
         for (Protos.Offer offer : offers) {
-            Pair<Double, Double> cpuMem = checkOffer(offer);
+            Tuple<Double, Double> cpuMem = checkOffer(offer);
 
             // Decline offer which doesn't match by mem or cpu.
             if (cpuMem == null) {
@@ -95,11 +95,11 @@ public class IgniteScheduler implements Scheduler {
      * @param taskId Task id.
      * @return Task.
      */
-    protected Protos.TaskInfo createTask(Protos.Offer offer, Pair<Double, Double> cpuMem, Protos.TaskID taskId) {
+    protected Protos.TaskInfo createTask(Protos.Offer offer, Tuple<Double, Double> cpuMem, Protos.TaskID taskId) {
         // Docker image info.
         Protos.ContainerInfo.DockerInfo.Builder docker = Protos.ContainerInfo.DockerInfo.newBuilder()
-                .setImage(IMAGE)
-                .setNetwork(Protos.ContainerInfo.DockerInfo.Network.HOST);
+            .setImage(IMAGE)
+            .setNetwork(Protos.ContainerInfo.DockerInfo.Network.HOST);
 
         // Container info.
         Protos.ContainerInfo.Builder cont = Protos.ContainerInfo.newBuilder();
@@ -113,16 +113,16 @@ public class IgniteScheduler implements Scheduler {
             .addResources(Protos.Resource.newBuilder()
                 .setName(CPUS)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._1)))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get2())))
             .addResources(Protos.Resource.newBuilder()
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem._2)))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get2())))
             .setContainer(cont)
             .setCommand(Protos.CommandInfo.newBuilder()
                 .setShell(false)
                 .addArguments(STARTUP_SCRIPT)
-                .addArguments(String.valueOf(cpuMem._2.intValue())))
+                .addArguments(String.valueOf(cpuMem.get2().intValue())))
             .build();
     }
 
@@ -132,7 +132,7 @@ public class IgniteScheduler implements Scheduler {
      * @param offer Offer request.
      * @return Pair where first is cpus, second is memory.
      */
-    private Pair<Double, Double> checkOffer(Protos.Offer offer) {
+    private Tuple<Double, Double> checkOffer(Protos.Offer offer) {
         double cpus = -1;
         double mem = -1;
 
@@ -159,7 +159,7 @@ public class IgniteScheduler implements Scheduler {
             log.debug("No mem resource present");
 
         if (cpus >= 1 && MIN_MEMORY <= mem)
-            return new Pair<>(cpus, mem);
+            return new Tuple<>(cpus, mem);
         else {
             log.info("Offer not sufficient for slave request:\n" + offer.getResourcesList().toString() +
                 "\n" + offer.getAttributesList().toString() +
@@ -211,19 +211,33 @@ public class IgniteScheduler implements Scheduler {
     /**
      * Tuple.
      */
-    public static class Pair<A, B> {
+    public static class Tuple<A, B> {
         /** */
-        public final A _1;
+        private final A val1;
 
         /** */
-        public final B _2;
+        private final B val2;
 
         /**
          *
          */
-        public Pair(A _1, B _2) {
-            this._1 = _1;
-            this._2 = _2;
+        public Tuple(A val1, B val2) {
+            this.val1 = val1;
+            this.val2 = val2;
+        }
+
+        /**
+         * @return val1
+         */
+        public A get1() {
+            return val1;
+        }
+
+        /**
+         * @return val2
+         */
+        public B get2() {
+            return val2;
         }
     }
 }
