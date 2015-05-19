@@ -127,7 +127,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             fail();
         }
         catch (IgniteCheckedException e) {
-            assertTrue(e.getCause().getMessage().startsWith("Remote node has deployment mode different from"));
+            if (!e.getCause().getMessage().startsWith("Remote node has deployment mode different from"))
+                throw e;
         }
     }
 
@@ -145,8 +146,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             fail();
         }
         catch (IgniteCheckedException e) {
-            assertTrue(e.getCause().getMessage().startsWith("Remote node has peer class loading enabled flag " +
-                "different from"));
+            if (!e.getCause().getMessage().startsWith("Remote node has peer class loading enabled flag different from"))
+                throw e;
         }
     }
 
