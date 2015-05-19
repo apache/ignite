@@ -1392,6 +1392,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @return Current topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return ctx.discovery().topologyVersionEx();
+    }
+
+    /**
      * Wrapper to store connection and flag is schema set or not.
      */
     private static class ConnectionWrapper {

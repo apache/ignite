@@ -118,7 +118,7 @@ public class GridReduceQueryExecutor {
      * @param h2 H2 Indexing.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(final GridKernalContext ctx, IgniteH2Indexing h2) throws IgniteCheckedException {
+    public void start(final GridKernalContext ctx, final IgniteH2Indexing h2) throws IgniteCheckedException {
         this.ctx = ctx;
         this.h2 = h2;
 
@@ -146,7 +146,7 @@ public class GridReduceQueryExecutor {
                     for (GridMergeTable tbl : r.tbls) {
                         if (tbl.getScanIndex(null).hasSource(nodeId)) {
                             // Will attempt to retry. If reduce query was started it will fail on next page fetching.
-                            retry(r, topologyVersion(), nodeId);
+                            retry(r, h2.topologyVersion(), nodeId);
 
                             break;
                         }
@@ -279,13 +279,6 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @return Current topology version.
-     */
-    private AffinityTopologyVersion topologyVersion() {
-        return ctx.discovery().topologyVersionEx();
-    }
-
-    /**
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
@@ -304,7 +297,7 @@ public class GridReduceQueryExecutor {
 
             r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
-            AffinityTopologyVersion topVer = topologyVersion();
+            AffinityTopologyVersion topVer = h2.topologyVersion();
 
             Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(space, topVer);
 
@@ -387,7 +380,7 @@ public class GridReduceQueryExecutor {
                     }
                 }
                 else  // Send failed -> retry.
-                    retry = topologyVersion();
+                    retry = h2.topologyVersion();
 
                 ResultSet res = null;
 

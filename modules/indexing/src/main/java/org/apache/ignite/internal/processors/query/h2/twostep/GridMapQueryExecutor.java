@@ -36,7 +36,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
-import org.h2.store.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -465,65 +464,9 @@ public class GridMapQueryExecutor {
             loc ? null : Collections.<Message>emptyList(),
             loc ? Collections.<Value[]>emptyList() : null);
 
-        msg.retry(ctx.discovery().topologyVersionEx());
+        msg.retry(h2.topologyVersion());
 
         ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
-    }
-
-    /**
-     * @param bytes Bytes.
-     * @return Rows.
-     */
-    public static List<Value[]> unmarshallRows(byte[] bytes) {
-        Data data = Data.create(null, bytes);
-
-        int rowCnt = data.readVarInt();
-
-        if (rowCnt == 0)
-            return Collections.emptyList();
-
-        ArrayList<Value[]> rows = new ArrayList<>(rowCnt);
-
-        int cols = data.readVarInt();
-
-        for (int r = 0; r < rowCnt; r++) {
-            Value[] row = new Value[cols];
-
-            for (int c = 0; c < cols; c++)
-                row[c] = data.readValue();
-
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
-    /**
-     * @param rows Rows.
-     * @return Bytes.
-     */
-    public static byte[] marshallRows(Collection<Value[]> rows) {
-        Data data = Data.create(null, 256);
-
-        data.writeVarInt(rows.size());
-
-        boolean first = true;
-
-        for (Value[] row : rows) {
-            if (first) {
-                data.writeVarInt(row.length);
-
-                first = false;
-            }
-
-            for (Value val : row) {
-                data.checkCapacity(data.getValueLen(val));
-
-                data.writeValue(val);
-            }
-        }
-
-        return Arrays.copyOf(data.getBytes(), data.length());
     }
 
     /**
