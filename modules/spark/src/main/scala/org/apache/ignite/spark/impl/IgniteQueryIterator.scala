@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.spark.impl
 
-import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.cache.query.Query
+import org.apache.ignite.spark.IgniteContext
 import org.apache.spark.Partition
 
-class IgnitePartition(
-    ic: IgniteContext,
-    cacheName: String,
-    idx: Int) extends Partition {
-    override def index: Int = idx
+class IgniteQueryIterator[R, K, V] (
+    ic: IgniteContext[K, V],
+    part: Partition,
+    qry: Query[R]
+    ) extends Iterator[R] {
+    override def hasNext: Boolean = ???
 
-    def nodes(): Seq[ClusterNode] = ???
+    override def next(): R = ???
 }

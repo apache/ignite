@@ -17,6 +17,86 @@
 
 package org.apache.ignite.spark
 
-class IgniteContext {
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.IgnitionEx
+import org.apache.ignite.spark.util.using
+import org.apache.ignite.{Ignition, IgniteCache, Ignite}
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 
+class IgniteContext[K, V](
+    sc: SparkContext,
+    igniteCfg: IgniteConfiguration,
+    val cacheName: String,
+    cacheCfg: CacheConfiguration[K, V]
+) {
+    def this(
+        sc: SparkContext,
+        springUrl: String,
+        cacheName: String
+    ) {
+        this(sc, IgnitionEx.loadConfiguration(springUrl).get1(), cacheName, null)
+    }
+
+    def this(
+        sc: SparkContext,
+        igniteCfg: IgniteConfiguration,
+        cacheName: String
+    ) {
+        this(sc, igniteCfg, cacheName, null)
+    }
+
+    def this(
+        sc: SparkContext,
+        igniteCfg: IgniteConfiguration,
+        cacheCfg: CacheConfiguration[K, V]
+    ) {
+        this(sc, igniteCfg, cacheCfg.getName, cacheCfg)
+    }
+
+    def this(
+        sc: SparkContext,
+        springUrl: String,
+        cacheCfg: CacheConfiguration[K, V]
+    ) {
+        this(sc, IgnitionEx.loadConfiguration(springUrl).get1(), cacheCfg.getName, cacheCfg)
+    }
+
+    def sparkContext() = sc
+
+    def saveToIgnite(rdd: RDD[V], keyFunc: (IgniteContext[K, V], V, ClusterNode) => K = affinityKeyFunc) = {
+        rdd.foreachPartition(it => {
+            // TODO get affinity node
+
+            using(ignite().dataStreamer[K, V](cacheName)) { streamer =>
+                it.foreach(value => {
+                    val key: K = keyFunc(this, value, null)
+                    streamer.addData(key, value)
+                })
+            }
+        })
+    }
+
+    def ignite(): Ignite = {
+        try {
+            Ignition.ignite(igniteCfg.getGridName)
+        }
+        catch {
+            case e: Exception =>
+                igniteCfg.setClientMode(true)
+
+                Ignition.start(igniteCfg)
+        }
+    }
+
+    def igniteCache(): IgniteCache[K, V] = {
+//        new IgniteRDD[Object, K, V](this, (k: K, v: V) => {true})
+
+        ignite().cache(cacheName)
+    }
+
+    private def affinityKeyFunc(ic: IgniteContext[K, V], key: K, node: ClusterNode) = {
+        null
+    }
 }

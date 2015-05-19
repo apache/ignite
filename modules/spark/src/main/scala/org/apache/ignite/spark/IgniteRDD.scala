@@ -17,10 +17,36 @@
 
 package org.apache.ignite.spark
 
-import org.apache.spark.{TaskContext, Partition, SparkContext}
+import org.apache.ignite.cache.query.{ScanQuery, Query}
+import org.apache.ignite.scalar.lang.ScalarPredicate2
+import org.apache.ignite.spark.impl.{IgniteQueryIterator, IgnitePartition}
+import org.apache.spark.{TaskContext, Partition}
 import org.apache.spark.rdd.RDD
 
-class IgniteRDD[T](
-    sc: SparkContext
-) {
+import scala.collection.JavaConversions._
+
+class IgniteRDD[R, K, V](
+    ic: IgniteContext[K, V],
+    qry: Query[R]
+) extends RDD[R] (ic.sparkContext(), deps = Nil) {
+    def this(
+        ic: IgniteContext[K, V],
+        p: (K, V) => Boolean
+    ) = {
+        this(ic, new ScanQuery[K, V](new ScalarPredicate2[K, V](p)))
+    }
+
+    override def compute(part: Partition, context: TaskContext): Iterator[R] = {
+        new IgniteQueryIterator[R, K, V](ic, part, qry)
+    }
+
+    override protected def getPartitions: Array[Partition] = {
+        val parts = ic.ignite().affinity(ic.cacheName).partitions()
+
+        (0 until parts).map(new IgnitePartition(_)).toArray
+    }
+
+    override protected def getPreferredLocations(split: Partition): Seq[String] = {
+        ic.ignite().affinity(ic.cacheName).mapPartitionToPrimaryAndBackups(split.index).map(_.addresses()).flatten.toList
+    }
 }
