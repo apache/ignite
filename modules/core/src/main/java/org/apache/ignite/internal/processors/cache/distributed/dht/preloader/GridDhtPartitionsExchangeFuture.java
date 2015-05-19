@@ -1224,12 +1224,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             boolean set = false;
 
-                            for (Iterator<ClusterNode> it = rmtNodes.iterator(); it.hasNext(); ) {
-                                if (it.next().id().equals(nodeId))
-                                    it.remove();
-                            }
-
-                            ClusterNode newOldest = CU.oldest(rmtNodes);
+                            ClusterNode newOldest = CU.oldestAliveCacheServerNode(cctx, exchId.topologyVersion());
 
                             if (newOldest != null) {
                                 // If local node is now oldest.
