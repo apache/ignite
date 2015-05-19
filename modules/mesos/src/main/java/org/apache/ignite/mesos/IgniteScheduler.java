@@ -40,26 +40,39 @@ public class IgniteScheduler implements Scheduler {
     /** Mem. */
     public static final String MEM = "mem";
 
+    /** Disk. */
+    public static final String DISK = "disk";
+
     /** Default port range. */
     public static final String DEFAULT_PORT = ":47500..47510";
-
-    /** Delimiter to use in IP names. */
-    public static final String DELIM = ",";
-
-    /** ID generator. */
-    private AtomicInteger taskIdGenerator = new AtomicInteger();
-
-    /** Logger. */
-    private static final Logger log = LoggerFactory.getLogger(IgniteScheduler.class);
 
     /** Min of memory required. */
     public static final int MIN_MEMORY = 256;
 
+    /** Delimiter to use in IP names. */
+    public static final String DELIM = ",";
+
+    /** Logger. */
+    private static final Logger log = LoggerFactory.getLogger(IgniteScheduler.class);
+
     /** Mutex. */
     private static final Object mux = new Object();
 
+    /** ID generator. */
+    private AtomicInteger taskIdGenerator = new AtomicInteger();
+
     /** Task on host. */
-    private ConcurrentMap<String, String> tasks = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, IgniteTask> tasks = new ConcurrentHashMap<>();
+
+    /** Cluster resources. */
+    private ClusterResources clusterLimit;
+
+    /**
+     * @param clusterLimit Resources limit.
+     */
+    public IgniteScheduler(ClusterResources clusterLimit) {
+        this.clusterLimit = clusterLimit;
+    }
 
     /** {@inheritDoc} */
     @Override public void registered(SchedulerDriver schedulerDriver, Protos.FrameworkID frameworkID,
@@ -78,10 +91,10 @@ public class IgniteScheduler implements Scheduler {
             log.info("resourceOffers() with {} offers", offers.size());
 
             for (Protos.Offer offer : offers) {
-                Tuple<Double, Double> cpuMem = checkOffer(offer);
+                IgniteTask igniteTask = checkOffer(offer);
 
                 // Decline offer which doesn't match by mem or cpu.
-                if (cpuMem == null) {
+                if (igniteTask == null) {
                     schedulerDriver.declineOffer(offer.getId());
 
                     continue;
@@ -94,13 +107,13 @@ public class IgniteScheduler implements Scheduler {
                 log.info("Launching task {}", taskId.getValue());
 
                 // Create task to run.
-                Protos.TaskInfo task = createTask(offer, cpuMem, taskId);
+                Protos.TaskInfo task = createTask(offer, igniteTask, taskId);
 
                 schedulerDriver.launchTasks(Collections.singletonList(offer.getId()),
                     Collections.singletonList(task),
                     Protos.Filters.newBuilder().setRefuseSeconds(1).build());
 
-                tasks.put(taskId.getValue(), offer.getHostname());
+                tasks.put(taskId.getValue(), igniteTask);
             }
         }
     }
@@ -109,11 +122,11 @@ public class IgniteScheduler implements Scheduler {
      * Create Task.
      *
      * @param offer Offer.
-     * @param cpuMem Cpu and mem on slave.
+     * @param igniteTask Task description.
      * @param taskId Task id.
      * @return Task.
      */
-    protected Protos.TaskInfo createTask(Protos.Offer offer, Tuple<Double, Double> cpuMem, Protos.TaskID taskId) {
+    protected Protos.TaskInfo createTask(Protos.Offer offer, IgniteTask igniteTask, Protos.TaskID taskId) {
         // Docker image info.
         Protos.ContainerInfo.DockerInfo.Builder docker = Protos.ContainerInfo.DockerInfo.newBuilder()
             .setImage(IMAGE)
@@ -131,16 +144,16 @@ public class IgniteScheduler implements Scheduler {
             .addResources(Protos.Resource.newBuilder()
                 .setName(CPUS)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get1())))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.cpuCores())))
             .addResources(Protos.Resource.newBuilder()
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
-                .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpuMem.get2())))
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.mem())))
             .setContainer(cont)
             .setCommand(Protos.CommandInfo.newBuilder()
                 .setShell(false)
                 .addArguments(STARTUP_SCRIPT)
-                .addArguments(String.valueOf(cpuMem.get2().intValue()))
+                .addArguments(String.valueOf(igniteTask.mem()))
                 .addArguments(getAddress()))
             .build();
     }
@@ -154,8 +167,8 @@ public class IgniteScheduler implements Scheduler {
 
         StringBuilder sb = new StringBuilder();
 
-        for (String host : tasks.values())
-            sb.append(host).append(DEFAULT_PORT).append(DELIM);
+        for (IgniteTask task : tasks.values())
+            sb.append(task.host()).append(DEFAULT_PORT).append(DELIM);
 
         return sb.substring(0, sb.length() - 1);
     }
@@ -164,11 +177,15 @@ public class IgniteScheduler implements Scheduler {
      * Check slave resources and return resources infos.
      *
      * @param offer Offer request.
-     * @return Pair where first is cpus, second is memory.
+     * @return Ignite task description.
      */
-    private Tuple<Double, Double> checkOffer(Protos.Offer offer) {
-        double cpus = -1;
-        double mem = -1;
+    private IgniteTask checkOffer(Protos.Offer offer) {
+        if (checkLimit(clusterLimit.instances(), tasks.size()))
+            return null;
+
+        double cpus = -2;
+        double mem = -2;
+        double disk = -2;
 
         for (Protos.Resource resource : offer.getResourcesList()) {
             if (resource.getName().equals(CPUS)) {
@@ -183,17 +200,18 @@ public class IgniteScheduler implements Scheduler {
                 else
                     log.debug("Mem resource was not a scalar: " + resource.getType().toString());
             }
-            else if (resource.getName().equals("disk"))
-                log.debug("Ignoring disk resources from offer");
+            else if (resource.getType().equals(Protos.Value.Type.SCALAR))
+                disk = resource.getScalar().getValue();
+            else
+                log.debug("Disk resource was not a scalar: " + resource.getType().toString());
         }
 
-        if (cpus < 0)
-            log.debug("No cpus resource present");
-        if (mem < 0)
-            log.debug("No mem resource present");
+        if (checkLimit(clusterLimit.memory(), mem) &&
+            checkLimit(clusterLimit.cpus(), cpus) &&
+            checkLimit(clusterLimit.disk(), disk) &&
+            MIN_MEMORY <= mem)
 
-        if (cpus >= 1 && MIN_MEMORY <= mem)
-            return new Tuple<>(cpus, mem);
+            return new IgniteTask(offer.getHostname(), cpus, mem, disk);
         else {
             log.info("Offer not sufficient for slave request:\n" + offer.getResourcesList().toString() +
                 "\n" + offer.getAttributesList().toString() +
@@ -203,6 +221,15 @@ public class IgniteScheduler implements Scheduler {
 
             return null;
         }
+    }
+
+    /**
+     * @param limit Limit.
+     * @param value Value.
+     * @return {@code True} if limit isn't violated else {@code false}.
+     */
+    private boolean checkLimit(double limit, double value) {
+        return limit == ClusterResources.DEFAULT_VALUE || limit <= value;
     }
 
     /** {@inheritDoc} */
@@ -249,38 +276,5 @@ public class IgniteScheduler implements Scheduler {
     /** {@inheritDoc} */
     @Override public void error(SchedulerDriver schedulerDriver, String s) {
         log.error("error() {}", s);
-    }
-
-    /**
-     * Tuple.
-     */
-    public static class Tuple<A, B> {
-        /** */
-        private final A val1;
-
-        /** */
-        private final B val2;
-
-        /**
-         *
-         */
-        public Tuple(A val1, B val2) {
-            this.val1 = val1;
-            this.val2 = val2;
-        }
-
-        /**
-         * @return val1
-         */
-        public A get1() {
-            return val1;
-        }
-
-        /**
-         * @return val2
-         */
-        public B get2() {
-            return val2;
-        }
     }
 }

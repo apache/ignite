@@ -68,6 +68,11 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.apache.ignite.mesos.IgniteFramework</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
                 <executions>
                     <execution>
@@ -79,7 +84,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 

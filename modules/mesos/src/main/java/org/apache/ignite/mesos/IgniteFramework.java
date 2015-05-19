@@ -25,7 +25,7 @@ import org.apache.mesos.*;
  */
 public class IgniteFramework {
     /**
-     * @param args Args
+     * @param args Args [host:port] [resource limit]
      */
     public static void main(String[] args) {
         checkArgs(args);
@@ -43,7 +43,7 @@ public class IgniteFramework {
         }
 
         // create the scheduler
-        final Scheduler scheduler = new IgniteScheduler();
+        final Scheduler scheduler = new IgniteScheduler(ClusterResources.from(args[1]));
 
         // create the driver
         MesosSchedulerDriver driver;

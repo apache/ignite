@@ -160,6 +160,5 @@ public class IgniteSchedulerSelfTest extends TestCase {
             return null;
         }
 
-
     }
 }
