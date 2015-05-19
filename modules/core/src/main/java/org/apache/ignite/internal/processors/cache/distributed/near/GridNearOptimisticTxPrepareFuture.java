@@ -493,8 +493,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             tx,
             tx.optimistic() && tx.serializable() ? m.reads() : null,
             m.writes(),
-            tx.groupLockKey(),
-            tx.partitionLock(),
             m.near(),
             txMapping.transactionNodes(),
             m.last(),
@@ -548,9 +546,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             });
         }
         else {
-            assert !tx.groupLock() : "Got group lock transaction that is mapped on remote node [tx=" + tx +
-                ", nodeId=" + n.id() + ']';
-
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
             }
@@ -590,10 +585,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                 ", primary=" + U.toShortString(primary) + ", topVer=" + topVer + ']');
         }
 
-        if (tx.groupLock() && !primary.isLocal())
-            throw new IgniteCheckedException("Failed to prepare group lock transaction (local node is not primary for " +
-                " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
-
         // Must re-initialize cached entry while holding topology lock.
         if (cacheCtx.isNear())
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer));
@@ -603,10 +594,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
-            if (waitLock && entry.explicitVersion() == null) {
-                if (!tx.groupLock() || tx.groupLockKey().equals(entry.txKey()))
-                    lockKeys.add(entry.txKey());
-            }
+            if (waitLock && entry.explicitVersion() == null)
+                lockKeys.add(entry.txKey());
         }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {

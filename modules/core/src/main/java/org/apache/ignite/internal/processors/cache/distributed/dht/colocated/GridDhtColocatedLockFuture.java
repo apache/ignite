@@ -754,8 +754,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncCommit(),
-                                        inTx() ? tx.groupLockKey() : null,
-                                        inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? accessTtl : -1L,
@@ -1089,10 +1087,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         if (cctx.discovery().node(primary.id()) == null)
             // If primary node left the grid before lock acquisition, fail the whole future.
             throw newTopologyException(null, primary.id());
-
-        if (inTx() && tx.groupLock() && !primary.isLocal())
-            throw new IgniteCheckedException("Failed to start group lock transaction (local node is not primary for " +
-                " key) [key=" + key + ", primaryNodeId=" + primary.id() + ']');
 
         if (mapping == null || !primary.id().equals(mapping.node().id()))
             mapping = new GridNearLockMapping(primary, key);
