@@ -527,8 +527,9 @@ public class GridCacheUtils {
      * @param topOrder Maximum allowed node order.
      * @return Affinity nodes.
      */
-    public static Collection<ClusterNode> aliveRemoteCacheNodes(final GridCacheSharedContext ctx, AffinityTopologyVersion topOrder) {
-        return ctx.discovery().aliveRemoteNodesWithCaches(topOrder);
+    public static Collection<ClusterNode> aliveRemoteServerNodesWithCaches(final GridCacheSharedContext ctx,
+        AffinityTopologyVersion topOrder) {
+        return ctx.discovery().aliveRemoteServerNodesWithCaches(topOrder);
     }
 
     /**
@@ -607,26 +608,6 @@ public class GridCacheUtils {
      * Gets oldest alive node for specified topology version.
      *
      * @param cctx Cache context.
-     * @return Oldest node for the current topology version.
-     */
-    public static ClusterNode oldest(GridCacheContext cctx) {
-        return oldest(cctx, AffinityTopologyVersion.NONE);
-    }
-
-    /**
-     * Gets oldest alive node across nodes with at least one cache configured.
-     *
-     * @param ctx Cache context.
-     * @return Oldest node.
-     */
-    public static ClusterNode oldest(GridCacheSharedContext ctx) {
-        return oldest(ctx, AffinityTopologyVersion.NONE);
-    }
-
-    /**
-     * Gets oldest alive node for specified topology version.
-     *
-     * @param cctx Cache context.
      * @param topOrder Maximum allowed node order.
      * @return Oldest node for the given topology version.
      */
@@ -662,6 +643,23 @@ public class GridCacheUtils {
         assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
 
         return oldest;
+    }
+
+    /**
+     * Gets oldest alive server node with at least one cache configured for specified topology version.
+     *
+     * @param ctx Context.
+     * @param topVer Maximum allowed topology version.
+     * @return Oldest alive cache server node.
+     */
+    @Nullable public static ClusterNode oldestAliveCacheServerNode(GridCacheSharedContext ctx,
+        AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> nodes = ctx.discovery().aliveServerNodesWithCaches(topVer);
+
+        if (nodes.isEmpty())
+            return null;
+
+        return oldest(nodes);
     }
 
     /**
@@ -1802,16 +1800,22 @@ public class GridCacheUtils {
 
     /**
      * @param node Node.
-     * @param filter Node filter.
-     * @return {@code True} if node is not client node and pass given filter.
+     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
      */
-    public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
+    public static boolean clientNode(ClusterNode node) {
         Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
         assert clientModeAttr != null : node;
 
-        boolean clientMode = clientModeAttr != null && clientModeAttr;
+        return clientModeAttr != null && clientModeAttr;
+    }
 
-        return !clientMode && filter.apply(node);
+    /**
+     * @param node Node.
+     * @param filter Node filter.
+     * @return {@code True} if node is not client node and pass given filter.
+     */
+    public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
+        return !clientNode(node) && filter.apply(node);
     }
 }
