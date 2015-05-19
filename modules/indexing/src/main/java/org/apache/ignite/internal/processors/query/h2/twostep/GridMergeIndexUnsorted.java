@@ -60,7 +60,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
             Iterator<Value[]> iter = Collections.emptyIterator();
 
             @Override public boolean hasNext() {
-                while (!iter.hasNext()){
+                while (!iter.hasNext()) {
                     GridResultPage page;
 
                     try {

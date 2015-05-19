@@ -161,7 +161,7 @@ public class GridResultPage {
      * Request next page.
      */
     public void fetchNextPage() {
-        throw new UnsupportedOperationException();
+        throw new CacheException("Failed to fetch data from node: " + src);
     }
 
     /** {@inheritDoc} */

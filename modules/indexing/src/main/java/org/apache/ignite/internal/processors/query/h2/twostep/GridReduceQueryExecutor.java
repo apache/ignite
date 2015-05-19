@@ -145,7 +145,8 @@ public class GridReduceQueryExecutor {
                 for (QueryRun r : runs.values()) {
                     for (GridMergeTable tbl : r.tbls) {
                         if (tbl.getScanIndex(null).hasSource(nodeId)) {
-                            fail(r, nodeId, "Node left the topology.");
+                            // Will attempt to retry. If reduce query was started it will fail on next page fetching.
+                            retry(r, topologyVersion(), nodeId);
 
                             break;
                         }
@@ -201,15 +202,8 @@ public class GridReduceQueryExecutor {
      * @param msg Error message.
      */
     private void fail(QueryRun r, UUID nodeId, String msg) {
-        if (r != null) {
-            r.rmtErr = new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg);
-
-            while(r.latch.getCount() != 0)
-                r.latch.countDown();
-
-            for (GridMergeTable tbl : r.tbls)
-                tbl.getScanIndex(null).fail(nodeId);
-        }
+        if (r != null)
+            r.state(new CacheException("Failed to execute map query on the node: " + nodeId + ", " + msg), nodeId);
     }
 
     /**
@@ -234,8 +228,16 @@ public class GridReduceQueryExecutor {
         try {
             page = new GridResultPage(ctx, node.id(), msg, false) {
                 @Override public void fetchNextPage() {
-                    if (r.rmtErr != null)
-                        throw new CacheException("Next page fetch failed.", r.rmtErr);
+                    Object errState = r.state.get();
+
+                    if (errState != null) {
+                        CacheException e = new CacheException("Failed to fetch data from node: " + node.id());
+
+                        if (errState instanceof CacheException)
+                            e.addSuppressed((Throwable)errState);
+
+                        throw e;
+                    }
 
                     try {
                         GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, pageSize);
@@ -261,14 +263,26 @@ public class GridReduceQueryExecutor {
 
         idx.addPage(page);
 
-        if (msg.retry() != null) {
-            r.retry = msg.retry();
-
-            while (r.latch.getCount() != 0)
-                r.latch.countDown();
-        }
+        if (msg.retry() != null)
+            retry(r, msg.retry(), node.id());
         else if (msg.allRows() != -1) // Only the first page contains row count.
             r.latch.countDown();
+    }
+
+    /**
+     * @param r Query run.
+     * @param retryVer Retry version.
+     * @param nodeId Node ID.
+     */
+    private void retry(QueryRun r, AffinityTopologyVersion retryVer, UUID nodeId) {
+        r.state(retryVer, nodeId);
+    }
+
+    /**
+     * @return Current topology version.
+     */
+    private AffinityTopologyVersion topologyVersion() {
+        return ctx.discovery().topologyVersionEx();
     }
 
     /**
@@ -290,9 +304,12 @@ public class GridReduceQueryExecutor {
 
             r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
-            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer = topologyVersion();
 
             Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(space, topVer);
+
+            if (F.isEmpty(nodes))
+                throw new CacheException("No data nodes found for cache: " + space);
 
             if (cctx.isReplicated() || qry.explain()) {
                 assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
@@ -342,17 +359,37 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer,
-                    extraSpaces(space, qry.spaces())));
+                boolean ok = false;
 
-                U.await(r.latch);
+                try {
+                    send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer,
+                        extraSpaces(space, qry.spaces())));
 
-                if (r.rmtErr != null)
-                    throw new CacheException("Failed to run map query remotely.", r.rmtErr);
+                    ok = true;
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Failed to send query request to nodes: " + nodes);
+                }
+
+                AffinityTopologyVersion retry = null;
+
+                if (ok) { // Sent successfully.
+                    U.await(r.latch);
+
+                    Object state = r.state.get();
+
+                    if (state != null) {
+                        if (state instanceof CacheException)
+                            throw new CacheException("Failed to run map query remotely.", (CacheException)state);
+
+                        if (state instanceof AffinityTopologyVersion)
+                            retry = (AffinityTopologyVersion)state; // Remote nodes can ask us to retry.
+                    }
+                }
+                else  // Send failed -> retry.
+                    retry = topologyVersion();
 
                 ResultSet res = null;
-
-                AffinityTopologyVersion retry = r.retry;
 
                 if (retry == null) {
                     if (qry.explain())
@@ -364,8 +401,14 @@ public class GridReduceQueryExecutor {
                 }
 
                 for (GridMergeTable tbl : r.tbls) {
-                    if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
-                        send(nodes, new GridQueryCancelRequest(qryReqId));
+                    if (!tbl.getScanIndex(null).fetchedAll()) { // We have to explicitly cancel queries on remote nodes.
+                        try {
+                            send(nodes, new GridQueryCancelRequest(qryReqId));
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.warn(log, "Failed to send cancel request to nodes: " + nodes);
+                        }
+                    }
 
 //                dropTable(r.conn, tbl.getName()); TODO
                 }
@@ -697,11 +740,26 @@ public class GridReduceQueryExecutor {
         /** */
         private int pageSize;
 
-        /** */
-        private volatile CacheException rmtErr;
+        /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
+        private final AtomicReference<Object> state = new AtomicReference<>();
 
-        /** */
-        private volatile AffinityTopologyVersion retry;
+        /**
+         * @param o Fail state object.
+         * @param nodeId Node ID.
+         */
+        void state(Object o, UUID nodeId) {
+            assert o != null;
+            assert o instanceof CacheException || o instanceof AffinityTopologyVersion : o.getClass();
+
+            if (!state.compareAndSet(null, o))
+                return;
+
+            while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
+                latch.countDown();
+
+            for (GridMergeTable tbl : tbls) // Fail all merge indexes.
+                tbl.getScanIndex(null).fail(nodeId);
+        }
     }
 
     /**
