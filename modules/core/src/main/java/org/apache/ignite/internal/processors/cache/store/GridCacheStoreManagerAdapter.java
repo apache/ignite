@@ -69,13 +69,21 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     private boolean writeThrough;
 
     /** */
-    private CacheStoreSessionListener[] sesLsnrs;
+    private Collection<CacheStoreSessionListener> sesLsnrs;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void initialize(@Nullable CacheStore cfgStore, Map sesHolders) throws IgniteCheckedException {
         GridKernalContext ctx = igniteContext();
         CacheConfiguration cfg = cacheConfiguration();
+
+        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
+            U.quietAndWarn(log,
+                "Persistence store is configured, but both read-through and write-through are disabled. This " +
+                "configuration makes sense if the store implements loadCache method only. If this is the " +
+                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
+                "Persistence store is configured, but both read-through and write-through are disabled.");
+        }
 
         writeThrough = cfg.isWriteThrough();
 
@@ -118,14 +126,25 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      * @param factories Factories.
      * @return Listeners.
      */
-    private CacheStoreSessionListener[] createSessionListeners(Factory<CacheStoreSessionListener>[] factories) {
+    private Collection<CacheStoreSessionListener> createSessionListeners(Factory<CacheStoreSessionListener>[] factories)
+        throws IgniteCheckedException {
         if (factories == null)
             return null;
 
-        CacheStoreSessionListener[] lsnrs = new CacheStoreSessionListener[factories.length];
+        Collection<CacheStoreSessionListener> lsnrs = new ArrayList<>(factories.length);
 
-        for (int i = 0; i < factories.length; i++)
-            lsnrs[i] = factories[i].create();
+        for (Factory<CacheStoreSessionListener> factory : factories) {
+            CacheStoreSessionListener lsnr = factory.create();
+
+            if (lsnr != null) {
+                cctx.kernalContext().resource().injectGeneric(lsnr);
+
+                if (lsnr instanceof LifecycleAware)
+                    ((LifecycleAware)lsnr).start();
+
+                lsnrs.add(lsnr);
+            }
+        }
 
         return lsnrs;
     }
@@ -193,6 +212,21 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
             catch (Exception e) {
                 U.error(log(), "Failed to stop cache store.", e);
+            }
+        }
+
+        if (sesLsnrs != null) {
+            for (CacheStoreSessionListener lsnr : sesLsnrs) {
+                if (lsnr instanceof LifecycleAware)
+                    ((LifecycleAware)lsnr).stop();
+
+                try {
+                    cctx.kernalContext().resource().cleanupGeneric(lsnr);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to remove injected resources from store session listener (ignoring): " +
+                        lsnr, e);
+                }
             }
         }
     }
