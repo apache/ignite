@@ -679,7 +679,8 @@ public abstract class GridAbstractTest extends TestCase {
             if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpiAdapter) {
                 cfg.setLocalHost("127.0.0.1");
 
-                ((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).setJoinTimeout(5000);
+                if (((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
+                    ((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).setJoinTimeout(8000);
             }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
