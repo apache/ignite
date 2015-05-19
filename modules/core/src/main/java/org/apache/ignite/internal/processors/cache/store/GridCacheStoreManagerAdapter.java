@@ -637,8 +637,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAll(@Nullable IgniteInternalTx tx, Collection keys)
-        throws IgniteCheckedException {
+    @Override public boolean removeAll(@Nullable IgniteInternalTx tx, Collection keys) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
@@ -700,7 +699,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public void sessionEnd(IgniteInternalTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void sessionEnd(IgniteInternalTx tx, boolean commit, boolean last) throws IgniteCheckedException {
         assert store != null;
 
         sessionInit0(tx);
@@ -711,10 +710,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     lsnr.onSessionEnd(locSes, commit);
             }
 
-            store.sessionEnd(commit);
+            if (!sesHolder.get().storeEnded(store))
+                store.sessionEnd(commit);
         }
         finally {
-            if (sesHolder != null) {
+            if (last && sesHolder != null) {
                 sesHolder.set(null);
 
                 tx.removeMeta(SES_ATTR);
@@ -752,7 +752,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      */
     private void sessionInit0(@Nullable IgniteInternalTx tx) {
         assert sesHolder != null;
-        assert sesHolder.get() == null;
 
         SessionData ses;
 
@@ -794,7 +793,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                store.sessionEnd(!threwEx);
+                if (!sesHolder.get().storeEnded(store))
+                    store.sessionEnd(!threwEx);
             }
         }
         catch (Exception e) {
@@ -839,6 +839,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         /** */
         private boolean started;
+
+        /** */
+        private final Set<CacheStore> endedStores = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
 
         /**
          * @param tx Current transaction.
@@ -891,6 +894,14 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
          */
         private boolean started() {
             return started;
+        }
+
+        /**
+         * @param store Cache store.
+         * @return Whether session already ended on this store instance.
+         */
+        private boolean storeEnded(CacheStore store) {
+            return !endedStores.add(store);
         }
 
         /** {@inheritDoc} */

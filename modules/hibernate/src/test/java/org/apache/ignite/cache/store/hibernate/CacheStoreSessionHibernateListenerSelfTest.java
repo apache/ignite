@@ -23,7 +23,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.hibernate.*;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.service.*;
 
 import javax.cache.Cache;
 import javax.cache.configuration.*;
@@ -50,10 +49,9 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
                 CacheStoreSessionHibernateListener lsnr = new CacheStoreSessionHibernateListener();
 
                 Configuration cfg = new Configuration().
-                    setProperty("hibernate.dialect", "org.hibernate.dialect.H2Dialect").
-                    setProperty("hibernate.connection.datasource", "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1");
+                    setProperty("hibernate.connection.url", URL);
 
-                lsnr.setSessionFactory(cfg.buildSessionFactory(new ServiceRegistryBuilder().buildServiceRegistry()));
+                lsnr.setSessionFactory(cfg.buildSessionFactory());
 
                 return lsnr;
             }

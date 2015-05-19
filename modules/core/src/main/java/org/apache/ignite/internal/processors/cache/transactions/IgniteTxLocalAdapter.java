@@ -531,11 +531,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             // Batch-process puts if cache ID has changed.
-                            if (writeStore != null && writeStore != cacheCtx.store() && putMap != null && !putMap.isEmpty()) {
-                                writeStore.putAll(this, putMap);
+                            if (writeStore != null && writeStore != cacheCtx.store()) {
+                                if (putMap != null && !putMap.isEmpty()) {
+                                    writeStore.putAll(this, putMap);
 
-                                // Reset.
-                                putMap.clear();
+                                    // Reset.
+                                    putMap.clear();
+                                }
 
                                 writeStore = null;
                             }
@@ -574,11 +576,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 writeStore = null;
                             }
 
-                            if (writeStore != null && writeStore != cacheCtx.store() && rmvCol != null && !rmvCol.isEmpty()) {
-                                writeStore.removeAll(this, rmvCol);
+                            if (writeStore != null && writeStore != cacheCtx.store()) {
+                                if (rmvCol != null && !rmvCol.isEmpty()) {
+                                    writeStore.removeAll(this, rmvCol);
 
-                                // Reset.
-                                rmvCol.clear();
+                                    // Reset.
+                                    rmvCol.clear();
+                                }
 
                                 writeStore = null;
                             }
@@ -623,8 +627,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
 
                 // Commit while locks are held.
-                for (CacheStoreManager store : stores)
-                    store.sessionEnd(this, true);
+                sessionEnd(stores, true);
             }
             catch (IgniteCheckedException ex) {
                 commitError(ex);
@@ -648,6 +651,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     throw (Error)ex;
 
                 throw new IgniteCheckedException("Failed to commit transaction to database: " + this, ex);
+            }
+            finally {
+                if (isRollbackOnly())
+                    sessionEnd(stores, false);
             }
         }
     }
@@ -984,13 +991,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 cctx.tm().resetContext();
             }
         }
-        else {
+        else if (!internal()) {
             Collection<CacheStoreManager> stores = stores();
 
-            if (stores != null && !stores.isEmpty() && !internal()) {
+            if (stores != null && !stores.isEmpty()) {
                 try {
-                    for (CacheStoreManager store : stores)
-                        store.sessionEnd(this, true);
+                    sessionEnd(stores, true);
                 }
                 catch (IgniteCheckedException e) {
                     commitError(e);
@@ -1091,13 +1097,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 cctx.tm().rollbackTx(this);
 
-                Collection<CacheStoreManager> stores = stores();
+                if (!internal()) {
+                    Collection<CacheStoreManager> stores = stores();
 
-                if (stores != null && !stores.isEmpty() && (near() || F.first(stores).isWriteToStoreFromDht())) {
-                    if (!internal()) {
-                        for (CacheStoreManager store : stores)
-                            store.sessionEnd(this, false);
-                    }
+                    if (stores != null && !stores.isEmpty() && (near() || F.first(stores).isWriteToStoreFromDht()))
+                        sessionEnd(stores, false);
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {
@@ -1105,6 +1109,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 throw e;
             }
+        }
+    }
+
+    /**
+     * @param stores Store managers.
+     * @param commit Commit flag.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private void sessionEnd(Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
+        Iterator<CacheStoreManager> it = stores.iterator();
+
+        while (it.hasNext()) {
+            CacheStoreManager store = it.next();
+
+            store.sessionEnd(this, commit, !it.hasNext());
         }
     }
 

@@ -47,7 +47,7 @@ public class CacheStoreSessionJdbcListenerSelfTest extends CacheStoreSessionList
             @Override public CacheStoreSessionListener create() {
                 CacheStoreSessionJdbcListener lsnr = new CacheStoreSessionJdbcListener();
 
-                lsnr.setDataSource(JdbcConnectionPool.create("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1", "", ""));
+                lsnr.setDataSource(JdbcConnectionPool.create(URL, "", ""));
 
                 return lsnr;
             }
@@ -86,6 +86,43 @@ public class CacheStoreSessionJdbcListenerSelfTest extends CacheStoreSessionList
             writeCnt.incrementAndGet();
 
             checkConnection();
+
+            if (write.get()) {
+                Connection conn = connection();
+
+                try {
+                    String table;
+
+                    switch (ses.cacheName()) {
+                        case "cache1":
+                            table = "Table1";
+
+                            break;
+
+                        case "cache2":
+                            if (fail.get())
+                                throw new CacheWriterException("Expected failure.");
+
+                            table = "Table2";
+
+                            break;
+
+                        default:
+                            throw new CacheWriterException("Wring cache: " + ses.cacheName());
+                    }
+
+                    PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO " + table + " (key, value) VALUES (?, ?)");
+
+                    stmt.setInt(1, entry.getKey());
+                    stmt.setInt(2, entry.getValue());
+
+                    stmt.executeUpdate();
+                }
+                catch (SQLException e) {
+                    throw new CacheWriterException(e);
+                }
+            }
         }
 
         /** {@inheritDoc} */

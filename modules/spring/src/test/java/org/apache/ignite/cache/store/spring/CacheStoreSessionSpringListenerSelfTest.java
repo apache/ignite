@@ -37,7 +37,7 @@ import java.util.*;
  */
 public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionListenerAbstractSelfTest {
     /** */
-    private static final DataSource DATA_SRC = new DriverManagerDataSource("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1");
+    private static final DataSource DATA_SRC = new DriverManagerDataSource(URL);
 
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheStore<Integer, Integer>> storeFactory() {
@@ -106,6 +106,31 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
 
             checkTransaction();
             checkConnection();
+
+            if (write.get()) {
+                String table;
+
+                switch (ses.cacheName()) {
+                    case "cache1":
+                        table = "Table1";
+
+                        break;
+
+                    case "cache2":
+                        if (fail.get())
+                            throw new CacheWriterException("Expected failure.");
+
+                        table = "Table2";
+
+                        break;
+
+                    default:
+                        throw new CacheWriterException("Wring cache: " + ses.cacheName());
+                }
+
+                jdbc.update("INSERT INTO " + table + " (key, value) VALUES (?, ?)",
+                    entry.getKey(), entry.getValue());
+            }
         }
 
         /** {@inheritDoc} */
