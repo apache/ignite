@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -33,7 +34,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
+public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -49,12 +50,6 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("IfMayBeConditional")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
-
-        disc.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disc);
 
         CacheConfiguration ccfg1 = defaultCacheConfiguration();
 
@@ -76,7 +71,21 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(ccfg1, ccfg2);
         }
 
+        cfg.setDiscoverySpi(createDiscovery(cfg));
+
         return cfg;
+    }
+
+    /**
+     * @return Discovery SPI.
+     * @param cfg DiscoverySpi
+     */
+    protected DiscoverySpi createDiscovery(IgniteConfiguration cfg) {
+        TcpDiscoverySpi disc = new TcpDiscoverySpi();
+
+        disc.setIpFinder(IP_FINDER);
+
+        return disc;
     }
 
     /**
@@ -186,5 +195,26 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g0.context().discovery().hasNearCache(null, three));
         assertTrue(g0.context().discovery().hasNearCache(null, four));
         assertFalse(g0.context().discovery().hasNearCache(null, five));
+    }
+
+    /**
+     *
+     */
+    public static class RegularDiscovery extends GridDiscoveryManagerSelfTest {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    public static class ClientDiscovery extends GridDiscoveryManagerSelfTest {
+        /** {@inheritDoc}
+         * @param cfg*/
+        @Override protected DiscoverySpi createDiscovery(IgniteConfiguration cfg) {
+            if (Boolean.TRUE.equals(cfg.isClientMode()))
+                return createClientDiscovery(IP_FINDER);
+
+            return super.createDiscovery(cfg);
+        }
     }
 }

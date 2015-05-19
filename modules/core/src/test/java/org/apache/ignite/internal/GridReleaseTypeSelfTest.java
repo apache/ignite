@@ -27,7 +27,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Test grids starting with non compatible release types.
@@ -36,32 +35,36 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Counter. */
-    private static final AtomicInteger cnt = new AtomicInteger();
+    /** */
+    private String nodeVer;
 
     /** */
-    private String firstNodeVer;
-
-    /** */
-    private String secondNodeVer;
+    private boolean clientMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        final int idx = cnt.getAndIncrement();
+        TcpDiscoverySpiAdapter discoSpi;
 
-        // Override node attributes in discovery spi.
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-            @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-                super.setNodeAttributes(attrs, ver);
+        if (clientMode) {
+            discoSpi = new TcpClientDiscoverySpi() {
+                @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+                    super.setNodeAttributes(attrs, ver);
 
-                if (idx % 2 == 0)
-                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, firstNodeVer);
-                else
-                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, secondNodeVer);
-            }
-        };
+                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
+                }
+            };
+        }
+        else {
+            discoSpi = new TcpDiscoverySpi() {
+                @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+                    super.setNodeAttributes(attrs, ver);
+
+                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
+                }
+            };
+        }
 
         discoSpi.setIpFinder(IP_FINDER);
 
@@ -70,15 +73,27 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        clientMode = false;
+
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testOsEditionDoesNotSupportRollingUpdates() throws Exception {
-        firstNodeVer = "1.0.0";
-        secondNodeVer = "1.0.1";
+        nodeVer = "1.0.0";
+
+        startGrid(0);
 
         try {
-            startGrids(2);
+            nodeVer = "1.0.1";
+
+            startGrid(1);
+
+            fail("Exception has not been thrown.");
         }
         catch (IgniteCheckedException e) {
             StringWriter errors = new StringWriter();
@@ -87,17 +102,36 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
             String stackTrace = errors.toString();
 
-            assertTrue(
-                "Caught exception does not contain specified string.",
-                stackTrace.contains("Local node and remote node have different version numbers")
-            );
-
-            return;
+            if (!stackTrace.contains("Local node and remote node have different version numbers"))
+                throw e;
         }
-        finally {
-            stopAllGrids();
-        }
+    }
 
-        fail("Exception has not been thrown.");
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOsEditionDoesNotSupportRollingUpdatesClientMode() throws Exception {
+        nodeVer = "1.0.0";
+
+        startGrid(0);
+
+        try {
+            nodeVer = "1.0.1";
+            clientMode = true;
+
+            startGrid(1);
+
+            fail("Exception has not been thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            StringWriter errors = new StringWriter();
+
+            e.printStackTrace(new PrintWriter(errors));
+
+            String stackTrace = errors.toString();
+
+            if (!stackTrace.contains("Local node and remote node have different version numbers"))
+                throw e;
+        }
     }
 }

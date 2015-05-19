@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -28,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -50,21 +48,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
             cfg.setClientMode(true);
 
-            if (clientDiscovery()) {
-                TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
-
-                String firstSrvAddr = F.first(ipFinder.getRegisteredAddresses()).toString();
-
-                if (firstSrvAddr.startsWith("/"))
-                    firstSrvAddr = firstSrvAddr.substring(1);
-
-                clientFinder.setAddresses(Collections.singletonList(firstSrvAddr));
-
-                TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
-                discoverySpi.setIpFinder(clientFinder);
-
-                cfg.setDiscoverySpi(discoverySpi);
-            }
+            if (clientDiscovery())
+                cfg.setDiscoverySpi(createClientDiscovery(ipFinder));
         }
 
         cfg.setLocalHost("127.0.0.1");

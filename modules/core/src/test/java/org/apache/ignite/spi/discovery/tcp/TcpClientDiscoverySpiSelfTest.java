@@ -102,8 +102,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setLocalHost("127.0.0.1");
-
         if (gridName.startsWith("server")) {
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

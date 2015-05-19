@@ -86,7 +86,12 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         cCfg.setRebalanceMode(SYNC);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
+        TcpDiscoverySpiAdapter disc;
+
+        if (((gridName.charAt(gridName.length() - 1) - '0') & 1) == 0)
+            disc = new TcpDiscoverySpi();
+        else
+            disc = new TcpClientDiscoverySpi();
 
         disc.setIpFinder(IP_FINDER);
 
@@ -148,7 +153,12 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("BusyWait")
     private void awaitDiscovery(long nodesCnt) throws InterruptedException {
+        Thread.sleep(50);
+
         for (Ignite g : alive) {
+            if (g.configuration().getDiscoverySpi() instanceof TcpClientDiscoverySpi)
+                ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
+
             while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);
         }

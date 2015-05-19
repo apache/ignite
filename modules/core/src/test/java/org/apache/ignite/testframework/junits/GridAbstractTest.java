@@ -676,8 +676,12 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
-            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpiAdapter) {
                 cfg.setLocalHost("127.0.0.1");
+
+                if (((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
+                    ((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).setJoinTimeout(8000);
+            }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
         }

@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Base class for TCP discovery SPIs.
  */
-abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
+public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
@@ -150,7 +150,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(sockTimeout > 0, "sockTimeout > 0");
         assertParameter(ackTimeout > 0, "ackTimeout > 0");
-        assertParameter(joinTimeout >= 0, "joinTimeout >= 0");
     }
 
     /**
@@ -220,7 +219,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * Note that when running Ignite on Amazon EC2, socket timeout must be set to a value
      * significantly greater than the default (e.g. to {@code 30000}).
      * <p>
-     * If not specified, default is {@link #DFLT_SOCK_TIMEOUT}.
+     * If not specified, default is {@link TcpDiscoverySpi#DFLT_SOCK_TIMEOUT},
+     * {@link TcpClientDiscoverySpi#DFLT_SOCK_TIMEOUT}.
      *
      * @param sockTimeout Socket connection timeout.
      */
@@ -235,7 +235,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * If acknowledgement is not received within this timeout, sending is considered as failed
      * and SPI tries to repeat message sending.
      * <p>
-     * If not specified, default is {@link #DFLT_ACK_TIMEOUT}.
+     * If not specified, default is {@link TcpDiscoverySpi#DFLT_ACK_TIMEOUT},
+     * {@link TcpClientDiscoverySpi#DFLT_ACK_TIMEOUT}.
      *
      * @param ackTimeout Acknowledgement timeout.
      */
@@ -1107,7 +1108,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     }
 
     /**
-     *
+     * Allow to connect to addresses parallel.
      */
     protected class SocketMultiConnector implements AutoCloseable {
         /** */
