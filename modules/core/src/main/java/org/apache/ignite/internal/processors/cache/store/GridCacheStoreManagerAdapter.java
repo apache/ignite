@@ -295,8 +295,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isWriteBehind() {
+        return cctx.config().isWriteBehindEnabled();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isWriteToStoreFromDht() {
-        return cctx.config().isWriteBehindEnabled() || locStore;
+        return isWriteBehind() || locStore;
     }
 
     /** {@inheritDoc} */

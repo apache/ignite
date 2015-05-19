@@ -68,6 +68,11 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
     public boolean isWriteThrough();
 
     /**
+     * @return {@code True} is write-behind is enabled.
+     */
+    public boolean isWriteBehind();
+
+    /**
      * @return Whether DHT transaction can write to store from DHT.
      */
     public boolean isWriteToStoreFromDht();

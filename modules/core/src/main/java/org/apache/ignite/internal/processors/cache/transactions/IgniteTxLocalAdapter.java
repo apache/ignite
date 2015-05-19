@@ -488,6 +488,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (stores == null || stores.isEmpty())
             return;
 
+        assert isWriteToStoreFromDhtValid(stores) : "isWriteToStoreFromDht can't be different within one transaction";
+
         boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
 
         if (near() || isWriteToStoreFromDht) {
@@ -657,6 +659,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     sessionEnd(stores, false);
             }
         }
+    }
+
+    /**
+     * @param stores Store managers.
+     * @return If {@code isWriteToStoreFromDht} value same for all stores.
+     */
+    private boolean isWriteToStoreFromDhtValid(Collection<CacheStoreManager> stores) {
+        boolean exp = F.first(stores).isWriteToStoreFromDht();
+
+        for (CacheStoreManager store : stores) {
+            if (store.isWriteToStoreFromDht() != exp)
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -3017,7 +3034,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
-            if (!cctx.txCompatible(this, activeCacheIds, cacheCtx)) {
+            String err = cctx.verifyTxCompatibility(this, activeCacheIds, cacheCtx);
+
+            if (err != null) {
                 StringBuilder cacheNames = new StringBuilder();
 
                 int idx = 0;
@@ -3029,9 +3048,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         cacheNames.append(", ");
                 }
 
-                throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
-                    "(cache configurations are not compatible) [" +
-                    "activeCaches=[" + cacheNames + "]" +
+                throw new IgniteCheckedException("Failed to enlist new cache to existing transaction (" +
+                    err +
+                    ") [activeCaches=[" + cacheNames + "]" +
                     ", cacheName=" + cacheCtx.name() +
                     ", cacheSystem=" + cacheCtx.systemTx() +
                     ", txSystem=" + system() + ']');
