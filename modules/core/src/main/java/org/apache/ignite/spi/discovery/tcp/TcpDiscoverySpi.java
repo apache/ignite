@@ -2654,9 +2654,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
 
-            else if (msg instanceof TcpDiscoveryPingResponse)
-                processPingResponse((TcpDiscoveryPingResponse)msg);
-
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
@@ -4516,16 +4513,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @param msg Message.
          */
-        private void processPingResponse(final TcpDiscoveryPingResponse msg) {
-            ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
-
-            if (clientWorker != null)
-                clientWorker.pingResult(true);
-        }
-
-        /**
-         * @param msg Message.
-         */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
             if (isLocalNodeCoordinator()) {
                 boolean sndNext;
@@ -5062,6 +5049,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (ignored && log.isDebugEnabled())
                                 log.debug("Loopback problem message has been ignored [msg=" + msg +
                                     ", spiState=" + state + ']');
+
+                            continue;
+                        }
+                        if (msg instanceof TcpDiscoveryPingResponse) {
+                            assert msg.client() : msg;
+
+                            ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                            if (clientWorker != null)
+                                clientWorker.pingResult(true);
 
                             continue;
                         }

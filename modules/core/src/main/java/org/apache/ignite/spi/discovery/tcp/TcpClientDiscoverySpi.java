@@ -1499,7 +1499,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * Router want to ping this client.
          */
         private void processPingRequest() {
-            sockWriter.sendMessage(new TcpDiscoveryPingResponse(getLocalNodeId()));
+            TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(getLocalNodeId());
+
+            res.client(true);
+
+            sockWriter.sendMessage(res);
         }
 
         /**
