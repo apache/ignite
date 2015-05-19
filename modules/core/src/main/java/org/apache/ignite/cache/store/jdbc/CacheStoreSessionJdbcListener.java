@@ -36,10 +36,6 @@ public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener 
     /** Data source. */
     private DataSource dataSrc;
 
-    /** Store session. */
-    @CacheStoreSessionResource
-    private CacheStoreSession ses;
-
     /**
      * Sets data source.
      *

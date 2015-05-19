@@ -35,10 +35,6 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
     /** Hibernate session factory. */
     private SessionFactory sesFactory;
 
-    /** Store session. */
-    @CacheStoreSessionResource
-    private CacheStoreSession ses;
-
     /**
      * Sets Hibernate session factory.
      *
