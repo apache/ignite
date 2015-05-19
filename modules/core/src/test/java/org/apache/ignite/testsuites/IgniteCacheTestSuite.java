@@ -153,6 +153,8 @@ public class IgniteCacheTestSuite extends TestSuite {
 //        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
 //        suite.addTestSuite(GridCacheStopSelfTest.class); TODO IGNITE-257
 
+        suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
+
         return suite;
     }
 }
