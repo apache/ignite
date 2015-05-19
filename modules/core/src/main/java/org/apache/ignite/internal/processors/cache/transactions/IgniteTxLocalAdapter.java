@@ -719,7 +719,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     // in order to keep near entries on backup nodes until
                                     // backup remote transaction completes.
                                     if (cacheCtx.isNear()) {
-                                        ((GridNearCacheEntry)cached).recordDhtVersion(txEntry.dhtVersion());
+                                        if (txEntry.op() == CREATE || txEntry.op() == UPDATE ||
+                                            txEntry.op() == DELETE || txEntry.op() == TRANSFORM)
+                                            ((GridNearCacheEntry)cached).recordDhtVersion(txEntry.dhtVersion());
 
                                         if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
                                             txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
