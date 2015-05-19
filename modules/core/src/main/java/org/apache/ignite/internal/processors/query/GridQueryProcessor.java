@@ -24,7 +24,6 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -605,7 +603,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw new CacheException("Failed to find SQL table for type: " + type);
 
             final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params), typeDesc,
-                idx.backupFilter());
+                idx.backupFilter(null));
 
             if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -652,13 +650,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Message factory for {@link GridIoManager}.
-     */
-    public MessageFactory messageFactory() {
-        return idx == null ? null : idx.messageFactory();
-    }
-
-    /**
      * Closeable iterator.
      */
     private static interface ClIter<X> extends AutoCloseable, Iterator<X> {
@@ -679,7 +670,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String sql = qry.getSql();
             Object[] args = qry.getArgs();
 
-            GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
+            GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter(null));
 
             if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(

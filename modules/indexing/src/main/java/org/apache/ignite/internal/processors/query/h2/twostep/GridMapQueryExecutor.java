@@ -303,7 +303,7 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(req.requestId(), qr) != null)
                 throw new IllegalStateException();
 
-            h2.setFilters(h2.backupFilter());
+            h2.setFilters(h2.backupFilter(topVer));
 
             // TODO Prepare snapshots for all the needed tables before the run.
 
