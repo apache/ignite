@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 /**
@@ -25,8 +26,10 @@ import org.apache.ignite.lang.*;
 public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
     /**
      * Initializes the filter.
+     *
+     * @param ctx Kernal context.
      */
-    public void initialize();
+    public void initialize(GridKernalContext ctx);
 
     /**
      * Closes the filter.
