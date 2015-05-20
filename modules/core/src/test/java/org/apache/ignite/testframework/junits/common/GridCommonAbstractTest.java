@@ -34,16 +34,12 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
 import javax.net.ssl.*;
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -850,33 +846,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         it.next(); // Skip primary.
 
         return grid(it.next());
-    }
-
-    /**
-     * Create TcpClientDiscoverySpi configured to connect to last started server.
-     *
-     * @param srvIpFinder IpFinder that was provided to servers. Used to obtain addreses to connect.
-     */
-    protected static TcpClientDiscoverySpi createClientDiscovery(TcpDiscoveryIpFinder srvIpFinder) {
-        TcpDiscoveryVmIpFinder clientFinder = new TcpDiscoveryVmIpFinder();
-
-        Collection<InetSocketAddress> srvAddrs = srvIpFinder.getRegisteredAddresses();
-
-        if (srvAddrs.isEmpty())
-            throw new IgniteException("Failed to create client IpFinder, no server addresses registered.");
-
-        String firstSrvAddr = F.first(srvAddrs).toString();
-
-        if (firstSrvAddr.startsWith("/"))
-            firstSrvAddr = firstSrvAddr.substring(1);
-
-        clientFinder.setAddresses(Collections.singletonList(firstSrvAddr));
-
-        TcpClientDiscoverySpi res = new TcpClientDiscoverySpi();
-
-        res.setIpFinder(clientFinder);
-
-        return res;
     }
 
     /**

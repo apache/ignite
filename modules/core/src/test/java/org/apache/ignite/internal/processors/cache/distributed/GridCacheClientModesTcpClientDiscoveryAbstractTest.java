@@ -37,10 +37,13 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (cfg.isClientMode() != null && cfg.isClientMode())
-            cfg.setDiscoverySpi(createClientDiscovery(ipFinder));
+        if (cfg.isClientMode() != null && cfg.isClientMode()) {
+            TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
 
-        cfg.setLocalHost("127.0.0.1");
+            discoverySpi.setIpFinder(ipFinder);
+
+            cfg.setDiscoverySpi(discoverySpi);
+        }
 
         return cfg;
     }

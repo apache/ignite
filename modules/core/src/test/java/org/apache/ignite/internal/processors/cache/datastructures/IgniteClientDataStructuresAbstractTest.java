@@ -43,16 +43,14 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
             cfg.setClientMode(true);
 
             if (clientDiscovery())
-                cfg.setDiscoverySpi(createClientDiscovery(ipFinder));
+                cfg.setDiscoverySpi(new TcpClientDiscoverySpi());
         }
 
-        cfg.setLocalHost("127.0.0.1");
+        ((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
