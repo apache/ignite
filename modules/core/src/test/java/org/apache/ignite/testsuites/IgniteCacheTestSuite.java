@@ -148,7 +148,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTxPartitionedLocalStoreSelfTest.class);
         suite.addTestSuite(IgniteCacheSystemTransactionsSelfTest.class);
 
-        suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
+        // TODO IGNITE-23 temporary disabled.
+        // suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
 
         // Heuristic exception handling. TODO IGNITE-257
 //        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
