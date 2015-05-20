@@ -301,7 +301,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         try {
             cctx.kernalContext().continuous().stopRoutine(routineId).get();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | IgniteException e) {
             if (log.isDebugEnabled())
                 log.debug("Failed to stop internal continuous query: " + e.getMessage());
         }
