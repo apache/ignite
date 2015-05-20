@@ -1019,17 +1019,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * This method should be overridden by subclasses to change configuration parameters.
-     *
-     * @return Grid configuration used for starting of grid.
-     * @param rsrcs Resources.
-     * @throws Exception If failed.
-     */
-    protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
-        return getConfiguration(getTestGridName(), rsrcs);
-    }
-
-    /**
      * @return Generated unique test grid name.
      */
     public String getTestGridName() {
