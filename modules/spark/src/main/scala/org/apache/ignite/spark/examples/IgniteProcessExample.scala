@@ -28,9 +28,9 @@ object IgniteProcessExample {
         val partitioned = new IgniteContext[Object, String](sc, ExampleConfiguration.configuration _, "partitioned")
 
         // Search for lines containing "Ignite".
-        val scan = partitioned.scan((k, v) => v.contains("Ignite"))
+        val scanRdd = partitioned.scan((k, v) => v.contains("Ignite"))
 
-        val processed = scan.filter(line => {
+        val processedRdd = scanRdd.filter(line => {
             println("Analyzing line: " + line)
 
             true
@@ -39,6 +39,6 @@ object IgniteProcessExample {
         // Create a new cache for results.
         val results = new IgniteContext[Object, String](sc, ExampleConfiguration.configuration _, "results")
 
-        results.saveToIgnite(processed)
+        results.saveToIgnite(processedRdd)
     }
 }

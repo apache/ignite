@@ -792,6 +792,29 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGetOrCreateMultiNodeTemplate() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            info(">>> Iteration " + i);
+
+            final AtomicInteger idx = new AtomicInteger();
+
+            GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int idx0 = idx.getAndIncrement();
+
+                    ignite(idx0 % nodeCount()).getOrCreateCache(DYNAMIC_CACHE_NAME);
+
+                    return null;
+                }
+            }, nodeCount() * 4, "runner");
+
+            ignite(0).destroyCache(DYNAMIC_CACHE_NAME);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetOrCreateNearOnlyMultiNode() throws Exception {
         checkGetOrCreateNear(true);
     }
