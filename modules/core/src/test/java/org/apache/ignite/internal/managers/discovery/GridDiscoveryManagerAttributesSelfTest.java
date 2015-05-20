@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -38,7 +37,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static DeploymentMode mode = SHARED;
+    private static DeploymentMode mode;
 
     /** */
     private static boolean p2pEnabled;
@@ -53,9 +52,21 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
-        cfg.setDiscoverySpi(createDiscovery(cfg));
+
+        TcpDiscoverySpiAdapter discoverySpi = createDiscovery(cfg);
+
+        discoverySpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoverySpi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        mode = SHARED;
+
+        p2pEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -67,12 +78,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @return Discovery SPI.
      * @param cfg DiscoverySpi
      */
-    protected DiscoverySpi createDiscovery(IgniteConfiguration cfg) {
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
-
-        disc.setIpFinder(IP_FINDER);
-
-        return disc;
+    protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
+        return new TcpDiscoverySpi();
     }
 
     /**
@@ -180,9 +187,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     public static class ClientDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc}
          * @param cfg*/
-        @Override protected DiscoverySpi createDiscovery(IgniteConfiguration cfg) {
+        @Override protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
             if (Boolean.TRUE.equals(cfg.isClientMode()))
-                return createClientDiscovery(IP_FINDER);
+                return new TcpClientDiscoverySpi();
 
             return super.createDiscovery(cfg);
         }
