@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 /**
  * Checks behavior on exception while unmarshalling key.
  */
-public class IgniteCacheP2pUnmarshallingErrorTestSuit extends TestSuite {
+public class IgniteCacheP2pUnmarshallingErrorTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.
