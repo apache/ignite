@@ -631,14 +631,9 @@ public class GridCacheUtils {
      * @return Oldest node for the given topology version.
      */
     public static ClusterNode oldest(GridCacheContext cctx, AffinityTopologyVersion topOrder) {
-        Collection<ClusterNode> aliveCacheNodes = aliveNodes(cctx, topOrder);
-
-        if (aliveCacheNodes.isEmpty())
-            return cctx.localNode();
-
         ClusterNode oldest = null;
 
-        for (ClusterNode n : aliveCacheNodes)
+        for (ClusterNode n : aliveNodes(cctx, topOrder))
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
 
@@ -656,20 +651,30 @@ public class GridCacheUtils {
      * @return Oldest node for the given topology version.
      */
     public static ClusterNode oldest(GridCacheSharedContext cctx, AffinityTopologyVersion topOrder) {
-        Collection<ClusterNode> aliveCacheNodes = aliveCacheNodes(cctx, topOrder);
+        ClusterNode oldest = oldest(aliveCacheNodes(cctx, topOrder));
 
-        if (aliveCacheNodes.isEmpty())
-            return cctx.localNode();
-
-        ClusterNode oldest = null;
-
-        for (ClusterNode n : aliveCacheNodes) {
+        for (ClusterNode n : aliveCacheNodes(cctx, topOrder)) {
             if (oldest == null || n.order() < oldest.order())
                 oldest = n;
         }
 
         assert oldest != null : "Failed to find oldest node with caches: " + topOrder;
         assert oldest.order() <= topOrder.topologyVersion() || AffinityTopologyVersion.NONE.equals(topOrder);
+
+        return oldest;
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @return Oldest node for the given topology version.
+     */
+    @Nullable public static ClusterNode oldest(Collection<ClusterNode> nodes) {
+        ClusterNode oldest = null;
+
+        for (ClusterNode n : nodes) {
+            if (oldest == null || n.order() < oldest.order())
+                oldest = n;
+        }
 
         return oldest;
     }
@@ -1461,13 +1466,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Cache ID for utility cache.
-     */
-    public static int utilityCacheId() {
-        return cacheId(UTILITY_CACHE_NAME);
-    }
-
-    /**
+     * @param cacheName Cache name.
      * @return Cache ID.
      */
     public static int cacheId(String cacheName) {
@@ -1698,7 +1697,7 @@ public class GridCacheUtils {
     /**
      * @param aff Affinity.
      * @param n Node.
-     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     * @return Predicate that evaluates to {@code true} if entry is primary for node.
      */
     public static CacheEntryPredicate cachePrimary(
         final Affinity aff,
@@ -1799,5 +1798,20 @@ public class GridCacheUtils {
         }
 
         return res;
+    }
+
+    /**
+     * @param node Node.
+     * @param filter Node filter.
+     * @return {@code True} if node is not client node and pass given filter.
+     */
+    public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
+        Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+        assert clientModeAttr != null : node;
+
+        boolean clientMode = clientModeAttr != null && clientModeAttr;
+
+        return !clientMode && filter.apply(node);
     }
 }

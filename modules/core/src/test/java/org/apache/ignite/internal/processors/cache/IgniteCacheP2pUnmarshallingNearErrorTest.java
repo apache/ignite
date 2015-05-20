@@ -33,10 +33,12 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getCacheConfiguration()[0].setEvictMaxOverflowRatio(0);
-        cfg.getCacheConfiguration()[0].setEvictSynchronized(true);
-        cfg.getCacheConfiguration()[0].setEvictSynchronizedKeyBufferSize(1);
-        cfg.getCacheConfiguration()[0].setEvictionPolicy(new FifoEvictionPolicy(1));
+        if (cfg.isClientMode() == null || !cfg.isClientMode()) {
+            cfg.getCacheConfiguration()[0].setEvictMaxOverflowRatio(0);
+            cfg.getCacheConfiguration()[0].setEvictSynchronized(true);
+            cfg.getCacheConfiguration()[0].setEvictSynchronizedKeyBufferSize(1);
+            cfg.getCacheConfiguration()[0].setEvictionPolicy(new FifoEvictionPolicy(1));
+        }
 
         return cfg;
     }
@@ -51,6 +53,7 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
 
         //Eviction request unmarshalling failed but ioManager does not hangs up.
 
-        Thread.sleep(1000); //todo: wait for eviction complete
+        // Wait for eviction complete.
+        Thread.sleep(1000);
     }
 }

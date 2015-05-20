@@ -45,17 +45,11 @@ import java.util.concurrent.atomic.*;
 /**
  * Base class for TCP discovery SPIs.
  */
-abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
+public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default port to listen (value is <tt>47500</tt>). */
     public static final int DFLT_PORT = 47500;
 
-    /** Default socket operations timeout in milliseconds (value is <tt>200ms</tt>). */
-    public static final long DFLT_SOCK_TIMEOUT = 200;
-
-    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>5,000ms</tt>). */
-    public static final long DFLT_ACK_TIMEOUT = 5000;
-
-    /** Default network timeout in milliseconds (value is <tt>5,000ms</tt>). */
+    /** Default network timeout in milliseconds (value is <tt>5000ms</tt>). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
 
     /** Default timeout for joining topology (value is <tt>0</tt>). */
@@ -86,10 +80,10 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected TcpDiscoveryIpFinder ipFinder;
 
     /** Socket operations timeout. */
-    protected long sockTimeout = DFLT_SOCK_TIMEOUT;
+    protected long sockTimeout; // Must be initialized in the constructor of child class.
 
     /** Message acknowledgement timeout. */
-    protected long ackTimeout = DFLT_ACK_TIMEOUT;
+    protected long ackTimeout; // Must be initialized in the constructor of child class.
 
     /** Network timeout. */
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
@@ -146,6 +140,17 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Logger. */
     @LoggerResource
     protected IgniteLogger log;
+
+    /**
+     * Check parameters set to this SPI.
+     */
+    protected void checkParameters() {
+        assertParameter(ipFinder != null, "ipFinder != null");
+        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        assertParameter(netTimeout > 0, "networkTimeout > 0");
+        assertParameter(sockTimeout > 0, "sockTimeout > 0");
+        assertParameter(ackTimeout > 0, "ackTimeout > 0");
+    }
 
     /**
      * Inject resources
@@ -214,7 +219,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * Note that when running Ignite on Amazon EC2, socket timeout must be set to a value
      * significantly greater than the default (e.g. to {@code 30000}).
      * <p>
-     * If not specified, default is {@link #DFLT_SOCK_TIMEOUT}.
+     * If not specified, default is {@link TcpDiscoverySpi#DFLT_SOCK_TIMEOUT},
+     * {@link TcpClientDiscoverySpi#DFLT_SOCK_TIMEOUT}.
      *
      * @param sockTimeout Socket connection timeout.
      */
@@ -229,7 +235,8 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * If acknowledgement is not received within this timeout, sending is considered as failed
      * and SPI tries to repeat message sending.
      * <p>
-     * If not specified, default is {@link #DFLT_ACK_TIMEOUT}.
+     * If not specified, default is {@link TcpDiscoverySpi#DFLT_ACK_TIMEOUT},
+     * {@link TcpClientDiscoverySpi#DFLT_ACK_TIMEOUT}.
      *
      * @param ackTimeout Acknowledgement timeout.
      */
@@ -782,6 +789,33 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     }
 
     /**
+     * @param nodeId Node ID.
+     * @return Marshalled exchange data.
+     */
+    protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
+        Map<Integer, Serializable> data = exchange.collect(nodeId);
+
+        if (data == null)
+            return null;
+
+        Map<Integer, byte[]> data0 = U.newHashMap(data.size());
+
+        for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
+            try {
+                byte[] bytes = marsh.marshal(entry.getValue());
+
+                data0.put(entry.getKey(), bytes);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to marshal discovery data " +
+                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+            }
+        }
+
+        return data0;
+    }
+
+    /**
      * @param joiningNodeID Joining node ID.
      * @param nodeId Remote node ID for which data is provided.
      * @param data Collection of marshalled discovery data objects from different components.
@@ -1045,9 +1079,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
-            assert msg != null;
-
-            if (msg instanceof TcpDiscoveryHeartbeatMessage)
+            if (msg.highPriority())
                 queue.addFirst(msg);
             else
                 queue.add(msg);
@@ -1076,7 +1108,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     }
 
     /**
-     *
+     * Allow to connect to addresses parallel.
      */
     protected class SocketMultiConnector implements AutoCloseable {
         /** */

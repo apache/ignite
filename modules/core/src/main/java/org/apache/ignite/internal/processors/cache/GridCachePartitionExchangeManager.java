@@ -150,8 +150,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 else {
                     DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)e;
 
-                    if (customEvt.data() instanceof DynamicCacheChangeBatch) {
-                        DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)customEvt.data();
+                    if (customEvt.customMessage() instanceof DynamicCacheChangeBatch) {
+                        DynamicCacheChangeBatch batch = (DynamicCacheChangeBatch)customEvt.customMessage();
 
                         Collection<DynamicCacheChangeRequest> valid = new ArrayList<>(batch.requests().size());
 

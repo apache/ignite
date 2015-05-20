@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.security.*;
@@ -37,11 +37,11 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -171,6 +171,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default socket operations timeout in milliseconds (value is <tt>200ms</tt>). */
+    public static final long DFLT_SOCK_TIMEOUT = 200;
+
+    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>200ms</tt>). */
+    public static final long DFLT_ACK_TIMEOUT = 200;
+
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -296,6 +302,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** */
     private final CopyOnWriteArrayList<IgniteInClosure<Socket>> incomeConnLsnrs =
         new CopyOnWriteArrayList<>();
+
+    /**
+     * Default constructor.
+     */
+    public TcpDiscoverySpi() {
+        ackTimeout = DFLT_ACK_TIMEOUT;
+        sockTimeout = DFLT_SOCK_TIMEOUT;
+    }
 
     /** {@inheritDoc} */
     @IgniteInstanceResource
@@ -794,17 +808,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private void onSpiStart() throws IgniteSpiException {
         startStopwatch();
 
-        assertParameter(ipFinder != null, "ipFinder != null");
+        checkParameters();
+
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
         assertParameter(locPortRange >= 0, "localPortRange >= 0");
         assertParameter(locPort + locPortRange <= 0xffff, "locPort + locPortRange <= 0xffff");
-        assertParameter(netTimeout > 0, "networkTimeout > 0");
-        assertParameter(sockTimeout > 0, "sockTimeout > 0");
-        assertParameter(ackTimeout > 0, "ackTimeout > 0");
         assertParameter(maxAckTimeout > ackTimeout, "maxAckTimeout > ackTimeout");
         assertParameter(reconCnt > 0, "reconnectCnt > 0");
-        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
         assertParameter(maxMissedHbs > 0, "maxMissedHeartbeats > 0");
         assertParameter(maxMissedClientHbs > 0, "maxMissedClientHeartbeats > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
@@ -1253,7 +1264,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(Serializable evt) {
+    @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
             msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(evt)));
         }
@@ -1771,7 +1782,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<ClusterNode> top = F.<TcpDiscoveryNode, ClusterNode>upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -2235,37 +2246,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @param nodeId Node ID.
-     * @return Marshalled exchange data.
-     * @throws IgniteSpiException If failed.
-     */
-    private Map<Integer, byte[]> collectExchangeData(UUID nodeId) throws IgniteSpiException {
-        Map<Integer, Serializable> data = exchange.collect(nodeId);
-
-        Map<Integer, byte[]> data0 = null;
-
-        if (data != null) {
-            data0 = U.newHashMap(data.size());
-
-            for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
-                try {
-                    byte[] bytes = marsh.marshal(entry.getValue());
-
-                    data0.put(entry.getKey(), bytes);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to marshal discovery data " +
-                        "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
-
-                    throw new IgniteSpiException("Failed to marshal discovery data.", e);
-                }
-            }
-        }
-
-        return data0;
-    }
-
-    /**
      * @param msg Message.
      * @param nodeId Node ID.
      */
@@ -2656,21 +2636,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryHeartbeatMessage) {
-                if (msg.client()) {
-                    ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+            else if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
+                processClientHeartbeatMessage((TcpDiscoveryClientHeartbeatMessage)msg);
 
-                    if (wrk != null) {
-                        msg.verify(getLocalNodeId());
+            else if (msg instanceof TcpDiscoveryHeartbeatMessage)
+                processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
 
-                        wrk.addMessage(msg);
-                    }
-                    else if (log.isDebugEnabled())
-                        log.debug("Received heartbeat message from unknown client node: " + msg);
-                }
-                else
-                    processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
-            }
             else if (msg instanceof TcpDiscoveryStatusCheckMessage)
                 processStatusCheckMessage((TcpDiscoveryStatusCheckMessage)msg);
 
@@ -2682,9 +2653,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             else if (msg instanceof TcpDiscoveryClientPingRequest)
                 processClientPingRequest((TcpDiscoveryClientPingRequest)msg);
-
-            else if (msg instanceof TcpDiscoveryPingResponse)
-                processPingResponse((TcpDiscoveryPingResponse)msg);
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
@@ -3577,7 +3545,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (msg.verified()) {
                     stats.onRingMessageReceived(msg);
 
-                    processNodeAddFinishedMessage(new TcpDiscoveryNodeAddFinishedMessage(locNodeId, node.id()));
+                    TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
+                        node.id());
+
+                    if (node.isClient()) {
+                        addFinishMsg.clientDiscoData(msg.oldNodesDiscoveryData());
+
+                        addFinishMsg.clientNodeAttributes(node.attributes());
+                    }
+
+                    processNodeAddFinishedMessage(addFinishMsg);
 
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id()));
 
@@ -3986,18 +3963,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 long topVer;
 
                 if (locNodeCoord) {
-                    if (!msg.client() && ipFinder.isShared()) {
-                        try {
-                            ipFinder.unregisterAddresses(leftNode.socketAddresses());
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to unregister left node address: " + leftNode);
-
-                            onException("Failed to unregister left node address: " + leftNode, e);
-                        }
-                    }
-
                     topVer = ring.incrementTopologyVersion();
 
                     msg.topologyVersion(topVer);
@@ -4165,20 +4130,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 long topVer;
 
                 if (locNodeCoord) {
-                    if (!node.isClient() && ipFinder.isShared()) {
-                        try {
-                            ipFinder.unregisterAddresses(node.socketAddresses());
-                        }
-                        catch (IgniteSpiException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to unregister failed node address [node=" + node +
-                                    ", err=" + e.getMessage() + ']');
-
-                            onException("Failed to unregister failed node address [node=" + node +
-                                ", err=" + e.getMessage() + ']', e);
-                        }
-                    }
-
                     topVer = ring.incrementTopologyVersion();
 
                     msg.topologyVersion(topVer);
@@ -4350,6 +4301,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private void processHeartbeatMessage(TcpDiscoveryHeartbeatMessage msg) {
             assert msg != null;
 
+            assert !msg.client();
+
             UUID locNodeId = getLocalNodeId();
 
             if (ring.node(msg.creatorNodeId()) == null) {
@@ -4452,6 +4405,22 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         /**
+         * Processes client heartbeat message.
+         *
+         * @param msg Heartbeat message.
+         */
+        private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
+            assert msg.client();
+
+            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+
+            if (wrk != null)
+                wrk.metrics(msg.metrics());
+            else if (log.isDebugEnabled())
+                log.debug("Received heartbeat message from unknown client node: " + msg);
+        }
+
+        /**
          * @param nodeId Node ID.
          * @param metrics Metrics.
          * @param cacheMetrics Cache metrics.
@@ -4544,50 +4513,74 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @param msg Message.
          */
-        private void processPingResponse(final TcpDiscoveryPingResponse msg) {
-            ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
+        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
+            if (isLocalNodeCoordinator()) {
+                boolean sndNext;
 
-            if (clientWorker != null)
-                clientWorker.pingResult(true);
+                if (!msg.verified()) {
+                    msg.verify(getLocalNodeId());
+                    msg.topologyVersion(ring.topologyVersion());
+
+                    notifyDiscoveryListener(msg);
+
+                    sndNext = true;
+                }
+                else
+                    sndNext = false;
+
+                if (sndNext && ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+                else {
+                    stats.onRingMessageReceived(msg);
+
+                    try {
+                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+
+                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
+
+                        if (nextMsg != null)
+                            addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                    }
+
+                    addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
+                }
+            }
+            else {
+                if (msg.verified())
+                    notifyDiscoveryListener(msg);
+
+                if (ring.hasRemoteNodes())
+                    sendMessageAcrossRing(msg);
+            }
         }
 
         /**
-         * @param msg Message.
+         * @param msg Custom message.
          */
-        private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
-            if (isLocalNodeCoordinator()) {
-                if (msg.verified()) {
-                    stats.onRingMessageReceived(msg);
+        private void notifyDiscoveryListener(TcpDiscoveryCustomEventMessage msg) {
+            DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
 
-                    addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
+            TcpDiscoverySpiState spiState = spiStateCopy();
 
-                    return;
-                }
+            Map<Long, Collection<ClusterNode>> hist;
 
-                msg.verify(getLocalNodeId());
-                msg.topologyVersion(ring.topologyVersion());
+            synchronized (mux) {
+                hist = new TreeMap<>(topHist);
             }
 
-            if (msg.verified()) {
-                DiscoverySpiListener lsnr = TcpDiscoverySpi.this.lsnr;
+            Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
-                TcpDiscoverySpiState spiState = spiStateCopy();
+            if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
+                assert msg.messageBytes() != null;
 
-                Map<Long, Collection<ClusterNode>> hist;
+                TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
-                synchronized (mux) {
-                    hist = new TreeMap<>(topHist);
-                }
-
-                Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
-
-                if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                    assert msg.messageBytes() != null;
-
-                    TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
-
+                if (node != null) {
                     try {
-                        Serializable msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -4595,15 +4588,14 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             snapshot,
                             hist,
                             msgObj);
+
+                        msg.messageBytes(marsh.marshal(msgObj));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
                 }
             }
-
-            if (ring.hasRemoteNodes())
-                sendMessageAcrossRing(msg);
         }
     }
 
@@ -4903,24 +4895,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     try {
                         TcpDiscoveryAbstractMessage msg = marsh.unmarshal(in, U.gridClassLoader());
 
-                        UUID destClientNodeId = msg.destinationClientNodeId();
-
-                        if (destClientNodeId != null) {
-                            ClientMessageWorker wrk = clientMsgWorkers.get(destClientNodeId);
-
-                            if (wrk != null) {
-                                msg.senderNodeId(locNodeId);
-
-                                wrk.addMessage(msg);
-
-                                writeToSocket(sock, RES_OK);
-                            }
-                            else if (log.isDebugEnabled())
-                                log.debug("Discarding routed message because client has already left: " + msg);
-
-                            continue;
-                        }
-
                         msg.senderNodeId(nodeId);
 
                         if (log.isDebugEnabled())
@@ -5075,6 +5049,16 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             if (ignored && log.isDebugEnabled())
                                 log.debug("Loopback problem message has been ignored [msg=" + msg +
                                     ", spiState=" + state + ']');
+
+                            continue;
+                        }
+                        if (msg instanceof TcpDiscoveryPingResponse) {
+                            assert msg.client() : msg;
+
+                            ClientMessageWorker clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
+
+                            if (clientWorker != null)
+                                clientWorker.pingResult(true);
 
                             continue;
                         }
@@ -5288,7 +5272,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      */
     private class ClientMessageWorker extends MessageWorkerAdapter {
         /** Node ID. */
-        private final UUID nodeId;
+        private final UUID clientNodeId;
 
         /** Socket. */
         private final Socket sock;
@@ -5297,17 +5281,17 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private volatile ClusterMetrics metrics;
 
         /** */
-        private final AtomicReference<SettableFuture<Boolean>> pingFut = new AtomicReference<>();
+        private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
         /**
          * @param sock Socket.
-         * @param nodeId Node ID.
+         * @param clientNodeId Node ID.
          */
-        protected ClientMessageWorker(Socket sock, UUID nodeId) {
+        protected ClientMessageWorker(Socket sock, UUID clientNodeId) {
             super("tcp-disco-client-message-worker");
 
             this.sock = sock;
-            this.nodeId = nodeId;
+            this.clientNodeId = clientNodeId;
         }
 
         /**
@@ -5317,22 +5301,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             return metrics;
         }
 
-        /** {@inheritDoc} */
-        @Override void addMessage(TcpDiscoveryAbstractMessage msg) {
-            if (msg instanceof TcpDiscoveryHeartbeatMessage) {
-                TcpDiscoveryHeartbeatMessage hbMsg = (TcpDiscoveryHeartbeatMessage)msg;
-
-                if (hbMsg.creatorNodeId().equals(nodeId)) {
-                    metrics = hbMsg.metrics().get(nodeId).metrics();
-
-                    removeMetrics(hbMsg, nodeId);
-
-                    assert !hbMsg.hasMetrics();
-                    assert !hbMsg.hasCacheMetrics();
-                }
-            }
-
-            super.addMessage(msg);
+        /**
+         * @param metrics New current client metrics.
+         */
+        void metrics(ClusterMetrics metrics) {
+            this.metrics = metrics;
         }
 
         /** {@inheritDoc} */
@@ -5342,10 +5315,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 if (log.isDebugEnabled())
                     log.debug("Redirecting message to client [sock=" + sock + ", locNodeId="
-                        + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+                        + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
 
                 try {
-                    prepareNodeAddedMessage(msg, nodeId, null, null);
+                    prepareNodeAddedMessage(msg, clientNodeId, null, null);
 
                     writeToSocket(sock, msg);
                 }
@@ -5356,12 +5329,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
-                        + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                        + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
 
                 onException("Client connection failed [sock=" + sock + ", locNodeId="
-                    + getLocalNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                    + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
 
-                clientMsgWorkers.remove(nodeId, this);
+                clientMsgWorkers.remove(clientNodeId, this);
 
                 U.interrupt(this);
 
@@ -5373,10 +5346,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          *
          */
         public void pingResult(boolean res) {
-            SettableFuture<Boolean> fut = pingFut.getAndSet(null);
+            GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
 
             if (fut != null)
-                fut.set(res);
+                fut.onDone(res);
         }
 
         /**
@@ -5386,7 +5359,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             if (isNodeStopping())
                 return false;
 
-            SettableFuture<Boolean> fut;
+            GridFutureAdapter<Boolean> fut;
 
             while (true) {
                 fut = pingFut.get();
@@ -5394,10 +5367,10 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (fut != null)
                     break;
 
-                fut = new SettableFuture<>();
+                fut = new GridFutureAdapter<>();
 
                 if (pingFut.compareAndSet(null, fut)) {
-                    TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), nodeId);
+                    TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), clientNodeId);
 
                     pingReq.verify(getLocalNodeId());
 
@@ -5410,14 +5383,17 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 return fut.get(ackTimeout, TimeUnit.MILLISECONDS);
             }
-            catch (ExecutionException e) {
-                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
+            catch (IgniteInterruptedCheckedException ignored) {
+                throw new InterruptedException();
             }
-            catch (TimeoutException ignored) {
+            catch (IgniteFutureTimeoutCheckedException ignored) {
                 if (pingFut.compareAndSet(fut, null))
-                    fut.set(false);
+                    fut.onDone(false);
 
                 return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSpiException("Internal error: ping future cannot be done with exception", e);
             }
         }
 

@@ -112,7 +112,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart() {
         if (ctx.config().isDaemon())
             return;
 
@@ -123,7 +123,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert utilityCache != null;
 
         if (atomicCfg != null) {
-            IgniteInternalCache atomicsCache = ctx.cache().getOrStartCache(CU.ATOMICS_CACHE_NAME);
+            IgniteInternalCache atomicsCache = ctx.cache().atomicsCache();
 
             assert atomicsCache != null;
 

@@ -20,16 +20,19 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.jetbrains.annotations.*;
 
-import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
 public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** */
-    private static final int TOP_SIZE = 1;
+    private static final int TOP_SIZE = 3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -41,31 +44,11 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
-        if (client) {
-            TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder();
+        TcpDiscoverySpiAdapter discoSpi = client ? new TcpClientDiscoverySpi() : new TcpDiscoverySpi();
 
-            String addr = new ArrayList<>(ipFinder.getRegisteredAddresses()).iterator().next().toString();
+        discoSpi.setIpFinder(ipFinder);
 
-            if (addr.startsWith("/"))
-                addr = addr.substring(1);
-
-            clientIpFinder.setAddresses(Arrays.asList(addr));
-
-            TcpClientDiscoverySpi discoSpi = new TcpClientDiscoverySpi();
-
-            discoSpi.setIpFinder(clientIpFinder);
-
-            cfg.setDiscoverySpi(discoSpi);
-        }
-        else {
-            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-            discoSpi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(discoSpi);
-        }
-
-        cfg.setLocalHost("127.0.0.1");
+        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration();
 
@@ -77,11 +60,16 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
         return Long.MAX_VALUE;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        client = false;
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testConcurrentStart() throws Exception {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 10; i++) {
             try {
                 startGridsMultiThreaded(TOP_SIZE);
             }
@@ -95,15 +83,28 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentStartClients() throws Exception {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             try {
                 client = false;
 
-                startGrid();
+                startGrid(0);
 
                 client = true;
 
-                startGridsMultiThreaded(TOP_SIZE);
+                final AtomicInteger gridIdx = new AtomicInteger(1);
+
+                GridTestUtils.runMultiThreaded(new Callable<Object>() {
+                        @Nullable @Override public Object call() throws Exception {
+                            startGrid(gridIdx.getAndIncrement());
+
+                            return null;
+                        }
+                    },
+                    TOP_SIZE,
+                    "grid-starter-" + getName()
+                );
+
+                checkTopology(TOP_SIZE + 1);
             }
             finally {
                 stopAllGrids();

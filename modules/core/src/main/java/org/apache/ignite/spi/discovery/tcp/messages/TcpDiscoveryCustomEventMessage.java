@@ -31,7 +31,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte[] msgBytes;
+    private byte[] msgBytes;
 
     /**
      * @param creatorNodeId Creator node id.
@@ -48,6 +48,13 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
      */
     public byte[] messageBytes() {
         return msgBytes;
+    }
+
+    /**
+     * @param msgBytes New message bytes.
+     */
+    public void messageBytes(byte[] msgBytes) {
+        this.msgBytes = msgBytes;
     }
 
     /** {@inheritDoc} */

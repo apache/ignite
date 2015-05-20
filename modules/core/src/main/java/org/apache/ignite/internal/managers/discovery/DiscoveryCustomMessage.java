@@ -15,27 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.managers.discovery;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
 
 /**
- * Checks behavior on exception while unmarshalling key.
+ *
  */
-public class IgniteCacheP2pUnmarshallingErrorTestSuit extends TestSuite {
+public interface DiscoveryCustomMessage extends Serializable {
     /**
-     * @return Suite.
-     * @throws Exception If failed.
+     * Whether or not minor version of topology should be increased on message receive.
+     *
+     * @return {@code true} if minor topology version should be increased.
+     * @see AffinityTopologyVersion#minorTopVer
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
+    public boolean incrementMinorTopologyVersion();
 
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingTxErrorTest.class);
-
-        return suite;
-    }
+    /**
+     * Called when custom message has been handled by all nodes.
+     *
+     * @return Ack message or {@code null} if ack is not required.
+     */
+    @Nullable public DiscoveryCustomMessage ackMessage();
 }

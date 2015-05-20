@@ -221,12 +221,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         log = cctx.logger(getClass());
 
+        initFut = new GridFutureAdapter<>();
+
         // Grab all nodes with order of equal or less than last joined node.
-        oldestNode.set(CU.oldest(cctx, exchId.topologyVersion()));
+        Collection<ClusterNode> nodes = CU.aliveCacheNodes(cctx, exchId.topologyVersion());
+
+        if (nodes.isEmpty()) {
+            initFut.onDone(true);
+
+            onDone(exchId.topologyVersion());
+
+            return;
+        }
+
+        oldestNode.set(CU.oldest(nodes));
 
         assert oldestNode.get() != null;
-
-        initFut = new GridFutureAdapter<>();
 
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() +
@@ -341,11 +351,21 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Fetched affinity from remote node, initializing affinity assignment [locNodeId=" +
                     cctx.localNodeId() + ", topVer=" + exchId.topologyVersion() + ']');
 
+            if (affAssignment == null) {
+                affAssignment = new ArrayList<>(cacheCtx.affinity().partitions());
+
+                List<ClusterNode> empty = Collections.emptyList();
+
+                for (int i = 0; i < cacheCtx.affinity().partitions(); i++)
+                    affAssignment.add(empty);
+            }
+
             cacheCtx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
         }
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @return {@code True} if local node can calculate affinity on it's own for this partition map exchange.
      */
     private boolean canCalculateAffinity(GridCacheContext cacheCtx) {
@@ -437,6 +457,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void init() throws IgniteInterruptedCheckedException {
+        if (isDone())
+            return;
+
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {

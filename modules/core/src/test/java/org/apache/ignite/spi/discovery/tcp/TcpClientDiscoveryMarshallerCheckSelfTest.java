@@ -19,15 +19,12 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.*;
 
 /**
  * Test for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
@@ -40,35 +37,22 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
+        TcpDiscoverySpiAdapter discoSpi;
+
         if (gridName.endsWith("0")) {
-            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-            discoSpi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(discoSpi);
-
-            cfg.setLocalHost("127.0.0.1");
+            discoSpi = new TcpDiscoverySpi();
 
             cfg.setMarshaller(new JdkMarshaller());
         }
         else {
-            TcpClientDiscoverySpi disco = new TcpClientDiscoverySpi();
-
-            TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder();
-
-            String addr = F.first(ipFinder.getRegisteredAddresses()).toString();
-
-            if (addr.startsWith("/"))
-                addr = addr.substring(1);
-
-            clientIpFinder.setAddresses(Collections.singleton(addr));
-
-            disco.setIpFinder(clientIpFinder);
-
-            cfg.setDiscoverySpi(disco);
+            discoSpi = new TcpClientDiscoverySpi();
 
             cfg.setMarshaller(new OptimizedMarshaller());
         }
+
+        discoSpi.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }

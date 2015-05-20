@@ -29,7 +29,7 @@ import static org.apache.ignite.configuration.DeploymentMode.*;
 /**
  * Tests for node attributes consistency checks.
  */
-public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
+public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
 
@@ -37,7 +37,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static DeploymentMode mode = SHARED;
+    private static DeploymentMode mode;
 
     /** */
     private static boolean p2pEnabled;
@@ -46,16 +46,40 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
-
-        disc.setIpFinder(IP_FINDER);
+        if (gridName.equals(getTestGridName(1)))
+            cfg.setClientMode(true);
 
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
-        cfg.setDiscoverySpi(disc);
+
+        TcpDiscoverySpiAdapter discoverySpi = createDiscovery(cfg);
+
+        discoverySpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoverySpi);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        mode = SHARED;
+
+        p2pEnabled = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @return Discovery SPI.
+     * @param cfg DiscoverySpi
+     */
+    protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
+        return new TcpDiscoverySpi();
     }
 
     /**
@@ -83,44 +107,35 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testPreferIpV4StackDifferentValues() throws Exception {
-        try {
-            System.setProperty(PREFER_IPV4, "true");
+        System.setProperty(PREFER_IPV4, "true");
 
-            for (int i = 0; i < 2; i++) {
-                Ignite g = startGrid(i);
+        for (int i = 0; i < 2; i++) {
+            Ignite g = startGrid(i);
 
-                assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
-            }
-
-            System.setProperty(PREFER_IPV4, "false");
-
-            startGrid(2);
+            assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
         }
-        finally {
-            stopAllGrids();
-        }
+
+        System.setProperty(PREFER_IPV4, "false");
+
+        startGrid(2);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDifferentDeploymentModes() throws Exception {
+        startGrid(0);
+
+        mode = CONTINUOUS;
+
         try {
             startGrid(1);
 
-            mode = CONTINUOUS;
-
-            try {
-                startGrid(2);
-
-                fail();
-            }
-            catch (IgniteCheckedException e) {
-                assertTrue(e.getCause().getMessage().startsWith("Remote node has deployment mode different from"));
-            }
+            fail();
         }
-        finally {
-            stopAllGrids();
+        catch (IgniteCheckedException e) {
+            if (!e.getCause().getMessage().startsWith("Remote node has deployment mode different from"))
+                throw e;
         }
     }
 
@@ -128,23 +143,18 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testDifferentPeerClassLoadingEnabledFlag() throws Exception {
+        startGrid(0);
+
+        p2pEnabled = true;
+
         try {
             startGrid(1);
 
-            p2pEnabled = true;
-
-            try {
-                startGrid(2);
-
-                fail();
-            }
-            catch (IgniteCheckedException e) {
-                assertTrue(e.getCause().getMessage().startsWith("Remote node has peer class loading enabled flag " +
-                    "different from"));
-            }
+            fail();
         }
-        finally {
-            stopAllGrids();
+        catch (IgniteCheckedException e) {
+            if (!e.getCause().getMessage().startsWith("Remote node has peer class loading enabled flag different from"))
+                throw e;
         }
     }
 
@@ -153,19 +163,35 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void testPreferIpV4Stack(boolean preferIpV4) throws Exception {
-        try {
-            String val = String.valueOf(preferIpV4);
+        String val = String.valueOf(preferIpV4);
 
-            System.setProperty(PREFER_IPV4, val);
+        System.setProperty(PREFER_IPV4, val);
 
-            for (int i = 0; i < 2; i++) {
-                Ignite g = startGrid(i);
+        for (int i = 0; i < 2; i++) {
+            Ignite g = startGrid(i);
 
-                assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
-            }
+            assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
         }
-        finally {
-            stopAllGrids();
+    }
+
+    /**
+     *
+     */
+    public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    public static class ClientDiscovery extends GridDiscoveryManagerAttributesSelfTest {
+        /** {@inheritDoc}
+         * @param cfg*/
+        @Override protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
+            if (Boolean.TRUE.equals(cfg.isClientMode()))
+                return new TcpClientDiscoverySpi();
+
+            return super.createDiscovery(cfg);
         }
     }
 }

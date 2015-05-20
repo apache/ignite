@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
@@ -100,8 +101,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setLocalHost("127.0.0.1");
 
         if (gridName.startsWith("server")) {
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -448,7 +447,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 3);
 
-        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brokeConnection();
+        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brakeConnection();
 
         G.ignite("client-2").message().remoteListen(null, new MessageListener()); // Send some discovery message.
 
@@ -714,12 +713,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         IgniteMessaging msg = grid(masterName).message();
 
-        UUID id = null;
+        UUID id = msg.remoteListen(null, new MessageListener());
 
         try {
-            id = msg.remoteListen(null, new MessageListener());
-
-            msgLatch = new CountDownLatch(4);
+            msgLatch = new CountDownLatch(2);
 
             msg.send(null, "Message 1");
 
@@ -730,17 +727,46 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             checkNodes(3, 3);
 
-            msgLatch = new CountDownLatch(6);
+            msgLatch = new CountDownLatch(3);
 
             msg.send(null, "Message 2");
 
             await(msgLatch);
         }
         finally {
-            if (id != null)
-                msg.stopRemoteListen(id);
+            msg.stopRemoteListen(id);
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDataExchangeFromServer2() throws Exception {
+        startServerNodes(2);
+
+        IgniteMessaging msg = grid("server-1").message();
+
+        UUID id = msg.remoteListen(null, new MessageListener());
+
+        try {
+            startClientNodes(1);
+
+            assertEquals(G.ignite("server-0").cluster().localNode().id(), ((TcpDiscoveryNode)G.ignite("client-0")
+                .cluster().localNode()).clientRouterNodeId());
+
+            checkNodes(2, 1);
+
+            msgLatch = new CountDownLatch(3);
+
+            msg.send(null, "Message");
+
+            await(msgLatch);
+        }
+        finally {
+            msg.stopRemoteListen(id);
+        }
+    }
+
 
     /**
      * @throws Exception If any error occurs.
@@ -786,6 +812,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             });
 
         try {
+            joinTimeout = 500;
+
             startGrid("client-0");
 
             assert false;
@@ -986,6 +1014,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Ignite g = G.ignite("client-" + i);
 
+            ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
+
             assertTrue(clientNodeIds.contains(g.cluster().localNode().id()));
 
             assertTrue(g.cluster().localNode().isClient());
@@ -1112,7 +1142,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void pauseAll() {
             pauseResumeOperation(true, openSockLock, writeLock);
 
-            brokeConnection();
+            brakeConnection();
         }
 
         /**

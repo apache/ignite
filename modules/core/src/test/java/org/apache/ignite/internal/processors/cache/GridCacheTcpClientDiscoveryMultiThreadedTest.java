@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -103,14 +104,14 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
      * @throws Exception If failed.
      */
     public void testCacheConcurrentlyWithMultipleClientNodes() throws Exception {
-        srvNodesCnt = 3;
-        clientNodesCnt = 4;
+        srvNodesCnt = 2;
+        clientNodesCnt = 3;
 
         startServerNodes();
 
         client = true;
 
-        for (int n = 0; n < 3; n++) {
+        for (int n = 0; n < 2; n++) {
             startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
 
             checkTopology(gridCount());
