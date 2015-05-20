@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -124,6 +125,9 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         if (filter != null)
             ctx.resource().injectGeneric(filter);
 
+        if (filter instanceof InteropAwareEventFilter)
+            ((InteropAwareEventFilter)filter).initialize(ctx);
+
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         lsnr = new GridLocalEventListener() {
@@ -188,6 +192,28 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         if (lsnr != null)
             ctx.event().removeLocalEventListener(lsnr, types);
+
+        RuntimeException err = null;
+
+        try {
+            if (filter instanceof InteropAwareEventFilter)
+                ((InteropAwareEventFilter)filter).close();
+        }
+        catch(RuntimeException ex) {
+            err = ex;
+        }
+
+        try {
+            if (cb instanceof InteropLocalEventListener)
+                ((InteropLocalEventListener)cb).close();
+        }
+        catch (RuntimeException ex) {
+            if (err == null)
+                err = ex;
+        }
+
+        if (err != null)
+            throw err;
     }
 
     /**

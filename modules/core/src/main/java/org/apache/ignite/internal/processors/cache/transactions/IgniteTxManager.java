@@ -633,6 +633,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Any transaction associated with the current thread.
+     */
+    public IgniteInternalTx anyActiveThreadTx() {
+        long threadId = Thread.currentThread().getId();
+
+        IgniteInternalTx tx = threadMap.get(threadId);
+
+        if (tx != null && tx.topologyVersionSnapshot() != null)
+            return tx;
+
+        for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
+            if (!cacheCtx.systemTx())
+                continue;
+
+            tx = sysThreadMap.get(new TxThreadKey(threadId, cacheCtx.cacheId()));
+
+            if (tx != null && tx.topologyVersionSnapshot() != null)
+                return tx;
+        }
+
+        return null;
+    }
+
+    /**
      * @return Local transaction.
      */
     @Nullable public IgniteInternalTx localTxx() {

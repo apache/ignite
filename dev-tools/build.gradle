@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 apply plugin: 'groovy'
 
 repositories {
@@ -25,21 +26,29 @@ dependencies {
 }
 
 task help {
-  println '''There are two interfaces to work with JIRA attachment validation tool
-  - to do the batch validation of all latest patch attachments
-     gradle slurp
-  - to grab a single JIRA's latest attachment and run test validation on it
-     JIRA_NUM=INGITE-### gradle patchapply'''
+    println '''There are 3 interfaces to work with JIRA attachment validation tool
+    - to do the batch validation of all latest patch attachments
+      gradle slurp
+    - to grab a single JIRA's latest attachment and run test validation on it
+      JIRA_NUM=INGITE-### gradle patchapply
+    - to run all test builds for a single JIRA's latest attachment and run test validation on it
+      JIRA_NUM=INGITE-### gradle runAllBuilds'''
 }
 
-task slurp (dependsOn: 'classes', type: JavaExec) {
-  args (project.buildDir, 'slurp')
-  main = 'jiraslurp'
-  classpath = sourceSets.main.runtimeClasspath
+task slurp(dependsOn: 'classes', type: JavaExec) {
+    args(project.buildDir, "slurp,${System.getenv('TEST_BUILDS')}")
+    main = 'jiraslurp'
+    classpath = sourceSets.main.runtimeClasspath
 }
 
-task patchapply (dependsOn: 'classes', type: JavaExec) {
-  args ("JIRA_NUM=${System.getenv('JIRA_NUM')}")
-  main = 'jiraslurp'
-  classpath = sourceSets.main.runtimeClasspath
+task patchapply(dependsOn: 'classes', type: JavaExec) {
+    args("patchApply,${System.getenv('JIRA_NUM')}")
+    main = 'jiraslurp'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task runAllBuilds(dependsOn: 'classes', type: JavaExec) {
+    args("runAllBuilds,${System.getenv('JIRA_NUM')}")
+    main = 'jiraslurp'
+    classpath = sourceSets.main.runtimeClasspath
 }
