@@ -48,9 +48,25 @@ public class DbH2ServerStartup {
      * @throws IgniteException If start H2 database TCP server failed.
      */
     public static void main(String[] args) throws IgniteException {
+        if (startServer() != null) {
+            try {
+                do {
+                    System.out.println("Type 'q' and press 'Enter' to stop H2 TCP server...");
+                }
+                while ('q' != System.in.read());
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+        }
+    }
+
+    public static Server startServer() {
+        Server srv = null;
+
         try {
             // Start H2 database TCP server in order to access sample in-memory database from other processes.
-            Server.createTcpServer("-tcpDaemon").start();
+            srv = Server.createTcpServer("-tcpDaemon").start();
 
             // Try to connect to database TCP server.
             JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
@@ -65,14 +81,6 @@ public class DbH2ServerStartup {
             throw new IgniteException("Failed to start database TCP server", e);
         }
 
-        try {
-            do {
-                System.out.println("Type 'q' and press 'Enter' to stop H2 TCP server...");
-            }
-            while ('q' != System.in.read());
-        }
-        catch (IOException ignored) {
-            // No-op.
-        }
+        return srv;
     }
 }

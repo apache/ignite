@@ -69,7 +69,6 @@ public class CacheStarSchemaExample {
      */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-
             System.out.println();
             System.out.println(">>> Cache star schema example started.");
 

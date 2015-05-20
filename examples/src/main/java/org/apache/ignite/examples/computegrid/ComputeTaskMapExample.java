@@ -79,7 +79,7 @@ public class ComputeTaskMapExample {
 
             Iterator<ClusterNode> it = nodes.iterator();
 
-            for (final String word : arg.split(" ")) {
+            for (final String word : words) {
                 // If we used all nodes, restart the iterator.
                 if (!it.hasNext())
                     it = nodes.iterator();
