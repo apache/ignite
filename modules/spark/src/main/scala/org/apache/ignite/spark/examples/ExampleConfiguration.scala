@@ -15,18 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.util
+package org.apache.ignite.spark.examples
 
-import scala.util.Try
+import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 
-object using {
-    type AutoClosable = { def close(): Unit }
+object ExampleConfiguration {
+    def configuration(): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration()
 
-    def apply[A <: AutoClosable, B](resource: A)(code: A => B): B =
-        try {
-            code(resource)
-        }
-        finally {
-            Try(resource.close())
-        }
+        val discoSpi = new TcpDiscoverySpi()
+
+        val ipFinder = new TcpDiscoveryVmIpFinder()
+
+        ipFinder.setAddresses(F.asList("127.0.0.1:47500", "127.0.0.1:47501"))
+
+        discoSpi.setIpFinder(ipFinder)
+
+        cfg.setDiscoverySpi(discoSpi)
+
+        cfg
+    }
 }

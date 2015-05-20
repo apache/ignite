@@ -17,25 +17,18 @@
 
 package org.apache.ignite.spark
 
-import org.apache.ignite.cache.query.{ScanQuery, Query}
-import org.apache.ignite.scalar.lang.ScalarPredicate2
+import org.apache.ignite.cache.query.Query
 import org.apache.ignite.spark.impl.{IgniteQueryIterator, IgnitePartition}
 import org.apache.spark.{TaskContext, Partition}
 import org.apache.spark.rdd.RDD
 
 import scala.collection.JavaConversions._
+import scala.reflect.ClassTag
 
-class IgniteRDD[R, K, V](
+class IgniteRDD[R:ClassTag, K, V](
     ic: IgniteContext[K, V],
     qry: Query[R]
 ) extends RDD[R] (ic.sparkContext(), deps = Nil) {
-    def this(
-        ic: IgniteContext[K, V],
-        p: (K, V) => Boolean
-    ) = {
-        this(ic, new ScanQuery[K, V](new ScalarPredicate2[K, V](p)))
-    }
-
     override def compute(part: Partition, context: TaskContext): Iterator[R] = {
         new IgniteQueryIterator[R, K, V](ic, part, qry)
     }
