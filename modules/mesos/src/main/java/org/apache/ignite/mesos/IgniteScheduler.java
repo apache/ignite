@@ -21,7 +21,6 @@ import org.apache.mesos.*;
 import org.slf4j.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -46,9 +45,6 @@ public class IgniteScheduler implements Scheduler {
     /** Default port range. */
     public static final String DEFAULT_PORT = ":47500..47510";
 
-    /** Min of memory required. */
-    public static final int MIN_MEMORY = 256;
-
     /** Delimiter to use in IP names. */
     public static final String DELIM = ",";
 
@@ -62,7 +58,7 @@ public class IgniteScheduler implements Scheduler {
     private AtomicInteger taskIdGenerator = new AtomicInteger();
 
     /** Task on host. */
-    private ConcurrentMap<String, IgniteTask> tasks = new ConcurrentHashMap<>();
+    private Map<String, IgniteTask> tasks = new HashMap<>();
 
     /** Cluster resources. */
     private ClusterResources clusterLimit;
@@ -82,7 +78,7 @@ public class IgniteScheduler implements Scheduler {
 
     /** {@inheritDoc} */
     @Override public void reregistered(SchedulerDriver schedulerDriver, Protos.MasterInfo masterInfo) {
-        log.info("reregistered");
+        log.info("reregistered()");
     }
 
     /** {@inheritDoc} */
@@ -138,7 +134,7 @@ public class IgniteScheduler implements Scheduler {
         cont.setDocker(docker.build());
 
         return Protos.TaskInfo.newBuilder()
-            .setName("task " + taskId.getValue())
+            .setName("Ignite node " + taskId.getValue())
             .setTaskId(taskId)
             .setSlaveId(offer.getSlaveId())
             .addResources(Protos.Resource.newBuilder()
@@ -153,7 +149,7 @@ public class IgniteScheduler implements Scheduler {
             .setCommand(Protos.CommandInfo.newBuilder()
                 .setShell(false)
                 .addArguments(STARTUP_SCRIPT)
-                .addArguments(String.valueOf(igniteTask.mem()))
+                .addArguments(String.valueOf((int) igniteTask.mem()))
                 .addArguments(getAddress()))
             .build();
     }
@@ -180,13 +176,15 @@ public class IgniteScheduler implements Scheduler {
      * @return Ignite task description.
      */
     private IgniteTask checkOffer(Protos.Offer offer) {
-        if (checkLimit(clusterLimit.instances(), tasks.size()))
+        // Check that limit on running nodes.
+        if (!checkLimit(clusterLimit.instances(), tasks.size()))
             return null;
 
-        double cpus = -2;
-        double mem = -2;
-        double disk = -2;
+        double cpus = -1;
+        double mem = -1;
+        double disk = -1;
 
+        // Collect resource on slave.
         for (Protos.Resource resource : offer.getResourcesList()) {
             if (resource.getName().equals(CPUS)) {
                 if (resource.getType().equals(Protos.Value.Type.SCALAR))
@@ -200,17 +198,43 @@ public class IgniteScheduler implements Scheduler {
                 else
                     log.debug("Mem resource was not a scalar: " + resource.getType().toString());
             }
-            else if (resource.getType().equals(Protos.Value.Type.SCALAR))
-                disk = resource.getScalar().getValue();
-            else
-                log.debug("Disk resource was not a scalar: " + resource.getType().toString());
+            else if (resource.getName().equals(DISK))
+                if (resource.getType().equals(Protos.Value.Type.SCALAR))
+                    disk = resource.getScalar().getValue();
+                else
+                    log.debug("Disk resource was not a scalar: " + resource.getType().toString());
         }
 
-        if (checkLimit(clusterLimit.memory(), mem) &&
-            checkLimit(clusterLimit.cpus(), cpus) &&
-            checkLimit(clusterLimit.disk(), disk) &&
-            MIN_MEMORY <= mem)
+        // Check that slave satisfies min requirements.
+        if (cpus < clusterLimit.minCpuPerNode()  && mem < clusterLimit.minMemoryPerNode() ) {
+            log.info("Offer not sufficient for slave request:\n" + offer.getResourcesList().toString() +
+                "\n" + offer.getAttributesList().toString() +
+                "\nRequested for slave:\n" +
+                "  cpus:  " + cpus + "\n" +
+                "  mem:   " + mem);
 
+            return null;
+        }
+
+        double totalCpus = 0;
+        double totalMem = 0;
+        double totalDisk = 0;
+
+        // Collect occupied resources.
+        for (IgniteTask task : tasks.values()) {
+            totalCpus += task.cpuCores();
+            totalMem += task.mem();
+            totalDisk += task.disk();
+        }
+
+        cpus = clusterLimit.cpus() == ClusterResources.DEFAULT_VALUE ? cpus :
+            Math.min(clusterLimit.cpus() - totalCpus, cpus);
+        mem = clusterLimit.memory() == ClusterResources.DEFAULT_VALUE ? mem :
+            Math.min(clusterLimit.memory() - totalMem, mem);
+        disk = clusterLimit.disk() == ClusterResources.DEFAULT_VALUE ? disk :
+            Math.min(clusterLimit.disk() - totalDisk, disk);
+
+        if (cpus > 0 && mem > 0)
             return new IgniteTask(offer.getHostname(), cpus, mem, disk);
         else {
             log.info("Offer not sufficient for slave request:\n" + offer.getResourcesList().toString() +
@@ -246,7 +270,28 @@ public class IgniteScheduler implements Scheduler {
         switch (taskStatus.getState()) {
             case TASK_FAILED:
             case TASK_FINISHED:
-                tasks.remove(taskId);
+                synchronized (mux) {
+                    IgniteTask failedTask = tasks.remove(taskId);
+
+                    if (failedTask != null) {
+                        List<Protos.Request> requests = new ArrayList<>();
+
+                        Protos.Request request = Protos.Request.newBuilder()
+                            .addResources(Protos.Resource.newBuilder()
+                                .setType(Protos.Value.Type.SCALAR)
+                                .setName(MEM)
+                                .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.mem())))
+                            .addResources(Protos.Resource.newBuilder()
+                                .setType(Protos.Value.Type.SCALAR)
+                                .setName(CPUS)
+                                .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
+                            .build();
+
+                        requests.add(request);
+
+                        schedulerDriver.requestResources(requests);
+                    }
+                }
                 break;
         }
     }

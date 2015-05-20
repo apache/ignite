@@ -33,7 +33,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
     @Override public void setUp() throws Exception {
         super.setUp();
 
-        scheduler = new IgniteScheduler();
+        //scheduler = new IgniteScheduler();
     }
 
     /**

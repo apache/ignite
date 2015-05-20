@@ -42,8 +42,8 @@ public class IgniteFramework {
             frameworkBuilder.setCheckpoint(true);
         }
 
-        // create the scheduler
-        final Scheduler scheduler = new IgniteScheduler(ClusterResources.from(args[1]));
+        // Create the scheduler.
+        final Scheduler scheduler = new IgniteScheduler(ClusterResources.from(null));
 
         // create the driver
         MesosSchedulerDriver driver;

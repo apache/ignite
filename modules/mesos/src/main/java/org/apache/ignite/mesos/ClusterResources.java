@@ -52,6 +52,18 @@ public class ClusterResources {
     private double nodeCnt = DEFAULT_VALUE;
 
     /** */
+    public static final String IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE = "IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE";
+
+    /** Min memory per node. */
+    private int minCpu = 2;
+
+    /** */
+    public static final String IGNITE_RESOURCE_MIN_MEMORY_PER_NODE = "IGNITE_RESOURCE_MIN_MEMORY_PER_NODE";
+
+    /** Min memory per node. */
+    private int minMemoryCnt = 256;
+
+    /** */
     public ClusterResources() {
         // No-op.
     }
@@ -85,14 +97,32 @@ public class ClusterResources {
     }
 
     /**
+     * @return min memory per node.
+     */
+    public int minMemoryPerNode() {
+        return minMemoryCnt;
+    }
+
+    /**
+     * @return min cpu count per node.
+     */
+    public int minCpuPerNode() {
+        return minCpu;
+    }
+
+    /**
      * @param config path to config file.
      * @return Cluster configuration.
      */
     public static ClusterResources from(String config) {
         try {
-            Properties props = new Properties();
+            Properties props = null;
 
-            props.load(new FileInputStream(config));
+            if (config != null) {
+                props = new Properties();
+
+                props.load(new FileInputStream(config));
+            }
 
             ClusterResources resources = new ClusterResources();
 
@@ -114,13 +144,13 @@ public class ClusterResources {
      * @return Property value.
      */
     private static double getProperty(String name, Properties fileProps) {
-        if (fileProps.containsKey(name))
+        if (fileProps != null && fileProps.containsKey(name))
             return Double.valueOf(fileProps.getProperty(name));
 
         String property = System.getProperty(name);
 
         if (property == null)
-            System.getenv(name);
+            property = System.getenv(name);
 
         if (property == null)
             return DEFAULT_VALUE;
