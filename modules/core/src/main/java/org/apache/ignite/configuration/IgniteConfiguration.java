@@ -334,9 +334,6 @@ public class IgniteConfiguration {
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
-    /** Client cache configurations. */
-    private NearCacheConfiguration[] nearCacheCfg;
-
     /** Client mode flag. */
     private Boolean clientMode;
 
