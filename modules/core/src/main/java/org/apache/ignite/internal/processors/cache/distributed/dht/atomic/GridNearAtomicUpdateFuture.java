@@ -289,7 +289,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param waitTopFut Whether to wait for topology future.
      */
     public void map(boolean waitTopFut) {
-        mapOnTopology(keys, false, null, waitTopFut);
+        mapOnTopology(null, false, null, waitTopFut);
     }
 
     /** {@inheritDoc} */
@@ -323,7 +323,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      */
     public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res) {
         if (res.remapKeys() != null) {
-            assert cctx.config().getAtomicWriteOrderMode() == PRIMARY;
+            assert cctx.config().getAtomicWriteOrderMode() == PRIMARY || cctx.kernalContext().clientNode();
 
             mapOnTopology(res.remapKeys(), true, nodeId, true);
 
@@ -474,13 +474,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /**
-     * @param keys Keys to map.
+     * @param topVer Topology version.
+     * @param remapKeys Keys to remap or {@code null} to map all keys.
      * @param remap Flag indicating if this is partial remap for this future.
      * @param oldNodeId Old node ID if was remap.
      */
     private void map0(
         AffinityTopologyVersion topVer,
-        Collection<?> keys,
+        @Nullable Collection<?> remapKeys,
         boolean remap,
         @Nullable UUID oldNodeId) {
         assert oldNodeId == null || remap;
@@ -503,6 +504,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             log.debug("Assigned fast-map version for update on near node: " + updVer);
 
         if (keys.size() == 1 && !fastMap && (single == null || single)) {
+            assert remapKeys == null || remapKeys.size() == 1 : remapKeys;
+
             Object key = F.first(keys);
 
             Object val;
@@ -681,6 +684,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     continue;
 
                 KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+
+                if (remapKeys != null && !remapKeys.contains(cacheKey))
+                    continue;
 
                 if (op != TRANSFORM)
                     val = cctx.toCacheObject(val);
