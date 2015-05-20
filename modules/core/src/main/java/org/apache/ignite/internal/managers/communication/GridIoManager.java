@@ -1697,10 +1697,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             this.predLsnr = predLsnr;
 
             if (predLsnr != null) {
-                ctx.resource().injectGeneric(predLsnr);
-
                 if (predLsnr instanceof GridLifecycleAwareMessageFilter)
-                    ((GridLifecycleAwareMessageFilter)predLsnr).initialize();
+                    ((GridLifecycleAwareMessageFilter)predLsnr).initialize(ctx);
+                else
+                    ctx.resource().injectGeneric(predLsnr);
             }
         }
 

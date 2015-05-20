@@ -291,7 +291,7 @@
                                             <substitution expression="${project.version}" />
                                         </replaceregexp>
 
-                                        <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh"/>
+                                        <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
 
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
@@ -566,7 +566,7 @@
                                                 <include name="**/*" />
                                             </fileset>
                                         </copy>
-                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false"/>
+                                        <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false" />
                                     </target>
                                 </configuration>
                             </execution>

@@ -55,11 +55,17 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
     /** Default timeout for joining topology (value is <tt>0</tt>). */
     public static final long DFLT_JOIN_TIMEOUT = 0;
 
+    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>50ms</tt>). */
+    public static final long DFLT_ACK_TIMEOUT = 50;
+
+    /** Default network timeout in milliseconds (value is <tt>5000ms</tt>). */
+    public static final long DFLT_NETWORK_TIMEOUT = 5000;
+
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
 
-    /** Default heartbeat messages issuing frequency (value is <tt>300ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 300;
+    /** Default heartbeat messages issuing frequency (value is <tt>100ms</tt>). */
+    public static final long DFLT_HEARTBEAT_FREQ = 100;
 
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
