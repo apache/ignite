@@ -38,5 +38,4 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         return cfg;
     }
-
 }

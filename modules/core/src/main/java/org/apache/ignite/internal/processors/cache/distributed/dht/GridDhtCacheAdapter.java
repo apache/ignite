@@ -75,7 +75,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
         super(ctx, ctx.config().getStartSize());
 
-        top = new GridDhtPartitionTopologyImpl<>(ctx);
+        top = new GridDhtPartitionTopologyImpl(ctx);
     }
 
     /**
@@ -87,7 +87,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
 
-        top = new GridDhtPartitionTopologyImpl<>(ctx);
+        top = new GridDhtPartitionTopologyImpl(ctx);
     }
 
     /** {@inheritDoc} */

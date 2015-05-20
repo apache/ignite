@@ -798,6 +798,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.cacheObjects().onCacheProcessorStarted();
+
+        assert caches.containsKey(CU.MARSH_CACHE_NAME) : "Marshaller cache should be started";
+        assert caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
     }
 
     /** {@inheritDoc} */
