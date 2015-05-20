@@ -77,14 +77,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         GridKernalContext ctx = igniteContext();
         CacheConfiguration cfg = cacheConfiguration();
 
-        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
-            U.quietAndWarn(log,
-                "Persistence store is configured, but both read-through and write-through are disabled. This " +
-                "configuration makes sense if the store implements loadCache method only. If this is the " +
-                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
-                "Persistence store is configured, but both read-through and write-through are disabled.");
-        }
-
         writeThrough = cfg.isWriteThrough();
 
         this.cfgStore = cfgStore;
@@ -197,6 +189,16 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start cache store: " + e, e);
             }
+        }
+
+        CacheConfiguration cfg = cctx.config();
+
+        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
+            U.quietAndWarn(log,
+                "Persistence store is configured, but both read-through and write-through are disabled. This " +
+                "configuration makes sense if the store implements loadCache method only. If this is the " +
+                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
+                "Persistence store is configured, but both read-through and write-through are disabled.");
         }
     }
 
