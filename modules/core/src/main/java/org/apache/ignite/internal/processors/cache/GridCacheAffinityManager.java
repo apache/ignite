@@ -149,6 +149,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * Copies previous affinity assignment when client node joins on leaves.
      *
      * @param node Node.
      * @param topVer Topology version.
