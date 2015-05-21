@@ -19,7 +19,8 @@
  * attachments to process.
  */
 final GIT_REPO = "https://git1-us-west.apache.org/repos/asf/incubator-ignite.git"
-final ATTACHMENT_URL = "https://issues.apache.org/jira/secure/attachment"
+final JIRA_URL = "https://issues.apache.org"
+final ATTACHMENT_URL = "$JIRA_URL/jira/secure/attachment"
 final validated_filename = "${System.getProperty("user.home")}/validated-jira.txt"
 final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$validated_filename"
 
@@ -119,8 +120,6 @@ def checkForAttachments = {
  * Monitors given process and show errors if exist.
  */
 def checkprocess = { process ->
-    println process.text
-
     process.waitFor()
 
     if (process.exitValue() != 0) {
@@ -179,65 +178,162 @@ def JIRA_xml = { jiranum ->
 }
 
 /**
+ * Gets all builds from TC project.
+ */
+def getTestBuilds = { ->
+    def projName = System.getenv('PROJECT_NAME')
+
+    if (projName == null || projName == 'null')
+        projName = "Ignite"
+
+    def tcURL = System.getenv('TC_URL')
+    def excludeListProp = System.getenv('BUILD_ID_EXCLUDES')
+    def excludeList = excludeListProp?.split(' ') as List
+
+    if (excludeList == null || excludeList == 'null')
+        excludeList = ["Ignite_RunAllTestBuilds"]
+
+    def project = new XmlSlurper().parse("http://$tcURL:80/guestAuth/app/rest/projects/id:$projName")
+
+    def buildIds = []
+
+    def count = Integer.valueOf(project.buildTypes.@count as String)
+
+    for (int i = 0; i < count; i++) {
+        def id = project.buildTypes.buildType[i].@id
+
+        if (excludeList == null || !excludeList.contains(id))
+            buildIds.add(id)
+    }
+
+    buildIds
+}
+
+/**
+ * Util method to send post request.
+ */
+def sendPostRequest = { urlString, user, pwd, postData, contentType ->
+    URL url = new URL(urlString as String);
+
+    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+
+    String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
+
+    conn.setRequestProperty("Authorization", "Basic " + encoded);
+
+    conn.setDoOutput(true);
+    conn.setRequestMethod("POST");
+    conn.setRequestProperty("Content-Type", contentType);
+    conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
+
+    OutputStream os = conn.getOutputStream();
+    os.write(postData.getBytes());
+    os.flush();
+    os.close();
+
+    conn.connect();
+
+    // Read response.
+    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+    String response = "";
+    String line;
+
+    while ((line = br.readLine()) != null)
+        response += line
+
+    br.close();
+
+    response
+}
+
+/**
+ * Adds comment to jira ticket.
+ */
+def addJiraComment = { jiraNum, comment ->
+    def user = System.getenv('JIRA_USER')
+    def pwd = System.getenv('JIRA_PWD')
+
+    try {
+        println "Comment: $comment"
+
+        def jsonComment = "{\n \"body\": \"${comment}\"\n}";
+
+        def response = sendPostRequest(
+            "$JIRA_URL/jira/rest/api/2/issue/$jiraNum/comment" as String,
+            user,
+            pwd,
+            jsonComment,
+            "application/json")
+
+        println "Response: $response"
+    }
+    catch (Exception e) {
+        e.printStackTrace()
+    }
+}
+
+/**
  * Runs all given test builds to validate last patch from given jira.
  */
-def runAllTestBuilds = { builds, jiraNum ->
-    assert jiraNum != 'null', 'Jira number should not be null.'
-    assert jiraNum != null, 'Jira number should not be null.'
+def runAllTestBuilds = {builds, jiraNum ->
+    def tcURL = System.getenv('TC_URL')
+    def user = System.getenv('TASK_RUNNER_USER')
+    def pwd = System.getenv('TASK_RUNNER_PWD')
 
-    if (jiraNum) {
-        def tcURL = System.getenv('TC_URL')
-        def user = System.getenv('TASK_RUNNER_USER')
-        def pwd = System.getenv('TASK_RUNNER_PWD')
+    def triggeredBuilds = [:]
 
-        builds.each {
-            try {
-                println "Triggering $it build for $jiraNum jira..."
+    builds.each {
+        try {
+            println "Triggering $it build for $jiraNum jira..."
 
-                String postData =
-                    "<build>" +
+            String postData
+
+            if (jiraNum == 'null' || jiraNum == null) {
+                postData = "<build>" +
+                        "  <buildType id='$it'/>" +
+                        "</build>";
+            }
+            else {
+                postData = "<build>" +
                         "  <buildType id='$it'/>" +
                         "  <properties>" +
-                        "    <property name='JIRA_NUM' value='$jiraNum'/>" +
+                        "    <property name='env.JIRA_NUM' value='$jiraNum'/>" +
                         "  </properties>" +
                         "</build>";
-
-                URL url = new URL("http://$tcURL:80/httpAuth/app/rest/buildQueue");
-
-                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-
-                String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
-
-                conn.setRequestProperty("Authorization", "Basic " + encoded);
-
-                conn.setDoOutput(true);
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/xml");
-                conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
-
-                OutputStream os = conn.getOutputStream();
-                os.write(postData.getBytes());
-                os.flush();
-                os.close();
-
-                conn.connect();
-
-                // Read response.
-                print "Response: "
-
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-                String line;
-                while ((line = br.readLine()) != null)
-                    println line
-
-                br.close();
             }
-            catch (Exception e) {
-                e.printStackTrace()
-            }
+
+            println "Request: $postData"
+
+            def response = sendPostRequest(
+                "http://$tcURL:80/httpAuth/app/rest/buildQueue" as String,
+                user,
+                pwd,
+                postData,
+                "application/xml")
+
+            println "Response: $response"
+
+            def build = new XmlSlurper().parseText(response)
+
+            println "Triggered build: ${build.buildType.@name}"
+            println "Triggered build url: ${build.@webUrl}"
+            println "Triggered build branch: ${build.@branchName}"
+
+            triggeredBuilds.put(build.buildType.@name, build.@webUrl)
+        }
+        catch (Exception e) {
+            e.printStackTrace()
         }
     }
+
+    def triggeredBuildsComment = "There was triggered next test builds for last attached patch-file:\\n"
+
+    triggeredBuilds.each { name, url ->
+        triggeredBuildsComment += "${name as String} - ${url as String}\\n"
+    }
+
+    addJiraComment(jiraNum, triggeredBuildsComment)
 }
 
 /**
@@ -250,22 +346,30 @@ args.each {
 
     println parameters
 
-    if (parameters.length == 2 && parameters[0] == "slurp" && parameters[1] != 'null') {
-        def builds = parameters[1].split(' ');
-
-        println "Running in 'slurp' mode. Test builds=${builds}"
+    if (parameters.length >= 1 && parameters[0] == "slurp") {
+        println "Running in 'slurp' mode."
 
         checkForAttachments()
+
+        def builds = getTestBuilds()
+
+        println "Test builds to be triggered=$builds"
 
         // For each ticket with new attachment, let's trigger remove build
         jirasAttached.each { k, v ->
             //  Trailing slash is important for download; only need to pass JIRA number
             println "Triggering the test builds for: $k = $ATTACHMENT_URL/$v/"
 
-            runAllTestBuilds(builds,k)
+            runAllTestBuilds(builds, k)
         }
     }
-    else if (parameters.length == 2 && parameters[0] == "patchApply" && parameters[1] ==~ /\w+-\d+/) {
+    else if (parameters.length >= 1 && parameters[0] == "patchApply") {
+        if (parameters.length < 2 || parameters[1] == 'null') {
+            println "There is no jira number to apply. Exit."
+
+            return
+        }
+
         def jiraNum = parameters[1]
 
         println "Running in 'patch apply' mode with jira number '$jiraNum'"
@@ -285,17 +389,16 @@ args.each {
             applyPatch(jira, attachementURL)
         }
     }
-    else if (parameters.length >= 2 && parameters[0] == "runAllBuilds" && parameters[1] ==~ /\w+-\d+/) {
+    else if (parameters.length > 1 && parameters[0] == "runAllBuilds" ) {
         def jiraNum = parameters[1]
 
-        def attachementURL=null
+        println "Running in 'all builds' mode with jira number='$jiraNum'."
 
-        if (parameters[2] ==~ /\d+/)
-            attachementURL = parameters[2]
+        def builds = getTestBuilds()
 
-        println "Running in 'all builds' mode with jira number='$jiraNum' and attachment URL='$attachementURL'."
+        println "Test builds to be triggered=$builds"
 
-        runAllTestBuilds jiraNum attachmentURL
+        runAllTestBuilds(builds, jiraNum)
     }
 }
 

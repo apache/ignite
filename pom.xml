@@ -31,8 +31,8 @@
     </parent>
 
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <artifactId>apache-ignite</artifactId>
+    <version>1.0.7-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
