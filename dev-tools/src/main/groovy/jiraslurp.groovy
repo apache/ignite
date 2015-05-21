@@ -363,8 +363,8 @@ args.each {
             runAllTestBuilds(builds, k)
         }
     }
-    else if (parameters.length > 1 && parameters[0] == "patchApply") {
-        if (parameters.length < 2 || parameters[1] !=~ /\w+-\d+/) {
+    else if (parameters.length >= 1 && parameters[0] == "patchApply") {
+        if (parameters.length < 2 || parameters[1] == 'null') {
             println "There is no jira number to apply. Exit."
 
             return
