@@ -32,12 +32,12 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.0.7-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
         <!--fix <attachartifact>...< /> at apache-release profile if changed-->
-        <ignite.zip.pattern>ignite-${ignite.edition}-${project.version}</ignite.zip.pattern>
+        <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
     </properties>
 
     <scm>
@@ -461,7 +461,7 @@
                                         <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
                                     </descriptorRefs>
                                     <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>ignite-${project.version}-src</finalName>
+                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
@@ -473,7 +473,7 @@
                         <artifactId>maven-antrun-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>attach-artifact</id>
+                                <id>attach-artifact</id><!-- allows to sign *bin.zip files -->
                                 <phase>package</phase>
                                 <goals>
                                     <goal>run</goal>
@@ -481,8 +481,8 @@
                                 <configuration>
                                     <failOnError>false</failOnError>
                                     <target>
-                                        <attachartifact file="${basedir}/target/bin/ignite-fabric-${project.version}.zip" classifier="fabric" type="zip" />
-                                        <attachartifact file="${basedir}/target/bin/ignite-hadoop-${project.version}.zip" classifier="hadoop" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-fabric-${project.version}-bin.zip" classifier="fabric" type="zip" />
+                                        <attachartifact file="${basedir}/target/bin/${project.artifactId}-hadoop-${project.version}-bin.zip" classifier="hadoop" type="zip" />
                                     </target>
                                 </configuration>
                             </execution>
@@ -499,6 +499,23 @@
                                 </goals>
                                 <configuration>
                                     <ascDirectory>${basedir}</ascDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- no <resourceBundle>, fix unexpected generation of
+                                       DEPENDENCIES, LICENSE, NOTICE files-->
+                                    <skip>true</skip>
                                 </configuration>
                             </execution>
                         </executions>
@@ -529,7 +546,7 @@
                                 <fileSet>
                                     <directory>${basedir}/target</directory>
                                     <includes>
-                                        <include>ignite-${project.version}-src.zip</include>
+                                        <include>${project.artifactId}-${project.version}-src.zip</include>
                                         <include>bin/*.zip</include>
                                     </includes>
                                 </fileSet>
@@ -557,10 +574,10 @@
                                     <failOnError>false</failOnError>
                                     <target>
                                         <mkdir dir="${basedir}/target/site" />
-                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip" tofile="${basedir}/target/site/ignite-${project.version}-src.zip" failonerror="false" />
-                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.asc" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.asc" failonerror="false" />
-                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.md5" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.md5" failonerror="false" />
-                                        <copy file="${basedir}/target/ignite-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/ignite-${project.version}-src.zip.sha1" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.asc" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.asc" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.md5" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" failonerror="false" />
+                                        <copy file="${basedir}/target/${project.artifactId}-${project.version}-src.zip.sha1" tofile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" failonerror="false" />
                                         <copy todir="${basedir}/target/site">
                                             <fileset dir="${basedir}/target/bin">
                                                 <include name="**/*" />
