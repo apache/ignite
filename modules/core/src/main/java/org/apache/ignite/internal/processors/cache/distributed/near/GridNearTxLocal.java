@@ -1185,6 +1185,22 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void onRemap(AffinityTopologyVersion topVer) {
+        assert cctx.kernalContext().clientNode();
+
+        mapped.set(false);
+        nearLocallyMapped = false;
+        colocatedLocallyMapped = false;
+        txNodes = null;
+        onePhaseCommit = false;
+        nearMap.clear();
+        dhtMap.clear();
+        mappings.clear();
+
+        this.topVer.set(topVer);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxLocal.class, this, "mappings", mappings.keySet(), "super", super.toString());
     }

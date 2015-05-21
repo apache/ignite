@@ -229,13 +229,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         initFut = new GridFutureAdapter<>();
 
-        // Grab all nodes with order of equal or less than last joined node.
-        ClusterNode node = CU.oldestAliveCacheServerNode(cctx, exchId.topologyVersion());
-
-        oldestNode.set(node);
-
         if (log.isDebugEnabled())
             log.debug("Creating exchange future [localNode=" + cctx.localNodeId() + ", fut=" + this + ']');
+    }
+
+    /**
+     * @param reqs Cache change requests.
+     */
+    public void cacheChangeRequests(Collection<DynamicCacheChangeRequest> reqs) {
+        this.reqs = reqs;
     }
 
     /** {@inheritDoc} */
@@ -460,6 +462,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 assert discoEvt != null : this;
                 assert !dummy && !forcePreload : this;
+
+                ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, exchId.topologyVersion());
+
+                oldestNode.set(oldest);
 
                 startCaches();
 
