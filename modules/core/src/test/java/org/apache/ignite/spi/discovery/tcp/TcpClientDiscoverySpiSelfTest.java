@@ -1142,7 +1142,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void pauseAll() {
             pauseResumeOperation(true, openSockLock, writeLock);
 
-            brakeConnection();
+            msgWorker.suspend();
         }
 
         /**
@@ -1150,6 +1150,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
          */
         public void resumeAll() {
             pauseResumeOperation(false, openSockLock, writeLock);
+
+            msgWorker.resume();
         }
     }
 }
