@@ -174,8 +174,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** Default socket operations timeout in milliseconds (value is <tt>200ms</tt>). */
     public static final long DFLT_SOCK_TIMEOUT = 200;
 
-    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>200ms</tt>). */
-    public static final long DFLT_ACK_TIMEOUT = 200;
+    /** Default timeout for receiving message acknowledgement in milliseconds (value is <tt>50ms</tt>). */
+    public static final long DFLT_ACK_TIMEOUT = 50;
 
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";

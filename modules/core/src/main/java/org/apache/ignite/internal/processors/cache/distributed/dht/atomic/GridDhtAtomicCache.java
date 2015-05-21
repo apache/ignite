@@ -1045,6 +1045,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     }
 
                     ClusterNode node = ctx.discovery().node(nodeId);
+                    // Do not check topology version for CLOCK versioning since
+                    // partition exchange will wait for near update future.
+                    // Also do not check topology version if topology was locked on near node by
+                    // external transaction or explicit lock.
+                    if (topology().topologyVersion().equals(req.topologyVersion()) || req.topologyLocked() ||
+                        ctx.config().getAtomicWriteOrderMode() == CLOCK) {
+                        ClusterNode node = ctx.discovery().node(nodeId);
 
                     if (node == null) {
                         U.warn(log, "Node originated update request left grid: " + nodeId);
@@ -1056,8 +1063,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     // Do not check topology version for CLOCK versioning since
                     // partition exchange will wait for near update future.
-                    if ((req.fastMap() && !clientReq) || topology().topologyVersion().equals(req.topologyVersion())) {
-
+                    // Also do not check topology version if topology was locked on near node by
+                    // external transaction or explicit lock.
+                    if ((req.fastMap() && !clientReq) || req.topologyLocked() || 
+                        topology().topologyVersion().equals(req.topologyVersion())) {
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         GridCacheVersion ver = req.updateVersion();

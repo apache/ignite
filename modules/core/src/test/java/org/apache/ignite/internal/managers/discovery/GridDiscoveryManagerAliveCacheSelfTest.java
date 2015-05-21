@@ -64,6 +64,9 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     private volatile CountDownLatch latch;
 
     /** */
+    private boolean clientMode;
+
+    /** */
     private final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
         @Override public boolean apply(Event evt) {
             assertNotNull("Topology lost nodes before stopTempNodes() was called.", latch);
@@ -88,10 +91,10 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         TcpDiscoverySpiAdapter disc;
 
-        if (((gridName.charAt(gridName.length() - 1) - '0') & 1) == 0)
-            disc = new TcpDiscoverySpi();
-        else
+        if (clientMode && ((gridName.charAt(gridName.length() - 1) - '0') & 1) != 0)
             disc = new TcpClientDiscoverySpi();
+        else
+            disc = new TcpDiscoverySpi();
 
         disc.setIpFinder(IP_FINDER);
 
@@ -121,9 +124,9 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testAlives() throws Exception {
+    private void doTestAlive() throws Exception {
         for (int i = 0; i < ITERATIONS; i++) {
             info("Performing iteration: " + i);
 
@@ -146,6 +149,24 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testAlives() throws Exception {
+        clientMode = false;
+
+        doTestAlive();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAlivesClient() throws Exception {
+        clientMode = true;
+
+        doTestAlive();
+    }
+
+    /**
      * Waits while topology on all nodes became equals to the expected size.
      *
      * @param nodesCnt Expected nodes count.
@@ -158,6 +179,8 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         for (Ignite g : alive) {
             if (g.configuration().getDiscoverySpi() instanceof TcpClientDiscoverySpi)
                 ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
+
+            Thread.sleep(500);
 
             while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);

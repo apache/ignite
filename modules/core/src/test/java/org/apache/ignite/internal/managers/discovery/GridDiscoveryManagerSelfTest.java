@@ -23,7 +23,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -71,7 +70,11 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
             cfg.setCacheConfiguration(ccfg1, ccfg2);
         }
 
-        cfg.setDiscoverySpi(createDiscovery(cfg));
+        TcpDiscoverySpiAdapter discoverySpi = createDiscovery(cfg);
+
+        discoverySpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoverySpi);
 
         return cfg;
     }
@@ -80,12 +83,8 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
      * @return Discovery SPI.
      * @param cfg DiscoverySpi
      */
-    protected DiscoverySpi createDiscovery(IgniteConfiguration cfg) {
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
-
-        disc.setIpFinder(IP_FINDER);
-
-        return disc;
+    protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
+        return new TcpDiscoverySpi();
     }
 
     /**
@@ -210,9 +209,9 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
     public static class ClientDiscovery extends GridDiscoveryManagerSelfTest {
         /** {@inheritDoc}
          * @param cfg*/
-        @Override protected DiscoverySpi createDiscovery(IgniteConfiguration cfg) {
+        @Override protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
             if (Boolean.TRUE.equals(cfg.isClientMode()))
-                return createClientDiscovery(IP_FINDER);
+                return new TcpClientDiscoverySpi();
 
             return super.createDiscovery(cfg);
         }

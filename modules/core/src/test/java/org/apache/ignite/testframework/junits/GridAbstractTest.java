@@ -455,7 +455,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            info(">>> Starting test class: " + getClass().getSimpleName() + " <<<");
+            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -736,9 +736,20 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
-        List<Ignite> ignites = G.allGrids();
+        Collection<Ignite> clients = new ArrayList<>();
+        Collection<Ignite> srvs = new ArrayList<>();
 
-        for (Ignite g : ignites)
+        for (Ignite g : G.allGrids()) {
+            if (g.configuration().getDiscoverySpi() instanceof TcpClientDiscoverySpi)
+                clients.add(g);
+            else
+                srvs.add(g);
+        }
+
+        for (Ignite g : clients)
+            stopGrid(g.name(), cancel);
+
+        for (Ignite g : srvs)
             stopGrid(g.name(), cancel);
 
         assert G.allGrids().isEmpty();
@@ -1008,17 +1019,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * This method should be overridden by subclasses to change configuration parameters.
-     *
-     * @return Grid configuration used for starting of grid.
-     * @param rsrcs Resources.
-     * @throws Exception If failed.
-     */
-    protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
-        return getConfiguration(getTestGridName(), rsrcs);
-    }
-
-    /**
      * @return Generated unique test grid name.
      */
     public String getTestGridName() {
@@ -1205,7 +1205,7 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
+                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
 
                 TestCounters counters = getTestCounters();
 

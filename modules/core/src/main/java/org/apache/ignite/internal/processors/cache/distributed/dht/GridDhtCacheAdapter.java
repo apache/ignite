@@ -655,8 +655,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     res.error(e);
                 }
 
-                res.invalidPartitions(fut.invalidPartitions(),
-                    new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
+                if (!F.isEmpty(fut.invalidPartitions()))
+                    res.invalidPartitions(fut.invalidPartitions(), ctx.shared().exchange().readyAffinityVersion());
+                else
+                    res.invalidPartitions(fut.invalidPartitions(), req.topologyVersion());
 
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());

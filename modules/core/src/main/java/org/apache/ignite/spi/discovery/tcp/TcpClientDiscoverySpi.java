@@ -1461,7 +1461,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param msg Message.
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg) {
-            if (msg.verified()) {
+            if (msg.verified() && joinLatch.getCount() == 0) {
                 DiscoverySpiListener lsnr = TcpClientDiscoverySpi.this.lsnr;
 
                 if (lsnr != null) {

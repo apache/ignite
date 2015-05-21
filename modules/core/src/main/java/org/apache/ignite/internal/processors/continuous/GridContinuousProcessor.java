@@ -168,7 +168,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessage.class,
             new CustomEventListener<StartRoutineDiscoveryMessage>() {
                 @Override public void onCustomEvent(ClusterNode snd, StartRoutineDiscoveryMessage msg) {
-                    if (!snd.id().equals(ctx.localNodeId()))
+                    if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
                         processStartRequest(snd, msg);
                 }
             });
