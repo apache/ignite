@@ -706,8 +706,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionsExchangeFuture old = exchFuts.addx(
             fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, reqs));
 
-        if (old != null)
+        if (old != null) {
             fut = old;
+
+            if (reqs != null)
+                fut.cacheChangeRequests(reqs);
+        }
 
         if (discoEvt != null)
             fut.onEvent(exchId, discoEvt);
@@ -870,17 +874,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             else {
                 if (msg.client()) {
-                    IgniteInternalFuture<?> fut = affinityReadyFuture(msg.exchangeId().topologyVersion());
+                    final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
+                        null,
+                        null);
 
-                    if (fut != null) {
-                        fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                            @Override public void apply(IgniteInternalFuture<?> fut) {
-                                processSinglePartitionClientUpdate(node, msg);
-                            }
-                        });
-                    }
-                    else
-                        processSinglePartitionClientUpdate(node, msg);
+                    exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                            // Finished future should reply only to sender client node.
+                            exchFut.onReceive(node.id(), msg);
+                        }
+                    });
                 }
                 else
                     exchangeFuture(msg.exchangeId(), null, null).onReceive(node.id(), msg);
@@ -889,23 +892,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         finally {
             leaveBusy();
         }
-    }
-
-    /**
-     * @param node Node.
-     * @param msg Message.
-     */
-    private void processSinglePartitionClientUpdate(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
-        final GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(),
-            null,
-            null);
-
-        exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-            @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                // Finished future should reply only to sender client node.
-                exchFut.onReceive(node.id(), msg);
-            }
-        });
     }
 
     /**

@@ -44,6 +44,9 @@ public class GridNearLockMapping {
     @GridToStringInclude
     private Collection<KeyCacheObject> distributedKeys;
 
+    /** {@code True} if this is first mapping for lock operation on client node. */
+    private boolean clientFirst;
+
     /**
      * Creates near lock mapping for specified node and key.
      *
@@ -57,6 +60,20 @@ public class GridNearLockMapping {
         this.node = node;
 
         mappedKeys.add(firstKey);
+    }
+
+    /**
+     * @return {@code True} if this is first mapping for lock operation on client node.
+     */
+    public boolean clientFirst() {
+        return clientFirst;
+    }
+
+    /**
+     * @param clientFirst {@code True} if this is first mapping for lock operation on client node.
+     */
+    public void clientFirst(boolean clientFirst) {
+        this.clientFirst = clientFirst;
     }
 
     /**

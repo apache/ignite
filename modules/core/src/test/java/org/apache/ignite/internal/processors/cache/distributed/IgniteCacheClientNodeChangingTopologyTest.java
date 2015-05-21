@@ -38,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -145,6 +146,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
                 cache.putAll(map);
 
                 return null;
@@ -177,6 +180,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
                 cache.putAll(map);
 
                 return null;
@@ -228,7 +233,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final Map<Integer, Integer> map = new HashMap<>();
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 100; i++)
             map.put(i, i);
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
@@ -240,7 +245,95 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
                 cache.putAll(map);
+
+                return null;
+            }
+        });
+
+        assertFalse(putFut.isDone());
+
+        client = false;
+
+        IgniteEx ignite3 = startGrid(3);
+
+        log.info("Stop block.");
+
+        spi.stopBlock();
+
+        putFut.get();
+
+        checkData(map, 4);
+
+        map.clear();
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, i + 1);
+
+        cache.putAll(map);
+
+        checkData(map, 4);
+    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTx() throws Exception {
+        pessimisticTx(null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testPessimisticTxNearEnabled() throws Exception {
+        pessimisticTx(new NearCacheConfiguration());
+    }
+
+    /**
+     * @param nearCfg Near cache configuration.
+     * @throws Exception If failed.
+     */
+    private void pessimisticTx(NearCacheConfiguration nearCfg) throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setNearConfiguration(nearCfg);
+
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+
+        client = true;
+
+        final Ignite ignite2 = startGrid(2);
+
+        assertTrue(ignite2.configuration().isClientMode());
+
+        final Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < 1; i++)
+            map.put(i, i);
+
+        TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+
+        spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
+
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+
+        IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
+                try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    cache.putAll(map);
+
+                    tx.commit();
+                }
 
                 return null;
             }
@@ -259,6 +352,143 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         putFut.get();
 
         checkData(map, 4);
+
+        ignite3.close();
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, i + 1);
+
+        spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
+
+        putFut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
+                try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    for (Map.Entry<Integer, Integer> e : map.entrySet())
+                        cache.put(e.getKey(), e.getValue());
+
+                    tx.commit();
+                }
+
+                return null;
+            }
+        });
+
+        ignite3 = startGrid(3);
+
+        log.info("Stop block2.");
+
+        spi.stopBlock();
+
+        putFut.get();
+
+        checkData(map, 4);
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, i + 2);
+
+        try (Transaction tx = ignite2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.putAll(map);
+
+            tx.commit();
+        }
+
+        checkData(map, 4);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticTxMessageClientFirstFlag() throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+        IgniteEx ignite2 = startGrid(2);
+
+        client = true;
+
+        Ignite ignite3 = startGrid(3);
+
+        assertTrue(ignite3.configuration().isClientMode());
+
+        TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
+
+        IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+
+        List<Integer> keys0 = primaryKeys(ignite0.cache(null), 2, 0);
+        List<Integer> keys1 = primaryKeys(ignite1.cache(null), 2, 0);
+        List<Integer> keys2 = primaryKeys(ignite2.cache(null), 2, 0);
+
+        LinkedHashMap<Integer, Integer> map = new LinkedHashMap<>();
+
+        map.put(keys0.get(0), 1);
+        map.put(keys1.get(0), 2);
+        map.put(keys2.get(0), 3);
+        map.put(keys0.get(1), 4);
+        map.put(keys1.get(1), 5);
+        map.put(keys2.get(1), 6);
+
+        spi.record(GridNearTxPrepareRequest.class);
+
+        try (Transaction tx = ignite3.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            for (Map.Entry<Integer, Integer> e : map.entrySet())
+                cache.put(e.getKey(), e.getValue());
+
+            tx.commit();
+        }
+
+        checkClientPrepareMessages(spi.recordedMessages(), 6);
+
+        checkData(map, 4);
+
+        cache.putAll(map);
+
+        checkClientPrepareMessages(spi.recordedMessages(), 6);
+
+        spi.record(null);
+
+        checkData(map, 4);
+
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+
+        TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        spi0.record(GridNearTxPrepareRequest.class);
+
+        cache0.putAll(map);
+
+        spi0.record(null);
+
+        List<Object> msgs = spi0.recordedMessages();
+
+        assertEquals(4, msgs.size());
+
+        for (Object msg : msgs)
+            assertFalse(((GridNearTxPrepareRequest)msg).firstClientRequest());
+
+        checkData(map, 4);
+    }
+
+    /**
+     * @param msgs Messages.
+     * @param expCnt Expected number of messages.
+     */
+    private void checkClientPrepareMessages(List<Object> msgs, int expCnt) {
+        assertEquals(expCnt, msgs.size());
+
+        assertTrue(((GridNearTxPrepareRequest)msgs.get(0)).firstClientRequest());
+
+        for (int i = 1; i < msgs.size(); i++)
+            assertFalse(((GridNearTxPrepareRequest) msgs.get(i)).firstClientRequest());
     }
 
     /**
@@ -579,12 +809,21 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         /** */
         private Map<Class<?>, Set<UUID>> blockCls = new HashMap<>();
 
+        /** */
+        private Class<?> recordCls;
+
+        /** */
+        private List<Object> recordedMsgs = new ArrayList<>();
+
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
                 synchronized (this) {
+                    if (recordCls != null && msg0.getClass().equals(recordCls))
+                        recordedMsgs.add(msg0);
+
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
@@ -599,6 +838,28 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
 
             super.sendMessage(node, msg);
+        }
+
+        /**
+         * @param recordCls Message class to record.
+         */
+        void record(@Nullable Class<?> recordCls) {
+            synchronized (this) {
+                this.recordCls = recordCls;
+            }
+        }
+
+        /**
+         * @return Recorded messages.
+         */
+        List<Object> recordedMessages() {
+            synchronized (this) {
+                List<Object> msgs = recordedMsgs;
+
+                recordedMsgs = new ArrayList<>();
+
+                return msgs;
+            }
         }
 
         /**
