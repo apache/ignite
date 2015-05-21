@@ -105,40 +105,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         sesHolder = sesHolder0;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
-
-        sesLsnrs = createSessionListeners(cfg.getCacheStoreSessionListenerFactories());
-
-        if (sesLsnrs == null)
-            sesLsnrs = createSessionListeners(ctx.config().getCacheStoreSessionListenerFactories());
-    }
-
-    /**
-     * Creates session listeners.
-     *
-     * @param factories Factories.
-     * @return Listeners.
-     */
-    private Collection<CacheStoreSessionListener> createSessionListeners(Factory<CacheStoreSessionListener>[] factories)
-        throws IgniteCheckedException {
-        if (factories == null)
-            return null;
-
-        Collection<CacheStoreSessionListener> lsnrs = new ArrayList<>(factories.length);
-
-        for (Factory<CacheStoreSessionListener> factory : factories) {
-            CacheStoreSessionListener lsnr = factory.create();
-
-            if (lsnr != null) {
-                cctx.kernalContext().resource().injectGeneric(lsnr);
-
-                if (lsnr instanceof LifecycleAware)
-                    ((LifecycleAware)lsnr).start();
-
-                lsnrs.add(lsnr);
-            }
-        }
-
-        return lsnrs;
     }
 
     /** {@inheritDoc} */
@@ -200,6 +166,40 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
                 "Persistence store is configured, but both read-through and write-through are disabled.");
         }
+
+        sesLsnrs = createSessionListeners(cfg.getCacheStoreSessionListenerFactories());
+
+        if (sesLsnrs == null)
+            sesLsnrs = createSessionListeners(cctx.kernalContext().config().getCacheStoreSessionListenerFactories());
+    }
+
+    /**
+     * Creates session listeners.
+     *
+     * @param factories Factories.
+     * @return Listeners.
+     */
+    private Collection<CacheStoreSessionListener> createSessionListeners(Factory<CacheStoreSessionListener>[] factories)
+        throws IgniteCheckedException {
+        if (factories == null)
+            return null;
+
+        Collection<CacheStoreSessionListener> lsnrs = new ArrayList<>(factories.length);
+
+        for (Factory<CacheStoreSessionListener> factory : factories) {
+            CacheStoreSessionListener lsnr = factory.create();
+
+            if (lsnr != null) {
+                cctx.kernalContext().resource().injectGeneric(lsnr);
+
+                if (lsnr instanceof LifecycleAware)
+                    ((LifecycleAware)lsnr).start();
+
+                lsnrs.add(lsnr);
+            }
+        }
+
+        return lsnrs;
     }
 
     /** {@inheritDoc} */
