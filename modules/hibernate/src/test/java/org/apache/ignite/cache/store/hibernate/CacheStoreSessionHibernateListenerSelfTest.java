@@ -27,6 +27,8 @@ import org.hibernate.cfg.Configuration;
 import javax.cache.Cache;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
+import javax.persistence.*;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -48,10 +50,13 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
             @Override public CacheStoreSessionListener create() {
                 CacheStoreSessionHibernateListener lsnr = new CacheStoreSessionHibernateListener();
 
-                Configuration cfg = new Configuration().
-                    setProperty("hibernate.connection.url", URL);
+                SessionFactory sesFactory = new Configuration().
+                    setProperty("hibernate.connection.url", URL).
+                    addAnnotatedClass(Table1.class).
+                    addAnnotatedClass(Table2.class).
+                    buildSessionFactory();
 
-                lsnr.setSessionFactory(cfg.buildSessionFactory());
+                lsnr.setSessionFactory(sesFactory);
 
                 return lsnr;
             }
@@ -90,6 +95,28 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
             writeCnt.incrementAndGet();
 
             checkSession();
+
+            if (write.get()) {
+                Session hibSes = session();
+
+                switch (ses.cacheName()) {
+                    case "cache1":
+                        hibSes.save(new Table1(entry.getKey(), entry.getValue()));
+
+                        break;
+
+                    case "cache2":
+                        if (fail.get())
+                            throw new CacheWriterException("Expected failure.");
+
+                        hibSes.save(new Table2(entry.getKey(), entry.getValue()));
+
+                        break;
+
+                    default:
+                        throw new CacheWriterException("Wring cache: " + ses.cacheName());
+                }
+            }
         }
 
         /** {@inheritDoc} */
@@ -113,10 +140,14 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
 
             assertTrue(hibSes.isOpen());
 
+            Transaction tx = hibSes.getTransaction();
+
+            assertNotNull(tx);
+
             if (ses.isWithinTransaction())
-                assertNotNull(hibSes.getTransaction());
+                assertTrue(tx.isActive());
             else
-                assertNull(hibSes.getTransaction());
+                assertFalse(tx.isActive());
 
             verifySameInstance(hibSes);
         }
@@ -143,6 +174,62 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
          */
         private Session session() {
             return ses.<String, Session>properties().get(CacheStoreSessionHibernateListener.HIBERNATE_SES_KEY);
+        }
+    }
+
+    /**
+     */
+    @Entity
+    @Table(name = "Table1")
+    private static class Table1 implements Serializable {
+        /** */
+        @Id @GeneratedValue
+        @Column(name = "id")
+        private Integer id;
+
+        /** */
+        @Column(name = "key")
+        private int key;
+
+        /** */
+        @Column(name = "value")
+        private int value;
+
+        /**
+         * @param key Key.
+         * @param value Value.
+         */
+        private Table1(int key, int value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    /**
+     */
+    @Entity
+    @Table(name = "Table2")
+    private static class Table2 implements Serializable {
+        /** */
+        @Id @GeneratedValue
+        @Column(name = "id")
+        private Integer id;
+
+        /** */
+        @Column(name = "key")
+        private int key;
+
+        /** */
+        @Column(name = "value")
+        private int value;
+
+        /**
+         * @param key Key.
+         * @param value Value.
+         */
+        private Table2(int key, int value) {
+            this.key = key;
+            this.value = value;
         }
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.cache.store.hibernate;
 
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
 import org.hibernate.*;
 
 import javax.cache.integration.*;
@@ -85,10 +84,10 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
                 if (commit) {
                     hibSes.flush();
 
-                    if (tx != null)
+                    if (tx.isActive())
                         tx.commit();
                 }
-                else if (tx != null)
+                else if (tx.isActive())
                     tx.rollback();
             }
             catch (HibernateException e) {

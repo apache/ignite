@@ -93,8 +93,8 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
             conn.createStatement().executeUpdate("DROP TABLE IF EXISTS Table1");
             conn.createStatement().executeUpdate("DROP TABLE IF EXISTS Table2");
 
-            conn.createStatement().executeUpdate("CREATE TABLE Table1 (key INT, value INT)");
-            conn.createStatement().executeUpdate("CREATE TABLE Table2 (key INT, value INT)");
+            conn.createStatement().executeUpdate("CREATE TABLE Table1 (id INT AUTO_INCREMENT, key INT, value INT)");
+            conn.createStatement().executeUpdate("CREATE TABLE Table2 (id INT AUTO_INCREMENT, key INT, value INT)");
         }
 
         loadCacheCnt.set(0);
