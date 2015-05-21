@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
+import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -650,6 +651,14 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             }
         }
 
+        if (lsnr instanceof UserListenerWrapper)
+        {
+            IgnitePredicate p = ((UserListenerWrapper)lsnr).listener();
+
+            if (p instanceof InteropLocalEventListener)
+                ((InteropLocalEventListener)p).close();
+        }
+
         return found;
     }
 
@@ -752,7 +761,20 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
-        return getSpi().localEvents(p);
+        if (p instanceof InteropAwareEventFilter) {
+            InteropAwareEventFilter p0 = (InteropAwareEventFilter)p;
+
+            p0.initialize(ctx);
+
+            try {
+                return getSpi().localEvents(p0);
+            }
+            finally {
+                p0.close();
+            }
+        }
+        else
+            return getSpi().localEvents(p);
     }
 
     /**

@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.communication;
+package org.apache.ignite.internal.interop;
 
+import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 /**
- * Special version of bi-predicate for messaging with initialize/close callbacks.
+ * Special version of predicate for events with initialize/close callbacks.
  */
-public interface GridLifecycleAwareMessageFilter<K, V> extends IgniteBiPredicate<K, V> {
+public interface InteropAwareEventFilter<E extends Event> extends IgnitePredicate<E> {
     /**
      * Initializes the filter.
-     *
-     * @param ctx Kernal context.
      */
     public void initialize(GridKernalContext ctx);
 

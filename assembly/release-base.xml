@@ -23,12 +23,12 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>LICENSE.txt</source>
+            <source>LICENSE</source>
             <outputDirectory>/</outputDirectory>
         </file>
 
         <file>
-            <source>NOTICE.txt</source>
+            <source>NOTICE</source>
             <outputDirectory>/</outputDirectory>
         </file>
 
