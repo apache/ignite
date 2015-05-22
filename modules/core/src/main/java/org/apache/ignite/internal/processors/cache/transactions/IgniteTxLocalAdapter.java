@@ -661,21 +661,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         }
     }
 
-    /**
-     * @param stores Store managers.
-     * @return If {@code isWriteToStoreFromDht} value same for all stores.
-     */
-    private boolean isWriteToStoreFromDhtValid(Collection<CacheStoreManager> stores) {
-        boolean exp = F.first(stores).isWriteToStoreFromDht();
-
-        for (CacheStoreManager store : stores) {
-            if (store.isWriteToStoreFromDht() != exp)
-                return false;
-        }
-
-        return true;
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass"})
     @Override public void userCommit() throws IgniteCheckedException {
@@ -1101,13 +1086,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 if (!internal()) {
                     Collection<CacheStoreManager> stores = stores();
 
-                    assert isWriteToStoreFromDhtValid(stores) :
-                        "isWriteToStoreFromDht can't be different within one transaction";
+                    if (stores != null && !stores.isEmpty()) {
+                        assert isWriteToStoreFromDhtValid(stores) :
+                            "isWriteToStoreFromDht can't be different within one transaction";
 
-                    boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+                        boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
 
-                    if (stores != null && !stores.isEmpty() && (near() || isWriteToStoreFromDht))
-                        sessionEnd(stores, false);
+                        if (stores != null && !stores.isEmpty() && (near() || isWriteToStoreFromDht))
+                            sessionEnd(stores, false);
+                    }
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {
@@ -3323,6 +3310,23 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         }
 
         return 0;
+    }
+
+    /**
+     * @param stores Store managers.
+     * @return If {@code isWriteToStoreFromDht} value same for all stores.
+     */
+    private boolean isWriteToStoreFromDhtValid(Collection<CacheStoreManager> stores) {
+        if (stores != null && !stores.isEmpty()) {
+            boolean exp = F.first(stores).isWriteToStoreFromDht();
+
+            for (CacheStoreManager store : stores) {
+                if (store.isWriteToStoreFromDht() != exp)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
