@@ -129,7 +129,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static void downloadHive() throws Exception {
-        String ver = IgniteSystemProperties.getString("hive.version", "0.13.1");
+        String ver = IgniteSystemProperties.getString("hive.version", "1.2.0");
 
         X.println("Will use Hive version: " + ver);
 
