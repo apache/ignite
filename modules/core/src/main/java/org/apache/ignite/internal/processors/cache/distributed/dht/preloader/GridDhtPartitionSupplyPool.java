@@ -83,16 +83,18 @@ class GridDhtPartitionSupplyPool {
 
         top = cctx.dht().topology();
 
-        int poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
+        if (!cctx.kernalContext().clientNode()) {
+            int poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
 
-        for (int i = 0; i < poolSize; i++)
-            workers.add(new SupplyWorker());
+            for (int i = 0; i < poolSize; i++)
+                workers.add(new SupplyWorker());
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage>() {
-            @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
-                processDemandMessage(id, m);
-            }
-        });
+            cctx.io().addHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class, new CI2<UUID, GridDhtPartitionDemandMessage>() {
+                @Override public void apply(UUID id, GridDhtPartitionDemandMessage m) {
+                    processDemandMessage(id, m);
+                }
+            });
+        }
 
         depEnabled = cctx.gridDeploy().enabled();
     }

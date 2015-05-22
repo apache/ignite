@@ -30,7 +30,7 @@ import java.util.*;
  * Cache preloader that is responsible for loading cache entries either from remote
  * nodes (for distributed cache) or anywhere else at cache startup.
  */
-public interface GridCachePreloader<K, V> {
+public interface GridCachePreloader {
     /**
      * Starts preloading.
      *

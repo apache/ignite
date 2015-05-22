@@ -108,9 +108,11 @@ public class GridDhtPartitionDemandPool {
 
         log = cctx.logger(getClass());
 
-        poolSize = cctx.rebalanceEnabled() ? cctx.config().getRebalanceThreadPoolSize() : 0;
+        boolean enabled = cctx.rebalanceEnabled() && !cctx.kernalContext().clientNode();
 
-        if (poolSize > 0) {
+        poolSize = enabled ? cctx.config().getRebalanceThreadPoolSize() : 0;
+
+        if (enabled) {
             barrier = new CyclicBarrier(poolSize);
 
             dmdWorkers = new ArrayList<>(poolSize);

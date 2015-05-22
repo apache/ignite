@@ -54,7 +54,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     private GridDhtPartitionTopology top;
 
     /** Preloader. */
-    protected GridCachePreloader<K, V> preldr;
+    protected GridCachePreloader preldr;
 
     /** Multi tx future holder. */
     private ThreadLocal<IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
@@ -168,17 +168,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return preldr;
     }
 
     /**
      * @return DHT preloader.
      */
-    public GridDhtPreloader<K, V> dhtPreloader() {
+    public GridDhtPreloader dhtPreloader() {
         assert preldr instanceof GridDhtPreloader;
 
-        return (GridDhtPreloader<K, V>)preldr;
+        return (GridDhtPreloader)preldr;
     }
 
     /**

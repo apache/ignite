@@ -171,7 +171,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         metrics = m;
 
-        preldr = new GridDhtPreloader<>(ctx);
+        preldr = new GridDhtPreloader(ctx);
 
         preldr.start();
 

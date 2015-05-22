@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
 /**
  * DHT cache preloader.
  */
-public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
+public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
 
@@ -57,7 +57,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     private final GridAtomicLong topVer = new GridAtomicLong();
 
     /** Force key futures. */
-    private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<K, V>> forceKeyFuts = newMap();
+    private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<?, ?>> forceKeyFuts = newMap();
 
     /** Partition suppliers. */
     private GridDhtPartitionSupplyPool supplyPool;
@@ -92,7 +92,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
                 assert !loc.id().equals(n.id());
 
-                for (GridDhtForceKeysFuture<K, V> f : forceKeyFuts.values())
+                for (GridDhtForceKeysFuture<?, ?> f : forceKeyFuts.values())
                     f.onDiscoveryEvent(e);
 
                 assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
@@ -117,7 +117,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      * @param cctx Cache context.
      */
-    public GridDhtPreloader(GridCacheContext<K, V> cctx) {
+    public GridDhtPreloader(GridCacheContext<?, ?> cctx) {
         super(cctx);
 
         top = cctx.dht().topology();
@@ -271,7 +271,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> syncFuture() {
-        return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>() : demandPool.syncFuture();
+        return demandPool.syncFuture();
     }
 
     /**
@@ -406,7 +406,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             return;
 
         try {
-            GridDhtForceKeysFuture<K, V> f = forceKeyFuts.get(msg.futureId());
+            GridDhtForceKeysFuture<?, ?> f = forceKeyFuts.get(msg.futureId());
 
             if (f != null)
                 f.onResult(node.id(), msg);
@@ -491,7 +491,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
-        final GridDhtForceKeysFuture<K, V> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
+        final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
 
@@ -543,7 +543,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      *
      * @param fut Future to add.
      */
-    void addFuture(GridDhtForceKeysFuture<K, V> fut) {
+    void addFuture(GridDhtForceKeysFuture<?, ?> fut) {
         forceKeyFuts.put(fut.futureId(), fut);
     }
 
@@ -552,7 +552,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      *
      * @param fut Future to remove.
      */
-    void remoteFuture(GridDhtForceKeysFuture<K, V> fut) {
+    void remoteFuture(GridDhtForceKeysFuture<?, ?> fut) {
         forceKeyFuts.remove(fut.futureId(), fut);
     }
 

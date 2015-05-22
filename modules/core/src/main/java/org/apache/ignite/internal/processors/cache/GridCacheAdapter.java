@@ -348,7 +348,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Preloader.
      */
-    public abstract GridCachePreloader<K, V> preloader();
+    public abstract GridCachePreloader preloader();
 
     /** {@inheritDoc} */
     @Override public Affinity<K> affinity() {
