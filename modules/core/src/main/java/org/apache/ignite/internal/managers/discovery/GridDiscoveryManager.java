@@ -2134,12 +2134,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             allNodes = Collections.unmodifiableList(all);
 
-            Map<String, Collection<ClusterNode>> cacheMap =
-                new HashMap<>(allNodes.size(), 1.0f);
-            Map<String, Collection<ClusterNode>> rmtCacheMap =
-                new HashMap<>(allNodes.size(), 1.0f);
-            Map<String, Collection<ClusterNode>> dhtNodesMap =
-                new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> cacheMap = new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> rmtCacheMap = new HashMap<>(allNodes.size(), 1.0f);
+            Map<String, Collection<ClusterNode>> dhtNodesMap =new HashMap<>(allNodes.size(), 1.0f);
             Collection<ClusterNode> nodesWithCaches = new HashSet<>(allNodes.size());
             Collection<ClusterNode> rmtNodesWithCaches = new HashSet<>(allNodes.size());
 

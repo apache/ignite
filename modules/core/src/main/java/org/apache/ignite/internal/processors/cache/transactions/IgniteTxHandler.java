@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -273,7 +274,7 @@ public class IgniteTxHandler {
             }
 
             try {
-                if (top != null && !top.topologyVersion().equals(req.topologyVersion())) {
+                if (top != null && needRemap(req.topologyVersion(), top.topologyVersion(), req)) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap transaction [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -400,6 +401,36 @@ public class IgniteTxHandler {
         }
         else
             return new GridFinishedFuture<>((GridNearTxPrepareResponse)null);
+    }
+
+    /**
+     * @param expVer Expected topology version.
+     * @param curVer Current topology version.
+     * @param req Request.
+     * @return {@code True} if cache affinity changed and request should be remapped.
+     */
+    private boolean needRemap(AffinityTopologyVersion expVer,
+        AffinityTopologyVersion curVer,
+        GridNearTxPrepareRequest req) {
+        if (expVer.equals(curVer))
+            return false;
+
+        for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
+            GridCacheContext ctx = e.context();
+
+            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
+            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
+
+            if (!cacheNodes0.equals(cacheNodes1)) {
+                Collection<ClusterNode> keyNodes0 = ctx.affinity().nodes(e.key(), expVer);
+                Collection<ClusterNode> keyNodes1 = ctx.affinity().nodes(e.key(), curVer);
+
+                if (!keyNodes0.equals(keyNodes1))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

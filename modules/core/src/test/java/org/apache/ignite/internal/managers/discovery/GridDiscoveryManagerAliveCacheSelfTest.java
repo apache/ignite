@@ -124,7 +124,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     private void doTestAlive() throws Exception {
         for (int i = 0; i < ITERATIONS; i++) {
@@ -220,7 +220,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
                     });
 
                 assertTrue(
-                    currTop.contains(GridCacheUtils.oldest(k.internalCache().context(), new AffinityTopologyVersion(currVer))));
+                    currTop.contains(GridCacheUtils.oldestAliveCacheServerNode(k.context().cache().context(), new AffinityTopologyVersion(currVer))));
             }
         }
     }

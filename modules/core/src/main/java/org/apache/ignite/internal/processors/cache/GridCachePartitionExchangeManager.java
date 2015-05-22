@@ -571,7 +571,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         try {
             // If this is the oldest node.
             if (oldest.id().equals(cctx.localNodeId())) {
-                rmts = CU.remoteNodes(cctx);
+                rmts = CU.remoteNodes(cctx, AffinityTopologyVersion.NONE);
 
                 if (log.isDebugEnabled())
                     log.debug("Refreshing partitions from oldest node: " + cctx.localNodeId());

@@ -778,24 +778,15 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
             boolean clientNode = cctx.kernalContext().clientNode();
 
-            assert !remap || (clientNode && !tx.hasRemoteLocks());
+            assert !remap || (clientNode && (tx == null || !tx.hasRemoteLocks()));
 
             ConcurrentLinkedDeque8<GridNearLockMapping> mappings = new ConcurrentLinkedDeque8<>();
 
             // Assign keys to primary nodes.
             GridNearLockMapping map = null;
 
-            boolean first = true;
-
             for (KeyCacheObject key : keys) {
                 GridNearLockMapping updated = map(key, map, topVer);
-
-                if (first) {
-                    if (clientNode)
-                        updated.clientFirst(tx == null || !tx.hasRemoteLocks());
-
-                    first = false;
-                }
 
                 // If new mapping was created, add to collection.
                 if (updated != map) {
@@ -817,6 +808,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
             if (log.isDebugEnabled())
                 log.debug("Starting (re)map for mappings [mappings=" + mappings + ", fut=" + this + ']');
+
+            boolean first = true;
 
             // Create mini futures.
             for (Iterator<GridNearLockMapping> iter = mappings.iterator(); iter.hasNext(); ) {
@@ -895,6 +888,14 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                                 if (!cand.reentry()) {
                                     if (req == null) {
+                                        boolean clientFirst = false;
+
+                                        if (first) {
+                                            clientFirst = clientNode && (tx == null || !tx.hasRemoteLocks());
+
+                                            first = false;
+                                        }
+
                                         req = new GridNearLockRequest(
                                             cctx.cacheId(),
                                             topVer,
@@ -917,7 +918,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                             inTx() ? tx.taskNameHash() : 0,
                                             read ? accessTtl : -1L,
                                             skipStore,
-                                            mapping.clientFirst());
+                                            clientFirst);
 
                                         mapping.request(req);
                                     }

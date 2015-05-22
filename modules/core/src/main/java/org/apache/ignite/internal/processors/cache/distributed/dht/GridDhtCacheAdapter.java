@@ -932,6 +932,35 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
+     * @param expVer Expected topology version.
+     * @param curVer Current topology version.
+     * @param keys Keys.
+     * @return {@code True} if cache affinity changed and operation should be remapped.
+     */
+    protected final boolean needRemap(AffinityTopologyVersion expVer,
+        AffinityTopologyVersion curVer,
+        Collection<?> keys)
+    {
+        if (expVer.equals(curVer))
+            return false;
+
+        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
+        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
+
+        if (!cacheNodes0.equals(cacheNodes1)) {
+            for (Object key : keys) {
+                Collection<ClusterNode> keyNodes0 = ctx.affinity().nodes(key, expVer);
+                Collection<ClusterNode> keyNodes1 = ctx.affinity().nodes(key, curVer);
+
+                if (!keyNodes0.equals(keyNodes1))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
      * @return Local entries iterator.

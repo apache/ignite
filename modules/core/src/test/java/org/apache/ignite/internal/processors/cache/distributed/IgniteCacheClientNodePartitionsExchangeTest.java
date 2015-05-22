@@ -425,6 +425,49 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientOnlyCacheStart() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        Ignite ignite1 = startGrid(1);
+
+        waitForTopologyUpdate(2, 2);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName("cache1");
+
+        ignite0.createCache(ccfg);
+
+        client = true;
+
+        Ignite ignite2 = startGrid(2);
+
+        waitForTopologyUpdate(3, 3);
+
+        TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+        TestCommunicationSpi spi1 = (TestCommunicationSpi)ignite1.configuration().getCommunicationSpi();
+        TestCommunicationSpi spi2 = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+
+        spi0.reset();
+        spi1.reset();
+        spi2.reset();
+
+        assertNull(((IgniteKernal) ignite2).context().cache().context().cache().internalCache("cache1"));
+
+        ignite2.cache("cache1");
+
+        assertNotNull(((IgniteKernal) ignite2).context().cache().context().cache().internalCache("cache1"));
+
+        assertEquals(0, spi0.partitionsSingleMessages());
+        assertEquals(0, spi0.partitionsFullMessages());
+        assertEquals(0, spi1.partitionsSingleMessages());
+        assertEquals(0, spi1.partitionsFullMessages());
+        assertEquals(0, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsFullMessages());
+    }
+
+    /**
      * Test communication SPI.
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {

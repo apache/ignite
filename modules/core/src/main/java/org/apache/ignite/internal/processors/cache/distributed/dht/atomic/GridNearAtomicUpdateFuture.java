@@ -345,7 +345,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (res.remapKeys() != null) {
             assert !fastMap || cctx.kernalContext().clientNode();
 
-            mapOnTopology(res.remapKeys(), true, nodeId, true);
+            Collection<?> remapKeys = fastMap && cctx.kernalContext().clientNode() ? null : res.remapKeys();
+
+            mapOnTopology(remapKeys, true, nodeId, true);
 
             return;
         }

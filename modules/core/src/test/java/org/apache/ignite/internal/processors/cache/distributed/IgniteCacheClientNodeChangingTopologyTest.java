@@ -298,7 +298,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(0);
+        ccfg.setBackups(1);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
@@ -315,7 +315,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final Map<Integer, Integer> map = new HashMap<>();
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 100; i++)
             map.put(i, i);
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
@@ -396,6 +396,204 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         }
 
         checkData(map, cache, 4);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void _testLock() throws Exception {
+        lock(null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockNearEnabled() throws Exception {
+        lock(new NearCacheConfiguration());
+    }
+
+    /**
+     * @param nearCfg Near cache configuration.
+     * @throws Exception If failed.
+     */
+    private void lock(NearCacheConfiguration nearCfg) throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setNearConfiguration(nearCfg);
+
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+
+        client = true;
+
+        final Ignite ignite2 = startGrid(2);
+
+        assertTrue(ignite2.configuration().isClientMode());
+
+        final List<Integer> keys = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++)
+            keys.add(i);
+
+        TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+
+        spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
+
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+
+        final CountDownLatch lockedLatch = new CountDownLatch(1);
+
+        final CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<Lock> lockFut = GridTestUtils.runAsync(new Callable<Lock>() {
+            @Override public Lock call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
+                Lock lock = cache.lockAll(keys);
+
+                lock.lock();
+
+                log.info("Locked");
+
+                lockedLatch.countDown();
+
+                unlockLatch.await();
+
+                lock.unlock();
+
+                return lock;
+            }
+        });
+
+        client = false;
+
+        IgniteEx ignite3 = startGrid(3);
+
+        log.info("Stop block.");
+
+        assertEquals(1, lockedLatch.getCount());
+
+        spi.stopBlock();
+
+        assertTrue(lockedLatch.await(3000, TimeUnit.MILLISECONDS));
+
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+
+        for (Integer key : keys) {
+            Lock lock = cache0.lock(key);
+
+            assertFalse(lock.tryLock());
+        }
+
+        unlockLatch.countDown();
+
+        lockFut.get();
+
+        for (Integer key : keys) {
+            Lock lock = cache0.lock(key);
+
+            assertTrue(lock.tryLock());
+
+            lock.unlock();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPessimisticTxMessageClientFirstFlag() throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+        IgniteEx ignite2 = startGrid(2);
+
+        client = true;
+
+        Ignite ignite3 = startGrid(3);
+
+        assertTrue(ignite3.configuration().isClientMode());
+
+        TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
+
+        spi.record(GridNearLockRequest.class);
+
+        IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+
+        try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.put(1, 1);
+            cache.put(2, 2);
+            cache.put(3, 3);
+
+            tx.commit();
+        }
+
+        checkClientLockMessages(spi.recordedMessages(), 3);
+
+        Map<Integer, Integer> map = new HashMap<>();
+
+        map.put(4, 4);
+        map.put(5, 5);
+        map.put(6, 6);
+        map.put(7, 7);
+
+        try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache.putAll(map);
+
+            tx.commit();
+        }
+
+        checkClientLockMessages(spi.recordedMessages(), 4);
+
+        spi.record(null);
+
+        TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        spi0.record(GridNearLockRequest.class);
+
+        List<Integer> keys = primaryKeys(ignite1.cache(null), 3, 0);
+
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+
+        try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cache0.put(keys.get(0), 0);
+            cache0.put(keys.get(1), 1);
+            cache0.put(keys.get(2), 2);
+
+            tx.commit();
+        }
+
+        List<Object> msgs = spi0.recordedMessages();
+
+        assertEquals(3, msgs.size());
+
+        for (Object msg : msgs)
+            assertFalse(((GridNearLockRequest)msg).firstClientRequest());
+    }
+
+    /**
+     * @param msgs Messages.
+     * @param expCnt Expected number of messages.
+     */
+    private void checkClientLockMessages(List<Object> msgs, int expCnt) {
+        assertEquals(expCnt, msgs.size());
+
+        assertTrue(((GridNearLockRequest)msgs.get(0)).firstClientRequest());
+
+        for (int i = 1; i < msgs.size(); i++)
+            assertFalse(((GridNearLockRequest)msgs.get(i)).firstClientRequest());
     }
 
     /**
@@ -543,6 +741,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
     /**
      * @param map Expected data.
+     * @param clientCache Client cache.
      * @param expNodes Expected nodes number.
      * @throws Exception If failed.
      */

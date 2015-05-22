@@ -647,7 +647,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             boolean clientNode = cctx.kernalContext().clientNode();
 
-            assert !remap || (clientNode && !tx.hasRemoteLocks());
+            assert !remap || (clientNode && (tx == null || !tx.hasRemoteLocks()));
 
             // First assume this node is primary for all keys passed in.
             if (!clientNode && mapAsPrimary(keys, topVer))
@@ -658,17 +658,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             // Assign keys to primary nodes.
             GridNearLockMapping map = null;
 
-            boolean first = true;
-
             for (KeyCacheObject key : keys) {
                 GridNearLockMapping updated = map(key, map, topVer);
-
-                if (first) {
-                    if (clientNode)
-                        updated.clientFirst(tx == null || !tx.hasRemoteLocks());
-
-                    first = false;
-                }
 
                 // If new mapping was created, add to collection.
                 if (updated != map) {
@@ -692,6 +683,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 log.debug("Starting (re)map for mappings [mappings=" + mappings + ", fut=" + this + ']');
 
             boolean hasRmtNodes = false;
+
+            boolean first = true;
 
             // Create mini futures.
             for (Iterator<GridNearLockMapping> iter = mappings.iterator(); iter.hasNext(); ) {
@@ -761,6 +754,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                             if (cand != null && !cand.reentry()) {
                                 if (req == null) {
+                                    boolean clientFirst = false;
+
+                                    if (first) {
+                                        clientFirst = clientNode && (tx == null || !tx.hasRemoteLocks());
+
+                                        first = false;
+                                    }
+
                                     req = new GridNearLockRequest(
                                         cctx.cacheId(),
                                         topVer,
@@ -783,7 +784,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? accessTtl : -1L,
                                         skipStore,
-                                        mapping.clientFirst());
+                                        clientFirst);
 
                                     mapping.request(req);
                                 }

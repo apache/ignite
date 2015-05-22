@@ -1059,7 +1059,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     // Also do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
                     if ((req.fastMap() && !clientReq) || req.topologyLocked() || 
-                        topology().topologyVersion().equals(req.topologyVersion())) {
+                        !needRemap(req.topologyVersion(), topology().topologyVersion(), req.keys())) {
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         GridCacheVersion ver = req.updateVersion();
