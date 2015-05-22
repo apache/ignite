@@ -5510,7 +5510,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /** {@inheritDoc} */
         @Nullable @Override public final Object execute() {
-            waitAffinityReadyFuture();
+            if (!waitAffinityReadyFuture())
+                return null;
 
             IgniteInternalCache cache = ((IgniteKernal)ignite).context().cache().cache(cacheName);
 
@@ -5525,8 +5526,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * Holds (suspends) job execution until our cache version becomes equal to remote cache's version.
+         *
+         * @return {@code True} if topology check passed.
          */
-        private void waitAffinityReadyFuture() {
+        private boolean waitAffinityReadyFuture() {
             GridCacheProcessor cacheProc = ((IgniteKernal)ignite).context().cache();
 
             AffinityTopologyVersion locTopVer = cacheProc.context().exchange().readyAffinityVersion();
@@ -5535,15 +5538,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 IgniteInternalFuture<?> fut = cacheProc.context().exchange().affinityReadyFuture(topVer);
 
                 if (fut != null && !fut.isDone()) {
+                    jobCtx.holdcc();
+
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> t) {
+                        @Override
+                        public void apply(IgniteInternalFuture<?> t) {
                             jobCtx.callcc();
                         }
                     });
 
-                    jobCtx.holdcc();
+                    return false;
                 }
             }
+
+            return true;
         }
     }
 
