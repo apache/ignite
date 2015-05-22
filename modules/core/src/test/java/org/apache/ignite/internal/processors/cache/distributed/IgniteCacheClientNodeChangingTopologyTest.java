@@ -166,7 +166,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut.get();
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         ignite3.close();
 
@@ -200,14 +200,14 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut.get();
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         for (int i = 0; i < 100; i++)
             map.put(i, i + 2);
 
         cache.putAll(map);
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
     }
 
     /**
@@ -265,7 +265,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut.get();
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         map.clear();
 
@@ -274,7 +274,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         cache.putAll(map);
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
     }
     /**
      * @throws Exception If failed.
@@ -286,7 +286,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void _testPessimisticTxNearEnabled() throws Exception {
+    public void testPessimisticTxNearEnabled() throws Exception {
         pessimisticTx(new NearCacheConfiguration());
     }
 
@@ -351,7 +351,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut.get();
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         ignite3.close();
 
@@ -384,7 +384,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         putFut.get();
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         for (int i = 0; i < 100; i++)
             map.put(i, i + 2);
@@ -395,7 +395,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             tx.commit();
         }
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
     }
 
     /**
@@ -448,7 +448,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkClientPrepareMessages(spi.recordedMessages(), 6);
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         cache.putAll(map);
 
@@ -456,7 +456,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(null);
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
 
         IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
 
@@ -475,7 +475,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         for (Object msg : msgs)
             assertFalse(((GridNearTxPrepareRequest)msg).firstClientRequest());
 
-        checkData(map, 4);
+        checkData(map, cache, 4);
     }
 
     /**
@@ -546,12 +546,18 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @param expNodes Expected nodes number.
      * @throws Exception If failed.
      */
-    private void checkData(final Map<Integer, Integer> map, final int expNodes) throws Exception {
+    private void checkData(final Map<Integer, Integer> map, IgniteCache<?, ?> clientCache, final int expNodes)
+        throws Exception
+    {
         final List<Ignite> nodes = G.allGrids();
 
         final Affinity<Integer> aff = nodes.get(0).affinity(null);
 
         assertEquals(expNodes, nodes.size());
+
+        boolean hasNearCache = clientCache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null;
+
+        final Ignite nearCacheNode = hasNearCache ? clientCache.unwrap(Ignite.class) : null;
 
         boolean wait = GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -562,7 +568,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                         for (Ignite node : nodes) {
                             IgniteCache<Integer, Integer> cache = node.cache(null);
 
-                            if (aff.isPrimaryOrBackup(node.cluster().localNode(), key))
+                            if (aff.isPrimaryOrBackup(node.cluster().localNode(), key) || node == nearCacheNode)
                                 assertEquals("Unexpected value for " + node.name(), e.getValue(), cache.localPeek(key));
                             else
                                 assertNull("Unexpected non-null value for " + node.name(), cache.localPeek(key));
@@ -744,16 +750,18 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     }
                 });
 
-                updateBarrier.await(15_000, TimeUnit.MILLISECONDS);
-
-                CyclicBarrier barrier0 = updateBarrier;
-
-                if (barrier0 != null) {
+                try {
+                    updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
+                }
+                catch (TimeoutException e) {
                     log.info("Failed to wait for update.");
 
                     U.dumpThreads(log);
 
-                    barrier0.reset();
+                    CyclicBarrier barrier0 = updateBarrier;
+
+                    if (barrier0 != null)
+                        barrier0.reset();
 
                     fail("Failed to wait for update.");
                 }
@@ -770,16 +778,20 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     }
                 });
 
-                updateBarrier.await(15_000, TimeUnit.MILLISECONDS);
+                updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
 
-                barrier0 = updateBarrier;
-
-                if (barrier0 != null) {
+                try {
+                    updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
+                }
+                catch (TimeoutException e) {
                     log.info("Failed to wait for update.");
 
                     U.dumpThreads(log);
 
-                    barrier0.reset();
+                    CyclicBarrier barrier0 = updateBarrier;
+
+                    if (barrier0 != null)
+                        barrier0.reset();
 
                     fail("Failed to wait for update.");
                 }

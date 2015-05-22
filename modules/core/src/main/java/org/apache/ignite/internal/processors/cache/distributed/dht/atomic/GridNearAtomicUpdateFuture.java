@@ -343,7 +343,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      */
     public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res) {
         if (res.remapKeys() != null) {
-            assert cctx.config().getAtomicWriteOrderMode() == PRIMARY || cctx.kernalContext().clientNode();
+            assert !fastMap || cctx.kernalContext().clientNode();
 
             mapOnTopology(res.remapKeys(), true, nodeId, true);
 

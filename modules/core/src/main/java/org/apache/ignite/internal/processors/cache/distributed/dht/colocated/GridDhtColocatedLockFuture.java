@@ -326,13 +326,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * Undoes all locks.
      *
      * @param dist If {@code true}, then remove locks from remote nodes as well.
+     * @param rollback {@code True} if should rollback tx.
      */
-    private void undoLocks(boolean dist) {
+    private void undoLocks(boolean dist, boolean rollback) {
         // Transactions will undo during rollback.
         if (dist && tx == null)
             cctx.colocated().removeLocks(threadId, lockVer, keys);
         else {
-            if (tx != null) {
+            if (rollback && tx != null) {
                 if (tx.setRollbackOnly()) {
                     if (log.isDebugEnabled())
                         log.debug("Marked transaction as rollback only because locks could not be acquired: " + tx);
@@ -350,7 +351,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @param dist {@code True} if need to distribute lock release.
      */
     private void onFailed(boolean dist) {
-        undoLocks(dist);
+        undoLocks(dist, true);
 
         complete(false);
     }
@@ -475,7 +476,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 ", fut=" + this + ']');
 
         if (!success)
-            undoLocks(distribute);
+            undoLocks(distribute, true);
 
         if (tx != null)
             cctx.tm().txContext(tx);
@@ -1369,6 +1370,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
          *
          */
         private void remap() {
+            undoLocks(false, false);
+
             mapOnTopology(true);
 
             onDone(true);
