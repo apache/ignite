@@ -4591,7 +4591,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         msg.messageBytes(marsh.marshal(msgObj));
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
                 }

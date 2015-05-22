@@ -1481,7 +1481,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Throwable e) {
                             U.error(log, "Failed to unmarshal discovery custom message.", e);
                         }
                     }
