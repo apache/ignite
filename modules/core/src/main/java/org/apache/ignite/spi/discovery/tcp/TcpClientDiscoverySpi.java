@@ -1167,7 +1167,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             }
         }
 
-        /** {@inheritDoc} */
+        /**
+         * @param msg Message.
+         */
         protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
             assert msg.verified() || msg.senderNodeId() == null;
