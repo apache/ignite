@@ -4533,16 +4533,26 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 else {
                     stats.onRingMessageReceived(msg);
 
-                    try {
-                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                    DiscoverySpiCustomMessage msgObj = null;
 
+                    try {
+                        msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                    }
+                    catch (Throwable e) {
+                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                    }
+
+                    if (msgObj != null) {
                         DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
 
-                        if (nextMsg != null)
-                            addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to unmarshal discovery custom message.", e);
+                        if (nextMsg != null) {
+                            try {
+                                addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to marshal discovery custom message.", e);
+                            }
+                        }
                     }
 
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id()));
@@ -4591,7 +4601,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         msg.messageBytes(marsh.marshal(msgObj));
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
                 }

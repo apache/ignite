@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -406,6 +407,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
         try {
             return fut.get();
+        }
+        catch (IgniteInterruptedCheckedException ignored) {
+            return false;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException(e); // Should newer occur
@@ -1163,7 +1167,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             }
         }
 
-        /** {@inheritDoc} */
+        /**
+         * @param msg Message.
+         */
         protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
             assert msg.verified() || msg.senderNodeId() == null;
@@ -1475,7 +1481,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Throwable e) {
                             U.error(log, "Failed to unmarshal discovery custom message.", e);
                         }
                     }
