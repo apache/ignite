@@ -35,7 +35,6 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 
@@ -167,39 +166,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 "Persistence store is configured, but both read-through and write-through are disabled.");
         }
 
-        sesLsnrs = createSessionListeners(cfg.getCacheStoreSessionListenerFactories());
+        sesLsnrs = CU.createStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
 
         if (sesLsnrs == null)
-            sesLsnrs = createSessionListeners(cctx.kernalContext().config().getCacheStoreSessionListenerFactories());
-    }
-
-    /**
-     * Creates session listeners.
-     *
-     * @param factories Factories.
-     * @return Listeners.
-     */
-    private Collection<CacheStoreSessionListener> createSessionListeners(Factory<CacheStoreSessionListener>[] factories)
-        throws IgniteCheckedException {
-        if (factories == null)
-            return null;
-
-        Collection<CacheStoreSessionListener> lsnrs = new ArrayList<>(factories.length);
-
-        for (Factory<CacheStoreSessionListener> factory : factories) {
-            CacheStoreSessionListener lsnr = factory.create();
-
-            if (lsnr != null) {
-                cctx.kernalContext().resource().injectGeneric(lsnr);
-
-                if (lsnr instanceof LifecycleAware)
-                    ((LifecycleAware)lsnr).start();
-
-                lsnrs.add(lsnr);
-            }
-        }
-
-        return lsnrs;
+            sesLsnrs = cctx.shared().storeSessionListeners();
     }
 
     /** {@inheritDoc} */
@@ -754,6 +724,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (!sesHolder.get().storeEnded(store))
                 store.sessionEnd(commit);
         }
+        catch (Throwable e) {
+            last = true;
+
+            throw e;
+        }
         finally {
             if (last && sesHolder != null) {
                 sesHolder.set(null);
@@ -834,8 +809,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                if (!sesHolder.get().storeEnded(store))
-                    store.sessionEnd(!threwEx);
+                assert !sesHolder.get().storeEnded(store);
+
+                store.sessionEnd(!threwEx);
             }
         }
         catch (Exception e) {

@@ -17,23 +17,38 @@
 
 package org.apache.ignite.cache.store.spring;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
+import org.springframework.jdbc.datasource.*;
 import org.springframework.transaction.*;
 import org.springframework.transaction.support.*;
 
 import javax.cache.integration.*;
+import javax.sql.*;
 
 /**
  * Cache store session listener based on Spring cache manager.
  */
-public class CacheStoreSessionSpringListener implements CacheStoreSessionListener {
+public class CacheStoreSessionSpringListener implements CacheStoreSessionListener, LifecycleAware {
     /** Session key for transaction status. */
     public static final String TX_STATUS_KEY = "__spring_tx_status_";
 
     /** Transaction manager. */
     private PlatformTransactionManager txMgr;
+
+    /** Data source. */
+    private DataSource dataSrc;
+
+    /** Propagation behavior. */
+    private int propagation = TransactionDefinition.PROPAGATION_REQUIRED;
+
+    /** Logger. */
+    @LoggerResource
+    private IgniteLogger log;
 
     /**
      * Sets transaction manager.
@@ -41,8 +56,6 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
      * @param txMgr Transaction manager.
      */
     public void setTransactionManager(PlatformTransactionManager txMgr) {
-        A.notNull(txMgr, "txMgr");
-
         this.txMgr = txMgr;
     }
 
@@ -55,11 +68,71 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
         return txMgr;
     }
 
+    /**
+     * Sets data source.
+     *
+     * @param dataSrc Data source.
+     */
+    public void setDataSource(DataSource dataSrc) {
+        this.dataSrc = dataSrc;
+    }
+
+    /**
+     * Gets data source.
+     *
+     * @return Data source.
+     */
+    public DataSource getDataSource() {
+        return dataSrc;
+    }
+
+    /**
+     * Sets propagation behavior.
+     *
+     * @param propagation Propagation behavior.
+     */
+    public void setPropagationBehavior(int propagation) {
+        this.propagation = propagation;
+    }
+
+    /**
+     * Gets propagation behavior.
+     *
+     * @return Propagation behavior.
+     */
+    public int getPropagationBehavior() {
+        return propagation;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        if (txMgr == null && dataSrc == null)
+            throw new IgniteException("Either transaction manager or data source is required by " +
+                getClass().getSimpleName() + '.');
+
+        if (dataSrc != null) {
+            if (txMgr == null)
+                txMgr = new DataSourceTransactionManager(dataSrc);
+            else
+                U.warn(log, "Data source configured in " + getClass().getSimpleName() +
+                    " will be ignored (transaction manager is already set).");
+        }
+
+        assert txMgr != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public void onSessionStart(CacheStoreSession ses) {
         if (ses.isWithinTransaction()) {
             try {
-                ses.properties().put(TX_STATUS_KEY, txMgr.getTransaction(definition(ses.transaction())));
+                TransactionDefinition def = definition(ses.transaction(), ses.cacheName());
+
+                ses.properties().put(TX_STATUS_KEY, txMgr.getTransaction(def));
             }
             catch (TransactionException e) {
                 throw new CacheWriterException("Failed to start store session [tx=" + ses.transaction() + ']', e);
@@ -91,12 +164,19 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
      *
      * @return DB transaction isolation.
      */
-    private TransactionDefinition definition(Transaction tx) {
+    private TransactionDefinition definition(Transaction tx, String cacheName) {
         assert tx != null;
 
         DefaultTransactionDefinition def = new DefaultTransactionDefinition();
 
+        def.setName("Ignite Tx [cache=" + (cacheName != null ? cacheName : "<default>") + ", id=" + tx.xid() + ']');
         def.setIsolationLevel(isolationLevel(tx.isolation()));
+        def.setPropagationBehavior(propagation);
+
+        long timeoutSec = (tx.timeout() + 500) / 1000;
+
+        if (timeoutSec > 0 && timeoutSec < Integer.MAX_VALUE)
+            def.setTimeout((int)timeoutSec);
 
         return def;
     }

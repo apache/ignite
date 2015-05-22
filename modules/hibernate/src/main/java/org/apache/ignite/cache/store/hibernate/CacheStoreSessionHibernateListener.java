@@ -17,22 +17,39 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.resources.*;
 import org.hibernate.*;
+import org.hibernate.cfg.*;
 
 import javax.cache.integration.*;
+import java.io.*;
+import java.net.*;
 import java.util.*;
 
 /**
  * Cache store session listener based on Hibernate session.
  */
-public class CacheStoreSessionHibernateListener implements CacheStoreSessionListener {
+public class CacheStoreSessionHibernateListener implements CacheStoreSessionListener, LifecycleAware {
     /** Session key for JDBC connection. */
     public static final String HIBERNATE_SES_KEY = "__hibernate_ses_";
 
     /** Hibernate session factory. */
     private SessionFactory sesFactory;
+
+    /** Hibernate configuration file path. */
+    private String hibernateCfgPath;
+
+    /** Logger. */
+    @LoggerResource
+    private IgniteLogger log;
+
+    /** Whether to close session on stop. */
+    private boolean closeSesOnStop;
 
     /**
      * Sets Hibernate session factory.
@@ -52,6 +69,69 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
      */
     public SessionFactory getSessionFactory() {
         return sesFactory;
+    }
+
+    /**
+     * Sets hibernate configuration path.
+     *
+     * @param hibernateCfgPath Hibernate configuration path.
+     */
+    public void setHibernateConfigurationPath(String hibernateCfgPath) {
+        this.hibernateCfgPath = hibernateCfgPath;
+    }
+
+    /**
+     * Gets hibernate configuration path.
+     *
+     * @return Hibernate configuration path.
+     */
+    public String getHibernateConfigurationPath() {
+        return hibernateCfgPath;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
+    @Override public void start() throws IgniteException {
+        if (sesFactory == null && F.isEmpty(hibernateCfgPath))
+            throw new IgniteException("Either session factory or Hibernate configuration file is required by " +
+                getClass().getSimpleName() + '.');
+
+        if (!F.isEmpty(hibernateCfgPath)) {
+            if (sesFactory == null) {
+                try {
+                    URL url = new URL(hibernateCfgPath);
+
+                    sesFactory = new Configuration().configure(url).buildSessionFactory();
+                }
+                catch (MalformedURLException ignored) {
+                    // No-op.
+                }
+
+                if (sesFactory == null) {
+                    File cfgFile = new File(hibernateCfgPath);
+
+                    if (cfgFile.exists())
+                        sesFactory = new Configuration().configure(cfgFile).buildSessionFactory();
+                }
+
+                if (sesFactory == null)
+                    sesFactory = new Configuration().configure(hibernateCfgPath).buildSessionFactory();
+
+                if (sesFactory == null)
+                    throw new IgniteException("Failed to resolve Hibernate configuration file: " + hibernateCfgPath);
+
+                closeSesOnStop = true;
+            }
+            else
+                U.warn(log, "Hibernate configuration file configured in " + getClass().getSimpleName() +
+                    " will be ignored (session factory is already set).");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        if (closeSesOnStop && sesFactory != null && !sesFactory.isClosed())
+            sesFactory.close();
     }
 
     /** {@inheritDoc} */

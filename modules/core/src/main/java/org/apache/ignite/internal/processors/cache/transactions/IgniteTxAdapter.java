@@ -408,9 +408,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         if (!storeEnabled())
             return false;
 
-        Collection<CacheStoreManager> stores = stores();
+        Collection<Integer> cacheIds = activeCacheIds();
 
-        return stores != null && !stores.isEmpty();
+        if (!cacheIds.isEmpty()) {
+            for (int cacheId : cacheIds) {
+                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+
+                if (store.configured())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

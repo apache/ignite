@@ -17,9 +17,10 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.lifecycle.*;
 
 import javax.cache.integration.*;
 import javax.sql.*;
@@ -29,7 +30,7 @@ import java.util.*;
 /**
  * Cache store session listener based on JDBC connection.
  */
-public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener {
+public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener, LifecycleAware {
     /** Session key for JDBC connection. */
     public static final String JDBC_CONN_KEY = "__jdbc_conn_";
 
@@ -54,6 +55,17 @@ public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener 
      */
     public DataSource getDataSource() {
         return dataSrc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        if (dataSrc == null)
+            throw new IgniteException("Data source is required by " + getClass().getSimpleName() + '.');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        // No-op.
     }
 
     /** {@inheritDoc} */

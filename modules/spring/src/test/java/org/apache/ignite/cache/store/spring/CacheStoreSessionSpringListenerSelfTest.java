@@ -54,7 +54,7 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
             @Override public CacheStoreSessionListener create() {
                 CacheStoreSessionSpringListener lsnr = new CacheStoreSessionSpringListener();
 
-                lsnr.setTransactionManager(new DataSourceTransactionManager(DATA_SRC));
+                lsnr.setDataSource(DATA_SRC);
 
                 return lsnr;
             }

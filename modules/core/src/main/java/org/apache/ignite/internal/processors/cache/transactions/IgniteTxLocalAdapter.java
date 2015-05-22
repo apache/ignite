@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
@@ -1010,24 +1010,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 cctx.tm().resetContext();
             }
         }
-        else if (!internal()) {
-            Collection<CacheStoreManager> stores = stores();
-
-            if (stores != null && !stores.isEmpty()) {
-                try {
-                    sessionEnd(stores, true);
-                }
-                catch (IgniteCheckedException e) {
-                    commitError(e);
-
-                    setRollbackOnly();
-
-                    cctx.tm().removeCommittedTx(this);
-
-                    throw e;
-                }
-            }
-        }
 
         // Do not unlock transaction entries if one-phase commit.
         if (!onePhaseCommit()) {
@@ -1119,7 +1101,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 if (!internal()) {
                     Collection<CacheStoreManager> stores = stores();
 
-                    if (stores != null && !stores.isEmpty() && (near() || F.first(stores).isWriteToStoreFromDht()))
+                    assert isWriteToStoreFromDhtValid(stores) :
+                        "isWriteToStoreFromDht can't be different within one transaction";
+
+                    boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+
+                    if (stores != null && !stores.isEmpty() && (near() || isWriteToStoreFromDht))
                         sessionEnd(stores, false);
                 }
             }
