@@ -1742,6 +1742,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets cache store session listener factories.
      *
      * @return Cache store session listener factories.
+     * @see CacheStoreSessionListener
      */
     public Factory<? extends CacheStoreSessionListener>[] getCacheStoreSessionListenerFactories() {
         return storeSesLsnrs;
@@ -1749,9 +1750,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Cache store session listener factories.
+     * <p>
+     * These listeners override global listeners provided in
+     * {@link IgniteConfiguration#setCacheStoreSessionListenerFactories(Factory[])}
+     * configuration property.
      *
      * @param storeSesLsnrs Cache store session listener factories.
      * @return {@code this} for chaining.
+     * @see CacheStoreSessionListener
      */
     public CacheConfiguration setCacheStoreSessionListenerFactories(
         Factory<? extends CacheStoreSessionListener>... storeSesLsnrs) {

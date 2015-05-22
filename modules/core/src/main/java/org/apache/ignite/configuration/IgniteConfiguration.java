@@ -2249,6 +2249,7 @@ public class IgniteConfiguration {
      * Gets cache store session listener factories.
      *
      * @return Cache store session listener factories.
+     * @see CacheStoreSessionListener
      */
     public Factory<CacheStoreSessionListener>[] getCacheStoreSessionListenerFactories() {
         return storeSesLsnrs;
@@ -2256,9 +2257,15 @@ public class IgniteConfiguration {
 
     /**
      * Cache store session listener factories.
+     * <p>
+     * These are global store session listeners, so they are applied to
+     * all caches. If you need to override listeners for a
+     * particular cache, use {@link CacheConfiguration#setCacheStoreSessionListenerFactories(Factory[])}
+     * configuration property.
      *
      * @param storeSesLsnrs Cache store session listener factories.
      * @return {@code this} for chaining.
+     * @see CacheStoreSessionListener
      */
     public IgniteConfiguration setCacheStoreSessionListenerFactories(
         Factory<CacheStoreSessionListener>... storeSesLsnrs) {

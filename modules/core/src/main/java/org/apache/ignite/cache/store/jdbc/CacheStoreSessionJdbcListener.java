@@ -22,6 +22,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lifecycle.*;
 
+import javax.cache.*;
 import javax.cache.integration.*;
 import javax.sql.*;
 import java.sql.*;
@@ -29,6 +30,44 @@ import java.util.*;
 
 /**
  * Cache store session listener based on JDBC connection.
+ * <p>
+ * For each session this listener gets a new JDBC connection
+ * from provided {@link DataSource} and commits (or rolls
+ * back) it when session ends.
+ * <p>
+ * The connection is stored in store session
+ * {@link CacheStoreSession#properties() properties} and can
+ * be accessed at any moment by {@link #JDBC_CONN_KEY} key.
+ * The listener guarantees that the connection will be
+ * available for any store operation. If there is an
+ * ongoing cache transaction, all operations within this
+ * transaction will be committed or rolled back only when
+ * session ends.
+ * <p>
+ * As an example, here is how the {@link CacheStore#write(Cache.Entry)}
+ * method can be implemented if {@link CacheStoreSessionJdbcListener}
+ * is configured:
+ * <pre name="code" class="java">
+ * private static class Store extends CacheStoreAdapter&lt;Integer, Integer&gt; {
+ *     &#64;CacheStoreSessionResource
+ *     private CacheStoreSession ses;
+ *
+ *     &#64;Override public void write(Cache.Entry&lt;? extends Integer, ? extends Integer&gt; entry) throws CacheWriterException {
+ *         // Get connection from the current session.
+ *         Connection conn = ses.<String, Connection>properties().get(CacheStoreSessionJdbcListener.JDBC_CONN_KEY);
+ *
+ *         // Execute update SQL query.
+ *         try {
+ *             conn.createStatement().executeUpdate("...");
+ *         }
+ *         catch (SQLException e) {
+ *             throw new CacheWriterException("Failed to update the store.", e);
+ *         }
+ *     }
+ * }
+ * </pre>
+ * JDBC connection will be automatically created by the listener
+ * at the start of the session and closed when it ends.
  */
 public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener, LifecycleAware {
     /** Session key for JDBC connection. */
@@ -39,12 +78,13 @@ public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener,
 
     /**
      * Sets data source.
+     * <p>
+     * This is a required parameter. If data source is not set,
+     * exception will be thrown on startup.
      *
      * @param dataSrc Data source.
      */
     public void setDataSource(DataSource dataSrc) {
-        A.notNull(dataSrc, "dataSrc");
-
         this.dataSrc = dataSrc;
     }
 

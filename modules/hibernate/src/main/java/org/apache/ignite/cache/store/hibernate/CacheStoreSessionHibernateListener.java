@@ -32,7 +32,45 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Cache store session listener based on Hibernate session.
+ * Hibernate-based cache store session listener.
+ * <p>
+ * This listener creates a new Hibernate session for each store
+ * session. If there is an ongoing cache transaction, a corresponding
+ * Hibernate transaction is created as well.
+ * <p>
+ * The Hibernate session is stored in store session
+ * {@link CacheStoreSession#properties() properties} and can
+ * be accessed at any moment by {@link #HIBERNATE_SES_KEY} key.
+ * The listener guarantees that the session will be
+ * available for any store operation. If there is an
+ * ongoing cache transaction, all operations within this
+ * transaction will share a DB transaction.
+ * <p>
+ * As an example, here is how the {@link CacheStore#write(javax.cache.Cache.Entry)}
+ * method can be implemented if {@link CacheStoreSessionHibernateListener}
+ * is configured:
+ * <pre name="code" class="java">
+ * private static class Store extends CacheStoreAdapter&lt;Integer, Integer&gt; {
+ *     &#64;CacheStoreSessionResource
+ *     private CacheStoreSession ses;
+ *
+ *     &#64;Override public void write(Cache.Entry&lt;? extends Integer, ? extends Integer&gt; entry) throws CacheWriterException {
+ *         // Get Hibernate session from the current store session.
+ *         Session hibSes = ses.<String, Session>properties().get(CacheStoreSessionHibernateListener.HIBERNATE_SES_KEY);
+ *
+ *         // Persist the value.
+ *         hibSes.persist(entry.getValue());
+ *     }
+ * }
+ * </pre>
+ * Hibernate session will be automatically created by the listener
+ * at the start of the session and closed when it ends.
+ * <p>
+ * {@link CacheStoreSessionHibernateListener} requires that either
+ * {@link #setSessionFactory(SessionFactory)} session factory}
+ * or {@link #setHibernateConfigurationPath(String) Hibernate configuration file}
+ * is provided. If non of them is set, exception is thrown. Is both are provided,
+ * session factory will be used.
  */
 public class CacheStoreSessionHibernateListener implements CacheStoreSessionListener, LifecycleAware {
     /** Session key for JDBC connection. */
@@ -53,12 +91,13 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
 
     /**
      * Sets Hibernate session factory.
+     * <p>
+     * Either session factory or configuration file is required.
+     * If none is provided, exception will be thrown on startup.
      *
      * @param sesFactory Session factory.
      */
     public void setSessionFactory(SessionFactory sesFactory) {
-        A.notNull(sesFactory, "sesFactory");
-
         this.sesFactory = sesFactory;
     }
 
@@ -73,6 +112,9 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
 
     /**
      * Sets hibernate configuration path.
+     * <p>
+     * Either session factory or configuration file is required.
+     * If none is provided, exception will be thrown on startup.
      *
      * @param hibernateCfgPath Hibernate configuration path.
      */

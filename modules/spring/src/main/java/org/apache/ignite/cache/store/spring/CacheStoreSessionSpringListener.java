@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
+import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.datasource.*;
 import org.springframework.transaction.*;
 import org.springframework.transaction.support.*;
@@ -31,7 +32,28 @@ import javax.cache.integration.*;
 import javax.sql.*;
 
 /**
- * Cache store session listener based on Spring cache manager.
+ * Cache store session listener based on Spring transaction management.
+ * <p>
+ * This listener starts a new DB transaction for each session and commits
+ * or rolls it back when session ends. If there is no ongoing
+ * cache transaction, this listener is no-op.
+ * <p>
+ * Store implementation can use any Spring APIs like {@link JdbcTemplate}
+ * and others. The listener will guarantee that if there is an
+ * ongoing cache transaction, all store operations within this
+ * transaction will be automatically enlisted in the same database
+ * transaction.
+ * <p>
+ * {@link CacheStoreSessionSpringListener} requires that either
+ * {@link #setTransactionManager(PlatformTransactionManager) transaction manager}
+ * or {@link #setDataSource(DataSource) data source} is configured. If non of them is
+ * provided, exception is thrown. Is both are provided, data source will be
+ * ignored.
+ * <p>
+ * If there is a transaction, a {@link TransactionStatus} object will be stored
+ * in store session {@link CacheStoreSession#properties() properties} and can be
+ * accessed at any moment by {@link #TX_STATUS_KEY} key. This can be used to
+ * acquire current DB transaction status.
  */
 public class CacheStoreSessionSpringListener implements CacheStoreSessionListener, LifecycleAware {
     /** Session key for transaction status. */
@@ -52,6 +74,9 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
 
     /**
      * Sets transaction manager.
+     * <p>
+     * Either transaction manager or data source is required.
+     * If none is provided, exception will be thrown on startup.
      *
      * @param txMgr Transaction manager.
      */
@@ -70,6 +95,9 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
 
     /**
      * Sets data source.
+     * <p>
+     * Either transaction manager or data source is required.
+     * If none is provided, exception will be thrown on startup.
      *
      * @param dataSrc Data source.
      */
@@ -88,6 +116,8 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
 
     /**
      * Sets propagation behavior.
+     * <p>
+     * This parameter is optional.
      *
      * @param propagation Propagation behavior.
      */
