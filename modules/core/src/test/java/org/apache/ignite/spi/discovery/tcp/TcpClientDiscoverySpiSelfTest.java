@@ -98,21 +98,25 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private long joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
 
+    /** */
+    private long netTimeout = TcpDiscoverySpiAdapter.DFLT_NETWORK_TIMEOUT;
+
+    /** */
+    private boolean longSockTimeouts;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        TcpDiscoverySpiAdapter disco;
+
         if (gridName.startsWith("server")) {
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
+            disco = new TcpDiscoverySpi();
 
             disco.setIpFinder(IP_FINDER);
-
-            cfg.setDiscoverySpi(disco);
         }
         else if (gridName.startsWith("client")) {
-            TcpClientDiscoverySpi disco = new TestTcpClientDiscovery();
-
-            disco.setJoinTimeout(joinTimeout);
+            disco = new TestTcpClientDiscovery();
 
             TcpDiscoveryVmIpFinder ipFinder;
 
@@ -132,14 +136,24 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             disco.setIpFinder(ipFinder);
 
-            cfg.setDiscoverySpi(disco);
-
             String nodeId = cfg.getNodeId().toString();
 
             nodeId = "cc" + nodeId.substring(2);
 
             cfg.setNodeId(UUID.fromString(nodeId));
         }
+        else
+            throw new IllegalArgumentException();
+
+        if (longSockTimeouts) {
+            disco.setAckTimeout(2000);
+            disco.setSocketTimeout(2000);
+        }
+
+        disco.setJoinTimeout(joinTimeout);
+        disco.setNetworkTimeout(netTimeout);
+
+        cfg.setDiscoverySpi(disco);
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
@@ -171,6 +185,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         nodeId = null;
         clientIpFinder = null;
         joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
+        netTimeout = TcpClientDiscoverySpi.DFLT_NETWORK_TIMEOUT;
+        longSockTimeouts = false;
 
         assert G.allGrids().isEmpty();
     }
@@ -793,6 +809,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If any error occurs.
      */
     public void testTimeoutWaitingNodeAddedMessage() throws Exception {
+        longSockTimeouts = true;
+
         startServerNodes(2);
 
         final CountDownLatch cnt = new CountDownLatch(1);
@@ -812,7 +830,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             });
 
         try {
-            joinTimeout = 500;
+            netTimeout = 500;
 
             startGrid("client-0");
 

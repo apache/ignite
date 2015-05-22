@@ -1069,6 +1069,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 ", timeout=" + netTimeout + ']');
 
                             joinLatch.countDown();
+
+                            break;
                         }
                     }
                     else if (msg == SPI_STOP) {
@@ -1092,6 +1094,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 joinErr = new IgniteSpiException("Failed to connect to cluster: socket closed.");
 
                                 joinLatch.countDown();
+
+                                break;
                             }
                             else {
                                 if (getSpiContext().isStopping() || segmented)
