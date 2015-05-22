@@ -98,6 +98,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             ses.setConfig("StrictHostKeyChecking", "no");
 
+            ses.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
+
             ses.connect(timeout);
 
             boolean win = isWindows(ses);
