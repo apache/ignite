@@ -778,8 +778,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     }
                 });
 
-                updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
-
                 try {
                     updateBarrier.await(30_000, TimeUnit.MILLISECONDS);
                 }
