@@ -36,7 +36,7 @@ task help {
 }
 
 task slurp(dependsOn: 'classes', type: JavaExec) {
-    args(project.buildDir, "slurp,${System.getenv('TEST_BUILDS')}")
+    args(project.buildDir, "slurp")
     main = 'jiraslurp'
     classpath = sourceSets.main.runtimeClasspath
 }

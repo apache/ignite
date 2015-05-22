@@ -116,7 +116,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     private final Timer timer = new Timer("TcpClientDiscoverySpi.timer");
 
     /** */
-    private MessageWorker msgWorker;
+    protected MessageWorker msgWorker;
 
     /**
      * Default constructor.
@@ -1007,7 +1007,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /**
      * Message worker.
      */
-    private class MessageWorker extends IgniteSpiThread {
+    protected class MessageWorker extends IgniteSpiThread {
         /** Message queue. */
         private final BlockingDeque<Object> queue = new LinkedBlockingDeque<>();
 

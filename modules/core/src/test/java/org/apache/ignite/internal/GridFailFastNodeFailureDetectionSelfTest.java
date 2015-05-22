@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.EventType.*;
+
 /**
  * Fail fast test.
  */
@@ -76,7 +79,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
                     return true;
                 }
-            }, EventType.EVT_NODE_FAILED);
+            }, EVT_NODE_FAILED);
         }
 
         Ignite ignite1 = ignite(0);
@@ -98,7 +101,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
         failNode(ignite1);
 
-        assert failLatch.await(500, TimeUnit.MILLISECONDS);
+        assert failLatch.await(1000, MILLISECONDS);
     }
 
     /**
