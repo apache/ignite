@@ -333,7 +333,10 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
                                         val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
-                                    assertEquals(ver, entry.version());
+
+                                    assertEquals("Failed to check version for key [key=" + k + ", node=" +
+                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                        ver, entry.version());
                                 }
                             }
                             else

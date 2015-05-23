@@ -250,11 +250,6 @@ class GridDhtPartitionSupplyPool {
             boolean ack = false;
 
             try {
-                // Partition map exchange is finished which means that all near transactions with given
-                // topology version are committed. We can wait for local locks here as it will not take
-                // much time.
-                cctx.mvcc().finishLocks(d.topologyVersion()).get();
-
                 for (int part : d.partitions()) {
                     GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
