@@ -48,7 +48,7 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(IgniteStartFromStreamConfigurationTest.class));
 
-        suite.addTestSuite(CacheStoreSessionSpringListenerSelfTest.class);
+        suite.addTestSuite(CacheSpringStoreSessionListenerSelfTest.class);
 
         return suite;
     }

@@ -131,7 +131,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(CacheOffheapMapEntrySelfTest.class);
 
-        suite.addTestSuite(CacheStoreSessionJdbcListenerSelfTest.class);
+        suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
 
         return suite;
     }

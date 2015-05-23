@@ -855,6 +855,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Map<Object, Object> props;
 
         /** */
+        private Object attachment;
+
+        /** */
         private boolean started;
 
         /** */
@@ -884,6 +887,20 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 props = new GridLeanMap<>();
 
             return props;
+        }
+
+        /**
+         * @param attachment Attachment.
+         */
+        private void attach(Object attachment) {
+            this.attachment = attachment;
+        }
+
+        /**
+         * @return Attachment.
+         */
+        private Object attachment() {
+            return attachment;
         }
 
         /**
@@ -951,6 +968,21 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /** {@inheritDoc} */
         @Override public boolean isWithinTransaction() {
             return transaction() != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void attach(@Nullable Object attachment) {
+            SessionData ses0 = sesHolder.get();
+
+            if (ses0 != null)
+                ses0.attach(attachment);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T attachment() {
+            SessionData ses0 = sesHolder.get();
+
+            return ses0 != null ? (T)ses0.attachment() : null;
         }
 
         /** {@inheritDoc} */

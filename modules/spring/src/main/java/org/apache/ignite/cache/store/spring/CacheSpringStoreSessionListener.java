@@ -44,21 +44,17 @@ import javax.sql.*;
  * transaction will be automatically enlisted in the same database
  * transaction.
  * <p>
- * {@link CacheStoreSessionSpringListener} requires that either
+ * {@link CacheSpringStoreSessionListener} requires that either
  * {@link #setTransactionManager(PlatformTransactionManager) transaction manager}
  * or {@link #setDataSource(DataSource) data source} is configured. If non of them is
  * provided, exception is thrown. Is both are provided, data source will be
  * ignored.
  * <p>
- * If there is a transaction, a {@link TransactionStatus} object will be stored
- * in store session {@link CacheStoreSession#properties() properties} and can be
- * accessed at any moment by {@link #TX_STATUS_KEY} key. This can be used to
- * acquire current DB transaction status.
+ * If there is a transaction, a {@link TransactionStatus} object will be saved
+ * as a store session {@link CacheStoreSession#attachment() attachment}. It
+ * can be used to acquire current DB transaction status.
  */
-public class CacheStoreSessionSpringListener implements CacheStoreSessionListener, LifecycleAware {
-    /** Session key for transaction status. */
-    public static final String TX_STATUS_KEY = "__spring_tx_status_";
-
+public class CacheSpringStoreSessionListener implements CacheStoreSessionListener, LifecycleAware {
     /** Transaction manager. */
     private PlatformTransactionManager txMgr;
 
@@ -162,7 +158,7 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
             try {
                 TransactionDefinition def = definition(ses.transaction(), ses.cacheName());
 
-                ses.properties().put(TX_STATUS_KEY, txMgr.getTransaction(def));
+                ses.attach(txMgr.getTransaction(def));
             }
             catch (TransactionException e) {
                 throw new CacheWriterException("Failed to start store session [tx=" + ses.transaction() + ']', e);
@@ -173,9 +169,11 @@ public class CacheStoreSessionSpringListener implements CacheStoreSessionListene
     /** {@inheritDoc} */
     @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
         if (ses.isWithinTransaction()) {
-            TransactionStatus tx = ses.<String, TransactionStatus>properties().remove(TX_STATUS_KEY);
+            TransactionStatus tx = ses.attachment();
 
             if (tx != null) {
+                ses.attach(null);
+
                 try {
                     if (commit)
                         txMgr.commit(tx);

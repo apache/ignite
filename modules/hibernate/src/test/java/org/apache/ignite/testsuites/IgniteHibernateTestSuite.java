@@ -41,7 +41,7 @@ public class IgniteHibernateTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheHibernateBlobStoreNodeRestartTest.class);
 
-        suite.addTestSuite(CacheStoreSessionHibernateListenerSelfTest.class);
+        suite.addTestSuite(CacheHibernateStoreSessionListenerSelfTest.class);
 
         return suite;
     }

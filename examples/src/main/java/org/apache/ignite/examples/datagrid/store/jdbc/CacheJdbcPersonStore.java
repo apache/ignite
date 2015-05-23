@@ -19,7 +19,6 @@ package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -70,7 +69,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
         System.out.println(">>> Loading key: " + key);
 
         try {
-            Connection conn = connection();
+            Connection conn = ses.attachment();
 
             try (PreparedStatement st = conn.prepareStatement("select * from PERSONS where id=?")) {
                 st.setString(1, key.toString());
@@ -97,7 +96,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
         System.out.println(">>> Putting [key=" + key + ", val=" + val +  ']');
 
         try {
-            Connection conn = connection();
+            Connection conn = ses.attachment();
 
             int updated;
 
@@ -134,7 +133,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
         System.out.println(">>> Removing key: " + key);
 
         try {
-            Connection conn = connection();
+            Connection conn = ses.attachment();
 
             try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
                 st.setLong(1, (Long)key);
@@ -154,7 +153,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
         final int entryCnt = (Integer)args[0];
 
-        Connection conn = connection();
+        Connection conn = ses.attachment();
 
         try (
             PreparedStatement st = conn.prepareStatement("select * from PERSONS");
@@ -175,14 +174,5 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to load values from cache store.", e);
         }
-    }
-
-    /**
-     * Gets JDBC connection attached to current session.
-     *
-     * @return Connection.
-     */
-    private Connection connection() {
-        return ses.<String, Connection>properties().get(CacheStoreSessionJdbcListener.JDBC_CONN_KEY);
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.cache.store;
 
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -50,6 +51,10 @@ public interface CacheStoreSession {
      * {@code false} otherwise.
      */
     public boolean isWithinTransaction();
+
+    public void attach(@Nullable Object attachment);
+
+    @Nullable public <T> T attachment();
 
     /**
      * Gets current session properties. You can add properties directly to the

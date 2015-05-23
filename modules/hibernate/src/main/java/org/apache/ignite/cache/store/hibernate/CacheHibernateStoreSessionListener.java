@@ -29,7 +29,6 @@ import org.hibernate.cfg.*;
 import javax.cache.integration.*;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 /**
  * Hibernate-based cache store session listener.
@@ -38,16 +37,15 @@ import java.util.*;
  * session. If there is an ongoing cache transaction, a corresponding
  * Hibernate transaction is created as well.
  * <p>
- * The Hibernate session is stored in store session
- * {@link CacheStoreSession#properties() properties} and can
- * be accessed at any moment by {@link #HIBERNATE_SES_KEY} key.
+ * The Hibernate session is saved as a store session
+ * {@link CacheStoreSession#attachment() attachment}.
  * The listener guarantees that the session will be
  * available for any store operation. If there is an
  * ongoing cache transaction, all operations within this
  * transaction will share a DB transaction.
  * <p>
  * As an example, here is how the {@link CacheStore#write(javax.cache.Cache.Entry)}
- * method can be implemented if {@link CacheStoreSessionHibernateListener}
+ * method can be implemented if {@link CacheHibernateStoreSessionListener}
  * is configured:
  * <pre name="code" class="java">
  * private static class Store extends CacheStoreAdapter&lt;Integer, Integer&gt; {
@@ -56,7 +54,7 @@ import java.util.*;
  *
  *     &#64;Override public void write(Cache.Entry&lt;? extends Integer, ? extends Integer&gt; entry) throws CacheWriterException {
  *         // Get Hibernate session from the current store session.
- *         Session hibSes = ses.<String, Session>properties().get(CacheStoreSessionHibernateListener.HIBERNATE_SES_KEY);
+ *         Session hibSes = ses.attachment();
  *
  *         // Persist the value.
  *         hibSes.persist(entry.getValue());
@@ -66,16 +64,13 @@ import java.util.*;
  * Hibernate session will be automatically created by the listener
  * at the start of the session and closed when it ends.
  * <p>
- * {@link CacheStoreSessionHibernateListener} requires that either
+ * {@link CacheHibernateStoreSessionListener} requires that either
  * {@link #setSessionFactory(SessionFactory)} session factory}
  * or {@link #setHibernateConfigurationPath(String) Hibernate configuration file}
  * is provided. If non of them is set, exception is thrown. Is both are provided,
  * session factory will be used.
  */
-public class CacheStoreSessionHibernateListener implements CacheStoreSessionListener, LifecycleAware {
-    /** Session key for JDBC connection. */
-    public static final String HIBERNATE_SES_KEY = "__hibernate_ses_";
-
+public class CacheHibernateStoreSessionListener implements CacheStoreSessionListener, LifecycleAware {
     /** Hibernate session factory. */
     private SessionFactory sesFactory;
 
@@ -178,13 +173,11 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
 
     /** {@inheritDoc} */
     @Override public void onSessionStart(CacheStoreSession ses) {
-        Map<String, Session> props = ses.properties();
-
-        if (!props.containsKey(HIBERNATE_SES_KEY)) {
+        if (ses.attachment() == null) {
             try {
                 Session hibSes = sesFactory.openSession();
 
-                props.put(HIBERNATE_SES_KEY, hibSes);
+                ses.attach(hibSes);
 
                 if (ses.isWithinTransaction())
                     hibSes.beginTransaction();
@@ -197,9 +190,11 @@ public class CacheStoreSessionHibernateListener implements CacheStoreSessionList
 
     /** {@inheritDoc} */
     @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
-        Session hibSes = ses.<String, Session>properties().remove(HIBERNATE_SES_KEY);
+        Session hibSes = ses.attachment();
 
         if (hibSes != null) {
+            ses.attach(null);
+
             try {
                 Transaction tx = hibSes.getTransaction();
 

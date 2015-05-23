@@ -77,7 +77,7 @@ public class CacheJdbcStoreExample {
             // Configure JDBC session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
                 @Override public CacheStoreSessionListener create() {
-                    CacheStoreSessionJdbcListener lsnr = new CacheStoreSessionJdbcListener();
+                    CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
 
                     lsnr.setDataSource(JdbcConnectionPool.create("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1", "", ""));
 

@@ -52,20 +52,20 @@ import javax.sql.*;
  * details):
  * <ul>
  *     <li>
- *         {@link CacheStoreSessionJdbcListener} - JDBC-based session
+ *         {@link CacheJdbcStoreSessionListener} - JDBC-based session
  *         listener. For each session it gets a new JDBC connection from
  *         provided {@link DataSource} and commits (or rolls back) it
  *         when session ends.
  *     </li>
  *     <li>
- *         {@ignitelink org.apache.ignite.cache.store.spring.CacheStoreSessionSpringListener} -
+ *         {@ignitelink org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListener} -
  *         session listener based on Spring transaction management.
  *         It starts a new DB transaction for each session and commits
  *         (or rolls back) it when session ends. If there is no ongoing
  *         cache transaction, this listener is no-op.
  *     </li>
  *     <li>
- *         <@ignitelink org.apache.ignite.cache.store.hibernate.CacheStoreSessionHibernateListener} -
+ *         <@ignitelink org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListener} -
  *         Hibernate-based session listener. It creates a new Hibernate
  *         session for each Ignite session. If there is an ongoing cache
  *         transaction, a corresponding Hibernate transaction is created
@@ -89,7 +89,7 @@ import javax.sql.*;
  *         cache participates in transaction.
  *     </li>
  * </ul>
- * For example, here is how global {@link CacheStoreSessionJdbcListener}
+ * For example, here is how global {@link CacheJdbcStoreSessionListener}
  * can be configured in Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
@@ -99,7 +99,7 @@ import javax.sql.*;
  *         &lt;list&gt;
  *             &lt;bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory"&gt;
  *                 &lt;constructor-arg&gt;
- *                     &lt;bean class="org.apache.ignite.cache.store.jdbc.CacheStoreSessionJdbcListener"&gt;
+ *                     &lt;bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener"&gt;
  *                         &lt;!-- Inject external data source. --&gt;
  *                         &lt;property name="dataSource" ref="jdbc-data-source"/&gt;
  *                     &lt;/bean&gt;

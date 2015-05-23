@@ -26,7 +26,6 @@ import javax.cache.*;
 import javax.cache.integration.*;
 import javax.sql.*;
 import java.sql.*;
-import java.util.*;
 
 /**
  * Cache store session listener based on JDBC connection.
@@ -35,9 +34,8 @@ import java.util.*;
  * from provided {@link DataSource} and commits (or rolls
  * back) it when session ends.
  * <p>
- * The connection is stored in store session
- * {@link CacheStoreSession#properties() properties} and can
- * be accessed at any moment by {@link #JDBC_CONN_KEY} key.
+ * The connection is saved as a store session
+  * {@link CacheStoreSession#attachment() attachment}.
  * The listener guarantees that the connection will be
  * available for any store operation. If there is an
  * ongoing cache transaction, all operations within this
@@ -45,7 +43,7 @@ import java.util.*;
  * session ends.
  * <p>
  * As an example, here is how the {@link CacheStore#write(Cache.Entry)}
- * method can be implemented if {@link CacheStoreSessionJdbcListener}
+ * method can be implemented if {@link CacheJdbcStoreSessionListener}
  * is configured:
  * <pre name="code" class="java">
  * private static class Store extends CacheStoreAdapter&lt;Integer, Integer&gt; {
@@ -54,7 +52,7 @@ import java.util.*;
  *
  *     &#64;Override public void write(Cache.Entry&lt;? extends Integer, ? extends Integer&gt; entry) throws CacheWriterException {
  *         // Get connection from the current session.
- *         Connection conn = ses.<String, Connection>properties().get(CacheStoreSessionJdbcListener.JDBC_CONN_KEY);
+ *         Connection conn = ses.attachment();
  *
  *         // Execute update SQL query.
  *         try {
@@ -69,10 +67,7 @@ import java.util.*;
  * JDBC connection will be automatically created by the listener
  * at the start of the session and closed when it ends.
  */
-public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener, LifecycleAware {
-    /** Session key for JDBC connection. */
-    public static final String JDBC_CONN_KEY = "__jdbc_conn_";
-
+public class CacheJdbcStoreSessionListener implements CacheStoreSessionListener, LifecycleAware {
     /** Data source. */
     private DataSource dataSrc;
 
@@ -110,15 +105,13 @@ public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener,
 
     /** {@inheritDoc} */
     @Override public void onSessionStart(CacheStoreSession ses) {
-        Map<String, Connection> props = ses.properties();
-
-        if (!props.containsKey(JDBC_CONN_KEY)) {
+        if (ses.attachment() == null) {
             try {
                 Connection conn = dataSrc.getConnection();
 
                 conn.setAutoCommit(false);
 
-                props.put(JDBC_CONN_KEY, conn);
+                ses.attach(conn);
             }
             catch (SQLException e) {
                 throw new CacheWriterException("Failed to start store session [tx=" + ses.transaction() + ']', e);
@@ -128,9 +121,11 @@ public class CacheStoreSessionJdbcListener implements CacheStoreSessionListener,
 
     /** {@inheritDoc} */
     @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
-        Connection conn = ses.<String, Connection>properties().remove(JDBC_CONN_KEY);
+        Connection conn = ses.attachment();
 
         if (conn != null) {
+            ses.attach(null);
+
             try {
                 if (commit)
                     conn.commit();

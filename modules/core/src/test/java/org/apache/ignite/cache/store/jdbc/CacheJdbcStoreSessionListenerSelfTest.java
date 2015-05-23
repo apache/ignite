@@ -15,35 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.spring;
+package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.springframework.jdbc.core.*;
-import org.springframework.jdbc.datasource.*;
-import org.springframework.transaction.*;
+import org.h2.jdbcx.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
-import javax.sql.*;
 import java.sql.*;
 import java.util.*;
 
 /**
- * Tests for {@link CacheStoreSessionJdbcListener}.
+ * Tests for {@link CacheJdbcStoreSessionListener}.
  */
-public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionListenerAbstractSelfTest {
-    /** */
-    private static final DataSource DATA_SRC = new DriverManagerDataSource(URL);
-
+public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionListenerAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheStore<Integer, Integer>> storeFactory() {
         return new Factory<CacheStore<Integer, Integer>>() {
             @Override public CacheStore<Integer, Integer> create() {
-                return new Store(new JdbcTemplate(DATA_SRC));
+                return new Store();
             }
         };
     }
@@ -52,9 +45,9 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
     @Override protected Factory<CacheStoreSessionListener> sessionListenerFactory() {
         return new Factory<CacheStoreSessionListener>() {
             @Override public CacheStoreSessionListener create() {
-                CacheStoreSessionSpringListener lsnr = new CacheStoreSessionSpringListener();
+                CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
 
-                lsnr.setDataSource(DATA_SRC);
+                lsnr.setDataSource(JdbcConnectionPool.create(URL, "", ""));
 
                 return lsnr;
             }
@@ -68,24 +61,13 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
         private static String SES_CONN_KEY = "ses_conn";
 
         /** */
-        private final JdbcTemplate jdbc;
-
-        /** */
         @CacheStoreSessionResource
         private CacheStoreSession ses;
-
-        /**
-         * @param jdbc JDBC template.
-         */
-        private Store(JdbcTemplate jdbc) {
-            this.jdbc = jdbc;
-        }
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, Object... args) {
             loadCacheCnt.incrementAndGet();
 
-            checkTransaction();
             checkConnection();
         }
 
@@ -93,7 +75,6 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
         @Override public Integer load(Integer key) throws CacheLoaderException {
             loadCnt.incrementAndGet();
 
-            checkTransaction();
             checkConnection();
 
             return null;
@@ -104,32 +85,43 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
             throws CacheWriterException {
             writeCnt.incrementAndGet();
 
-            checkTransaction();
             checkConnection();
 
             if (write.get()) {
-                String table;
+                Connection conn = ses.attachment();
 
-                switch (ses.cacheName()) {
-                    case "cache1":
-                        table = "Table1";
+                try {
+                    String table;
 
-                        break;
+                    switch (ses.cacheName()) {
+                        case "cache1":
+                            table = "Table1";
 
-                    case "cache2":
-                        if (fail.get())
-                            throw new CacheWriterException("Expected failure.");
+                            break;
 
-                        table = "Table2";
+                        case "cache2":
+                            if (fail.get())
+                                throw new CacheWriterException("Expected failure.");
 
-                        break;
+                            table = "Table2";
 
-                    default:
-                        throw new CacheWriterException("Wring cache: " + ses.cacheName());
+                            break;
+
+                        default:
+                            throw new CacheWriterException("Wring cache: " + ses.cacheName());
+                    }
+
+                    PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO " + table + " (key, value) VALUES (?, ?)");
+
+                    stmt.setInt(1, entry.getKey());
+                    stmt.setInt(2, entry.getValue());
+
+                    stmt.executeUpdate();
                 }
-
-                jdbc.update("INSERT INTO " + table + " (key, value) VALUES (?, ?)",
-                    entry.getKey(), entry.getValue());
+                catch (SQLException e) {
+                    throw new CacheWriterException(e);
+                }
             }
         }
 
@@ -137,45 +129,24 @@ public class CacheStoreSessionSpringListenerSelfTest extends CacheStoreSessionLi
         @Override public void delete(Object key) throws CacheWriterException {
             deleteCnt.incrementAndGet();
 
-            checkTransaction();
             checkConnection();
         }
 
         /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) {
-            assertNull(transaction());
-        }
-
-        /**
-         */
-        private void checkTransaction() {
-            TransactionStatus tx = transaction();
-
-            if (ses.isWithinTransaction()) {
-                assertNotNull(tx);
-                assertFalse(tx.isCompleted());
-            }
-            else
-                assertNull(tx);
-        }
-
-        /**
-         * @return Transaction status.
-         */
-        private TransactionStatus transaction() {
-            return ses.<String, TransactionStatus>properties().get(CacheStoreSessionSpringListener.TX_STATUS_KEY);
+            assertNull(ses.attachment());
         }
 
         /**
          */
         private void checkConnection() {
-            Connection conn = DataSourceUtils.getConnection(jdbc.getDataSource());
+            Connection conn = ses.attachment();
 
             assertNotNull(conn);
 
             try {
                 assertFalse(conn.isClosed());
-                assertEquals(!ses.isWithinTransaction(), conn.getAutoCommit());
+                assertFalse(conn.getAutoCommit());
             }
             catch (SQLException e) {
                 throw new RuntimeException(e);

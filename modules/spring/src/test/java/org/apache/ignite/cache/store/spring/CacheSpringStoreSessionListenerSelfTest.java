@@ -15,31 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.hibernate;
+package org.apache.ignite.cache.store.spring;
 
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.hibernate.*;
-import org.hibernate.cfg.Configuration;
+import org.springframework.jdbc.core.*;
+import org.springframework.jdbc.datasource.*;
+import org.springframework.transaction.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
-import javax.persistence.*;
-import java.io.*;
+import javax.sql.*;
+import java.sql.*;
 import java.util.*;
 
 /**
- * Tests for {@link CacheStoreSessionJdbcListener}.
+ * Tests for {@link CacheJdbcStoreSessionListener}.
  */
-public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessionListenerAbstractSelfTest {
+public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionListenerAbstractSelfTest {
+    /** */
+    private static final DataSource DATA_SRC = new DriverManagerDataSource(URL);
+
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheStore<Integer, Integer>> storeFactory() {
         return new Factory<CacheStore<Integer, Integer>>() {
             @Override public CacheStore<Integer, Integer> create() {
-                return new Store();
+                return new Store(new JdbcTemplate(DATA_SRC));
             }
         };
     }
@@ -48,15 +52,9 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
     @Override protected Factory<CacheStoreSessionListener> sessionListenerFactory() {
         return new Factory<CacheStoreSessionListener>() {
             @Override public CacheStoreSessionListener create() {
-                CacheStoreSessionHibernateListener lsnr = new CacheStoreSessionHibernateListener();
+                CacheSpringStoreSessionListener lsnr = new CacheSpringStoreSessionListener();
 
-                SessionFactory sesFactory = new Configuration().
-                    setProperty("hibernate.connection.url", URL).
-                    addAnnotatedClass(Table1.class).
-                    addAnnotatedClass(Table2.class).
-                    buildSessionFactory();
-
-                lsnr.setSessionFactory(sesFactory);
+                lsnr.setDataSource(DATA_SRC);
 
                 return lsnr;
             }
@@ -70,21 +68,33 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
         private static String SES_CONN_KEY = "ses_conn";
 
         /** */
+        private final JdbcTemplate jdbc;
+
+        /** */
         @CacheStoreSessionResource
         private CacheStoreSession ses;
+
+        /**
+         * @param jdbc JDBC template.
+         */
+        private Store(JdbcTemplate jdbc) {
+            this.jdbc = jdbc;
+        }
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, Object... args) {
             loadCacheCnt.incrementAndGet();
 
-            checkSession();
+            checkTransaction();
+            checkConnection();
         }
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
             loadCnt.incrementAndGet();
 
-            checkSession();
+            checkTransaction();
+            checkConnection();
 
             return null;
         }
@@ -94,14 +104,15 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
             throws CacheWriterException {
             writeCnt.incrementAndGet();
 
-            checkSession();
+            checkTransaction();
+            checkConnection();
 
             if (write.get()) {
-                Session hibSes = session();
+                String table;
 
                 switch (ses.cacheName()) {
                     case "cache1":
-                        hibSes.save(new Table1(entry.getKey(), entry.getValue()));
+                        table = "Table1";
 
                         break;
 
@@ -109,13 +120,16 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
                         if (fail.get())
                             throw new CacheWriterException("Expected failure.");
 
-                        hibSes.save(new Table2(entry.getKey(), entry.getValue()));
+                        table = "Table2";
 
                         break;
 
                     default:
                         throw new CacheWriterException("Wring cache: " + ses.cacheName());
                 }
+
+                jdbc.update("INSERT INTO " + table + " (key, value) VALUES (?, ?)",
+                    entry.getKey(), entry.getValue());
             }
         }
 
@@ -123,113 +137,61 @@ public class CacheStoreSessionHibernateListenerSelfTest extends CacheStoreSessio
         @Override public void delete(Object key) throws CacheWriterException {
             deleteCnt.incrementAndGet();
 
-            checkSession();
+            checkTransaction();
+            checkConnection();
         }
 
         /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) {
-            assertNull(session());
+            assertNull(ses.attachment());
         }
 
         /**
          */
-        private void checkSession() {
-            Session hibSes = session();
+        private void checkTransaction() {
+            TransactionStatus tx = ses.attachment();
 
-            assertNotNull(hibSes);
-
-            assertTrue(hibSes.isOpen());
-
-            Transaction tx = hibSes.getTransaction();
-
-            assertNotNull(tx);
-
-            if (ses.isWithinTransaction())
-                assertTrue(tx.isActive());
+            if (ses.isWithinTransaction()) {
+                assertNotNull(tx);
+                assertFalse(tx.isCompleted());
+            }
             else
-                assertFalse(tx.isActive());
-
-            verifySameInstance(hibSes);
+                assertNull(tx);
         }
 
         /**
-         * @param hibSes Session.
          */
-        private void verifySameInstance(Session hibSes) {
-            Map<String, Session> props = ses.properties();
+        private void checkConnection() {
+            Connection conn = DataSourceUtils.getConnection(jdbc.getDataSource());
 
-            Session sesConn = props.get(SES_CONN_KEY);
+            assertNotNull(conn);
+
+            try {
+                assertFalse(conn.isClosed());
+                assertEquals(!ses.isWithinTransaction(), conn.getAutoCommit());
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+            verifySameInstance(conn);
+        }
+
+        /**
+         * @param conn Connection.
+         */
+        private void verifySameInstance(Connection conn) {
+            Map<String, Connection> props = ses.properties();
+
+            Connection sesConn = props.get(SES_CONN_KEY);
 
             if (sesConn == null)
-                props.put(SES_CONN_KEY, hibSes);
+                props.put(SES_CONN_KEY, conn);
             else {
-                assertSame(hibSes, sesConn);
+                assertSame(conn, sesConn);
 
                 reuseCnt.incrementAndGet();
             }
-        }
-
-        /**
-         * @return Connection.
-         */
-        private Session session() {
-            return ses.<String, Session>properties().get(CacheStoreSessionHibernateListener.HIBERNATE_SES_KEY);
-        }
-    }
-
-    /**
-     */
-    @Entity
-    @Table(name = "Table1")
-    private static class Table1 implements Serializable {
-        /** */
-        @Id @GeneratedValue
-        @Column(name = "id")
-        private Integer id;
-
-        /** */
-        @Column(name = "key")
-        private int key;
-
-        /** */
-        @Column(name = "value")
-        private int value;
-
-        /**
-         * @param key Key.
-         * @param value Value.
-         */
-        private Table1(int key, int value) {
-            this.key = key;
-            this.value = value;
-        }
-    }
-
-    /**
-     */
-    @Entity
-    @Table(name = "Table2")
-    private static class Table2 implements Serializable {
-        /** */
-        @Id @GeneratedValue
-        @Column(name = "id")
-        private Integer id;
-
-        /** */
-        @Column(name = "key")
-        private int key;
-
-        /** */
-        @Column(name = "value")
-        private int value;
-
-        /**
-         * @param key Key.
-         * @param value Value.
-         */
-        private Table2(int key, int value) {
-            this.key = key;
-            this.value = value;
         }
     }
 }
