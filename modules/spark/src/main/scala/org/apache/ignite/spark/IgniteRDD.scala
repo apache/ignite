@@ -18,11 +18,11 @@ package org.apache.ignite.spark
 
 import javax.cache.Cache
 
-import org.apache.ignite.cache.query.{SqlQuery, ScanQuery}
+import org.apache.ignite.cache.query.{SqlFieldsQuery, SqlQuery, ScanQuery}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.lang.IgniteUuid
-import org.apache.ignite.spark.impl.{IgniteSqlRDD, IgnitePartition, IgniteQueryIterator}
+import org.apache.ignite.spark.impl.{IgniteAbstractRDD, IgniteSqlRDD, IgnitePartition, IgniteQueryIterator}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{TaskContext, Partition}
 
@@ -64,6 +64,14 @@ class IgniteRDD[K, V] (
         qry.setArgs(args)
 
         new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry => (entry.getKey, entry.getValue))
+    }
+
+    def queryFields(sql: String, args: Any*): RDD[Seq[Any]] = {
+        val qry = new SqlFieldsQuery(sql)
+
+        qry.setArgs(args)
+
+        new IgniteSqlRDD[Seq[Any], java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list => list)
     }
 
     def saveValues(rdd: RDD[V]) = {

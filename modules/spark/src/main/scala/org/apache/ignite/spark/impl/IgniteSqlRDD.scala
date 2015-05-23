@@ -19,7 +19,7 @@ package org.apache.ignite.spark.impl
 
 import org.apache.ignite.cache.query.Query
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.{IgniteAbstractRDD, IgniteContext}
+import org.apache.ignite.spark.IgniteContext
 import org.apache.spark.{TaskContext, Partition}
 
 import scala.reflect.ClassTag

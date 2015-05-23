@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.spark.IgniteContext
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag

@@ -42,6 +42,10 @@ object IgniteProcessExample {
 
         results.saveValues(processedRdd)
 
+        // SQL query
         ignite.fromCache("indexed").query("Person", "age > ?", 20).collect()
+
+        // SQL fields query
+        ignite.fromCache("indexed").queryFields("select name, age from Person where age > ?", 20).collect()
     }
 }
