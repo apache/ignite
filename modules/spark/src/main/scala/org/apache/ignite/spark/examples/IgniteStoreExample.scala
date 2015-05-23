@@ -27,7 +27,7 @@ object IgniteStoreExample {
         val conf = new SparkConf().setAppName("Ignite store example")
         val sc = new SparkContext(conf)
 
-        val ignite = new IgniteContext[String, String](sc, ExampleConfiguration.configuration _, "partitioned")
+        val ignite = new IgniteContext[String, String](sc, ExampleConfiguration.configuration _)
 
         val lines: RDD[String] = sc.textFile(args(0)).filter(line => {
             println("Read line: " + line)
@@ -35,6 +35,6 @@ object IgniteStoreExample {
             true
         })
 
-        ignite.saveToIgnite(lines)
+        ignite.fromCache("partitioned").saveValues(lines)
     }
 }

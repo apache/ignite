@@ -1931,7 +1931,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.cacheType(cacheType);
 
-        return F.first(initiateCacheChanges(F.asList(req)));
+        return F.first(initiateCacheChanges(F.asList(req), failIfExists));
     }
 
     /**
@@ -1941,14 +1941,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> dynamicStopCache(String cacheName) {
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId(), true);
 
-        return F.first(initiateCacheChanges(F.asList(t)));
+        return F.first(initiateCacheChanges(F.asList(t), false));
     }
 
     /**
      * @param reqs Requests.
      * @return Collection of futures.
      */
-    public Collection<DynamicCacheStartFuture> initiateCacheChanges(Collection<DynamicCacheChangeRequest> reqs) {
+    @SuppressWarnings("TypeMayBeWeakened")
+    private Collection<DynamicCacheStartFuture> initiateCacheChanges(Collection<DynamicCacheChangeRequest> reqs,
+        boolean failIfExists) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
@@ -1981,9 +1983,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     maskNull(req.cacheName()), fut);
 
                 if (old != null) {
-                    if (req.start() && !req.clientStartOnly()) {
-                        fut.onDone(new CacheExistsException("Failed to start cache " +
-                            "(a cache with the same name is already being started or stopped): " + req.cacheName()));
+                    if (req.start()) {
+                        if (!req.clientStartOnly()) {
+                            if (failIfExists)
+                                fut.onDone(new CacheExistsException("Failed to start cache " +
+                                    "(a cache with the same name is already being started or stopped): " +
+                                    req.cacheName()));
+                            else {
+                                fut = old;
+
+                                continue;
+                            }
+                        }
+                        else {
+                            fut = old;
+
+                            continue;
+                        }
                     }
                     else {
                         fut = old;
@@ -2617,7 +2633,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.clientStartOnly(true);
 
-        F.first(initiateCacheChanges(F.asList(req))).get();
+        F.first(initiateCacheChanges(F.asList(req), false)).get();
 
         IgniteCache cache = jCacheProxies.get(masked);
 

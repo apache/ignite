@@ -17,11 +17,27 @@
 
 package org.apache.ignite.spark.impl
 
-class IgniteQueryIterator[T, R] (
-    cur: java.util.Iterator[T],
-    conv: (T) => R
-) extends Iterator[R] {
-    override def hasNext: Boolean = cur.hasNext
+import org.apache.ignite.cache.query.Query
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.spark.{IgniteAbstractRDD, IgniteContext}
+import org.apache.spark.{TaskContext, Partition}
 
-    override def next(): R = conv(cur.next())
+import scala.reflect.ClassTag
+
+class IgniteSqlRDD[R: ClassTag, T, K, V](
+    ic: IgniteContext[K, V],
+    cacheName: String,
+    cacheCfg: CacheConfiguration[K, V],
+    qry: Query[T],
+    conv: (T) => R
+) extends IgniteAbstractRDD[R, K, V](ic, cacheName, cacheCfg) {
+    override def compute(split: Partition, context: TaskContext): Iterator[R] = {
+        val it: java.util.Iterator[T] = ensureCache().query(qry).iterator()
+
+        new IgniteQueryIterator[T, R](it, conv)
+    }
+
+    override protected def getPartitions: Array[Partition] = {
+        Array(new IgnitePartition(0))
+    }
 }

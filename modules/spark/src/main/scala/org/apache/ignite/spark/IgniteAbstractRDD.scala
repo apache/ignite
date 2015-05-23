@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.util
+package org.apache.ignite.spark
 
-import org.apache.ignite.lang.IgniteBiPredicate
+import org.apache.ignite.IgniteCache
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.spark.rdd.RDD
 
-/**
- * Peer deploy aware adapter for Java's `GridPredicate2`.
- */
-class SerializablePredicate2[T1, T2](private val p: (T1, T2) => Boolean) extends IgniteBiPredicate[T1, T2] {
-    assert(p != null)
+import scala.reflect.ClassTag
 
-    /**
-     * Delegates to passed in function.
-     */
-    def apply(e1: T1, e2: T2) = p(e1, e2)
+abstract class IgniteAbstractRDD[R:ClassTag, K, V] (
+    ic: IgniteContext[K, V],
+    cacheName: String,
+    cacheCfg: CacheConfiguration[K, V]
+) extends RDD[R] (ic.sparkContext, deps = Nil) {
+    protected def ensureCache(): IgniteCache[K, V] = {
+        // Make sure to deploy the cache
+        if (cacheCfg != null)
+            ic.ignite().getOrCreateCache(cacheCfg)
+        else
+            ic.ignite().getOrCreateCache(cacheName)
+    }
 }

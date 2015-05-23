@@ -25,20 +25,23 @@ object IgniteProcessExample {
         val conf = new SparkConf().setAppName("Ignite processing example")
         val sc = new SparkContext(conf)
 
-        val partitioned = new IgniteContext[Object, String](sc, ExampleConfiguration.configuration _, "partitioned")
+        val ignite = new IgniteContext[Object, String](sc, ExampleConfiguration.configuration _)
 
         // Search for lines containing "Ignite".
-        val scanRdd = partitioned.scan((k, v) => v.contains("Ignite"))
+        val scanRdd = ignite.fromCache("partitioned")
 
         val processedRdd = scanRdd.filter(line => {
             println("Analyzing line: " + line)
+            line._2.contains("Ignite")
 
             true
-        }).map(_.getValue)
+        }).map(_._2)
 
         // Create a new cache for results.
-        val results = new IgniteContext[Object, String](sc, ExampleConfiguration.configuration _, "results")
+        val results = ignite.fromCache("results")
 
-        results.saveToIgnite(processedRdd)
+        results.saveValues(processedRdd)
+
+        ignite.fromCache("indexed").query("Person", "age > ?", 20).collect()
     }
 }

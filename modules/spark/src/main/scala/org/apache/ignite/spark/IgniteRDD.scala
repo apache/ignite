@@ -14,32 +14,114 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.spark
 
-import org.apache.ignite.cache.query.Query
-import org.apache.ignite.spark.impl.{IgniteQueryIterator, IgnitePartition}
-import org.apache.spark.{TaskContext, Partition}
+import javax.cache.Cache
+
+import org.apache.ignite.cache.query.{SqlQuery, ScanQuery}
+import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.lang.IgniteUuid
+import org.apache.ignite.spark.impl.{IgniteSqlRDD, IgnitePartition, IgniteQueryIterator}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{TaskContext, Partition}
 
 import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
 
-class IgniteRDD[R:ClassTag, K, V](
+class IgniteRDD[K, V] (
     ic: IgniteContext[K, V],
-    qry: Query[R]
-) extends RDD[R] (ic.sparkContext(), deps = Nil) {
-    override def compute(part: Partition, context: TaskContext): Iterator[R] = {
-        new IgniteQueryIterator[R, K, V](ic, part, qry)
+    cacheName: String,
+    cacheCfg: CacheConfiguration[K, V]
+) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg) {
+
+    override def compute(part: Partition, context: TaskContext): Iterator[(K, V)] = {
+        val cache = ensureCache()
+
+        val it: java.util.Iterator[Cache.Entry[K, V]] = cache.query(new ScanQuery[K, V]()).iterator()
+
+        new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](it, entry => {
+            (entry.getKey, entry.getValue)
+        })
     }
 
     override protected def getPartitions: Array[Partition] = {
-        val parts = ic.ignite().affinity(ic.cacheName).partitions()
+        ensureCache()
+
+        val parts = ic.ignite().affinity(cacheName).partitions()
 
         (0 until parts).map(new IgnitePartition(_)).toArray
     }
 
     override protected def getPreferredLocations(split: Partition): Seq[String] = {
-        ic.ignite().affinity(ic.cacheName).mapPartitionToPrimaryAndBackups(split.index).map(_.addresses()).flatten.toList
+        ensureCache()
+
+        ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index).map(_.addresses()).flatten.toList
+    }
+
+    def query(typeName: String, sql: String, args: Any*): RDD[(K, V)] = {
+        val qry: SqlQuery[K, V] = new SqlQuery[K, V](typeName, sql)
+
+        qry.setArgs(args)
+
+        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry => (entry.getKey, entry.getValue))
+    }
+
+    def saveValues(rdd: RDD[V]) = {
+        rdd.foreachPartition(it => {
+            println("Using scala version: " + scala.util.Properties.versionString)
+            val ig = ic.ignite()
+
+            ensureCache()
+
+            val locNode = ig.cluster().localNode()
+
+            val node: Option[ClusterNode] = ig.cluster().forHost(locNode).nodes().find(!_.eq(locNode))
+
+            val streamer = ig.dataStreamer[Object, V](cacheName)
+
+            try {
+                it.foreach(value => {
+                    val key = affinityKeyFunc(value, node.orNull)
+
+                    println("Saving: " + key + ", " + value)
+
+                    streamer.addData(key, value)
+                })
+            }
+            finally {
+                streamer.close()
+            }
+        })
+    }
+
+    def save(rdd: RDD[(K, V)]) = {
+        rdd.foreachPartition(it => {
+            println("Using scala version: " + scala.util.Properties.versionString)
+            val ig = ic.ignite()
+
+            // Make sure to deploy the cache
+            ensureCache()
+
+            val locNode = ig.cluster().localNode()
+
+            val node: Option[ClusterNode] = ig.cluster().forHost(locNode).nodes().find(!_.eq(locNode))
+
+            val streamer = ig.dataStreamer[K, V](cacheName)
+
+            try {
+                it.foreach(tup => {
+                    println("Saving: " + tup._1 + ", " + tup._2)
+
+                    streamer.addData(tup._1, tup._2)
+                })
+            }
+            finally {
+                streamer.close()
+            }
+        })
+    }
+
+    private def affinityKeyFunc(value: V, node: ClusterNode): Object = {
+        IgniteUuid.randomUuid()
     }
 }

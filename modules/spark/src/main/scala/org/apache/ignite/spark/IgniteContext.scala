@@ -17,98 +17,29 @@
 
 package org.apache.ignite.spark
 
-import javax.cache.Cache
 
-import org.apache.ignite.cache.query.{Query, ScanQuery}
-import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.lang.IgniteUuid
-import org.apache.ignite.spark.util.SerializablePredicate2
-import org.apache.ignite.{Ignition, IgniteCache, Ignite}
+import org.apache.ignite.{Ignition, Ignite}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-
-import scala.collection.JavaConversions._
-import scala.reflect.ClassTag
 
 class IgniteContext[K, V](
-    @scala.transient sc: SparkContext,
-    cfgF: () => IgniteConfiguration,
-    val cacheName: String,
-    cacheCfg: CacheConfiguration[K, V]
+    @scala.transient val sparkContext: SparkContext,
+    cfgF: () => IgniteConfiguration
 ) extends Serializable {
-    type ScanRDD[K1, V1] = IgniteRDD[Cache.Entry[K1, V1], K1, V1]
-
     def this(
         sc: SparkContext,
-        springUrl: String,
-        cacheName: String
+        springUrl: String
     ) {
-        this(sc, () => IgnitionEx.loadConfiguration(springUrl).get1(), cacheName, null)
+        this(sc, () => IgnitionEx.loadConfiguration(springUrl).get1())
     }
 
-    def this(
-        sc: SparkContext,
-        cfgF: () => IgniteConfiguration,
-        cacheName: String
-    ) {
-        this(sc, cfgF, cacheName, null)
+    def fromCache(cacheName: String): IgniteRDD[K, V] = {
+        new IgniteRDD[K, V](this, cacheName, null)
     }
 
-    def this(
-        sc: SparkContext,
-        cfgF: () => IgniteConfiguration,
-        cacheCfg: CacheConfiguration[K, V]
-    ) {
-        this(sc, cfgF, cacheCfg.getName, cacheCfg)
-    }
-
-    def this(
-        sc: SparkContext,
-        springUrl: String,
-        cacheCfg: CacheConfiguration[K, V]
-    ) {
-        this(sc, () => IgnitionEx.loadConfiguration(springUrl).get1(), cacheCfg.getName, cacheCfg)
-    }
-
-    def sparkContext() = sc
-
-    def scan(p: (K, V) => Boolean = (_, _) => true): ScanRDD[K, V] = {
-        new ScanRDD(this, new ScanQuery[K, V](new SerializablePredicate2[K, V](p)))
-    }
-
-    def scan[R:ClassTag](qry: Query[R]): IgniteRDD[R, K, V] = {
-        new IgniteRDD[R, K, V](this, qry)
-    }
-
-    def saveToIgnite[T](rdd: RDD[V], keyFunc: (IgniteContext[K, V], V, ClusterNode) => T = affinityKeyFunc(_: IgniteContext[K, V], _:V, _: ClusterNode)) = {
-        rdd.foreachPartition(it => {
-            println("Using scala version: " + scala.util.Properties.versionString)
-            // Make sure to deploy the cache
-            igniteCache()
-
-            val ig = ignite()
-
-            val locNode = ig.cluster().localNode()
-
-            val node: Option[ClusterNode] = ig.cluster().forHost(locNode).nodes().find(!_.eq(locNode))
-
-            val streamer = ignite().dataStreamer[T, V](cacheName)
-
-            try {
-                it.foreach(value => {
-                    val key: T = keyFunc(this, value, node.orNull)
-
-                    println("Saving: " + key + ", " + value)
-
-                    streamer.addData(key, value)
-                })
-            }
-            finally {
-                streamer.close()
-            }
-        })
+    def fromCache(cacheCfg: CacheConfiguration[K, V]) = {
+        new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg)
     }
 
     def ignite(): Ignite = {
@@ -130,14 +61,4 @@ class IgniteContext[K, V](
         }
     }
 
-    private def igniteCache(): IgniteCache[K, V] = {
-        if (cacheCfg == null)
-            ignite().getOrCreateCache(cacheName)
-        else
-            ignite().getOrCreateCache(cacheCfg)
-    }
-
-    private def affinityKeyFunc(ic: IgniteContext[K, V], value: V, node: ClusterNode): Object = {
-        IgniteUuid.randomUuid()
-    }
 }
