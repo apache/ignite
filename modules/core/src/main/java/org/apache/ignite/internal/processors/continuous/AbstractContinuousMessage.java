@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,26 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery;
+package org.apache.ignite.internal.processors.continuous;
 
-import org.jetbrains.annotations.*;
+import org.apache.ignite.internal.managers.discovery.*;
 
-import java.io.*;
+import java.util.*;
 
 /**
- * Message to send across ring.
  *
- * @see org.apache.ignite.internal.managers.discovery.GridDiscoveryManager#sendCustomEvent(
- * org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage)
  */
-public interface DiscoverySpiCustomMessage extends Serializable {
-    /**
-     * Called when message passed the ring.
-     */
-    @Nullable public DiscoverySpiCustomMessage ackMessage();
+public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
+    /** Routine ID. */
+    protected final UUID routineId;
 
     /**
-     * @return {@code true} if message can be modified during listener notification. Changes will be send to next nodes.
+     * @param id Id.
      */
-    public boolean isMutable();
+    protected AbstractContinuousMessage(UUID id) {
+        routineId = id;
+    }
+
+    /**
+     * @return Routine ID.
+     */
+    public UUID routineId() {
+        return routineId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean incrementMinorTopologyVersion() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
+    }
 }

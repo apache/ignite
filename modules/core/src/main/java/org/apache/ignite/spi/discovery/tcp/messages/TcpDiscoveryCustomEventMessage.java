@@ -18,6 +18,9 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.spi.discovery.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -31,15 +34,21 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** */
+    private transient volatile DiscoverySpiCustomMessage msg;
+
+    /** */
     private byte[] msgBytes;
 
     /**
      * @param creatorNodeId Creator node id.
+     * @param msg Message.
      * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, byte[] msgBytes) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
+        @NotNull byte[] msgBytes) {
         super(creatorNodeId);
 
+        this.msg = msg;
         this.msgBytes = msgBytes;
     }
 
@@ -51,10 +60,26 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
-     * @param msgBytes New message bytes.
+     * @param msg Message.
+     * @param msgBytes Serialized message.
      */
-    public void messageBytes(byte[] msgBytes) {
+    public void message(@Nullable DiscoverySpiCustomMessage msg, @NotNull byte[] msgBytes) {
+        this.msg = msg;
         this.msgBytes = msgBytes;
+    }
+
+    /**
+     * @return Deserialized message,
+     * @throws java.lang.Throwable if unmarshal failed.
+     */
+    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh) throws Throwable {
+        if (msg == null) {
+            msg = marsh.unmarshal(msgBytes, U.gridClassLoader());
+
+            assert msg != null;
+        }
+
+        return msg;
     }
 
     /** {@inheritDoc} */

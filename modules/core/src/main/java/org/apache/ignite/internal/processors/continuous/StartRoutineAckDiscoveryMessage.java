@@ -26,12 +26,9 @@ import java.util.*;
 /**
  *
  */
-public class StartRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Routine ID. */
-    private final UUID routineId;
 
     /** */
     private final Map<UUID, IgniteCheckedException> errs;
@@ -41,25 +38,14 @@ public class StartRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
      * @param errs Errs.
      */
     public StartRoutineAckDiscoveryMessage(UUID routineId, Map<UUID, IgniteCheckedException> errs) {
-        this.routineId = routineId;
-        this.errs = new HashMap<>(errs);
-    }
+        super(routineId);
 
-    /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return false;
+        this.errs = new HashMap<>(errs);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
     }
 
     /**

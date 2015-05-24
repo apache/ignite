@@ -1266,7 +1266,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
-            msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(evt)));
+            msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt, marsh.marshal(evt)));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -4536,7 +4536,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     DiscoverySpiCustomMessage msgObj = null;
 
                     try {
-                        msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                        msgObj = msg.message(marsh);
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
@@ -4547,7 +4547,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         if (nextMsg != null) {
                             try {
-                                addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(nextMsg)));
+                                addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), nextMsg,
+                                    marsh.marshal(nextMsg)));
                             }
                             catch (IgniteCheckedException e) {
                                 U.error(log, "Failed to marshal discovery custom message.", e);
@@ -4584,13 +4585,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             Collection<ClusterNode> snapshot = hist.get(msg.topologyVersion());
 
             if (lsnr != null && (spiState == CONNECTED || spiState == DISCONNECTING)) {
-                assert msg.messageBytes() != null;
-
                 TcpDiscoveryNode node = ring.node(msg.creatorNodeId());
 
                 if (node != null) {
                     try {
-                        DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                        DiscoverySpiCustomMessage msgObj = msg.message(marsh);
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -4599,7 +4598,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             hist,
                             msgObj);
 
-                        msg.messageBytes(marsh.marshal(msgObj));
+                        if (msgObj.isMutable())
+                            msg.message(msgObj, marsh.marshal(msgObj));
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);

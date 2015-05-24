@@ -25,34 +25,19 @@ import java.util.*;
 /**
  *
  */
-public class StopRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
+public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Routine ID. */
-    private final UUID routineId;
 
     /**
      * @param routineId Routine id.
      */
     public StopRoutineAckDiscoveryMessage(UUID routineId) {
-        this.routineId = routineId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return false;
+        super(routineId);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
     }
 }
