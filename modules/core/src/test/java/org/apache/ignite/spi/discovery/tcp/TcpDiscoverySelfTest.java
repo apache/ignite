@@ -70,14 +70,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi;
-
-        if (gridName.contains("FailBeforeNodeAddedSentSpi"))
-            spi = new FailBeforeNodeAddedSentSpi();
-        else if (gridName.contains("FailBeforeNodeLeftSentSpi"))
-            spi = new FailBeforeNodeLeftSentSpi();
-        else
-            spi = new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         discoMap.put(gridName, spi);
 
@@ -600,7 +593,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_NODE_JOINED, EVT_NODE_FAILED);
 
-            startGrid("FailBeforeNodeAddedSentSpi");
+            final Ignite g = startGrid("FailBeforeNodeAddedSentSpi");
+
+            discoMap.get(g.name()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                        discoMap.get(g.name()).simulateNodeFailure();
+
+                        throw new RuntimeException("Avoid message sending: " + msg.getClass());
+                    }
+                }
+            });
 
             startGrid(3);
 
@@ -620,7 +623,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             startGrid(1);
             startGrid(2);
 
-            startGrid("FailBeforeNodeLeftSentSpi");
+            final Ignite g = startGrid("FailBeforeNodeLeftSentSpi");
+
+            discoMap.get(g.name()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryNodeLeftMessage) {
+                        discoMap.get(g.name()).simulateNodeFailure();
+
+                        throw new RuntimeException("Avoid message sending: " + msg.getClass());
+                    }
+                }
+            });
 
             Ignite g3 = startGrid(3);
 
@@ -953,37 +966,5 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     private Ignite startGridNoOptimize(String gridName) throws Exception {
         return G.start(getConfiguration(gridName));
-    }
-
-    /**
-     *
-     */
-    private static class FailBeforeNodeAddedSentSpi extends TcpDiscoverySpi {
-        /** */
-        private int i;
-
-        /** {@inheritDoc} */
-        @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage)
-                if (++i == 2) {
-                    simulateNodeFailure();
-
-                    throw new RuntimeException("Avoid message sending: " + msg.getClass());
-                }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class FailBeforeNodeLeftSentSpi extends TcpDiscoverySpi {
-        /** {@inheritDoc} */
-        @Override void onBeforeMessageSentAcrossRing(Serializable msg) {
-            if (msg instanceof TcpDiscoveryNodeLeftMessage) {
-                simulateNodeFailure();
-
-                throw new RuntimeException("Avoid message sending: " + msg.getClass());
-            }
-        }
     }
 }

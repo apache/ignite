@@ -1252,7 +1252,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 cctx.kernalContext().timeout().removeTimeoutObject(old);
 
             GridTimeoutObject timeoutObj = new GridTimeoutObjectAdapter(
-                cctx.gridConfig().getNetworkTimeout() * cctx.gridConfig().getCacheConfiguration().length) {
+                cctx.gridConfig().getNetworkTimeout() * Math.max(1, cctx.gridConfig().getCacheConfiguration().length)) {
                 @Override public void onTimeout() {
                     if (isDone())
                         return;

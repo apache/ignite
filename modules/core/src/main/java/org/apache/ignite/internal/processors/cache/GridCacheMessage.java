@@ -60,7 +60,7 @@ public abstract class GridCacheMessage implements Message {
 
     /** */
     @GridDirectTransient
-    private Exception err;
+    private IgniteCheckedException err;
 
     /** */
     @GridDirectTransient
@@ -115,14 +115,14 @@ public abstract class GridCacheMessage implements Message {
      *
      * @param err Error.
      */
-    public void onClassError(Exception err) {
+    public void onClassError(IgniteCheckedException err) {
         this.err = err;
     }
 
     /**
-     * @return Error set via {@link #onClassError(Exception)} method.
+     * @return Error set via {@link #onClassError(IgniteCheckedException)} method.
      */
-    public Exception classError() {
+    public IgniteCheckedException classError() {
         return err;
     }
 

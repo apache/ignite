@@ -59,6 +59,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLargeResultSelfTest.class);
         suite.addTestSuite(GridCacheQueryInternalKeysSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryMultiThreadedOffHeapTiredSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryOffheapMultiThreadedSelfTest.class);
         suite.addTestSuite(IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest.class);
@@ -110,6 +111,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2CompareBigQueryTest.class);
 
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
+
+        //Unmarshallig query test.
+        suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
 
         return suite;
     }

@@ -49,7 +49,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
     private static final long MAX_ENTRIES = 9000000;
 
     /** Test duration. */
-    private static final long DURATION = 10 * 60 * 1000;
+    private static final long DURATION = 2 * 60 * 1000;
 
     /** Swap context. */
     private final SwapContext swapCtx = new SwapContext();
@@ -73,7 +73,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
     /**
      * @return An SPI instance to test.
      */
-    private SwapSpaceSpi spi() {
+    protected SwapSpaceSpi spi() {
         FileSwapSpaceSpi spi = new FileSwapSpaceSpi();
 
 //        spi.setConcurrencyLevel(N_THREADS);
