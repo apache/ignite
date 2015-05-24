@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -53,5 +54,10 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
      */
     public Map<UUID, IgniteCheckedException> errs() {
         return errs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StartRoutineAckDiscoveryMessage.class, this, "routineId", routineId());
     }
 }

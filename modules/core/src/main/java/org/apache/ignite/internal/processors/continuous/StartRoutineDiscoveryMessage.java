@@ -80,6 +80,6 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StartRoutineDiscoveryMessage.class, this, super.toString());
+        return S.toString(StartRoutineDiscoveryMessage.class, this, "routineId", routineId());
     }
 }
