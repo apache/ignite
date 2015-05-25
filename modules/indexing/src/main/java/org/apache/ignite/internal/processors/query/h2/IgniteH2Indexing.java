@@ -1354,21 +1354,56 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer) {
+    @Override public IndexingQueryFilter backupFilter(
+        @Nullable final List<String> caches,
+        @Nullable final AffinityTopologyVersion topVer,
+        @Nullable final List<int[]> parts
+    ) {
         final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
 
         return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
-                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
+                if (cache.context().isReplicated() || (cache.configuration().getBackups() == 0 && parts == null))
                     return null;
+
+                final GridCacheAffinityManager aff = cache.context().affinity();
+
+                if (parts != null) {
+                    int idx = caches.indexOf(spaceName);
+
+                    final int[] parts0 = parts.get(idx);
+
+                    if (parts0.length < 64) {
+                        return new IgniteBiPredicate<K,V>() {
+                            @Override public boolean apply(K k, V v) {
+                                int p = aff.partition(k);
+
+                                for (int p0 : parts0) {
+                                    if (p0 == p)
+                                        return true;
+                                }
+
+                                return false;
+                            }
+                        };
+                    }
+
+                    return new IgniteBiPredicate<K,V>() {
+                        @Override public boolean apply(K k, V v) {
+                            int p = aff.partition(k);
+
+                            return Arrays.binarySearch(parts0, p) >= 0;
+                        }
+                    };
+                }
 
                 final ClusterNode locNode = ctx.discovery().localNode();
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primary(locNode, k, topVer0);
+                        return aff.primary(locNode, k, topVer0);
                     }
                 };
             }
@@ -1392,7 +1427,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Current topology version.
      */
     public AffinityTopologyVersion topologyVersion() {
-        return ctx.discovery().topologyVersionEx();
+        return ctx.cache().context().exchange().readyAffinityVersion();
     }
 
     /**

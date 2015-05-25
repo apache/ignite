@@ -222,8 +222,11 @@ public interface GridQueryIndexing {
     /**
      * Returns backup filter.
      *
+     * @param caches List of caches.
      * @param topVer Topology version.
+     * @param parts Partitions.
      * @return Backup filter.
      */
-    public IndexingQueryFilter backupFilter(AffinityTopologyVersion topVer);
+    public IndexingQueryFilter backupFilter(List<String> caches, AffinityTopologyVersion topVer,
+        List<int[]> parts);
 }

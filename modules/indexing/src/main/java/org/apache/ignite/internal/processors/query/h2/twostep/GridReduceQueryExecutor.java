@@ -279,6 +279,21 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     * @param set Set.
+     * @return Array.
+     */
+    private static int[] unbox(Set<Integer> set) {
+        int[] arr = new int[set.size()];
+
+        int i = 0;
+
+        for (int x : set)
+            arr[i++] = x;
+
+        return arr;
+    }
+
+    /**
      * @param cctx Cache context.
      * @param qry Query.
      * @return Cursor.
@@ -304,11 +319,26 @@ public class GridReduceQueryExecutor {
             if (F.isEmpty(nodes))
                 throw new CacheException("No data nodes found for cache: " + space);
 
+            List<String> extraSpaces = extraSpaces(space, qry.spaces());
+
+            List<int[]> parts = null;
+
             if (cctx.isReplicated() || qry.explain()) {
                 assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
                 nodes = Collections.singleton(F.rand(nodes));
+            }
+            else if (ctx.cache().context().exchange().hasPendingExchange()) { // TODO isActive ??
+                parts = new ArrayList<>(extraSpaces == null ? 1 : extraSpaces.size() + 1);
+
+                parts.add(unbox(cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer)));
+
+                if (extraSpaces != null) {
+                    for (String extraSpace : extraSpaces)
+                        parts.add(unbox(ctx.cache().internalCache(extraSpace).context()
+                            .affinity().primaryPartitions(ctx.localNodeId(), topVer)));
+                }
             }
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
@@ -355,8 +385,7 @@ public class GridReduceQueryExecutor {
                 boolean ok = false;
 
                 try {
-                    send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer,
-                        extraSpaces(space, qry.spaces())));
+                    send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, parts));
 
                     ok = true;
                 }

@@ -603,7 +603,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 throw new CacheException("Failed to find SQL table for type: " + type);
 
             final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params), typeDesc,
-                idx.backupFilter(null));
+                idx.backupFilter(null, null, null));
 
             if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -670,7 +670,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String sql = qry.getSql();
             Object[] args = qry.getArgs();
 
-            GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter(null));
+            GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter(null, null, null));
 
             if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(

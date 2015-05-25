@@ -217,16 +217,22 @@ public class GridMapQueryExecutor {
     /**
      * @param cacheNames Cache names.
      * @param topVer Topology version.
+     * @param parts Explicit partitions.
      * @param reserved Reserved list.
      * @return {@code true} If all the needed partitions successfully reserved.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean reservePartitions(Collection<String> cacheNames,  AffinityTopologyVersion topVer,
+    private boolean reservePartitions(Collection<String> cacheNames, AffinityTopologyVersion topVer, List<int[]> parts,
         List<GridDhtLocalPartition> reserved) throws IgniteCheckedException {
+        assert parts == null || parts.size() == cacheNames.size();
+
+        int i = 0;
+
         for (String cacheName : cacheNames) {
             GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
 
-            Set<Integer> partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+            Collection<Integer> partIds = parts != null ? wrap(parts.get(i++)) :
+                cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
             for (int partId : partIds) {
                 GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
@@ -247,6 +253,37 @@ public class GridMapQueryExecutor {
         }
 
         return true;
+    }
+
+    /**
+     * @param ints Integers.
+     * @return Collection wrapper.
+     */
+    private static Collection<Integer> wrap(final int[] ints) {
+        return new AbstractCollection<Integer>() {
+            @Override public Iterator<Integer> iterator() {
+                return new Iterator<Integer>() {
+                    /** */
+                    private int i = 0;
+
+                    @Override public boolean hasNext() {
+                        return i < ints.length;
+                    }
+
+                    @Override public Integer next() {
+                        return ints[i++];
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+
+            @Override public int size() {
+                return ints.length;
+            }
+        };
     }
 
     /**
@@ -280,6 +317,8 @@ public class GridMapQueryExecutor {
                 throw new CacheException(e);
             }
 
+            List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
+
             // Topology version can be null in rolling restart with previous version!
             final AffinityTopologyVersion topVer = req.topologyVersion();
 
@@ -288,7 +327,7 @@ public class GridMapQueryExecutor {
                 h2.awaitForCacheAffinity(topVer);
 
                 // Reserve primary partitions.
-                if (!reservePartitions(F.concat(true, req.space(), req.extraSpaces()), topVer, reserved)) {
+                if (!reservePartitions(caches, topVer, req.partitions(), reserved)) {
                     sendRetry(node, req.requestId());
 
                     return;
@@ -303,7 +342,7 @@ public class GridMapQueryExecutor {
             if (nodeRess.put(req.requestId(), qr) != null)
                 throw new IllegalStateException();
 
-            h2.setFilters(h2.backupFilter(topVer));
+            h2.setFilters(h2.backupFilter(caches, topVer, req.partitions()));
 
             // TODO Prepare snapshots for all the needed tables before the run.
 
