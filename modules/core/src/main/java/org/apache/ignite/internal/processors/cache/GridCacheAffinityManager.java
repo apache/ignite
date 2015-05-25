@@ -149,15 +149,16 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Copies previous affinity assignment when client node joins on leaves.
+     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
+     * (e.g. client node joins on leaves).
      *
-     * @param node Node.
+     * @param evt Event.
      * @param topVer Topology version.
      */
-    public void clientNodeTopologyChange(ClusterNode node, AffinityTopologyVersion topVer) {
+    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
         assert !cctx.isLocal();
 
-        aff.clientNodeTopologyChange(node, topVer);
+        aff.clientEventTopologyChange(evt, topVer);
     }
 
     /**

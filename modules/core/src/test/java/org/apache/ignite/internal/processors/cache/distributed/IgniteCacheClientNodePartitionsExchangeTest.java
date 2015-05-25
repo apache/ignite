@@ -373,23 +373,32 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void waitForTopologyUpdate(int expNodes, int topVer) throws Exception {
+        final AffinityTopologyVersion ver = new AffinityTopologyVersion(topVer, 0);
+
+        waitForTopologyUpdate(expNodes, ver);
+    }
+
+    /**
+     * @param expNodes Expected number of nodes.
+     * @param topVer Expected topology version.
+     * @throws Exception If failed.
+     */
+    private void waitForTopologyUpdate(int expNodes, final AffinityTopologyVersion topVer) throws Exception {
         List<Ignite> nodes = G.allGrids();
 
         assertEquals(expNodes, nodes.size());
-
-        final AffinityTopologyVersion ver = new AffinityTopologyVersion(topVer, 0);
 
         for (Ignite ignite : nodes) {
             final IgniteKernal kernal = (IgniteKernal)ignite;
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return ver.equals(kernal.context().cache().context().exchange().readyAffinityVersion());
+                    return topVer.equals(kernal.context().cache().context().exchange().readyAffinityVersion());
                 }
             }, 10_000);
 
             assertEquals("Unexpected affinity version for " + ignite.name(),
-                ver,
+                topVer,
                 kernal.context().cache().context().exchange().readyAffinityVersion());
         }
 
@@ -417,7 +426,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
                 GridDhtPartitionTopology top = cache.context().topology();
 
                 assertEquals("Unexpected topology version [node=" + ignite.name() + ", cache=" + cache.name() + ']',
-                    ver,
+                    topVer,
                     top.topologyVersion());
             }
         }
@@ -429,35 +438,52 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testClientOnlyCacheStart() throws Exception {
-        clientOnlyCacheStart(false);
+        clientOnlyCacheStart(false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNearOnlyCacheStart() throws Exception {
-        clientOnlyCacheStart(true);
+        clientOnlyCacheStart(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientOnlyCacheStartFromServerNode() throws Exception {
+        clientOnlyCacheStart(false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearOnlyCacheStartFromServerNode() throws Exception {
+        clientOnlyCacheStart(true, true);
     }
 
     /**
      * @param nearCache If {@code true} creates near cache on client.
      * @throws Exception If failed.
      */
-    public void clientOnlyCacheStart(boolean nearCache) throws Exception {
+    private void clientOnlyCacheStart(boolean nearCache, boolean srvNode) throws Exception {
         Ignite ignite0 = startGrid(0);
         Ignite ignite1 = startGrid(1);
 
         waitForTopologyUpdate(2, 2);
 
-        final String CACHE_NAME = "cache1";
+        final String CACHE_NAME1 = "cache1";
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName(CACHE_NAME);
+        ccfg.setName(CACHE_NAME1);
+
+        if (srvNode)
+            ccfg.setNodeFilter(new TestFilter(getTestGridName(2)));
 
         ignite0.createCache(ccfg);
 
-        client = true;
+        client = !srvNode;
 
         Ignite ignite2 = startGrid(2);
 
@@ -474,9 +500,11 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache("cache1"));
 
         if (nearCache)
-            ignite2.getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
+            ignite2.getOrCreateNearCache(CACHE_NAME1, new NearCacheConfiguration<>());
         else
-            ignite2.cache(CACHE_NAME);
+            ignite2.cache(CACHE_NAME1);
+
+        waitForTopologyUpdate(3, new AffinityTopologyVersion(3, 1));
 
         GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache("cache1");
 
@@ -484,10 +512,10 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         assertEquals(nearCache, cache.context().isNear());
 
         assertEquals(0, spi0.partitionsSingleMessages());
-        assertEquals(0, spi0.partitionsFullMessages());
+        assertEquals(1, spi0.partitionsFullMessages());
         assertEquals(0, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
-        assertEquals(0, spi2.partitionsSingleMessages());
+        assertEquals(1, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
 
         ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
@@ -495,9 +523,50 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         for (Ignite ignite : Ignition.allGrids()) {
             GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
 
-            assertTrue(disco.cacheNode(clientNode, CACHE_NAME));
-            assertFalse(disco.cacheAffinityNode(clientNode, CACHE_NAME));
-            assertEquals(nearCache, disco.cacheNearNode(clientNode, CACHE_NAME));
+            assertTrue(disco.cacheNode(clientNode, CACHE_NAME1));
+            assertFalse(disco.cacheAffinityNode(clientNode, CACHE_NAME1));
+            assertEquals(nearCache, disco.cacheNearNode(clientNode, CACHE_NAME1));
+        }
+
+        spi0.reset();
+        spi1.reset();
+        spi2.reset();
+
+        final String CACHE_NAME2 = "cache2";
+
+        ccfg = new CacheConfiguration();
+
+        ccfg.setName(CACHE_NAME2);
+
+        ignite2.createCache(ccfg);
+
+        waitForTopologyUpdate(3, new AffinityTopologyVersion(3, 2));
+
+        assertEquals(0, spi0.partitionsSingleMessages());
+        assertEquals(2, spi0.partitionsFullMessages());
+        assertEquals(1, spi1.partitionsSingleMessages());
+        assertEquals(0, spi1.partitionsFullMessages());
+        assertEquals(1, spi2.partitionsSingleMessages());
+        assertEquals(0, spi2.partitionsFullMessages());
+    }
+
+    /**
+     *
+     */
+    private static class TestFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private String exclNodeName;
+
+        /**
+         * @param exclNodeName Node name to exclude.
+         */
+        public TestFilter(String exclNodeName) {
+            this.exclNodeName = exclNodeName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return !exclNodeName.equals(clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
         }
     }
 

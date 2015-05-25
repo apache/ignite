@@ -482,18 +482,29 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 else {
                     assert discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
-                    clientNodeEvt = false;
+                    boolean clientOnlyStart = true;
+
+                    for (DynamicCacheChangeRequest req : reqs) {
+                        if (!req.clientStartOnly()) {
+                            clientOnlyStart = false;
+
+                            break;
+                        }
+                    }
+
+                    clientNodeEvt = clientOnlyStart;
                 }
 
                 if (clientNodeEvt) {
                     ClusterNode node = discoEvt.eventNode();
 
-                    if (!node.isLocal()) {  // Client need to initialize affinity for local join event.
+                    // Client need to initialize affinity for local join event or for stated client caches.
+                    if (!node.isLocal()) {
                         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                             if (cacheCtx.isLocal())
                                 continue;
 
-                            cacheCtx.affinity().clientNodeTopologyChange(node, exchId.topologyVersion());
+                            cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
 
                             GridDhtPartitionTopology top = cacheCtx.topology();
 
