@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -25,34 +26,24 @@ import java.util.*;
 /**
  *
  */
-public class StopRoutineDiscoveryMessage implements DiscoveryCustomMessage {
+public class StopRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Routine ID. */
-    private final UUID routineId;
 
     /**
      * @param routineId Routine id.
      */
     public StopRoutineDiscoveryMessage(UUID routineId) {
-        this.routineId = routineId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return false;
-    }
-
-    /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
+        super(routineId);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return new StopRoutineAckDiscoveryMessage(routineId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StopRoutineDiscoveryMessage.class, this, "routineId", routineId());
     }
 }

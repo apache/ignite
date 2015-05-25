@@ -75,6 +75,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             spi.setIpFinder(ipFinder);
 
+            cfg.setClientMode(true);
+
             cfg.setDiscoverySpi(spi);
         }
         else {

@@ -47,6 +47,8 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
         else {
             discoSpi = new TcpClientDiscoverySpi();
 
+            cfg.setClientMode(true);
+
             cfg.setMarshaller(new OptimizedMarshaller());
         }
 

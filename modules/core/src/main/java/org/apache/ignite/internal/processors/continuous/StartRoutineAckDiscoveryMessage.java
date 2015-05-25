@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -26,12 +27,9 @@ import java.util.*;
 /**
  *
  */
-public class StartRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Routine ID. */
-    private final UUID routineId;
 
     /** */
     private final Map<UUID, IgniteCheckedException> errs;
@@ -41,13 +39,9 @@ public class StartRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
      * @param errs Errs.
      */
     public StartRoutineAckDiscoveryMessage(UUID routineId, Map<UUID, IgniteCheckedException> errs) {
-        this.routineId = routineId;
-        this.errs = new HashMap<>(errs);
-    }
+        super(routineId);
 
-    /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return false;
+        this.errs = new HashMap<>(errs);
     }
 
     /** {@inheritDoc} */
@@ -56,16 +50,14 @@ public class StartRoutineAckDiscoveryMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
-    }
-
-    /**
      * @return Errs.
      */
     public Map<UUID, IgniteCheckedException> errs() {
         return errs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StartRoutineAckDiscoveryMessage.class, this, "routineId", routineId());
     }
 }

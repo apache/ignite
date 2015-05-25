@@ -55,6 +55,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
                     attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
                 }
             };
+
+            cfg.setClientMode(true);
         }
         else {
             discoSpi = new TcpDiscoverySpi() {

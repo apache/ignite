@@ -860,7 +860,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
                         latch.countDown();

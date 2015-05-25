@@ -20,9 +20,9 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -131,40 +131,81 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
+            /** node ID, routine ID, event */
+            private final Queue<T3<UUID, UUID, Event>> notificationQueue = new LinkedList<>();
+
+            private boolean notificationInProgress;
+
+            @Override public void onEvent(final Event evt) {
                 if (filter == null || filter.apply(evt)) {
                     if (loc) {
                         if (!cb.apply(nodeId, evt))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
-                        GridDiscoveryManager disco = ctx.discovery();
+                        if (ctx.discovery().node(nodeId) == null)
+                            return;
 
-                        ClusterNode node = disco.node(nodeId);
+                        synchronized (notificationQueue) {
+                            notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
-                        if (node != null) {
-                            try {
-                                EventWrapper wrapper = new EventWrapper(evt);
+                            if (!notificationInProgress) {
+                                ctx.getSystemExecutorService().submit(new Runnable() {
+                                    @Override public void run() {
+                                        while (true) {
+                                            T3<UUID, UUID, Event> t3;
 
-                                if (evt instanceof CacheEvent) {
-                                    String cacheName = ((CacheEvent)evt).cacheName();
+                                            synchronized (notificationQueue) {
+                                                t3 = notificationQueue.poll();
 
-                                    if (ctx.config().isPeerClassLoadingEnabled() && disco.cacheNode(node, cacheName)) {
-                                        wrapper.p2pMarshal(ctx.config().getMarshaller());
+                                                if (t3 == null) {
+                                                    notificationInProgress = false;
 
-                                        wrapper.cacheName = cacheName;
+                                                    return;
+                                                }
+                                            }
 
-                                        GridCacheDeploymentManager depMgr =
-                                            ctx.cache().internalCache(cacheName).context().deploy();
+                                            try {
+                                                Event evt = t3.get3();
 
-                                        depMgr.prepare(wrapper);
+                                                EventWrapper wrapper = new EventWrapper(evt);
+
+                                                if (evt instanceof CacheEvent) {
+                                                    String cacheName = ((CacheEvent)evt).cacheName();
+
+                                                    ClusterNode node = ctx.discovery().node(t3.get1());
+
+                                                    if (node == null)
+                                                        continue;
+
+                                                    if (ctx.config().isPeerClassLoadingEnabled()
+                                                        && ctx.discovery().cacheNode(node, cacheName)) {
+                                                        wrapper.p2pMarshal(ctx.config().getMarshaller());
+
+                                                        wrapper.cacheName = cacheName;
+
+                                                        GridCacheDeploymentManager depMgr =
+                                                            ctx.cache().internalCache(cacheName).context().deploy();
+
+                                                        depMgr.prepare(wrapper);
+                                                    }
+                                                }
+
+                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
+                                                    false, false);
+                                            }
+                                            catch (ClusterTopologyCheckedException ignored) {
+                                                // No-op.
+                                            }
+                                            catch (Throwable e) {
+                                                U.error(ctx.log(GridEventConsumeHandler.class),
+                                                    "Failed to send event notification to node: " + nodeId, e);
+                                            }
+                                        }
                                     }
-                                }
+                                });
 
-                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false, false);
-                            }
-                            catch (IgniteCheckedException e) {
-                                U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, e);
+                                notificationInProgress = true;
                             }
                         }
                     }

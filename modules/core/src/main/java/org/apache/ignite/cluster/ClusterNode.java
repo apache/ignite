@@ -238,9 +238,12 @@ public interface ClusterNode {
     public boolean isDaemon();
 
     /**
-     * Tests whether or not this node is a client node.
+     * Tests whether or not this node is connected to cluster as a client. Do not confuse client in terms of
+     * discovery {@link org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi} and client in terms of cache
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#isClientMode()}.
      *
      * @return {@code True} if this node is a client node, {@code false} otherwise.
+     * @see org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi
      */
     public boolean isClient();
 }

@@ -745,7 +745,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            impl = (CacheEntryEventSerializableFilter)in.readObject();
+            impl = (CacheEntryEventFilter)in.readObject();
             types = in.readByte();
         }
 

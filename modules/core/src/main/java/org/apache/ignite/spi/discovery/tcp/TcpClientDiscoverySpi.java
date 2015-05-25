@@ -461,7 +461,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             throw new IgniteException("Failed to send custom message: client is disconnected");
 
         try {
-            sockWriter.sendMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), marsh.marshal(evt)));
+            sockWriter.sendMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt, marsh.marshal(evt)));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -1069,6 +1069,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 ", timeout=" + netTimeout + ']');
 
                             joinLatch.countDown();
+
+                            break;
                         }
                     }
                     else if (msg == SPI_STOP) {
@@ -1092,6 +1094,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 joinErr = new IgniteSpiException("Failed to connect to cluster: socket closed.");
 
                                 joinLatch.countDown();
+
+                                break;
                             }
                             else {
                                 if (getSpiContext().isStopping() || segmented)
@@ -1167,7 +1171,9 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             }
         }
 
-        /** {@inheritDoc} */
+        /**
+         * @param msg Message.
+         */
         protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
             assert msg != null;
             assert msg.verified() || msg.senderNodeId() == null;
@@ -1475,11 +1481,11 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoverySpiCustomMessage msgObj = marsh.unmarshal(msg.messageBytes(), U.gridClassLoader());
+                            DiscoverySpiCustomMessage msgObj = msg.message(marsh);
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Throwable e) {
                             U.error(log, "Failed to unmarshal discovery custom message.", e);
                         }
                     }

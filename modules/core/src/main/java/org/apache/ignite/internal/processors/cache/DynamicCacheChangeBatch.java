@@ -83,4 +83,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return false;
+    }
 }

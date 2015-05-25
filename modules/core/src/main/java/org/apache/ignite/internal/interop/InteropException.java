@@ -15,35 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.internal.interop;
 
-import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
- *
+ * Interop checked exception.
  */
-public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
+public class InteropException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param routineId Routine id.
+     * Create empty exception.
      */
-    public StopRoutineAckDiscoveryMessage(UUID routineId) {
-        super(routineId);
+    public InteropException() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public InteropException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates new grid exception with given throwable as a cause and
+     * source of error message.
+     *
+     * @param cause Non-null throwable cause.
+     */
+    public InteropException(Throwable cause) {
+        this(cause.getMessage(), cause);
+    }
+
+    /**
+     * Creates new exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public InteropException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StopRoutineAckDiscoveryMessage.class, this, "routineId", routineId());
+        return S.toString(InteropException.class, this);
     }
 }
