@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Start of util methods.
+ */
+
 def envVariable = { name, defaultVar ->
     def res = System.getenv(name as String)
 
@@ -34,6 +38,79 @@ def envVariableAsList = { name, defaultList ->
 }
 
 /**
+ * Monitors given process and show errors if exist.
+ */
+def checkprocess = { process ->
+    process.waitFor()
+
+    if (process.exitValue() != 0) {
+        println "Return code: " + process.exitValue()
+        println "Errout:\n" + process.err.text
+
+        assert process.exitValue() == 0 || process.exitValue() == 128
+    }
+}
+
+/**
+ * Util method to send http request.
+ */
+def sendHttpRequest = { requestMethod, urlString, user, pwd, postData, contentType ->
+    URL url = new URL(urlString as String);
+
+    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+
+    String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
+
+    conn.setRequestProperty("Authorization", "Basic " + encoded);
+
+    conn.setDoOutput(true);
+    conn.setRequestMethod(requestMethod);
+
+    if (postData) {
+        conn.setRequestProperty("Content-Type", contentType);
+        conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
+
+        OutputStream os = conn.getOutputStream();
+        os.write(postData.getBytes());
+        os.flush();
+        os.close();
+    }
+
+    conn.connect();
+
+    // Read response.
+    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+    String response = "";
+    String line;
+
+    while ((line = br.readLine()) != null)
+        response += line
+
+    br.close();
+
+    response
+}
+
+/**
+ * Util method to send http POST request.
+ */
+def sendPostRequest = { urlString, user, pwd, postData, contentType ->
+    sendHttpRequest("POST", urlString, user, pwd, postData, contentType);
+}
+
+/**
+ * Util method to send http GET request.
+ */
+def sendGetRequest = { urlString, user, pwd->
+    sendHttpRequest("GET", urlString, user, pwd, null, null);
+}
+
+/*
+ * End of util methods.
+ */
+
+/**
  * Parsing a special filter from Apache Ignite JIRA and picking up latest by ID
  * attachments to process.
  */
@@ -47,9 +124,33 @@ final def JIRA_CMD = System.getProperty('JIRA_COMMAND', 'jira.sh')
 
 // Envariement variables.
 final def TC_PROJECT_NAME = envVariable("PROJECT_NAME", "Ignite")
-
-final def CONTRIBUTORS = envVariableAsList("JIRA_CONTRIBUTORS", [])
 final def TC_BUILD_EXCLUDE_LIST = envVariableAsList("BUILD_ID_EXCLUDES", ["Ignite_RunAllTestBuilds"])
+
+final def JIRA_USER = System.getenv('JIRA_USER')
+final def JIRA_PWD = System.getenv('JIRA_PWD')
+
+final def CONTRIBUTORS = []
+
+def contributors = {
+    if (!CONTRIBUTORS) {
+        def response = sendGetRequest(
+            "$JIRA_URL/jira/rest/api/2/project/12315922/role/10010" as String,
+            JIRA_USER,
+            JIRA_PWD)
+
+        println "Response on contributors request = $response"
+
+        def json = new groovy.json.JsonSlurper().parseText(response)
+
+        json.actors.each {
+            CONTRIBUTORS.add(it.name)
+        }
+
+        println "Contributors list: $CONTRIBUTORS"
+    }
+
+    CONTRIBUTORS
+}
 
 /**
  * Gets jiras for which test tasks were already triggered.
@@ -87,7 +188,7 @@ def getLatestAttachment = { jira ->
         .find {
             def fName = it.@name.toString()
 
-            CONTRIBUTORS.contains(it.@author as String) &&
+            contributors().contains(it.@author as String) &&
                 (fName.endsWith(".patch") || fName.endsWith(".txt") || fName.endsWith(".diff"))
         }
 
@@ -135,20 +236,6 @@ def findAttachments = {
     validated << list.join('\n')
 
     attachments
-}
-
-/**
- * Monitors given process and show errors if exist.
- */
-def checkprocess = { process ->
-    process.waitFor()
-
-    if (process.exitValue() != 0) {
-        println "Return code: " + process.exitValue()
-        println "Errout:\n" + process.err.text
-
-        assert process.exitValue() == 0 || process.exitValue() == 128
-    }
 }
 
 /**
@@ -232,50 +319,9 @@ def getTestBuilds = { ->
 }
 
 /**
- * Util method to send post request.
- */
-def sendPostRequest = { urlString, user, pwd, postData, contentType ->
-    URL url = new URL(urlString as String);
-
-    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-
-    String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
-
-    conn.setRequestProperty("Authorization", "Basic " + encoded);
-
-    conn.setDoOutput(true);
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("Content-Type", contentType);
-    conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
-
-    OutputStream os = conn.getOutputStream();
-    os.write(postData.getBytes());
-    os.flush();
-    os.close();
-
-    conn.connect();
-
-    // Read response.
-    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-    String response = "";
-    String line;
-
-    while ((line = br.readLine()) != null)
-        response += line
-
-    br.close();
-
-    response
-}
-
-/**
  * Adds comment to jira ticket.
  */
 def addJiraComment = { jiraNum, comment ->
-    def user = System.getenv('JIRA_USER')
-    def pwd = System.getenv('JIRA_PWD')
-
     try {
         println "Comment: $comment"
 
@@ -283,8 +329,8 @@ def addJiraComment = { jiraNum, comment ->
 
         def response = sendPostRequest(
             "$JIRA_URL/jira/rest/api/2/issue/$jiraNum/comment" as String,
-            user,
-            pwd,
+            JIRA_USER,
+            JIRA_PWD,
             jsonComment,
             "application/json")
 
