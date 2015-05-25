@@ -27,14 +27,6 @@ import java.util.*;
  */
 public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
-     * Gets disconnect check interval.
-     *
-     * @return Disconnect check interval.
-     */
-    @MXBeanDescription("Disconnect check interval.")
-    public long getDisconnectCheckInterval();
-
-    /**
      * Gets socket timeout.
      *
      * @return Socket timeout.
