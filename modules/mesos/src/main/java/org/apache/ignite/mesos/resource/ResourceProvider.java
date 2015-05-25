@@ -25,7 +25,7 @@ import java.util.*;
 import static org.apache.ignite.mesos.resource.ResourceController.*;
 
 /**
- *
+ * Provides path to user's libs and config file.
  */
 public class ResourceProvider {
     /** Ignite url. */

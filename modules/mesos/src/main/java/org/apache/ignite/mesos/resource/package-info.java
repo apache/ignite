@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains classes to support integration with Apache Mesos.
+ * Contains classes provide access to resources.
  */
-package org.apache.ignite.mesos;
+package org.apache.ignite.mesos.resource;

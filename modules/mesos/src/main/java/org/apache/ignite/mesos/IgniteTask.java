@@ -18,7 +18,7 @@
 package org.apache.ignite.mesos;
 
 /**
- * TODO
+ * Information about launched task.
  */
 public class IgniteTask {
     /** */

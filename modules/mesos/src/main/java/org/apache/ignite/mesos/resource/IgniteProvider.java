@@ -23,7 +23,7 @@ import java.nio.channels.*;
 import java.util.*;
 
 /**
- * TODO
+ * Class downloads and stores Ignite.
  */
 public class IgniteProvider {
     /** */

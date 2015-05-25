@@ -18,6 +18,7 @@
 package org.apache.ignite.mesos;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -25,7 +26,7 @@ import java.util.*;
  */
 public class ClusterProperties {
     /** Unlimited. */
-    public static final double UNLIMITED = -1;
+    public static final double UNLIMITED = Double.MAX_VALUE;
 
     /** */
     public static final String MESOS_MASTER_URL = "MESOS_MASTER_URL";
@@ -37,10 +38,31 @@ public class ClusterProperties {
     private String mesosUrl = DEFAULT_MESOS_MASTER_URL;
 
     /** */
+    public static final String IGNITE_HTTP_SERVER_HOST = "IGNITE_HTTP_SERVER_HOST";
+
+    /** Http server host. */
+    private String httpServerHost = null;
+
+    /** */
+    public static final String IGNITE_HTTP_SERVER_PORT = "IGNITE_HTTP_SERVER_PORT";
+
+    /** */
+    public static final String DEFAULT_HTTP_SERVER_PORT = "47511";
+
+    /** Http server host. */
+    private int httpServerPort = Integer.valueOf(DEFAULT_HTTP_SERVER_PORT);
+
+    /** */
     public static final String IGNITE_RESOURCE_CPU_CORES = "IGNITE_RESOURCE_CPU_CORES";
 
     /** CPU limit. */
     private double cpu = UNLIMITED;
+
+    /** */
+    public static final String IGNITE_RESOURCE_CPU_CORES_PER_NODE = "IGNITE_RESOURCE_CPU_CORES_PER_NODE";
+
+    /** CPU limit. */
+    private double cpuPerNode = UNLIMITED;
 
     /** */
     public static final String IGNITE_RESOURCE_MEM_MB = "IGNITE_RESOURCE_MEM_MB";
@@ -49,10 +71,22 @@ public class ClusterProperties {
     private double mem = UNLIMITED;
 
     /** */
+    public static final String IGNITE_RESOURCE_MEM_MB_PER_NODE = "IGNITE_RESOURCE_MEM_MB_PER_NODE";
+
+    /** Memory limit. */
+    private double memPerNode = UNLIMITED;
+
+    /** */
     public static final String IGNITE_RESOURCE_DISK_MB = "IGNITE_RESOURCE_DISK_MB";
 
     /** Disk space limit. */
     private double disk = UNLIMITED;
+
+    /** */
+    public static final String IGNITE_RESOURCE_DISK_MB_PER_NODE = "IGNITE_RESOURCE_DISK_MB_PER_NODE";
+
+    /** Disk space limit. */
+    private double diskPerNode = UNLIMITED;
 
     /** */
     public static final String IGNITE_RESOURCE_NODE_CNT = "IGNITE_RESOURCE_NODE_CNT";
@@ -121,6 +155,13 @@ public class ClusterProperties {
     }
 
     /**
+     * @return CPU count limit.
+     */
+    public double cpusPerNode(){
+        return cpuPerNode;
+    }
+
+    /**
      * @return mem limit.
      */
     public double memory() {
@@ -128,10 +169,24 @@ public class ClusterProperties {
     }
 
     /**
+     * @return mem limit.
+     */
+    public double memoryPerNode() {
+        return memPerNode;
+    }
+
+    /**
      * @return disk limit.
      */
     public double disk() {
         return disk;
+    }
+
+    /**
+     * @return disk limit per node.
+     */
+    public double diskPerNode() {
+        return diskPerNode;
     }
 
     /**
@@ -191,6 +246,20 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Http server host.
+     */
+    public String httpServerHost() {
+        return httpServerHost;
+    }
+
+    /**
+     * @return Http server port.
+     */
+    public int httpServerPort() {
+        return httpServerPort;
+    }
+
+    /**
      * @param config path to config file.
      * @return Cluster configuration.
      */
@@ -208,9 +277,16 @@ public class ClusterProperties {
 
             prop.mesosUrl = getStringProperty(MESOS_MASTER_URL, props, DEFAULT_MESOS_MASTER_URL);
 
+            prop.httpServerHost = getStringProperty(IGNITE_HTTP_SERVER_HOST, props, getNonLoopbackAddress());
+            prop.httpServerPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
+                DEFAULT_HTTP_SERVER_PORT));
+
             prop.cpu = getDoubleProperty(IGNITE_RESOURCE_CPU_CORES, props, UNLIMITED);
+            prop.cpuPerNode = getDoubleProperty(IGNITE_RESOURCE_CPU_CORES_PER_NODE, props, UNLIMITED);
             prop.mem = getDoubleProperty(IGNITE_RESOURCE_MEM_MB, props, UNLIMITED);
+            prop.memPerNode = getDoubleProperty(IGNITE_RESOURCE_MEM_MB_PER_NODE, props, UNLIMITED);
             prop.disk = getDoubleProperty(IGNITE_RESOURCE_DISK_MB, props, UNLIMITED);
+            prop.diskPerNode = getDoubleProperty(IGNITE_RESOURCE_DISK_MB_PER_NODE, props, UNLIMITED);
             prop.nodeCnt = getDoubleProperty(IGNITE_RESOURCE_NODE_CNT, props, UNLIMITED);
             prop.minCpu = getDoubleProperty(IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
             prop.minMemory = getDoubleProperty(IGNITE_RESOURCE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);
@@ -259,5 +335,33 @@ public class ClusterProperties {
             property = System.getenv(name);
 
         return property == null ? defaultVal : property;
+    }
+
+    /**
+     * Finds a local, non-loopback, IPv4 address
+     *
+     * @return The first non-loopback IPv4 address found, or
+     *         <code>null</code> if no such addresses found
+     * @throws java.net.SocketException
+     *            If there was a problem querying the network
+     *            interfaces
+     */
+    public static String getNonLoopbackAddress() throws SocketException {
+        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+
+        while (ifaces.hasMoreElements()) {
+            NetworkInterface iface = ifaces.nextElement();
+
+            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+
+            while (addresses.hasMoreElements()) {
+                InetAddress addr = addresses.nextElement();
+
+                if (addr instanceof Inet4Address && !addr.isLoopbackAddress())
+                    return addr.getHostAddress();
+            }
+        }
+
+        throw new RuntimeException("Failed. Couldn't find non-loopback address");
     }
 }

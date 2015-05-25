@@ -22,7 +22,7 @@ import javax.ws.rs.core.*;
 import java.io.*;
 
 /**
- *
+ * HTTP controller which provides on slave resources.
  */
 @Path("/")
 public class ResourceController {
@@ -58,9 +58,8 @@ public class ResourceController {
     }
 
     /**
-     *
-     * @param ignite
-     * @return
+     * @param ignite Ignite jar name.
+     * @return Http response.
      */
     @GET
     @Path(IGNITE_PREFIX + "{ignite-dist}")
@@ -69,9 +68,8 @@ public class ResourceController {
     }
 
     /**
-     *
-     * @param lib
-     * @return
+     * @param lib user's jar.
+     * @return Http response.
      */
     @GET
     @Path(LIBS_PREFIX + "{lib}")
@@ -81,8 +79,8 @@ public class ResourceController {
 
     /**
      *
-     * @param cfg
-     * @return
+     * @param cfg Config file.
+     * @return Http response.
      */
     @GET
     @Path(CONFIG_PREFIX + "{cfg}")
@@ -91,9 +89,8 @@ public class ResourceController {
     }
 
     /**
-     *
-     * @param cfg
-     * @return
+     * @param cfg Config file.
+     * @return Http response.
      */
     @GET
     @Path(DEFAULT_CONFIG + "{cfg}")
@@ -111,7 +108,7 @@ public class ResourceController {
      */
     private static Response handleRequest(File resource, String type, String attachmentName) {
         final Response.ResponseBuilder builder = Response.ok(resource, type);
-        builder.header("Content-Disposition", String.format("attachment; filename=\"%s\"", attachmentName));
+        builder.header("Content-Disposition", "attachment; filename=\"" + attachmentName + "\"");
         return builder.build();
     }
 
@@ -124,7 +121,7 @@ public class ResourceController {
      */
     private static Response handleRequest(InputStream resource, String type, String attachmentName) {
         final Response.ResponseBuilder builder = Response.ok(resource, type);
-        builder.header("Content-Disposition", String.format("attachment; filename=\"%s\"", attachmentName));
+        builder.header("Content-Disposition", "attachment; filename=\"" + attachmentName + "\"");
         return builder.build();
     }
 }

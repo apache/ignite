@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * TODO
+ * Ignite scheduler receives offers from Mesos and decides how many resources will be occupied.
  */
 public class IgniteScheduler implements Scheduler {
     /** Cpus. */
@@ -162,7 +162,7 @@ public class IgniteScheduler implements Scheduler {
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.mem())))
-            .build();
+                .build();
     }
 
     /**
@@ -187,8 +187,8 @@ public class IgniteScheduler implements Scheduler {
      * @return Ignite task description.
      */
     private IgniteTask checkOffer(Protos.Offer offer) {
-        // Check that limit on running nodes.
-        if (!checkLimit(clusterLimit.instances(), tasks.size()))
+        // Check limit on running nodes.
+        if (clusterLimit.instances() <= tasks.size())
             return null;
 
         double cpus = -1;
@@ -238,12 +238,9 @@ public class IgniteScheduler implements Scheduler {
             totalDisk += task.disk();
         }
 
-        cpus = clusterLimit.cpus() == ClusterProperties.UNLIMITED ? cpus :
-            Math.min(clusterLimit.cpus() - totalCpus, cpus);
-        mem = clusterLimit.memory() == ClusterProperties.UNLIMITED ? mem :
-            Math.min(clusterLimit.memory() - totalMem, mem);
-        disk = clusterLimit.disk() == ClusterProperties.UNLIMITED ? disk :
-            Math.min(clusterLimit.disk() - totalDisk, disk);
+        cpus = Math.min(clusterLimit.cpus() - totalCpus, Math.min(cpus, clusterLimit.cpusPerNode()));
+        mem = Math.min(clusterLimit.memory() - totalMem, Math.min(mem, clusterLimit.memoryPerNode()));
+        disk = Math.min(clusterLimit.disk() - totalDisk, Math.min(disk, clusterLimit.diskPerNode()));
 
         if (cpus > 0 && mem > 0)
             return new IgniteTask(offer.getHostname(), cpus, mem, disk);
@@ -256,15 +253,6 @@ public class IgniteScheduler implements Scheduler {
 
             return null;
         }
-    }
-
-    /**
-     * @param limit Limit.
-     * @param value Value.
-     * @return {@code True} if limit isn't violated else {@code false}.
-     */
-    private boolean checkLimit(double limit, double value) {
-        return limit == ClusterProperties.UNLIMITED || limit <= value;
     }
 
     /** {@inheritDoc} */
