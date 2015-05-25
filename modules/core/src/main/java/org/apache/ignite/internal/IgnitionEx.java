@@ -1747,6 +1747,13 @@ public class IgnitionEx {
                 myCfg.setFileSystemConfiguration(clone);
             }
 
+            if (myCfg.isClientMode() == null || !myCfg.isClientMode()) {
+                if (myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi) {
+                    throw new IgniteCheckedException("TcpClientDiscoverySpi can be used in client mode only, you " +
+                        "have to set IgniteConfiguration#isClientMode to 'true'");
+                }
+            }
+
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
@@ -1811,11 +1818,15 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDefaultSpi(IgniteConfiguration cfg) {
-            if (cfg.getDiscoverySpi() == null)
-                cfg.setDiscoverySpi(new TcpDiscoverySpi());
+            if (cfg.getDiscoverySpi() == null) {
+                if (cfg.isClientMode() != null && cfg.isClientMode())
+                    cfg.setDiscoverySpi(new TcpClientDiscoverySpi());
+                else
+                    cfg.setDiscoverySpi(new TcpDiscoverySpi());
+            }
 
-            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
-                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpiAdapter) {
+                TcpDiscoverySpiAdapter tcpDisco = (TcpDiscoverySpiAdapter)cfg.getDiscoverySpi();
 
                 if (tcpDisco.getIpFinder() == null)
                     tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());

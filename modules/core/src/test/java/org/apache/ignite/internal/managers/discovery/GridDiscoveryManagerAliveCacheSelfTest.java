@@ -91,8 +91,11 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         TcpDiscoverySpiAdapter disc;
 
-        if (clientMode && ((gridName.charAt(gridName.length() - 1) - '0') & 1) != 0)
+        if (clientMode && ((gridName.charAt(gridName.length() - 1) - '0') & 1) != 0) {
             disc = new TcpClientDiscoverySpi();
+
+            cfg.setClientMode(true);
+        }
         else {
             TcpDiscoverySpi srvDisc = new TcpDiscoverySpi();
 
