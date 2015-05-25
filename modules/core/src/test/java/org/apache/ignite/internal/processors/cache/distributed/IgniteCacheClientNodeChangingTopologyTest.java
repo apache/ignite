@@ -24,8 +24,11 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -38,6 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
+import org.eclipse.jetty.util.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -96,21 +100,53 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicPutAllClockMode() throws Exception {
-        atomicPutAll(CLOCK);
+        atomicPut(CLOCK, true, null);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicPutAllPrimaryMode() throws Exception {
-        atomicPutAll(PRIMARY);
+        atomicPut(PRIMARY, true, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicPutAllNearEnabledClockMode() throws Exception {
+        atomicPut(CLOCK, true, new NearCacheConfiguration());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicPutAllNearEnabledPrimaryMode() throws Exception {
+        atomicPut(PRIMARY, true, new NearCacheConfiguration());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicPutClockMode() throws Exception {
+        atomicPut(CLOCK, false, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicPutPrimaryMode() throws Exception {
+        atomicPut(PRIMARY, false, null);
     }
 
     /**
      * @param writeOrder Write order.
+     * @param putAll If {@code true} executes putAll.
+     * @param nearCfg Near cache configuration.
      * @throws Exception If failed.
      */
-    private void atomicPutAll(CacheAtomicWriteOrderMode writeOrder) throws Exception {
+    private void atomicPut(CacheAtomicWriteOrderMode writeOrder,
+        final boolean putAll,
+        @Nullable NearCacheConfiguration nearCfg) throws Exception {
         ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
@@ -123,7 +159,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
+        ccfg.setNearConfiguration(nearCfg);
+
         client = true;
+
+        ccfg.setNearConfiguration(null);
 
         Ignite ignite2 = startGrid(2);
 
@@ -131,7 +171,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final Map<Integer, Integer> map = new HashMap<>();
 
-        for (int i = 0; i < 100; i++)
+        final int KEYS = putAll ? 100 : 1;
+
+        for (int i = 0; i < KEYS; i++)
             map.put(i, i);
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
@@ -148,7 +190,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("put-thread");
 
-                cache.putAll(map);
+                if (putAll)
+                    cache.putAll(map);
+                else
+                    cache.put(0, 0);
 
                 return null;
             }
@@ -172,7 +217,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         map.clear();
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < KEYS; i++)
             map.put(i, i + 1);
 
         // Block messages requests for single node.
@@ -182,7 +227,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             @Override public Object call() throws Exception {
                 Thread.currentThread().setName("put-thread");
 
-                cache.putAll(map);
+                if (putAll)
+                    cache.putAll(map);
+                else
+                    cache.put(0, 1);
 
                 return null;
             }
@@ -202,10 +250,13 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkData(map, cache, 4);
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < KEYS; i++)
             map.put(i, i + 2);
 
-        cache.putAll(map);
+        if (putAll)
+            cache.putAll(map);
+        else
+            cache.put(0, 2);
 
         checkData(map, cache, 4);
     }
@@ -401,7 +452,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void _testLock() throws Exception {
+    public void testLock() throws Exception {
         lock(null);
     }
 
@@ -740,6 +791,72 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testLockFromClientBlocksExchange() throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+
+        startGrid(0);
+        startGrid(1);
+
+        client = true;
+
+        Ignite ignite2 = startGrid(2);
+
+        IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+
+        Lock lock = cache.lock(0);
+
+        lock.lock();
+
+        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                client = false;
+
+                startGrid(3);
+
+                return null;
+            }
+        });
+
+        U.sleep(2000);
+
+        assertFalse(startFut.isDone());
+
+        AffinityTopologyVersion ver = new AffinityTopologyVersion(4);
+
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+        U.sleep(2000);
+
+        for (int i = 0; i < 3; i++) {
+            Ignite ignite = ignite(i);
+
+            IgniteInternalFuture<?> fut =
+                ((IgniteKernal)ignite).context().cache().context().exchange().affinityReadyFuture(ver);
+
+            assertNotNull(fut);
+
+            assertFalse(fut.isDone());
+
+            futs.add(fut);
+        }
+
+        lock.unlock();
+
+        for (IgniteInternalFuture<?> fut : futs)
+            fut.get(10_000);
+
+        startFut.get(10_000);
+    }
+
+    /**
      * @param map Expected data.
      * @param clientCache Client cache.
      * @param expNodes Expected nodes number.
@@ -764,11 +881,35 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     for (Map.Entry<Integer, Integer> e : map.entrySet()) {
                         Integer key = e.getKey();
 
+                        GridCacheVersion ver = null;
+
                         for (Ignite node : nodes) {
                             IgniteCache<Integer, Integer> cache = node.cache(null);
 
-                            if (aff.isPrimaryOrBackup(node.cluster().localNode(), key) || node == nearCacheNode)
+                            boolean affNode = aff.isPrimaryOrBackup(node.cluster().localNode(), key);
+
+                            if (affNode || node == nearCacheNode) {
                                 assertEquals("Unexpected value for " + node.name(), e.getValue(), cache.localPeek(key));
+
+                                GridCacheAdapter cache0 = ((IgniteKernal)node).internalCache(null);
+
+                                if (affNode && cache0.isNear())
+                                    cache0 = ((GridNearCacheAdapter)cache0).dht();
+
+                                GridCacheEntryEx entry = cache0.peekEx(key);
+
+                                assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
+
+                                GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
+                                    ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
+
+                                assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);
+
+                                if (ver == null)
+                                    ver = ver0;
+                                else
+                                    assertEquals(ver0, ver);
+                            }
                             else
                                 assertNull("Unexpected non-null value for " + node.name(), cache.localPeek(key));
                         }
@@ -778,6 +919,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     log.info("Check failed, will retry: " + e);
 
                     return false;
+                }
+                catch (Exception e) {
+                    fail("Unexpected exception: " + e);
                 }
 
                 return true;
@@ -860,6 +1004,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final int THREADS = CLIENT_CNT * 3;
 
+        final ConcurrentHashSet<Integer> putKeys = new ConcurrentHashSet<>();
+
         try {
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -887,8 +1033,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     while (!stop.get()) {
                         TreeMap<Integer, Integer> map = new TreeMap<>();
 
-                        for (int i = 0; i < 100; i++)
-                            map.put(rnd.nextInt(0, 1000), i);
+                        for (int i = 0; i < 100; i++) {
+                            Integer key = rnd.nextInt(0, 1000);
+
+                            map.put(key, key);
+                        }
 
                         try {
                             if (useTx) {
@@ -904,6 +1053,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                             }
                             else
                                 cache.putAll(map);
+
+                            putKeys.addAll(map.keySet());
                         }
                         catch (CacheException | IgniteException e) {
                             log.info("Update failed, ignore: " + e);
@@ -1002,6 +1153,13 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         for (IgniteInternalFuture<?> fut : futs)
             fut.get();
+
+        Map<Integer, Integer> map = new HashMap<>();
+
+        for (Integer key : putKeys)
+            map.put(key, key);
+
+        checkData(map, grid(SRV_CNT).cache(null), SRV_CNT + CLIENT_CNT);
     }
 
     /**

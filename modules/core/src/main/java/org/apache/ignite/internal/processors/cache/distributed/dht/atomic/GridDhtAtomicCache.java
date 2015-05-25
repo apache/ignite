@@ -1023,8 +1023,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         IgniteCacheExpiryPolicy expiry = null;
 
-        boolean clientReq = false;
-
         try {
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -1052,13 +1050,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return;
                     }
 
-                    clientReq = CU.clientNode(node);
-
                     // Do not check topology version for CLOCK versioning since
                     // partition exchange will wait for near update future.
                     // Also do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
-                    if ((req.fastMap() && !clientReq) || req.topologyLocked() || 
+                    if ((req.fastMap() && !req.clientRequest()) || req.topologyLocked() ||
                         !needRemap(req.topologyVersion(), topology().topologyVersion(), req.keys())) {
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
@@ -1161,7 +1157,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         catch (GridDhtInvalidPartitionException ignore) {
-            assert !req.fastMap() || clientReq : req;
+            assert !req.fastMap() || req.clientRequest() : req;
 
             if (log.isDebugEnabled())
                 log.debug("Caught invalid partition exception for cache entry (will remap update request): " + req);

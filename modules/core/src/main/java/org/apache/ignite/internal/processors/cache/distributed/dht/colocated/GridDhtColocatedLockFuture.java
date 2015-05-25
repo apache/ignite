@@ -341,6 +341,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 else if (log.isDebugEnabled())
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
+
+            for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
+                cctx.mvcc().removeExplicitLock(threadId, key, lockVer);
         }
 
         cctx.mvcc().recheckPendingLocks();
