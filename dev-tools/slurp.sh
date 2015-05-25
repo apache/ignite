@@ -58,8 +58,6 @@ git checkout ${DEFAULT_BRANCH}
 git pull
 
 export TC_URL=${TC_URL}
-export GIT_USER_NAME=${GIT_USER_NAME}
-export GIT_USER_EMAIL=${GIT_USER_EMAIL}
 export JIRA_USER=${JIRA_USER}
 export JIRA_PWD=${JIRA_PWD}
 export TASK_RUNNER_PWD=${TASK_RUNNER_PWD}

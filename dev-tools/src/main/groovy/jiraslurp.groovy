@@ -238,6 +238,19 @@ def findAttachments = {
     attachments
 }
 
+def tryGitAmAbort = {
+    try {
+        checkprocess "git am --abort".execute(null, new File("../"))
+
+        println "Succsessfull: git am --abort."
+    }
+    catch (Throwable e) {
+        println "Error: git am --abort fails: "
+
+        e.printStackTrace()
+    }
+}
+
 /**
  * Applys patch from jira to given git state.
  */
@@ -254,7 +267,11 @@ def applyPatch = { jira, attachementURL ->
 
         patchFile << new URL("$ATTACHMENT_URL/$attachementURL/").text
 
+        println "Got patch content."
+
         try {
+            tryGitAmAbort()
+
             checkprocess "git branch".execute()
 
             checkprocess "git config user.email \"$userEmail\"".execute(null, new File("../"))
@@ -266,6 +283,8 @@ def applyPatch = { jira, attachementURL ->
 
             checkprocess "git branch".execute()
 
+            println "Trying to apply patch."
+
             checkprocess "git am dev-tools/${patchFile.name}".execute(null, new File("../"))
 
             println "Patch was applied successfully."
@@ -273,16 +292,7 @@ def applyPatch = { jira, attachementURL ->
         catch (Exception e) {
             println "Patch was not applied successfully. Aborting patch applying."
 
-            try {
-                checkprocess "git am --abort".execute(null, new File("../"))
-
-                print "Succsessfull: git am --abort."
-            }
-            catch (Exception e2) {
-                print "Error: git am --abort fails: "
-
-                e2.printStackTrace()
-            }
+            tryGitAmAbort()
 
             throw e;
         }
