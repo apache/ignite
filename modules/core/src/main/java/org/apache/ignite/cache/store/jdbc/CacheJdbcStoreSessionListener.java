@@ -121,11 +121,9 @@ public class CacheJdbcStoreSessionListener implements CacheStoreSessionListener,
 
     /** {@inheritDoc} */
     @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
-        Connection conn = ses.attachment();
+        Connection conn = ses.attach(null);
 
         if (conn != null) {
-            ses.attach(null);
-
             try {
                 if (commit)
                     conn.commit();

@@ -190,11 +190,9 @@ public class CacheHibernateStoreSessionListener implements CacheStoreSessionList
 
     /** {@inheritDoc} */
     @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
-        Session hibSes = ses.attachment();
+        Session hibSes = ses.attach(null);
 
         if (hibSes != null) {
-            ses.attach(null);
-
             try {
                 Transaction tx = hibSes.getTransaction();
 

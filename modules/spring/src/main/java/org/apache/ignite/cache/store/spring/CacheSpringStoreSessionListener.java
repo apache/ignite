@@ -169,11 +169,9 @@ public class CacheSpringStoreSessionListener implements CacheStoreSessionListene
     /** {@inheritDoc} */
     @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
         if (ses.isWithinTransaction()) {
-            TransactionStatus tx = ses.attachment();
+            TransactionStatus tx = ses.attach(null);
 
             if (tx != null) {
-                ses.attach(null);
-
                 try {
                     if (commit)
                         txMgr.commit(tx);

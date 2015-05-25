@@ -52,8 +52,25 @@ public interface CacheStoreSession {
      */
     public boolean isWithinTransaction();
 
-    public void attach(@Nullable Object attachment);
+    /**
+     * Attaches the given object to this session.
+     * <p>
+     * An attached object may later be retrieved via the {@link #attachment()}
+     * method. Invoking this method causes any previous attachment to be
+     * discarded. To attach additional objects use {@link #properties()} map.
+     * <p>
+     * The current attachment may be discarded by attaching {@code null}.
+     *
+     * @param attachment The object to be attached (or {@code null} to discard current attachment).
+     * @return Previously attached object, if any.
+     */
+    @Nullable public <T> T attach(@Nullable Object attachment);
 
+    /**
+     * Retrieves the current attachment or {@code null} if there is no attachment.
+     *
+     * @return Currently attached object, if any.
+     */
     @Nullable public <T> T attachment();
 
     /**

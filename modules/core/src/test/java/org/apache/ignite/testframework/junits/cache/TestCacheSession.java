@@ -58,8 +58,12 @@ public class TestCacheSession implements CacheStoreSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void attach(@Nullable Object attachment) {
+    @Override public Object attach(@Nullable Object attachment) {
+        Object prev = this.attachment;
+
         this.attachment = attachment;
+
+        return prev;
     }
 
     /** {@inheritDoc} */

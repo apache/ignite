@@ -889,8 +889,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @param attachment Attachment.
          */
-        private void attach(Object attachment) {
+        private Object attach(Object attachment) {
+            Object prev = this.attachment;
+
             this.attachment = attachment;
+
+            return prev;
         }
 
         /**
@@ -962,11 +966,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
-        @Override public void attach(@Nullable Object attachment) {
+        @Override public Object attach(@Nullable Object attachment) {
             SessionData ses0 = sesHolder.get();
 
-            if (ses0 != null)
-                ses0.attach(attachment);
+            return ses0 != null ? ses0.attach(attachment) : null;
         }
 
         /** {@inheritDoc} */
