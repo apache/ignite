@@ -154,7 +154,7 @@ public class CacheSpringStoreSessionListener implements CacheStoreSessionListene
 
     /** {@inheritDoc} */
     @Override public void onSessionStart(CacheStoreSession ses) {
-        if (ses.isWithinTransaction()) {
+        if (ses.isWithinTransaction() && ses.attachment() == null) {
             try {
                 TransactionDefinition def = definition(ses.transaction(), ses.cacheName());
 

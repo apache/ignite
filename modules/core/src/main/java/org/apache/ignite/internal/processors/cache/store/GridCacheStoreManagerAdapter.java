@@ -70,6 +70,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** */
     private Collection<CacheStoreSessionListener> sesLsnrs;
 
+    /** */
+    private boolean globalSesLsnrs;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void initialize(@Nullable CacheStore cfgStore, Map sesHolders) throws IgniteCheckedException {
@@ -166,10 +169,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 "Persistence store is configured, but both read-through and write-through are disabled.");
         }
 
-        sesLsnrs = CU.createStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
+        sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
 
-        if (sesLsnrs == null)
+        if (sesLsnrs == null) {
             sesLsnrs = cctx.shared().storeSessionListeners();
+
+            globalSesLsnrs = true;
+        }
     }
 
     /** {@inheritDoc} */
@@ -187,18 +193,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
         }
 
-        if (sesLsnrs != null) {
-            for (CacheStoreSessionListener lsnr : sesLsnrs) {
-                if (lsnr instanceof LifecycleAware)
-                    ((LifecycleAware)lsnr).stop();
-
-                try {
-                    cctx.kernalContext().resource().cleanupGeneric(lsnr);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to remove injected resources from store session listener (ignoring): " +
-                        lsnr, e);
-                }
+        if (!globalSesLsnrs) {
+            try {
+                CU.stopStoreSessionListeners(cctx.kernalContext(), sesLsnrs);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to stop store session listeners for cache: " + cctx.name(), e);
             }
         }
     }
@@ -721,7 +721,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     lsnr.onSessionEnd(locSes, commit);
             }
 
-            if (!sesHolder.get().storeEnded(store))
+            if (!sesHolder.get().ended(store))
                 store.sessionEnd(commit);
         }
         catch (Throwable e) {
@@ -788,13 +788,9 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         sesHolder.set(ses);
 
-        if (!ses.started()) {
-            if (sesLsnrs != null) {
-                for (CacheStoreSessionListener lsnr : sesLsnrs)
-                    lsnr.onSessionStart(locSes);
-            }
-
-            ses.onStarted();
+        if (sesLsnrs != null && !ses.started(this)) {
+            for (CacheStoreSessionListener lsnr : sesLsnrs)
+                lsnr.onSessionStart(locSes);
         }
     }
 
@@ -809,7 +805,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                         lsnr.onSessionEnd(locSes, !threwEx);
                 }
 
-                assert !sesHolder.get().storeEnded(store);
+                assert !sesHolder.get().ended(store);
 
                 store.sessionEnd(!threwEx);
             }
@@ -858,10 +854,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         private Object attachment;
 
         /** */
-        private boolean started;
+        private final Set<CacheStoreManager> started =
+            new GridSetWrapper<>(new IdentityHashMap<CacheStoreManager, Object>());
 
         /** */
-        private final Set<CacheStore> endedStores = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
+        private final Set<CacheStore> ended = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
 
         /**
          * @param tx Current transaction.
@@ -918,24 +915,18 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /**
-         */
-        private void onStarted() {
-            started = true;
-        }
-
-        /**
          * @return If session is started.
          */
-        private boolean started() {
-            return started;
+        private boolean started(CacheStoreManager mgr) {
+            return !started.add(mgr);
         }
 
         /**
          * @param store Cache store.
          * @return Whether session already ended on this store instance.
          */
-        private boolean storeEnded(CacheStore store) {
-            return !endedStores.add(store);
+        private boolean ended(CacheStore store) {
+            return !ended.add(store);
         }
 
         /** {@inheritDoc} */

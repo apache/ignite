@@ -54,13 +54,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
         Long key = entry.getKey();
         Person val = entry.getValue();
 
-        System.out.println(">>> Store put [key=" + key + ", val=" + val + ']');
-
-        if (val == null) {
-            delete(key);
-
-            return;
-        }
+        System.out.println(">>> Store write [key=" + key + ", val=" + val + ']');
 
         Session hibSes = ses.attachment();
 
@@ -75,13 +69,14 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
     /** {@inheritDoc} */
     @SuppressWarnings({"JpaQueryApiInspection"})
     @Override public void delete(Object key) {
-        System.out.println(">>> Store remove [key=" + key + ']');
+        System.out.println(">>> Store delete [key=" + key + ']');
 
         Session hibSes = ses.attachment();
 
         try {
-            hibSes.createQuery("delete " + Person.class.getSimpleName() + " where key = :key")
-                .setParameter("key", key).setFlushMode(FlushMode.ALWAYS).executeUpdate();
+            hibSes.createQuery("delete " + Person.class.getSimpleName() + " where key = :key").
+                setParameter("key", key).
+                executeUpdate();
         }
         catch (HibernateException e) {
             throw new CacheWriterException("Failed to remove value from cache store [key=" + key + ']', e);
@@ -100,13 +95,13 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
         try {
             int cnt = 0;
 
-            List res = hibSes.createCriteria(Person.class).list();
+            List list = hibSes.createCriteria(Person.class).
+                setMaxResults(entryCnt).
+                list();
 
-            if (res != null) {
-                Iterator iter = res.iterator();
-
-                while (cnt < entryCnt && iter.hasNext()) {
-                    Person person = (Person)iter.next();
+            if (list != null) {
+                for (Object obj : list) {
+                    Person person = (Person)obj;
 
                     clo.apply(person.getId(), person);
 

@@ -567,7 +567,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
-        sharedCtx = createSharedContext(ctx, CU.createStoreSessionListeners(ctx,
+        sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx,
             ctx.config().getCacheStoreSessionListenerFactories()));
 
         ctx.performance().add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
@@ -812,6 +812,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             mgr.stop(cancel);
         }
+
+        CU.stopStoreSessionListeners(ctx, sharedCtx.storeSessionListeners());
 
         sharedCtx.cleanup();
 

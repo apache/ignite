@@ -22,9 +22,11 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
+import org.h2.jdbcx.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
+import javax.sql.*;
 import java.sql.*;
 
 /**
@@ -32,6 +34,10 @@ import java.sql.*;
  * transaction with cache transactions and maps {@link Long} to {@link Person}.
  */
 public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
+    /** Data source. */
+    public static final DataSource DATA_SRC =
+        JdbcConnectionPool.create("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1", "", "");
+
     /** Store session. */
     @CacheStoreSessionResource
     private CacheStoreSession ses;
@@ -52,12 +58,10 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * @throws IgniteException If failed.
      */
     private void prepareDb() throws IgniteException {
-        try (
-            Connection conn = DriverManager.getConnection("jdbc:h2:mem:example;DB_CLOSE_DELAY=-1");
-            Statement st = conn.createStatement()
-        ) {
-            st.execute("create table if not exists PERSONS (id number unique, firstName varchar(255), " +
-                "lastName varchar(255))");
+        try (Connection conn = DATA_SRC.getConnection()) {
+            conn.createStatement().execute(
+                "create table if not exists PERSONS (" +
+                "id number unique, firstName varchar(255), lastName varchar(255))");
         }
         catch (SQLException e) {
             throw new IgniteException("Failed to create database table.", e);
@@ -66,34 +70,28 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
     /** {@inheritDoc} */
     @Override public Person load(Long key) {
-        System.out.println(">>> Loading key: " + key);
+        System.out.println(">>> Store load [key=" + key + ']');
 
-        try {
-            Connection conn = ses.attachment();
+        Connection conn = ses.attachment();
 
-            try (PreparedStatement st = conn.prepareStatement("select * from PERSONS where id=?")) {
-                st.setString(1, key.toString());
+        try (PreparedStatement st = conn.prepareStatement("select * from PERSONS where id = ?")) {
+            st.setString(1, key.toString());
 
-                ResultSet rs = st.executeQuery();
+            ResultSet rs = st.executeQuery();
 
-                if (rs.next())
-                    return new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
-            }
+            return rs.next() ? new Person(rs.getLong(1), rs.getString(2), rs.getString(3)) : null;
         }
         catch (SQLException e) {
-            throw new CacheLoaderException("Failed to load object: " + key, e);
+            throw new CacheLoaderException("Failed to load object [key=" + key + ']', e);
         }
-
-        return null;
     }
 
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
         Long key = entry.getKey();
-
         Person val = entry.getValue();
 
-        System.out.println(">>> Putting [key=" + key + ", val=" + val +  ']');
+        System.out.println(">>> Store write [key=" + key + ", val=" + val + ']');
 
         try {
             Connection conn = ses.attachment();
@@ -103,7 +101,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             // Try update first. If it does not work, then try insert.
             // Some databases would allow these to be done in one 'upsert' operation.
             try (PreparedStatement st = conn.prepareStatement(
-                "update PERSONS set firstName=?, lastName=? where id=?")) {
+                "update PERSONS set firstName = ?, lastName = ? where id = ?")) {
                 st.setString(1, val.getFirstName());
                 st.setString(2, val.getLastName());
                 st.setLong(3, val.getId());
@@ -114,7 +112,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             // If update failed, try to insert.
             if (updated == 0) {
                 try (PreparedStatement st = conn.prepareStatement(
-                    "insert into PERSONS (id, firstName, lastName) values(?, ?, ?)")) {
+                    "insert into PERSONS (id, firstName, lastName) values (?, ?, ?)")) {
                     st.setLong(1, val.getId());
                     st.setString(2, val.getFirstName());
                     st.setString(3, val.getLastName());
@@ -124,25 +122,23 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             }
         }
         catch (SQLException e) {
-            throw new CacheLoaderException("Failed to put object [key=" + key + ", val=" + val + ']', e);
+            throw new CacheWriterException("Failed to write object [key=" + key + ", val=" + val + ']', e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) {
-        System.out.println(">>> Removing key: " + key);
+        System.out.println(">>> Store delete [key=" + key + ']');
 
-        try {
-            Connection conn = ses.attachment();
+        Connection conn = ses.attachment();
 
-            try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
-                st.setLong(1, (Long)key);
+        try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
+            st.setLong(1, (Long)key);
 
-                st.executeUpdate();
-            }
+            st.executeUpdate();
         }
         catch (SQLException e) {
-            throw new CacheWriterException("Failed to remove object: " + key, e);
+            throw new CacheWriterException("Failed to delete object [key=" + key + ']', e);
         }
     }
 
@@ -155,13 +151,14 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
         Connection conn = ses.attachment();
 
-        try (
-            PreparedStatement st = conn.prepareStatement("select * from PERSONS");
-            ResultSet rs = st.executeQuery()
-        ) {
+        try (PreparedStatement stmt = conn.prepareStatement("select * from PERSONS limit ?")) {
+            stmt.setInt(1, entryCnt);
+
+            ResultSet rs = stmt.executeQuery();
+
             int cnt = 0;
 
-            while (cnt < entryCnt && rs.next()) {
+            while (rs.next()) {
                 Person person = new Person(rs.getLong(1), rs.getString(2), rs.getString(3));
 
                 clo.apply(person.getId(), person);

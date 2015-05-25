@@ -266,30 +266,6 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param col1 Collection 1.
-     * @param col2 Collection 2.
-     */
-    private static void assertEqualsCollections(Collection<?> col1, Collection<?> col2) {
-        if (col1.size() != col2.size())
-            fail("Collections are not equal:\nExpected:\t" + col1 + "\nActual:\t" + col2);
-
-        Iterator<?> it1 = col1.iterator();
-        Iterator<?> it2 = col2.iterator();
-
-        int idx = 0;
-
-        while (it1.hasNext()) {
-            Object item1 = it1.next();
-            Object item2 = it2.next();
-
-            if (!F.eq(item1, item2))
-                fail("Collections are not equal (position " + idx + "):\nExpected: " + col1 + "\nActual:   " + col2);
-
-            idx++;
-        }
-    }
-
-    /**
      *
      */
     private static class TestStore implements CacheStore<Object, Object> {

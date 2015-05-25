@@ -1795,13 +1795,14 @@ public class GridCacheUtils {
     }
 
     /**
-     * Creates store session listeners.
+     * Creates and starts store session listeners.
      *
      * @param ctx Kernal context.
      * @param factories Factories.
      * @return Listeners.
+     * @throws IgniteCheckedException In case of error.
      */
-    public static Collection<CacheStoreSessionListener> createStoreSessionListeners(GridKernalContext ctx,
+    public static Collection<CacheStoreSessionListener> startStoreSessionListeners(GridKernalContext ctx,
         Factory<CacheStoreSessionListener>[] factories) throws IgniteCheckedException {
         if (factories == null)
             return null;
@@ -1822,5 +1823,25 @@ public class GridCacheUtils {
         }
 
         return lsnrs;
+    }
+
+    /**
+     * Stops store session listeners.
+     *
+     * @param ctx Kernal context.
+     * @param sesLsnrs Session listeners.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public static void stopStoreSessionListeners(GridKernalContext ctx, Collection<CacheStoreSessionListener> sesLsnrs)
+        throws IgniteCheckedException {
+        if (sesLsnrs == null)
+            return;
+
+        for (CacheStoreSessionListener lsnr : sesLsnrs) {
+            if (lsnr instanceof LifecycleAware)
+                ((LifecycleAware)lsnr).stop();
+
+            ctx.resource().cleanupGeneric(lsnr);
+        }
     }
 }
