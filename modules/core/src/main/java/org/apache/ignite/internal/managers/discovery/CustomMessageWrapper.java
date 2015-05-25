@@ -44,6 +44,11 @@ class CustomMessageWrapper implements DiscoverySpiCustomMessage {
         return res == null ? null : new CustomMessageWrapper(res);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return delegate.isMutable();
+    }
+
     /**
      * @return Delegate.
      */

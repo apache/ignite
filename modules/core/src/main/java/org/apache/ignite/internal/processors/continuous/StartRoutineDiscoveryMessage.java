@@ -26,12 +26,9 @@ import java.util.*;
 /**
  *
  */
-public class StartRoutineDiscoveryMessage implements DiscoveryCustomMessage {
+public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Routine ID. */
-    private final UUID routineId;
 
     /** */
     private final StartRequestData startReqData;
@@ -44,13 +41,9 @@ public class StartRoutineDiscoveryMessage implements DiscoveryCustomMessage {
      * @param startReqData Start request data.
      */
     public StartRoutineDiscoveryMessage(UUID routineId, StartRequestData startReqData) {
-        this.routineId = routineId;
-        this.startReqData = startReqData;
-    }
+        super(routineId);
 
-    /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return false;
+        this.startReqData = startReqData;
     }
 
     /**
@@ -69,17 +62,15 @@ public class StartRoutineDiscoveryMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
-    }
-
-    /**
      * @return Errs.
      */
     public Map<UUID, IgniteCheckedException> errs() {
         return errs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMutable() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -89,6 +80,6 @@ public class StartRoutineDiscoveryMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StartRoutineDiscoveryMessage.class, this, super.toString());
+        return S.toString(StartRoutineDiscoveryMessage.class, this, "routineId", routineId());
     }
 }

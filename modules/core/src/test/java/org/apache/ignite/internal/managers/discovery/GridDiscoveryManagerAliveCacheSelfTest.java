@@ -93,10 +93,18 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         if (clientMode && ((gridName.charAt(gridName.length() - 1) - '0') & 1) != 0)
             disc = new TcpClientDiscoverySpi();
-        else
-            disc = new TcpDiscoverySpi();
+        else {
+            TcpDiscoverySpi srvDisc = new TcpDiscoverySpi();
 
+            srvDisc.setMaxMissedClientHeartbeats(50);
+
+            disc = srvDisc;
+        }
+
+        disc.setHeartbeatFrequency(500);
         disc.setIpFinder(IP_FINDER);
+        disc.setAckTimeout(1000);
+        disc.setSocketTimeout(1000);
 
         cfg.setCacheConfiguration(cCfg);
         cfg.setDiscoverySpi(disc);
@@ -174,13 +182,9 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("BusyWait")
     private void awaitDiscovery(long nodesCnt) throws InterruptedException {
-        Thread.sleep(50);
-
         for (Ignite g : alive) {
             if (g.configuration().getDiscoverySpi() instanceof TcpClientDiscoverySpi)
                 ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
-
-            Thread.sleep(500);
 
             while (g.cluster().nodes().size() != nodesCnt)
                 Thread.sleep(10);
@@ -246,23 +250,28 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * Stops temporary nodes.
      */
     private void stopTempNodes() {
-        int rmv = 0;
+        Collection<Ignite> toRmv = new ArrayList<>(alive.subList(0, TMP_NODES_CNT));
 
-        Collection<Ignite> toRmv = new ArrayList<>(TMP_NODES_CNT);
-
-        for (Iterator<Ignite> iter = alive.iterator(); iter.hasNext() && rmv < TMP_NODES_CNT;) {
-            toRmv.add(iter.next());
-
-            iter.remove();
-
-            rmv++;
-        }
+        alive.removeAll(toRmv);
 
         // Remove listeners to avoid receiving events from stopping nodes.
         for (Ignite g : toRmv)
             g.events().stopLocalListen(lsnr, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
 
-        for (Ignite g : toRmv)
+        for (Iterator<Ignite> itr = toRmv.iterator(); itr.hasNext(); ) {
+            Ignite g = itr.next();
+
+            if (g.cluster().node().isClient()) {
+                G.stop(g.name(), false);
+
+                itr.remove();
+            }
+        }
+
+        for (Ignite g : toRmv) {
+            assert !g.cluster().localNode().isClient();
+
             G.stop(g.name(), false);
+        }
     }
 }

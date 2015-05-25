@@ -361,7 +361,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
                 else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    if (customMsg != null && customMsg.incrementMinorTopologyVersion()) {
+                    assert customMsg != null;
+
+                    if (customMsg.incrementMinorTopologyVersion()) {
                         minorTopVer++;
 
                         verChanged = true;
@@ -385,18 +387,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    if (customMsg != null) {
-                        for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
-                            List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
+                    for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
+                        List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
-                            if (list != null) {
-                                for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
-                                    try {
-                                        lsnr.onCustomEvent(node, customMsg);
-                                    }
-                                    catch (Exception e) {
-                                        U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
-                                    }
+                        if (list != null) {
+                            for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
+                                try {
+                                    lsnr.onCustomEvent(node, customMsg);
+                                }
+                                catch (Exception e) {
+                                    U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
                                 }
                             }
                         }
