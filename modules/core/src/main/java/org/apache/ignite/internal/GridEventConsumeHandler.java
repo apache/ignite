@@ -136,78 +136,81 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
             private boolean notificationInProgress;
 
-            @Override public void onEvent(final Event evt) {
-                if (filter == null || filter.apply(evt)) {
-                    if (loc) {
-                        if (!cb.apply(nodeId, evt))
-                            ctx.continuous().stopRoutine(routineId);
-                    }
-                    else {
-                        if (ctx.discovery().node(nodeId) == null)
-                            return;
+            @Override public void onEvent(Event evt) {
+                synchronized (notificationQueue) {
+                    notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
-                        synchronized (notificationQueue) {
-                            notificationQueue.add(new T3<>(nodeId, routineId, evt));
+                    if (!notificationInProgress) {
+                        ctx.getSystemExecutorService().submit(new Runnable() {
+                            @Override public void run() {
+                                while (true) {
+                                    T3<UUID, UUID, Event> t3;
 
-                            if (!notificationInProgress) {
-                                ctx.getSystemExecutorService().submit(new Runnable() {
-                                    @Override public void run() {
-                                        while (true) {
-                                            T3<UUID, UUID, Event> t3;
+                                    synchronized (notificationQueue) {
+                                        t3 = notificationQueue.poll();
 
-                                            synchronized (notificationQueue) {
-                                                t3 = notificationQueue.poll();
+                                        if (t3 == null) {
+                                            notificationInProgress = false;
 
-                                                if (t3 == null) {
-                                                    notificationInProgress = false;
-
-                                                    return;
-                                                }
-                                            }
-
-                                            try {
-                                                Event evt = t3.get3();
-
-                                                EventWrapper wrapper = new EventWrapper(evt);
-
-                                                if (evt instanceof CacheEvent) {
-                                                    String cacheName = ((CacheEvent)evt).cacheName();
-
-                                                    ClusterNode node = ctx.discovery().node(t3.get1());
-
-                                                    if (node == null)
-                                                        continue;
-
-                                                    if (ctx.config().isPeerClassLoadingEnabled()
-                                                        && ctx.discovery().cacheNode(node, cacheName)) {
-                                                        wrapper.p2pMarshal(ctx.config().getMarshaller());
-
-                                                        wrapper.cacheName = cacheName;
-
-                                                        GridCacheDeploymentManager depMgr =
-                                                            ctx.cache().internalCache(cacheName).context().deploy();
-
-                                                        depMgr.prepare(wrapper);
-                                                    }
-                                                }
-
-                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
-                                                    false, false);
-                                            }
-                                            catch (ClusterTopologyCheckedException ignored) {
-                                                // No-op.
-                                            }
-                                            catch (Throwable e) {
-                                                U.error(ctx.log(GridEventConsumeHandler.class),
-                                                    "Failed to send event notification to node: " + nodeId, e);
-                                            }
+                                            return;
                                         }
                                     }
-                                });
 
-                                notificationInProgress = true;
+                                    try {
+                                        Event evt = t3.get3();
+
+                                        if (filter != null && !filter.apply(evt))
+                                            continue;
+
+                                        if (loc) {
+                                            if (!cb.apply(nodeId, evt)) {
+                                                ctx.continuous().stopRoutine(routineId);
+
+                                                return;
+                                            }
+
+                                            continue;
+                                        }
+
+                                        ClusterNode node = ctx.discovery().node(t3.get1());
+
+                                        if (node == null)
+                                            continue;
+
+                                        EventWrapper wrapper = new EventWrapper(evt);
+
+                                        if (evt instanceof CacheEvent) {
+                                            String cacheName = ((CacheEvent)evt).cacheName();
+
+                                            if (ctx.config().isPeerClassLoadingEnabled()
+                                                && ctx.discovery().cacheNode(node, cacheName)) {
+                                                wrapper.p2pMarshal(ctx.config().getMarshaller());
+
+                                                wrapper.cacheName = cacheName;
+
+                                                GridCacheDeploymentManager depMgr =
+                                                    ctx.cache().internalCache(cacheName).context().deploy();
+
+                                                depMgr.prepare(wrapper);
+                                            }
+                                        }
+
+                                        ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
+                                            false, false);
+                                    }
+                                    catch (ClusterTopologyCheckedException
+                                        | IgniteInterruptedCheckedException ignored) {
+                                        // No-op.
+                                    }
+                                    catch (Throwable e) {
+                                        U.error(ctx.log(GridEventConsumeHandler.class),
+                                            "Failed to send event notification to node: " + nodeId, e);
+                                    }
+                                }
                             }
-                        }
+                        });
+
+                        notificationInProgress = true;
                     }
                 }
             }
