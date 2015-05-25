@@ -18,22 +18,29 @@
 package org.apache.ignite.mesos;
 
 import com.google.protobuf.*;
+import org.apache.ignite.mesos.resource.*;
 import org.apache.mesos.*;
+import org.glassfish.grizzly.http.server.*;
+import org.glassfish.jersey.grizzly2.httpserver.*;
+import org.glassfish.jersey.server.*;
+
+import java.net.*;
 
 /**
  * TODO
  */
 public class IgniteFramework {
-    /**
-     * @param args Args [host:port] [resource limit]
-     */
-    public static void main(String[] args) {
-        checkArgs(args);
 
+    public static final String IGNITE_FRAMEWORK_NAME = "IgniteFramework";
+
+    /**
+     * @param args Args
+     */
+    public static void main(String[] args) throws Exception {
         final int frameworkFailoverTimeout = 0;
 
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-            .setName("IgniteFramework")
+            .setName(IGNITE_FRAMEWORK_NAME)
             .setUser("") // Have Mesos fill in the current user.
             .setFailoverTimeout(frameworkFailoverTimeout); // timeout in seconds
 
@@ -42,8 +49,26 @@ public class IgniteFramework {
             frameworkBuilder.setCheckpoint(true);
         }
 
+        ClusterProperties clusterProperties = ClusterProperties.from(args.length == 1 ? args[0] : null);
+
+        String baseUrl = String.format("http://%s:%d", formatInetAddress(InetAddress.getLocalHost()), 4444);
+
+        URI httpServerBaseUri = URI.create(baseUrl);
+
+        ResourceConfig rc = new ResourceConfig()
+            .registerInstances(new ResourceController(clusterProperties.userLibs(), clusterProperties.igniteCfg(),
+                clusterProperties.igniteWorkDir()));
+
+        HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(httpServerBaseUri, rc);
+
+        ResourceProvider provider = new ResourceProvider();
+
+        IgniteProvider igniteProvider = new IgniteProvider(clusterProperties.igniteWorkDir());
+
+        provider.init(clusterProperties, igniteProvider, baseUrl);
+
         // Create the scheduler.
-        final Scheduler scheduler = new IgniteScheduler(ClusterResources.from(null));
+        Scheduler scheduler = new IgniteScheduler(clusterProperties, provider);
 
         // create the driver
         MesosSchedulerDriver driver;
@@ -67,15 +92,18 @@ public class IgniteFramework {
 
             frameworkBuilder.setPrincipal(System.getenv("DEFAULT_PRINCIPAL"));
 
-            driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), args[0], credential);
+            driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProperties.masterUrl(),
+                credential);
         }
         else {
             frameworkBuilder.setPrincipal("ignite-framework-java");
 
-            driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), args[0]);
+            driver = new MesosSchedulerDriver(scheduler, frameworkBuilder.build(), clusterProperties.masterUrl());
         }
 
         int status = driver.run() == Protos.Status.DRIVER_STOPPED ? 0 : 1;
+
+        httpServer.shutdown();
 
         // Ensure that the driver process terminates.
         driver.stop();
@@ -83,15 +111,15 @@ public class IgniteFramework {
         System.exit(status);
     }
 
-    /**
-     * Check input arguments.
-     *
-     * @param args Arguments.
-     */
-    private static void checkArgs(String[] args) {
-        if (args.length == 0)
-            throw new IllegalArgumentException("Illegal arguments.");
-
-        // TODO: add more
+    public static String formatInetAddress(final InetAddress inetAddress) {
+        if (inetAddress instanceof Inet4Address) {
+            return inetAddress.getHostAddress();
+        }
+        else if (inetAddress instanceof Inet6Address) {
+            return String.format("[%s]", inetAddress.getHostAddress());
+        }
+        else
+            throw new IllegalArgumentException("InetAddress type: " + inetAddress.getClass().getName() +
+                " is not supported");
     }
 }

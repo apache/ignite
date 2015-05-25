@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mesos;
 
+import org.apache.ignite.mesos.resource.*;
 import org.apache.mesos.*;
 import org.slf4j.*;
 
@@ -27,12 +28,6 @@ import java.util.concurrent.atomic.*;
  * TODO
  */
 public class IgniteScheduler implements Scheduler {
-    /** Docker image name. */
-    public static final String IMAGE = "apacheignite/ignite-docker";
-
-    /** Startup sctipt path. */
-    public static final String STARTUP_SCRIPT = "/home/ignite/startup.sh";
-
     /** Cpus. */
     public static final String CPUS = "cpus";
 
@@ -61,13 +56,18 @@ public class IgniteScheduler implements Scheduler {
     private Map<String, IgniteTask> tasks = new HashMap<>();
 
     /** Cluster resources. */
-    private ClusterResources clusterLimit;
+    private ClusterProperties clusterLimit;
+
+    /** Resource provider. */
+    private ResourceProvider resourceProvider;
 
     /**
-     * @param clusterLimit Resources limit.
+     * @param clusterLimit Cluster limit.
+     * @param resourceProvider Resource provider.
      */
-    public IgniteScheduler(ClusterResources clusterLimit) {
+    public IgniteScheduler(ClusterProperties clusterLimit, ResourceProvider resourceProvider) {
         this.clusterLimit = clusterLimit;
+        this.resourceProvider = resourceProvider;
     }
 
     /** {@inheritDoc} */
@@ -114,6 +114,7 @@ public class IgniteScheduler implements Scheduler {
         }
     }
 
+
     /**
      * Create Task.
      *
@@ -123,20 +124,36 @@ public class IgniteScheduler implements Scheduler {
      * @return Task.
      */
     protected Protos.TaskInfo createTask(Protos.Offer offer, IgniteTask igniteTask, Protos.TaskID taskId) {
-        // Docker image info.
-        Protos.ContainerInfo.DockerInfo.Builder docker = Protos.ContainerInfo.DockerInfo.newBuilder()
-            .setImage(IMAGE)
-            .setNetwork(Protos.ContainerInfo.DockerInfo.Network.HOST);
+        Protos.CommandInfo.Builder builder = Protos.CommandInfo.newBuilder()
+            .setEnvironment(Protos.Environment.newBuilder().addVariables(Protos.Environment.Variable.newBuilder()
+                .setName("IGNITE_TCP_DISCOVERY_ADDRESSES")
+                .setValue(getAddress())))
+            .addUris(Protos.CommandInfo.URI.newBuilder()
+                .setValue(resourceProvider.igniteUrl())
+                .setExtract(true))
+            .addUris(Protos.CommandInfo.URI.newBuilder().setValue(resourceProvider.igniteConfigUrl()));
 
-        // Container info.
-        Protos.ContainerInfo.Builder cont = Protos.ContainerInfo.newBuilder();
-        cont.setType(Protos.ContainerInfo.Type.DOCKER);
-        cont.setDocker(docker.build());
+        if (resourceProvider.resourceUrl() != null) {
+            for (String url : resourceProvider.resourceUrl())
+                builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
+
+            builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
+                + "&& ./gridgain-community-*/bin/ignite.sh "
+                + resourceProvider.configName()
+                + " -J-Xmx" + String.valueOf((int) igniteTask.mem() + "m")
+                + " -J-Xms" + String.valueOf((int) igniteTask.mem()) + "m");
+        }
+        else
+            builder.setValue("./gridgain-community-*/bin/ignite.sh "
+                + resourceProvider.configName()
+                + " -J-Xmx" + String.valueOf((int) igniteTask.mem() + "m")
+                + " -J-Xms" + String.valueOf((int) igniteTask.mem()) + "m");
 
         return Protos.TaskInfo.newBuilder()
             .setName("Ignite node " + taskId.getValue())
             .setTaskId(taskId)
             .setSlaveId(offer.getSlaveId())
+            .setCommand(builder)
             .addResources(Protos.Resource.newBuilder()
                 .setName(CPUS)
                 .setType(Protos.Value.Type.SCALAR)
@@ -145,12 +162,6 @@ public class IgniteScheduler implements Scheduler {
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.mem())))
-            .setContainer(cont)
-            .setCommand(Protos.CommandInfo.newBuilder()
-                .setShell(false)
-                .addArguments(STARTUP_SCRIPT)
-                .addArguments(String.valueOf((int) igniteTask.mem()))
-                .addArguments(getAddress()))
             .build();
     }
 
@@ -227,11 +238,11 @@ public class IgniteScheduler implements Scheduler {
             totalDisk += task.disk();
         }
 
-        cpus = clusterLimit.cpus() == ClusterResources.DEFAULT_VALUE ? cpus :
+        cpus = clusterLimit.cpus() == ClusterProperties.UNLIMITED ? cpus :
             Math.min(clusterLimit.cpus() - totalCpus, cpus);
-        mem = clusterLimit.memory() == ClusterResources.DEFAULT_VALUE ? mem :
+        mem = clusterLimit.memory() == ClusterProperties.UNLIMITED ? mem :
             Math.min(clusterLimit.memory() - totalMem, mem);
-        disk = clusterLimit.disk() == ClusterResources.DEFAULT_VALUE ? disk :
+        disk = clusterLimit.disk() == ClusterProperties.UNLIMITED ? disk :
             Math.min(clusterLimit.disk() - totalDisk, disk);
 
         if (cpus > 0 && mem > 0)
@@ -253,7 +264,7 @@ public class IgniteScheduler implements Scheduler {
      * @return {@code True} if limit isn't violated else {@code false}.
      */
     private boolean checkLimit(double limit, double value) {
-        return limit == ClusterResources.DEFAULT_VALUE || limit <= value;
+        return limit == ClusterProperties.UNLIMITED || limit <= value;
     }
 
     /** {@inheritDoc} */
