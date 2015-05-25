@@ -118,6 +118,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         else if (gridName.startsWith("client")) {
             disco = new TestTcpClientDiscovery();
 
+            cfg.setClientMode(true);
+
             TcpDiscoveryVmIpFinder ipFinder;
 
             if (clientIpFinder != null)

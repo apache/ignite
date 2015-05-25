@@ -52,6 +52,8 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration();
 
+        cfg.setClientMode(client);
+
         return cfg;
     }
 

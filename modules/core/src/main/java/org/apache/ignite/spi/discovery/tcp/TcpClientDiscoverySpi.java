@@ -47,21 +47,83 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeat
 /**
  * Client discovery SPI implementation that uses TCP/IP for node discovery.
  * <p>
- * This discovery SPI requires at least on server node configured with
+ * This discovery SPI requires at least one server node configured with
  * {@link TcpDiscoverySpi}. It will try to connect to random IP taken from
  * {@link TcpDiscoveryIpFinder} which should point to one of these server
  * nodes and will maintain connection only with this node (will not enter the ring).
  * If this connection is broken, it will try to reconnect using addresses from
  * the same IP finder.
+ *
+ * <h1 class="header">Configuration</h1>
+ * <h2 class="header">Mandatory</h2>
+ * There are no mandatory configuration parameters.
+ * <h2 class="header">Optional</h2>
+ * The following configuration parameters are optional:
+ * <ul>
+ * <li>IP finder to share info about nodes IP addresses
+ * (see {@link #setIpFinder(TcpDiscoveryIpFinder)}).
+ * See the following IP finder implementations for details on configuration:
+ * <ul>
+ * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder}</li>
+ * <li>{@ignitelink org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder}</li>
+ * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder}</li>
+ * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}</li>
+ * <li>{@link TcpDiscoveryMulticastIpFinder} - default</li>
+ * </ul>
+ * </li>
+ * </ul>
+ * <ul>
+ * <li>Local address (see {@link #setLocalAddress(String)})</li>
+ * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)})</li>
+ * <li>Network timeout (see {@link #setNetworkTimeout(long)})</li>
+ * <li>Socket timeout (see {@link #setSocketTimeout(long)})</li>
+ * <li>Message acknowledgement timeout (see {@link #setAckTimeout(long)})</li>
+ * <li>Join timeout (see {@link #setJoinTimeout(long)})</li>
+ * <li>Thread priority for threads started by SPI (see {@link #setThreadPriority(int)})</li>
+ * </ul>
+ * <h2 class="header">Java Example</h2>
+ * <pre name="code" class="java">
+ * TcpClientDiscoverySpi spi = new TcpClientDiscoverySpi();
+ *
+ * TcpDiscoveryVmIpFinder finder =
+ *     new GridTcpDiscoveryVmIpFinder();
+ *
+ * spi.setIpFinder(finder);
+ *
+ * IgniteConfiguration cfg = new IgniteConfiguration();
+ *
+ * // Override default discovery SPI.
+ * cfg.setDiscoverySpi(spi);
+ *
+ * // Start grid.
+ * Ignition.start(cfg);
+ * </pre>
+ * <h2 class="header">Spring Example</h2>
+ * TcpClientDiscoverySpi can be configured from Spring XML configuration file:
+ * <pre name="code" class="xml">
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
+ *         ...
+ *         &lt;property name="discoverySpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi"&gt;
+ *                 &lt;property name="ipFinder"&gt;
+ *                     &lt;bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder" /&gt;
+ *                 &lt;/property&gt;
+ *             &lt;/bean&gt;
+ *         &lt;/property&gt;
+ *         ...
+ * &lt;/bean&gt;
+ * </pre>
+ * <p>
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * @see DiscoverySpi
  */
 @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpClientDiscoverySpiMBean {
-    /** Default disconnect check interval. */
-    public static final long DFLT_DISCONNECT_CHECK_INT = 2000;
-
     /** Default socket operations timeout in milliseconds (value is <tt>700ms</tt>). */
     public static final long DFLT_SOCK_TIMEOUT = 700;
 
@@ -110,9 +172,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     /** Left latch. */
     private final CountDownLatch leaveLatch = new CountDownLatch(1);
 
-    /** Disconnect check interval. */
-    private long disconnectCheckInt = DFLT_DISCONNECT_CHECK_INT;
-
     /** */
     private final Timer timer = new Timer("TcpClientDiscoverySpi.timer");
 
@@ -125,21 +184,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     public TcpClientDiscoverySpi() {
         ackTimeout = DFLT_ACK_TIMEOUT;
         sockTimeout = DFLT_SOCK_TIMEOUT;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getDisconnectCheckInterval() {
-        return disconnectCheckInt;
-    }
-
-    /**
-     * Sets disconnect check interval.
-     *
-     * @param disconnectCheckInt Disconnect check interval.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public void setDisconnectCheckInterval(long disconnectCheckInt) {
-        this.disconnectCheckInt = disconnectCheckInt;
     }
 
     /** {@inheritDoc} */

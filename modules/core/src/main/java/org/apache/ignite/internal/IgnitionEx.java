@@ -121,11 +121,7 @@ public class IgnitionEx {
     };
 
     /** */
-    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return null;
-        }
-    };
+    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
@@ -196,7 +192,7 @@ public class IgnitionEx {
      * @return Client mode flag.
      */
     public static boolean isClientMode() {
-        return clientMode.get();
+        return clientMode.get() == null ? false : clientMode.get();
     }
 
     /**
@@ -1747,6 +1743,13 @@ public class IgnitionEx {
                 myCfg.setFileSystemConfiguration(clone);
             }
 
+            if (myCfg.isClientMode() == null || !myCfg.isClientMode()) {
+                if (myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi) {
+                    throw new IgniteCheckedException("TcpClientDiscoverySpi can be used in client mode only" +
+                        "(consider changing 'IgniteConfiguration.clientMode' to 'true').");
+                }
+            }
+
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
@@ -1811,11 +1814,15 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDefaultSpi(IgniteConfiguration cfg) {
-            if (cfg.getDiscoverySpi() == null)
-                cfg.setDiscoverySpi(new TcpDiscoverySpi());
+            if (cfg.getDiscoverySpi() == null) {
+                if (cfg.isClientMode() != null && cfg.isClientMode())
+                    cfg.setDiscoverySpi(new TcpClientDiscoverySpi());
+                else
+                    cfg.setDiscoverySpi(new TcpDiscoverySpi());
+            }
 
-            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
-                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpiAdapter) {
+                TcpDiscoverySpiAdapter tcpDisco = (TcpDiscoverySpiAdapter)cfg.getDiscoverySpi();
 
                 if (tcpDisco.getIpFinder() == null)
                     tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());
