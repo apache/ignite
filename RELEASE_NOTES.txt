@@ -1,7 +1,13 @@
 Apache Ignite Release Notes
 ===========================
 
-Apache Ignite In-Memory Data Fabric 1.1
+Apache Ignite In-Memory Data Fabric 1.0.5
+---------------------------------------
+
+* Fixed unnecessary value sending for near cache with near lock response
+* Optimized getOrCreateCache methods for case when cache is already started locally
+
+Apache Ignite In-Memory Data Fabric 1.0.4
 ---------------------------------------
 
 * Added Google Compute Engine TCP discovery IP finder.
