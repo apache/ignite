@@ -125,7 +125,7 @@ public class ClusterProperties {
     public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
 
     /** */
-    public static final String DEFAULT_IGNITE_WORK_DIR = "~/ignite-releases";
+    public static final String DEFAULT_IGNITE_WORK_DIR = "~/ignite-releases/";
 
     /** Ignite version. */
     private String igniteWorkDir = DEFAULT_IGNITE_WORK_DIR;
