@@ -1532,8 +1532,10 @@ public abstract class IgniteUtils {
             return Collections.emptyList();
 
         if (addrs.size() == 1) {
-            if (reachable(addrs.get(1), reachTimeout))
-                return Collections.singletonList(addrs.get(1));
+            InetAddress addr = addrs.get(0);
+
+            if (reachable(addr, reachTimeout))
+                return Collections.singletonList(addr);
 
             return Collections.emptyList();
         }

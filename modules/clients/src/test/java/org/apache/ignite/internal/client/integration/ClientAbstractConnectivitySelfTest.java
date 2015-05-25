@@ -19,6 +19,7 @@ package org.apache.ignite.internal.client.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -120,6 +121,19 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
         String extIp = F.find(U.allLocalIps(), null, new IpV4AddressPredicate());
 
         checkConnectivityByIp(extIp, getAllIps());
+    }
+
+    /**
+     * Simple test of address list filtering.
+     * @throws Exception
+     */
+    public void testResolveReachableOneAddress() throws Exception {
+        InetAddress addr = InetAddress.getByAddress(new byte[] {127, 0, 0, 1} );
+
+        List <InetAddress> filtered = IgniteUtils.filterReachable(Collections.singletonList(addr));
+
+        assertEquals(1, filtered.size());
+        assertEquals(addr, filtered.get(0));
     }
 
     /**

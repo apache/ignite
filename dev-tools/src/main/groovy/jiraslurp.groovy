@@ -14,6 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+def envVariable = { name, defaultVar ->
+    def res = System.getenv(name as String)
+
+    if (res == 'null' || res == null)
+        return defaultVar
+
+    res
+}
+
+def envVariableAsList = { name, defaultList ->
+    def list = System.getenv(name as String)?.split(' ') as List
+
+    if (list == 'null' || list == null)
+        return defaultList
+
+    list
+}
+
 /**
  * Parsing a special filter from Apache Ignite JIRA and picking up latest by ID
  * attachments to process.
@@ -25,7 +44,12 @@ final validated_filename = "${System.getProperty("user.home")}/validated-jira.tx
 final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$validated_filename"
 
 final def JIRA_CMD = System.getProperty('JIRA_COMMAND', 'jira.sh')
-LinkedHashMap<String, String> jirasAttached = [:]
+
+// Envariement variables.
+final def TC_PROJECT_NAME = envVariable("PROJECT_NAME", "Ignite")
+
+final def CONTRIBUTORS = envVariableAsList("JIRA_CONTRIBUTORS", [])
+final def TC_BUILD_EXCLUDE_LIST = envVariableAsList("BUILD_ID_EXCLUDES", ["Ignite_RunAllTestBuilds"])
 
 /**
  * Gets jiras for which test tasks were already triggered.
@@ -37,28 +61,11 @@ def readHistory = {
 
     List validated_list = []
 
-    // TODO do not use folder.
     def validated = new File(validated_filename)
 
     if (validated.exists()) {
-        // TODO use commented way.
         validated_list = validated.text.split('\n')
     }
-
-    // TODO use it way.
-//    try {
-//        def historyUrl = "http://${System.getenv('TC_URL')}/$LAST_SUCCESSFUL_ARTIFACT"
-//
-//        println "Reading history from $historyUrl"
-//
-//        validated_list = new URL(historyUrl).text.split('\n')
-//
-//        println "Got validated list=$validated_list"
-//    }
-//    catch (Exception e) {
-//        println e.getMessage()
-//
-//    }
 
     // Let's make sure the preserved history isn't too long
     if (validated_list.size > MAX_HISTORY)
@@ -74,26 +81,38 @@ def readHistory = {
  * @return <code>null</code> or <code>JIRA-###,latest_attach_id</code>
  */
 def getLatestAttachment = { jira ->
-    def latestAttr = jira.attachments[0].attachment.list().sort {
-        it.@id.toInteger()
-    }.reverse()[0]
+    def attachment = jira.attachments[0].attachment.list()
+        .sort { it.@id.toInteger() }
+        .reverse()
+        .find {
+            def fName = it.@name.toString()
+
+            CONTRIBUTORS.contains(it.@author as String) &&
+                (fName.endsWith(".patch") || fName.endsWith(".txt") || fName.endsWith(".diff"))
+        }
 
     String row = null
 
-    if (latestAttr == null) {
-        println "${jira.key} is in invalid state: patch is not available"
+    if (attachment == null) {
+        println "${jira.key} is in invalid state: there was not found '.{patch/txt/diff}'-file from approved user."
     }
     else {
-        row = "${jira.key},${latestAttr.@id}"
+        row = "${jira.key},${attachment.@id}"
     }
 }
 
-def checkForAttachments = {
+/**
+ * Checks all "Patch availiable" jiras on attached ".patch"-files from approved users.
+ */
+def findAttachments = {
+    // See https://issues.apache.org/jira/issues/?filter=12330308 (the same).
     def JIRA_FILTER =
         "https://issues.apache.org/jira/sr/jira.issueviews:searchrequest-xml/12330308/SearchRequest-12330308.xml?tempMax=100&field=key&field=attachments"
     def rss = new XmlSlurper().parse(JIRA_FILTER)
 
     List list = readHistory {}
+
+    LinkedHashMap<String, String> attachments = [:]
 
     rss.channel.item.each { jira ->
         String row = getLatestAttachment(jira)
@@ -101,7 +120,7 @@ def checkForAttachments = {
         if (row != null && !list.contains(row)) {
             def pair = row.split(',')
 
-            jirasAttached.put(pair[0] as String, pair[1] as String)
+            attachments.put(pair[0] as String, pair[1] as String)
 
             list.add(row)
         }
@@ -114,6 +133,8 @@ def checkForAttachments = {
         validated.delete()
 
     validated << list.join('\n')
+
+    attachments
 }
 
 /**
@@ -142,6 +163,8 @@ def applyPatch = { jira, attachementURL ->
     def patchFile = new File("${jira}-${attachementURL}.patch")
 
     try {
+        println "Getting patch content."
+
         patchFile << new URL("$ATTACHMENT_URL/$attachementURL/").text
 
         try {
@@ -163,7 +186,16 @@ def applyPatch = { jira, attachementURL ->
         catch (Exception e) {
             println "Patch was not applied successfully. Aborting patch applying."
 
-            checkprocess "git am --abort".execute(null, new File("../"))
+            try {
+                checkprocess "git am --abort".execute(null, new File("../"))
+
+                print "Succsessfull: git am --abort."
+            }
+            catch (Exception e2) {
+                print "Error: git am --abort fails: "
+
+                e2.printStackTrace()
+            }
 
             throw e;
         }
@@ -181,19 +213,9 @@ def JIRA_xml = { jiranum ->
  * Gets all builds from TC project.
  */
 def getTestBuilds = { ->
-    def projName = System.getenv('PROJECT_NAME')
-
-    if (projName == null || projName == 'null')
-        projName = "Ignite"
-
     def tcURL = System.getenv('TC_URL')
-    def excludeListProp = System.getenv('BUILD_ID_EXCLUDES')
-    def excludeList = excludeListProp?.split(' ') as List
 
-    if (excludeList == null || excludeList == 'null')
-        excludeList = ["Ignite_RunAllTestBuilds"]
-
-    def project = new XmlSlurper().parse("http://$tcURL:80/guestAuth/app/rest/projects/id:$projName")
+    def project = new XmlSlurper().parse("http://$tcURL:80/guestAuth/app/rest/projects/id:$TC_PROJECT_NAME")
 
     def buildIds = []
 
@@ -202,7 +224,7 @@ def getTestBuilds = { ->
     for (int i = 0; i < count; i++) {
         def id = project.buildTypes.buildType[i].@id
 
-        if (excludeList == null || !excludeList.contains(id))
+        if (TC_BUILD_EXCLUDE_LIST == null || !TC_BUILD_EXCLUDE_LIST.contains(id))
             buildIds.add(id)
     }
 
@@ -316,10 +338,6 @@ def runAllTestBuilds = {builds, jiraNum ->
 
             def build = new XmlSlurper().parseText(response)
 
-            println "Triggered build: ${build.buildType.@name}"
-            println "Triggered build url: ${build.@webUrl}"
-            println "Triggered build branch: ${build.@branchName}"
-
             triggeredBuilds.put(build.buildType.@name, build.@webUrl)
         }
         catch (Exception e) {
@@ -338,6 +356,16 @@ def runAllTestBuilds = {builds, jiraNum ->
 
 /**
  * Main.
+ *
+ * Modes:
+ * 1. "slurp" mode - triggers all TC test builds for all jiras with valid attachment
+ * (Jira in "patch availiable" state, there is attached file from approved user with "patch" extension)
+ * 2. "patchApply" mode - gets last valid patch file from given jira number and applies it.
+ * 3. "runAllBuilds" - triggers given jira number for all TC test builds.
+ *
+ * Main workflow:
+ * 1. run in "slurp" mode
+ * 2. each triggered build uses "patchApply" mode to apply latest valid patch.
  */
 args.each {
     println "Arg=$it"
@@ -349,14 +377,14 @@ args.each {
     if (parameters.length >= 1 && parameters[0] == "slurp") {
         println "Running in 'slurp' mode."
 
-        checkForAttachments()
-
         def builds = getTestBuilds()
 
         println "Test builds to be triggered=$builds"
 
+        def attachments = findAttachments()
+
         // For each ticket with new attachment, let's trigger remove build
-        jirasAttached.each { k, v ->
+        attachments.each { k, v ->
             //  Trailing slash is important for download; only need to pass JIRA number
             println "Triggering the test builds for: $k = $ATTACHMENT_URL/$v/"
 
@@ -401,15 +429,3 @@ args.each {
         runAllTestBuilds(builds, jiraNum)
     }
 }
-
-/* Workflow:
-  1. download an attachment if JIRA num's set; otherwise get all latest attachments not mentioned in the
-     validated-jira.txt file from the last successful build
-  2. trigger test build(s) parametrised by JIRA no.
-  3. test build will download JIRA's latest attachment and apply it to currently checked out repo;
-     - build will fail with comment on JIRA if that can not apply
-     - build will post error/success comment depends on the test results
-*/
-// TODO
-//   - TC's test job needs to send a comment to JIRA
-//       $JIRA_CMD -a addComment -s https://issues.apache.org/jira -u ignite-ci -p ci-of-1gnit3 --issue IGNITE-495 --comment "Trying latest version of the jira-cli"
