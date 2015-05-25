@@ -47,7 +47,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeat
 /**
  * Client discovery SPI implementation that uses TCP/IP for node discovery.
  * <p>
- * This discovery SPI requires at least on server node configured with
+ * This discovery SPI requires at least one server node configured with
  * {@link TcpDiscoverySpi}. It will try to connect to random IP taken from
  * {@link TcpDiscoveryIpFinder} which should point to one of these server
  * nodes and will maintain connection only with this node (will not enter the ring).

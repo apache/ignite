@@ -1824,9 +1824,10 @@ public class IgniteConfiguration {
 
     /**
      * Gets client mode flag. Client node cannot hold data in the caches. It's recommended to use
-     * {@link org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi} on client nodes.
+     * {@link TcpClientDiscoverySpi} on client nodes.
      *
      * @return Client mode flag.
+     * @see TcpClientDiscoverySpi
      */
     public Boolean isClientMode() {
         return clientMode;

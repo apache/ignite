@@ -121,11 +121,7 @@ public class IgnitionEx {
     };
 
     /** */
-    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return null;
-        }
-    };
+    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
@@ -196,7 +192,7 @@ public class IgnitionEx {
      * @return Client mode flag.
      */
     public static boolean isClientMode() {
-        return clientMode.get();
+        return clientMode.get() == null ? false : clientMode.get();
     }
 
     /**
@@ -1749,8 +1745,8 @@ public class IgnitionEx {
 
             if (myCfg.isClientMode() == null || !myCfg.isClientMode()) {
                 if (myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi) {
-                    throw new IgniteCheckedException("TcpClientDiscoverySpi can be used in client mode only, you " +
-                        "have to set IgniteConfiguration#isClientMode to 'true'");
+                    throw new IgniteCheckedException("TcpClientDiscoverySpi can be used in client mode only" +
+                        "(consider changing 'IgniteConfiguration.clientMode' to 'true').");
                 }
             }
 
