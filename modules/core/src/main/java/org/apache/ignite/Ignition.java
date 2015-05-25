@@ -133,18 +133,23 @@ public class Ignition {
     }
 
     /**
-     * Sets client mode flag.
+     * Sets static client mode flag. This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
+     * is {@code null}.
      *
      * @param clientMode Client mode flag.
+     * @see IgniteConfiguration#isClientMode()
      */
     public static void setClientMode(boolean clientMode) {
         IgnitionEx.setClientMode(clientMode);
     }
 
     /**
-     * Gets client mode flag.
+     * Gets client static mode flag. This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
+     * is {@code null}.
+     * {@link org.apache.ignite.spi.discovery.tcp.TcpClientDiscoverySpi} on client nodes.
      *
      * @return Client mode flag.
+     * @see IgniteConfiguration#isClientMode()
      */
     public static boolean isClientMode() {
         return IgnitionEx.isClientMode();
