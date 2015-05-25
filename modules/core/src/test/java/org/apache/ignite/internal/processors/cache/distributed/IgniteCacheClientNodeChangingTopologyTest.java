@@ -264,6 +264,84 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testAtomicGetAndPutClockMode() throws Exception {
+        atomicGetAndPut(CLOCK);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicGetAndPutPrimaryMode() throws Exception {
+        atomicGetAndPut(PRIMARY);
+    }
+
+    /**
+     * @param writeOrder Write order.
+     * @throws Exception If failed.
+     */
+    private void atomicGetAndPut(CacheAtomicWriteOrderMode writeOrder) throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setAtomicWriteOrderMode(writeOrder);
+        ccfg.setRebalanceMode(SYNC);
+
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+
+        client = true;
+
+        ignite0.cache(null).put(0, 0);
+
+        Ignite ignite2 = startGrid(2);
+
+        assertTrue(ignite2.configuration().isClientMode());
+
+        final Map<Integer, Integer> map = new HashMap<>();
+
+        map.put(0, 1);
+
+        TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
+
+        // Block messages requests for both nodes.
+        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+
+        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
+
+        IgniteInternalFuture<Integer> putFut = GridTestUtils.runAsync(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                Thread.currentThread().setName("put-thread");
+
+                return cache.getAndPut(0, 1);
+            }
+        });
+
+        assertFalse(putFut.isDone());
+
+        client = false;
+
+        startGrid(3);
+
+        log.info("Stop block.");
+
+        spi.stopBlock();
+
+        Integer old = putFut.get();
+
+        checkData(map, cache, 4);
+
+        assertEquals((Object)0, old);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testTxPutAll() throws Exception {
         ccfg = new CacheConfiguration();
 
