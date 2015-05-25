@@ -92,6 +92,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Number of retries using to send messages. */
     private int retryCnt = 3;
 
+    private ExecutorService sendNotificationThreadPool;
+
     /**
      * @param ctx Kernal context.
      */
@@ -108,6 +110,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         retryCnt = ctx.config().getNetworkSendRetryCount();
 
         marsh = ctx.config().getMarshaller();
+
+        sendNotificationThreadPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(), new IgniteThreadFactory(ctx.gridName(), "notification-sender"));
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @SuppressWarnings({"fallthrough", "TooBroadScope"})
@@ -268,6 +273,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor stopped.");
+
+        sendNotificationThreadPool.shutdownNow();
     }
 
     /** {@inheritDoc} */
@@ -578,7 +585,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 Collection<Object> toSnd = info.add(obj);
 
                 if (toSnd != null)
-                    sendNotification(nodeId, routineId, null, toSnd, orderedTopic, msg);
+                    sendNotificationAsync(nodeId, routineId, null, toSnd, orderedTopic, msg);
             }
         }
     }
@@ -606,6 +613,41 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         sendWithRetries(nodeId,
             new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, futId, toSnd, msg),
             orderedTopic);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param routineId Routine ID.
+     * @param futId Future ID.
+     * @param toSnd Notification object to send.
+     * @param orderedTopic Topic for ordered notifications.
+     *      If {@code null}, non-ordered message will be sent.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private void sendNotificationAsync(final UUID nodeId,
+        final UUID routineId,
+        @Nullable final IgniteUuid futId,
+        final Collection<Object> toSnd,
+        @Nullable final Object orderedTopic,
+        final boolean msg) {
+        assert nodeId != null;
+        assert routineId != null;
+        assert toSnd != null;
+        assert !toSnd.isEmpty();
+
+        sendNotificationThreadPool.execute(new Runnable() {
+            @Override public void run() {
+                try {
+                    sendWithRetries(nodeId,
+                        new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, futId, toSnd, msg),
+                        orderedTopic);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send event notification to node: " + nodeId, e);
+                }
+            }
+        });
+
     }
 
     /**
