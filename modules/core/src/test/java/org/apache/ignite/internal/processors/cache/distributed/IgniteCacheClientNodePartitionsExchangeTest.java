@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -428,14 +429,31 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testClientOnlyCacheStart() throws Exception {
+        clientOnlyCacheStart(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNearOnlyCacheStart() throws Exception {
+        clientOnlyCacheStart(true);
+    }
+
+    /**
+     * @param nearCache If {@code true} creates near cache on client.
+     * @throws Exception If failed.
+     */
+    public void clientOnlyCacheStart(boolean nearCache) throws Exception {
         Ignite ignite0 = startGrid(0);
         Ignite ignite1 = startGrid(1);
 
         waitForTopologyUpdate(2, 2);
 
+        final String CACHE_NAME = "cache1";
+
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setName("cache1");
+        ccfg.setName(CACHE_NAME);
 
         ignite0.createCache(ccfg);
 
@@ -453,11 +471,17 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         spi1.reset();
         spi2.reset();
 
-        assertNull(((IgniteKernal) ignite2).context().cache().context().cache().internalCache("cache1"));
+        assertNull(((IgniteKernal)ignite2).context().cache().context().cache().internalCache("cache1"));
 
-        ignite2.cache("cache1");
+        if (nearCache)
+            ignite2.getOrCreateNearCache(CACHE_NAME, new NearCacheConfiguration<>());
+        else
+            ignite2.cache(CACHE_NAME);
 
-        assertNotNull(((IgniteKernal) ignite2).context().cache().context().cache().internalCache("cache1"));
+        GridCacheAdapter cache = ((IgniteKernal)ignite2).context().cache().context().cache().internalCache("cache1");
+
+        assertNotNull(cache);
+        assertEquals(nearCache, cache.context().isNear());
 
         assertEquals(0, spi0.partitionsSingleMessages());
         assertEquals(0, spi0.partitionsFullMessages());
@@ -465,6 +489,16 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         assertEquals(0, spi1.partitionsFullMessages());
         assertEquals(0, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
+
+        ClusterNode clientNode = ((IgniteKernal)ignite2).localNode();
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            GridDiscoveryManager disco = ((IgniteKernal)ignite).context().discovery();
+
+            assertTrue(disco.cacheNode(clientNode, CACHE_NAME));
+            assertFalse(disco.cacheAffinityNode(clientNode, CACHE_NAME));
+            assertEquals(nearCache, disco.cacheNearNode(clientNode, CACHE_NAME));
+        }
     }
 
     /**

@@ -341,22 +341,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 else if (log.isDebugEnabled())
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
-
-            for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
-                cctx.mvcc().removeExplicitLock(threadId, key, lockVer);
         }
 
         cctx.mvcc().recheckPendingLocks();
-    }
-
-    /**
-     *
-     * @param dist {@code True} if need to distribute lock release.
-     */
-    private void onFailed(boolean dist) {
-        undoLocks(dist, true);
-
-        complete(false);
     }
 
     /**
@@ -1375,6 +1362,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
          */
         private void remap() {
             undoLocks(false, false);
+
+            for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
+                cctx.mvcc().removeExplicitLock(threadId, key, lockVer);
 
             mapOnTopology(true);
 

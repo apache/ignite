@@ -507,6 +507,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (exchId.isLeft())
                             cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
+                        cctx.mvcc().finishLocks(exchId.topologyVersion()).get();
+
                         onDone(exchId.topologyVersion());
 
                         skipPreload = true;
@@ -691,6 +693,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (exchId.isLeft())
                     cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
+
+                cctx.mvcc().finishLocks(exchId.topologyVersion()).get();
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())

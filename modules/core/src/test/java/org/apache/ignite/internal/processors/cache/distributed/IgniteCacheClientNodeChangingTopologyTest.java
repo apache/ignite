@@ -841,13 +841,21 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
 
-        Lock lock2 = cache2.lock(0);
+        final Integer key = 0;
+
+        Lock lock2 = cache2.lock(key);
 
         lock2.lock();
 
         ignite2.close();
 
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+
+        assertFalse(cache0.isLocalLocked(key, false));
+
         IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+
+        assertFalse(cache1.isLocalLocked(key, false));
 
         Lock lock1 = cache1.lock(0);
 
@@ -1163,7 +1171,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 }));
             }
 
-            long stopTime = System.currentTimeMillis() + 2 * 60_000;
+            long stopTime = System.currentTimeMillis() + 60_000;
 
             while (System.currentTimeMillis() < stopTime) {
                 int idx = ThreadLocalRandom.current().nextInt(0, SRV_CNT);

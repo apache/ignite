@@ -415,7 +415,6 @@ public class GridCacheSharedContext<K, V> {
         GridCompoundFuture f = new GridCompoundFuture();
 
         f.add(mvcc().finishExplicitLocks(topVer));
-        f.add(mvcc().finishLocks(topVer));
         f.add(tm().finishTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
 

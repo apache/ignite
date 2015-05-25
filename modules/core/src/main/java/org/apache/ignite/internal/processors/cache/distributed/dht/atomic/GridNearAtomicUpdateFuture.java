@@ -128,6 +128,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** Fast map flag. */
     private final boolean fastMap;
 
+    /** */
+    private boolean fastMapRemap;
+
+    /** */
+    private GridCacheVersion updVer;
+
     /** Near cache flag. */
     private final boolean nearEnabled;
 
@@ -142,9 +148,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Skip store flag. */
     private final boolean skipStore;
-
-    /** */
-    private boolean fastMapRemap;
 
     /**
      * @param cctx Cache context.
@@ -537,7 +540,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         CacheConfiguration ccfg = cctx.config();
 
         // Assign version on near node in CLOCK ordering mode even if fastMap is false.
-        GridCacheVersion updVer = ccfg.getAtomicWriteOrderMode() == CLOCK ? cctx.versions().next(topVer) : null;
+        if (updVer == null)
+            updVer = ccfg.getAtomicWriteOrderMode() == CLOCK ? cctx.versions().next(topVer) : null;
 
         if (updVer != null && log.isDebugEnabled())
             log.debug("Assigned fast-map version for update on near node: " + updVer);
