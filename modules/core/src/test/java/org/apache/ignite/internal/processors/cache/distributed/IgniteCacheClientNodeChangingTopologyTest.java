@@ -1249,6 +1249,64 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testServersLeaveOnStart() throws Exception {
+        ccfg = new CacheConfiguration();
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+
+        Ignite ignite0 = startGrid(0);
+
+        client = true;
+
+        final AtomicInteger nodeIdx = new AtomicInteger(2);
+
+        final int CLIENTS = 10;
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int idx = nodeIdx.getAndIncrement();
+
+                startGrid(idx);
+
+                return null;
+            }
+        }, CLIENTS, "start-client");
+
+        ignite0.close();
+
+        fut.get();
+
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite ignite = grid(i + 2);
+
+            assertEquals(CLIENTS, ignite.cluster().nodes().size());
+        }
+
+        client = false;
+
+        startGrid(0);
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite ignite = grid(i + 2);
+
+            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+
+            cache.put(i, i);
+
+            assertEquals((Object)i, cache.get(i));
+        }
+    }
+
+    /**
      *
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {

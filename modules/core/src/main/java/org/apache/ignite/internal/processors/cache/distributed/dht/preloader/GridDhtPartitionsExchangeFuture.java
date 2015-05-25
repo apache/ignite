@@ -497,10 +497,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                             GridDhtPartitionTopology top = cacheCtx.topology();
 
-                            GridDhtPartitionMap parts = top.partitions(node.id());
-
-                            assert parts == null || parts.size() == 0 : parts;
-
                             top.updateTopologyVersion(exchId, this, -1, stopping(cacheCtx.cacheId()));
                         }
 
