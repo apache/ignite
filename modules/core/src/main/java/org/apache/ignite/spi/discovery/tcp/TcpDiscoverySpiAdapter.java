@@ -359,6 +359,168 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
         return F.<Object>asList(ipFinder);
     }
 
+    /**
+     * Gets socket timeout.
+     *
+     * @return Socket timeout.
+     */
+    public long getSocketTimeout() {
+        return sockTimeout;
+    }
+
+    /**
+     * Gets message acknowledgement timeout.
+     *
+     * @return Message acknowledgement timeout.
+     */
+    public long getAckTimeout() {
+        return ackTimeout;
+    }
+
+    /**
+     * Gets network timeout.
+     *
+     * @return Network timeout.
+     */
+    public long getNetworkTimeout() {
+        return netTimeout;
+    }
+
+    /**
+     * Gets thread priority. All threads within SPI will be started with it.
+     *
+     * @return Thread priority.
+     */
+    public int getThreadPriority() {
+        return threadPri;
+    }
+
+    /**
+     * Gets delay between heartbeat messages sent by coordinator.
+     *
+     * @return Time period in milliseconds.
+     */
+    public long getHeartbeatFrequency() {
+        return hbFreq;
+    }
+
+    /**
+     * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
+     *
+     * @return IPFinder (string representation).
+     */
+    public String getIpFinderFormatted() {
+        return ipFinder.toString();
+    }
+
+    /**
+     * Gets joined nodes count.
+     *
+     * @return Nodes joined count.
+     */
+    public long getNodesJoined() {
+        return stats.joinedNodesCount();
+    }
+
+    /**
+     * Gets left nodes count.
+     *
+     * @return Left nodes count.
+     */
+    public long getNodesLeft() {
+        return stats.leftNodesCount();
+    }
+
+    /**
+     * Gets failed nodes count.
+     *
+     * @return Failed nodes count.
+     */
+    public long getNodesFailed() {
+        return stats.failedNodesCount();
+    }
+
+    /**
+     * Gets pending messages registered count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesRegistered() {
+        return stats.pendingMessagesRegistered();
+    }
+
+    /**
+     * Gets pending messages discarded count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesDiscarded() {
+        return stats.pendingMessagesDiscarded();
+    }
+
+    /**
+     * Gets avg message processing time.
+     *
+     * @return Avg message processing time.
+     */
+    public long getAvgMessageProcessingTime() {
+        return stats.avgMessageProcessingTime();
+    }
+
+    /**
+     * Gets max message processing time.
+     *
+     * @return Max message processing time.
+     */
+    public long getMaxMessageProcessingTime() {
+        return stats.maxMessageProcessingTime();
+    }
+
+    /**
+     * Gets total received messages count.
+     *
+     * @return Total received messages count.
+     */
+    public int getTotalReceivedMessages() {
+        return stats.totalReceivedMessages();
+    }
+
+    /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Integer> getReceivedMessages() {
+        return stats.receivedMessages();
+    }
+
+    /**
+     * Gets total processed messages count.
+     *
+     * @return Total processed messages count.
+     */
+    public int getTotalProcessedMessages() {
+        return stats.totalProcessedMessages();
+    }
+
+    /**
+     * Gets processed messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Integer> getProcessedMessages() {
+        return stats.processedMessages();
+    }
+
+    /**
+     * Gets time local node has been coordinator since.
+     *
+     * @return Time local node is coordinator since.
+     */
+    public long getCoordinatorSinceTimestamp() {
+        return stats.coordinatorSinceTimestamp();
+    }
+
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
