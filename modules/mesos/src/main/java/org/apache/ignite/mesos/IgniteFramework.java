@@ -23,6 +23,7 @@ import org.apache.mesos.*;
 import org.glassfish.grizzly.http.server.*;
 import org.glassfish.jersey.grizzly2.httpserver.*;
 import org.glassfish.jersey.server.*;
+import org.slf4j.*;
 
 import java.net.*;
 
@@ -30,7 +31,10 @@ import java.net.*;
  * Ignite mesos framework.
  */
 public class IgniteFramework {
+    /** */
+    public static final Logger log = LoggerFactory.getLogger(IgniteFramework.class);
 
+    /** Framework name. */
     public static final String IGNITE_FRAMEWORK_NAME = "Ignite";
 
     /**
@@ -48,11 +52,12 @@ public class IgniteFramework {
             .setFailoverTimeout(frameworkFailoverTimeout);
 
         if (System.getenv("MESOS_CHECKPOINT") != null) {
-            System.out.println("Enabling checkpoint for the framework");
+            log.info("Enabling checkpoint for the framework");
+
             frameworkBuilder.setCheckpoint(true);
         }
 
-        ClusterProperties clusterProps = ClusterProperties.from(args.length == 1 ? args[0] : null);
+        ClusterProperties clusterProps = ClusterProperties.from(args.length >= 1 ? args[0] : null);
 
         String baseUrl = String.format("http://%s:%d", clusterProps.httpServerHost(), clusterProps.httpServerPort());
 
@@ -60,7 +65,7 @@ public class IgniteFramework {
 
         ResourceConfig rc = new ResourceConfig()
             .registerInstances(new ResourceController(clusterProps.userLibs(), clusterProps.igniteCfg(),
-                    clusterProps.igniteWorkDir()));
+                clusterProps.igniteWorkDir()));
 
         HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(httpServerBaseUri, rc);
 
@@ -76,15 +81,17 @@ public class IgniteFramework {
         // create the driver
         MesosSchedulerDriver driver;
         if (System.getenv("MESOS_AUTHENTICATE") != null) {
-            System.out.println("Enabling authentication for the framework");
+            log.info("Enabling authentication for the framework");
 
             if (System.getenv("DEFAULT_PRINCIPAL") == null) {
-                System.err.println("Expecting authentication principal in the environment");
+                log.error("Expecting authentication principal in the environment");
+
                 System.exit(1);
             }
 
             if (System.getenv("DEFAULT_SECRET") == null) {
-                System.err.println("Expecting authentication secret in the environment");
+                log.error("Expecting authentication secret in the environment");
+
                 System.exit(1);
             }
 
