@@ -514,8 +514,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (exchId.isLeft())
                             cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
-                        cctx.mvcc().finishLocks(exchId.topologyVersion()).get();
-
                         onDone(exchId.topologyVersion());
 
                         skipPreload = true;
