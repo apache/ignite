@@ -117,19 +117,37 @@ public class IgniteScheduler implements Scheduler {
                 .setName("IGNITE_TCP_DISCOVERY_ADDRESSES")
                 .setValue(getAddress(offer.getHostname()))))
             .addUris(Protos.CommandInfo.URI.newBuilder()
-                .setValue(resourceProvider.igniteUrl())
+                .setValue(clusterProps.ignitePackageUrl() != null ?
+                    clusterProps.ignitePackageUrl() : resourceProvider.igniteUrl())
                 .setExtract(true))
-            .addUris(Protos.CommandInfo.URI.newBuilder().setValue(resourceProvider.igniteConfigUrl()));
+            .addUris(Protos.CommandInfo.URI.newBuilder()
+                .setValue(clusterProps.igniteConfigUrl() != null ?
+                    clusterProps.igniteConfigUrl() : resourceProvider.igniteConfigUrl()));
 
-        if (resourceProvider.resourceUrl() != null) {
-            for (String url : resourceProvider.resourceUrl())
-                builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
+        if (resourceProvider.resourceUrl() != null || clusterProps.usersLibsUrl() != null) {
+            if (clusterProps.igniteConfigUrl() != null) {
+                builder.addUris(Protos.CommandInfo.URI.newBuilder()
+                    .setValue(clusterProps.igniteConfigUrl())
+                    .setExtract(true));
 
-            builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
-                + "&& ./gridgain-community-*/bin/ignite.sh "
-                + resourceProvider.configName()
-                + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
-                + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
+                String[] split = clusterProps.igniteConfigUrl().split("/");
+
+                builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
+                    + "&& ./gridgain-community-*/bin/ignite.sh "
+                    + split[split.length - 1]
+                    + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
+                    + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
+            }
+            else {
+                for (String url : resourceProvider.resourceUrl())
+                    builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
+
+                builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
+                        + "&& ./gridgain-community-*/bin/ignite.sh "
+                        + resourceProvider.configName()
+                        + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
+                        + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
+            }
         }
         else
             builder.setValue("./gridgain-community-*/bin/ignite.sh "

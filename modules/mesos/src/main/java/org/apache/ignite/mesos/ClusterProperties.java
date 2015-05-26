@@ -53,49 +53,49 @@ public class ClusterProperties {
     private int httpServerPort = Integer.valueOf(DEFAULT_HTTP_SERVER_PORT);
 
     /** */
-    public static final String IGNITE_RESOURCE_CPU_CORES = "IGNITE_RESOURCE_CPU_CORES";
+    public static final String IGNITE_TOTAL_CPU = "IGNITE_TOTAL_CPU";
 
     /** CPU limit. */
     private double cpu = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_CPU_CORES_PER_NODE = "IGNITE_RESOURCE_CPU_CORES_PER_NODE";
+    public static final String IGNITE_RUN_CPU_PER_NODE = "IGNITE_RUN_CPU_PER_NODE";
 
     /** CPU limit. */
     private double cpuPerNode = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_MEM_MB = "IGNITE_RESOURCE_MEM_MB";
+    public static final String IGNITE_TOTAL_MEMORY = "IGNITE_TOTAL_MEMORY";
 
     /** Memory limit. */
     private double mem = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_MEM_MB_PER_NODE = "IGNITE_RESOURCE_MEM_MB_PER_NODE";
+    public static final String IGNITE_MEMORY_PER_NODE = "IGNITE_MEMORY_PER_NODE";
 
     /** Memory limit. */
     private double memPerNode = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_DISK_MB = "IGNITE_RESOURCE_DISK_MB";
+    public static final String IGNITE_TOTAL_DISK_SPACE = "IGNITE_TOTAL_DISK_SPACE";
 
     /** Disk space limit. */
     private double disk = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_DISK_MB_PER_NODE = "IGNITE_RESOURCE_DISK_MB_PER_NODE";
+    public static final String IGNITE_DISK_SPACE_PER_NODE = "IGNITE_DISK_SPACE_PER_NODE";
 
     /** Disk space limit. */
     private double diskPerNode = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_NODE_CNT = "IGNITE_RESOURCE_NODE_CNT";
+    public static final String IGNITE_NODE_COUNT = "IGNITE_NODE_COUNT";
 
     /** Node count limit. */
     private double nodeCnt = UNLIMITED;
 
     /** */
-    public static final String IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE = "IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE";
+    public static final String IGNITE_MIN_CPU_PER_NODE = "IGNITE_MIN_CPU_PER_NODE";
 
     /** */
     public static final double DEFAULT_RESOURCE_MIN_CPU = 1;
@@ -104,7 +104,7 @@ public class ClusterProperties {
     private double minCpu = DEFAULT_RESOURCE_MIN_CPU;
 
     /** */
-    public static final String IGNITE_RESOURCE_MIN_MEMORY_PER_NODE = "IGNITE_RESOURCE_MIN_MEMORY_PER_NODE";
+    public static final String IGNITE_MIN_MEMORY_PER_NODE = "IGNITE_MIN_MEMORY_PER_NODE";
 
     /** */
     public static final double DEFAULT_RESOURCE_MIN_MEM = 256;
@@ -122,10 +122,16 @@ public class ClusterProperties {
     private String igniteVer = DEFAULT_IGNITE_VERSION;
 
     /** */
+    public static final String IGNITE_PACKAGE_URL = "IGNITE_PACKAGE_URL";
+
+    /** Ignite package url. */
+    private String ignitePackageUrl = null;
+
+    /** */
     public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
 
     /** */
-    public static final String DEFAULT_IGNITE_WORK_DIR = "~/ignite-releases/";
+    public static final String DEFAULT_IGNITE_WORK_DIR = "ignite-releases/";
 
     /** Ignite version. */
     private String igniteWorkDir = DEFAULT_IGNITE_WORK_DIR;
@@ -137,10 +143,22 @@ public class ClusterProperties {
     private String userLibs = null;
 
     /** */
+    public static final String IGNITE_USERS_LIBS_URL = "IGNITE_USERS_LIBS_URL";
+
+    /** URL to users libs. */
+    private String userLibsUrl = null;
+
+    /** */
     public static final String IGNITE_CONFIG_XML = "IGNITE_XML_CONFIG";
 
     /** Ignite config. */
     private String igniteCfg = null;
+
+    /** */
+    public static final String IGNITE_CONFIG_XML_URL = "IGNITE_XML_CONFIG_URL";
+
+    /** Url to ignite config. */
+    private String igniteCfgUrl = null;
 
     /** */
     public ClusterProperties() {
@@ -293,6 +311,27 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Url to ignite package.
+     */
+    public String ignitePackageUrl() {
+        return ignitePackageUrl;
+    }
+
+    /**
+     * @return Url to ignite configuration.
+     */
+    public String igniteConfigUrl() {
+        return igniteCfgUrl;
+    }
+
+    /**
+     * @return Url to users libs configuration.
+     */
+    public String usersLibsUrl() {
+        return userLibsUrl;
+    }
+
+    /**
      * @param config path to config file.
      * @return Cluster configuration.
      */
@@ -314,15 +353,19 @@ public class ClusterProperties {
             prop.httpServerPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
                 DEFAULT_HTTP_SERVER_PORT));
 
-            prop.cpu = getDoubleProperty(IGNITE_RESOURCE_CPU_CORES, props, UNLIMITED);
-            prop.cpuPerNode = getDoubleProperty(IGNITE_RESOURCE_CPU_CORES_PER_NODE, props, UNLIMITED);
-            prop.mem = getDoubleProperty(IGNITE_RESOURCE_MEM_MB, props, UNLIMITED);
-            prop.memPerNode = getDoubleProperty(IGNITE_RESOURCE_MEM_MB_PER_NODE, props, UNLIMITED);
-            prop.disk = getDoubleProperty(IGNITE_RESOURCE_DISK_MB, props, UNLIMITED);
-            prop.diskPerNode = getDoubleProperty(IGNITE_RESOURCE_DISK_MB_PER_NODE, props, 1024.0);
-            prop.nodeCnt = getDoubleProperty(IGNITE_RESOURCE_NODE_CNT, props, UNLIMITED);
-            prop.minCpu = getDoubleProperty(IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
-            prop.minMemory = getDoubleProperty(IGNITE_RESOURCE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);
+            prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
+            prop.ignitePackageUrl = getStringProperty(IGNITE_PACKAGE_URL, props, null);
+            prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, props, null);
+
+            prop.cpu = getDoubleProperty(IGNITE_TOTAL_CPU, props, UNLIMITED);
+            prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, UNLIMITED);
+            prop.mem = getDoubleProperty(IGNITE_TOTAL_MEMORY, props, UNLIMITED);
+            prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, UNLIMITED);
+            prop.disk = getDoubleProperty(IGNITE_TOTAL_DISK_SPACE, props, UNLIMITED);
+            prop.diskPerNode = getDoubleProperty(IGNITE_DISK_SPACE_PER_NODE, props, 1024.0);
+            prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, UNLIMITED);
+            prop.minCpu = getDoubleProperty(IGNITE_MIN_CPU_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
+            prop.minMemory = getDoubleProperty(IGNITE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
             prop.igniteWorkDir = getStringProperty(IGNITE_WORK_DIR, props, DEFAULT_IGNITE_WORK_DIR);
