@@ -1360,7 +1360,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // Find the eldest acceptable discovery cache.
             Map.Entry<AffinityTopologyVersion, DiscoCache> eldest = Collections.min(discoCacheHist.entrySet(), histCmp);
 
-            if (topVer.compareTo(eldest.getKey()) <= 0)
+            if (topVer.compareTo(eldest.getKey()) < 0)
                 cache = eldest.getValue();
         }
 

@@ -1042,20 +1042,20 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         return;
                     }
 
-                    ClusterNode node = ctx.discovery().node(nodeId);
-
-                    if (node == null) {
-                        U.warn(log, "Node originated update request left grid: " + nodeId);
-
-                        return;
-                    }
-
                     // Do not check topology version for CLOCK versioning since
                     // partition exchange will wait for near update future.
                     // Also do not check topology version if topology was locked on near node by
                     // external transaction or explicit lock.
                     if ((req.fastMap() && !req.clientRequest()) || req.topologyLocked() ||
                         !needRemap(req.topologyVersion(), topology().topologyVersion(), req.keys())) {
+                        ClusterNode node = ctx.discovery().node(nodeId);
+
+                        if (node == null) {
+                            U.warn(log, "Node originated update request left grid: " + nodeId);
+
+                            return;
+                        }
+
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 
                         GridCacheVersion ver = req.updateVersion();

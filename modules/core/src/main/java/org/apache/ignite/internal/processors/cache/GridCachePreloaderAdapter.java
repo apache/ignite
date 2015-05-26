@@ -126,6 +126,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         // No-op.
     }
 
+    /** {@inheritDoc} */
     @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
         // No-op.
     }

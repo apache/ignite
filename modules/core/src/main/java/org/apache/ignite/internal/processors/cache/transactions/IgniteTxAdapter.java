@@ -494,7 +494,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public void onRemap(AffinityTopologyVersion topVer) {
-        assert false;
+        assert false : this;
     }
 
     /** {@inheritDoc} */
