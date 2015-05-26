@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -39,7 +38,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -1184,118 +1182,4 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
         }
     }
 
-    /**
-     * Allow to connect to addresses parallel.
-     */
-    protected class SocketMultiConnector implements AutoCloseable {
-        /** */
-        private int connInProgress;
-
-        /** */
-        private final ExecutorService executor;
-
-        /** */
-        private final CompletionService<GridTuple3<InetSocketAddress, Socket, Exception>> completionSrvc;
-
-        /**
-         * @param addrs Addresses.
-         * @param retryCnt Retry count.
-         */
-        public SocketMultiConnector(Collection<InetSocketAddress> addrs, final int retryCnt) {
-            connInProgress = addrs.size();
-
-            executor = Executors.newFixedThreadPool(Math.min(1, addrs.size()));
-
-            completionSrvc = new ExecutorCompletionService<>(executor);
-
-            for (final InetSocketAddress addr : addrs) {
-                completionSrvc.submit(new Callable<GridTuple3<InetSocketAddress, Socket, Exception>>() {
-                    @Override public GridTuple3<InetSocketAddress, Socket, Exception> call() {
-                        Exception ex = null;
-                        Socket sock = null;
-
-                        for (int i = 0; i < retryCnt; i++) {
-                            if (Thread.currentThread().isInterrupted())
-                                return null; // Executor is shutdown.
-
-                            try {
-                                sock = openSocket(addr);
-
-                                break;
-                            }
-                            catch (Exception e) {
-                                ex = e;
-                            }
-                        }
-
-                        return new GridTuple3<>(addr, sock, ex);
-                    }
-                });
-            }
-        }
-
-        /**
-         *
-         */
-        @Nullable public GridTuple3<InetSocketAddress, Socket, Exception> next() {
-            if (connInProgress == 0)
-                return null;
-
-            try {
-                Future<GridTuple3<InetSocketAddress, Socket, Exception>> fut = completionSrvc.take();
-
-                connInProgress--;
-
-                return fut.get();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteSpiException("Thread has been interrupted.", e);
-            }
-            catch (ExecutionException e) {
-                throw new IgniteSpiException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            List<Runnable> unstartedTasks = executor.shutdownNow();
-
-            connInProgress -= unstartedTasks.size();
-
-            if (connInProgress > 0) {
-                Thread thread = new Thread(new Runnable() {
-                    @Override public void run() {
-                        try {
-                            executor.awaitTermination(5, TimeUnit.MINUTES);
-
-                            Future<GridTuple3<InetSocketAddress, Socket, Exception>> fut;
-
-                            while ((fut = completionSrvc.poll()) != null) {
-                                try {
-                                    GridTuple3<InetSocketAddress, Socket, Exception> tuple3 = fut.get();
-
-                                    if (tuple3 != null)
-                                        IgniteUtils.closeQuiet(tuple3.get2());
-                                }
-                                catch (ExecutionException ignore) {
-
-                                }
-                            }
-                        }
-                        catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-
-                            throw new RuntimeException(e);
-                        }
-                    }
-                });
-
-                thread.setDaemon(true);
-
-                thread.start();
-            }
-        }
-    }
 }

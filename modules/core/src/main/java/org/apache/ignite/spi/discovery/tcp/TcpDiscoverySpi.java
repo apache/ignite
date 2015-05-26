@@ -1344,7 +1344,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             boolean retry = false;
             Collection<Exception> errs = new ArrayList<>();
 
-            try (SocketMultiConnector multiConnector = new SocketMultiConnector(addrs, 2)) {
+            try (SocketMultiConnector multiConnector = new SocketMultiConnector(this, addrs, 2)) {
                 GridTuple3<InetSocketAddress, Socket, Exception> tuple;
 
                 while ((tuple = multiConnector.next()) != null) {
