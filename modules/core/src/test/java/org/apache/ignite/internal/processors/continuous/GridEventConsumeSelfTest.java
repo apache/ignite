@@ -867,7 +867,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
         }
 
         g.events().remoteListen(
