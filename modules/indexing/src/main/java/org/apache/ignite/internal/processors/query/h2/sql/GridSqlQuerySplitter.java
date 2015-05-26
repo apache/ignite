@@ -78,7 +78,7 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
-        GridSqlQuery qry0 = GridSqlQueryParser.parse(stmt);
+        final GridSqlQuery qry0 = GridSqlQueryParser.parse(stmt);
 
         GridSqlSelect srcQry;
 
@@ -86,6 +86,8 @@ public class GridSqlQuerySplitter {
             srcQry = (GridSqlSelect)qry0;
         else { // Handle UNION.
             srcQry = new GridSqlSelect().from(new GridSqlSubquery(qry0));
+
+            srcQry.explain(qry0.explain());
 
             GridSqlSelect left = leftest(qry0);
 
@@ -127,7 +129,10 @@ public class GridSqlQuerySplitter {
 
         // Create map and reduce queries.
         GridSqlSelect mapQry = srcQry.clone();
-        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction("PUBLIC", TABLE_FUNC_NAME)); // table(mergeTable)); TODO
+
+        mapQry.explain(false);
+
+        GridSqlSelect rdcQry = new GridSqlSelect().from(new GridSqlFunction(null, TABLE_FUNC_NAME)); // table(mergeTable)); TODO
 
         // Split all select expressions into map-reduce parts.
         List<GridSqlElement> mapExps = F.addAll(
@@ -212,6 +217,8 @@ public class GridSqlQuerySplitter {
 
         res.addMapQuery(mergeTable, mapQry.getSQL(),
             findParams(mapQry, params, new ArrayList<>(params.length)).toArray());
+
+        res.explain(qry0.explain());
 
         return res;
     }

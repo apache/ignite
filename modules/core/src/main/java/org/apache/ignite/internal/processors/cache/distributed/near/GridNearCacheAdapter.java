@@ -76,6 +76,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
+                if (ctx.useOffheapEntry())
+                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val, next, hdrId);
+
                 return new GridNearCacheEntry(ctx, key, hash, val, next, hdrId);
             }
         });
@@ -433,16 +436,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
         return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        return dht().swapIterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException {
-        return dht().offHeapIterator();
     }
 
     /** {@inheritDoc} */

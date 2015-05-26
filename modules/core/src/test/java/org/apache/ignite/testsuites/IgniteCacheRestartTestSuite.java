@@ -21,7 +21,6 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 
 /**
  * In-Memory Data Grid stability test suite on changing topology.
@@ -36,11 +35,10 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
 
-        // TODO: GG-7419: Enable when fixed.
-        // suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        // suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
-        // TODO: uncomment when fix GG-1969
-        // suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+        // TODO IGNITE-882.
+        //suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+        //suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
+        //suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
         // suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class); // TODO IGNITE-747
@@ -48,6 +46,7 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
         suite.addTestSuite(IgniteCachePutAllRestartTest.class);
         suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
+        suite.addTestSuite(CacheGetFromJobTest.class);
 
         return suite;
     }

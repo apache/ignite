@@ -23,10 +23,10 @@ import org.scalatest._
 /**
 * Unit test for 'log' command.
 */
-class VisorLogCommandSpec extends FlatSpec with Matchers {
-    behavior of "A 'log' visor command"
-
-    it should "print log status" in {
-        visor.log()
+class VisorLogCommandSpec extends FunSpec with Matchers {
+    describe("A 'log' visor command") {
+        it("should print log status") {
+            visor.log()
+        }
     }
 }

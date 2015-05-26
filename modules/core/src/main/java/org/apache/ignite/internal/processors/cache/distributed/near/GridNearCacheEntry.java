@@ -204,15 +204,13 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param topVer Topology version.
      * @return {@code True} if reset was done.
      * @throws GridCacheEntryRemovedException If obsolete.
-     * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings( {"RedundantTypeArguments"})
     public boolean resetFromPrimary(CacheObject val,
         GridCacheVersion ver,
         GridCacheVersion dhtVer,
         UUID primaryNodeId,
         AffinityTopologyVersion topVer)
-        throws GridCacheEntryRemovedException, IgniteCheckedException
+        throws GridCacheEntryRemovedException
     {
         assert dhtVer != null;
 
@@ -301,7 +299,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         else {
             CacheObject val0 = valueBytesUnlocked();
 
-            return F.t(ver, val0);
+            return F.t(dhtVer, val0);
         }
     }
 

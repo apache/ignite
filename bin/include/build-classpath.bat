@@ -18,7 +18,7 @@
 :: Target class path resolver.
 ::
 :: Can be used like:
-::       call "%IGNITE_HOME%\bin\include\target-classpath.bat"
+::       call "%IGNITE_HOME%\bin\include\build-classpath.bat"
 :: in other scripts to set classpath using libs from target folder.
 ::
 :: Will be excluded in release.

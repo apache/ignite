@@ -169,12 +169,13 @@ public class GridDistributedTxMapping implements Externalizable {
 
     /**
      * @param dhtVer DHT version.
+     * @param writeVer DHT writeVersion.
      */
-    public void dhtVersion(GridCacheVersion dhtVer) {
+    public void dhtVersion(GridCacheVersion dhtVer, GridCacheVersion writeVer) {
         this.dhtVer = dhtVer;
 
         for (IgniteTxEntry e : entries)
-            e.dhtVersion(dhtVer);
+            e.dhtVersion(writeVer);
     }
 
     /**

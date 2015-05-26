@@ -35,6 +35,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -186,7 +187,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
-        affPool = Executors.newFixedThreadPool(1);
+        affPool = new IgniteThreadPoolExecutor(
+            "aff-" + ctx.gridName(),
+            1,
+            1,
+            0,
+            new LinkedBlockingQueue<Runnable>());
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -1691,10 +1697,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             this.predLsnr = predLsnr;
 
             if (predLsnr != null) {
-                ctx.resource().injectGeneric(predLsnr);
-
                 if (predLsnr instanceof GridLifecycleAwareMessageFilter)
-                    ((GridLifecycleAwareMessageFilter)predLsnr).initialize();
+                    ((GridLifecycleAwareMessageFilter)predLsnr).initialize(ctx);
+                else
+                    ctx.resource().injectGeneric(predLsnr);
             }
         }
 
