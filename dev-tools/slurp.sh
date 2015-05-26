@@ -51,11 +51,6 @@ TASK_RUNNER_USER='task_runner'
 #
 TASK_RUNNER_PWD=''
 
-#
-# Space separated logins of jira useres which were approved to auto triggering patches. Like 'user1 user2 user3'.
-#
-JIRA_CONTRIBUTORS=''
-
 git fetch
 
 git checkout ${DEFAULT_BRANCH}
@@ -63,12 +58,9 @@ git checkout ${DEFAULT_BRANCH}
 git pull
 
 export TC_URL=${TC_URL}
-export GIT_USER_NAME=${GIT_USER_NAME}
-export GIT_USER_EMAIL=${GIT_USER_EMAIL}
 export JIRA_USER=${JIRA_USER}
 export JIRA_PWD=${JIRA_PWD}
 export TASK_RUNNER_PWD=${TASK_RUNNER_PWD}
 export TASK_RUNNER_USER=${TASK_RUNNER_USER}
-export JIRA_CONTRIBUTORS=${JIRA_CONTRIBUTORS}
 
 gradle slurp -b dev-tools/build.gradle
