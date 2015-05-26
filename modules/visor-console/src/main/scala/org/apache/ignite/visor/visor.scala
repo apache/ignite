@@ -2012,6 +2012,8 @@ object visor extends VisorTag {
 
             None
         }
+        else if (nodes.size == 1)
+            Some(nodes.head.id)
         else {
             (0 until nodes.size) foreach (i => {
                 val n = nodes(i)
