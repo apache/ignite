@@ -92,6 +92,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Number of retries using to send messages. */
     private int retryCnt = 3;
 
+    /** */
+    private final ReentrantReadWriteLock processorStopLock = new ReentrantReadWriteLock();
+
+    /** */
+    private boolean processorStopped;
+
     /**
      * @param ctx Kernal context.
      */
@@ -254,6 +260,41 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor started.");
+    }
+
+    /**
+     * @return {@code true} if lock successful, {@code false} if processor already stopped.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public boolean lockStopping() {
+        processorStopLock.readLock().lock();
+
+        if (processorStopped) {
+            processorStopLock.readLock().unlock();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     *
+     */
+    public void unlockStopping() {
+        processorStopLock.readLock().unlock();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        processorStopLock.writeLock().lock();
+
+        try {
+            processorStopped = true;
+        }
+        finally {
+            processorStopLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -550,6 +591,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         assert !msg || obj instanceof Message : obj;
 
         assert !nodeId.equals(ctx.localNodeId());
+
+        if (processorStopped)
+            return;
 
         RemoteRoutineInfo info = rmtInfos.get(routineId);
 

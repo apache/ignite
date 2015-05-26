@@ -264,7 +264,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         for (Iterator<Ignite> itr = toRmv.iterator(); itr.hasNext(); ) {
             Ignite g = itr.next();
 
-            if (g.cluster().node().isClient()) {
+            if (g.cluster().localNode().isClient()) {
                 G.stop(g.name(), false);
 
                 itr.remove();
