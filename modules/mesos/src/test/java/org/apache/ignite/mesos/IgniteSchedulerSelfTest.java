@@ -159,6 +159,5 @@ public class IgniteSchedulerSelfTest extends TestCase {
         @Override public Protos.Status reconcileTasks(Collection<Protos.TaskStatus> statuses) {
             return null;
         }
-
     }
 }

@@ -71,17 +71,6 @@ public class IgniteScheduler implements Scheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public void registered(SchedulerDriver schedulerDriver, Protos.FrameworkID frameworkID,
-        Protos.MasterInfo masterInfo) {
-        log.info("registered() master={}:{}, framework={}", masterInfo.getIp(), masterInfo.getPort(), frameworkID);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void reregistered(SchedulerDriver schedulerDriver, Protos.MasterInfo masterInfo) {
-        log.info("reregistered()");
-    }
-
-    /** {@inheritDoc} */
     @Override public void resourceOffers(SchedulerDriver schedulerDriver, List<Protos.Offer> offers) {
         synchronized (mux) {
             log.info("resourceOffers() with {} offers", offers.size());
@@ -201,28 +190,24 @@ public class IgniteScheduler implements Scheduler {
                 if (resource.getType().equals(Protos.Value.Type.SCALAR))
                     cpus = resource.getScalar().getValue();
                 else
-                    log.debug("Cpus resource was not a scalar: " + resource.getType().toString());
+                    log.debug("Cpus resource was not a scalar: {}" + resource.getType());
             }
             else if (resource.getName().equals(MEM)) {
                 if (resource.getType().equals(Protos.Value.Type.SCALAR))
                     mem = resource.getScalar().getValue();
                 else
-                    log.debug("Mem resource was not a scalar: " + resource.getType().toString());
+                    log.debug("Mem resource was not a scalar: {}", resource.getType());
             }
             else if (resource.getName().equals(DISK))
                 if (resource.getType().equals(Protos.Value.Type.SCALAR))
                     disk = resource.getScalar().getValue();
                 else
-                    log.debug("Disk resource was not a scalar: " + resource.getType().toString());
+                    log.debug("Disk resource was not a scalar: {}", resource.getType());
         }
 
         // Check that slave satisfies min requirements.
         if (cpus < clusterLimit.minCpuPerNode()  && mem < clusterLimit.minMemoryPerNode() ) {
-            log.info("Offer not sufficient for slave request:\n" + offer.getResourcesList().toString() +
-                "\n" + offer.getAttributesList().toString() +
-                "\nRequested for slave:\n" +
-                "  cpus:  " + cpus + "\n" +
-                "  mem:   " + mem);
+            log.debug("Offer not sufficient for slave request: {}", offer.getResourcesList());
 
             return null;
         }
@@ -245,19 +230,10 @@ public class IgniteScheduler implements Scheduler {
         if (cpus > 0 && mem > 0)
             return new IgniteTask(offer.getHostname(), cpus, mem, disk);
         else {
-            log.info("Offer not sufficient for slave request:\n" + offer.getResourcesList().toString() +
-                "\n" + offer.getAttributesList().toString() +
-                "\nRequested for slave:\n" +
-                "  cpus:  " + cpus + "\n" +
-                "  mem:   " + mem);
+            log.debug("Offer not sufficient for slave request: {}", offer.getResourcesList());
 
             return null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void offerRescinded(SchedulerDriver schedulerDriver, Protos.OfferID offerID) {
-        log.info("offerRescinded()");
     }
 
     /** {@inheritDoc} */
@@ -296,29 +272,46 @@ public class IgniteScheduler implements Scheduler {
     }
 
     /** {@inheritDoc} */
-    @Override public void frameworkMessage(SchedulerDriver schedulerDriver, Protos.ExecutorID executorID,
-        Protos.SlaveID slaveID, byte[] bytes) {
-        log.info("frameworkMessage()");
+    @Override public void registered(SchedulerDriver schedulerDriver, Protos.FrameworkID frameworkID,
+        Protos.MasterInfo masterInfo) {
+        log.info("Scheduler registered. Master: [{}:{}], framework=[{}]", masterInfo.getIp(), masterInfo.getPort(),
+            frameworkID);
     }
 
     /** {@inheritDoc} */
     @Override public void disconnected(SchedulerDriver schedulerDriver) {
-        log.info("disconnected()");
+        log.info("Scheduler disconnected.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(SchedulerDriver schedulerDriver, String s) {
+        log.error("Failed. Error message: {}", s);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void frameworkMessage(SchedulerDriver schedulerDriver, Protos.ExecutorID executorID,
+        Protos.SlaveID slaveID, byte[] bytes) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void slaveLost(SchedulerDriver schedulerDriver, Protos.SlaveID slaveID) {
-        log.info("slaveLost()");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void executorLost(SchedulerDriver schedulerDriver, Protos.ExecutorID executorID,
         Protos.SlaveID slaveID, int i) {
-        log.info("executorLost()");
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void error(SchedulerDriver schedulerDriver, String s) {
-        log.error("error() {}", s);
+    @Override public void offerRescinded(SchedulerDriver schedulerDriver, Protos.OfferID offerID) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reregistered(SchedulerDriver schedulerDriver, Protos.MasterInfo masterInfo) {
+        // No-op.
     }
 }
