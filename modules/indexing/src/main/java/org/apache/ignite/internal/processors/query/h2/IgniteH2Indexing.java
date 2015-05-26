@@ -1375,7 +1375,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     final int[] parts0 = parts.get(idx);
 
-                    if (parts0.length < 64) {
+                    if (parts0.length < 64) { // Fast scan for small arrays.
                         return new IgniteBiPredicate<K,V>() {
                             @Override public boolean apply(K k, V v) {
                                 int p = aff.partition(k);
@@ -1383,6 +1383,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 for (int p0 : parts0) {
                                     if (p0 == p)
                                         return true;
+
+                                    if (p0 > p) // Array is sorted.
+                                        return false;
                                 }
 
                                 return false;
@@ -1424,9 +1427,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Current topology version.
+     * @return Ready topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    public AffinityTopologyVersion readyTopologyVersion() {
         return ctx.cache().context().exchange().readyAffinityVersion();
     }
 

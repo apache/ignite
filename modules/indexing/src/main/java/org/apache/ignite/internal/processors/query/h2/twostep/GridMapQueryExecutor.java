@@ -260,6 +260,9 @@ public class GridMapQueryExecutor {
      * @return Collection wrapper.
      */
     private static Collection<Integer> wrap(final int[] ints) {
+        if (F.isEmpty(ints))
+            return Collections.emptySet();
+
         return new AbstractCollection<Integer>() {
             @Override public Iterator<Integer> iterator() {
                 return new Iterator<Integer>() {
@@ -503,7 +506,7 @@ public class GridMapQueryExecutor {
             loc ? null : Collections.<Message>emptyList(),
             loc ? Collections.<Value[]>emptyList() : null);
 
-        msg.retry(h2.topologyVersion());
+        msg.retry(h2.readyTopologyVersion());
 
         ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
     }

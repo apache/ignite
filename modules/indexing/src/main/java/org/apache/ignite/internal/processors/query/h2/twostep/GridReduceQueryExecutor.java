@@ -146,7 +146,7 @@ public class GridReduceQueryExecutor {
                     for (GridMergeTable tbl : r.tbls) {
                         if (tbl.getScanIndex(null).hasSource(nodeId)) {
                             // Will attempt to retry. If reduce query was started it will fail on next page fetching.
-                            retry(r, h2.topologyVersion(), nodeId);
+                            retry(r, h2.readyTopologyVersion(), nodeId);
 
                             break;
                         }
@@ -283,6 +283,9 @@ public class GridReduceQueryExecutor {
      * @return Array.
      */
     private static int[] unbox(Set<Integer> set) {
+        if (set == null)
+            return null;
+
         int[] arr = new int[set.size()];
 
         int i = 0;
@@ -291,6 +294,20 @@ public class GridReduceQueryExecutor {
             arr[i++] = x;
 
         return arr;
+    }
+
+    /**
+     * @param readyTop Latest ready topology.
+     * @return {@code true} If preloading is active.
+     */
+    private boolean isPreloadingActive(AffinityTopologyVersion readyTop) {
+        AffinityTopologyVersion freshTop = ctx.discovery().topologyVersionEx();
+
+        int res = readyTop.compareTo(freshTop);
+
+        assert res <= 0 : readyTop + " " + freshTop;
+
+        return res < 0;
     }
 
     /**
@@ -312,7 +329,7 @@ public class GridReduceQueryExecutor {
 
             r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
-            AffinityTopologyVersion topVer = h2.topologyVersion();
+            AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
             Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(space, topVer);
 
@@ -321,7 +338,8 @@ public class GridReduceQueryExecutor {
 
             List<String> extraSpaces = extraSpaces(space, qry.spaces());
 
-            List<int[]> parts = null;
+            // Explicit partition mapping for unstable topology: {nodeId -> {cacheName -> {parts}}}
+            Map<ClusterNode, Map<String, Set<Integer>>> gridPartsMap = null;
 
             if (cctx.isReplicated() || qry.explain()) {
                 assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
@@ -329,16 +347,17 @@ public class GridReduceQueryExecutor {
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
                 nodes = Collections.singleton(F.rand(nodes));
             }
-            else if (ctx.cache().context().exchange().hasPendingExchange()) { // TODO isActive ??
-                parts = new ArrayList<>(extraSpaces == null ? 1 : extraSpaces.size() + 1);
+            else if (isPreloadingActive(topVer)) {
+                gridPartsMap = new HashMap<>(nodes.size(), 1f);
 
-                parts.add(unbox(cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer)));
+                collectPartitionOwners(gridPartsMap, cctx);
 
                 if (extraSpaces != null) {
                     for (String extraSpace : extraSpaces)
-                        parts.add(unbox(ctx.cache().internalCache(extraSpace).context()
-                            .affinity().primaryPartitions(ctx.localNodeId(), topVer)));
+                        collectPartitionOwners(gridPartsMap, ctx.cache().internalCache(extraSpace).context());
                 }
+
+                nodes = gridPartsMap.keySet();
             }
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
@@ -382,34 +401,23 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                boolean ok = false;
+                send(nodes,
+                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null),
+                    gridPartsMap);
 
-                try {
-                    send(nodes, new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, parts));
-
-                    ok = true;
-                }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Failed to send query request to nodes: " + nodes);
-                }
+                U.await(r.latch);
 
                 AffinityTopologyVersion retry = null;
 
-                if (ok) { // Sent successfully.
-                    U.await(r.latch);
+                Object state = r.state.get();
 
-                    Object state = r.state.get();
+                if (state != null) {
+                    if (state instanceof CacheException)
+                        throw new CacheException("Failed to run map query remotely.", (CacheException)state);
 
-                    if (state != null) {
-                        if (state instanceof CacheException)
-                            throw new CacheException("Failed to run map query remotely.", (CacheException)state);
-
-                        if (state instanceof AffinityTopologyVersion)
-                            retry = (AffinityTopologyVersion)state; // Remote nodes can ask us to retry.
-                    }
+                    if (state instanceof AffinityTopologyVersion)
+                        retry = (AffinityTopologyVersion)state; // Remote nodes can ask us to retry.
                 }
-                else  // Send failed -> retry.
-                    retry = h2.topologyVersion();
 
                 ResultSet res = null;
 
@@ -423,14 +431,8 @@ public class GridReduceQueryExecutor {
                 }
 
                 for (GridMergeTable tbl : r.tbls) {
-                    if (!tbl.getScanIndex(null).fetchedAll()) { // We have to explicitly cancel queries on remote nodes.
-                        try {
-                            send(nodes, new GridQueryCancelRequest(qryReqId));
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.warn(log, "Failed to send cancel request to nodes: " + nodes);
-                        }
-                    }
+                    if (!tbl.getScanIndex(null).fetchedAll()) // We have to explicitly cancel queries on remote nodes.
+                        send(nodes, new GridQueryCancelRequest(qryReqId), null);
 
 //                dropTable(r.conn, tbl.getName()); TODO
                 }
@@ -457,6 +459,48 @@ public class GridReduceQueryExecutor {
 
                 curFunTbl.remove();
             }
+        }
+    }
+
+    /**
+     * Collects actual partition owners for the cache context int the given map.
+     *
+     * @param gridPartsMap Target map.
+     * @param cctx Cache context.
+     */
+    private void collectPartitionOwners(
+        Map<ClusterNode,Map<String,Set<Integer>>> gridPartsMap,
+        GridCacheContext<?,?> cctx
+    ) {
+        int partsCnt = cctx.affinity().partitions();
+
+        for (int p = 0; p < partsCnt; p++) {
+            // We don't care about exact topology version here, we just need to get all the needed partition
+            // owners in actual state.
+            List<ClusterNode> owners = cctx.topology().owners(p);
+
+            if (F.isEmpty(owners))
+                continue; // All primary and backup nodes are dead now for this partition. We sorrow.
+
+            ClusterNode owner = F.rand(owners);
+
+            Map<String, Set<Integer>> nodePartsMap = gridPartsMap.get(owner);
+
+            if (nodePartsMap == null) {
+                nodePartsMap = new HashMap<>();
+
+                gridPartsMap.put(owner, nodePartsMap);
+            }
+
+            Set<Integer> parts = nodePartsMap.get(cctx.name());
+
+            if (parts == null) {
+                parts = new TreeSet<>(); // We need them sorted.
+
+                nodePartsMap.put(cctx.name(), parts);
+            }
+
+            parts.add(p);
         }
     }
 
@@ -531,33 +575,64 @@ public class GridReduceQueryExecutor {
     /**
      * @param nodes Nodes.
      * @param msg Message.
-     * @throws IgniteCheckedException If failed.
+     * @param gridPartsMap Partitions.
      */
-    private void send(Collection<ClusterNode> nodes, Message msg) throws IgniteCheckedException {
+    private void send(
+        Collection<ClusterNode> nodes,
+        Message msg,
+        Map<ClusterNode, Map<String, Set<Integer>>> gridPartsMap
+    ) {
+        boolean locNodeFound = false;
+
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
-                if (nodes.size() > 1) {
-                    ArrayList<ClusterNode> remotes = new ArrayList<>(nodes.size() - 1);
+                locNodeFound = true;
 
-                    for (ClusterNode node0 : nodes) {
-                        if (!node0.isLocal())
-                            remotes.add(node0);
-                    }
+                continue;
+            }
 
-                    assert remotes.size() == nodes.size() - 1;
-
-                    ctx.io().send(remotes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
-                }
-
-                // Local node goes the last to allow parallel execution.
-                h2.mapQueryExecutor().onMessage(ctx.localNodeId(), msg);
-
-                return;
+            try {
+                ctx.io().send(node, GridTopic.TOPIC_QUERY, copy(msg, node, gridPartsMap), GridIoPolicy.PUBLIC_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to send message to node: " + node, e);
             }
         }
 
-        // All the given nodes are remotes.
-        ctx.io().send(nodes, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+        if (locNodeFound) // Local node goes the last to allow parallel execution.
+            h2.mapQueryExecutor().onMessage(ctx.localNodeId(), copy(msg, ctx.cluster().get().localNode(), gridPartsMap));
+    }
+
+    /**
+     * @param msg Message to copy.
+     * @param node Node.
+     * @param gridPartsMap Partitions map.
+     * @return Copy of message with partitions set.
+     */
+    private Message copy(Message msg, ClusterNode node, Map<ClusterNode, Map<String, Set<Integer>>> gridPartsMap) {
+        if (gridPartsMap == null)
+            return msg;
+
+        Map<String,Set<Integer>> nodeParts = gridPartsMap.get(node);
+
+        assert nodeParts != null;
+
+        GridQueryRequest req = (GridQueryRequest)msg;
+
+        List<int[]> parts = new ArrayList<>(nodeParts.size());
+
+        parts.add(unbox(nodeParts.get(req.space())));
+
+        if (req.extraSpaces() != null) {
+            for (String extraSpace : req.extraSpaces())
+                parts.add(unbox(nodeParts.get(extraSpace)));
+        }
+
+        GridQueryRequest res = new GridQueryRequest(req);
+
+        res.partitions(parts);
+
+        return res;
     }
 
     /**

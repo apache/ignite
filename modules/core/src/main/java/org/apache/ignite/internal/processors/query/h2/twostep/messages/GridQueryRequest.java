@@ -95,10 +95,30 @@ public class GridQueryRequest implements Message {
     }
 
     /**
+     * @param cp Copy from.
+     */
+    public GridQueryRequest(GridQueryRequest cp) {
+        this.reqId = cp.reqId;
+        this.pageSize = cp.pageSize;
+        this.space = cp.space;
+        this.qrys = cp.qrys;
+        this.topVer = cp.topVer;
+        this.extraSpaces = cp.extraSpaces;
+        this.parts = cp.parts;
+    }
+
+    /**
      * @return All the needed partitions for {@link #space()} and {@link #extraSpaces()}.
      */
     public List<int[]> partitions() {
         return parts;
+    }
+
+    /**
+     * @param parts All the needed partitions for {@link #space()} and {@link #extraSpaces()}.
+     */
+    public void partitions(List<int[]> parts) {
+        this.parts = parts;
     }
 
     /**
