@@ -66,9 +66,9 @@ public class IgniteProvider {
                             String[] ver1 = parseVersion(f1).split("\\.");
                             String[] ver2 = parseVersion(f2).split("\\.");
 
-                            if (Integer.valueOf(ver1[0]) > Integer.valueOf(ver2[0])
-                                && Integer.valueOf(ver1[1]) > Integer.valueOf(ver2[1])
-                                && Integer.valueOf(ver1[2]) > Integer.valueOf(ver2[2]))
+                            if (Integer.valueOf(ver1[0]) >= Integer.valueOf(ver2[0])
+                                && Integer.valueOf(ver1[1]) >= Integer.valueOf(ver2[1])
+                                && Integer.valueOf(ver1[2]) >= Integer.valueOf(ver2[2]))
 
                                 return 1;
                             else

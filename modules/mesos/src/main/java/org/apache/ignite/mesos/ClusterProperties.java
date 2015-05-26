@@ -98,7 +98,7 @@ public class ClusterProperties {
     public static final String IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE = "IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE";
 
     /** */
-    public static final double DEFAULT_RESOURCE_MIN_CPU = 2;
+    public static final double DEFAULT_RESOURCE_MIN_CPU = 1;
 
     /** Min memory per node. */
     private double minCpu = DEFAULT_RESOURCE_MIN_CPU;
@@ -155,6 +155,13 @@ public class ClusterProperties {
     }
 
     /**
+     * Set CPU count limit.
+     */
+    public void cpus(double cpu){
+        this.cpu = cpu;
+    }
+
+    /**
      * @return CPU count limit.
      */
     public double cpusPerNode(){
@@ -167,6 +174,14 @@ public class ClusterProperties {
     public double memory() {
         return mem;
     }
+
+    /**
+     * Set mem limit.
+     */
+    public void memory(double mem) {
+        this.mem = mem;
+    }
+
 
     /**
      * @return mem limit.
@@ -204,10 +219,28 @@ public class ClusterProperties {
     }
 
     /**
+     * Sets min memory.
+     *
+     * @param minMemory Min memory.
+     */
+    public void minMemoryPerNode(double minMemory) {
+        this.minMemory = minMemory;
+    }
+
+    /**
      * @return min cpu count per node.
      */
     public double minCpuPerNode() {
         return minCpu;
+    }
+
+    /**
+     * Sets min cpu count per node.
+     *
+     * @param minCpu min cpu count per node.
+     */
+    public void minCpuPerNode(double minCpu) {
+        this.minCpu = minCpu;
     }
 
     /**
@@ -286,7 +319,7 @@ public class ClusterProperties {
             prop.mem = getDoubleProperty(IGNITE_RESOURCE_MEM_MB, props, UNLIMITED);
             prop.memPerNode = getDoubleProperty(IGNITE_RESOURCE_MEM_MB_PER_NODE, props, UNLIMITED);
             prop.disk = getDoubleProperty(IGNITE_RESOURCE_DISK_MB, props, UNLIMITED);
-            prop.diskPerNode = getDoubleProperty(IGNITE_RESOURCE_DISK_MB_PER_NODE, props, UNLIMITED);
+            prop.diskPerNode = getDoubleProperty(IGNITE_RESOURCE_DISK_MB_PER_NODE, props, 1024.0);
             prop.nodeCnt = getDoubleProperty(IGNITE_RESOURCE_NODE_CNT, props, UNLIMITED);
             prop.minCpu = getDoubleProperty(IGNITE_RESOURCE_MIN_CPU_CNT_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
             prop.minMemory = getDoubleProperty(IGNITE_RESOURCE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);

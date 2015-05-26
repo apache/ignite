@@ -28,38 +28,41 @@
     <version>1.1.0-SNAPSHOT</version>
 
     <properties>
-        <version.grizzly>2.16</version.grizzly>
+        <jetty.version>9.2.10.v20150310</jetty.version>
+        <mesos.version>0.22.0</mesos.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <log4j.version>2.0.2</log4j.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.mesos</groupId>
             <artifactId>mesos</artifactId>
-            <version>0.22.0</version>
+            <version>${mesos.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.12</version>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.0.2</version>
+            <version>${log4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.0.2</version>
+            <version>${log4j.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-grizzly2-http</artifactId>
-            <version>${version.grizzly}</version>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty.version}</version>
         </dependency>
 
         <dependency>

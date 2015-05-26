@@ -18,6 +18,7 @@
 package org.apache.ignite.mesos;
 
 import junit.framework.*;
+import org.apache.ignite.mesos.resource.*;
 import org.apache.mesos.*;
 
 import java.util.*;
@@ -33,27 +34,230 @@ public class IgniteSchedulerSelfTest extends TestCase {
     @Override public void setUp() throws Exception {
         super.setUp();
 
-        //scheduler = new IgniteScheduler();
+        ClusterProperties clustProp = new ClusterProperties();
+
+        scheduler = new IgniteScheduler(clustProp, new ResourceProvider() {
+            @Override public String configName() {
+                return "config.xml";
+            }
+
+            @Override public String igniteUrl() {
+                return "ignite.jar";
+            }
+
+            @Override public String igniteConfigUrl() {
+                return "config.xml";
+            }
+
+            @Override public Collection<String> resourceUrl() {
+                return null;
+            }
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testHostRegister() throws Exception {
-        //Protos.Offer offer = createOffer("hostname", 4, 1024);
+        Protos.Offer offer = createOffer("hostname", 4, 1024);
 
-        //scheduler.resourceOffers(DriverStub.INSTANCE, Lists.);
+        DriverMock mock = new DriverMock();
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNotNull(mock.launchedTask);
+        assertEquals(1, mock.launchedTask.size());
+
+        Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
+
+        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS));
+        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeclineByCpu() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 4, 1024);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.cpus(2);
+
+        scheduler.setClusterProps(clustProp);
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNotNull(mock.launchedTask);
+        assertEquals(1, mock.launchedTask.size());
+
+        Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
+
+        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS));
+        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+
+        mock.clear();
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNull(mock.launchedTask);
+
+        Protos.OfferID declinedOffer = mock.declinedOffer;
+
+        assertEquals(offer.getId(), declinedOffer);
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeclineByMem() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 4, 1024);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.memory(512);
+
+        scheduler.setClusterProps(clustProp);
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNotNull(mock.launchedTask);
+        assertEquals(1, mock.launchedTask.size());
+
+        Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
+
+        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS));
+        assertEquals(512.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+
+        mock.clear();
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNull(mock.launchedTask);
+
+        Protos.OfferID declinedOffer = mock.declinedOffer;
+
+        assertEquals(offer.getId(), declinedOffer);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeclineByMemCpu() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 1, 1024);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.cpus(4);
+        clustProp.memory(2000);
+
+        scheduler.setClusterProps(clustProp);
+
+        double totalMem = 0, totalCpu = 0;
+
+        for (int i = 0; i < 2; i++) {
+            scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+            assertNotNull(mock.launchedTask);
+            assertEquals(1, mock.launchedTask.size());
+
+            Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
+
+            totalCpu += resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS);
+            totalMem += resources(taskInfo.getResourcesList(), IgniteScheduler.MEM);
+
+            mock.clear();
+        }
+
+        assertEquals(2.0, totalCpu);
+        assertEquals(2000.0, totalMem);
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNull(mock.launchedTask);
+
+        Protos.OfferID declinedOffer = mock.declinedOffer;
+
+        assertEquals(offer.getId(), declinedOffer);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeclineByCpuMinRequirements() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 8, 10240);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.minCpuPerNode(12);
+
+        scheduler.setClusterProps(clustProp);
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNotNull(mock.declinedOffer);
+
+        assertEquals(offer.getId(), mock.declinedOffer);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeclineByMemMinRequirements() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 8, 10240);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.minMemoryPerNode(15000);
+
+        scheduler.setClusterProps(clustProp);
+
+        scheduler.resourceOffers(mock, Arrays.asList(offer));
+
+        assertNotNull(mock.declinedOffer);
+
+        assertEquals(offer.getId(), mock.declinedOffer);
+    }
+
+
+    /**
+     * @param resourceType Resource type.
+     * @return Value.
+     */
+    private Double resources(List<Protos.Resource> resources, String resourceType) {
+        for (Protos.Resource resource : resources) {
+            if (resource.getName().equals(resourceType))
+                return resource.getScalar().getValue();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param hostname Hostname
+     * @param cpu Cpu count.
+     * @param mem Mem size.
+     * @return Offer.
+     */
     private Protos.Offer createOffer(String hostname, double cpu, double mem) {
         return Protos.Offer.newBuilder()
-            .setSlaveId(Protos.SlaveID.newBuilder().setValue("1").build())
+            .setId(Protos.OfferID.newBuilder().setValue("1"))
+            .setSlaveId(Protos.SlaveID.newBuilder().setValue("1"))
+            .setFrameworkId(Protos.FrameworkID.newBuilder().setValue("1"))
             .setHostname(hostname)
             .addResources(Protos.Resource.newBuilder()
+                .setType(Protos.Value.Type.SCALAR)
                 .setName(IgniteScheduler.CPUS)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpu).build())
                 .build())
             .addResources(Protos.Resource.newBuilder()
+                .setType(Protos.Value.Type.SCALAR)
                 .setName(IgniteScheduler.MEM)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(mem).build())
                 .build())
@@ -63,8 +267,22 @@ public class IgniteSchedulerSelfTest extends TestCase {
     /**
      * No-op implementation.
      */
-    public static class DriverStub implements SchedulerDriver {
-        private static final DriverStub INSTANCE = new DriverStub();
+    public static class DriverMock implements SchedulerDriver {
+        /**
+         *
+         */
+        Collection<Protos.TaskInfo> launchedTask;
+
+        /** */
+        Protos.OfferID declinedOffer;
+
+        /**
+         * Clear launched task.
+         */
+        public void clear() {
+            launchedTask = null;
+            declinedOffer = null;
+        }
 
         /** {@inheritDoc} */
         @Override public Protos.Status start() {
@@ -104,23 +322,31 @@ public class IgniteSchedulerSelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public Protos.Status launchTasks(Collection<Protos.OfferID> offerIds,
             Collection<Protos.TaskInfo> tasks, Protos.Filters filters) {
+            launchedTask = tasks;
+
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public Protos.Status launchTasks(Collection<Protos.OfferID> offerIds,
             Collection<Protos.TaskInfo> tasks) {
+            launchedTask = tasks;
+
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public Protos.Status launchTasks(Protos.OfferID offerId, Collection<Protos.TaskInfo> tasks,
             Protos.Filters filters) {
+            launchedTask = tasks;
+
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public Protos.Status launchTasks(Protos.OfferID offerId, Collection<Protos.TaskInfo> tasks) {
+            launchedTask = tasks;
+
             return null;
         }
 
@@ -131,11 +357,15 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         /** {@inheritDoc} */
         @Override public Protos.Status declineOffer(Protos.OfferID offerId, Protos.Filters filters) {
+            declinedOffer = offerId;
+
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public Protos.Status declineOffer(Protos.OfferID offerId) {
+            declinedOffer = offerId;
+
             return null;
         }
 

@@ -75,4 +75,12 @@ public class IgniteTask {
     public double disk() {
         return disk;
     }
+
+    @Override
+    public String toString() {
+        return "IgniteTask " +
+            "host: [" + host + ']' +
+            ", cpuCores: [" + cpuCores + "]" +
+            ", mem: [" + mem + "]";
+    }
 }

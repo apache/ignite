@@ -20,9 +20,6 @@ package org.apache.ignite.mesos;
 import com.google.protobuf.*;
 import org.apache.ignite.mesos.resource.*;
 import org.apache.mesos.*;
-import org.glassfish.grizzly.http.server.*;
-import org.glassfish.jersey.grizzly2.httpserver.*;
-import org.glassfish.jersey.server.*;
 import org.slf4j.*;
 
 import java.net.*;
@@ -61,13 +58,12 @@ public class IgniteFramework {
 
         String baseUrl = String.format("http://%s:%d", clusterProps.httpServerHost(), clusterProps.httpServerPort());
 
-        URI httpServerBaseUri = URI.create(baseUrl);
+        JettyServer httpServer = new JettyServer();
 
-        ResourceConfig rc = new ResourceConfig()
-            .registerInstances(new ResourceController(clusterProps.userLibs(), clusterProps.igniteCfg(),
-                clusterProps.igniteWorkDir()));
-
-        HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(httpServerBaseUri, rc);
+        httpServer.start(
+            new InetSocketAddress(clusterProps.httpServerHost(), clusterProps.httpServerPort()),
+            new ResourceHandler(clusterProps.userLibs(), clusterProps.igniteCfg(), clusterProps.igniteWorkDir())
+        );
 
         ResourceProvider provider = new ResourceProvider();
 
@@ -113,7 +109,7 @@ public class IgniteFramework {
 
         int status = driver.run() == Protos.Status.DRIVER_STOPPED ? 0 : 1;
 
-        httpServer.shutdown();
+        httpServer.stop();
 
         // Ensure that the driver process terminates.
         driver.stop();

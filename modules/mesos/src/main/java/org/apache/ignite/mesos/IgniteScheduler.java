@@ -56,24 +56,24 @@ public class IgniteScheduler implements Scheduler {
     private Map<String, IgniteTask> tasks = new HashMap<>();
 
     /** Cluster resources. */
-    private ClusterProperties clusterLimit;
+    private ClusterProperties clusterProps;
 
     /** Resource provider. */
     private ResourceProvider resourceProvider;
 
     /**
-     * @param clusterLimit Cluster limit.
+     * @param clusterProps Cluster limit.
      * @param resourceProvider Resource provider.
      */
-    public IgniteScheduler(ClusterProperties clusterLimit, ResourceProvider resourceProvider) {
-        this.clusterLimit = clusterLimit;
+    public IgniteScheduler(ClusterProperties clusterProps, ResourceProvider resourceProvider) {
+        this.clusterProps = clusterProps;
         this.resourceProvider = resourceProvider;
     }
 
     /** {@inheritDoc} */
     @Override public void resourceOffers(SchedulerDriver schedulerDriver, List<Protos.Offer> offers) {
         synchronized (mux) {
-            log.info("resourceOffers() with {} offers", offers.size());
+            log.debug("Offers resources: {} ", offers.size());
 
             for (Protos.Offer offer : offers) {
                 IgniteTask igniteTask = checkOffer(offer);
@@ -89,7 +89,7 @@ public class IgniteScheduler implements Scheduler {
                 Protos.TaskID taskId = Protos.TaskID.newBuilder()
                     .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
 
-                log.info("Launching task {}", taskId.getValue());
+                log.info("Launching task: [{}]", igniteTask);
 
                 // Create task to run.
                 Protos.TaskInfo task = createTask(offer, igniteTask, taskId);
@@ -103,7 +103,6 @@ public class IgniteScheduler implements Scheduler {
         }
     }
 
-
     /**
      * Create Task.
      *
@@ -116,7 +115,7 @@ public class IgniteScheduler implements Scheduler {
         Protos.CommandInfo.Builder builder = Protos.CommandInfo.newBuilder()
             .setEnvironment(Protos.Environment.newBuilder().addVariables(Protos.Environment.Variable.newBuilder()
                 .setName("IGNITE_TCP_DISCOVERY_ADDRESSES")
-                .setValue(getAddress())))
+                .setValue(getAddress(offer.getHostname()))))
             .addUris(Protos.CommandInfo.URI.newBuilder()
                 .setValue(resourceProvider.igniteUrl())
                 .setExtract(true))
@@ -129,14 +128,14 @@ public class IgniteScheduler implements Scheduler {
             builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
                 + "&& ./gridgain-community-*/bin/ignite.sh "
                 + resourceProvider.configName()
-                + " -J-Xmx" + String.valueOf((int) igniteTask.mem() + "m")
-                + " -J-Xms" + String.valueOf((int) igniteTask.mem()) + "m");
+                + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
+                + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
         }
         else
             builder.setValue("./gridgain-community-*/bin/ignite.sh "
                 + resourceProvider.configName()
-                + " -J-Xmx" + String.valueOf((int) igniteTask.mem() + "m")
-                + " -J-Xms" + String.valueOf((int) igniteTask.mem()) + "m");
+                + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
+                + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
 
         return Protos.TaskInfo.newBuilder()
             .setName("Ignite node " + taskId.getValue())
@@ -151,15 +150,23 @@ public class IgniteScheduler implements Scheduler {
                 .setName(MEM)
                 .setType(Protos.Value.Type.SCALAR)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.mem())))
+            .addResources(Protos.Resource.newBuilder()
+                .setName(DISK)
+                .setType(Protos.Value.Type.SCALAR)
+                .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.disk())))
                 .build();
     }
 
     /**
      * @return Address running nodes.
      */
-    protected String getAddress() {
-        if (tasks.isEmpty())
+    protected String getAddress(String address) {
+        if (tasks.isEmpty()) {
+            if (address != null && !address.isEmpty())
+                return address + DEFAULT_PORT;
+
             return "";
+        }
 
         StringBuilder sb = new StringBuilder();
 
@@ -177,7 +184,7 @@ public class IgniteScheduler implements Scheduler {
      */
     private IgniteTask checkOffer(Protos.Offer offer) {
         // Check limit on running nodes.
-        if (clusterLimit.instances() <= tasks.size())
+        if (clusterProps.instances() <= tasks.size())
             return null;
 
         double cpus = -1;
@@ -206,7 +213,7 @@ public class IgniteScheduler implements Scheduler {
         }
 
         // Check that slave satisfies min requirements.
-        if (cpus < clusterLimit.minCpuPerNode()  && mem < clusterLimit.minMemoryPerNode() ) {
+        if (cpus < clusterProps.minCpuPerNode() || mem < clusterProps.minMemoryPerNode() ) {
             log.debug("Offer not sufficient for slave request: {}", offer.getResourcesList());
 
             return null;
@@ -223,9 +230,9 @@ public class IgniteScheduler implements Scheduler {
             totalDisk += task.disk();
         }
 
-        cpus = Math.min(clusterLimit.cpus() - totalCpus, Math.min(cpus, clusterLimit.cpusPerNode()));
-        mem = Math.min(clusterLimit.memory() - totalMem, Math.min(mem, clusterLimit.memoryPerNode()));
-        disk = Math.min(clusterLimit.disk() - totalDisk, Math.min(disk, clusterLimit.diskPerNode()));
+        cpus = Math.min(clusterProps.cpus() - totalCpus, Math.min(cpus, clusterProps.cpusPerNode()));
+        mem = Math.min(clusterProps.memory() - totalMem, Math.min(mem, clusterProps.memoryPerNode()));
+        disk = Math.min(clusterProps.disk() - totalDisk, Math.min(disk, clusterProps.diskPerNode()));
 
         if (cpus > 0 && mem > 0)
             return new IgniteTask(offer.getHostname(), cpus, mem, disk);
@@ -240,35 +247,43 @@ public class IgniteScheduler implements Scheduler {
     @Override public void statusUpdate(SchedulerDriver schedulerDriver, Protos.TaskStatus taskStatus) {
         final String taskId = taskStatus.getTaskId().getValue();
 
-        log.info("statusUpdate() task {} is in state {}", taskId, taskStatus.getState());
+        log.info("Received update event task: [{}] is in state: [{}]", taskId, taskStatus.getState());
 
-        switch (taskStatus.getState()) {
-            case TASK_FAILED:
-            case TASK_FINISHED:
-                synchronized (mux) {
-                    IgniteTask failedTask = tasks.remove(taskId);
+        if (taskStatus.getState().equals(Protos.TaskState.TASK_FAILED)
+            || taskStatus.getState().equals(Protos.TaskState.TASK_ERROR)
+            || taskStatus.getState().equals(Protos.TaskState.TASK_FINISHED)
+            || taskStatus.getState().equals(Protos.TaskState.TASK_KILLED)
+            || taskStatus.getState().equals(Protos.TaskState.TASK_LOST)) {
+            synchronized (mux) {
+                IgniteTask failedTask = tasks.remove(taskId);
 
-                    if (failedTask != null) {
-                        List<Protos.Request> requests = new ArrayList<>();
+                if (failedTask != null) {
+                    List<Protos.Request> requests = new ArrayList<>();
 
-                        Protos.Request request = Protos.Request.newBuilder()
-                            .addResources(Protos.Resource.newBuilder()
-                                .setType(Protos.Value.Type.SCALAR)
-                                .setName(MEM)
-                                .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.mem())))
-                            .addResources(Protos.Resource.newBuilder()
-                                .setType(Protos.Value.Type.SCALAR)
-                                .setName(CPUS)
-                                .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
-                            .build();
+                    Protos.Request request = Protos.Request.newBuilder()
+                        .addResources(Protos.Resource.newBuilder()
+                            .setType(Protos.Value.Type.SCALAR)
+                            .setName(MEM)
+                            .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.mem())))
+                        .addResources(Protos.Resource.newBuilder()
+                            .setType(Protos.Value.Type.SCALAR)
+                            .setName(CPUS)
+                            .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
+                        .build();
 
-                        requests.add(request);
+                    requests.add(request);
 
-                        schedulerDriver.requestResources(requests);
-                    }
+                    schedulerDriver.requestResources(requests);
                 }
-                break;
+            }
         }
+    }
+
+    /**
+     * @param clusterProps Cluster properties.
+     */
+    public void setClusterProps(ClusterProperties clusterProps) {
+        this.clusterProps = clusterProps;
     }
 
     /** {@inheritDoc} */

@@ -22,7 +22,7 @@ import org.apache.ignite.mesos.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.mesos.resource.ResourceController.*;
+import static org.apache.ignite.mesos.resource.ResourceHandler.*;
 
 /**
  * Provides path to user's libs and config file.
