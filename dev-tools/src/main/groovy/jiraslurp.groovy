@@ -407,10 +407,17 @@ def runAllTestBuilds = {builds, jiraNum ->
         }
     }
 
+    // Format comment for jira.
     def triggeredBuildsComment = "There was triggered next test builds for last attached patch-file:\\n"
 
+    def n = 1;
+
     triggeredBuilds.each { name, url ->
-        triggeredBuildsComment += "${name as String} - ${url as String}\\n"
+        def prefix = n < 10 ? "0" : ""
+
+        triggeredBuildsComment += "${prefix}${n}. ${url as String} - ${name as String}\\n"
+
+        n++
     }
 
     addJiraComment(jiraNum, triggeredBuildsComment)
