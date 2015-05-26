@@ -92,6 +92,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Number of retries using to send messages. */
     private int retryCnt = 3;
 
+    /** */
+    private volatile boolean processorStopped;
+
     /**
      * @param ctx Kernal context.
      */
@@ -254,6 +257,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor started.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        processorStopped = true;
     }
 
     /** {@inheritDoc} */
@@ -550,6 +558,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         assert !msg || obj instanceof Message : obj;
 
         assert !nodeId.equals(ctx.localNodeId());
+
+        if (processorStopped)
+            return;
 
         RemoteRoutineInfo info = rmtInfos.get(routineId);
 
