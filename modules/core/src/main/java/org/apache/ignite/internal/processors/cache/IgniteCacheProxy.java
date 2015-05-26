@@ -542,7 +542,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     private void validate(Query qry) {
         if (!GridQueryProcessor.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
             !(qry instanceof ContinuousQuery))
-            throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
+            throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
+                ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
     }
 
     /** {@inheritDoc} */
