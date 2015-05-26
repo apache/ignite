@@ -56,6 +56,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
 
+    /** Partition. */
+    private Integer part;
+
     /** */
     private final boolean incMeta;
 
@@ -95,6 +98,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param clsName Class name.
      * @param clause Clause.
      * @param filter Scan filter.
+     * @param part Partition.
      * @param incMeta Include metadata flag.
      * @param keepPortable Keep portable flag.
      */
@@ -103,6 +107,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
+        @Nullable Integer part,
         boolean incMeta,
         boolean keepPortable) {
         assert cctx != null;
@@ -113,6 +118,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.clsName = clsName;
         this.clause = clause;
         this.filter = filter;
+        this.part = part;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
 
@@ -132,6 +138,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param dedup Enable dedup flag.
      * @param prj Grid projection.
      * @param filter Key-value filter.
+     * @param part Partition.
      * @param clsName Class name.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
@@ -149,6 +156,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean dedup,
         ClusterGroup prj,
         IgniteBiPredicate<Object, Object> filter,
+        @Nullable Integer part,
         @Nullable String clsName,
         String clause,
         boolean incMeta,
@@ -165,6 +173,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
+        this.part = part;
         this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
@@ -334,6 +343,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @return Partition.
+     */
+    @Nullable public Integer partition() {
+        return part;
+    }
+
+    /**
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
@@ -448,14 +464,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             case REPLICATED:
                 if (prj != null)
-                    return nodes(cctx, prj);
+                    return nodes(cctx, prj, partition());
 
                 return cctx.affinityNode() ?
                     Collections.singletonList(cctx.localNode()) :
-                    Collections.singletonList(F.rand(nodes(cctx, null)));
+                    Collections.singletonList(F.rand(nodes(cctx, null, partition())));
 
             case PARTITIONED:
-                return nodes(cctx, prj);
+                return nodes(cctx, prj, partition());
 
             default:
                 throw new IllegalStateException("Unknown cache distribution mode: " + cacheMode);
@@ -467,13 +483,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param prj Projection (optional).
      * @return Collection of data nodes in provided projection (if any).
      */
-    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx, @Nullable final ClusterGroup prj) {
+    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
+        @Nullable final ClusterGroup prj, @Nullable final Integer part) {
         assert cctx != null;
 
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null);
+                    (prj == null || prj.node(n.id()) != null) &&
+                    (part == null || cctx.affinity().primary(n , part, cctx.affinity().affinityTopologyVersion()));
             }
         });
     }

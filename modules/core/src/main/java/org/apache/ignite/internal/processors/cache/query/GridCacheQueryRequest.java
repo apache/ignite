@@ -26,6 +26,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -109,6 +111,9 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /** */
     private int taskHash;
 
+    /** Partition. */
+    private Integer part;
+
     /**
      * Required by {@link Externalizable}
      */
@@ -173,6 +178,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param clause Query clause.
      * @param clsName Query class name.
      * @param keyValFilter Key-value filter.
+     * @param part Partition.
      * @param rdc Reducer.
      * @param trans Transformer.
      * @param pageSize Page size.
@@ -189,6 +195,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         String clause,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
+        @Nullable Integer part,
         IgniteReducer<Object, Object> rdc,
         IgniteClosure<Object, Object> trans,
         int pageSize,
@@ -211,6 +218,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.clause = clause;
         this.clsName = clsName;
         this.keyValFilter = keyValFilter;
+        this.part = part;
         this.rdc = rdc;
         this.trans = trans;
         this.pageSize = pageSize;
@@ -414,6 +422,13 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         return taskHash;
     }
 
+    /**
+     * @return partition.
+     */
+    @Nullable public Integer partition() {
+        return part;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -537,6 +552,11 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
                 writer.incrementState();
 
+            case 21:
+                if (!writer.writeInt("part", part != null ? part : -1))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -701,6 +721,15 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
                 reader.incrementState();
 
+            case 21:
+                int part0 = reader.readInt("part");
+
+                part = part0 == -1 ? null : part0;
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
@@ -713,7 +742,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 21;
+        return 22;
     }
 
     /** {@inheritDoc} */
