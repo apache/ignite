@@ -29,6 +29,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -65,6 +66,14 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /** PeerClassLoadingLocalClassPathExclude enable. */
     private boolean excluded;
 
+    /**
+     * Creates a SwapSpaceSpi.
+     * @return the Spi
+     */
+    protected SwapSpaceSpi spi() {
+        return new FileSwapSpaceSpi();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -77,7 +86,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(spi());
 
         CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 

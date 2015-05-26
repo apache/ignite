@@ -23,12 +23,12 @@
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
         <file>
-            <source>LICENSE.txt</source>
+            <source>LICENSE</source>
             <outputDirectory>/</outputDirectory>
         </file>
 
         <file>
-            <source>NOTICE.txt</source>
+            <source>NOTICE</source>
             <outputDirectory>/</outputDirectory>
         </file>
 
@@ -71,8 +71,9 @@
             <excludes>
                 <exclude>**/*hadoop*.bat</exclude>
                 <exclude>igniterouter.bat</exclude>
-                <exclude>**/target-classpath.bat</exclude>
+                <exclude>**/build-classpath.bat</exclude>
                 <exclude>ignitevisorcmd.bat</exclude>
+                <exclude>ignite-schema-import.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -86,9 +87,10 @@
             <excludes>
                 <exclude>**/*hadoop*.sh</exclude>
                 <exclude>igniterouter.sh</exclude>
-                <exclude>**/target-classpath.sh</exclude>
+                <exclude>**/build-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
                 <exclude>ignitevisorcmd.sh</exclude>
+                <exclude>ignite-schema-import.sh</exclude>
             </excludes>
         </fileSet>
 

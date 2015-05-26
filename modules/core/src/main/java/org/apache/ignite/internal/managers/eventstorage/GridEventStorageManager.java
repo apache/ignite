@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.events.*;
+import org.apache.ignite.internal.interop.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -50,9 +51,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Grid event storage SPI manager.
  */
 public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
-    /** */
-    private static final int[] EMPTY = new int[0];
-
     /** Local event listeners. */
     private final ConcurrentMap<Integer, Set<GridLocalEventListener>> lsnrs = new ConcurrentHashMap8<>();
 
@@ -106,7 +104,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         int[] cfgInclEvtTypes0 = ctx.config().getIncludeEventTypes();
 
         if (F.isEmpty(cfgInclEvtTypes0))
-            cfgInclEvtTypes = EMPTY;
+            cfgInclEvtTypes = U.EMPTY_INTS;
         else {
             cfgInclEvtTypes0 = copy(cfgInclEvtTypes0);
 
@@ -653,6 +651,14 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             }
         }
 
+        if (lsnr instanceof UserListenerWrapper)
+        {
+            IgnitePredicate p = ((UserListenerWrapper)lsnr).listener();
+
+            if (p instanceof InteropLocalEventListener)
+                ((InteropLocalEventListener)p).close();
+        }
+
         return found;
     }
 
@@ -755,7 +761,20 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         assert p != null;
 
-        return getSpi().localEvents(p);
+        if (p instanceof InteropAwareEventFilter) {
+            InteropAwareEventFilter p0 = (InteropAwareEventFilter)p;
+
+            p0.initialize(ctx);
+
+            try {
+                return getSpi().localEvents(p0);
+            }
+            finally {
+                p0.close();
+            }
+        }
+        else
+            return getSpi().localEvents(p);
     }
 
     /**

@@ -266,7 +266,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                         ClusterNode node = evt.discoveryNode();
 
                         return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
-                            evt.discoveryEventType() == EVT_NODE_LEFT;
+                            (evt.discoveryEventType() == EVT_NODE_LEFT || evt.discoveryEventType() == EVT_NODE_FAILED);
                     }
                 }, EVT_CACHE_REBALANCE_STOPPED));
 

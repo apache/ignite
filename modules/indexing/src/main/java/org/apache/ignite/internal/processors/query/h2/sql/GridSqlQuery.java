@@ -37,6 +37,26 @@ public abstract class GridSqlQuery implements Cloneable {
     /** */
     protected GridSqlElement limit;
 
+    /** */
+    private boolean explain;
+
+    /**
+     * @param explain Explain.
+     * @return {@code this}.
+     */
+    public GridSqlQuery explain(boolean explain) {
+        this.explain = explain;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} If explain.
+     */
+    public boolean explain() {
+        return explain;
+    }
+
     /**
      * @return Offset.
      */

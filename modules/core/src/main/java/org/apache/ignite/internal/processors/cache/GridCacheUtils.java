@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -1157,6 +1156,8 @@ public class GridCacheUtils {
 
         if (ctx.isNear())
             ctx.near().dht().context().evicts().unwind();
+
+        ctx.ttl().expire();
     }
 
     /**
@@ -1166,11 +1167,12 @@ public class GridCacheUtils {
         assert ctx != null;
 
         for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts()) {
-
             cacheCtx.evicts().unwind();
 
             if (cacheCtx.isNear())
                 cacheCtx.near().dht().context().evicts().unwind();
+
+            cacheCtx.ttl().expire();
         }
     }
 
