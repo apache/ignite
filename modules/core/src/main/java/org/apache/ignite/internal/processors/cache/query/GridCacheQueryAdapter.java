@@ -487,11 +487,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable final ClusterGroup prj, @Nullable final Integer part) {
         assert cctx != null;
 
+        final List<ClusterNode> owners = part == null ? null :
+            cctx.topology().owners(part, cctx.affinity().affinityTopologyVersion());
+
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || cctx.affinity().primary(n , part, cctx.affinity().affinityTopologyVersion()));
+                    (part == null || owners.contains(n));
             }
         });
     }

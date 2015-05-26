@@ -36,11 +36,18 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private IgniteBiPredicate<K, V> filter;
 
+    /** */
+    private Integer part;
+
     /**
      * Create scan query returning all entries.
      */
     public ScanQuery() {
-        this(null);
+        this(null, null);
+    }
+
+    public ScanQuery(int part) {
+        this(part, null);
     }
 
     /**
@@ -49,6 +56,16 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * @param filter Filter. If {@code null} then all entries will be returned.
      */
     public ScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
+        this(null, filter);
+    }
+
+    /**
+     * Create scan query with filter.
+     *
+     * @param filter Filter. If {@code null} then all entries will be returned.
+     */
+    public ScanQuery(Integer part, @Nullable IgniteBiPredicate<K, V> filter) {
+        setPartition(part);
         setFilter(filter);
     }
 
@@ -71,6 +88,26 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this.filter = filter;
 
         return this;
+    }
+
+    /**
+     * Gets partition number over which this query should iterate. Will return {@code null} if partition was not
+     * set. In this case query will iterate over all partitions in the cache.
+     *
+     * @return Partition number or {@code null}.
+     */
+    public Integer getPartition() {
+        return part;
+    }
+
+    /**
+     * Sets partition number over which this query should iterate. If {@code null}, query will iterate over
+     * all partitions in the cache. Must be in the range [0, N) where N is partition number in the cache.
+     *
+     * @param part Partition number over which this query should iterate.
+     */
+    public void setPartition(Integer part) {
+        this.part = part;
     }
 
     /** {@inheritDoc} */

@@ -669,19 +669,20 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         }
 
         for (int i = 0; i < cctx.affinity().partitions(); i++) {
-            CacheQuery<Map.Entry<Integer, Integer>> qry =
-                ((IgniteCacheProxy<Integer, Integer>)cache).context().queries().createScanQuery(null, i, false);
+            ScanQuery<Integer, Integer> scan = new ScanQuery<>(i);
 
-            CacheQueryFuture<Map.Entry<Integer, Integer>> fut = qry.execute();
+            Collection<Cache.Entry<Integer, Integer>> actual = cache.query(scan).getAll();
 
             Map<Integer, Integer> exp = entries.get(i);
 
-            Collection<Map.Entry<Integer, Integer>> actual = fut.get();
+            int size = exp == null ? 0 : exp.size();
+
+            assertEquals("Failed for partition: " + i, size, actual.size());
 
             if (exp == null)
                 assertTrue(actual.isEmpty());
             else
-                for (Map.Entry<Integer, Integer> entry : actual)
+                for (Cache.Entry<Integer, Integer> entry : actual)
                     assertTrue(entry.getValue().equals(exp.get(entry.getKey())));
         }
     }

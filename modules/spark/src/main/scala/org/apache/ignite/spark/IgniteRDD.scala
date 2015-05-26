@@ -37,7 +37,11 @@ class IgniteRDD[K, V] (
     override def compute(part: Partition, context: TaskContext): Iterator[(K, V)] = {
         val cache = ensureCache()
 
-        val it: java.util.Iterator[Cache.Entry[K, V]] = cache.query(new ScanQuery[K, V]()).iterator()
+        val qry: ScanQuery[K, V] = new ScanQuery[K, V]()
+
+        qry.setPartition(part.index)
+
+        val it: java.util.Iterator[Cache.Entry[K, V]] = cache.query(qry).iterator()
 
         new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](it, entry => {
             (entry.getKey, entry.getValue)
