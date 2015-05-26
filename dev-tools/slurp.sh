@@ -51,6 +51,16 @@ TASK_RUNNER_USER='task_runner'
 #
 TASK_RUNNER_PWD=''
 
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+echo "<"$(date +"%H:%M:%S")"> Starting task triggering"
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+
+# Useful settings
+#cd /home/teamcity/jobs/incubator-ignite/
+#
+#export JAVA_HOME=<java_home>
+#export PATH=$PATH:<gradle_path>
+
 git fetch
 
 git checkout ${DEFAULT_BRANCH}
