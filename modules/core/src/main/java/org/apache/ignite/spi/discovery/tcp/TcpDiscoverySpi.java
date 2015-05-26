@@ -27,6 +27,7 @@ import org.apache.ignite.internal.events.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -5319,6 +5320,96 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             pingResult(false);
 
             U.closeQuiet(sock);
+        }
+    }
+
+    /**
+     * Base class for message workers.
+     */
+    protected abstract class MessageWorkerAdapter extends IgniteSpiThread {
+        /** Pre-allocated output stream (100K). */
+        private final GridByteArrayOutputStream bout = new GridByteArrayOutputStream(100 * 1024);
+
+        /** Message queue. */
+        private final BlockingDeque<TcpDiscoveryAbstractMessage> queue = new LinkedBlockingDeque<>();
+
+        /** Backed interrupted flag. */
+        private volatile boolean interrupted;
+
+        /**
+         * @param name Thread name.
+         */
+        protected MessageWorkerAdapter(String name) {
+            super(gridName, name, log);
+
+            setPriority(threadPri);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            if (log.isDebugEnabled())
+                log.debug("Message worker started [locNodeId=" + getLocalNodeId() + ']');
+
+            while (!isInterrupted()) {
+                TcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
+
+                if (msg == null)
+                    continue;
+
+                processMessage(msg);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void interrupt() {
+            interrupted = true;
+
+            super.interrupt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInterrupted() {
+            return interrupted || super.isInterrupted();
+        }
+
+        /**
+         * @return Current queue size.
+         */
+        int queueSize() {
+            return queue.size();
+        }
+
+        /**
+         * Adds message to queue.
+         *
+         * @param msg Message to add.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg) {
+            if (msg.highPriority())
+                queue.addFirst(msg);
+            else
+                queue.add(msg);
+
+            if (log.isDebugEnabled())
+                log.debug("Message has been added to queue: " + msg);
+        }
+
+        /**
+         * @param msg Message.
+         */
+        protected abstract void processMessage(TcpDiscoveryAbstractMessage msg);
+
+        /**
+         * @param sock Socket.
+         * @param msg Message.
+         * @throws IOException If IO failed.
+         * @throws IgniteCheckedException If marshalling failed.
+         */
+        protected final void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg)
+            throws IOException, IgniteCheckedException {
+            bout.reset();
+
+            TcpDiscoverySpi.this.writeToSocket(sock, msg, bout);
         }
     }
 }
