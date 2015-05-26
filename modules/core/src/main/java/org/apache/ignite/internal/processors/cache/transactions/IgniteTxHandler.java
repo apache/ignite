@@ -421,13 +421,8 @@ public class IgniteTxHandler {
             Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
             Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
 
-            if (!cacheNodes0.equals(cacheNodes1)) {
-                Collection<ClusterNode> keyNodes0 = ctx.affinity().nodes(e.key(), expVer);
-                Collection<ClusterNode> keyNodes1 = ctx.affinity().nodes(e.key(), curVer);
-
-                if (!keyNodes0.equals(keyNodes1))
-                    return true;
-            }
+            if (!cacheNodes0.equals(cacheNodes1))
+                return true;
         }
 
         return false;
