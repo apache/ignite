@@ -117,8 +117,9 @@ def sendGetRequest = { urlString, user, pwd->
 final GIT_REPO = "https://git1-us-west.apache.org/repos/asf/incubator-ignite.git"
 final JIRA_URL = "https://issues.apache.org"
 final ATTACHMENT_URL = "$JIRA_URL/jira/secure/attachment"
-final validated_filename = "${System.getProperty("user.home")}/validated-jira.txt"
-final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$validated_filename"
+final HISTORY_FILE = "${System.getProperty("user.home")}/validated-jira.txt"
+final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$HISTORY_FILE"
+final NL = System.getProperty("line.separator")
 
 final def JIRA_CMD = System.getProperty('JIRA_COMMAND', 'jira.sh')
 
@@ -162,15 +163,19 @@ def readHistory = {
 
     List validated_list = []
 
-    def validated = new File(validated_filename)
+    def validated = new File(HISTORY_FILE)
 
     if (validated.exists()) {
         validated_list = validated.text.split('\n')
     }
 
     // Let's make sure the preserved history isn't too long
-    if (validated_list.size > MAX_HISTORY)
+    if (validated_list.size > MAX_HISTORY) {
         validated_list = validated_list[validated_list.size - MAX_HISTORY..validated_list.size - 1]
+
+        validated.delete()
+        validated << validated_list.join(NL)
+    }
 
     println "History=$validated_list"
 
@@ -211,31 +216,32 @@ def findAttachments = {
         "https://issues.apache.org/jira/sr/jira.issueviews:searchrequest-xml/12330308/SearchRequest-12330308.xml?tempMax=100&field=key&field=attachments"
     def rss = new XmlSlurper().parse(JIRA_FILTER)
 
-    List list = readHistory {}
+    final List history = readHistory {}
 
     LinkedHashMap<String, String> attachments = [:]
 
     rss.channel.item.each { jira ->
         String row = getLatestAttachment(jira)
 
-        if (row != null && !list.contains(row)) {
+        if (row != null && !history.contains(row)) {
             def pair = row.split(',')
 
             attachments.put(pair[0] as String, pair[1] as String)
-
-            list.add(row)
         }
     }
 
-    // Write everything back to persist the list
-    def validated = new File(validated_filename)
-
-    if (validated.exists())
-        validated.delete()
-
-    validated << list.join('\n')
-
     attachments
+}
+
+/**
+ * Store jira with attachment id to hostory.
+ */
+def addToHistory = {jira, attachmentId ->
+    def validated = new File(HISTORY_FILE)
+
+    assert validated.exists(), "History file does not exist."
+
+    validated << NL + "$jira,$attachmentId"
 }
 
 def tryGitAmAbort = {
@@ -445,6 +451,8 @@ args.each {
             println "Triggering the test builds for: $k = $ATTACHMENT_URL/$v/"
 
             runAllTestBuilds(builds, k)
+
+            addToHistory(k, v)
         }
     }
     else if (parameters.length >= 1 && parameters[0] == "patchApply") {

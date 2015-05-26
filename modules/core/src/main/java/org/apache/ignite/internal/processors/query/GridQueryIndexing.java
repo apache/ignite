@@ -149,6 +149,22 @@ public interface GridQueryIndexing {
     public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
 
     /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public boolean isSqlType(Class<?> cls);
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param cls Class.
+     * @return {@code true} If this is geometry.
+     */
+    public boolean isGeometryClass(Class<?> cls);
+
+    /**
      * Registers type if it was not known before or updates it otherwise.
      *
      * @param spaceName Space name.
