@@ -137,80 +137,86 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             private boolean notificationInProgress;
 
             @Override public void onEvent(Event evt) {
-                synchronized (notificationQueue) {
-                    notificationQueue.add(new T3<>(nodeId, routineId, evt));
+                if (filter != null && !filter.apply(evt))
+                    return;
 
-                    if (!notificationInProgress) {
-                        ctx.getSystemExecutorService().submit(new Runnable() {
-                            @Override public void run() {
-                                while (true) {
-                                    T3<UUID, UUID, Event> t3;
+                if (loc) {
+                    if (!cb.apply(nodeId, evt))
+                        ctx.continuous().stopRoutine(routineId);
+                }
+                else {
+                    if (ctx.discovery().node(nodeId) == null)
+                        return;
 
-                                    synchronized (notificationQueue) {
-                                        t3 = notificationQueue.poll();
+                    synchronized (notificationQueue) {
+                        notificationQueue.add(new T3<>(nodeId, routineId, evt));
 
-                                        if (t3 == null) {
-                                            notificationInProgress = false;
-
-                                            return;
-                                        }
-                                    }
+                        if (!notificationInProgress) {
+                            ctx.getSystemExecutorService().submit(new Runnable() {
+                                @Override public void run() {
+                                    if (!ctx.continuous().lockStopping())
+                                        return;
 
                                     try {
-                                        Event evt = t3.get3();
+                                        while (true) {
+                                            T3<UUID, UUID, Event> t3;
 
-                                        if (filter != null && !filter.apply(evt))
-                                            continue;
+                                            synchronized (notificationQueue) {
+                                                t3 = notificationQueue.poll();
 
-                                        if (loc) {
-                                            if (!cb.apply(nodeId, evt)) {
-                                                ctx.continuous().stopRoutine(routineId);
+                                                if (t3 == null) {
+                                                    notificationInProgress = false;
 
-                                                return;
+                                                    return;
+                                                }
                                             }
 
-                                            continue;
-                                        }
+                                            try {
+                                                Event evt = t3.get3();
 
-                                        ClusterNode node = ctx.discovery().node(t3.get1());
+                                                EventWrapper wrapper = new EventWrapper(evt);
 
-                                        if (node == null)
-                                            continue;
+                                                if (evt instanceof CacheEvent) {
+                                                    String cacheName = ((CacheEvent)evt).cacheName();
 
-                                        EventWrapper wrapper = new EventWrapper(evt);
+                                                    ClusterNode node = ctx.discovery().node(t3.get1());
 
-                                        if (evt instanceof CacheEvent) {
-                                            String cacheName = ((CacheEvent)evt).cacheName();
+                                                    if (node == null)
+                                                        continue;
 
-                                            if (ctx.config().isPeerClassLoadingEnabled()
-                                                && ctx.discovery().cacheNode(node, cacheName)) {
-                                                wrapper.p2pMarshal(ctx.config().getMarshaller());
+                                                    if (ctx.config().isPeerClassLoadingEnabled()
+                                                        && ctx.discovery().cacheNode(node, cacheName)) {
+                                                        wrapper.p2pMarshal(ctx.config().getMarshaller());
 
-                                                wrapper.cacheName = cacheName;
+                                                        wrapper.cacheName = cacheName;
 
-                                                GridCacheDeploymentManager depMgr =
-                                                    ctx.cache().internalCache(cacheName).context().deploy();
+                                                        GridCacheDeploymentManager depMgr = ctx.cache()
+                                                            .internalCache(cacheName).context().deploy();
 
-                                                depMgr.prepare(wrapper);
+                                                        depMgr.prepare(wrapper);
+                                                    }
+                                                }
+
+                                                ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null, false,
+                                                    false);
+                                            }
+                                            catch (ClusterTopologyCheckedException ignored) {
+                                                // No-op.
+                                            }
+                                            catch (Throwable e) {
+                                                U.error(ctx.log(GridEventConsumeHandler.class),
+                                                    "Failed to send event notification to node: " + nodeId, e);
                                             }
                                         }
-
-                                        ctx.continuous().addNotification(t3.get1(), t3.get2(), wrapper, null,
-                                            false, false);
                                     }
-                                    catch (ClusterTopologyCheckedException
-                                        | IgniteInterruptedCheckedException ignored) {
-                                        // No-op.
-                                    }
-                                    catch (Throwable e) {
-                                        U.error(ctx.log(GridEventConsumeHandler.class),
-                                            "Failed to send event notification to node: " + nodeId, e);
+                                    finally {
+                                        ctx.continuous().unlockStopping();
                                     }
                                 }
-                            }
-                        });
+                            });
 
-                        notificationInProgress = true;
+                            notificationInProgress = true;
+                        }
                     }
                 }
             }

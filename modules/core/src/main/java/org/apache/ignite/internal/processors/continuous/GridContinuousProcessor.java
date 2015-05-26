@@ -93,7 +93,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private int retryCnt = 3;
 
     /** */
-    private volatile boolean processorStopped;
+    private final ReentrantReadWriteLock processorStopLock = new ReentrantReadWriteLock();
+
+    /** */
+    private boolean processorStopped;
 
     /**
      * @param ctx Kernal context.
@@ -259,9 +262,39 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             log.debug("Continuous processor started.");
     }
 
+    /**
+     * @return {@code true} if lock successful, {@code false} if processor already stopped.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public boolean lockStopping() {
+        processorStopLock.readLock().lock();
+
+        if (processorStopped) {
+            processorStopLock.readLock().unlock();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     *
+     */
+    public void unlockStopping() {
+        processorStopLock.readLock().unlock();
+    }
+
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        processorStopped = true;
+        processorStopLock.writeLock().lock();
+
+        try {
+            processorStopped = true;
+        }
+        finally {
+            processorStopLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
