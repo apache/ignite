@@ -390,11 +390,6 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Object> injectables() {
-        return F.<Object>asList(ipFinder);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
         return U.arrayList(rmtNodes.values(), TcpDiscoveryNodesRing.VISIBLE_NODES);
     }

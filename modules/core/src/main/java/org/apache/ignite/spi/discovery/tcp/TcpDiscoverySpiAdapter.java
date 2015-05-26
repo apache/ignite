@@ -355,6 +355,11 @@ public abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<Object> injectables() {
+        return F.<Object>asList(ipFinder);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 

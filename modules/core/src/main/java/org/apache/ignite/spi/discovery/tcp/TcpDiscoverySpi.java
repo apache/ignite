@@ -646,11 +646,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Object> injectables() {
-        return F.<Object>asList(ipFinder);
-    }
-
-    /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws IgniteSpiException {
         spiStart0(false);
     }
