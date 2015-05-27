@@ -164,7 +164,7 @@ public class ClusterProperties {
     private String igniteCfg = null;
 
     /** */
-    public static final String IGNITE_CONFIG_XML_URL = "IGNITE_XML_CONFIG_URL";
+    public static final String IGNITE_CONFIG_XML_URL = "IGNITE_CONFIG_XML_URL";
 
     /** Url to ignite config. */
     private String igniteCfgUrl = null;

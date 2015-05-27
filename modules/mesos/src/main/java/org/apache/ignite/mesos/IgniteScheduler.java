@@ -112,6 +112,9 @@ public class IgniteScheduler implements Scheduler {
      * @return Task.
      */
     protected Protos.TaskInfo createTask(Protos.Offer offer, IgniteTask igniteTask, Protos.TaskID taskId) {
+        String cfgUrl = clusterProps.igniteConfigUrl() != null ?
+            clusterProps.igniteConfigUrl() : resourceProvider.igniteConfigUrl();
+
         Protos.CommandInfo.Builder builder = Protos.CommandInfo.newBuilder()
             .setEnvironment(Protos.Environment.newBuilder().addVariables(Protos.Environment.Variable.newBuilder()
                 .setName("IGNITE_TCP_DISCOVERY_ADDRESSES")
@@ -121,39 +124,30 @@ public class IgniteScheduler implements Scheduler {
                     clusterProps.ignitePackageUrl() : resourceProvider.igniteUrl())
                 .setExtract(true))
             .addUris(Protos.CommandInfo.URI.newBuilder()
-                .setValue(clusterProps.igniteConfigUrl() != null ?
-                    clusterProps.igniteConfigUrl() : resourceProvider.igniteConfigUrl()));
+                .setValue(cfgUrl));
 
-        if (resourceProvider.resourceUrl() != null || clusterProps.usersLibsUrl() != null) {
-            if (clusterProps.igniteConfigUrl() != null) {
-                builder.addUris(Protos.CommandInfo.URI.newBuilder()
-                    .setValue(clusterProps.igniteConfigUrl())
-                    .setExtract(true));
-
-                String[] split = clusterProps.igniteConfigUrl().split("/");
-
-                builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
-                    + "&& ./gridgain-community-*/bin/ignite.sh "
-                    + split[split.length - 1]
-                    + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
-                    + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
-            }
-            else {
-                for (String url : resourceProvider.resourceUrl())
-                    builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
-
-                builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
-                    + "&& ./gridgain-community-*/bin/ignite.sh "
-                    + resourceProvider.configName()
-                    + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
-                    + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
-            }
+        if (clusterProps.usersLibsUrl() != null)
+            builder.addUris(Protos.CommandInfo.URI.newBuilder()
+                .setValue(clusterProps.usersLibsUrl())
+                .setExtract(true));
+        else if (resourceProvider.resourceUrl() != null) {
+            for (String url : resourceProvider.resourceUrl())
+                builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
         }
-        else
-            builder.setValue("./gridgain-community-*/bin/ignite.sh "
-                + resourceProvider.configName()
-                + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
-                + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
+
+        String cfgName = resourceProvider.configName();
+
+        if (clusterProps.igniteConfigUrl() != null) {
+            String[] split = clusterProps.igniteConfigUrl().split("/");
+
+            cfgName = split[split.length - 1];
+        }
+
+        builder.setValue("find . -maxdepth 1 -name \"*.jar\" -exec cp {} ./gridgain-community-*/libs/ \\; && "
+            + "./gridgain-community-*/bin/ignite.sh "
+            + cfgName
+            + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
+            + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
 
         return Protos.TaskInfo.newBuilder()
             .setName("Ignite node " + taskId.getValue())
