@@ -1582,7 +1582,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         unregisterMBean();
 
-        impl.spiStop();
+        if (impl != null)
+            impl.spiStop();
     }
 
     /**
