@@ -248,9 +248,9 @@ public interface ClusterNode {
      * while topology clients connect to topology in a different way.
      *
      * @return {@code True} if this node is a client node, {@code false} otherwise.
-     * @see DiscoverySpi#isClientMode()
      * @see IgniteConfiguration#isClientMode()
      * @see Ignition#isClientMode()
+     * @see DiscoverySpi#isClientMode()
      */
     public boolean isClient();
 }

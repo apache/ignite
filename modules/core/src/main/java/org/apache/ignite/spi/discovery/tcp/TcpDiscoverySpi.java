@@ -1877,5 +1877,4 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             return S.toString(SocketTimeoutObject.class, this);
         }
     }
-
 }

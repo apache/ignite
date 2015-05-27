@@ -1817,7 +1817,7 @@ public class IgnitionEx {
             if (cfg.getDiscoverySpi() == null) {
                 cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
-                if (cfg.isClientMode() != null && cfg.isClientMode())
+                if (Boolean.TRUE.equals(cfg.isClientMode()))
                     ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
             }
 
