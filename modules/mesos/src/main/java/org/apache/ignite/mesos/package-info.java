@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Messo Framework.
+ * Contains classes to support integration with Apache Mesos.
  */
-package org.apache.ignite.messo;
+package org.apache.ignite.mesos;
