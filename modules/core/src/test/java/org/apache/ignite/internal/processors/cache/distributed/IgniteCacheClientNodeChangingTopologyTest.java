@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -851,8 +852,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         ccfg.setRebalanceMode(SYNC);
         ccfg.setNearConfiguration(nearCfg);
 
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
+        final IgniteEx ignite0 = startGrid(0);
+        final IgniteEx ignite1 = startGrid(1);
 
         client = true;
 
@@ -920,10 +921,32 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         lockFut.get();
 
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return unlocked(ignite0) && unlocked(ignite1);
+            }
+
+            private boolean unlocked(Ignite ignite) {
+                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+
+                for (Integer key : keys) {
+                    if (cache.isLocalLocked(key, false)) {
+                        log.info("Key is locked [key=" + key + ", node=" + ignite.name() + ']');
+
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 10_000);
+
+        assertTrue(wait);
+
         for (Integer key : keys) {
             Lock lock = cache0.lock(key);
 
-            assertTrue(lock.tryLock());
+            assertTrue("Failed to lock: " + key, lock.tryLock());
 
             lock.unlock();
         }

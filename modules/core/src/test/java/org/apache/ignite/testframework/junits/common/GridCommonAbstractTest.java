@@ -391,7 +391,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 if (i == 0)
                                     start = System.currentTimeMillis();
 
-                                if (i >= 50)
+                                if (System.currentTimeMillis() - start > 30_000)
                                     throw new IgniteException("Timeout of waiting for topology map update [grid="
                                         + g.name() + ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
                                             ", affNodes=" + affNodes + ", owners=" + owners + ", locNode="
