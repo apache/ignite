@@ -17,14 +17,20 @@
 
 package org.apache.ignite.mesos;
 
+import org.slf4j.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.regex.*;
 
 /**
  * Cluster settings.
  */
 public class ClusterProperties {
+    /** */
+    private static final Logger log = LoggerFactory.getLogger(ClusterProperties.class);
+
     /** Unlimited. */
     public static final double UNLIMITED = Double.MAX_VALUE;
 
@@ -170,6 +176,12 @@ public class ClusterProperties {
     private String igniteCfgUrl = null;
 
     /** */
+    public static final String IGNITE_HOSTNAME_CONSTRAINT = "IGNITE_HOSTNAME_CONSTRAINT";
+
+    /** Url to ignite config. */
+    private Pattern hostnameConstraint = null;
+
+    /** */
     public ClusterProperties() {
         // No-op.
     }
@@ -184,21 +196,21 @@ public class ClusterProperties {
     /**
      * @return CPU count limit.
      */
-    public double cpus(){
+    public double cpus() {
         return cpu;
     }
 
     /**
      * Set CPU count limit.
      */
-    public void cpus(double cpu){
+    public void cpus(double cpu) {
         this.cpu = cpu;
     }
 
     /**
      * @return CPU count limit.
      */
-    public double cpusPerNode(){
+    public double cpusPerNode() {
         return cpuPerNode;
     }
 
@@ -215,7 +227,6 @@ public class ClusterProperties {
     public void memory(double mem) {
         this.mem = mem;
     }
-
 
     /**
      * @return mem limit.
@@ -259,6 +270,15 @@ public class ClusterProperties {
      */
     public void minMemoryPerNode(double minMemory) {
         this.minMemory = minMemory;
+    }
+
+    /**
+     * Sets hostname constraint.
+     *
+     * @param pattern Hostname pattern.
+     */
+    public void hostnameConstraint(Pattern pattern) {
+        this.hostnameConstraint = pattern;
     }
 
     /**
@@ -348,6 +368,13 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Host name constraint.
+     */
+    public Pattern hostnameConstraint() {
+        return hostnameConstraint;
+    }
+
+    /**
      * @param config path to config file.
      * @return Cluster configuration.
      */
@@ -396,6 +423,17 @@ public class ClusterProperties {
             prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
             prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
 
+            String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
+
+            if (pattern != null) {
+                try {
+                    prop.hostnameConstraint = Pattern.compile(pattern);
+                }
+                catch (PatternSyntaxException e) {
+                    log.warn("IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
+                }
+            }
+
             return prop;
         }
         catch (IOException e) {
@@ -440,11 +478,8 @@ public class ClusterProperties {
     /**
      * Finds a local, non-loopback, IPv4 address
      *
-     * @return The first non-loopback IPv4 address found, or
-     *         <code>null</code> if no such addresses found
-     * @throws java.net.SocketException
-     *            If there was a problem querying the network
-     *            interfaces
+     * @return The first non-loopback IPv4 address found, or <code>null</code> if no such addresses found
+     * @throws java.net.SocketException If there was a problem querying the network interfaces
      */
     public static String getNonLoopbackAddress() throws SocketException {
         Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();

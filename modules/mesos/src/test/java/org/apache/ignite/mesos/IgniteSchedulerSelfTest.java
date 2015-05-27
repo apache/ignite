@@ -22,6 +22,7 @@ import org.apache.ignite.mesos.resource.*;
 import org.apache.mesos.*;
 
 import java.util.*;
+import java.util.regex.*;
 
 /**
  * Scheduler tests.
@@ -63,7 +64,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         DriverMock mock = new DriverMock();
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNotNull(mock.launchedTask);
         assertEquals(1, mock.launchedTask.size());
@@ -87,7 +88,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         scheduler.setClusterProps(clustProp);
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNotNull(mock.launchedTask);
         assertEquals(1, mock.launchedTask.size());
@@ -99,7 +100,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         mock.clear();
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNull(mock.launchedTask);
 
@@ -122,7 +123,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         scheduler.setClusterProps(clustProp);
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNotNull(mock.launchedTask);
         assertEquals(1, mock.launchedTask.size());
@@ -134,7 +135,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         mock.clear();
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNull(mock.launchedTask);
 
@@ -160,7 +161,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
         double totalMem = 0, totalCpu = 0;
 
         for (int i = 0; i < 2; i++) {
-            scheduler.resourceOffers(mock, Arrays.asList(offer));
+            scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
             assertNotNull(mock.launchedTask);
             assertEquals(1, mock.launchedTask.size());
@@ -176,7 +177,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
         assertEquals(2.0, totalCpu);
         assertEquals(2000.0, totalMem);
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNull(mock.launchedTask);
 
@@ -198,7 +199,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         scheduler.setClusterProps(clustProp);
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNotNull(mock.declinedOffer);
 
@@ -218,13 +219,39 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         scheduler.setClusterProps(clustProp);
 
-        scheduler.resourceOffers(mock, Arrays.asList(offer));
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
 
         assertNotNull(mock.declinedOffer);
 
         assertEquals(offer.getId(), mock.declinedOffer);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHosthameConstraint() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 8, 10240);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.hostnameConstraint(Pattern.compile("hostname"));
+
+        scheduler.setClusterProps(clustProp);
+
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
+
+        assertNotNull(mock.declinedOffer);
+
+        assertEquals(offer.getId(), mock.declinedOffer);
+
+        offer = createOffer("hostnameAccept", 8, 10240);
+
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
+
+        assertNotNull(mock.launchedTask);
+        assertEquals(1, mock.launchedTask.size());
+    }
 
     /**
      * @param resourceType Resource type.

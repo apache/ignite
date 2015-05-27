@@ -203,6 +203,11 @@ public class IgniteScheduler implements Scheduler {
         double mem = -1;
         double disk = -1;
 
+        // Check host name
+        if (clusterProps.hostnameConstraint() != null
+            && clusterProps.hostnameConstraint().matcher(offer.getHostname()).matches())
+            return null;
+
         // Collect resource on slave.
         for (Protos.Resource resource : offer.getResourcesList()) {
             if (resource.getName().equals(CPUS)) {
