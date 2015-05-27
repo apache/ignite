@@ -55,6 +55,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 /**
  *
  */
+@SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private final Executor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
@@ -416,7 +417,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             DiscoverySpiListener lsnr = adapter.lsnr;
 
             if (lsnr != null) {
-                Set<ClusterNode> processed = new HashSet<>();
+                Collection<ClusterNode> processed = new HashSet<>();
 
                 for (TcpDiscoveryNode n : rmts) {
                     assert n.visible();
@@ -1412,7 +1413,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    public void dumpDebugInfo(IgniteLogger log) {
+    @Override public void dumpDebugInfo(IgniteLogger log) {
         if (!debugMode) {
             U.quietAndWarn(log, "Failed to dump debug info (discovery SPI was not configured " +
                 "in debug mode, consider setting 'debugMode' configuration property to 'true').");
@@ -2040,12 +2041,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 final boolean sameHost = U.sameMacs(locNode, next);
 
-                List<InetSocketAddress> localNodeAddresses = U.arrayList(locNode.socketAddresses());
+                List<InetSocketAddress> locNodeAddrs = U.arrayList(locNode.socketAddresses());
 
                 addr: for (InetSocketAddress addr : adapter.getNodeAddresses(next, sameHost)) {
                     long ackTimeout0 = adapter.ackTimeout;
 
-                    if (localNodeAddresses.contains(addr)){
+                    if (locNodeAddrs.contains(addr)){
                         if (log.isDebugEnabled())
                             log.debug("Skip to send message to the local node (probably remote node has the same " +
                                 "loopback address that local node): " + addr);

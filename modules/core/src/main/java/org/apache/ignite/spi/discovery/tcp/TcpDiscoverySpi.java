@@ -1613,7 +1613,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return {@code True} if node is stopping.
      */
     boolean isNodeStopping0() {
-        return super.isNodeStopping();
+        return isNodeStopping();
     }
 
     /**

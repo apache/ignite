@@ -541,6 +541,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         U.closeQuiet(msgWorker.currSock);
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteSpiThread workerThread() {
         return msgWorker;
     }
@@ -548,6 +549,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     /**
      * FOR TEST PURPOSE ONLY!
      */
+    @SuppressWarnings("BusyWait")
     public void waitForClientMessagePrecessed() {
         Object last = msgWorker.queue.peekLast();
 
