@@ -24,7 +24,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests {@link TcpClientDiscoverySpi}.
+ * Tests {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} in client mode.
  */
 @SuppressWarnings("RedundantMethodOverride")
 public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends GridCacheClientModesAbstractSelfTest {
@@ -38,11 +38,9 @@ public abstract class GridCacheClientModesTcpClientDiscoveryAbstractTest extends
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (cfg.isClientMode() != null && cfg.isClientMode()) {
-            TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
-
-            discoverySpi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(discoverySpi);
+            cfg.setDiscoverySpi(new TcpDiscoverySpi()
+                .setClientMode(true)
+                .setIpFinder(ipFinder));
         }
 
         return cfg;

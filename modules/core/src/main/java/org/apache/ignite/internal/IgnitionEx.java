@@ -1744,8 +1744,8 @@ public class IgnitionEx {
             }
 
             if (myCfg.isClientMode() == null || !myCfg.isClientMode()) {
-                if (myCfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi) {
-                    throw new IgniteCheckedException("TcpClientDiscoverySpi can be used in client mode only" +
+                if (myCfg.getDiscoverySpi().isClientMode()) {
+                    throw new IgniteCheckedException("DiscoverySpi is in client mode, but node is not in client mode" +
                         "(consider changing 'IgniteConfiguration.clientMode' to 'true').");
                 }
             }
@@ -1815,14 +1815,14 @@ public class IgnitionEx {
          */
         private void initializeDefaultSpi(IgniteConfiguration cfg) {
             if (cfg.getDiscoverySpi() == null) {
+                cfg.setDiscoverySpi(new TcpDiscoverySpi());
+
                 if (cfg.isClientMode() != null && cfg.isClientMode())
-                    cfg.setDiscoverySpi(new TcpClientDiscoverySpi());
-                else
-                    cfg.setDiscoverySpi(new TcpDiscoverySpi());
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
             }
 
-            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpiAdapter) {
-                TcpDiscoverySpiAdapter tcpDisco = (TcpDiscoverySpiAdapter)cfg.getDiscoverySpi();
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
+                TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
                 if (tcpDisco.getIpFinder() == null)
                     tcpDisco.setIpFinder(new TcpDiscoveryMulticastIpFinder());

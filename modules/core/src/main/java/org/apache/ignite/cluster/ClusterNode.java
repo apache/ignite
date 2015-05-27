@@ -20,7 +20,7 @@ package org.apache.ignite.cluster;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -243,12 +243,12 @@ public interface ClusterNode {
      * Tests whether or not this node is connected to cluster as a client.
      * <p>
      * Do not confuse client in terms of
-     * discovery {@link TcpClientDiscoverySpi} and client in terms of cache
+     * discovery {@link DiscoverySpi#isClientMode()} and client in terms of cache
      * {@link IgniteConfiguration#isClientMode()}. Cache clients cannot carry data,
      * while topology clients connect to topology in a different way.
      *
      * @return {@code True} if this node is a client node, {@code false} otherwise.
-     * @see TcpClientDiscoverySpi
+     * @see DiscoverySpi#isClientMode()
      * @see IgniteConfiguration#isClientMode()
      * @see Ignition#isClientMode()
      */

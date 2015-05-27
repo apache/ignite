@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -77,11 +78,10 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sets node attributes and node version which will be distributed in grid during
      * join process. Note that these attributes cannot be changed and set only once.
-     *
-     * @param attrs Map of node attributes.
+     *  @param attrs Map of node attributes.
      * @param ver Product version.
      */
-    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
+    public TcpDiscoverySpi setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
 
     /**
      * Sets a listener for discovery events. Refer to
@@ -102,7 +102,7 @@ public interface DiscoverySpi extends IgniteSpi {
      *
      * @param exchange Discovery data exchange handler.
      */
-    public void setDataExchange(DiscoverySpiDataExchange exchange);
+    public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
@@ -111,7 +111,7 @@ public interface DiscoverySpi extends IgniteSpi {
      *
      * @param metricsProvider Provider of metrics data.
      */
-    public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
+    public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling
@@ -152,4 +152,11 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param nodeId Node ID.
      */
     public void failNode(UUID nodeId);
+
+    /**
+     * Whether or not discovery is in client mode.
+     *
+     * @return {@code true} if node is in client mode.
+     */
+    public boolean isClientMode();
 }

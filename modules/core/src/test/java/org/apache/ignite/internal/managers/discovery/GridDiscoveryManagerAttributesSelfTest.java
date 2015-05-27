@@ -53,7 +53,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
-        TcpDiscoverySpiAdapter discoverySpi = createDiscovery(cfg);
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
 
         discoverySpi.setIpFinder(IP_FINDER);
 
@@ -72,14 +72,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @return Discovery SPI.
-     * @param cfg DiscoverySpi
-     */
-    protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
-        return new TcpDiscoverySpi();
     }
 
     /**
@@ -185,13 +177,14 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      *
      */
     public static class ClientDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        /** {@inheritDoc}
-         * @param cfg*/
-        @Override protected TcpDiscoverySpiAdapter createDiscovery(IgniteConfiguration cfg) {
-            if (Boolean.TRUE.equals(cfg.isClientMode()))
-                return new TcpClientDiscoverySpi();
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-            return super.createDiscovery(cfg);
+            if (Boolean.TRUE.equals(cfg.isClientMode()))
+                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
+
+            return cfg;
         }
     }
 }

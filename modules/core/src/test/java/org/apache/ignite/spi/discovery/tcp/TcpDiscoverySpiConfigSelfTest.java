@@ -41,5 +41,13 @@ public class TcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<Tcp
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "threadPriority", -1);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "maxMissedHeartbeats", 0);
         checkNegativeSpiProperty(new TcpDiscoverySpi(), "statisticsPrintFrequency", 0);
+
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "ipFinder", null);
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "networkTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "socketTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "ackTimeout", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "heartbeatFrequency", 0);
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "threadPriority", -1);
+        checkNegativeSpiProperty(new TcpDiscoverySpi().setClientMode(true), "joinTimeout", -1);
     }
 }

@@ -47,10 +47,10 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             cfg.setClientMode(true);
 
             if (clientDiscovery())
-                cfg.setDiscoverySpi(new TcpClientDiscoverySpi());
+                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
         }
 
-        ((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -265,10 +265,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertTrue(ignite.configuration().isClientMode());
 
-        if (clientDiscovery())
-            assertTrue(ignite.configuration().getDiscoverySpi() instanceof TcpClientDiscoverySpi);
-        else
-            assertTrue(ignite.configuration().getDiscoverySpi() instanceof TcpDiscoverySpi);
+        assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
 
         return ignite;
     }

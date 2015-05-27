@@ -20,6 +20,7 @@ package org.apache.ignite;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.jetbrains.annotations.*;
 
@@ -138,11 +139,11 @@ public class Ignition {
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
      * is {@code null}. When {@link IgniteConfiguration#isClientMode()} is set this flag is ignored.
-     * It is recommended to use {@link TcpClientDiscoverySpi} on client nodes.
+     * It is recommended to use {@link DiscoverySpi} in client mode too.
      *
      * @param clientMode Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpClientDiscoverySpi
+     * @see TcpDiscoverySpi#setClientMode(boolean)
      */
     public static void setClientMode(boolean clientMode) {
         IgnitionEx.setClientMode(clientMode);
@@ -153,11 +154,11 @@ public class Ignition {
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
      * is {@code null}. When {@link IgniteConfiguration#isClientMode()} is set this flag is ignored.
-     * It is recommended to use {@link TcpClientDiscoverySpi} on client nodes.
+     * It is recommended to use {@link DiscoverySpi} in client mode too.
      *
      * @return Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpClientDiscoverySpi
+     * @see TcpDiscoverySpi#setClientMode(boolean)
      */
     public static boolean isClientMode() {
         return IgnitionEx.isClientMode();

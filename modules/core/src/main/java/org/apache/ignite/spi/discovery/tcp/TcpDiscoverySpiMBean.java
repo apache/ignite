@@ -272,4 +272,12 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Dump debug info.")
     public void dumpDebugInfo();
+
+    /**
+     * Whether or not discovery is in client mode.
+     *
+     * @return {@code true} if node is in client mode.
+     */
+    @MXBeanDescription("Client mode.")
+    public boolean isClientMode();
 }

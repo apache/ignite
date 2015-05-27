@@ -44,7 +44,7 @@ class SocketMultiConnector implements AutoCloseable {
      * @param addrs Addresses.
      * @param retryCnt Retry count.
      */
-    SocketMultiConnector(final TcpDiscoverySpiAdapter spi, Collection<InetSocketAddress> addrs,
+    SocketMultiConnector(final TcpDiscoverySpi spi, Collection<InetSocketAddress> addrs,
         final int retryCnt) {
         connInProgress = addrs.size();
 

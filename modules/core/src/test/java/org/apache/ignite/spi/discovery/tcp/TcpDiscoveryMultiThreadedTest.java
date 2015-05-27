@@ -71,13 +71,11 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (client()) {
-            TcpClientDiscoverySpi spi = new TcpClientDiscoverySpi();
-
-            spi.setIpFinder(ipFinder);
-
             cfg.setClientMode(true);
 
-            cfg.setDiscoverySpi(spi);
+            cfg.setDiscoverySpi(new TcpDiscoverySpi()
+                .setClientMode(true)
+                .setIpFinder(ipFinder));
         }
         else {
             TcpDiscoverySpi spi = new TcpDiscoverySpi();

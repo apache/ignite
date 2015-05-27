@@ -96,10 +96,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryVmIpFinder clientIpFinder;
 
     /** */
-    private long joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
+    private long joinTimeout = TcpDiscoverySpi.DFLT_JOIN_TIMEOUT;
 
     /** */
-    private long netTimeout = TcpDiscoverySpiAdapter.DFLT_NETWORK_TIMEOUT;
+    private long netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
 
     /** */
     private boolean longSockTimeouts;
@@ -108,7 +108,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpiAdapter disco;
+        TcpDiscoverySpi disco;
 
         if (gridName.startsWith("server")) {
             disco = new TcpDiscoverySpi();
@@ -116,7 +116,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             disco.setIpFinder(IP_FINDER);
         }
         else if (gridName.startsWith("client")) {
-            disco = new TestTcpClientDiscovery();
+            disco = new TestTcpDiscoverySpi();
+
+            disco.setClientMode(true);
 
             cfg.setClientMode(true);
 
@@ -186,8 +188,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         nodeId = null;
         clientIpFinder = null;
-        joinTimeout = TcpClientDiscoverySpi.DFLT_JOIN_TIMEOUT;
-        netTimeout = TcpClientDiscoverySpi.DFLT_NETWORK_TIMEOUT;
+        joinTimeout = TcpDiscoverySpi.DFLT_JOIN_TIMEOUT;
+        netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
         longSockTimeouts = false;
 
         assert G.allGrids().isEmpty();
@@ -408,14 +410,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         Ignite srv1 = G.ignite("server-1");
         Ignite client = G.ignite("client-0");
 
-        ((TcpDiscoverySpiAdapter)srv0.configuration().getDiscoverySpi()).setAckTimeout(1000);
+        ((TcpDiscoverySpi)srv0.configuration().getDiscoverySpi()).setAckTimeout(1000);
 
-        ((TestTcpClientDiscovery)client.configuration().getDiscoverySpi()).pauseSocketWrite();
+        ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).pauseSocketWrite();
 
         assert !((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
         assert !((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
 
-        ((TestTcpClientDiscovery)client.configuration().getDiscoverySpi()).resumeAll();
+        ((TestTcpDiscoverySpi)client.configuration().getDiscoverySpi()).resumeAll();
 
         assert ((IgniteEx)srv1).context().discovery().pingNode(client.cluster().localNode().id());
         assert ((IgniteEx)srv0).context().discovery().pingNode(client.cluster().localNode().id());
@@ -465,7 +467,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 3);
 
-        ((TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brakeConnection();
+        ((TcpDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi()).brakeConnection();
 
         G.ignite("client-2").message().remoteListen(null, new MessageListener()); // Send some discovery message.
 
@@ -488,7 +490,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(2, 2);
 
-        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).pauseAll();
+        ((TestTcpDiscoverySpi)G.ignite("client-1").configuration().getDiscoverySpi()).pauseAll();
 
         stopGrid("server-2");
 
@@ -502,7 +504,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         clientLeftLatch = new CountDownLatch(1);
 
-        ((TestTcpClientDiscovery)G.ignite("client-1").configuration().getDiscoverySpi()).resumeAll();
+        ((TestTcpDiscoverySpi)G.ignite("client-1").configuration().getDiscoverySpi()).resumeAll();
 
         await(clientLeftLatch);
 
@@ -535,7 +537,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         };
         G.addListener(lsnr);
 
-        final TcpClientDiscoverySpi client2Disco = (TcpClientDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi();
+        final TcpDiscoverySpi disco = (TcpDiscoverySpi)G.ignite("client-2").configuration().getDiscoverySpi();
 
         try {
             failServer(2);
@@ -551,7 +553,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             G.removeListener(lsnr);
         }
 
-        assert client2Disco.getRemoteNodes().isEmpty();
+        assert disco.getRemoteNodes().isEmpty();
     }
 
     /**
@@ -875,8 +877,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private void setClientRouter(int clientIdx, int srvIdx) throws Exception {
-        TcpClientDiscoverySpi disco =
-            (TcpClientDiscoverySpi)G.ignite("client-" + clientIdx).configuration().getDiscoverySpi();
+        TcpDiscoverySpi disco =
+            (TcpDiscoverySpi)G.ignite("client-" + clientIdx).configuration().getDiscoverySpi();
 
         TcpDiscoveryVmIpFinder ipFinder = (TcpDiscoveryVmIpFinder)disco.getIpFinder();
 
@@ -923,7 +925,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      */
     private void failClient(int idx) {
-        ((TcpClientDiscoverySpi)G.ignite("client-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
+        ((TcpDiscoverySpi)G.ignite("client-" + idx).configuration().getDiscoverySpi()).simulateNodeFailure();
     }
 
     /**
@@ -1034,7 +1036,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < clientCnt; i++) {
             Ignite g = G.ignite("client-" + i);
 
-            ((TcpClientDiscoverySpi)g.configuration().getDiscoverySpi()).waitForMessagePrecessed();
+            ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
 
             assertTrue(clientNodeIds.contains(g.cluster().localNode().id()));
 
@@ -1094,7 +1096,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestTcpClientDiscovery extends TcpClientDiscoverySpi {
+    private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** */
         private final Object mux = new Object();
 
@@ -1162,7 +1164,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void pauseAll() {
             pauseResumeOperation(true, openSockLock, writeLock);
 
-            msgWorker.suspend();
+            impl.workerThread().suspend();
         }
 
         /**
@@ -1171,7 +1173,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         public void resumeAll() {
             pauseResumeOperation(false, openSockLock, writeLock);
 
-            msgWorker.resume();
+            impl.workerThread().resume();
         }
     }
 }

@@ -676,11 +676,11 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
-            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpiAdapter) {
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
                 cfg.setLocalHost("127.0.0.1");
 
-                if (((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
-                    ((TcpDiscoverySpiAdapter)cfg.getDiscoverySpi()).setJoinTimeout(8000);
+                if (((TcpDiscoverySpi)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(8000);
             }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
@@ -740,7 +740,7 @@ public abstract class GridAbstractTest extends TestCase {
         Collection<Ignite> srvs = new ArrayList<>();
 
         for (Ignite g : G.allGrids()) {
-            if (g.configuration().getDiscoverySpi() instanceof TcpClientDiscoverySpi)
+            if (g.configuration().getDiscoverySpi().isClientMode())
                 clients.add(g);
             else
                 srvs.add(g);

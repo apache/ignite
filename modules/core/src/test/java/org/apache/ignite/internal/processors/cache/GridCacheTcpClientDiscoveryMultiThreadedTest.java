@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests {@link TcpClientDiscoverySpi} with multiple client nodes that interact with a cache concurrently.
+ * Tests {@link TcpDiscoverySpi} in client mode with multiple client nodes that interact with a cache concurrently.
  */
 public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstractSelfTest {
     /** Server nodes count. */
@@ -78,10 +78,10 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
             clientFinder.setAddresses(addrs);
 
-            TcpClientDiscoverySpi discoverySpi = new TcpClientDiscoverySpi();
-            discoverySpi.setIpFinder(clientFinder);
+            cfg.setDiscoverySpi(new TcpDiscoverySpi()
+                .setClientMode(true)
+                .setIpFinder(clientFinder));
 
-            cfg.setDiscoverySpi(discoverySpi);
             cfg.setClientMode(true);
         }
 
