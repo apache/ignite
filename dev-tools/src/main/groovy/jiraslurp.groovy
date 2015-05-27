@@ -51,6 +51,28 @@ def checkprocess = { process ->
     }
 }
 
+def exec = {command, envp, dir ->
+    println "Executing command '$command'..."
+
+    def ps = command.execute(envp, dir)
+
+    try {
+        println "Command output:"
+
+        println ps.text
+    }
+    catch (Throwable e) {
+        // Do nothing.
+        println "Error: could not get caommand output."
+    }
+
+    checkprocess ps
+}
+
+def execGit = {command ->
+    exec(command, null, new File("../"))
+}
+
 /**
  * Util method to send http request.
  */
@@ -252,8 +274,6 @@ def tryGitAmAbort = {
     }
     catch (Throwable e) {
         println "Error: git am --abort fails: "
-
-        e.printStackTrace()
     }
 }
 
@@ -278,20 +298,20 @@ def applyPatch = { jira, attachementURL ->
         try {
             tryGitAmAbort()
 
-            checkprocess "git branch".execute()
+            execGit "git branch"
 
-            checkprocess "git config user.email \"$userEmail\"".execute(null, new File("../"))
-            checkprocess "git config user.name \"$userName\"".execute(null, new File("../"))
+            execGit "git config user.email \"$userEmail\""
+            execGit "git config user.name \"$userName\""
 
             // Create a new uniqueue branch to applying patch
             def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
-            checkprocess "git checkout -b ${newTestBranch}".execute(null, new File("../"))
+            execGit "git checkout -b ${newTestBranch}"
 
-            checkprocess "git branch".execute()
+            execGit "git branch"
 
             println "Trying to apply patch."
 
-            checkprocess "git am dev-tools/${patchFile.name}".execute(null, new File("../"))
+            execGit "git am dev-tools/${patchFile.name}"
 
             println "Patch was applied successfully."
         }
