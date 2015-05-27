@@ -87,7 +87,7 @@ public class IgniteScheduler implements Scheduler {
 
                 // Generate a unique task ID.
                 Protos.TaskID taskId = Protos.TaskID.newBuilder()
-                    .setValue(taskIdGenerator.incrementAndGet() + "-" + clusterProps.clusterName()).build();
+                    .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
 
                 log.info("Launching task: [{}]", igniteTask);
 
