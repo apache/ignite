@@ -78,7 +78,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private RingMessageWorker msgWorker;
 
     /** Client message workers. */
-    private ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap8<>();
+    protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap8<>();
 
     /** Metrics sender. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")

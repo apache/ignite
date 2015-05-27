@@ -1495,6 +1495,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                 sockTimeout = DFLT_SOCK_TIMEOUT_CLIENT;
 
             impl = new ClientImpl(this);
+
+            ctxInitLatch.countDown();
         }
         else {
             if (ackTimeout == 0)
@@ -1505,8 +1507,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             impl = new ServerImpl(this);
         }
-
-        startStopwatch();
 
         assertParameter(ipFinder != null, "ipFinder != null");
         assertParameter(hbFreq > 0, "heartbeatFreq > 0");
@@ -1631,6 +1631,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         }
 
         return false;
+    }
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     */
+    public int clientWorkerCount() {
+        return ((ServerImpl)impl).clientMsgWorkers.size();
     }
 
     /**
