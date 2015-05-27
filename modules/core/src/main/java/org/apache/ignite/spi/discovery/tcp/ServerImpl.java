@@ -4080,7 +4080,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     // Ping.
                     if (msg instanceof TcpDiscoveryPingRequest) {
-                        if (!adapter.getSpiContext().isStopping()) {
+                        if (!adapter.isNodeStopping0()) {
                             TcpDiscoveryPingRequest req = (TcpDiscoveryPingRequest)msg;
 
                             TcpDiscoveryPingResponse res = new TcpDiscoveryPingResponse(locNodeId);
@@ -4649,7 +4649,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          */
         public boolean ping() throws InterruptedException {
-            if (adapter.getSpiContext().isStopping())
+            if (adapter.isNodeStopping0())
                 return false;
 
             GridFutureAdapter<Boolean> fut;
