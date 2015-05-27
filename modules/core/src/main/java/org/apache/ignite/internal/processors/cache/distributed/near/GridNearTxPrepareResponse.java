@@ -53,6 +53,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /** DHT version. */
     private GridCacheVersion dhtVer;
 
+    /** Write version. */
+    private GridCacheVersion writeVer;
+
     /** */
     @GridToStringInclude
     @GridDirectCollection(int.class)
@@ -101,6 +104,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion dhtVer,
+        GridCacheVersion writeVer,
         Collection<Integer> invalidParts,
         GridCacheReturn retVal,
         Throwable err
@@ -114,6 +118,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.futId = futId;
         this.miniId = miniId;
         this.dhtVer = dhtVer;
+        this.writeVer = writeVer;
         this.invalidParts = invalidParts;
         this.retVal = retVal;
     }
@@ -155,6 +160,13 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      */
     public GridCacheVersion dhtVersion() {
         return dhtVer;
+    }
+
+    /**
+     * @return Write version.
+     */
+    public GridCacheVersion writeVersion() {
+        return writeVer;
     }
 
     /**
@@ -371,6 +383,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 writer.incrementState();
 
+            case 19:
+                if (!writer.writeMessage("writeVer", writeVer))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -459,6 +477,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
+            case 19:
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -471,7 +497,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 19;
+        return 20;
     }
 
     /** {@inheritDoc} */

@@ -1044,7 +1044,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     // Do not check topology version for CLOCK versioning since
                     // partition exchange will wait for near update future.
-                    if (topology().topologyVersion().equals(req.topologyVersion()) ||
+                    // Also do not check topology version if topology was locked on near node by
+                    // external transaction or explicit lock.
+                    if (topology().topologyVersion().equals(req.topologyVersion()) || req.topologyLocked() ||
                         ctx.config().getAtomicWriteOrderMode() == CLOCK) {
                         ClusterNode node = ctx.discovery().node(nodeId);
 
