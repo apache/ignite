@@ -70,6 +70,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
         suite.addTestSuite(GridCacheQuerySerializationSelfTest.class);
 
+        // Scan queries.
+        suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
 
         // Fields queries.
         suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);

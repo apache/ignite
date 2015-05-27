@@ -21,7 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -31,6 +33,7 @@ import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
@@ -392,10 +395,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return execute(null, rmtTransform, args);
     }
 
+    /** {@inheritDoc} */
     @Override public QueryMetrics metrics() {
         return metrics.copy();
     }
 
+    /** {@inheritDoc} */
     @Override public void resetMetrics() {
         metrics = new GridCacheQueryMetricsAdapter();
     }
@@ -434,18 +439,34 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
+        final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
             (IgniteClosure<Object, Object>)rmtTransform, args);
 
-        GridCacheQueryManager qryMgr = cctx.queries();
+        final GridCacheQueryManager qryMgr = cctx.queries();
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
         if (type == SQL_FIELDS || type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
-        else
-            return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+        else {
+            final CacheQueryFuture<R> fut =
+                (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+
+            if (type == SCAN && part != null) {
+                assert nodes.size() == 1;
+
+                final Queue<ClusterNode> backups = new LinkedList<>(
+                    cctx.affinity().backups(part, cctx.affinity().affinityTopologyVersion()));
+
+                if (F.isEmpty(backups))
+                    return fut;
+
+                return new CacheQueryFallbackFuture<>(backups, bean, qryMgr, fut);
+            }
+
+            return fut;
+        }
     }
 
     /**
@@ -492,6 +513,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
+                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null) &&
                     (part == null || owners.contains(n));
@@ -502,5 +525,174 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryAdapter.class, this);
+    }
+
+    /**
+     * Wrapper for queries with fallback.
+     */
+    private static class CacheQueryFallbackFuture<R> extends GridCacheQueryFutureAdapter<Object, Object, R> {
+        /** Target. */
+        private GridCacheQueryFutureAdapter<?, ?, R> target;
+
+        /** Backups. */
+        private final Queue<ClusterNode> backups;
+
+        /** Bean. */
+        private final GridCacheQueryBean bean;
+
+        /** Query manager. */
+        private final GridCacheQueryManager qryMgr;
+
+        /**
+         * @param backups Backups.
+         * @param bean Bean.
+         * @param qryMgr Query manager.
+         * @param fut Future.
+         */
+        public CacheQueryFallbackFuture(Queue<ClusterNode> backups, GridCacheQueryBean bean,
+            GridCacheQueryManager qryMgr, CacheQueryFuture<R> fut) {
+            this.backups = backups;
+            this.bean = bean;
+            this.qryMgr = qryMgr;
+            this.target = (GridCacheQueryFutureAdapter<?, ?, R>)fut;
+
+            init();
+        }
+
+        /**
+         *
+         */
+        private void init() {
+            target.listen(new IgniteInClosure<IgniteInternalFuture<Collection<R>>>() {
+                @Override public void apply(IgniteInternalFuture<Collection<R>> fut) {
+                    try {
+                        onDone(fut.get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (F.isEmpty(backups))
+                            onDone(e);
+                        else {
+                            Set<ClusterNode> backup = Collections.singleton(backups.poll());
+
+                            target =
+                                (GridCacheQueryFutureAdapter<?, ?, R>)qryMgr.queryDistributed(bean, backup);
+
+                            init();
+                        }
+                    }
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onPage(UUID nodeId, boolean last) {
+            return target.onPage(nodeId, last);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void loadPage() {
+            target.loadPage();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void loadAllPages() throws IgniteInterruptedCheckedException {
+            target.loadAllPages();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void cancelQuery() throws IgniteCheckedException {
+            target.cancelQuery();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int available() {
+            return target.available();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return target.cancel();
+        }
+
+        /** {@inheritDoc} */
+        @Override void clear() {
+            target.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long endTime() {
+            return target.endTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void enqueue(Collection<?> col) {
+            target.enqueue(col);
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean fields() {
+            return target.fields();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<R> get() throws IgniteCheckedException {
+            return target.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+            return target.get(timeout, unit);
+        }
+
+        /** {@inheritDoc} */
+        @Override public R next() {
+            return target.next();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<R> nextPage() throws IgniteCheckedException {
+            return target.nextPage();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(Collection<R> res, Throwable err) {
+            return target.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<R> nextPage(long timeout) throws IgniteCheckedException {
+            return target.nextPage(timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onNodeLeft(UUID evtNodeId) {
+            target.onNodeLeft(evtNodeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data,
+            @Nullable Throwable err, boolean finished) {
+            target.onPage(nodeId, data, err, finished);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            target.onTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void printMemoryStats() {
+            target.printMemoryStats();
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheQueryBean query() {
+            return target.query();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid timeoutId() {
+            return target.timeoutId();
+        }
     }
 }
