@@ -41,7 +41,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private static final int GRID_CNT = 5;
 
     /** Kys count. */
-    private static final int KEYS_CNT = 1;
+    private static final int KEYS_CNT = 5000;
 
     /** Backups. */
     private int backups;
