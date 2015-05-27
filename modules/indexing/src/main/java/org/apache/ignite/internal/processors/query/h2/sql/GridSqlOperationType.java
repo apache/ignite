@@ -131,7 +131,7 @@ public enum GridSqlOperationType {
         @Override public String getSql(GridSqlOperation operation) {
             assert operation.opType().childrenCnt == 2;
 
-            return "(INTERSECTS(" + operation.child(0) + ", " + operation.child(1) + "))";
+            return "(INTERSECTS(" + operation.child(0).getSQL() + ", " + operation.child(1).getSQL() + "))";
         }
     }
 
