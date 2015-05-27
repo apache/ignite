@@ -1744,7 +1744,7 @@ public class IgnitionEx {
             }
 
             if (myCfg.isClientMode() == null || !myCfg.isClientMode()) {
-                if (myCfg.getDiscoverySpi().isClientMode()) {
+                if (myCfg.getDiscoverySpi() != null && myCfg.getDiscoverySpi().isClientMode()) {
                     throw new IgniteCheckedException("DiscoverySpi is in client mode, but node is not in client mode" +
                         "(consider changing 'IgniteConfiguration.clientMode' to 'true').");
                 }
