@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spark.examples
 
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.IgniteContext
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 
 object IgniteProcessExample {
@@ -43,9 +45,11 @@ object IgniteProcessExample {
         results.saveValues(processedRdd)
 
         // SQL query
-        ignite.fromCache("indexed").query("Person", "age > ?", 20).collect()
+        ignite.fromCache("indexed").objectSql("Person", "age > ? and organizationId = ?", 20, 12).collect()
+
+        ignite.fromCache(new CacheConfiguration[Object, String]("ad"))
 
         // SQL fields query
-        ignite.fromCache("indexed").queryFields("select name, age from Person where age > ?", 20).collect()
+        val sqlRes: RDD[Seq[Any]] = ignite.fromCache("indexed").sql("select name, age from Person where age > ?", 20)
     }
 }

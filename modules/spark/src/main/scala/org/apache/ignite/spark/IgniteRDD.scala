@@ -62,25 +62,24 @@ class IgniteRDD[K, V] (
         ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index).map(_.addresses()).flatten.toList
     }
 
-    def query(typeName: String, sql: String, args: Any*): RDD[(K, V)] = {
+    def objectSql(typeName: String, sql: String, args: Any*): RDD[(K, V)] = {
         val qry: SqlQuery[K, V] = new SqlQuery[K, V](typeName, sql)
 
-        qry.setArgs(args)
+        qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
         new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry => (entry.getKey, entry.getValue))
     }
 
-    def queryFields(sql: String, args: Any*): RDD[Seq[Any]] = {
+    def sql(sql: String, args: Any*): RDD[Seq[Any]] = {
         val qry = new SqlFieldsQuery(sql)
 
-        qry.setArgs(args)
+        qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
         new IgniteSqlRDD[Seq[Any], java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list => list)
     }
 
     def saveValues(rdd: RDD[V]) = {
         rdd.foreachPartition(it => {
-            println("Using scala version: " + scala.util.Properties.versionString)
             val ig = ic.ignite()
 
             ensureCache()
@@ -95,8 +94,6 @@ class IgniteRDD[K, V] (
                 it.foreach(value => {
                     val key = affinityKeyFunc(value, node.orNull)
 
-                    println("Saving: " + key + ", " + value)
-
                     streamer.addData(key, value)
                 })
             }
@@ -106,9 +103,8 @@ class IgniteRDD[K, V] (
         })
     }
 
-    def save(rdd: RDD[(K, V)]) = {
+    def saveTuples(rdd: RDD[(K, V)]) = {
         rdd.foreachPartition(it => {
-            println("Using scala version: " + scala.util.Properties.versionString)
             val ig = ic.ignite()
 
             // Make sure to deploy the cache
@@ -122,8 +118,6 @@ class IgniteRDD[K, V] (
 
             try {
                 it.foreach(tup => {
-                    println("Saving: " + tup._1 + ", " + tup._2)
-
                     streamer.addData(tup._1, tup._2)
                 })
             }

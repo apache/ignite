@@ -15,27 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.examples
+package org.apache.ignite.spark
 
-import org.apache.ignite.spark.IgniteContext
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkConf
-import org.apache.spark.rdd.RDD
+import org.apache.ignite.spark.IgniteRddSpec.ScalarCacheQuerySqlField
 
-object IgniteStoreExample {
-    def main(args: Array[String]) {
-        val conf = new SparkConf().setAppName("Ignite store example")
-        val sc = new SparkContext(conf)
+class Entity (
+    @ScalarCacheQuerySqlField(index = true) val id: Int,
+    @ScalarCacheQuerySqlField(index = true) val name: String,
+    @ScalarCacheQuerySqlField(index = true) val salary: Int
+) extends Serializable {
 
-        val ignite = new IgniteContext[String, String](sc, () ⇒ ExampleConfiguration.configuration())
-
-        val lines: RDD[String] = sc.textFile(args(0)).filter(line ⇒ {
-            println("Read line: " + line)
-
-            line.contains("IGNITE")
-        })
-
-        ignite.fromCache("partitioned").saveValues(lines)
-        ignite.fromCache("").saveTuples(lines.map(l ⇒ (l, l)))
-    }
 }

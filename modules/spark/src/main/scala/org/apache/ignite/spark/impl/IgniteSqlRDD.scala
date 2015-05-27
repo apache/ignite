@@ -32,9 +32,7 @@ class IgniteSqlRDD[R: ClassTag, T, K, V](
     conv: (T) => R
 ) extends IgniteAbstractRDD[R, K, V](ic, cacheName, cacheCfg) {
     override def compute(split: Partition, context: TaskContext): Iterator[R] = {
-        val it: java.util.Iterator[T] = ensureCache().query(qry).iterator()
-
-        new IgniteQueryIterator[T, R](it, conv)
+        new IgniteQueryIterator[T, R](ensureCache().query(qry).iterator(), conv)
     }
 
     override protected def getPartitions: Array[Partition] = {

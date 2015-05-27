@@ -31,7 +31,7 @@ class IgniteContext[K, V](
         sc: SparkContext,
         springUrl: String
     ) {
-        this(sc, () => IgnitionEx.loadConfiguration(springUrl).get1())
+        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1())
     }
 
     def fromCache(cacheName: String): IgniteRDD[K, V] = {
