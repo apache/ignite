@@ -184,7 +184,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     private AtomicReference<GridFutureAdapter<IgniteInternalTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
-    private AtomicReference<AffinityTopologyVersion> topVer = new AtomicReference<>(AffinityTopologyVersion.NONE);
+    protected AtomicReference<AffinityTopologyVersion> topVer = new AtomicReference<>(AffinityTopologyVersion.NONE);
 
     /** Mutex. */
     private final Lock lock = new ReentrantLock();
@@ -493,13 +493,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void onRemap(AffinityTopologyVersion topVer) {
+        assert false : this;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasTransforms() {
         return transform;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean markPreparing() {
+    @Override public boolean markPreparing() {
         return preparing.compareAndSet(false, true);
     }
 
@@ -1712,6 +1716,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onRemap(AffinityTopologyVersion topVer) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

@@ -53,7 +53,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private GridCachePreloader<K,V> preldr;
+    private GridCachePreloader preldr;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -68,7 +68,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     public GridLocalAtomicCache(GridCacheContext<K, V> ctx) {
         super(ctx, ctx.config().getStartSize());
 
-        preldr = new GridCachePreloaderAdapter<>(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +94,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return preldr;
     }
 
