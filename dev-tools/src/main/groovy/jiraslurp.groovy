@@ -295,7 +295,7 @@ def applyPatch = { jira, attachementURL ->
 
             println "Patch was applied successfully."
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             println "Patch was not applied successfully. Aborting patch applying."
 
             tryGitAmAbort()
