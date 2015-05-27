@@ -87,7 +87,7 @@ public class IgniteScheduler implements Scheduler {
 
                 // Generate a unique task ID.
                 Protos.TaskID taskId = Protos.TaskID.newBuilder()
-                    .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
+                    .setValue(taskIdGenerator.incrementAndGet() + "-" + clusterProps.clusterName()).build();
 
                 log.info("Launching task: [{}]", igniteTask);
 
@@ -143,10 +143,10 @@ public class IgniteScheduler implements Scheduler {
                     builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
 
                 builder.setValue("cp *.jar ./gridgain-community-*/libs/ "
-                        + "&& ./gridgain-community-*/bin/ignite.sh "
-                        + resourceProvider.configName()
-                        + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
-                        + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
+                    + "&& ./gridgain-community-*/bin/ignite.sh "
+                    + resourceProvider.configName()
+                    + " -J-Xmx" + String.valueOf((int)igniteTask.mem() + "m")
+                    + " -J-Xms" + String.valueOf((int)igniteTask.mem()) + "m");
             }
         }
         else
@@ -172,7 +172,7 @@ public class IgniteScheduler implements Scheduler {
                 .setName(DISK)
                 .setType(Protos.Value.Type.SCALAR)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.disk())))
-                .build();
+            .build();
     }
 
     /**
@@ -231,7 +231,7 @@ public class IgniteScheduler implements Scheduler {
         }
 
         // Check that slave satisfies min requirements.
-        if (cpus < clusterProps.minCpuPerNode() || mem < clusterProps.minMemoryPerNode() ) {
+        if (cpus < clusterProps.minCpuPerNode() || mem < clusterProps.minMemoryPerNode()) {
             log.debug("Offer not sufficient for slave request: {}", offer.getResourcesList());
 
             return null;

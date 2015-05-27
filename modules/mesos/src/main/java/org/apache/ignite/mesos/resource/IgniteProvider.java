@@ -155,7 +155,8 @@ public class IgniteProvider {
                 outFile.close();
 
                 return parseVersion(redirectUrl);
-            } else if (code == 304)
+            }
+            else if (code == 304)
                 // This version is latest.
                 return currentVersion;
             else
@@ -198,7 +199,6 @@ public class IgniteProvider {
             throw new RuntimeException("Failed update ignite.", e);
         }
     }
-
 
     /**
      * @return Download folder.

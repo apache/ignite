@@ -73,7 +73,7 @@ public class ResourceHandler extends AbstractHandler {
 
         String[] path = url.split("/");
 
-        String fileName = path[path.length -1];
+        String fileName = path[path.length - 1];
 
         String servicePath = url.substring(0, url.length() - fileName.length());
 
@@ -131,7 +131,7 @@ public class ResourceHandler extends AbstractHandler {
      * @throws IOException If failed.
      */
     private static void handleRequest(HttpServletResponse response, String type, InputStream stream,
-                                      String attachmentName) throws IOException {
+        String attachmentName) throws IOException {
         response.setContentType(type);
         response.setHeader("Content-Disposition", "attachment; filename=\"" + attachmentName + "\"");
 

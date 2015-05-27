@@ -38,6 +38,15 @@ public class ClusterProperties {
     private String mesosUrl = DEFAULT_MESOS_MASTER_URL;
 
     /** */
+    public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
+
+    /** */
+    public static final String DEFAULT_CLUSTER_NAME = "ignite-cluster";
+
+    /** Mesos master url. */
+    private String clusterName = DEFAULT_CLUSTER_NAME;
+
+    /** */
     public static final String IGNITE_HTTP_SERVER_HOST = "IGNITE_HTTP_SERVER_HOST";
 
     /** Http server host. */
@@ -163,6 +172,13 @@ public class ClusterProperties {
     /** */
     public ClusterProperties() {
         // No-op.
+    }
+
+    /**
+     * @return Cluster name.
+     */
+    public String clusterName() {
+        return clusterName;
     }
 
     /**
@@ -350,8 +366,16 @@ public class ClusterProperties {
             prop.mesosUrl = getStringProperty(MESOS_MASTER_URL, props, DEFAULT_MESOS_MASTER_URL);
 
             prop.httpServerHost = getStringProperty(IGNITE_HTTP_SERVER_HOST, props, getNonLoopbackAddress());
-            prop.httpServerPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
-                DEFAULT_HTTP_SERVER_PORT));
+
+            String port = System.getProperty("PORT0");
+
+            if (port != null && !port.isEmpty())
+                prop.httpServerPort = Integer.valueOf(port);
+            else
+                prop.httpServerPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
+                    DEFAULT_HTTP_SERVER_PORT));
+
+            prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
 
             prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
             prop.ignitePackageUrl = getStringProperty(IGNITE_PACKAGE_URL, props, null);
