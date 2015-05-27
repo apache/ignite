@@ -1344,36 +1344,43 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testAtomicPrimaryPutAllMultinode() throws Exception {
-        putAllMultinode(PRIMARY, false);
+        multinode(PRIMARY, TestType.PUT_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicClockPutAllMultinode() throws Exception {
-        putAllMultinode(CLOCK ,false);
+        multinode(CLOCK, TestType.PUT_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOptimisticTxPutAllMultinode() throws Exception {
-        putAllMultinode(null, false);
+        multinode(null, TestType.OPTIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPessimisticTxPutAllMultinode() throws Exception {
-        putAllMultinode(null, true);
+        multinode(null, TestType.PESSIMISTIC_TX);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockAllMultinode() throws Exception {
+        multinode(null, TestType.LOCK);
     }
 
     /**
      * @param atomicWriteOrder Write order if test atomic cache.
-     * @param pessimisticTx {@code True} if use pessimistic tx.
+     * @param testType Test type.
      * @throws Exception If failed.
      */
-    private void putAllMultinode(final CacheAtomicWriteOrderMode atomicWriteOrder, final boolean pessimisticTx)
+    private void multinode(final CacheAtomicWriteOrderMode atomicWriteOrder, final TestType testType)
         throws Exception {
         ccfg = new CacheConfiguration();
 
@@ -1426,9 +1433,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                     IgniteCache<Integer, Integer> cache = ignite.cache(null);
 
-                    boolean useTx = atomicWriteOrder == null;
+                    boolean useTx = testType == TestType.OPTIMISTIC_TX || testType == TestType.PESSIMISTIC_TX;
 
-                    if (useTx) {
+                    if (useTx || testType == TestType.LOCK) {
                         assertEquals(TRANSACTIONAL,
                             cache.getConfiguration(CacheConfiguration.class).getAtomicityMode());
                     }
@@ -1447,24 +1454,34 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                         }
 
                         try {
-                            if (useTx) {
-                                IgniteTransactions txs = ignite.transactions();
+                            if (testType == TestType.LOCK) {
+                                Lock lock = cache.lockAll(map.keySet());
 
-                                TransactionConcurrency concurrency = pessimisticTx ? PESSIMISTIC : OPTIMISTIC;
+                                lock.lock();
 
-                                try (Transaction tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                                lock.unlock();
+                            }
+                            else {
+                                if (useTx) {
+                                    IgniteTransactions txs = ignite.transactions();
+
+                                    TransactionConcurrency concurrency =
+                                        testType == TestType.PESSIMISTIC_TX ? PESSIMISTIC : OPTIMISTIC;
+
+                                    try (Transaction tx = txs.txStart(concurrency, REPEATABLE_READ)) {
+                                        cache.putAll(map);
+
+                                        tx.commit();
+                                    }
+                                }
+                                else
                                     cache.putAll(map);
 
-                                    tx.commit();
-                                }
+                                putKeys.addAll(map.keySet());
                             }
-                            else
-                                cache.putAll(map);
-
-                            putKeys.addAll(map.keySet());
                         }
                         catch (CacheException | IgniteException e) {
-                            log.info("Update failed, ignore: " + e);
+                            log.info("Operation failed, ignore: " + e);
                         }
 
                         if (++cntr % 100 == 0)
@@ -1572,7 +1589,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         fut.get(30_000);
 
-        checkData(null, putKeys, grid(SRV_CNT).cache(null), SRV_CNT + CLIENT_CNT);
+        if (testType != TestType.LOCK)
+            checkData(null, putKeys, grid(SRV_CNT).cache(null), SRV_CNT + CLIENT_CNT);
     }
 
     /**
@@ -1735,5 +1753,22 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    enum TestType {
+        /** */
+        PUT_ALL,
+
+        /** */
+        OPTIMISTIC_TX,
+
+        /** */
+        PESSIMISTIC_TX,
+
+        /** */
+        LOCK
     }
 }

@@ -345,8 +345,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchId + ']');
 
             // Fetch affinity assignment from remote node.
-            GridDhtAssignmentFetchFuture fetchFut =
-                new GridDhtAssignmentFetchFuture(cacheCtx, exchId.topologyVersion(), CU.affinityNodes(cacheCtx));
+            GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cacheCtx,
+                exchId.topologyVersion(),
+                CU.affinityNodes(cacheCtx, exchId.topologyVersion()));
 
             fetchFut.init();
 
