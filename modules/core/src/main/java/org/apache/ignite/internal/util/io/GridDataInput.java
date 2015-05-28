@@ -30,10 +30,33 @@ public interface GridDataInput extends DataInput {
     public void bytes(byte[] bytes, int len);
 
     /**
+     * @param bytes Bytes.
+     * @param off Offset.
+     * @param len Length.
+     */
+    public void bytes(byte[] bytes, int off, int len);
+
+    /**
      * @param in Underlying input stream.
      * @throws IOException In case of error.
      */
     public void inputStream(InputStream in) throws IOException;
+
+    /**
+     * Sets offset to the new position. Supported only for {@code GridDataInput} backed by byte array.
+     *
+     * @param off Offset.
+     * @throws IOException In case of error.
+     */
+    public void offset(int off) throws IOException;
+
+    /**
+     * Size of {@code GridDataInput}. Supported only for instances backed by byte array.
+     *
+     * @return Total number of bytes available.
+     * @throws IOException In case of error.
+     */
+    public int size() throws IOException;
 
     /**
      * Resets data output.

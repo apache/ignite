@@ -147,7 +147,8 @@ class OptimizedMarshallerUtils {
     static final byte FOOTER_START = 1;
 
     /** */
-    static final byte EMPTY_FOOTER = 2;
+    static final byte EMPTY_FOOTER = -1;
+
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");

@@ -518,7 +518,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             }
         }
 
-        byte flag = in.readByte();
+        byte flag = (byte)in.readInt();
 
         assert flag == EMPTY_FOOTER || flag == FOOTER_START;
 
@@ -940,6 +940,54 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** {@inheritDoc} */
     @Override public int available() throws IOException {
         return -1;
+    }
+
+    //TODO
+    Object readField(String fieldName) throws IOException, ClassNotFoundException {
+        byte type = in.readByte();
+
+        if (type != SERIALIZABLE)
+            return -1;
+
+        int fieldId = resolveFieldId(fieldName);
+
+        int end = in.size() - 4;
+        in.offset(end);
+
+        int footerStartOff = in.readInt();
+
+        if (footerStartOff == EMPTY_FOOTER)
+            return null; //TODO
+
+        int pos = footerStartOff;
+        in.offset(footerStartOff);
+
+        assert in.readInt() == FOOTER_START;
+        in.readInt(); //TODO: do I need this? skip fields start offset
+
+        int fieldOff = -1;
+
+        while (pos < end) {
+            int id = in.readInt();
+            int len = in.readInt(); //TODO: do I need this?
+
+            if (fieldId == id) {
+                fieldOff = in.readInt();
+                break;
+            }
+            else
+                // skip field offset
+                in.skipBytes(4);
+
+            pos += 12;
+        }
+
+        if (fieldOff > 0) {
+            in.offset(fieldOff);
+            return readObject();
+        }
+
+        return null; //TODO
     }
 
     /**

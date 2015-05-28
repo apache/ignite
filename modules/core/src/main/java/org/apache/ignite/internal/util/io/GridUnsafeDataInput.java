@@ -71,10 +71,10 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @GridToStringExclude
     private final char[] urfCBuf = new char[CHAR_BUF_SIZE];
 
-    /** Current offset into buf. */
+    /** Current increaseOffset into buf. */
     private int pos;
 
-    /** End offset of valid data in buf, or -1 if no more block data. */
+    /** End increaseOffset of valid data in buf, or -1 if no more block data. */
     private int end = -1;
 
     /** Bytes. */
@@ -106,17 +106,14 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
         bytes(bytes, 0, len);
     }
 
-    /**
-     * @param bytes Bytes.
-     * @param off Offset.
-     * @param len Length.
-     */
-    public void bytes(byte[] bytes, int off, int len) {
+    /** {@inheritDoc} */
+    @Override public void bytes(byte[] bytes, int off, int len) {
         buf = bytes;
 
         max = len;
         this.off = off;
     }
+
 
     /** {@inheritDoc} */
     @Override public void inputStream(InputStream in) throws IOException {
@@ -124,6 +121,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         buf = inBuf;
     }
+
 
     /**
      * Reads from stream to buffer. If stream is {@code null}, this method is no-op.
@@ -170,12 +168,28 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public int size() throws IOException {
+        if (in != null)
+            throw new IOException("Unable to get bytes available in InputStream");
+
+        return max;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void offset(int off) throws IOException {
+        if (in != null)
+            throw new IOException("Unable to change offset in InputStream");
+
+        this.off = off;
+    }
+
     /**
      * @param more Bytes to move forward.
      * @return Old offset value.
      * @throws IOException In case of error.
      */
-    private int offset(int more) throws IOException {
+    private int increaseOffset(int more) throws IOException {
         int old = off;
 
         off += more;
@@ -204,7 +218,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         byte[] arr = new byte[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(arrSize), arr, byteArrOff, arrSize);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(arrSize), arr, byteArrOff, arrSize);
 
         return arr;
     }
@@ -219,7 +233,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         short[] arr = new short[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(bytesToCp), arr, shortArrOff, bytesToCp);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(bytesToCp), arr, shortArrOff, bytesToCp);
 
         return arr;
     }
@@ -234,7 +248,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         int[] arr = new int[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(bytesToCp), arr, intArrOff, bytesToCp);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(bytesToCp), arr, intArrOff, bytesToCp);
 
         return arr;
     }
@@ -249,7 +263,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         double[] arr = new double[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(bytesToCp), arr, doubleArrOff, bytesToCp);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(bytesToCp), arr, doubleArrOff, bytesToCp);
 
         return arr;
     }
@@ -276,7 +290,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         char[] arr = new char[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(bytesToCp), arr, charArrOff, bytesToCp);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(bytesToCp), arr, charArrOff, bytesToCp);
 
         return arr;
     }
@@ -291,7 +305,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         long[] arr = new long[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(bytesToCp), arr, longArrOff, bytesToCp);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(bytesToCp), arr, longArrOff, bytesToCp);
 
         return arr;
     }
@@ -306,7 +320,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         float[] arr = new float[arrSize];
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(bytesToCp), arr, floatArrOff, bytesToCp);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(bytesToCp), arr, floatArrOff, bytesToCp);
 
         return arr;
     }
@@ -317,14 +331,14 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         fromStream(len);
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(len), b, byteArrOff, len);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(len), b, byteArrOff, len);
     }
 
     /** {@inheritDoc} */
     @Override public void readFully(byte[] b, int off, int len) throws IOException {
         fromStream(len);
 
-        UNSAFE.copyMemory(buf, byteArrOff + offset(len), b, byteArrOff + off, len);
+        UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(len), b, byteArrOff + off, len);
     }
 
     /** {@inheritDoc} */
@@ -341,14 +355,14 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public boolean readBoolean() throws IOException {
         fromStream(1);
 
-        return UNSAFE.getBoolean(buf, byteArrOff + offset(1));
+        return UNSAFE.getBoolean(buf, byteArrOff + increaseOffset(1));
     }
 
     /** {@inheritDoc} */
     @Override public byte readByte() throws IOException {
         fromStream(1);
 
-        return UNSAFE.getByte(buf, byteArrOff + offset(1));
+        return UNSAFE.getByte(buf, byteArrOff + increaseOffset(1));
     }
 
     /** {@inheritDoc} */
@@ -360,7 +374,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public short readShort() throws IOException {
         fromStream(2);
 
-        return UNSAFE.getShort(buf, byteArrOff + offset(2));
+        return UNSAFE.getShort(buf, byteArrOff + increaseOffset(2));
     }
 
     /** {@inheritDoc} */
@@ -374,7 +388,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         char v = UNSAFE.getChar(buf, byteArrOff + off);
 
-        offset(2);
+        increaseOffset(2);
 
         return v;
     }
@@ -383,28 +397,28 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public int readInt() throws IOException {
         fromStream(4);
 
-        return UNSAFE.getInt(buf, byteArrOff + offset(4));
+        return UNSAFE.getInt(buf, byteArrOff + increaseOffset(4));
     }
 
     /** {@inheritDoc} */
     @Override public long readLong() throws IOException {
         fromStream(8);
 
-        return UNSAFE.getLong(buf, byteArrOff + offset(8));
+        return UNSAFE.getLong(buf, byteArrOff + increaseOffset(8));
     }
 
     /** {@inheritDoc} */
     @Override public float readFloat() throws IOException {
         fromStream(4);
 
-        return UNSAFE.getFloat(buf, byteArrOff + offset(4));
+        return UNSAFE.getFloat(buf, byteArrOff + increaseOffset(4));
     }
 
     /** {@inheritDoc} */
     @Override public double readDouble() throws IOException {
         fromStream(8);
 
-        return UNSAFE.getDouble(buf, byteArrOff + offset(8));
+        return UNSAFE.getDouble(buf, byteArrOff + increaseOffset(8));
     }
 
     /** {@inheritDoc} */
@@ -433,7 +447,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
         else {
             int toRead = Math.min(len, max - this.off);
 
-            UNSAFE.copyMemory(buf, byteArrOff + offset(toRead), b, byteArrOff + off, toRead);
+            UNSAFE.copyMemory(buf, byteArrOff + increaseOffset(toRead), b, byteArrOff + off, toRead);
 
             return toRead;
         }
@@ -511,7 +525,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
     /**
      * Reads span of UTF-encoded characters out of internal buffer
-     * (starting at offset pos and ending at or before offset end),
+     * (starting at increaseOffset pos and ending at or before increaseOffset end),
      * consuming no more than utfLen bytes. Appends read characters to
      * sbuf. Returns the number of bytes consumed.
      *

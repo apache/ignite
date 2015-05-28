@@ -248,6 +248,34 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         }
     }
 
+    //TODO:
+    public <T> T unmarshal(String fieldName, byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        assert arr != null && fieldName != null;
+
+        OptimizedObjectInputStream objIn = null;
+
+        try {
+            objIn = OptimizedObjectStreamRegistry.in();
+
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+
+            objIn.in().bytes(arr, arr.length);
+
+            return (T)objIn.readField(fieldName);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
+        }
+        catch (ClassNotFoundException e) {
+            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
+                                                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
+                                                 clsLdr, e);
+        }
+        finally {
+            OptimizedObjectStreamRegistry.closeIn(objIn);
+        }
+    }
+
     /**
      * Checks whether {@code GridOptimizedMarshaller} is able to work on the current JVM.
      * <p>

@@ -955,8 +955,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 return;
 
             data[pos++] = typeId;
-            data[pos++] = offset;
             data[pos++] = length;
+            data[pos++] = offset;
         }
 
         /**
@@ -966,11 +966,11 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
          */
         private void write() throws IOException {
             if (data == null)
-                writeByte(EMPTY_FOOTER);
+                writeInt(EMPTY_FOOTER);
             else {
                 int footerStartOff = out.size();
 
-                writeByte(FOOTER_START);
+                writeInt(FOOTER_START);
                 writeInt(fieldsStartOff);
 
                 for (int i = 0; i < data.length; i++)

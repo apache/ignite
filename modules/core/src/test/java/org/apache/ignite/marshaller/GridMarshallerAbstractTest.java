@@ -50,7 +50,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static final String CACHE_NAME = "namedCache";
 
     /** */
-    private static Marshaller marsh;
+    protected static Marshaller marsh;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
