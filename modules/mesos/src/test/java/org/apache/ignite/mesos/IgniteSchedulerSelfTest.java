@@ -341,16 +341,14 @@ public class IgniteSchedulerSelfTest extends TestCase {
      * No-op implementation.
      */
     public static class DriverMock implements SchedulerDriver {
-        /**
-         *
-         */
+        /** */
         Collection<Protos.TaskInfo> launchedTask;
 
         /** */
         Protos.OfferID declinedOffer;
 
         /**
-         * Clear launched task.
+         * Clears launched task.
          */
         public void clear() {
             launchedTask = null;
