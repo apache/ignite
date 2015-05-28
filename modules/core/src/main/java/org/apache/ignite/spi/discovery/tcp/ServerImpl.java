@@ -810,84 +810,61 @@ class ServerImpl extends TcpDiscoveryImpl {
             boolean retry = false;
             Collection<Exception> errs = new ArrayList<>();
 
-            for (int j = 2; --j >= 0;) {
-                for (InetSocketAddress addr : addrs) {
-                    Socket sock = null;
-                    Exception ex = null;
+            for (InetSocketAddress addr : addrs) {
+                try {
+                    Integer res = sendMessageDirectly(joinReq, addr);
 
-                    try {
-                        sock = spi.openSocket(addr);
-                    }
-                    catch (Exception e) {
-                        if (j > 0)
-                            continue;
+                    assert res != null;
 
-                        ex = e;
-                    }
+                    noResAddrs.remove(addr);
 
-                    if (ex == null) {
-                        try {
-                            Integer res = sendMessageDirectly(joinReq, addr, sock);
+                    // Address is responsive, reset period start.
+                    noResStart = 0;
 
-                            assert res != null;
+                    switch (res) {
+                        case RES_WAIT:
+                            // Concurrent startup, try sending join request again or wait if no success.
+                            retry = true;
 
-                            noResAddrs.remove(addr);
+                            break;
+                        case RES_OK:
+                            if (log.isDebugEnabled())
+                                log.debug("Join request message has been sent to address [addr=" + addr +
+                                    ", req=" + joinReq + ']');
 
-                            // Address is responsive, reset period start.
-                            noResStart = 0;
+                            // Join request sending succeeded, wait for response from topology.
+                            return true;
 
-                            switch (res) {
-                                case RES_WAIT:
-                                    // Concurrent startup, try sending join request again or wait if no success.
+                        default:
+                            // Concurrent startup, try next node.
+                            if (res == RES_CONTINUE_JOIN) {
+                                if (!fromAddrs.contains(addr))
                                     retry = true;
-
-                                    break;
-                                case RES_OK:
-                                    if (log.isDebugEnabled())
-                                        log.debug("Join request message has been sent to address [addr=" + addr +
-                                            ", req=" + joinReq + ']');
-
-                                    // Join request sending succeeded, wait for response from topology.
-                                    return true;
-
-                                default:
-                                    // Concurrent startup, try next node.
-                                    if (res == RES_CONTINUE_JOIN) {
-                                        if (!fromAddrs.contains(addr))
-                                            retry = true;
-                                    }
-                                    else {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Unexpected response to join request: " + res);
-
-                                        retry = true;
-                                    }
-
-                                    break;
                             }
-                        }
-                        catch (IgniteSpiException e) {
-                            e.printStackTrace();
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Unexpected response to join request: " + res);
 
-                            ex = e;
-                        }
+                                retry = true;
+                            }
+
+                            break;
+                    }
+                }
+                catch (IgniteSpiException e) {
+                    errs.add(e);
+
+                    if (log.isDebugEnabled()) {
+                        IOException ioe = X.cause(e, IOException.class);
+
+                        log.debug("Failed to send join request message [addr=" + addr +
+                            ", msg=" + (ioe != null ? ioe.getMessage() : e.getMessage()) + ']');
+
+                        onException("Failed to send join request message [addr=" + addr +
+                            ", msg=" + (ioe != null ? ioe.getMessage() : e.getMessage()) + ']', ioe);
                     }
 
-                    if (ex != null) {
-                        errs.add(ex);
-
-                        if (log.isDebugEnabled()) {
-                            IOException ioe = X.cause(ex, IOException.class);
-
-                            log.debug("Failed to send join request message [addr=" + addr +
-                                ", msg=" + ioe != null ? ioe.getMessage() : ex.getMessage() + ']');
-
-                            onException("Failed to send join request message [addr=" + addr +
-                                ", msg=" + ioe != null ? ioe.getMessage() : ex.getMessage() + ']', ioe);
-                        }
-
-                        noResAddrs.add(addr);
-                    }
+                    noResAddrs.add(addr);
                 }
             }
 
@@ -950,7 +927,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return Response read from the recipient or {@code null} if no response is supposed.
      * @throws IgniteSpiException If an error occurs.
      */
-    @Nullable private Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr, Socket sock)
+    @Nullable private Integer sendMessageDirectly(TcpDiscoveryAbstractMessage msg, InetSocketAddress addr)
         throws IgniteSpiException {
         assert msg != null;
         assert addr != null;
@@ -972,11 +949,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean openSock = false;
 
+            Socket sock = null;
+
             try {
                 long tstamp = U.currentTimeMillis();
 
-                if (sock == null)
-                    sock = spi.openSocket(addr);
+                sock = spi.openSocket(addr);
 
                 openSock = true;
 
@@ -1060,8 +1038,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             finally {
                 U.closeQuiet(sock);
-
-                sock = null;
             }
         }
 
@@ -2718,7 +2694,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
-                    sendMessageDirectly(msg, addr, null);
+                    sendMessageDirectly(msg, addr);
 
                     ex = null;
 
