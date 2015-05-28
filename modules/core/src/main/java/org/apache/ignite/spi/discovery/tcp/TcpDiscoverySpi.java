@@ -54,10 +54,12 @@ import java.util.concurrent.atomic.*;
  * done across it.
  * <p>
  * If node is configured as client node (see {@link IgniteConfiguration#clientMode})
- * TcpDiscoverySpi starts in client mode too. In this case node does not insert to the ring,
- * it connects to any node in the ring router and communicated with that node only.
- * Thereby slowing or shutdown of client node will not affect whole cluster. If you want to start TcpDiscoverySpi in
- * server mode regardless {@link IgniteConfiguration#clientMode} you can set {@link #forceSrvMode} to true.
+ * TcpDiscoverySpi starts in client mode as well. In this case node does not take its place in the ring,
+ * but it connects to random node in the ring (IP taken from IP finder configured) and
+ * use it as a router for discovery traffic.
+ * Therefore slow client node or its shutdown will not affect whole cluster. If TcpDiscoverySpi
+ * needs to be started in server mode regardless of {@link IgniteConfiguration#clientMode},
+ * {@link #forceSrvMode} should be set to true.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
@@ -388,11 +390,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
-     * If {@code true} TcpDiscoverySpi will started in server mode regardless
-     * of {@link IgniteConfiguration#isClientMode()}
+     * Sets force server mode flag.
+     * <p>
+     * If {@code true} TcpDiscoverySpi is started in server mode regardless
+     * of {@link IgniteConfiguration#isClientMode()}.
      *
      * @param forceSrvMode forceServerMode flag.
+     * @return {@code this} for chaining.
      */
+    @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
         this.forceSrvMode = forceSrvMode;
 

@@ -285,7 +285,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
-            ctx.performance().add("Enable client mode for TcpDiscoverySpi (set TcpDiscoverySpi.forceServerMode to true)");
+            ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
+                    "(set TcpDiscoverySpi.forceServerMode to false)");
     }
 
     /** {@inheritDoc} */

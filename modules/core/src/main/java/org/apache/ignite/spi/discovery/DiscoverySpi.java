@@ -78,7 +78,8 @@ public interface DiscoverySpi extends IgniteSpi {
     /**
      * Sets node attributes and node version which will be distributed in grid during
      * join process. Note that these attributes cannot be changed and set only once.
-     *  @param attrs Map of node attributes.
+     *
+     * @param attrs Map of node attributes.
      * @param ver Product version.
      */
     public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
