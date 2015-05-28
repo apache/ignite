@@ -393,8 +393,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *
      * @param forceSrvMode forceServerMode flag.
      */
-    public void setForceServerMode(boolean forceSrvMode) {
+    public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
         this.forceSrvMode = forceSrvMode;
+
+        return this;
     }
 
     /**
