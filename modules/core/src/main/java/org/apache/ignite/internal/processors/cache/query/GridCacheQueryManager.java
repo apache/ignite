@@ -795,7 +795,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             !locPart.reserve())
                             throw new GridDhtInvalidPartitionException(part, "Partition can't be reserved");
 
-
                         iter = new Iterator<K>() {
                             private Iterator<KeyCacheObject> iter0 = locPart.keySet().iterator();
 
@@ -1329,9 +1328,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     K key = row.getKey();
 
-                    // Filter backups for SCAN queries. Other types are filtered in indexing manager.
-                    if (!cctx.isReplicated() && cctx.config().getCacheMode() != LOCAL && qry.type() == SCAN &&
-                        !incBackups && !cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+                    // Filter backups for SCAN queries, if it isn't partition scan.
+                    // Other types are filtered in indexing manager.
+                    if (!cctx.isReplicated() && qry.type() == SCAN && qry.partition() == null &&
+                        cctx.config().getCacheMode() != LOCAL && !incBackups &&
+                        !cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring backup element [row=" + row +
                                 ", cacheMode=" + cctx.config().getCacheMode() + ", incBackups=" + incBackups +

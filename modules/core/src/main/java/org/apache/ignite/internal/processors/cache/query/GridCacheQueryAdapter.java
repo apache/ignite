@@ -26,14 +26,15 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
@@ -457,7 +458,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else if (type == SCAN && part != null && nodes.size() > 1)
-            return new CacheQueryFallbackFuture(nodes, bean, qryMgr);
+            return new CacheQueryFallbackFuture<>(nodes, bean, qryMgr);
         else
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
@@ -524,9 +525,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * Wrapper for queries with fallback.
      */
-    private static class CacheQueryFallbackFuture<R> extends GridCacheQueryFutureAdapter<Object, Object, R> {
-        /** Target. */
-        private GridCacheQueryFutureAdapter<?, ?, R> fut;
+    private static class CacheQueryFallbackFuture<R> extends GridFutureAdapter<Collection<R>>
+        implements CacheQueryFuture<R> {
+        /** Query future. */
+        private volatile GridCacheQueryFutureAdapter<?, ?, R> fut;
 
         /** Backups. */
         private final Queue<ClusterNode> nodes;
@@ -559,13 +561,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             ClusterNode node = F.first(F.view(nodes, IS_LOC_NODE));
 
-            if (node != null) {
+            if (node != null)
                 fallbacks.add(node);
 
-                fallbacks.addAll(F.view(nodes, F.not(IS_LOC_NODE)));
-            }
-            else
-                fallbacks.addAll(nodes);
+            fallbacks.addAll(node != null ? F.view(nodes, F.not(IS_LOC_NODE)) : nodes);
 
             return fallbacks;
         }
@@ -576,10 +575,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private void init() {
             ClusterNode node = nodes.poll();
 
-            fut = (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ? qryMgr.queryLocal(bean) :
-                qryMgr.queryDistributed(bean, Collections.singleton(node)));
+            GridCacheQueryFutureAdapter<?, ?, R> fut0 =
+                (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ? qryMgr.queryLocal(bean) :
+                    qryMgr.queryDistributed(bean, Collections.singleton(node)));
 
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<Collection<R>>>() {
+            fut0.listen(new IgniteInClosure<IgniteInternalFuture<Collection<R>>>() {
                 @Override public void apply(IgniteInternalFuture<Collection<R>> fut) {
                     try {
                         onDone(fut.get());
@@ -592,26 +592,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     }
                 }
             });
-        }
 
-        /** {@inheritDoc} */
-        @Override protected boolean onPage(UUID nodeId, boolean last) {
-            return fut.onPage(nodeId, last);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void loadPage() {
-            fut.loadPage();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void loadAllPages() throws IgniteInterruptedCheckedException {
-            fut.loadAllPages();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void cancelQuery() throws IgniteCheckedException {
-            fut.cancelQuery();
+            fut = fut0;
         }
 
         /** {@inheritDoc} */
@@ -625,84 +607,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         }
 
         /** {@inheritDoc} */
-        @Override void clear() {
-            fut.clear();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return fut.endTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void enqueue(Collection<?> col) {
-            fut.enqueue(col);
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean fields() {
-            return fut.fields();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<R> get() throws IgniteCheckedException {
-            return fut.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-            return fut.get(timeout, unit);
-        }
-
-        /** {@inheritDoc} */
         @Override public R next() {
             return fut.next();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<R> nextPage() throws IgniteCheckedException {
-            return fut.nextPage();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(Collection<R> res, Throwable err) {
-            return fut.onDone(res, err);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<R> nextPage(long timeout) throws IgniteCheckedException {
-            return fut.nextPage(timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onNodeLeft(UUID evtNodeId) {
-            fut.onNodeLeft(evtNodeId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data,
-            @Nullable Throwable err, boolean finished) {
-            fut.onPage(nodeId, data, err, finished);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            fut.onTimeout();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void printMemoryStats() {
-            fut.printMemoryStats();
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheQueryBean query() {
-            return fut.query();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid timeoutId() {
-            return fut.timeoutId();
         }
     }
 }

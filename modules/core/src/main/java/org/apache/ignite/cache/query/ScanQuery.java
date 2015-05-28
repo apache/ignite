@@ -46,6 +46,11 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this(null, null);
     }
 
+    /**
+     * Creates partition scan query returning all entries for given partition.
+     *
+     * @param part Partition.
+     */
     public ScanQuery(int part) {
         this(part, null);
     }
@@ -62,9 +67,10 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /**
      * Create scan query with filter.
      *
+     * @param part Partition.
      * @param filter Filter. If {@code null} then all entries will be returned.
      */
-    public ScanQuery(Integer part, @Nullable IgniteBiPredicate<K, V> filter) {
+    public ScanQuery(@Nullable Integer part, @Nullable IgniteBiPredicate<K, V> filter) {
         setPartition(part);
         setFilter(filter);
     }
@@ -96,7 +102,7 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @return Partition number or {@code null}.
      */
-    public Integer getPartition() {
+    @Nullable public Integer getPartition() {
         return part;
     }
 
@@ -106,7 +112,7 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      *
      * @param part Partition number over which this query should iterate.
      */
-    public void setPartition(Integer part) {
+    public void setPartition(@Nullable Integer part) {
         this.part = part;
     }
 
