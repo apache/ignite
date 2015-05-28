@@ -221,7 +221,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        return ctx.cluster().get().compute();
+        return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
     }
 
     /** {@inheritDoc} */
@@ -236,7 +236,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
-        return ctx.cluster().get().services();
+        return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).services();
     }
 
     /** {@inheritDoc} */
