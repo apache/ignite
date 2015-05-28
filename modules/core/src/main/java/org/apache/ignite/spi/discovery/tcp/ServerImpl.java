@@ -115,9 +115,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Response on join request from coordinator (in case of duplicate ID or auth failure). */
     private final GridTuple<TcpDiscoveryAbstractMessage> joinRes = F.t1();
 
-    /** Node authenticator. */
-    private DiscoverySpiNodeAuthenticator nodeAuth;
-
     /** Mutex. */
     private final Object mux = new Object();
 
@@ -631,11 +628,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator nodeAuth) {
-        this.nodeAuth = nodeAuth;
-    }
-
-    /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
             msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt, spi.marsh.marshal(evt)));
@@ -680,10 +672,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Join request message has not been sent (local node is the first in the topology).");
 
-                if (nodeAuth != null) {
+                if (spi.nodeAuth != null) {
                     // Authenticate local node.
                     try {
-                        SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
+                        SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
 
                         if (subj == null)
                             throw new IgniteSpiException("Authentication failed for local node: " + locNode.id());
@@ -2469,12 +2461,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                if (nodeAuth != null) {
+                if (spi.nodeAuth != null) {
                     // Authenticate node first.
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
 
-                        SecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                        SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
                         if (subj == null) {
                             // Node has not pass authentication.
@@ -2843,7 +2835,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                if (!isLocalNodeCoordinator() && nodeAuth != null && nodeAuth.isGlobalNodeAuthentication()) {
+                if (!isLocalNodeCoordinator() && spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
                     boolean authFailed = true;
 
                     try {
@@ -2861,7 +2853,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             authFailed = false;
                         }
                         else {
-                            SecurityContext subj = nodeAuth.authenticateNode(node, cred);
+                            SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
                             SecurityContext coordSubj = spi.ignite().configuration().getMarshaller().unmarshal(
                                 node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),

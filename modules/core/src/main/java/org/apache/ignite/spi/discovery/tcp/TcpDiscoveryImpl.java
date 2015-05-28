@@ -113,11 +113,6 @@ abstract class TcpDiscoveryImpl {
     public abstract void disconnect() throws IgniteSpiException;
 
     /**
-     * @param auth Auth.
-     */
-    public abstract void setAuthenticator(DiscoverySpiNodeAuthenticator auth);
-
-    /**
      * @param msg Message.
      */
     public abstract void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
