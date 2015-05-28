@@ -215,6 +215,13 @@ public class ClusterProperties {
     }
 
     /**
+     * Set CPU count limit.
+     */
+    public void cpusPerNode(double cpu) {
+        this.cpuPerNode = cpu;
+    }
+
+    /**
      * @return mem limit.
      */
     public double memory() {
@@ -223,6 +230,8 @@ public class ClusterProperties {
 
     /**
      * Set mem limit.
+     *
+     * @param mem Memory.
      */
     public void memory(double mem) {
         this.mem = mem;
@@ -233,6 +242,15 @@ public class ClusterProperties {
      */
     public double memoryPerNode() {
         return memPerNode;
+    }
+
+    /**
+     * Set mem limit.
+     *
+     * @param mem Memory.
+     */
+    public void memoryPerNode(double mem) {
+         this.memPerNode = mem;
     }
 
     /**

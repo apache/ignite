@@ -71,7 +71,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS));
+        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
         assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
     }
 
@@ -95,7 +95,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS));
+        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
         assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
 
         mock.clear();
@@ -130,7 +130,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS));
+        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
         assertEquals(512.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
 
         mock.clear();
@@ -168,7 +168,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
 
             Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-            totalCpu += resources(taskInfo.getResourcesList(), IgniteScheduler.CPUS);
+            totalCpu += resources(taskInfo.getResourcesList(), IgniteScheduler.CPU);
             totalMem += resources(taskInfo.getResourcesList(), IgniteScheduler.MEM);
 
             mock.clear();
@@ -254,6 +254,52 @@ public class IgniteSchedulerSelfTest extends TestCase {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPerNode() throws Exception {
+        Protos.Offer offer = createOffer("hostname", 8, 1024);
+
+        DriverMock mock = new DriverMock();
+
+        ClusterProperties clustProp = new ClusterProperties();
+        clustProp.memoryPerNode(1024);
+        clustProp.cpusPerNode(2);
+
+        scheduler.setClusterProps(clustProp);
+
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
+
+        assertNotNull(mock.launchedTask);
+
+        Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
+
+        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
+        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+
+        mock.clear();
+
+        offer = createOffer("hostname", 1, 2048);
+
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
+
+        assertNull(mock.launchedTask);
+
+        assertNotNull(mock.declinedOffer);
+        assertEquals(offer.getId(), mock.declinedOffer);
+
+        mock.clear();
+
+        offer = createOffer("hostname", 4, 512);
+
+        scheduler.resourceOffers(mock, Collections.singletonList(offer));
+
+        assertNull(mock.launchedTask);
+
+        assertNotNull(mock.declinedOffer);
+        assertEquals(offer.getId(), mock.declinedOffer);
+    }
+
+    /**
      * @param resourceType Resource type.
      * @return Value.
      */
@@ -280,7 +326,7 @@ public class IgniteSchedulerSelfTest extends TestCase {
             .setHostname(hostname)
             .addResources(Protos.Resource.newBuilder()
                 .setType(Protos.Value.Type.SCALAR)
-                .setName(IgniteScheduler.CPUS)
+                .setName(IgniteScheduler.CPU)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(cpu).build())
                 .build())
             .addResources(Protos.Resource.newBuilder()

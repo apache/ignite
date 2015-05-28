@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteScheduler implements Scheduler {
     /** Cpus. */
-    public static final String CPUS = "cpus";
+    public static final String CPU = "cpus";
 
     /** Mem. */
     public static final String MEM = "mem";
@@ -126,14 +126,17 @@ public class IgniteScheduler implements Scheduler {
             .addUris(Protos.CommandInfo.URI.newBuilder()
                 .setValue(cfgUrl));
 
-        if (clusterProps.usersLibsUrl() != null)
-            builder.addUris(Protos.CommandInfo.URI.newBuilder()
-                .setValue(clusterProps.usersLibsUrl())
-                .setExtract(true));
-        else if (resourceProvider.resourceUrl() != null) {
-            for (String url : resourceProvider.resourceUrl())
-                builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
-        }
+        // Collection user's libs.
+        Collection<String> usersLibs = new ArrayList<>();
+
+        if (clusterProps.usersLibsUrl() != null && !clusterProps.usersLibsUrl().isEmpty())
+            Collections.addAll(usersLibs, clusterProps.usersLibsUrl().split(DELIM));
+
+        if (resourceProvider.resourceUrl() != null && !resourceProvider.resourceUrl().isEmpty())
+            usersLibs.addAll(resourceProvider.resourceUrl());
+
+        for (String url : usersLibs)
+            builder.addUris(Protos.CommandInfo.URI.newBuilder().setValue(url));
 
         String cfgName = resourceProvider.configName();
 
@@ -155,7 +158,7 @@ public class IgniteScheduler implements Scheduler {
             .setSlaveId(offer.getSlaveId())
             .setCommand(builder)
             .addResources(Protos.Resource.newBuilder()
-                .setName(CPUS)
+                .setName(CPU)
                 .setType(Protos.Value.Type.SCALAR)
                 .setScalar(Protos.Value.Scalar.newBuilder().setValue(igniteTask.cpuCores())))
             .addResources(Protos.Resource.newBuilder()
@@ -210,7 +213,7 @@ public class IgniteScheduler implements Scheduler {
 
         // Collect resource on slave.
         for (Protos.Resource resource : offer.getResourcesList()) {
-            if (resource.getName().equals(CPUS)) {
+            if (resource.getName().equals(CPU)) {
                 if (resource.getType().equals(Protos.Value.Type.SCALAR))
                     cpus = resource.getScalar().getValue();
                 else
@@ -251,6 +254,13 @@ public class IgniteScheduler implements Scheduler {
         mem = Math.min(clusterProps.memory() - totalMem, Math.min(mem, clusterProps.memoryPerNode()));
         disk = Math.min(clusterProps.disk() - totalDisk, Math.min(disk, clusterProps.diskPerNode()));
 
+        if ((clusterProps.cpusPerNode() != ClusterProperties.UNLIMITED && clusterProps.cpusPerNode() != cpus)
+            || (clusterProps.memoryPerNode() != ClusterProperties.UNLIMITED && clusterProps.memoryPerNode() != mem)) {
+            log.debug("Offer not sufficient for slave request: {}", offer.getResourcesList());
+
+            return null;
+        }
+
         if (cpus > 0 && mem > 0)
             return new IgniteTask(offer.getHostname(), cpus, mem, disk);
         else {
@@ -284,7 +294,7 @@ public class IgniteScheduler implements Scheduler {
                             .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.mem())))
                         .addResources(Protos.Resource.newBuilder()
                             .setType(Protos.Value.Type.SCALAR)
-                            .setName(CPUS)
+                            .setName(CPU)
                             .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
                         .build();
 
