@@ -54,6 +54,13 @@ public interface GridDataOutput extends DataOutput {
     public void reset();
 
     /**
+     * Total number of bytes already written so far.
+     * 
+     * @return Number of bytes.
+     */
+    public int size();
+
+    /**
      * Writes array of {@code byte}s.
      *
      * @param arr Array.

@@ -518,6 +518,21 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             }
         }
 
+        byte flag = in.readByte();
+
+        assert flag == EMPTY_FOOTER || flag == FOOTER_START;
+
+        if (flag == FOOTER_START) {
+            int skip = 2;
+
+            for (int i = 0; i < fields.hierarchyLevels(); i++)
+                skip += fields.fields(i).size() * 3;
+
+            skip *= 4; // all the values are integers
+
+            in.skipBytes(skip);
+        }
+
         return obj;
     }
 

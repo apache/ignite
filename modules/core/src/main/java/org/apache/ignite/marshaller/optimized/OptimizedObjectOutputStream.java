@@ -64,6 +64,9 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     private OptimizedClassDescriptor.ClassFields curFields;
 
     /** */
+    private Footer curFooter;
+
+    /** */
     private PutFieldImpl curPut;
 
     /** */
@@ -150,11 +153,16 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      *
      * @param obj Object.
      * @throws IOException In case of error.
+     *
+     * @return Handle ID that has already written {@code obj} or -1 if the {@code obj} has not been written before.
      */
-    private void writeObject0(Object obj) throws IOException {
+    private int writeObject0(Object obj) throws IOException {
         curObj = null;
         curFields = null;
         curPut = null;
+        curFooter = null;
+
+        int handle = -1;
 
         if (obj == null)
             writeByte(NULL);
@@ -184,7 +192,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 if (desc.excluded()) {
                     writeByte(NULL);
 
-                    return;
+                    return handle;
                 }
 
                 Object obj0 = desc.replace(obj);
@@ -192,13 +200,11 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 if (obj0 == null) {
                     writeByte(NULL);
 
-                    return;
+                    return handle;
                 }
 
-                int handle = -1;
-
                 if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
-                    handle = handles.lookup(obj);
+                    handle = handles.lookup(obj, out.size());
 
                 if (obj0 != obj) {
                     obj = obj0;
@@ -217,6 +223,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     desc.write(this, obj);
             }
         }
+
+        return handle;
     }
 
     /**
@@ -300,12 +308,15 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields)
         throws IOException {
+        Footer footer = new Footer(fields);
+
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
 
             if (mtd != null) {
                 curObj = obj;
                 curFields = fields.fields(i);
+                curFooter = footer;
 
                 try {
                     mtd.invoke(obj, this);
@@ -318,8 +329,10 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 }
             }
             else
-                writeFields(obj, fields.fields(i));
+                writeFields(obj, fields.fields(i), footer);
         }
+
+        footer.write();
     }
 
     /**
@@ -451,9 +464,15 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void writeFields(Object obj, OptimizedClassDescriptor.ClassFields fields) throws IOException {
+    private void writeFields(Object obj, OptimizedClassDescriptor.ClassFields fields, Footer footer)
+        throws IOException {
+        int size;
+        int offset;
+
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);
+
+            offset = size = out.size();
 
             switch (t.type()) {
                 case BYTE:
@@ -505,9 +524,16 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     break;
 
                 case OTHER:
-                    if (t.field() != null)
-                        writeObject0(getObject(obj, t.offset()));
+                    if (t.field() != null) {
+                        int handle = writeObject0(getObject(obj, t.offset()));
+
+                        if (handle >= 0)
+                            offset = handles.objectOffset(handle);
+                    }
             }
+
+            if (t.field() != null)
+                footer.put(t.id(), offset, out.size() - size);
         }
     }
 
@@ -676,7 +702,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (curObj == null)
             throw new NotActiveException("Not in writeObject() call.");
 
-        writeFields(curObj, curFields);
+        writeFields(curObj, curFields, curFooter);
     }
 
     /** {@inheritDoc} */
@@ -698,8 +724,16 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         if (curPut == null)
             throw new NotActiveException("putFields() was not called.");
 
-        for (IgniteBiTuple<OptimizedFieldType, Object> t : curPut.objs) {
-            switch (t.get1()) {
+        int size;
+        int offset;
+
+        Footer footer = curPut.curFooter;
+
+        for (IgniteBiTuple<OptimizedClassDescriptor.FieldInfo, Object> t : curPut.objs) {
+
+            offset = size = out.size();
+
+            switch (t.get1().type()) {
                 case BYTE:
                     writeByte((Byte)t.get2());
 
@@ -741,8 +775,13 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     break;
 
                 case OTHER:
-                    writeObject0(t.get2());
+                    int handle = writeObject0(t.get2());
+
+                    if (handle >= 0)
+                        offset = handles.objectOffset(handle);
             }
+
+            footer.put(t.get1().id(), offset, out.size() - size);
         }
     }
 
@@ -785,8 +824,12 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         /** Fields info. */
         private final OptimizedClassDescriptor.ClassFields curFields;
+
         /** Values. */
-        private final IgniteBiTuple<OptimizedFieldType, Object>[] objs;
+        private final IgniteBiTuple<OptimizedClassDescriptor.FieldInfo, Object>[] objs;
+
+        /** Footer. */
+        private final Footer curFooter;
 
         /**
          * @param out Output stream.
@@ -796,6 +839,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             this.out = out;
 
             curFields = out.curFields;
+            curFooter = out.curFooter;
 
             objs = new IgniteBiTuple[curFields.size()];
         }
@@ -862,7 +906,78 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
             OptimizedClassDescriptor.FieldInfo info = curFields.get(i);
 
-            objs[i] = F.t(info.type(), val);
+            objs[i] = F.t(info, val);
+        }
+    }
+
+    /**
+     *
+     */
+    private class Footer {
+        /** */
+        private int[] data;
+
+        /** */
+        private int pos;
+
+        /** */
+        private int fieldsStartOff;
+
+        /**
+         * Constructor.
+         *
+         * @param fields Fields.
+         */
+        private Footer(OptimizedClassDescriptor.Fields fields) {
+            if (fields.fieldsIndexingEnabled()) {
+                int totalFooterSize = 0;
+
+                for (int i = 0; i < fields.hierarchyLevels(); i++)
+                    totalFooterSize += fields.fields(i).size() * 3;
+
+                data = new int[totalFooterSize];
+
+                fieldsStartOff = out.size();
+            }
+            else
+                data = null;
+        }
+
+        /**
+         * Puts type ID and its value length to the footer.
+         *
+         * @param typeId Type ID.
+         * @param offset Start offset of an object in the marhsalled array.
+         * @param length Total number of bytes occupied by type's value.
+         */
+        private void put(int typeId, int offset, int length) {
+            if (data == null)
+                return;
+
+            data[pos++] = typeId;
+            data[pos++] = offset;
+            data[pos++] = length;
+        }
+
+        /**
+         * Writes footer content to the OutputStream.
+         *
+         * @throws IOException In case of error.
+         */
+        private void write() throws IOException {
+            if (data == null)
+                writeByte(EMPTY_FOOTER);
+            else {
+                int footerStartOff = out.size();
+
+                writeByte(FOOTER_START);
+                writeInt(fieldsStartOff);
+
+                for (int i = 0; i < data.length; i++)
+                    writeInt(data[i]);
+
+                writeInt(footerStartOff);
+            }
         }
     }
 }

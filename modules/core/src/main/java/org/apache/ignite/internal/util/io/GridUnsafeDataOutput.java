@@ -68,6 +68,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** Offset. */
     private int off;
 
+    /** Total number of bytes already written. */
+    private int size;
+
     /** Underlying output stream. */
     private OutputStream out;
 
@@ -98,6 +101,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     public void bytes(byte[] bytes, int off) {
         this.bytes = bytes;
         this.off = off;
+        size = 0;
     }
 
     /**
@@ -107,6 +111,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         this.out = out;
 
         off = 0;
+        size = 0;
     }
 
     /** {@inheritDoc} */
@@ -128,9 +133,15 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
         return off;
     }
 
+
     /** {@inheritDoc} */
     @Override public void offset(int off) {
         this.off = off;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return size;
     }
 
     /**
@@ -175,6 +186,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
             out.write(bytes, 0, size);
         else
             off += size;
+
+        this.size += size;
     }
 
     /** {@inheritDoc} */
@@ -259,6 +272,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** {@inheritDoc} */
     @Override public void reset() {
         off = 0;
+        size = 0;
 
         out = null;
     }

@@ -337,6 +337,9 @@ class OptimizedClassDescriptor {
                     writeObjMtds = new ArrayList<>();
                     readObjMtds = new ArrayList<>();
                     List<ClassFields> fields = new ArrayList<>();
+                    HashSet<String> fieldsSet = new HashSet<>();
+
+                    boolean fieldsIndexingEnabled = true;
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -379,8 +382,12 @@ class OptimizedClassDescriptor {
 
                         Map<String, Field> fieldNames = new HashMap<>();
 
-                        for (Field f : clsFields0)
+                        for (Field f : clsFields0) {
                             fieldNames.put(f.getName(), f);
+
+                            if (!fieldsSet.add(f.getName()))
+                                fieldsIndexingEnabled = false;
+                        }
 
                         List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
 
@@ -408,6 +415,7 @@ class OptimizedClassDescriptor {
                                         fieldInfo = new FieldInfo(null,
                                             serField.getName(),
                                             -1,
+                                            resolveFieldId(serField.getName()),
                                             fieldType(serField.getType()));
                                     }
                                     else {
@@ -416,6 +424,7 @@ class OptimizedClassDescriptor {
                                         fieldInfo = new FieldInfo(f,
                                             serField.getName(),
                                             UNSAFE.objectFieldOffset(f),
+                                            resolveFieldId(serField.getName()),
                                             fieldType(serField.getType()));
                                     }
 
@@ -438,8 +447,11 @@ class OptimizedClassDescriptor {
                                 int mod = f.getModifiers();
 
                                 if (!isStatic(mod) && !isTransient(mod)) {
-                                    FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
-                                        UNSAFE.objectFieldOffset(f), fieldType(f.getType()));
+                                    FieldInfo fieldInfo = new FieldInfo(f,
+                                        f.getName(),
+                                        UNSAFE.objectFieldOffset(f),
+                                        resolveFieldId(f.getName()),
+                                        fieldType(f.getType()));
 
                                     clsFields.add(fieldInfo);
                                 }
@@ -459,7 +471,7 @@ class OptimizedClassDescriptor {
                     Collections.reverse(readObjMtds);
                     Collections.reverse(fields);
 
-                    this.fields = new Fields(fields);
+                    this.fields = new Fields(fields, fieldsIndexingEnabled);
                 }
             }
         }
@@ -816,17 +828,21 @@ class OptimizedClassDescriptor {
         /** Field name. */
         private final String fieldName;
 
+        /** ID calculated from field's name. */
+        private final int fieldId;
+
         /**
          * @param field Field.
          * @param name Field name.
          * @param offset Field offset.
          * @param type Grid optimized field type.
          */
-        FieldInfo(Field field, String name, long offset, OptimizedFieldType type) {
+        FieldInfo(Field field, String name, long offset, int fieldId, OptimizedFieldType type) {
             this.field = field;
             fieldOffs = offset;
             fieldType = type;
             fieldName = name;
+            this.fieldId = fieldId;
         }
 
         /**
@@ -856,6 +872,13 @@ class OptimizedClassDescriptor {
         String name() {
             return fieldName;
         }
+
+        /**
+         * @return Field ID.
+         */
+        int id() {
+            return fieldId;
+        }
     }
 
     /**
@@ -865,6 +888,7 @@ class OptimizedClassDescriptor {
         /** Fields. */
         private final List<FieldInfo> fields;
 
+        /** */
         private final Map<String, Integer> nameToIndex;
 
         /**
@@ -923,13 +947,17 @@ class OptimizedClassDescriptor {
         /** Own fields (excluding inherited). */
         private final List<Field> ownFields;
 
+        /** Fields indexing flag. */
+        private final boolean fieldsIndexingEnabled;
+
         /**
          * Creates new instance.
          *
          * @param fields Fields.
          */
-        Fields(List<ClassFields> fields) {
+        Fields(List<ClassFields> fields, boolean fieldsIndexingEnabled) {
             this.fields = fields;
+            this.fieldsIndexingEnabled = fieldsIndexingEnabled;
 
             if (fields.isEmpty())
                 ownFields = null;
@@ -960,6 +988,24 @@ class OptimizedClassDescriptor {
          */
         ClassFields fields(int i) {
             return fields.get(i);
+        }
+
+        /**
+         * Whether fields indexing is enabled for a given object or not.
+         *
+         * @return {@code true} if enabled, {@code false} otherwise.
+         */
+        boolean fieldsIndexingEnabled() {
+            return fieldsIndexingEnabled;
+        }
+
+        /**
+         * Returns a total number of hierarchy levels.
+         *
+         * @return number of hierarchy levels.
+         */
+        int hierarchyLevels() {
+            return fields.size();
         }
     }
 }
