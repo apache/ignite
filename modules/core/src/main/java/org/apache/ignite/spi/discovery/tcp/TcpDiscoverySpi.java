@@ -53,6 +53,10 @@ import java.util.concurrent.atomic.*;
  * Nodes are organized in ring. So almost all network exchange (except few cases) is
  * done across it.
  * <p>
+ * Node may be started in client mode, in this case node does not insert to the ring,
+ * it connects to any node in the ring router and communicated with that node only.
+ * Thereby slowing or shutdown of client node will not affect whole cluster.
+ * <p>
  * At startup SPI tries to send messages to random IP taken from
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
  * and then this info goes to coordinator. When coordinator processes join request
@@ -481,6 +485,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * is reached, then the process of message sending is considered as failed.
      * <p>
      * If not specified, default is {@link #DFLT_MAX_ACK_TIMEOUT}.
+     * <p>
+     * Affected server nodes only.
      *
      * @param maxAckTimeout Maximum acknowledgement timeout.
      */
@@ -502,6 +508,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * Sets local port to listen to.
      * <p>
      * If not specified, default is {@link #DFLT_PORT}.
+     * <p>
+     * Affected server nodes only.
      *
      * @param locPort Local port to bind.
      */
@@ -523,6 +531,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * <tt>{@link #getLocalPort()} {@code + locPortRange}</tt>.
      * <p>
      * If not specified, default is {@link #DFLT_PORT_RANGE}.
+     * <p>
+     * Affected server nodes only.
+
      *
      * @param locPortRange Local port range to bind.
      */
@@ -542,6 +553,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * Sets max heartbeats count node can miss without initiating status check.
      * <p>
      * If not provided, default value is {@link #DFLT_MAX_MISSED_HEARTBEATS}.
+     * <p>
+     * Affected server nodes only.
      *
      * @param maxMissedHbs Max missed heartbeats.
      */
@@ -603,6 +616,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * Sets IP finder clean frequency in milliseconds.
      * <p>
      * If not provided, default value is {@link #DFLT_IP_FINDER_CLEAN_FREQ}
+     * <p>
+     * Affected server nodes only.
      *
      * @param ipFinderCleanFreq IP finder clean frequency.
      */
