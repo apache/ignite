@@ -40,7 +40,7 @@ abstract class TcpDiscoveryImpl {
     protected static final int RES_WAIT = 200;
 
     /** */
-    protected final TcpDiscoverySpi adapter;
+    protected final TcpDiscoverySpi spi;
 
     /** */
     protected final IgniteLogger log;
@@ -49,19 +49,19 @@ abstract class TcpDiscoveryImpl {
     protected TcpDiscoveryNode locNode;
 
     /**
-     * @param adapter Adapter.
+     * @param spi Adapter.
      */
-    TcpDiscoveryImpl(TcpDiscoverySpi adapter) {
-        this.adapter = adapter;
+    TcpDiscoveryImpl(TcpDiscoverySpi spi) {
+        this.spi = spi;
 
-        log = adapter.log;
+        log = spi.log;
     }
 
     /**
      *
      */
     public UUID getLocalNodeId() {
-        return adapter.getLocalNodeId();
+        return spi.getLocalNodeId();
     }
 
     /**
@@ -69,7 +69,7 @@ abstract class TcpDiscoveryImpl {
      * @param e Exception.
      */
     protected void onException(String msg, Exception e){
-        adapter.getExceptionRegistry().onException(msg, e);
+        spi.getExceptionRegistry().onException(msg, e);
     }
 
     /**
