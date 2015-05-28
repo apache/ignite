@@ -103,26 +103,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean longSockTimeouts;
 
-    /** */
-    private Boolean cfgClientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco;
+        TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
-        if (gridName.startsWith("server")) {
-            disco = new TcpDiscoverySpi();
-
+        if (gridName.startsWith("server"))
             disco.setIpFinder(IP_FINDER);
-        }
         else if (gridName.startsWith("client")) {
-            disco = new TestTcpDiscoverySpi();
-
-            disco.setClientMode(true);
-
-            cfg.setClientMode(cfgClientMode == null ? true : cfgClientMode);
+            cfg.setClientMode(true);
 
             TcpDiscoveryVmIpFinder ipFinder;
 
@@ -871,25 +861,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 startTime = kernal.context().discovery().gridStartTime();
             else
                 assertEquals(startTime, kernal.context().discovery().gridStartTime());
-        }
-    }
-
-    /**
-     *
-     */
-    public void testBrokenConfiguration() throws Exception {
-        startServerNodes(1);
-
-        cfgClientMode = false;
-
-        try {
-            startClientNodes(1);
-
-            fail("Configuration is boken, node cannot be started with DiscoverySpi.clientMode = true and " +
-                "IgniteConfiguration.clientMode = false");
-        }
-        catch (Exception e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("DiscoverySpi is in client mode"));
         }
     }
 

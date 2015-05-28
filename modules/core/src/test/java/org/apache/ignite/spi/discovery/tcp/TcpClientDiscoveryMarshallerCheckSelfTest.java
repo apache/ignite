@@ -37,21 +37,15 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
         if (gridName.endsWith("0"))
             cfg.setMarshaller(new JdkMarshaller());
         else {
-            discoSpi.setClientMode(true);
-
             cfg.setClientMode(true);
 
             cfg.setMarshaller(new OptimizedMarshaller());
         }
 
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         return cfg;
     }

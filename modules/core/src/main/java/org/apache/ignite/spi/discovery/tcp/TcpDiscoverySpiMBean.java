@@ -274,10 +274,11 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public void dumpDebugInfo();
 
     /**
-     * Whether or not discovery is in client mode.
+     * Whether or not discovery is started in client mode.
      *
      * @return {@code true} if node is in client mode.
+     * @throws IllegalStateException If discovery SPI has not started.
      */
     @MXBeanDescription("Client mode.")
-    public boolean isClientMode();
+    public boolean isClientMode() throws IllegalStateException;
 }

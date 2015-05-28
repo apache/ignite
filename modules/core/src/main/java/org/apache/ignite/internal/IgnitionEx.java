@@ -1743,13 +1743,6 @@ public class IgnitionEx {
                 myCfg.setFileSystemConfiguration(clone);
             }
 
-            if (myCfg.isClientMode() == null || !myCfg.isClientMode()) {
-                if (myCfg.getDiscoverySpi() != null && myCfg.getDiscoverySpi().isClientMode()) {
-                    throw new IgniteCheckedException("DiscoverySpi is in client mode, but node is not in client mode" +
-                        "(consider changing 'IgniteConfiguration.clientMode' to 'true').");
-                }
-            }
-
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
@@ -1814,12 +1807,8 @@ public class IgnitionEx {
          * @param cfg Ignite configuration.
          */
         private void initializeDefaultSpi(IgniteConfiguration cfg) {
-            if (cfg.getDiscoverySpi() == null) {
+            if (cfg.getDiscoverySpi() == null)
                 cfg.setDiscoverySpi(new TcpDiscoverySpi());
-
-                if (Boolean.TRUE.equals(cfg.isClientMode()))
-                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
-            }
 
             if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
                 TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)cfg.getDiscoverySpi();

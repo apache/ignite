@@ -170,21 +170,20 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      *
      */
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        // No-op.
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
+            return cfg;
+        }
     }
 
     /**
      *
      */
     public static class ClientDiscovery extends GridDiscoveryManagerAttributesSelfTest {
-        /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-            if (Boolean.TRUE.equals(cfg.isClientMode()))
-                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
-
-            return cfg;
-        }
+        // No-op.
     }
 }

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 
 import java.io.*;
 import java.util.concurrent.atomic.*;
@@ -65,6 +66,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
             nearOnlyGridName = gridName;
         }
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }

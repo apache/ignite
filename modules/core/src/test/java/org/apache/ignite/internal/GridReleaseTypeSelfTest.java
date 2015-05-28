@@ -57,8 +57,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            discoSpi.setClientMode(true);
-
             cfg.setClientMode(true);
         }
         else {

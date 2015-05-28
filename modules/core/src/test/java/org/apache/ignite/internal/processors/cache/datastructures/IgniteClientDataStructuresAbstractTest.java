@@ -46,8 +46,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
             cfg.setClientMode(true);
 
-            if (clientDiscovery())
-                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientMode(true);
+            if (!clientDiscovery())
+                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);

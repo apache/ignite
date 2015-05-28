@@ -78,9 +78,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
 
             clientFinder.setAddresses(addrs);
 
-            cfg.setDiscoverySpi(new TcpDiscoverySpi()
-                .setClientMode(true)
-                .setIpFinder(clientFinder));
+            cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(clientFinder));
 
             cfg.setClientMode(true);
         }

@@ -53,9 +53,11 @@ import java.util.concurrent.atomic.*;
  * Nodes are organized in ring. So almost all network exchange (except few cases) is
  * done across it.
  * <p>
- * Node may be started in client mode, in this case node does not insert to the ring,
+ * If node is configured as client node (see {@link IgniteConfiguration#clientMode})
+ * TcpDiscoverySpi starts in client mode too. In this case node does not insert to the ring,
  * it connects to any node in the ring router and communicated with that node only.
- * Thereby slowing or shutdown of client node will not affect whole cluster.
+ * Thereby slowing or shutdown of client node will not affect whole cluster. If you want to start TcpDiscoverySpi in
+ * server mode regardless {@link IgniteConfiguration#clientMode} you can set {@link #forceSrvMode} to true.
  * <p>
  * At startup SPI tries to send messages to random IP taken from
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
@@ -97,6 +99,7 @@ import java.util.concurrent.atomic.*;
  * <li>Thread priority for threads started by SPI (see {@link #setThreadPriority(int)})</li>
  * <li>IP finder clean frequency (see {@link #setIpFinderCleanFrequency(long)})</li>
  * <li>Statistics print frequency (see {@link #setStatisticsPrintFrequency(long)}</li>
+ * <li>Force server mode (see {@link #setForceServerMode(boolean)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
  * <pre name="code" class="java">
@@ -309,7 +312,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected TcpDiscoveryImpl impl;
 
     /** */
-    private boolean clientMode;
+    private boolean forceSrvMode;
 
     /** {@inheritDoc} */
     @Override public String getSpiState() {
@@ -368,20 +371,30 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** {@inheritDoc} */
     @Override public boolean isClientMode() {
-        return clientMode;
+        if (impl == null)
+            throw new IllegalStateException("TcpDiscoverySpi has not started");
+
+        return impl instanceof ClientImpl;
     }
 
     /**
-     * @param clientMode New client mode.
+     * If {@code true} TcpDiscoverySpi will started in server mode regardless
+     * of {@link IgniteConfiguration#isClientMode()}
+     *
+     * @return forceServerMode flag.
      */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setClientMode(boolean clientMode) {
-        if (impl != null)
-            throw new IllegalStateException("You cannot change mode, TcpDiscoverySpi already started.");
+    public boolean isForceServerMode() {
+        return forceSrvMode;
+    }
 
-        this.clientMode = clientMode;
-
-        return this;
+    /**
+     * If {@code true} TcpDiscoverySpi will started in server mode regardless
+     * of {@link IgniteConfiguration#isClientMode()}
+     *
+     * @param forceSrvMode forceServerMode flag.
+     */
+    public void setForceServerMode(boolean forceSrvMode) {
+        this.forceSrvMode = forceSrvMode;
     }
 
     /**
@@ -1500,7 +1513,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
-        if (clientMode) {
+        if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
             if (ackTimeout == 0)
                 ackTimeout = DFLT_ACK_TIMEOUT_CLIENT;
 
