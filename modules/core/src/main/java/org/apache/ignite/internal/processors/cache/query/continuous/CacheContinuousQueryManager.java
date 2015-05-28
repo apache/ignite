@@ -250,8 +250,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    public UUID executeQuery(CacheEntryUpdatedListener locLsnr, CacheEntryEventSerializableFilter rmtFilter,
-        int bufSize, long timeInterval, boolean autoUnsubscribe, ClusterGroup grp) throws IgniteCheckedException {
+    public UUID executeQuery(CacheEntryUpdatedListener locLsnr,
+        CacheEntryEventSerializableFilter rmtFilter,
+        int bufSize,
+        long timeInterval,
+        boolean autoUnsubscribe,
+        ClusterGroup grp) throws IgniteCheckedException
+    {
         return executeQuery0(
             locLsnr,
             rmtFilter,
@@ -357,9 +362,18 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    private UUID executeQuery0(CacheEntryUpdatedListener locLsnr, final CacheEntryEventSerializableFilter rmtFilter,
-        int bufSize, long timeInterval, boolean autoUnsubscribe, boolean internal, boolean notifyExisting,
-        boolean oldValRequired, boolean sync, boolean ignoreExpired, ClusterGroup grp) throws IgniteCheckedException {
+    private UUID executeQuery0(CacheEntryUpdatedListener locLsnr,
+        final CacheEntryEventSerializableFilter rmtFilter,
+        int bufSize,
+        long timeInterval,
+        boolean autoUnsubscribe,
+        boolean internal,
+        boolean notifyExisting,
+        boolean oldValRequired,
+        boolean sync,
+        boolean ignoreExpired,
+        ClusterGroup grp) throws IgniteCheckedException
+    {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (grp == null)

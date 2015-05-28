@@ -741,6 +741,18 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> keySetx() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.keySetx();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
         CacheOperationContext prev = gate.enter(opCtx);
 

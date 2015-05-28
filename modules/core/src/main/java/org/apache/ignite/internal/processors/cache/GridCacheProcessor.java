@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -666,8 +665,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onKernalStart() throws IgniteCheckedException {
-        List<GridCacheAdapter<?, ?>> locCaches = new ArrayList<>(registeredCaches.size());
-
         try {
             if (ctx.config().isDaemon())
                 return;
@@ -735,9 +732,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     startCache(cache);
 
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
-
-                    if (loc)
-                        locCaches.add(cache);
                 }
             }
         }
@@ -785,21 +779,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
 
-        // Wait for caches in SYNC preload mode.
-        for (GridCacheAdapter<?, ?> cache : locCaches) {
-            CacheConfiguration cfg = cache.configuration();
+        boolean utilityCacheStarted = false;
 
-            if (cfg.getRebalanceMode() == SYNC) {
-                if (cfg.getCacheMode() == REPLICATED ||
-                    (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0))
-                    cache.preloader().syncFuture().get();
+        // Wait for caches in SYNC preload mode.
+        for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
+            GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
+
+            if (cache != null) {
+                if (cfg.getRebalanceMode() == SYNC) {
+                    if (cfg.getCacheMode() == REPLICATED ||
+                        (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0)) {
+                        cache.preloader().syncFuture().get();
+
+                        if (CU.isUtilityCache(cache.name())) {
+                            ctx.cacheObjects().onUtilityCacheStarted();
+
+                            utilityCacheStarted = true;
+                        }
+                    }
+                }
             }
         }
 
-        ctx.cacheObjects().onCacheProcessorStarted();
-
         assert caches.containsKey(CU.MARSH_CACHE_NAME) : "Marshaller cache should be started";
         assert caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
+        assert utilityCacheStarted;
     }
 
     /** {@inheritDoc} */
