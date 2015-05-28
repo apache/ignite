@@ -158,6 +158,9 @@ public class GridSqlQueryParser {
     private static final Getter<SelectUnion, SortOrder> UNION_SORT = getter(SelectUnion.class, "sort");
 
     /** */
+    private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
+
+    /** */
     private static volatile Getter<Command,Prepared> prepared;
 
     /** */
@@ -182,7 +185,7 @@ public class GridSqlQueryParser {
 
         Prepared statement = p.get(cmd);
 
-        return new GridSqlQueryParser().parse((Query)statement);
+        return new GridSqlQueryParser().parse(statement);
     }
 
     /**
@@ -321,12 +324,15 @@ public class GridSqlQueryParser {
     /**
      * @param qry Select.
      */
-    public GridSqlQuery parse(Query qry) {
+    public GridSqlQuery parse(Prepared qry) {
         if (qry instanceof Select)
             return parse((Select)qry);
 
         if (qry instanceof SelectUnion)
             return parse((SelectUnion)qry);
+
+        if (qry instanceof Explain)
+            return parse(EXPLAIN_COMMAND.get((Explain)qry)).explain(true);
 
         throw new UnsupportedOperationException("Unknown query type: " + qry);
     }

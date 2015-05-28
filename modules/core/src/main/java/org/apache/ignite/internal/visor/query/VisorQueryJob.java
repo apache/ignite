@@ -75,6 +75,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
             if (scan) {
                 ScanQuery<Object, Object> qry = new ScanQuery<>(null);
                 qry.setPageSize(arg.pageSize());
+                qry.setLocal(arg.local());
 
                 long start = U.currentTimeMillis();
 
@@ -100,6 +101,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
             else {
                 SqlFieldsQuery qry = new SqlFieldsQuery(arg.queryTxt());
                 qry.setPageSize(arg.pageSize());
+                qry.setLocal(arg.local());
 
                 long start = U.currentTimeMillis();
 

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -135,6 +136,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Task name hash. */
     private final int taskNameHash;
+
+    /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
+    private boolean topLocked;
 
     /** Skip store flag. */
     private final boolean skipStore;
@@ -289,7 +293,23 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param waitTopFut Whether to wait for topology future.
      */
     public void map(boolean waitTopFut) {
-        mapOnTopology(keys, false, null, waitTopFut);
+        AffinityTopologyVersion topVer = null;
+
+        IgniteInternalTx tx = cctx.tm().anyActiveThreadTx();
+
+        if (tx != null && tx.topologyVersionSnapshot() != null)
+            topVer = tx.topologyVersionSnapshot();
+
+        if (topVer == null)
+            topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+
+        if (topVer == null)
+            mapOnTopology(keys, false, null, waitTopFut);
+        else {
+            topLocked = true;
+
+            map0(topVer, keys, false, null);
+        }
     }
 
     /** {@inheritDoc} */
@@ -430,15 +450,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 }
 
                 topVer = fut.topologyVersion();
-
-                if (futVer == null)
-                    // Assign future version in topology read lock before first exception may be thrown.
-                    futVer = cctx.versions().next(topVer);
             }
             else {
                 if (waitTopFut) {
                     fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
+                        @Override
+                        public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             mapOnTopology(keys, remap, oldNodeId, waitTopFut);
                         }
                     });
@@ -448,9 +465,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 return;
             }
-
-            if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
-                cctx.mvcc().addAtomicFuture(version(), this);
         }
         finally {
             cache.topology().readUnlock();
@@ -474,6 +488,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /**
+     * @param topVer Topology version.
      * @param keys Keys to map.
      * @param remap Flag indicating if this is partial remap for this future.
      * @param oldNodeId Old node ID if was remap.
@@ -493,6 +508,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             return;
         }
+
+        if (futVer == null)
+            // Assign future version in topology read lock before first exception may be thrown.
+            futVer = cctx.versions().next(topVer);
+
+        if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
+            cctx.mvcc().addAtomicFuture(version(), this);
 
         CacheConfiguration ccfg = cctx.config();
 
@@ -579,6 +601,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 fastMap,
                 updVer,
                 topVer,
+                topLocked,
                 syncMode,
                 op,
                 retval,
@@ -716,6 +739,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             fastMap,
                             updVer,
                             topVer,
+                            topLocked,
                             syncMode,
                             op,
                             retval,

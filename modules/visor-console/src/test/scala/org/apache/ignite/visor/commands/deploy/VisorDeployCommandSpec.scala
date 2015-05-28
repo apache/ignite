@@ -25,10 +25,10 @@ import org.apache.ignite.visor.commands.deploy.VisorDeployCommand._
 /**
  * Unit test for 'deploy' command.
  */
-class VisorDeployCommandSpec extends FlatSpec with Matchers {
-    behavior of "A 'deploy' visor command"
-
-    it should "copy folder" in {
-        visor.deploy("-h=uname:passwd@localhost -s=/home/uname/test -d=dir")
+class VisorDeployCommandSpec extends FunSpec with Matchers {
+    describe("A 'deploy' visor command") {
+        it("should copy folder") {
+            visor.deploy("-h=uname:passwd@localhost -s=/home/uname/test -d=dir")
+        }
     }
 }

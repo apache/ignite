@@ -141,6 +141,9 @@ public class GridMapQueryExecutor {
 
             ClusterNode node = ctx.discovery().node(nodeId);
 
+            if (node == null)
+                return; // Node left, ignore.
+
             boolean processed = true;
 
             if (msg instanceof GridQueryRequest)

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -53,9 +52,14 @@ public class IgniteTxHandler {
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> ctx;
 
-    public IgniteInternalFuture<IgniteInternalTx> processNearTxPrepareRequest(final UUID nearNodeId,
+    /**
+     * @param nearNodeId Node ID.
+     * @param req Request.
+     * @return Prepare future.
+     */
+    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest req) {
-        return prepareTx(nearNodeId, null, req, null);
+        return prepareTx(nearNodeId, null, req);
     }
 
     /**
@@ -114,16 +118,16 @@ public class IgniteTxHandler {
             }
         });
 
-        ctx.io().addHandler(0, GridCacheOptimisticCheckPreparedTxRequest.class,
-            new CI2<UUID, GridCacheOptimisticCheckPreparedTxRequest>() {
-                @Override public void apply(UUID nodeId, GridCacheOptimisticCheckPreparedTxRequest req) {
+        ctx.io().addHandler(0, GridCacheTxRecoveryRequest.class,
+            new CI2<UUID, GridCacheTxRecoveryRequest>() {
+                @Override public void apply(UUID nodeId, GridCacheTxRecoveryRequest req) {
                     processCheckPreparedTxRequest(nodeId, req);
                 }
             });
 
-        ctx.io().addHandler(0, GridCacheOptimisticCheckPreparedTxResponse.class,
-            new CI2<UUID, GridCacheOptimisticCheckPreparedTxResponse>() {
-                @Override public void apply(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse res) {
+        ctx.io().addHandler(0, GridCacheTxRecoveryResponse.class,
+            new CI2<UUID, GridCacheTxRecoveryResponse>() {
+                @Override public void apply(UUID nodeId, GridCacheTxRecoveryResponse res) {
                     processCheckPreparedTxResponse(nodeId, res);
                 }
             });
@@ -135,29 +139,26 @@ public class IgniteTxHandler {
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public IgniteInternalFuture<IgniteInternalTx> prepareTx(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareTx(
         UUID nearNodeId,
         @Nullable GridNearTxLocal locTx,
-        GridNearTxPrepareRequest req,
-        @Nullable IgniteInClosure<GridNearTxPrepareResponse> completeCb
+        GridNearTxPrepareRequest req
     ) {
         assert nearNodeId != null;
         assert req != null;
 
         if (locTx != null) {
-            assert completeCb != null;
-
             if (req.near()) {
                 // Make sure not to provide Near entries to DHT cache.
                 req.cloneEntries();
 
-                return prepareNearTx(nearNodeId, req, completeCb);
+                return prepareNearTx(nearNodeId, req);
             }
             else
-                return prepareColocatedTx(locTx, req, completeCb);
+                return prepareColocatedTx(locTx, req);
         }
         else
-            return prepareNearTx(nearNodeId, req, null);
+            return prepareNearTx(nearNodeId, req);
     }
 
     /**
@@ -167,28 +168,25 @@ public class IgniteTxHandler {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<IgniteInternalTx> prepareColocatedTx(
+    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareColocatedTx(
         final GridNearTxLocal locTx,
-        final GridNearTxPrepareRequest req,
-        final IgniteInClosure<GridNearTxPrepareResponse> completeCb
+        final GridNearTxPrepareRequest req
     ) {
-
         IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(); // TODO force preload keys.
 
         return new GridEmbeddedFuture<>(
             fut,
-            new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
-                @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception ex) {
+            new C2<Object, Exception, IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                @Override public IgniteInternalFuture<GridNearTxPrepareResponse> apply(Object o, Exception ex) {
                     if (ex != null)
                         throw new GridClosureException(ex);
 
-                    IgniteInternalFuture<IgniteInternalTx> fut = locTx.prepareAsyncLocal(
+                    IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(
                         req.reads(),
                         req.writes(),
                         req.transactionNodes(),
                         req.last(),
-                        req.lastBackups(),
-                        completeCb);
+                        req.lastBackups());
 
                     if (locTx.isRollbackOnly())
                         locTx.rollbackAsync();
@@ -196,18 +194,16 @@ public class IgniteTxHandler {
                     return fut;
                 }
             },
-            new C2<IgniteInternalTx, Exception, IgniteInternalTx>() {
-                @Nullable @Override public IgniteInternalTx apply(IgniteInternalTx tx, Exception e) {
+            new C2<GridNearTxPrepareResponse, Exception, GridNearTxPrepareResponse>() {
+                @Nullable @Override public GridNearTxPrepareResponse apply(GridNearTxPrepareResponse res, Exception e) {
                     if (e != null) {
-                        // tx can be null of exception occurred.
-                        if (tx != null)
-                            tx.setRollbackOnly(); // Just in case.
+                        locTx.setRollbackOnly(); // Just in case.
 
                         if (!(e instanceof IgniteTxOptimisticCheckedException))
-                            U.error(log, "Failed to prepare DHT transaction: " + tx, e);
+                            U.error(log, "Failed to prepare transaction: " + locTx, e);
                     }
 
-                    return tx;
+                    return res;
                 }
             }
         );
@@ -220,10 +216,9 @@ public class IgniteTxHandler {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<IgniteInternalTx> prepareNearTx(
+    private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
         final UUID nearNodeId,
-        final GridNearTxPrepareRequest req,
-        IgniteInClosure<GridNearTxPrepareResponse> completeCb
+        final GridNearTxPrepareRequest req
     ) {
         ClusterNode nearNode = ctx.node(nearNodeId);
 
@@ -276,8 +271,6 @@ public class IgniteTxHandler {
                 req.isInvalidate(),
                 false,
                 req.txSize(),
-                req.groupLockKey(),
-                req.partitionLock(),
                 req.transactionNodes(),
                 req.subjectId(),
                 req.taskNameHash()
@@ -308,7 +301,7 @@ public class IgniteTxHandler {
             if (req.returnValue())
                 tx.needReturnValue(true);
 
-            IgniteInternalFuture<IgniteInternalTx> fut = tx.prepareAsync(
+            IgniteInternalFuture<GridNearTxPrepareResponse> fut = tx.prepareAsync(
                 req.reads(),
                 req.writes(),
                 req.dhtVersions(),
@@ -316,8 +309,7 @@ public class IgniteTxHandler {
                 req.miniId(),
                 req.transactionNodes(),
                 req.last(),
-                req.lastBackups(),
-                completeCb);
+                req.lastBackups());
 
             if (tx.isRollbackOnly()) {
                 try {
@@ -330,8 +322,8 @@ public class IgniteTxHandler {
 
             final GridDhtTxLocal tx0 = tx;
 
-            fut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteInternalTx> txFut) {
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> txFut) {
                     try {
                         txFut.get();
                     }
@@ -347,7 +339,7 @@ public class IgniteTxHandler {
             return fut;
         }
         else
-            return new GridFinishedFuture<>((IgniteInternalTx)null);
+            return new GridFinishedFuture<>((GridNearTxPrepareResponse)null);
     }
 
     /**
@@ -355,7 +347,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
-        GridNearTxPrepareFuture fut = (GridNearTxPrepareFuture)ctx.mvcc()
+        GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
             .<IgniteInternalTx>future(res.version(), res.futureId());
 
         if (fut == null) {
@@ -392,8 +384,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().
-            <IgniteInternalTx>future(res.version(), res.futureId());
+        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().future(res.version(), res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -437,6 +428,7 @@ public class IgniteTxHandler {
 
     /**
      * @param nodeId Node ID.
+     * @param locTx Local transaction.
      * @param req Request.
      * @return Future.
      */
@@ -560,8 +552,6 @@ public class IgniteTxHandler {
                             req.isInvalidate(),
                             req.storeEnabled(),
                             req.txSize(),
-                            req.groupLockKey(),
-                            false,
                             null,
                             req.subjectId(),
                             req.taskNameHash()));
@@ -1008,7 +998,6 @@ public class IgniteTxHandler {
                     req.isInvalidate(),
                     req.timeout(),
                     req.writes() != null ? Math.max(req.writes().size(), req.txSize()) : req.txSize(),
-                    req.groupLockKey(),
                     req.nearXidVersion(),
                     req.transactionNodes(),
                     req.subjectId(),
@@ -1094,6 +1083,7 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param cacheCtx Context.
      * @param key Key
      * @param ver Version.
      * @throws IgniteCheckedException If invalidate failed.
@@ -1141,7 +1131,6 @@ public class IgniteTxHandler {
                     req.timeout(),
                     req.nearWrites(),
                     req.txSize(),
-                    req.groupLockKey(),
                     req.subjectId(),
                     req.taskNameHash()
                 );
@@ -1178,12 +1167,13 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     protected void processCheckPreparedTxRequest(final UUID nodeId,
-        final GridCacheOptimisticCheckPreparedTxRequest req)
+        final GridCacheTxRecoveryRequest req)
     {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
 
-        IgniteInternalFuture<Boolean> fut = ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+        IgniteInternalFuture<Boolean> fut = req.nearTxCheck() ? ctx.tm().txCommitted(req.nearXidVersion()) :
+            ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
 
         if (fut == null || fut.isDone()) {
             boolean prepared;
@@ -1225,10 +1215,10 @@ public class IgniteTxHandler {
      * @param prepared {@code True} if all transaction prepared or committed.
      */
     private void sendCheckPreparedResponse(UUID nodeId,
-        GridCacheOptimisticCheckPreparedTxRequest req,
+        GridCacheTxRecoveryRequest req,
         boolean prepared) {
-        GridCacheOptimisticCheckPreparedTxResponse res =
-            new GridCacheOptimisticCheckPreparedTxResponse(req.version(), req.futureId(), req.miniId(), prepared);
+        GridCacheTxRecoveryResponse res =
+            new GridCacheTxRecoveryResponse(req.version(), req.futureId(), req.miniId(), prepared);
 
         try {
             if (log.isDebugEnabled())
@@ -1250,11 +1240,11 @@ public class IgniteTxHandler {
      * @param nodeId Node ID.
      * @param res Response.
      */
-    protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheOptimisticCheckPreparedTxResponse res) {
+    protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-        GridCacheOptimisticCheckPreparedTxFuture fut = (GridCacheOptimisticCheckPreparedTxFuture)ctx.mvcc().
+        GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().
             <Boolean>future(res.version(), res.futureId());
 
         if (fut == null) {

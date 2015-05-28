@@ -47,7 +47,7 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder();
+        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN \n" : "");
 
         buff.append('(').append(left.getSQL()).append(')');
 

@@ -43,12 +43,29 @@ public class GridCacheTwoStepQuery {
     /** */
     private int pageSize = DFLT_PAGE_SIZE;
 
+    /** */
+    private boolean explain;
+
     /**
      * @param qry Reduce query.
      * @param params Reduce query parameters.
      */
     public GridCacheTwoStepQuery(String qry, Object ... params) {
         reduce = new GridCacheSqlQuery(null, qry, params);
+    }
+
+    /**
+     * @return If this is explain query.
+     */
+    public boolean explain() {
+        return explain;
+    }
+
+    /**
+     * @param explain If this is explain query.
+     */
+    public void explain(boolean explain) {
+        this.explain = explain;
     }
 
     /**

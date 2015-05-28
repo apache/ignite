@@ -77,7 +77,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param timeout Timeout.
      * @param ctx Cache context.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param nearXidVer Near transaction ID.
      * @param txNodes Transaction nodes mapping.
      */
@@ -97,14 +96,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, grpLockKey, subjId, taskNameHash);
+            txSize, subjId, taskNameHash);
 
         assert nearNodeId != null;
         assert rmtFutId != null;
@@ -139,7 +137,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param timeout Timeout.
      * @param ctx Cache context.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if transaction is group-lock.
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
@@ -158,12 +155,11 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, grpLockKey, subjId, taskNameHash);
+            txSize, subjId, taskNameHash);
 
         assert nearNodeId != null;
         assert rmtFutId != null;

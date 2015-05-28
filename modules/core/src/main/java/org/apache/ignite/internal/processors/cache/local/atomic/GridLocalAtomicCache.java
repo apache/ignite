@@ -387,12 +387,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public void removeAll() throws IgniteCheckedException {
-        removeAll(keySet());
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
         return ctx.closures().callLocalSafe(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1374,15 +1368,23 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     private List<GridCacheEntryEx> lockEntries(Collection<? extends K> keys) {
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
+        boolean nullKeys = false;
+
         while (true) {
             for (K key : keys) {
-                if (key == null)
-                    throw new NullPointerException("Null key.");
+                if (key == null) {
+                    nullKeys = true;
+
+                    break;
+                }
 
                 GridCacheEntryEx entry = entryEx(ctx.toCacheKeyObject(key));
 
                 locked.add(entry);
             }
+
+            if (nullKeys)
+                break;
 
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
@@ -1405,6 +1407,15 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             if (!locked.isEmpty())
                 return locked;
         }
+
+        assert nullKeys;
+
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+        for (GridCacheEntryEx entry : locked)
+            ctx.evicts().touch(entry, topVer);
+
+        throw new NullPointerException("Null key.");
     }
 
     /**

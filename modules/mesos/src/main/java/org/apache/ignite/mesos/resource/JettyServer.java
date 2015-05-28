@@ -44,7 +44,7 @@ public class JettyServer {
             server.start();
         }
         else
-            throw new IllegalStateException("Failed. Jetty server has been started already.");
+            throw new IllegalStateException("Jetty server has already been started.");
     }
 
     /**
@@ -56,6 +56,6 @@ public class JettyServer {
         if (server != null)
             server.stop();
         else
-            throw new IllegalStateException("Failed. Jetty server has not been started yet.");
+            throw new IllegalStateException("Jetty server has not yet been started.");
     }
 }

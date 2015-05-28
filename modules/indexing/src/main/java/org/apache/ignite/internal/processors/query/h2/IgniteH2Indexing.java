@@ -1321,6 +1321,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteCheckedException("Cache already registered: " + U.maskName(ccfg.getName()));
 
         createSchema(schema);
+
+        executeStatement(schema, "CREATE ALIAS " + GridSqlQuerySplitter.TABLE_FUNC_NAME +
+            " NOBUFFER FOR \"" + GridReduceQueryExecutor.class.getName() + ".mergeTableFunction\"");
+
         createSqlFunctions(schema, ccfg.getSqlFunctionClasses());
     }
 
@@ -1406,6 +1410,23 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Override public String toString() {
             return S.toString(ConnectionWrapper.class, this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSqlType(Class<?> cls) {
+        switch (DBTypeEnum.fromClass(cls)) {
+            case OTHER:
+            case ARRAY:
+                return false;
+
+            default:
+                return true;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isGeometryClass(Class<?> cls) {
+        return DataType.isGeometryClass(cls);
     }
 
     /**
