@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.spark.impl.{IgniteAbstractRDD, IgniteSqlRDD, IgnitePartition, IgniteQueryIterator}
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{TaskContext, Partition}
 
@@ -37,9 +38,9 @@ class IgniteRDD[K, V] (
     override def compute(part: Partition, context: TaskContext): Iterator[(K, V)] = {
         val cache = ensureCache()
 
-        val qry: ScanQuery[K, V] = new ScanQuery[K, V]()
+        val qry: ScanQuery[K, V] = new ScanQuery[K, V](part.index)
 
-        qry.setPartition(part.index)
+        val partNodes = ic.ignite().affinity(cache.getName).mapPartitionToPrimaryAndBackups(part.index)
 
         val it: java.util.Iterator[Cache.Entry[K, V]] = cache.query(qry).iterator()
 
@@ -59,7 +60,8 @@ class IgniteRDD[K, V] (
     override protected def getPreferredLocations(split: Partition): Seq[String] = {
         ensureCache()
 
-        ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index).map(_.addresses()).flatten.toList
+        ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+            .map(_.asInstanceOf[TcpDiscoveryNode].socketAddresses()).flatten.map(_.getHostName).toList
     }
 
     def objectSql(typeName: String, sql: String, args: Any*): RDD[(K, V)] = {
