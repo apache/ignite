@@ -81,7 +81,7 @@ public interface DiscoverySpi extends IgniteSpi {
      *  @param attrs Map of node attributes.
      * @param ver Product version.
      */
-    public TcpDiscoverySpi setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
+    public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
 
     /**
      * Sets a listener for discovery events. Refer to

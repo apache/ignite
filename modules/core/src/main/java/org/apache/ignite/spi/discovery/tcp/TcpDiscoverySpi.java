@@ -769,7 +769,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+    @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
         assert locNodeAttrs == null;
         assert locNodeVer == null;
 
@@ -780,8 +780,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         locNodeAttrs = attrs;
         locNodeVer = ver;
-
-        return this;
     }
 
     /**

@@ -49,13 +49,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         if (clientMode) {
             discoSpi = new TcpDiscoverySpi() {
-                @Override public TcpDiscoverySpi setNodeAttributes(Map<String, Object> attrs,
+                @Override public void setNodeAttributes(Map<String, Object> attrs,
                     IgniteProductVersion ver) {
                     super.setNodeAttributes(attrs, ver);
 
                     attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
-
-                    return this;
                 }
             };
 
@@ -65,13 +63,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         }
         else {
             discoSpi = new TcpDiscoverySpi() {
-                @Override public TcpDiscoverySpi setNodeAttributes(Map<String, Object> attrs,
+                @Override public void setNodeAttributes(Map<String, Object> attrs,
                     IgniteProductVersion ver) {
                     super.setNodeAttributes(attrs, ver);
 
                     attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
-
-                    return this;
                 }
             };
         }
