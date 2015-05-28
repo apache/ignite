@@ -283,6 +283,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        if (Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
+            ctx.performance().add("Enable client mode for TcpDiscoverySpi (set TcpDiscoverySpi.clientMode to true)");
+    }
+
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         long totSysMemory = -1;
 

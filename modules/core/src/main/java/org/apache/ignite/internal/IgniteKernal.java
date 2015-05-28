@@ -1072,9 +1072,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
 
-        if (Boolean.TRUE.equals(cfg.isClientMode()) && !cfg.getDiscoverySpi().isClientMode())
-            perf.add("Use TcpDiscoverySpi in client mode for client node");
-
         if (OptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof OptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
                 OptimizedMarshaller.class.getSimpleName() + ')');
