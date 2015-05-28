@@ -810,17 +810,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             boolean retry = false;
             Collection<Exception> errs = new ArrayList<>();
 
-            try (SocketMultiConnector multiConnector = new SocketMultiConnector(spi, addrs, 2)) {
-                GridTuple3<InetSocketAddress, Socket, Exception> tuple;
+            for (int j = 2; --j >= 0;) {
+                for (InetSocketAddress addr : addrs) {
+                    Socket sock = null;
+                    Exception ex = null;
 
-                while ((tuple = multiConnector.next()) != null) {
-                    InetSocketAddress addr = tuple.get1();
-                    Socket sock = tuple.get2();
-                    Exception ex = tuple.get3();
+                    try {
+                        sock = spi.openSocket(addr);
+                    }
+                    catch (Exception e) {
+                        if (j > 0)
+                            continue;
+
+                        ex = e;
+                    }
 
                     if (ex == null) {
-                        assert sock != null;
-
                         try {
                             Integer res = sendMessageDirectly(joinReq, addr, sock);
 
