@@ -104,8 +104,10 @@ public class IgniteScheduler implements Scheduler {
                     Collections.singletonList(task),
                     Protos.Filters.newBuilder().setRefuseSeconds(1).build());
             }
-            catch (Exception e) {
+            catch (RuntimeException e) {
                 log.error("Failed launch task. Task id: {}. Task info: {}", taskId, task);
+
+                throw e;
             }
 
             synchronized (mux) {
