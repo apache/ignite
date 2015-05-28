@@ -18,8 +18,8 @@
 package org.apache.ignite.mesos;
 
 import org.apache.ignite.mesos.resource.*;
+import org.apache.logging.log4j.*;
 import org.apache.mesos.*;
-import org.slf4j.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -44,7 +44,7 @@ public class IgniteScheduler implements Scheduler {
     public static final String DELIM = ",";
 
     /** Logger. */
-    private static final Logger log = LoggerFactory.getLogger(IgniteScheduler.class);
+    private static final Logger log = LogManager.getLogger(IgniteScheduler.class);
 
     /** Mutex. */
     private static final Object mux = new Object();
@@ -72,10 +72,13 @@ public class IgniteScheduler implements Scheduler {
 
     /** {@inheritDoc} */
     @Override public void resourceOffers(SchedulerDriver schedulerDriver, List<Protos.Offer> offers) {
-        synchronized (mux) {
-            log.debug("Offers resources: {} ", offers.size());
+        log.debug("Offers resources: {} ", offers.size());
 
-            for (Protos.Offer offer : offers) {
+        for (Protos.Offer offer : offers) {
+            Protos.TaskID taskId;
+            Protos.TaskInfo task;
+
+            synchronized (mux) {
                 IgniteTask igniteTask = checkOffer(offer);
 
                 // Decline offer which doesn't match by mem or cpu.
@@ -86,19 +89,28 @@ public class IgniteScheduler implements Scheduler {
                 }
 
                 // Generate a unique task ID.
-                Protos.TaskID taskId = Protos.TaskID.newBuilder()
+                taskId = Protos.TaskID.newBuilder()
                     .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
 
-                log.info("Launching task: [{}]", igniteTask);
+                log.info("Launching task: {}", igniteTask);
 
                 // Create task to run.
-                Protos.TaskInfo task = createTask(offer, igniteTask, taskId);
+                task = createTask(offer, igniteTask, taskId);
 
+                tasks.put(taskId.getValue(), igniteTask);
+            }
+
+            try {
                 schedulerDriver.launchTasks(Collections.singletonList(offer.getId()),
                     Collections.singletonList(task),
                     Protos.Filters.newBuilder().setRefuseSeconds(1).build());
+            }
+            catch (Exception e) {
+                synchronized (mux) {
+                    tasks.remove(taskId.getValue());
+                }
 
-                tasks.put(taskId.getValue(), igniteTask);
+                log.error("Failed launch task. Task id: {}. Task info: {}", taskId, task);
             }
         }
     }
@@ -274,34 +286,36 @@ public class IgniteScheduler implements Scheduler {
     @Override public void statusUpdate(SchedulerDriver schedulerDriver, Protos.TaskStatus taskStatus) {
         final String taskId = taskStatus.getTaskId().getValue();
 
-        log.info("Received update event task: [{}] is in state: [{}]", taskId, taskStatus.getState());
+        log.info("Received update event task: {} is in state: {}", taskId, taskStatus.getState());
 
         if (taskStatus.getState().equals(Protos.TaskState.TASK_FAILED)
             || taskStatus.getState().equals(Protos.TaskState.TASK_ERROR)
             || taskStatus.getState().equals(Protos.TaskState.TASK_FINISHED)
             || taskStatus.getState().equals(Protos.TaskState.TASK_KILLED)
             || taskStatus.getState().equals(Protos.TaskState.TASK_LOST)) {
+            IgniteTask failedTask;
+
             synchronized (mux) {
-                IgniteTask failedTask = tasks.remove(taskId);
+                failedTask = tasks.remove(taskId);
+            }
 
-                if (failedTask != null) {
-                    List<Protos.Request> requests = new ArrayList<>();
+            if (failedTask != null) {
+                List<Protos.Request> requests = new ArrayList<>();
 
-                    Protos.Request request = Protos.Request.newBuilder()
-                        .addResources(Protos.Resource.newBuilder()
-                            .setType(Protos.Value.Type.SCALAR)
-                            .setName(MEM)
-                            .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.mem())))
-                        .addResources(Protos.Resource.newBuilder()
-                            .setType(Protos.Value.Type.SCALAR)
-                            .setName(CPU)
-                            .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
-                        .build();
+                Protos.Request request = Protos.Request.newBuilder()
+                    .addResources(Protos.Resource.newBuilder()
+                        .setType(Protos.Value.Type.SCALAR)
+                        .setName(MEM)
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.mem())))
+                    .addResources(Protos.Resource.newBuilder()
+                        .setType(Protos.Value.Type.SCALAR)
+                        .setName(CPU)
+                        .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
+                    .build();
 
-                    requests.add(request);
+                requests.add(request);
 
-                    schedulerDriver.requestResources(requests);
-                }
+                schedulerDriver.requestResources(requests);
             }
         }
     }
@@ -316,7 +330,7 @@ public class IgniteScheduler implements Scheduler {
     /** {@inheritDoc} */
     @Override public void registered(SchedulerDriver schedulerDriver, Protos.FrameworkID frameworkID,
         Protos.MasterInfo masterInfo) {
-        log.info("Scheduler registered. Master: [{}:{}], framework=[{}]", masterInfo.getIp(), masterInfo.getPort(),
+        log.info("Scheduler registered. Master: {}:{}, framework={}", masterInfo.getIp(), masterInfo.getPort(),
             frameworkID);
     }
 

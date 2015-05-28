@@ -19,8 +19,8 @@ package org.apache.ignite.mesos;
 
 import com.google.protobuf.*;
 import org.apache.ignite.mesos.resource.*;
+import org.apache.logging.log4j.*;
 import org.apache.mesos.*;
-import org.slf4j.*;
 
 import java.net.*;
 
@@ -29,7 +29,7 @@ import java.net.*;
  */
 public class IgniteFramework {
     /** */
-    public static final Logger log = LoggerFactory.getLogger(IgniteFramework.class);
+    public static final Logger log = LogManager.getLogger(IgniteFramework.class);
 
     /** Framework name. */
     public static final String IGNITE_FRAMEWORK_NAME = "Ignite";

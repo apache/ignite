@@ -17,7 +17,7 @@
 
 package org.apache.ignite.mesos;
 
-import org.slf4j.*;
+import org.apache.logging.log4j.*;
 
 import java.io.*;
 import java.net.*;
@@ -29,7 +29,7 @@ import java.util.regex.*;
  */
 public class ClusterProperties {
     /** */
-    private static final Logger log = LoggerFactory.getLogger(ClusterProperties.class);
+    private static final Logger log = LogManager.getLogger(ClusterProperties.class);
 
     /** Unlimited. */
     public static final double UNLIMITED = Double.MAX_VALUE;
@@ -62,7 +62,7 @@ public class ClusterProperties {
     public static final String IGNITE_HTTP_SERVER_PORT = "IGNITE_HTTP_SERVER_PORT";
 
     /** */
-    public static final String DEFAULT_HTTP_SERVER_PORT = "47511";
+    public static final String DEFAULT_HTTP_SERVER_PORT = "48610";
 
     /** Http server host. */
     private int httpServerPort = Integer.valueOf(DEFAULT_HTTP_SERVER_PORT);
