@@ -61,9 +61,6 @@ public class CacheSpringStoreSessionListener implements CacheStoreSessionListene
     /** Data source. */
     private DataSource dataSrc;
 
-    /** Propagation behavior. */
-    private int propagation = TransactionDefinition.PROPAGATION_REQUIRED;
-
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -108,26 +105,6 @@ public class CacheSpringStoreSessionListener implements CacheStoreSessionListene
      */
     public DataSource getDataSource() {
         return dataSrc;
-    }
-
-    /**
-     * Sets propagation behavior.
-     * <p>
-     * This parameter is optional.
-     *
-     * @param propagation Propagation behavior.
-     */
-    public void setPropagationBehavior(int propagation) {
-        this.propagation = propagation;
-    }
-
-    /**
-     * Gets propagation behavior.
-     *
-     * @return Propagation behavior.
-     */
-    public int getPropagationBehavior() {
-        return propagation;
     }
 
     /** {@inheritDoc} */
@@ -197,7 +174,6 @@ public class CacheSpringStoreSessionListener implements CacheStoreSessionListene
 
         def.setName("Ignite Tx [cache=" + (cacheName != null ? cacheName : "<default>") + ", id=" + tx.xid() + ']');
         def.setIsolationLevel(isolationLevel(tx.isolation()));
-        def.setPropagationBehavior(propagation);
 
         long timeoutSec = (tx.timeout() + 500) / 1000;
 

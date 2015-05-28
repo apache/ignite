@@ -65,7 +65,7 @@ import javax.sql.*;
  *         cache transaction, this listener is no-op.
  *     </li>
  *     <li>
- *         <@ignitelink org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListener} -
+ *         {@ignitelink org.apache.ignite.cache.store.hibernate.CacheHibernateStoreSessionListener} -
  *         Hibernate-based session listener. It creates a new Hibernate
  *         session for each Ignite session. If there is an ongoing cache
  *         transaction, a corresponding Hibernate transaction is created
