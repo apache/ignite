@@ -40,14 +40,14 @@ public class IgniteScheduler implements Scheduler {
     /** Default port range. */
     public static final String DEFAULT_PORT = ":47500..47510";
 
-    /** Delimiter to use in IP names. */
+    /** Delimiter char. */
     public static final String DELIM = ",";
 
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteScheduler.class);
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    private final Object mux = new Object();
 
     /** ID generator. */
     private AtomicInteger taskIdGenerator = new AtomicInteger();
@@ -89,7 +89,7 @@ public class IgniteScheduler implements Scheduler {
                 Protos.TaskID taskId = Protos.TaskID.newBuilder()
                     .setValue(Integer.toString(taskIdGenerator.incrementAndGet())).build();
 
-                log.info("Launching task: [{}]", igniteTask);
+                log.info("Launching task: {}", igniteTask);
 
                 // Create task to run.
                 Protos.TaskInfo task = createTask(offer, igniteTask, taskId);
@@ -175,7 +175,9 @@ public class IgniteScheduler implements Scheduler {
     /**
      * @return Address running nodes.
      */
-    protected String getAddress(String address) {
+    private String getAddress(String address) {
+        assert Thread.holdsLock(mux);
+
         if (tasks.isEmpty()) {
             if (address != null && !address.isEmpty())
                 return address + DEFAULT_PORT;
@@ -198,6 +200,8 @@ public class IgniteScheduler implements Scheduler {
      * @return Ignite task description.
      */
     private IgniteTask checkOffer(Protos.Offer offer) {
+        assert Thread.holdsLock(mux);
+
         // Check limit on running nodes.
         if (clusterProps.instances() <= tasks.size())
             return null;
