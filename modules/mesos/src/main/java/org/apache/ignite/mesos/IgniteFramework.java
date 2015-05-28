@@ -19,17 +19,17 @@ package org.apache.ignite.mesos;
 
 import com.google.protobuf.*;
 import org.apache.ignite.mesos.resource.*;
-import org.apache.logging.log4j.*;
 import org.apache.mesos.*;
 
 import java.net.*;
+import java.util.logging.*;
 
 /**
  * Ignite mesos framework.
  */
 public class IgniteFramework {
     /** */
-    public static final Logger log = LogManager.getLogger(IgniteFramework.class);
+    public static final Logger log = Logger.getLogger(IgniteFramework.class.getSimpleName());
 
     /** Framework name. */
     public static final String IGNITE_FRAMEWORK_NAME = "Ignite";
@@ -80,13 +80,13 @@ public class IgniteFramework {
             log.info("Enabling authentication for the framework");
 
             if (System.getenv("DEFAULT_PRINCIPAL") == null) {
-                log.error("Expecting authentication principal in the environment");
+                log.log(Level.SEVERE, "Expecting authentication principal in the environment");
 
                 System.exit(1);
             }
 
             if (System.getenv("DEFAULT_SECRET") == null) {
-                log.error("Expecting authentication secret in the environment");
+                log.log(Level.SEVERE, "Expecting authentication secret in the environment");
 
                 System.exit(1);
             }

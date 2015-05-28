@@ -17,11 +17,10 @@
 
 package org.apache.ignite.mesos;
 
-import org.apache.logging.log4j.*;
-
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.logging.*;
 import java.util.regex.*;
 
 /**
@@ -29,7 +28,7 @@ import java.util.regex.*;
  */
 public class ClusterProperties {
     /** */
-    private static final Logger log = LogManager.getLogger(ClusterProperties.class);
+    private static final Logger log = Logger.getLogger(ClusterProperties.class.getSimpleName());
 
     /** Unlimited. */
     public static final double UNLIMITED = Double.MAX_VALUE;
@@ -448,7 +447,7 @@ public class ClusterProperties {
                     prop.hostnameConstraint = Pattern.compile(pattern);
                 }
                 catch (PatternSyntaxException e) {
-                    log.warn("IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
+                    log.log(Level.WARNING, "IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
                 }
             }
 

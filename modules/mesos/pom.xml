@@ -30,7 +30,6 @@
     <properties>
         <jetty.version>9.2.10.v20150310</jetty.version>
         <mesos.version>0.22.0</mesos.version>
-        <log4j.version>2.0.2</log4j.version>
     </properties>
 
     <dependencies>
@@ -38,12 +37,6 @@
             <groupId>org.apache.mesos</groupId>
             <artifactId>mesos</artifactId>
             <version>${mesos.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
         </dependency>
 
         <dependency>
