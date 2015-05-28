@@ -201,7 +201,7 @@ public class ClusterProperties {
     }
 
     /**
-     * Set CPU count limit.
+     * Sets CPU count limit.
      */
     public void cpus(double cpu) {
         this.cpu = cpu;
@@ -215,7 +215,7 @@ public class ClusterProperties {
     }
 
     /**
-     * Set CPU count limit.
+     * Sets CPU count limit.
      */
     public void cpusPerNode(double cpu) {
         this.cpuPerNode = cpu;
@@ -229,7 +229,7 @@ public class ClusterProperties {
     }
 
     /**
-     * Set mem limit.
+     * Sets mem limit.
      *
      * @param mem Memory.
      */
@@ -245,7 +245,7 @@ public class ClusterProperties {
     }
 
     /**
-     * Set mem limit.
+     * Sets mem limit.
      *
      * @param mem Memory.
      */

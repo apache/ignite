@@ -77,9 +77,10 @@ public class IgniteScheduler implements Scheduler {
         for (Protos.Offer offer : offers) {
             Protos.TaskID taskId;
             Protos.TaskInfo task;
+            IgniteTask igniteTask;
 
             synchronized (mux) {
-                IgniteTask igniteTask = checkOffer(offer);
+                igniteTask = checkOffer(offer);
 
                 // Decline offer which doesn't match by mem or cpu.
                 if (igniteTask == null) {
@@ -96,8 +97,6 @@ public class IgniteScheduler implements Scheduler {
 
                 // Create task to run.
                 task = createTask(offer, igniteTask, taskId);
-
-                tasks.put(taskId.getValue(), igniteTask);
             }
 
             try {
@@ -106,11 +105,11 @@ public class IgniteScheduler implements Scheduler {
                     Protos.Filters.newBuilder().setRefuseSeconds(1).build());
             }
             catch (Exception e) {
-                synchronized (mux) {
-                    tasks.remove(taskId.getValue());
-                }
-
                 log.error("Failed launch task. Task id: {}. Task info: {}", taskId, task);
+            }
+
+            synchronized (mux) {
+                tasks.put(taskId.getValue(), igniteTask);
             }
         }
     }
