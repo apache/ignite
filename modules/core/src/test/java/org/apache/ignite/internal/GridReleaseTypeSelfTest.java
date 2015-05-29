@@ -45,32 +45,19 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoSpi;
-
-        if (clientMode) {
-            discoSpi = new TcpDiscoverySpi() {
-                @Override public void setNodeAttributes(Map<String, Object> attrs,
-                    IgniteProductVersion ver) {
-                    super.setNodeAttributes(attrs, ver);
-
-                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
-                }
-            };
-
+        if (clientMode)
             cfg.setClientMode(true);
-        }
-        else {
-            discoSpi = new TcpDiscoverySpi() {
-                @Override public void setNodeAttributes(Map<String, Object> attrs,
-                    IgniteProductVersion ver) {
-                    super.setNodeAttributes(attrs, ver);
 
-                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
-                }
-            };
-        }
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+            @Override public void setNodeAttributes(Map<String, Object> attrs,
+                IgniteProductVersion ver) {
+                super.setNodeAttributes(attrs, ver);
 
-        discoSpi.setIpFinder(IP_FINDER);
+                attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
+            }
+        };
+
+        discoSpi.setIpFinder(IP_FINDER).setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoSpi);
 
