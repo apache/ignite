@@ -226,13 +226,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             return;
         }
 
-        prepareOnTopology(false);
+        prepareOnTopology(false, null);
     }
 
     /**
      * @param remap Remap flag.
+     * @param c Optional closure to run after map.
      */
-    private void prepareOnTopology(final boolean remap) {
+    private void prepareOnTopology(final boolean remap, @Nullable final Runnable c) {
         GridDhtTopologyFuture topFut = topologyReadLock();
 
         try {
@@ -271,13 +272,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                     tx.topologyVersion(topFut.topologyVersion());
 
                 prepare0(remap);
+
+                if (c != null)
+                    c.run();
             }
             else {
                 topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                         cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
-                                prepareOnTopology(remap);
+                                prepareOnTopology(remap, c);
                             }
                         });
                     }
@@ -796,9 +800,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
          *
          */
         private void remap() {
-            prepareOnTopology(true);
-
-            onDone(tx);
+            prepareOnTopology(true, new Runnable() {
+                @Override public void run() {
+                    onDone(tx);
+                }
+            });
         }
 
         /** {@inheritDoc} */

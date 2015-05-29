@@ -549,7 +549,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         }
 
         // Must get topology snapshot and map on that version.
-        mapOnTopology(false);
+        mapOnTopology(false, null);
     }
 
     /**
@@ -557,8 +557,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * will asynchronously wait for it's completeness and then try again.
      *
      * @param remap Remap flag.
+     * @param c Optional closure to run after map.
      */
-    private void mapOnTopology(final boolean remap) {
+    private void mapOnTopology(final boolean remap, @Nullable final Runnable c) {
         // We must acquire topology snapshot from the topology version future.
         cctx.topology().readLock();
 
@@ -597,12 +598,15 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                 map(keys, remap);
 
+                if (c != null)
+                    c.run();
+
                 markInitialized();
             }
             else {
                 fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
-                        mapOnTopology(remap);
+                        mapOnTopology(remap, c);
                     }
                 });
             }
@@ -1366,9 +1370,11 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             for (KeyCacheObject key : GridDhtColocatedLockFuture.this.keys)
                 cctx.mvcc().removeExplicitLock(threadId, key, lockVer);
 
-            mapOnTopology(true);
-
-            onDone(true);
+            mapOnTopology(true, new Runnable() {
+                @Override public void run() {
+                    onDone(true);
+                }
+            });
         }
 
         /** {@inheritDoc} */
