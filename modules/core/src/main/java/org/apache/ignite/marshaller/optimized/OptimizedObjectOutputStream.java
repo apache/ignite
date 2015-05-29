@@ -1005,18 +1005,18 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
          * Puts type ID and its value len to the footer.
          *
          * @param typeId Type ID.
-         * @param relativeOff Offset of an object in fields' data section.
+         * @param relOff Offset of an object in fields' data section.
          * @param len Total number of bytes occupied by type's value.
          */
-        private void put(int typeId, int relativeOff, int len) {
+        private void put(int typeId, int relOff, int len) {
             if (data == null)
                 return;
 
             data[pos++] = typeId;
-            data[pos++] = relativeOff;
+            data[pos++] = relOff;
             data[pos++] = len;
 
-            lenForOff.put(relativeOff, len);
+            lenForOff.put(relOff, len);
         }
 
         /**
@@ -1026,13 +1026,22 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
          * @param typeId Type ID.
          */
         private void putHandle(int handle, int typeId) {
+            if (data == null)
+                return;
+
             int handleOff = handles.objectOffset(handle);
             int relOff = fieldsDataPos - handleOff;
 
             Integer len = lenForOff.get(relOff);
 
-            if (len == null)
-                throw new IllegalArgumentException("Failed to find length for offset: " + relOff);
+            if (len == null) {
+                // this can be a handle to an outer object, we won't be able to process such cases when a field
+                // is detached
+                data = null;
+                lenForOff = null;
+
+                return;
+            }
 
             put(typeId, relOff, len);
         }

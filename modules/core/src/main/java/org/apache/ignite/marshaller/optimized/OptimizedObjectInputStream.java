@@ -521,7 +521,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         byte flag = (byte)in.readInt();
 
         if (flag != EMPTY_FOOTER) {
-            int skip = 3;
+            int skip = 2;
 
             for (int i = 0; i < fields.hierarchyLevels(); i++)
                 skip += fields.fields(i).size() * 3;
