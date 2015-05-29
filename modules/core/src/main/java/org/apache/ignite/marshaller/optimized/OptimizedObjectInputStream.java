@@ -352,6 +352,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             switch ((t.type())) {
                 case BYTE:
+                    readByte(); //type
+
                     byte resByte = readByte();
 
                     if (t.field() != null)
@@ -360,6 +362,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case SHORT:
+                    readByte(); //type
+
                     short resShort = readShort();
 
                     if (t.field() != null)
@@ -368,6 +372,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case INT:
+                    readByte(); //type
+
                     int resInt = readInt();
 
                     if (t.field() != null)
@@ -376,6 +382,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case LONG:
+                    readByte(); //type
+
                     long resLong = readLong();
 
                     if (t.field() != null)
@@ -384,6 +392,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case FLOAT:
+                    readByte(); //type
+
                     float resFloat = readFloat();
 
                     if (t.field() != null)
@@ -392,6 +402,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case DOUBLE:
+                    readByte(); //type
+
                     double resDouble = readDouble();
 
                     if (t.field() != null)
@@ -400,6 +412,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case CHAR:
+                    readByte(); //type
+
                     char resChar = readChar();
 
                     if (t.field() != null)
@@ -408,6 +422,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case BOOLEAN:
+                    readByte(); //type
+
                     boolean resBoolean = readBoolean();
 
                     if (t.field() != null)
@@ -955,27 +971,25 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int footerStartOff = in.readInt();
 
         if (footerStartOff == EMPTY_FOOTER)
-            return null; //TODO
+            return null; //TODO: IGNITE-950
 
         int pos = footerStartOff;
         in.offset(footerStartOff);
 
-        //assert in.readInt() == FOOTER_START;
-        in.readInt(); //TODO: do I need this? skip fields start offset
+        int fieldsDataPos = in.readInt();
 
         int fieldOff = -1;
 
         while (pos < end) {
             int id = in.readInt();
-            int len = in.readInt(); //TODO: do I need this?
 
             if (fieldId == id) {
-                fieldOff = in.readInt();
+                fieldOff = fieldsDataPos + in.readInt();
                 break;
             }
             else
-                // skip field offset
-                in.skipBytes(4);
+                // skip offset and len
+                in.skipBytes(8);
 
             pos += 12;
         }
@@ -1105,41 +1119,57 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
                 switch (t.type()) {
                     case BYTE:
+                        in.readByte(); //type
+
                         obj = in.readByte();
 
                         break;
 
                     case SHORT:
+                        in.readByte(); //type
+
                         obj = in.readShort();
 
                         break;
 
                     case INT:
+                        in.readByte(); //type
+
                         obj = in.readInt();
 
                         break;
 
                     case LONG:
+                        in.readByte(); //type
+
                         obj = in.readLong();
 
                         break;
 
                     case FLOAT:
+                        in.readByte(); //type
+
                         obj = in.readFloat();
 
                         break;
 
                     case DOUBLE:
+                        in.readByte(); //type
+
                         obj = in.readDouble();
 
                         break;
 
                     case CHAR:
+                        in.readByte(); //type
+
                         obj = in.readChar();
 
                         break;
 
                     case BOOLEAN:
+                        in.readByte(); //type
+
                         obj = in.readBoolean();
 
                         break;

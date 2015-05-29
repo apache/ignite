@@ -481,50 +481,66 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
             switch (t.type()) {
                 case BYTE:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(BYTE);
                         writeByte(getByte(obj, t.offset()));
+                    }
 
                     break;
 
                 case SHORT:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(SHORT);
                         writeShort(getShort(obj, t.offset()));
+                    }
 
                     break;
 
                 case INT:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(INT);
                         writeInt(getInt(obj, t.offset()));
+                    }
 
                     break;
 
                 case LONG:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(LONG);
                         writeLong(getLong(obj, t.offset()));
+                    }
 
                     break;
 
                 case FLOAT:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(FLOAT);
                         writeFloat(getFloat(obj, t.offset()));
+                    }
 
                     break;
 
                 case DOUBLE:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(DOUBLE);
                         writeDouble(getDouble(obj, t.offset()));
+                    }
 
                     break;
 
                 case CHAR:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(CHAR);
                         writeChar(getChar(obj, t.offset()));
+                    }
 
                     break;
 
                 case BOOLEAN:
-                    if (t.field() != null)
+                    if (t.field() != null) {
+                        writeByte(BOOLEAN);
                         writeBoolean(getBoolean(obj, t.offset()));
+                    }
 
                     break;
 
@@ -751,41 +767,49 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
             switch (t.get1().type()) {
                 case BYTE:
+                    writeByte(BYTE);
                     writeByte((Byte)t.get2());
 
                     break;
 
                 case SHORT:
+                    writeByte(SHORT);
                     writeShort((Short)t.get2());
 
                     break;
 
                 case INT:
+                    writeByte(INT);
                     writeInt((Integer)t.get2());
 
                     break;
 
                 case LONG:
+                    writeByte(LONG);
                     writeLong((Long)t.get2());
 
                     break;
 
                 case FLOAT:
+                    writeByte(FLOAT);
                     writeFloat((Float)t.get2());
 
                     break;
 
                 case DOUBLE:
+                    writeByte(DOUBLE);
                     writeDouble((Double)t.get2());
 
                     break;
 
                 case CHAR:
+                    writeByte(CHAR);
                     writeChar((Character)t.get2());
 
                     break;
 
                 case BOOLEAN:
+                    writeByte(BOOLEAN);
                     writeBoolean((Boolean)t.get2());
 
                     break;
