@@ -29,12 +29,27 @@ import org.apache.spark.{TaskContext, Partition}
 
 import scala.collection.JavaConversions._
 
+/**
+ * Ignite RDD. Represents Ignite cache as Spark RDD abstraction.
+ *
+ * @param ic Ignite context to use.
+ * @param cacheName Cache name.
+ * @param cacheCfg Cache configuration.
+ * @tparam K Key type.
+ * @tparam V Value type.
+ */
 class IgniteRDD[K, V] (
     ic: IgniteContext[K, V],
     cacheName: String,
     cacheCfg: CacheConfiguration[K, V]
 ) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg) {
-
+    /**
+     * Computes iterator based on given partition.
+     *
+     * @param part Partition to use.
+     * @param context Task context.
+     * @return Partition iterator.
+     */
     override def compute(part: Partition, context: TaskContext): Iterator[(K, V)] = {
         val cache = ensureCache()
 
@@ -49,6 +64,11 @@ class IgniteRDD[K, V] (
         })
     }
 
+    /**
+     * Gets partitions for the given cache RDD.
+     *
+     * @return Partitions.
+     */
     override protected def getPartitions: Array[Partition] = {
         ensureCache()
 
@@ -57,6 +77,12 @@ class IgniteRDD[K, V] (
         (0 until parts).map(new IgnitePartition(_)).toArray
     }
 
+    /**
+     * Gets prefferred locations for the given partition.
+     *
+     * @param split Split partition.
+     * @return
+     */
     override protected def getPreferredLocations(split: Partition): Seq[String] = {
         ensureCache()
 
@@ -127,6 +153,10 @@ class IgniteRDD[K, V] (
                 streamer.close()
             }
         })
+    }
+
+    def clear(): Unit = {
+        ensureCache().removeAll()
     }
 
     private def affinityKeyFunc(value: V, node: ClusterNode): Object = {

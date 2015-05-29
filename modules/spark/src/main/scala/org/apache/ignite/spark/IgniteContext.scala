@@ -23,6 +23,14 @@ import org.apache.ignite.{Ignition, Ignite}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.SparkContext
 
+/**
+ * Ignite context.
+ *
+ * @param sparkContext Spark context.
+ * @param cfgF Configuration factory.
+ * @tparam K Key type.
+ * @tparam V Value type.
+ */
 class IgniteContext[K, V](
     @scala.transient val sparkContext: SparkContext,
     cfgF: () => IgniteConfiguration
@@ -61,4 +69,9 @@ class IgniteContext[K, V](
         }
     }
 
+    def close() = {
+        val igniteCfg = cfgF()
+
+        Ignition.stop(igniteCfg.getGridName, false)
+    }
 }
