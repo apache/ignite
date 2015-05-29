@@ -968,19 +968,19 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int end = in.size() - 4;
         in.offset(end);
 
-        int footerStartOff = in.readInt();
+        int footerLen = in.readInt();
 
-        if (footerStartOff == EMPTY_FOOTER)
+        if (footerLen == EMPTY_FOOTER)
             return null; //TODO: IGNITE-950
 
-        int pos = footerStartOff;
+        int footerStartOff = in.size() - footerLen;
         in.offset(footerStartOff);
 
         int fieldsDataPos = in.readInt();
 
         int fieldOff = -1;
 
-        while (pos < end) {
+        while (footerStartOff < end) {
             int id = in.readInt();
 
             if (fieldId == id) {
@@ -991,7 +991,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 // skip offset and len
                 in.skipBytes(8);
 
-            pos += 12;
+            footerStartOff += 12;
         }
 
         if (fieldOff > 0) {
