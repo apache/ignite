@@ -520,10 +520,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         byte flag = (byte)in.readInt();
 
-        assert flag == EMPTY_FOOTER || flag == FOOTER_START;
-
-        if (flag == FOOTER_START) {
-            int skip = 2;
+        if (flag != EMPTY_FOOTER) {
+            int skip = 3;
 
             for (int i = 0; i < fields.hierarchyLevels(); i++)
                 skip += fields.fields(i).size() * 3;
@@ -962,7 +960,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int pos = footerStartOff;
         in.offset(footerStartOff);
 
-        assert in.readInt() == FOOTER_START;
+        //assert in.readInt() == FOOTER_START;
         in.readInt(); //TODO: do I need this? skip fields start offset
 
         int fieldOff = -1;

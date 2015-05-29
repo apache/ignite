@@ -144,9 +144,6 @@ class OptimizedMarshallerUtils {
     static final byte SERIALIZABLE = 102;
 
     /** */
-    static final byte FOOTER_START = 1;
-
-    /** */
     static final byte EMPTY_FOOTER = -1;
 
 
