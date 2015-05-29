@@ -517,7 +517,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         onDone(exchId.topologyVersion());
 
-                        skipPreload = true;
+                        skipPreload = cctx.kernalContext().clientNode();
 
                         return;
                     }
