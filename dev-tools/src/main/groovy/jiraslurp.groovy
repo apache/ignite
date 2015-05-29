@@ -45,10 +45,32 @@ def checkprocess = { process ->
 
     if (process.exitValue() != 0) {
         println "Return code: " + process.exitValue()
-        println "Errout:\n" + process.err.text
+//        println "Errout:\n" + process.err.text
 
         assert process.exitValue() == 0 || process.exitValue() == 128
     }
+}
+
+def exec = {command, envp, dir ->
+    println "Executing command '$command'..."
+
+    def ps = command.execute(envp, dir)
+
+    try {
+        println "Command output:"
+
+        println ps.text
+    }
+    catch (Throwable e) {
+        // Do nothing.
+        println "Error: could not get caommand output."
+    }
+
+    checkprocess ps
+}
+
+def execGit = {command ->
+    exec(command, null, new File("../"))
 }
 
 /**
@@ -117,8 +139,9 @@ def sendGetRequest = { urlString, user, pwd->
 final GIT_REPO = "https://git1-us-west.apache.org/repos/asf/incubator-ignite.git"
 final JIRA_URL = "https://issues.apache.org"
 final ATTACHMENT_URL = "$JIRA_URL/jira/secure/attachment"
-final validated_filename = "${System.getProperty("user.home")}/validated-jira.txt"
-final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$validated_filename"
+final HISTORY_FILE = "${System.getProperty("user.home")}/validated-jira.txt"
+final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$HISTORY_FILE"
+final NL = System.getProperty("line.separator")
 
 final def JIRA_CMD = System.getProperty('JIRA_COMMAND', 'jira.sh')
 
@@ -162,15 +185,19 @@ def readHistory = {
 
     List validated_list = []
 
-    def validated = new File(validated_filename)
+    def validated = new File(HISTORY_FILE)
 
     if (validated.exists()) {
         validated_list = validated.text.split('\n')
     }
 
     // Let's make sure the preserved history isn't too long
-    if (validated_list.size > MAX_HISTORY)
+    if (validated_list.size > MAX_HISTORY) {
         validated_list = validated_list[validated_list.size - MAX_HISTORY..validated_list.size - 1]
+
+        validated.delete()
+        validated << validated_list.join(NL)
+    }
 
     println "History=$validated_list"
 
@@ -211,31 +238,32 @@ def findAttachments = {
         "https://issues.apache.org/jira/sr/jira.issueviews:searchrequest-xml/12330308/SearchRequest-12330308.xml?tempMax=100&field=key&field=attachments"
     def rss = new XmlSlurper().parse(JIRA_FILTER)
 
-    List list = readHistory {}
+    final List history = readHistory {}
 
     LinkedHashMap<String, String> attachments = [:]
 
     rss.channel.item.each { jira ->
         String row = getLatestAttachment(jira)
 
-        if (row != null && !list.contains(row)) {
+        if (row != null && !history.contains(row)) {
             def pair = row.split(',')
 
             attachments.put(pair[0] as String, pair[1] as String)
-
-            list.add(row)
         }
     }
 
-    // Write everything back to persist the list
-    def validated = new File(validated_filename)
-
-    if (validated.exists())
-        validated.delete()
-
-    validated << list.join('\n')
-
     attachments
+}
+
+/**
+ * Store jira with attachment id to hostory.
+ */
+def addToHistory = {jira, attachmentId ->
+    def validated = new File(HISTORY_FILE)
+
+    assert validated.exists(), "History file does not exist."
+
+    validated << NL + "$jira,$attachmentId"
 }
 
 def tryGitAmAbort = {
@@ -246,8 +274,6 @@ def tryGitAmAbort = {
     }
     catch (Throwable e) {
         println "Error: git am --abort fails: "
-
-        e.printStackTrace()
     }
 }
 
@@ -255,50 +281,69 @@ def tryGitAmAbort = {
  * Applys patch from jira to given git state.
  */
 def applyPatch = { jira, attachementURL ->
+    // Delete all old IGNITE-*-*.patch files.
+    def directory = new File("./")
+
+    println "Remove IGNITE-*-*.patch files in ${directory.absolutePath} and its subdirectories..."
+
+    def classPattern = ~/.*IGNITE-.*-.*\.patch/
+
+    directory.eachFileRecurse(groovy.io.FileType.FILES)
+        { file ->
+            if (file ==~ classPattern){
+                println "Deleting ${file}..."
+
+                file.delete()
+            }
+        }
+
+    // Main logic.
+    println "Patch apllying with jira='$jira' and attachment='$ATTACHMENT_URL/$attachementURL/'."
+
     def userEmail = System.getenv("env.GIT_USER_EMAIL");
     def userName = System.getenv("env.GIT_USER_NAME");
 
-    println "Patch apllying with jira='$jira' and attachment='$ATTACHMENT_URL/$attachementURL/'."
-
     def patchFile = new File("${jira}-${attachementURL}.patch")
 
+    println "Getting patch content."
+
+    def attachmentUrl = new URL("$ATTACHMENT_URL/$attachementURL/")
+
+    HttpURLConnection conn = (HttpURLConnection)attachmentUrl.openConnection();
+    conn.setRequestProperty("Content-Type", "text/x-patch;charset=utf-8");
+    conn.setRequestProperty("X-Content-Type-Options", "nosniff");
+    conn.connect();
+
+    patchFile << conn.getInputStream()
+
+    println "Got patch content."
+
     try {
-        println "Getting patch content."
+        tryGitAmAbort()
 
-        patchFile << new URL("$ATTACHMENT_URL/$attachementURL/").text
+        execGit "git branch"
 
-        println "Got patch content."
+        execGit "git config user.email \"$userEmail\""
+        execGit "git config user.name \"$userName\""
 
-        try {
-            tryGitAmAbort()
+        // Create a new uniqueue branch to applying patch
+        def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
+        execGit "git checkout -b ${newTestBranch}"
 
-            checkprocess "git branch".execute()
+        execGit "git branch"
 
-            checkprocess "git config user.email \"$userEmail\"".execute(null, new File("../"))
-            checkprocess "git config user.name \"$userName\"".execute(null, new File("../"))
+        println "Trying to apply patch."
 
-            // Create a new uniqueue branch to applying patch
-            def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
-            checkprocess "git checkout -b ${newTestBranch}".execute(null, new File("../"))
+        execGit "git am dev-tools/${patchFile.name}"
 
-            checkprocess "git branch".execute()
-
-            println "Trying to apply patch."
-
-            checkprocess "git am dev-tools/${patchFile.name}".execute(null, new File("../"))
-
-            println "Patch was applied successfully."
-        }
-        catch (Exception e) {
-            println "Patch was not applied successfully. Aborting patch applying."
-
-            tryGitAmAbort()
-
-            throw e;
-        }
+        println "Patch was applied successfully."
     }
-    finally {
-        assert patchFile.delete(), 'Could not delete patch file.'
+    catch (Throwable e) {
+        println "Patch was not applied successfully. Aborting patch applying."
+
+        tryGitAmAbort()
+
+        throw e;
     }
 }
 
@@ -375,6 +420,9 @@ def runAllTestBuilds = {builds, jiraNum ->
             else {
                 postData = "<build>" +
                         "  <buildType id='$it'/>" +
+                        "  <comment>" +
+                        "    <text>Auto triggered build to validate last attached patch file at $jiraNum.</text>" +
+                        "  </comment>" +
                         "  <properties>" +
                         "    <property name='env.JIRA_NUM' value='$jiraNum'/>" +
                         "  </properties>" +
@@ -401,10 +449,17 @@ def runAllTestBuilds = {builds, jiraNum ->
         }
     }
 
+    // Format comment for jira.
     def triggeredBuildsComment = "There was triggered next test builds for last attached patch-file:\\n"
 
+    def n = 1;
+
     triggeredBuilds.each { name, url ->
-        triggeredBuildsComment += "${name as String} - ${url as String}\\n"
+        def prefix = n < 10 ? "0" : ""
+
+        triggeredBuildsComment += "${prefix}${n}. ${url as String} - ${name as String}\\n"
+
+        n++
     }
 
     addJiraComment(jiraNum, triggeredBuildsComment)
@@ -445,6 +500,8 @@ args.each {
             println "Triggering the test builds for: $k = $ATTACHMENT_URL/$v/"
 
             runAllTestBuilds(builds, k)
+
+            addToHistory(k, v)
         }
     }
     else if (parameters.length >= 1 && parameters[0] == "patchApply") {
