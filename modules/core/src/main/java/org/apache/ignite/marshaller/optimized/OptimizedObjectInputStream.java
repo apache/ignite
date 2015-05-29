@@ -965,8 +965,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         int fieldId = resolveFieldId(fieldName);
 
-        int end = in.size() - 4;
-        in.offset(end);
+        int end = in.size();
+        in.offset(end - 4);
 
         int footerLen = in.readInt();
 
@@ -980,7 +980,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
         int fieldOff = -1;
 
-        while (footerStartOff < end) {
+
+        while (footerStartOff < end - 8) {
             int id = in.readInt();
 
             if (fieldId == id) {

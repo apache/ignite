@@ -1090,7 +1090,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 // object total len
                 writeInt((out.size() - headerPos) + 4);
                 // footer len
-                writeInt(out.size() - footerStartPos);
+                writeInt((out.size() - footerStartPos) + 4);
             }
         }
     }
