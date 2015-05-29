@@ -33,7 +33,7 @@ import org.apache.spark.SparkContext
  */
 class IgniteContext[K, V](
     @scala.transient val sparkContext: SparkContext,
-    cfgF: () => IgniteConfiguration
+    cfgF: () ⇒ IgniteConfiguration
 ) extends Serializable {
     def this(
         sc: SparkContext,
@@ -57,14 +57,14 @@ class IgniteContext[K, V](
             Ignition.ignite(igniteCfg.getGridName)
         }
         catch {
-            case e: Exception =>
+            case e: Exception ⇒
                 try {
                     igniteCfg.setClientMode(true)
 
                     Ignition.start(igniteCfg)
                 }
                 catch {
-                    case e: Exception => Ignition.ignite(igniteCfg.getGridName)
+                    case e: Exception ⇒ Ignition.ignite(igniteCfg.getGridName)
                 }
         }
     }

@@ -29,7 +29,7 @@ class IgniteSqlRDD[R: ClassTag, T, K, V](
     cacheName: String,
     cacheCfg: CacheConfiguration[K, V],
     qry: Query[T],
-    conv: (T) => R
+    conv: (T) ⇒ R
 ) extends IgniteAbstractRDD[R, K, V](ic, cacheName, cacheCfg) {
     override def compute(split: Partition, context: TaskContext): Iterator[R] = {
         new IgniteQueryIterator[T, R](ensureCache().query(qry).iterator(), conv)

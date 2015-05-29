@@ -42,7 +42,7 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                     () ⇒ configuration("client", client = true))
 
                 // Save pairs ("0", "val0"), ("1", "val1"), ... to Ignite cache.
-                ic.fromCache(PARTITIONED_CACHE_NAME).saveTuples(sc.parallelize(0 to 10000, 2).map(i ⇒ (String.valueOf(i), "val" + i)))
+                ic.fromCache(PARTITIONED_CACHE_NAME).savePairs(sc.parallelize(0 to 10000, 2).map(i ⇒ (String.valueOf(i), "val" + i)))
 
                 // Check cache contents.
                 val ignite = Ignition.ignite("grid-0")
@@ -92,9 +92,9 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 
                 val cache: IgniteRDD[String, Entity] = ic.fromCache(PARTITIONED_CACHE_NAME)
 
-                cache.saveTuples(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
+                cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
 
-                val res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000).map(_._2).collect()
+                val res: Array[Entity] = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000).map(_._2).collect()
 
                 assert(res.length == 1, "Invalid result length")
                 assert(50 == res(0).id, "Invalid result")
@@ -117,7 +117,7 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 
                 val cache: IgniteRDD[String, Entity] = ic.fromCache(PARTITIONED_CACHE_NAME)
 
-                cache.saveTuples(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
+                cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
 
                 val res = cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000).collect()
 
@@ -142,7 +142,7 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 
                 val cache: IgniteRDD[String, Entity] = ic.fromCache(PARTITIONED_CACHE_NAME)
 
-                cache.saveTuples(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
+                cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
 
                 val res = cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000).collect()
 

@@ -19,7 +19,7 @@ package org.apache.ignite.spark.impl
 
 class IgniteQueryIterator[T, R] (
     cur: java.util.Iterator[T],
-    conv: (T) => R
+    conv: (T) ⇒ R
 ) extends Iterator[R] {
     override def hasNext: Boolean = cur.hasNext
 

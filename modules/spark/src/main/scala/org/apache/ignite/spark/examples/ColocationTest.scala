@@ -31,7 +31,7 @@ object ColocationTest {
         // Search for lines containing "Ignite".
         val cache = ignite.fromCache("partitioned")
 
-        cache.saveTuples(sc.parallelize((1 to 100000).toSeq, 48).map(i => (i, i)))
+        cache.savePairs(sc.parallelize((1 to 100000).toSeq, 48).map(i => (i, i)))
 
         // Execute parallel sum.
         println("Local sum: " + (1 to 100000).sum)

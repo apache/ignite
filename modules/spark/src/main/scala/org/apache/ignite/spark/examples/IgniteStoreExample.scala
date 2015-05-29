@@ -36,6 +36,6 @@ object IgniteStoreExample {
         })
 
         ignite.fromCache("partitioned").saveValues(lines)
-        ignite.fromCache("").saveTuples(lines.map(l ⇒ (l, l)))
+        ignite.fromCache("partitioned").savePairs(lines.map(l ⇒ (l, l)))
     }
 }

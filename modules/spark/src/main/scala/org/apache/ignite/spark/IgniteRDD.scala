@@ -59,7 +59,7 @@ class IgniteRDD[K, V] (
 
         val it: java.util.Iterator[Cache.Entry[K, V]] = cache.query(qry).iterator()
 
-        new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](it, entry => {
+        new IgniteQueryIterator[Cache.Entry[K, V], (K, V)](it, entry ⇒ {
             (entry.getKey, entry.getValue)
         })
     }
@@ -95,7 +95,7 @@ class IgniteRDD[K, V] (
 
         qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
-        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry => (entry.getKey, entry.getValue))
+        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry ⇒ (entry.getKey, entry.getValue))
     }
 
     def sql(sql: String, args: Any*): RDD[Seq[Any]] = {
@@ -103,11 +103,11 @@ class IgniteRDD[K, V] (
 
         qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
-        new IgniteSqlRDD[Seq[Any], java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list => list)
+        new IgniteSqlRDD[Seq[Any], java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list ⇒ list)
     }
 
     def saveValues(rdd: RDD[V]) = {
-        rdd.foreachPartition(it => {
+        rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
             ensureCache()
@@ -119,7 +119,7 @@ class IgniteRDD[K, V] (
             val streamer = ig.dataStreamer[Object, V](cacheName)
 
             try {
-                it.foreach(value => {
+                it.foreach(value ⇒ {
                     val key = affinityKeyFunc(value, node.orNull)
 
                     streamer.addData(key, value)
@@ -131,8 +131,8 @@ class IgniteRDD[K, V] (
         })
     }
 
-    def saveTuples(rdd: RDD[(K, V)]) = {
-        rdd.foreachPartition(it => {
+    def savePairs(rdd: RDD[(K, V)]) = {
+        rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
             // Make sure to deploy the cache
@@ -145,7 +145,7 @@ class IgniteRDD[K, V] (
             val streamer = ig.dataStreamer[K, V](cacheName)
 
             try {
-                it.foreach(tup => {
+                it.foreach(tup ⇒ {
                     streamer.addData(tup._1, tup._2)
                 })
             }
