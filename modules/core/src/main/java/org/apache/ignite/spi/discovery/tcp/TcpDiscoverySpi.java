@@ -1614,8 +1614,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         U.interrupt(sockTimeoutWorker);
         U.join(sockTimeoutWorker, log);
 
-        if (ipFinder != null)
-            ipFinder.close();
+        if (ipFinder != null) {
+            try {
+                ipFinder.close();
+            }
+            catch (Exception e) {
+                log.error("Failed to close ipFinder", e);
+            }
+        }
 
         unregisterMBean();
 
