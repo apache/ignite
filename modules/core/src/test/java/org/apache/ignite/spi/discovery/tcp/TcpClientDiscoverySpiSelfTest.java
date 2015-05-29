@@ -681,7 +681,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             Ignite g = G.ignite("server-" + i);
 
             for (ClusterNode n : g.cluster().nodes()) {
-                if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
+                if (n.metrics().getTotalExecutedJobs() != (n.isClient() ? 0 : execJobsCnt))
                     return false;
             }
         }
@@ -690,7 +690,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             Ignite g = G.ignite("client-" + i);
 
             for (ClusterNode n : g.cluster().nodes()) {
-                if (n.metrics().getTotalExecutedJobs() != execJobsCnt)
+                if (n.metrics().getTotalExecutedJobs() != (n.isClient() ? 0 : execJobsCnt))
                     return false;
             }
         }
