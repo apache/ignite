@@ -1688,6 +1688,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
+    void forceNextNodeFailure() {
+        ((ServerImpl)impl).forceNextNodeFailure();
+    }
+
+    /**
+     * <strong>FOR TEST ONLY!!!</strong>
+     */
     public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
         sendMsgLsnrs.add(lsnr);
     }
