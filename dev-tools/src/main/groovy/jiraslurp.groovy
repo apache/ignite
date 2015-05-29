@@ -420,6 +420,9 @@ def runAllTestBuilds = {builds, jiraNum ->
             else {
                 postData = "<build>" +
                         "  <buildType id='$it'/>" +
+                        "  <comment>" +
+                        "    <text>Auto triggered build to validate last attached patch file at $jiraNum.</text>" +
+                        "  </comment>" +
                         "  <properties>" +
                         "    <property name='env.JIRA_NUM' value='$jiraNum'/>" +
                         "  </properties>" +
