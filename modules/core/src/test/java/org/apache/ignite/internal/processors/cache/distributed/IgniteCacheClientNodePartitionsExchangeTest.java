@@ -158,11 +158,11 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         Ignite ignite1 = startGrid(1);
 
-        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
         ignite1.close();
 
-        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
         ignite1 = startGrid(1);
 
@@ -178,7 +178,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
         client = false;
 
