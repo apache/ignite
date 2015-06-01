@@ -783,7 +783,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     Integer part = qry.partition();
 
                     if (part == null || dht == null)
-                        iter = backups ? prj.keySet().iterator() : prj.primaryKeySet().iterator();
+                        iter = backups ? prj.keySetx().iterator() : prj.primaryKeySet().iterator();
                     else if (part < 0 || part >= cctx.affinity().partitions())
                         iter = F.emptyIterator();
                     else {

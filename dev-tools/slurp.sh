@@ -52,7 +52,7 @@ TASK_RUNNER_USER='task_runner'
 TASK_RUNNER_PWD=''
 
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-echo "<"$(date +"%H:%M:%S")"> Starting task triggering"
+echo "<"$(date + "%D - %H:%M:%S")"> Starting task triggering"
 echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 # Useful settings

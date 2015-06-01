@@ -504,10 +504,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
+        Collection<ClusterNode> affNodes = CU.affinityNodes(cctx);
+
+        if (prj == null && part == null)
+            return affNodes;
+
         final Set<ClusterNode> owners =
             part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
 
-        return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
+        return F.view(affNodes, new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
 
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&

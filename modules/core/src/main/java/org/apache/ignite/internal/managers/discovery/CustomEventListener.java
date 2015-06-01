@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.managers.discovery;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.cluster.*;
 
 /**
- * Checks behavior on exception while unmarshalling key.
+ * Listener interface.
  */
-public class IgniteCacheP2pUnmarshallingErrorTestSuit extends TestSuite {
+public interface CustomEventListener<T extends DiscoveryCustomMessage> {
     /**
-     * @return Suite.
-     * @throws Exception If failed.
+     * @param snd Sender.
+     * @param msg Message.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
-
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingTxErrorTest.class);
-
-        return suite;
-    }
+    public void onCustomEvent(ClusterNode snd, T msg);
 }

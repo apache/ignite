@@ -1823,9 +1823,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets client mode flag.
+     * Gets client mode flag. Client node cannot hold data in the caches. It's recommended to use
+     * {@link DiscoverySpi} in client mode if this property is {@code true}.
      *
      * @return Client mode flag.
+     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public Boolean isClientMode() {
         return clientMode;
@@ -2188,15 +2190,21 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets plugin configurations.
+     *
      * @return Plugin configurations.
+     * @see PluginProvider
      */
     public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
 
     /**
+     * Sets plugin configurations.
+     *
      * @param pluginCfgs Plugin configurations.
      * @return {@code this} for chaining.
+     * @see PluginProvider
      */
     public IgniteConfiguration setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;

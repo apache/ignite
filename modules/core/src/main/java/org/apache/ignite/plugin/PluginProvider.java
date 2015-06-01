@@ -19,13 +19,22 @@ package org.apache.ignite.plugin;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Pluggable ignite component.
+ * Pluggable Ignite component.
+ * <p>
+ * Ignite plugins are loaded using JDK {@link ServiceLoader}.
+ * First method called to initialize plugin is {@link PluginProvider#initExtensions(PluginContext, ExtensionRegistry)}.
+ * If plugin requires configuration it can be set in {@link IgniteConfiguration} using
+ * {@link IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)}.
+ *
+ * @see IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)
+ * @see PluginContext
  */
 public interface PluginProvider<C extends PluginConfiguration> {
     /**
@@ -49,18 +58,21 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public <T extends IgnitePlugin> T plugin();
 
     /**
+     * Registers extensions.
+     *
+     * @param ctx Plugin context.
+     * @param registry Extension registry.
+     */
+    public void initExtensions(PluginContext ctx, ExtensionRegistry registry);
+
+    /**
+     * Creates Ignite component.
+     *
      * @param ctx Plugin context.
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
-
-    /**
-     * Register extensions.
-     * @param ctx Plugin context.
-     * @param registry Extension registry.
-     */
-    public void initExtensions(PluginContext ctx, ExtensionRegistry registry);
 
     /**
      * Starts grid component.
