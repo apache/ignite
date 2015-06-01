@@ -114,7 +114,7 @@ public class IgniteExProcessProxy implements IgniteEx {
             System.getProperty("surefire.test.class.path")
         );
 
-        assert rmtNodeStartedLatch.await(3, TimeUnit.SECONDS);
+        assert rmtNodeStartedLatch.await(3, TimeUnit.SECONDS): "Remote node with id=" + id + " didn't join.";
 
         gridProxies.put(cfg.getGridName(), this);
 
