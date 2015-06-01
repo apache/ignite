@@ -27,8 +27,7 @@ import java.util.concurrent.*;
 /**
  * Partition to node assignments.
  */
-public class GridDhtPreloaderAssignments<K, V> extends
-    ConcurrentHashMap<ClusterNode, GridDhtPartitionDemandMessage> {
+public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, GridDhtPartitionDemandMessage> {
     /** */
     private static final long serialVersionUID = 0L;
 

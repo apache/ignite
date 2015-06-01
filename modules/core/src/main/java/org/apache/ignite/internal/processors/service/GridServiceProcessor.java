@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
@@ -128,10 +129,10 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
             cfgQryId = cache.context().continuousQueries().executeInternalQuery(
-                new DeploymentListener(), null, true, true);
+                new DeploymentListener(), null, cache.context().affinityNode(), true);
 
             assignQryId = cache.context().continuousQueries().executeInternalQuery(
-                new AssignmentListener(), null, true, true);
+                new AssignmentListener(), null, cache.context().affinityNode(), true);
         }
         finally {
             if (ctx.deploy().enabled())
@@ -345,7 +346,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
-                            for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
+                            Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
+                                ServiceAssignmentsPredicate.INSTANCE);
+
+                            while (it.hasNext()) {
+                                Cache.Entry<Object, Object> e = it.next();
+
                                 if (e.getKey() instanceof GridServiceAssignmentsKey) {
                                     GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
@@ -437,7 +443,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> cancelAll() {
         Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
+        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
+
+        while (it.hasNext()) {
+            Cache.Entry<Object, Object> e = it.next();
+
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -456,7 +466,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<ServiceDescriptor> serviceDescriptors() {
         Collection<ServiceDescriptor> descs = new ArrayList<>();
 
-        for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
+        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
+
+        while (it.hasNext()) {
+            Cache.Entry<Object, Object> e = it.next();
+
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -904,6 +918,43 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param p Entry predicate used to execute query from client node.
+     * @return Service deployment entries.
+     */
+    @SuppressWarnings("unchecked")
+    private Iterator<Cache.Entry<Object, Object>> serviceEntries(IgniteBiPredicate<Object, Object> p) {
+        if (!cache.context().affinityNode()) {
+            ClusterNode oldestSrvNode =
+                CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
+
+            if (oldestSrvNode == null)
+                return F.emptyIterator();
+
+            GridCacheQueryManager qryMgr = cache.context().queries();
+
+            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, false);
+
+            qry.keepAll(false);
+
+            qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
+
+            return cache.context().itHolder().iterator(qry.execute(),
+                new CacheIteratorConverter<Object, Map.Entry<Object,Object>>() {
+                    @Override protected Object convert(Map.Entry<Object, Object> e) {
+                        return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                    }
+
+                    @Override protected void remove(Object item) {
+                        throw new UnsupportedOperationException();
+                    }
+                }
+            );
+        }
+        else
+            return cache.entrySetx().iterator();
+    }
+
+    /**
      * Service deployment listener.
      */
     private class DeploymentListener implements CacheEntryUpdatedListener<Object, Object> {
@@ -1045,18 +1096,24 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             try {
                 depExe.submit(new BusyRunnable() {
                     @Override public void run0() {
-                        long topVer = ((DiscoveryEvent)evt).topologyVersion();
+                        AffinityTopologyVersion topVer =
+                            new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion());
 
-                        ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
+                        ClusterNode oldest = CU.oldestAliveCacheServerNode(cache.context().shared(), topVer);
 
-                        if (oldest.isLocal()) {
+                        if (oldest != null && oldest.isLocal()) {
                             final Collection<GridServiceDeployment> retries = new ConcurrentLinkedQueue<>();
 
                             if (ctx.deploy().enabled())
                                 ctx.cache().context().deploy().ignoreOwnership(true);
 
                             try {
-                                for (Cache.Entry<Object, Object> e : cache.entrySetx()) {
+                                Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
+                                    ServiceDeploymentPredicate.INSTANCE);
+
+                                while (it.hasNext()) {
+                                    Cache.Entry<Object, Object> e = it.next();
+
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
                                         continue;
 
@@ -1068,7 +1125,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                         ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
                                             affinityReadyFuture(topVer).get();
 
-                                        reassign(dep, topVer);
+                                        reassign(dep, topVer.topologyVersion());
                                     }
                                     catch (IgniteCheckedException ex) {
                                         if (!(e instanceof ClusterTopologyCheckedException))
@@ -1085,7 +1142,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
 
                             if (!retries.isEmpty())
-                                onReassignmentFailed(topVer, retries);
+                                onReassignmentFailed(topVer.topologyVersion(), retries);
                         }
 
                         // Clean up zombie assignments.
@@ -1264,5 +1321,47 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * Abstract run method protected by busy lock.
          */
         public abstract void run0();
+    }
+
+    /**
+     *
+     */
+    static class ServiceDeploymentPredicate implements IgniteBiPredicate<Object, Object> {
+        /** */
+        static final ServiceDeploymentPredicate INSTANCE = new ServiceDeploymentPredicate();
+
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Object key, Object val) {
+            return key instanceof GridServiceDeploymentKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ServiceDeploymentPredicate.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    static class ServiceAssignmentsPredicate implements IgniteBiPredicate<Object, Object> {
+        /** */
+        static final ServiceAssignmentsPredicate INSTANCE = new ServiceAssignmentsPredicate();
+
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Object key, Object val) {
+            return key instanceof GridServiceAssignmentsKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ServiceAssignmentsPredicate.class, this);
+        }
     }
 }

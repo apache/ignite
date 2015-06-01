@@ -15,29 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
-
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 /**
- * Near only test for REPLICATED cache.
+ *
  */
-public class GridCacheReplicatedNearOnlySelfTest extends GridCacheNearOnlySelfTest {
+public class GridCacheDhtClientRemoveFailureTest extends GridCacheDhtRemoveFailureTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setAffinity(null);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+    @Override protected boolean testClientNode() {
+        return true;
     }
 }

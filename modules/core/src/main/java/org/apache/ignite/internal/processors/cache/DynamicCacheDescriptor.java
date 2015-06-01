@@ -62,6 +62,7 @@ public class DynamicCacheDescriptor {
     private final CachePluginManager pluginMgr;
 
     /**
+     * @param ctx Context.
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
      * @param template {@code True} if this is template configuration.
@@ -76,6 +77,7 @@ public class DynamicCacheDescriptor {
         this.cacheType = cacheType;
         this.template = template;
         this.deploymentId = deploymentId;
+
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
     }
 

@@ -448,11 +448,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         ClusterMetrics metrics = this.metrics;
 
-        if (metrics != null) {
-            mtr = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
-
-            ClusterMetricsSnapshot.serialize(mtr, 0, metrics);
-        }
+        if (metrics != null)
+            mtr = ClusterMetricsSnapshot.serialize(metrics);
 
         U.writeByteArray(out, mtr);
 

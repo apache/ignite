@@ -130,14 +130,13 @@ public class IgniteCacheTestSuite2 extends TestSuite {
 
         suite.addTest(new TestSuite(GridCacheOffheapUpdateSelfTest.class));
 
-        // TODO: GG-7242, GG-7243: Enabled when fixed.
-//        suite.addTest(new TestSuite(GridCacheDhtRemoveFailureTest.class));
-//        suite.addTest(new TestSuite(GridCacheNearRemoveFailureTest.class));
-        // TODO: GG-7201: Enable when fixed.
-        //suite.addTest(new TestSuite(GridCacheDhtAtomicRemoveFailureTest.class));
-
         suite.addTest(new TestSuite(GridCacheNearPrimarySyncSelfTest.class));
         suite.addTest(new TestSuite(GridCacheColocatedPrimarySyncSelfTest.class));
+
+        suite.addTest(new TestSuite(IgniteCachePartitionMapUpdateTest.class));
+        suite.addTest(new TestSuite(IgniteCacheClientNodePartitionsExchangeTest.class));
+        suite.addTest(new TestSuite(IgniteCacheClientNodeChangingTopologyTest.class));
+        suite.addTest(new TestSuite(IgniteCacheClientNodeConcurrentStart.class));
 
         return suite;
     }
