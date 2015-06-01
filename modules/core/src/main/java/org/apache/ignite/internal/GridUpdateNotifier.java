@@ -41,9 +41,6 @@ import static java.net.URLEncoder.*;
  * gracefully ignore any errors occurred during notification and verification process.
  */
 class GridUpdateNotifier {
-    /** Access URL to be used to access latest version data. */
-    private static final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
-
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
 
@@ -67,6 +64,9 @@ class GridUpdateNotifier {
 
     /** Grid name. */
     private final String gridName;
+
+    /** Access URL to be used to access latest version data. */
+    private final String updStatusParams;
 
     /** Whether or not to report only new version. */
     private volatile boolean reportOnlyNew;
@@ -116,6 +116,9 @@ class GridUpdateNotifier {
             url = "http://tiny.cc/updater/update_status_ignite.php";
 
             this.gridName = gridName == null ? "null" : gridName;
+
+            updStatusParams = IgniteProperties.get("ignite.update.status.params");
+
             this.gw = gw;
 
             pluginVers = U.newHashMap(pluginProviders.size());
@@ -286,7 +289,7 @@ class GridUpdateNotifier {
 
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
-                    (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
+                    (!F.isEmpty(updStatusParams) ? "&" + updStatusParams : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
