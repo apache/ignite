@@ -2188,15 +2188,21 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets plugin configurations.
+     *
      * @return Plugin configurations.
+     * @see PluginProvider
      */
     public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
 
     /**
+     * Sets plugin configurations.
+     *
      * @param pluginCfgs Plugin configurations.
      * @return {@code this} for chaining.
+     * @see PluginProvider
      */
     public IgniteConfiguration setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
