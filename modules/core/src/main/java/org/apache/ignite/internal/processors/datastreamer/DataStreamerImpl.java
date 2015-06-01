@@ -1422,6 +1422,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     cctx.evicts().touch(entry, topVer);
 
                     CU.unwindEvicts(cctx);
+
+                    entry.onUnlock();
                 }
                 catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
                     // No-op.
