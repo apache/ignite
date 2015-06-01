@@ -77,6 +77,7 @@ public class CacheHibernateStoreExample {
             // Configure Hibernate store.
             cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheHibernatePersonStore.class));
 
+            // Configure Hibernate session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
                 @Override public CacheStoreSessionListener create() {
                     CacheHibernateStoreSessionListener lsnr = new CacheHibernateStoreSessionListener();

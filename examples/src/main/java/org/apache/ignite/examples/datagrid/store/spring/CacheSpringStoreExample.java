@@ -70,10 +70,10 @@ public class CacheSpringStoreExample {
             // Set atomicity as transaction, since we are showing transactions in example.
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            // Configure JDBC store.
+            // Configure Spring store.
             cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheSpringPersonStore.class));
 
-            // Configure JDBC session listener.
+            // Configure Spring session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
                 @Override public CacheStoreSessionListener create() {
                     CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
