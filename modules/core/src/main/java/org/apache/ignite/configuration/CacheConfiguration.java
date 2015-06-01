@@ -793,7 +793,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets factory fpr persistent storage for cache data.
+     * Sets factory for persistent storage for cache data.
 
      * @param storeFactory Cache store factory.
      */
