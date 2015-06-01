@@ -4142,6 +4142,11 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void onUnlock() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         // Identity comparison left on purpose.
         return o == this;

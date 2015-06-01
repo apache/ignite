@@ -99,11 +99,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
+        c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
 
         // Otherwise noop swap space will be chosen on Windows.
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());

@@ -114,11 +114,12 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
 
         cacheCfg.setName(cacheName);
 
+        cacheCfg.setNearConfiguration(null);
+
         if (META_CACHE_NAME.equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setNearConfiguration(null);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));

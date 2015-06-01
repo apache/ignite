@@ -197,7 +197,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * Inject ignite instance.
      */
     @IgniteInstanceResource
-    protected void injectResources(Ignite ignite){
+    protected void injectResources(Ignite ignite) {
         this.ignite = ignite;
 
         if (ignite != null) {

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -33,6 +32,10 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+
 /**
  * Tests explicit lock.
  */
@@ -45,6 +48,9 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
     /** */
     private volatile boolean run = true;
+
+    /** */
+    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
@@ -66,15 +72,17 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setBackups(2);
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setCacheMode(PARTITIONED);
         ccfg.setStartSize(100000);
         ccfg.setEvictionPolicy(new LruEvictionPolicy(100000));
         ccfg.setEvictSynchronized(true);
 
         c.setCacheConfiguration(ccfg);
+
+        c.setClientMode(client);
 
         return c;
     }
@@ -83,32 +91,49 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExplicitLockOneKey() throws Exception {
-        checkExplicitLock(1);
+        checkExplicitLock(1, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testExplicitLockManyKeys() throws Exception {
-        checkExplicitLock(4);
+        checkExplicitLock(4, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void checkExplicitLock(int keys) throws Exception {
+    public void testExplicitLockManyKeysWithClient() throws Exception {
+        checkExplicitLock(4, true);
+    }
+
+    /**
+     * @param keys Number of keys.
+     * @param testClient If {@code true} uses one client node.
+     * @throws Exception If failed.
+     */
+    public void checkExplicitLock(int keys, boolean testClient) throws Exception {
         Collection<Thread> threads = new ArrayList<>();
 
         try {
             // Start grid 1.
             IgniteEx grid1 = startGrid(1);
 
+            assertFalse(grid1.configuration().isClientMode());
+
             threads.add(runCacheOperations(grid1.cachex(CACHE_NAME), keys));
 
             TimeUnit.SECONDS.sleep(3L);
 
+            client = testClient; // If test client start on node in client mode.
+
             // Start grid 2.
             IgniteEx grid2 = startGrid(2);
+
+            assertEquals((Object)testClient, grid2.configuration().isClientMode());
+
+            client = false;
 
             threads.add(runCacheOperations(grid2.cachex(CACHE_NAME), keys));
 
@@ -117,12 +142,19 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
             // Start grid 3.
             IgniteEx grid3 = startGrid(3);
 
+            assertFalse(grid3.configuration().isClientMode());
+
+            if (testClient)
+                log.info("Started client node: " + grid3.name());
+
             threads.add(runCacheOperations(grid3.cachex(CACHE_NAME), keys));
 
             TimeUnit.SECONDS.sleep(3L);
 
             // Start grid 4.
             IgniteEx grid4 = startGrid(4);
+
+            assertFalse(grid4.configuration().isClientMode());
 
             threads.add(runCacheOperations(grid4.cachex(CACHE_NAME), keys));
 
@@ -158,6 +190,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param cache Cache.
+     * @param keys Number of keys.
      * @return Running thread.
      */
     @SuppressWarnings("TypeMayBeWeakened")

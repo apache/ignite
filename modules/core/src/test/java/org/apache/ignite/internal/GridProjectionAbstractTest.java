@@ -20,9 +20,13 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -38,6 +42,9 @@ import static org.apache.ignite.events.EventType.*;
  */
 @SuppressWarnings("deprecation")
 public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest implements Externalizable {
+    /** VM ip finder for TCP discovery. */
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** Waiting timeout. */
     private static final int WAIT_TIMEOUT = 30000;
 
@@ -85,6 +92,15 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /** */
     protected GridProjectionAbstractTest() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
+
+        return cfg;
     }
 
     /**
