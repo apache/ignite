@@ -44,6 +44,7 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheLruEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheLruNearEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOnlyLruNearEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(RandomEvictionPolicyCacheSizeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheRandomEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));

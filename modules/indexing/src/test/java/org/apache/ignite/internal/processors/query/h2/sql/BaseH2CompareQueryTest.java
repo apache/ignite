@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
@@ -177,6 +178,21 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
                 return null;
             }
         }, CacheException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidQuery() throws Exception {
+        final SqlFieldsQuery sql = new SqlFieldsQuery("SELECT firstName from Person where id <> ? and orgId <> ?");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                pCache.query(sql.setArgs(3));
+
+                return null;
+            }
+        }, IgniteException.class, "Invalid number of query parameters.");
     }
 
     /**

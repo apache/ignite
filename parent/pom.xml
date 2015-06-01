@@ -317,6 +317,10 @@
                                 <title>Spring Caching</title>
                                 <packages>org.apache.ignite.cache.spring</packages>
                             </group>
+                            <group>
+                                <title>Mesos Framework</title>
+                                <packages>org.apache.ignite.mesos*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -619,7 +623,6 @@
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
                                         <exclude>DEVNOTES.txt</exclude>
-                                        <exclude>DEPENDENCIES</exclude><!--automatically generated file. presents at source pack-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
@@ -634,6 +637,10 @@
                                         <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
+                                        <exclude>dev-tools/IGNITE-*.patch</exclude>
+                                        <exclude>dev-tools/.gradle/**/*</exclude>
+                                        <exclude>dev-tools/gradle/wrapper/**/*</exclude>
+                                        <exclude>dev-tools/gradlew</exclude>
                                         <!--shmem-->
                                         <exclude>ipc/shmem/**/Makefile.in</exclude><!--auto generated files-->
                                         <exclude>ipc/shmem/**/Makefile</exclude><!--auto generated files-->
