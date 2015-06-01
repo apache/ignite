@@ -18,7 +18,9 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -33,7 +35,7 @@ import java.util.*;
  * You can use cluster node attributes to provide static information about a node.
  * This information is initialized once within a cluster, during the node startup, and
  * remains the same throughout the lifetime of a node. Use
- * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method to initialize your custom
+ * {@link IgniteConfiguration#getUserAttributes()} method to initialize your custom
  * node attributes at startup. Here is an example of how to assign an attribute to a node at startup:
  * <pre name="code" class="xml">
  * &lt;bean class="org.apache.ignite.configuration.IgniteConfiguration">
@@ -114,7 +116,7 @@ public interface ClusterNode {
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
-     * via {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
+     * via {@link IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -149,7 +151,7 @@ public interface ClusterNode {
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup
-     * via {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} method.
+     * via {@link IgniteConfiguration#getUserAttributes()} method.
      * <p>
      * The system adds the following attributes automatically:
      * <ul>
@@ -167,7 +169,7 @@ public interface ClusterNode {
     /**
      * Gets collection of addresses this node is known by.
      * <p>
-     * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
+     * If {@link IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
      * address for all communications and returned collection will contain only that address.
      * If it is {@code null} then local wildcard address will be used, and Ignite
      * will make the best effort to supply all addresses of that node in returned collection.
@@ -179,12 +181,12 @@ public interface ClusterNode {
     /**
      * Gets collection of host names this node is known by.
      * <p>
-     * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use
+     * If {@link IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use
      * the host name of that resolved address for all communications and
      * returned collection will contain only that host name.
      * If that host name can not be resolved then ip address returned by method {@link #addresses()} is used.
      * <p>
-     * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value is {@code null} then local wildcard address will be used,
+     * If {@link IgniteConfiguration#getLocalHost()} value is {@code null} then local wildcard address will be used,
      * and this method returns host names of all addresses of that node.
      *
      * @return Collection of host names.
@@ -238,9 +240,17 @@ public interface ClusterNode {
     public boolean isDaemon();
 
     /**
-     * Tests whether or not this node is a client node.
+     * Tests whether or not this node is connected to cluster as a client.
+     * <p>
+     * Do not confuse client in terms of
+     * discovery {@link DiscoverySpi#isClientMode()} and client in terms of cache
+     * {@link IgniteConfiguration#isClientMode()}. Cache clients cannot carry data,
+     * while topology clients connect to topology in a different way.
      *
      * @return {@code True} if this node is a client node, {@code false} otherwise.
+     * @see IgniteConfiguration#isClientMode()
+     * @see Ignition#isClientMode()
+     * @see DiscoverySpi#isClientMode()
      */
     public boolean isClient();
 }

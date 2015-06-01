@@ -68,8 +68,6 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopIgnites() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-840");
-
         for (int attempt = 0; attempt < 3; ++attempt) {
             log.info("Iteration: " + attempt);
             

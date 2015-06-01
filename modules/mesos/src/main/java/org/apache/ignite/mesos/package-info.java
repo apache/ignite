@@ -15,29 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
-
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
-
 /**
- * Near only test for REPLICATED cache.
+ * <!-- Package description. -->
+ * Contains classes to support integration with Apache Mesos.
  */
-public class GridCacheReplicatedNearOnlySelfTest extends GridCacheNearOnlySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setAffinity(null);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-}
+package org.apache.ignite.mesos;

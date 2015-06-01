@@ -292,12 +292,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         return ret;
     }
 
-    /**
-     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
-     */
+    /** {@inheritDoc} */
     @Override public void onUnlock() {
-        super.onUnlock();
-
         locPart.onUnlock();
     }
 

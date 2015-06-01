@@ -121,11 +121,7 @@ public class IgnitionEx {
     };
 
     /** */
-    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return null;
-        }
-    };
+    private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
     /**
      * Checks runtime version to be 1.7.x or 1.8.x.
@@ -196,7 +192,7 @@ public class IgnitionEx {
      * @return Client mode flag.
      */
     public static boolean isClientMode() {
-        return clientMode.get();
+        return clientMode.get() == null ? false : clientMode.get();
     }
 
     /**
@@ -1764,20 +1760,14 @@ public class IgnitionEx {
         public void initializeDefaultCacheConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
             List<CacheConfiguration> cacheCfgs = new ArrayList<>();
 
-            boolean clientDisco = cfg.getDiscoverySpi() instanceof TcpClientDiscoverySpi;
+            cacheCfgs.add(marshallerSystemCache());
 
-            // Add marshaller and utility caches.
-            if (!clientDisco) {
-                cacheCfgs.add(marshallerSystemCache());
-
-                cacheCfgs.add(utilitySystemCache());
-            }
+            cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())
                 cacheCfgs.add(CU.hadoopSystemCache());
 
-            if (cfg.getAtomicConfiguration() != null && !clientDisco)
-                cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
+            cacheCfgs.add(atomicsSystemCache(cfg.getAtomicConfiguration()));
 
             CacheConfiguration[] userCaches = cfg.getCacheConfiguration();
 

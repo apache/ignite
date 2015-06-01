@@ -54,7 +54,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     private GridDhtPartitionTopology top;
 
     /** Preloader. */
-    protected GridCachePreloader<K, V> preldr;
+    protected GridCachePreloader preldr;
 
     /** Multi tx future holder. */
     private ThreadLocal<IgniteBiTuple<IgniteUuid, GridDhtTopologyFuture>> multiTxHolder = new ThreadLocal<>();
@@ -75,7 +75,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
         super(ctx, ctx.config().getStartSize());
 
-        top = new GridDhtPartitionTopologyImpl<>(ctx);
+        top = new GridDhtPartitionTopologyImpl(ctx);
     }
 
     /**
@@ -87,7 +87,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
         super(ctx, map);
 
-        top = new GridDhtPartitionTopologyImpl<>(ctx);
+        top = new GridDhtPartitionTopologyImpl(ctx);
     }
 
     /** {@inheritDoc} */
@@ -168,17 +168,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return preldr;
     }
 
     /**
      * @return DHT preloader.
      */
-    public GridDhtPreloader<K, V> dhtPreloader() {
+    public GridDhtPreloader dhtPreloader() {
         assert preldr instanceof GridDhtPreloader;
 
-        return (GridDhtPreloader<K, V>)preldr;
+        return (GridDhtPreloader)preldr;
     }
 
     /**
@@ -929,6 +929,21 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
             }
         }
+    }
+
+    /**
+     * @param expVer Expected topology version.
+     * @param curVer Current topology version.
+     * @return {@code True} if cache affinity changed and operation should be remapped.
+     */
+    protected final boolean needRemap(AffinityTopologyVersion expVer, AffinityTopologyVersion curVer) {
+        if (expVer.equals(curVer))
+            return false;
+
+        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
+        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
+
+        return !cacheNodes0.equals(cacheNodes1);
     }
 
     /**
