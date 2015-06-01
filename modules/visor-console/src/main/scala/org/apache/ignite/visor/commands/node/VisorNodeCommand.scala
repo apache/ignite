@@ -159,7 +159,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                         t += ("ID8", nid8(node))
                         t += ("Order", node.order)
 
-                        (0 /: node.addresses())((b, a) => { t += ("Address (" + b + ")", a); b + 1 })
+                        (0 /: sortAddresses(node.addresses))((b, a) => { t += ("Address (" + b + ")", a); b + 1 })
 
                         val m = node.metrics
 

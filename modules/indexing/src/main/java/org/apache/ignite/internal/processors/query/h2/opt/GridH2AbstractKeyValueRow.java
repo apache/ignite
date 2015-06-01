@@ -27,6 +27,7 @@ import org.jetbrains.annotations.*;
 
 import java.lang.ref.*;
 import java.sql.*;
+import java.util.concurrent.*;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -137,19 +138,26 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /**
-     * @param attempt Attempt.
+     * @param waitTime Time to await for value unswap.
      * @return Synchronized value.
      */
-    protected synchronized Value syncValue(int attempt) {
+    protected synchronized Value syncValue(long waitTime) {
         Value v = peekValue(VAL_COL);
 
-        if (v == null && attempt != 0) {
+        while (v == null && waitTime > 0) {
+            long start = System.nanoTime(); // This call must be quite rare, so performance is not a concern.
+
             try {
-                wait(attempt);
+                wait(waitTime); // Wait for value arrival to allow other threads to make a progress.
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);
             }
+
+            long t = System.nanoTime() - start;
+
+            if (t > 0)
+                waitTime -= TimeUnit.NANOSECONDS.toMillis(t);
 
             v = peekValue(VAL_COL);
         }
@@ -211,7 +219,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
                     if (start == 0)
                         start = U.currentTimeMillis();
-                    else if (U.currentTimeMillis() - start > 15_000) // Loop for at most 15 seconds.
+                    else if (U.currentTimeMillis() - start > 60_000) // Loop for at most 60 seconds.
                         throw new IgniteException("Failed to get value for key: " + k +
                             ". This can happen due to a long GC pause.");
                 }

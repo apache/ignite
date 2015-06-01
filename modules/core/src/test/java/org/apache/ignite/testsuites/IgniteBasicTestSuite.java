@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.messaging.*;
@@ -47,6 +48,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteStartUpTestSuite.suite());
         suite.addTest(IgniteExternalizableSelfTestSuite.suite());
         suite.addTest(IgniteP2PSelfTestSuite.suite());
+        suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuit.suite());
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(GridProjectionSelfTest.class));
@@ -60,6 +62,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
+        suite.addTestSuite(ClosureServiceClientsNodesTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
         suite.addTestSuite(GridProjectionForCachesSelfTest.class);
         suite.addTestSuite(GridProjectionForCachesOnDaemonNodeSelfTest.class);
@@ -72,6 +75,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridMessageListenSelfTest.class);
         suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
+        suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
 
         return suite;
     }

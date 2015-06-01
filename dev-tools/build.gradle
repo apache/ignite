@@ -1,0 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'groovy'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.2.1'
+}
+
+task help {
+    println '''There are 3 interfaces to work with JIRA attachment validation tool
+    - to do the batch validation of all latest patch attachments
+      gradle slurp
+    - to grab a single JIRA's latest attachment and run test validation on it
+      JIRA_NUM=INGITE-### gradle patchapply
+    - to run all test builds for a single JIRA's latest attachment and run test validation on it
+      JIRA_NUM=INGITE-### gradle runAllBuilds'''
+}
+
+task slurp(dependsOn: 'classes', type: JavaExec) {
+    args(project.buildDir, "slurp")
+    main = 'jiraslurp'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task patchapply(dependsOn: 'classes', type: JavaExec) {
+    args("patchApply,${System.getenv('JIRA_NUM')}")
+    main = 'jiraslurp'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+task runAllBuilds(dependsOn: 'classes', type: JavaExec) {
+    args("runAllBuilds,${System.getenv('JIRA_NUM')}")
+    main = 'jiraslurp'
+    classpath = sourceSets.main.runtimeClasspath
+}

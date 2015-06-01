@@ -451,6 +451,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
          * @param res Result callback.
          */
         void onResult(GridDhtForceKeysResponse res) {
+            if (res.error() != null) {
+                onDone(res.error());
+
+                return;
+            }
+
             Collection<KeyCacheObject> missedKeys = res.missedKeys();
 
             boolean remapMissed = false;
