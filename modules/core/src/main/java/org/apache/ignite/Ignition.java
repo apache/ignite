@@ -143,7 +143,7 @@ public class Ignition {
      *
      * @param clientMode Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpDiscoverySpi#setClientMode(boolean)
+     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public static void setClientMode(boolean clientMode) {
         IgnitionEx.setClientMode(clientMode);
@@ -158,7 +158,7 @@ public class Ignition {
      *
      * @return Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpDiscoverySpi#setClientMode(boolean)
+     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public static boolean isClientMode() {
         return IgnitionEx.isClientMode();
