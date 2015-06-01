@@ -60,12 +60,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
-    /** */
-    private static final ServiceDeploymentPredicate DEPLOYMENT_PREDICATE = new ServiceDeploymentPredicate();
-
-    /** */
-    private static final ServiceAssignmentsPredicate ASSIGNMENTS_PREDICATE = new ServiceAssignmentsPredicate();
-
     /** Local service instances. */
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
 
@@ -352,7 +346,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
-                            Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ASSIGNMENTS_PREDICATE);
+                            Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
+                                ServiceAssignmentsPredicate.INSTANCE);
 
                             while (it.hasNext()) {
                                 Cache.Entry<Object, Object> e = it.next();
@@ -448,7 +443,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> cancelAll() {
         Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(DEPLOYMENT_PREDICATE);
+        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
 
         while (it.hasNext()) {
             Cache.Entry<Object, Object> e = it.next();
@@ -471,7 +466,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<ServiceDescriptor> serviceDescriptors() {
         Collection<ServiceDescriptor> descs = new ArrayList<>();
 
-        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(DEPLOYMENT_PREDICATE);
+        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
 
         while (it.hasNext()) {
             Cache.Entry<Object, Object> e = it.next();
@@ -1113,7 +1108,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctx.cache().context().deploy().ignoreOwnership(true);
 
                             try {
-                                Iterator<Cache.Entry<Object, Object>> it = serviceEntries(DEPLOYMENT_PREDICATE);
+                                Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
+                                    ServiceDeploymentPredicate.INSTANCE);
 
                                 while (it.hasNext()) {
                                     Cache.Entry<Object, Object> e = it.next();
@@ -1332,6 +1328,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     static class ServiceDeploymentPredicate implements IgniteBiPredicate<Object, Object> {
         /** */
+        static final ServiceDeploymentPredicate INSTANCE = new ServiceDeploymentPredicate();
+
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
@@ -1349,6 +1348,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      *
      */
     static class ServiceAssignmentsPredicate implements IgniteBiPredicate<Object, Object> {
+        /** */
+        static final ServiceAssignmentsPredicate INSTANCE = new ServiceAssignmentsPredicate();
+
         /** */
         private static final long serialVersionUID = 0L;
 
