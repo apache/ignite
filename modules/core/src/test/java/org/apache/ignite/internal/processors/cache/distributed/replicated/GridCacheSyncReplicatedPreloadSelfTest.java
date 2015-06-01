@@ -58,7 +58,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
-        disco.setDebugMode(DISCO_DEBUG_MODE);
 
         cfg.setDiscoverySpi(disco);
 

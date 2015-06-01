@@ -15,27 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.continuous;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
- * Checks behavior on exception while unmarshalling key.
+ *
  */
-public class IgniteCacheP2pUnmarshallingErrorTestSuit extends TestSuite {
+public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * @return Suite.
-     * @throws Exception If failed.
+     * @param routineId Routine id.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
+    public StopRoutineAckDiscoveryMessage(UUID routineId) {
+        super(routineId);
+    }
 
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingTxErrorTest.class);
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        return null;
+    }
 
-        return suite;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StopRoutineAckDiscoveryMessage.class, this, "routineId", routineId());
     }
 }

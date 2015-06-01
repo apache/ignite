@@ -433,6 +433,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        return dht.tryPutIfAbsent(key, val);
+    }
+
+    /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) throws IgniteCheckedException {
         return dht.getAndReplace(key, val);
     }

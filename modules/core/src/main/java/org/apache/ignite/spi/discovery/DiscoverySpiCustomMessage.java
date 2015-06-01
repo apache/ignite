@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,29 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.spi.discovery;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.jetbrains.annotations.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import java.io.*;
 
 /**
- * Client only test for REPLICATED cache.
+ * Message to send across ring.
+ *
+ * @see org.apache.ignite.internal.managers.discovery.GridDiscoveryManager#sendCustomEvent(
+ * org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage)
  */
-public class GridCacheReplicatedClientOnlySelfTest extends GridCacheClientOnlySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+public interface DiscoverySpiCustomMessage extends Serializable {
+    /**
+     * Called when message passed the ring.
+     */
+    @Nullable public DiscoverySpiCustomMessage ackMessage();
 
-        cfg.setAffinity(null);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
+    /**
+     * @return {@code true} if message can be modified during listener notification. Changes will be send to next nodes.
+     */
+    public boolean isMutable();
 }
