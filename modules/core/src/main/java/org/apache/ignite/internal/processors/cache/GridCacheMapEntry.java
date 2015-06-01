@@ -3700,18 +3700,20 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param prevVal Previous value.
      * @throws IgniteCheckedException If failed.
      */
-    private void evictFailed(CacheObject prevVal) throws IgniteCheckedException {
+    private void evictFailed(@Nullable CacheObject prevVal) throws IgniteCheckedException {
         if (cctx.offheapTiered() && ((flags & IS_OFFHEAP_PTR_MASK) != 0)) {
-            cctx.swap().removeOffheap(key());
-
-            value(prevVal);
-
             flags &= ~IS_OFFHEAP_PTR_MASK;
 
-            GridCacheQueryManager qryMgr = cctx.queries();
+            if (prevVal != null) {
+                cctx.swap().removeOffheap(key());
 
-            if (qryMgr != null)
-                qryMgr.onUnswap(key, prevVal);
+                value(prevVal);
+
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                if (qryMgr != null)
+                    qryMgr.onUnswap(key, prevVal);
+            }
         }
     }
 
