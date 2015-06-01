@@ -63,6 +63,9 @@ public class GridDistributedTxMapping implements Externalizable {
     /** {@code True} if mapping is for near caches, {@code false} otherwise. */
     private boolean near;
 
+    /** {@code True} if this is first mapping for optimistic tx on client node. */
+    private boolean clientFirst;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -105,6 +108,20 @@ public class GridDistributedTxMapping implements Externalizable {
      */
     public void last(boolean last) {
         this.last = last;
+    }
+
+    /**
+     * @return {@code True} if this is first mapping for optimistic tx on client node.
+     */
+    public boolean clientFirst() {
+        return clientFirst;
+    }
+
+    /**
+     * @param clientFirst {@code True} if this is first mapping for optimistic tx on client node.
+     */
+    public void clientFirst(boolean clientFirst) {
+        this.clientFirst = clientFirst;
     }
 
     /**

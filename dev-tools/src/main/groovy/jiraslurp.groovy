@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+/*
+ * Start of util methods.
+ */
+
 def envVariable = { name, defaultVar ->
     def res = System.getenv(name as String)
 
@@ -34,22 +38,142 @@ def envVariableAsList = { name, defaultList ->
 }
 
 /**
+ * Monitors given process and show errors if exist.
+ */
+def checkprocess = { process ->
+    process.waitFor()
+
+    if (process.exitValue() != 0) {
+        println "Return code: " + process.exitValue()
+//        println "Errout:\n" + process.err.text
+
+        assert process.exitValue() == 0 || process.exitValue() == 128
+    }
+}
+
+def exec = {command, envp, dir ->
+    println "Executing command '$command'..."
+
+    def ps = command.execute(envp, dir)
+
+    try {
+        println "Command output:"
+
+        println ps.text
+    }
+    catch (Throwable e) {
+        // Do nothing.
+        println "Error: could not get caommand output."
+    }
+
+    checkprocess ps
+}
+
+def execGit = {command ->
+    exec(command, null, new File("../"))
+}
+
+/**
+ * Util method to send http request.
+ */
+def sendHttpRequest = { requestMethod, urlString, user, pwd, postData, contentType ->
+    URL url = new URL(urlString as String);
+
+    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+
+    String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
+
+    conn.setRequestProperty("Authorization", "Basic " + encoded);
+
+    conn.setDoOutput(true);
+    conn.setRequestMethod(requestMethod);
+
+    if (postData) {
+        conn.setRequestProperty("Content-Type", contentType);
+        conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
+
+        OutputStream os = conn.getOutputStream();
+        os.write(postData.getBytes());
+        os.flush();
+        os.close();
+    }
+
+    conn.connect();
+
+    // Read response.
+    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+    String response = "";
+    String line;
+
+    while ((line = br.readLine()) != null)
+        response += line
+
+    br.close();
+
+    response
+}
+
+/**
+ * Util method to send http POST request.
+ */
+def sendPostRequest = { urlString, user, pwd, postData, contentType ->
+    sendHttpRequest("POST", urlString, user, pwd, postData, contentType);
+}
+
+/**
+ * Util method to send http GET request.
+ */
+def sendGetRequest = { urlString, user, pwd->
+    sendHttpRequest("GET", urlString, user, pwd, null, null);
+}
+
+/*
+ * End of util methods.
+ */
+
+/**
  * Parsing a special filter from Apache Ignite JIRA and picking up latest by ID
  * attachments to process.
  */
 final GIT_REPO = "https://git1-us-west.apache.org/repos/asf/incubator-ignite.git"
 final JIRA_URL = "https://issues.apache.org"
 final ATTACHMENT_URL = "$JIRA_URL/jira/secure/attachment"
-final validated_filename = "${System.getProperty("user.home")}/validated-jira.txt"
-final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$validated_filename"
+final HISTORY_FILE = "${System.getProperty("user.home")}/validated-jira.txt"
+final LAST_SUCCESSFUL_ARTIFACT = "guestAuth/repository/download/Ignite_PatchValidation_PatchChecker/.lastSuccessful/$HISTORY_FILE"
+final NL = System.getProperty("line.separator")
 
 final def JIRA_CMD = System.getProperty('JIRA_COMMAND', 'jira.sh')
 
 // Envariement variables.
 final def TC_PROJECT_NAME = envVariable("PROJECT_NAME", "Ignite")
-
-final def CONTRIBUTORS = envVariableAsList("JIRA_CONTRIBUTORS", [])
 final def TC_BUILD_EXCLUDE_LIST = envVariableAsList("BUILD_ID_EXCLUDES", ["Ignite_RunAllTestBuilds"])
+
+final def JIRA_USER = System.getenv('JIRA_USER')
+final def JIRA_PWD = System.getenv('JIRA_PWD')
+
+final def CONTRIBUTORS = []
+
+def contributors = {
+    if (!CONTRIBUTORS) {
+        def response = sendGetRequest(
+            "$JIRA_URL/jira/rest/api/2/project/12315922/role/10010" as String,
+            JIRA_USER,
+            JIRA_PWD)
+
+        println "Response on contributors request = $response"
+
+        def json = new groovy.json.JsonSlurper().parseText(response)
+
+        json.actors.each {
+            CONTRIBUTORS.add(it.name)
+        }
+
+        println "Contributors list: $CONTRIBUTORS"
+    }
+
+    CONTRIBUTORS
+}
 
 /**
  * Gets jiras for which test tasks were already triggered.
@@ -61,15 +185,19 @@ def readHistory = {
 
     List validated_list = []
 
-    def validated = new File(validated_filename)
+    def validated = new File(HISTORY_FILE)
 
     if (validated.exists()) {
         validated_list = validated.text.split('\n')
     }
 
     // Let's make sure the preserved history isn't too long
-    if (validated_list.size > MAX_HISTORY)
+    if (validated_list.size > MAX_HISTORY) {
         validated_list = validated_list[validated_list.size - MAX_HISTORY..validated_list.size - 1]
+
+        validated.delete()
+        validated << validated_list.join(NL)
+    }
 
     println "History=$validated_list"
 
@@ -87,7 +215,7 @@ def getLatestAttachment = { jira ->
         .find {
             def fName = it.@name.toString()
 
-            CONTRIBUTORS.contains(it.@author as String) &&
+            contributors().contains(it.@author as String) &&
                 (fName.endsWith(".patch") || fName.endsWith(".txt") || fName.endsWith(".diff"))
         }
 
@@ -110,44 +238,42 @@ def findAttachments = {
         "https://issues.apache.org/jira/sr/jira.issueviews:searchrequest-xml/12330308/SearchRequest-12330308.xml?tempMax=100&field=key&field=attachments"
     def rss = new XmlSlurper().parse(JIRA_FILTER)
 
-    List list = readHistory {}
+    final List history = readHistory {}
 
     LinkedHashMap<String, String> attachments = [:]
 
     rss.channel.item.each { jira ->
         String row = getLatestAttachment(jira)
 
-        if (row != null && !list.contains(row)) {
+        if (row != null && !history.contains(row)) {
             def pair = row.split(',')
 
             attachments.put(pair[0] as String, pair[1] as String)
-
-            list.add(row)
         }
     }
-
-    // Write everything back to persist the list
-    def validated = new File(validated_filename)
-
-    if (validated.exists())
-        validated.delete()
-
-    validated << list.join('\n')
 
     attachments
 }
 
 /**
- * Monitors given process and show errors if exist.
+ * Store jira with attachment id to hostory.
  */
-def checkprocess = { process ->
-    process.waitFor()
+def addToHistory = {jira, attachmentId ->
+    def validated = new File(HISTORY_FILE)
 
-    if (process.exitValue() != 0) {
-        println "Return code: " + process.exitValue()
-        println "Errout:\n" + process.err.text
+    assert validated.exists(), "History file does not exist."
 
-        assert process.exitValue() == 0 || process.exitValue() == 128
+    validated << NL + "$jira,$attachmentId"
+}
+
+def tryGitAmAbort = {
+    try {
+        checkprocess "git am --abort".execute(null, new File("../"))
+
+        println "Succsessfull: git am --abort."
+    }
+    catch (Throwable e) {
+        println "Error: git am --abort fails: "
     }
 }
 
@@ -155,53 +281,69 @@ def checkprocess = { process ->
  * Applys patch from jira to given git state.
  */
 def applyPatch = { jira, attachementURL ->
+    // Delete all old IGNITE-*-*.patch files.
+    def directory = new File("./")
+
+    println "Remove IGNITE-*-*.patch files in ${directory.absolutePath} and its subdirectories..."
+
+    def classPattern = ~/.*IGNITE-.*-.*\.patch/
+
+    directory.eachFileRecurse(groovy.io.FileType.FILES)
+        { file ->
+            if (file ==~ classPattern){
+                println "Deleting ${file}..."
+
+                file.delete()
+            }
+        }
+
+    // Main logic.
+    println "Patch apllying with jira='$jira' and attachment='$ATTACHMENT_URL/$attachementURL/'."
+
     def userEmail = System.getenv("env.GIT_USER_EMAIL");
     def userName = System.getenv("env.GIT_USER_NAME");
 
-    println "Patch apllying with jira='$jira' and attachment='$ATTACHMENT_URL/$attachementURL/'."
-
     def patchFile = new File("${jira}-${attachementURL}.patch")
 
+    println "Getting patch content."
+
+    def attachmentUrl = new URL("$ATTACHMENT_URL/$attachementURL/")
+
+    HttpURLConnection conn = (HttpURLConnection)attachmentUrl.openConnection();
+    conn.setRequestProperty("Content-Type", "text/x-patch;charset=utf-8");
+    conn.setRequestProperty("X-Content-Type-Options", "nosniff");
+    conn.connect();
+
+    patchFile << conn.getInputStream()
+
+    println "Got patch content."
+
     try {
-        println "Getting patch content."
+        tryGitAmAbort()
 
-        patchFile << new URL("$ATTACHMENT_URL/$attachementURL/").text
+        execGit "git branch"
 
-        try {
-            checkprocess "git branch".execute()
+        execGit "git config user.email \"$userEmail\""
+        execGit "git config user.name \"$userName\""
 
-            checkprocess "git config user.email \"$userEmail\"".execute(null, new File("../"))
-            checkprocess "git config user.name \"$userName\"".execute(null, new File("../"))
+        // Create a new uniqueue branch to applying patch
+        def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
+        execGit "git checkout -b ${newTestBranch}"
 
-            // Create a new uniqueue branch to applying patch
-            def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
-            checkprocess "git checkout -b ${newTestBranch}".execute(null, new File("../"))
+        execGit "git branch"
 
-            checkprocess "git branch".execute()
+        println "Trying to apply patch."
 
-            checkprocess "git am dev-tools/${patchFile.name}".execute(null, new File("../"))
+        execGit "git am dev-tools/${patchFile.name}"
 
-            println "Patch was applied successfully."
-        }
-        catch (Exception e) {
-            println "Patch was not applied successfully. Aborting patch applying."
-
-            try {
-                checkprocess "git am --abort".execute(null, new File("../"))
-
-                print "Succsessfull: git am --abort."
-            }
-            catch (Exception e2) {
-                print "Error: git am --abort fails: "
-
-                e2.printStackTrace()
-            }
-
-            throw e;
-        }
+        println "Patch was applied successfully."
     }
-    finally {
-        assert patchFile.delete(), 'Could not delete patch file.'
+    catch (Throwable e) {
+        println "Patch was not applied successfully. Aborting patch applying."
+
+        tryGitAmAbort()
+
+        throw e;
     }
 }
 
@@ -232,50 +374,9 @@ def getTestBuilds = { ->
 }
 
 /**
- * Util method to send post request.
- */
-def sendPostRequest = { urlString, user, pwd, postData, contentType ->
-    URL url = new URL(urlString as String);
-
-    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-
-    String encoded = new sun.misc.BASE64Encoder().encode("$user:$pwd".getBytes());
-
-    conn.setRequestProperty("Authorization", "Basic " + encoded);
-
-    conn.setDoOutput(true);
-    conn.setRequestMethod("POST");
-    conn.setRequestProperty("Content-Type", contentType);
-    conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
-
-    OutputStream os = conn.getOutputStream();
-    os.write(postData.getBytes());
-    os.flush();
-    os.close();
-
-    conn.connect();
-
-    // Read response.
-    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-    String response = "";
-    String line;
-
-    while ((line = br.readLine()) != null)
-        response += line
-
-    br.close();
-
-    response
-}
-
-/**
  * Adds comment to jira ticket.
  */
 def addJiraComment = { jiraNum, comment ->
-    def user = System.getenv('JIRA_USER')
-    def pwd = System.getenv('JIRA_PWD')
-
     try {
         println "Comment: $comment"
 
@@ -283,8 +384,8 @@ def addJiraComment = { jiraNum, comment ->
 
         def response = sendPostRequest(
             "$JIRA_URL/jira/rest/api/2/issue/$jiraNum/comment" as String,
-            user,
-            pwd,
+            JIRA_USER,
+            JIRA_PWD,
             jsonComment,
             "application/json")
 
@@ -319,6 +420,9 @@ def runAllTestBuilds = {builds, jiraNum ->
             else {
                 postData = "<build>" +
                         "  <buildType id='$it'/>" +
+                        "  <comment>" +
+                        "    <text>Auto triggered build to validate last attached patch file at $jiraNum.</text>" +
+                        "  </comment>" +
                         "  <properties>" +
                         "    <property name='env.JIRA_NUM' value='$jiraNum'/>" +
                         "  </properties>" +
@@ -345,10 +449,17 @@ def runAllTestBuilds = {builds, jiraNum ->
         }
     }
 
+    // Format comment for jira.
     def triggeredBuildsComment = "There was triggered next test builds for last attached patch-file:\\n"
 
+    def n = 1;
+
     triggeredBuilds.each { name, url ->
-        triggeredBuildsComment += "${name as String} - ${url as String}\\n"
+        def prefix = n < 10 ? "0" : ""
+
+        triggeredBuildsComment += "${prefix}${n}. ${url as String} - ${name as String}\\n"
+
+        n++
     }
 
     addJiraComment(jiraNum, triggeredBuildsComment)
@@ -389,6 +500,8 @@ args.each {
             println "Triggering the test builds for: $k = $ATTACHMENT_URL/$v/"
 
             runAllTestBuilds(builds, k)
+
+            addToHistory(k, v)
         }
     }
     else if (parameters.length >= 1 && parameters[0] == "patchApply") {

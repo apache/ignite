@@ -288,6 +288,10 @@ public class GridSqlQuerySplitter {
             while (target.size() < idx)
                 target.add(null);
 
+            if (params.length <= idx)
+                throw new IgniteException("Invalid number of query parameters. " +
+                    "Cannot find " + idx + " parameter.");
+
             Object param = params[idx];
 
             if (idx == target.size())

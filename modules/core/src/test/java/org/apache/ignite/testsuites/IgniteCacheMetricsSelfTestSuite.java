@@ -39,6 +39,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
+        suite.addTestSuite(CacheLocalOffHeapAndSwapMetricsSelfTest.class);
 
         // Atomic cache.
         suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
