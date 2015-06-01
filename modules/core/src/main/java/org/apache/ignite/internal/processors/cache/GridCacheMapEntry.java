@@ -3704,7 +3704,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
         if (cctx.offheapTiered() && ((flags & IS_OFFHEAP_PTR_MASK) != 0)) {
             cctx.swap().removeOffheap(key());
 
-            offHeapPointer(0);
+            value(prevVal);
 
             flags &= ~IS_OFFHEAP_PTR_MASK;
 
