@@ -22,8 +22,6 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
-
     <bean id="simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">

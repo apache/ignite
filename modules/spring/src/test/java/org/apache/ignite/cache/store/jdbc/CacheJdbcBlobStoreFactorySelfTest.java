@@ -29,15 +29,15 @@ import org.h2.jdbcx.*;
 public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/store-cache.xml")) {
-            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache("test")) {
-                CacheJdbcBlobStore store = (CacheJdbcBlobStore)cache.getConfiguration(CacheConfiguration.class).
-                    getCacheStoreFactory().create();
+            IgniteCache<Integer, String> cache = ignite.cache("test");
 
-                assertEquals("GridGain", GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
+            CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
+                getCacheStoreFactory().create();
 
-                assertEquals(JdbcDataSource.class,
-                    GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
-            }
+            assertEquals("GridGain", GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
+
+            assertEquals(JdbcDataSource.class,
+                GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
         }
     }
 }

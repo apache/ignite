@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.internal.util.tostring.*;
-import org.springframework.beans.factory.annotation.*;
+import org.apache.ignite.resources.*;
 import org.springframework.context.*;
 
 import javax.cache.configuration.*;
@@ -97,7 +97,7 @@ public class CacheJdbcBlobStoreFactory  implements Factory<CacheJdbcBlobStore> {
     private String dataSrcBean;
 
     /** Application context. */
-    @Autowired
+    @SpringApplicationContextResource
     private ApplicationContext appContext;
 
     /** {@inheritDoc} */
