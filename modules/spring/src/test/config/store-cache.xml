@@ -24,7 +24,7 @@
 
     <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
 
-    <bean id= "simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/>
+    <bean id="simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="cacheConfiguration">
