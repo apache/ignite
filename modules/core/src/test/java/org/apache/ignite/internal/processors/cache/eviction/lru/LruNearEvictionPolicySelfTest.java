@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * LRU near eviction tests (GG-8884).
  */
-public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
+public class LruNearEvictionPolicySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -63,7 +63,11 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         cc.setBackups(0);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(EVICTION_MAX_SIZE));
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(EVICTION_MAX_SIZE);
+
+        nearCfg.setNearEvictionPolicy(plc);
         cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);

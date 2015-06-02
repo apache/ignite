@@ -20,6 +20,7 @@ package org.apache.ignite.cache.eviction;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.eviction.random.*;
+import org.apache.ignite.cache.eviction.sorted.*;
 
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order
@@ -32,6 +33,7 @@ import org.apache.ignite.cache.eviction.random.*;
  * <li>{@link LruEvictionPolicy}</li>
  * <li>{@link RandomEvictionPolicy}</li>
  * <li>{@link FifoEvictionPolicy}</li>
+ * <li>{@link SortedEvictionPolicy}</li>
  * </ul>
  * <p>
  * The eviction policy thread-safety is ensured by Ignition. Implementations of this interface should

@@ -28,8 +28,8 @@ import java.util.concurrent.*;
 /**
  * Random eviction policy test.
  */
-public class GridCacheRandomEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<RandomEvictionPolicy<String, String>> {
+public class RandomEvictionPolicySelfTest extends
+    EvictionAbstractTest<RandomEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -111,13 +111,9 @@ public class GridCacheRandomEvictionPolicySelfTest extends
             IgniteCache<String, String> c = jcache();
 
             MockEntry e1 = new MockEntry("1", c);
-
             MockEntry e2 = new MockEntry("2", c);
-
             MockEntry e3 = new MockEntry("3", c);
-
             MockEntry e4 = new MockEntry("4", c);
-
             MockEntry e5 = new MockEntry("5", c);
 
             RandomEvictionPolicy<String, String> p = policy();
@@ -207,7 +203,102 @@ public class GridCacheRandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override public void testPartitionedNearDisabled() throws Exception {
+    @Override public void testMaxMemSizeAllowEmptyEntries() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxMemSizeMemory() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxMemSizePartitionedNearDisabled() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxMemSizePolicy() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxMemSizePolicyWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxMemSizePut() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxMemSizeRandom() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizeAllowEmptyEntries() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizeAllowEmptyEntriesWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizeMemory() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizeMemoryWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void doTestPolicy() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizePut() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizePutWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizeRandom() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizeRandomWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizePolicyWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizePartitionedNearDisabledWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void doTestPolicyWithBatch() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testMaxSizePartitionedNearDisabled() throws Exception {
         // No-op.
     }
 
@@ -238,12 +329,20 @@ public class GridCacheRandomEvictionPolicySelfTest extends
 
     /** {@inheritDoc} */
     @Override protected RandomEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new RandomEvictionPolicy<>(plcMax);
+        RandomEvictionPolicy<String, String> plc = new RandomEvictionPolicy<>();
+
+        plc.setMaxSize(plcMax);
+
+        return plc;
     }
 
     /** {@inheritDoc} */
     @Override protected RandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new RandomEvictionPolicy<>(plcMax);
+        RandomEvictionPolicy<String, String> plc = new RandomEvictionPolicy<>();
+
+        plc.setMaxSize(plcMax);
+
+        return plc;
     }
 
     /** {@inheritDoc} */
@@ -252,7 +351,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkPolicies(int plcMax) {
+    @Override protected void checkPolicies() {
         // No-op.
     }
 }
