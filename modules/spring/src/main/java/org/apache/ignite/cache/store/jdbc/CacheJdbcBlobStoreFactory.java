@@ -31,9 +31,7 @@ import javax.sql.*;
  * Use this factory to pass {@link CacheJdbcBlobStore} to {@link org.apache.ignite.configuration.CacheConfiguration}.
  *
  * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml">
- *     &lt;bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/&gt;
- *
+ * <pre name="code" class="xml"> *
  *     &lt;bean id= "simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
  *
  *     &lt;bean id=&quot;cache.jdbc.store&quot;
