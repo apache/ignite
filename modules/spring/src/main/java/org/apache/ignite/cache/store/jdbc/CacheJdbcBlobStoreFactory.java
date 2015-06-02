@@ -117,6 +117,9 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
             if (appContext == null)
                 throw new IgniteException("Spring application context resource is not injected.");
 
+            if (!appContext.containsBean(dataSrcBean))
+                throw new IgniteException("Cannot find bean in application context. [beanName=" + dataSrcBean + "].");
+
             DataSource data = (DataSource) appContext.getBean(dataSrcBean);
 
             store.setDataSource(data);

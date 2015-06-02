@@ -24,6 +24,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.h2.jdbcx.*;
 import sun.jdbc.odbc.ee.*;
 
+import java.util.concurrent.*;
+
 /**
  * Test for Cache jdbc blob store factory.
  */
@@ -62,6 +64,21 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncorrectBeanConfiguration() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try(Ignite ignite = Ignition.start("modules/spring/src/test/config/incorrect-store-cache.xml")) {
+                    ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
+                        getCacheStoreFactory().create();
+                }
+                return null;
+            }
+        }, IgniteException.class, "Cannot find bean in application context.");
     }
 
     /**
