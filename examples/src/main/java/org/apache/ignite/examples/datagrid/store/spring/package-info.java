@@ -15,27 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-
 /**
- * Checks behavior on exception while unmarshalling key.
+ * <!-- Package description. -->
+ * Contains Spring-based cache store implementation.
  */
-public class IgniteCacheP2pUnmarshallingErrorTestSuit extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
-
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingTxErrorTest.class);
-
-        return suite;
-    }
-}
+package org.apache.ignite.examples.datagrid.store.spring;

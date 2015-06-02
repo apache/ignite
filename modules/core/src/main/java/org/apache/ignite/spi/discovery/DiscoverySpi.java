@@ -17,12 +17,13 @@
 
 package org.apache.ignite.spi.discovery;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -102,7 +103,7 @@ public interface DiscoverySpi extends IgniteSpi {
      *
      * @param exchange Discovery data exchange handler.
      */
-    public void setDataExchange(DiscoverySpiDataExchange exchange);
+    public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
@@ -111,7 +112,7 @@ public interface DiscoverySpi extends IgniteSpi {
      *
      * @param metricsProvider Provider of metrics data.
      */
-    public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
+    public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 
     /**
      * Tells discovery SPI to disconnect from topology. This is very close to calling
@@ -141,9 +142,10 @@ public interface DiscoverySpi extends IgniteSpi {
 
     /**
      * Sends custom message across the ring.
-     * @param evt Event.
+     * @param msg Custom message.
+     * @throws IgniteException if failed to marshal evt.
      */
-    public void sendCustomEvent(Serializable evt);
+    public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 
     /**
      * Initiates failure of provided node.
@@ -151,4 +153,12 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param nodeId Node ID.
      */
     public void failNode(UUID nodeId);
+
+    /**
+     * Whether or not discovery is started in client mode.
+     *
+     * @return {@code true} if node is in client mode.
+     * @throws IllegalStateException If discovery SPI has not started.
+     */
+    public boolean isClientMode() throws IllegalStateException;
 }

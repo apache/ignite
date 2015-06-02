@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.cluster.*;
 
 /**
- * Test for atomic cache.
+ * Listener interface.
  */
-public class GridCacheAtomicNearOnlySelfTest extends GridCacheNearOnlySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
+public interface CustomEventListener<T extends DiscoveryCustomMessage> {
+    /**
+     * @param snd Sender.
+     * @param msg Message.
+     */
+    public void onCustomEvent(ClusterNode snd, T msg);
 }

@@ -70,28 +70,16 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (client()) {
-            TcpClientDiscoverySpi spi = new TcpClientDiscoverySpi();
+        if (client())
+            cfg.setClientMode(true);
 
-            spi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(spi);
-        }
-        else {
-            TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-            spi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(spi);
-        }
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
 
         cfg.setCacheConfiguration();
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
         cfg.setIncludeProperties();
-
-        cfg.setLocalHost("127.0.0.1");
 
         return cfg;
     }

@@ -495,11 +495,13 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        for (AddressSender addrSnd : addrSnds)
-            U.interrupt(addrSnd);
+        if (addrSnds != null) {
+            for (AddressSender addrSnd : addrSnds)
+                U.interrupt(addrSnd);
 
-        for (AddressSender addrSnd : addrSnds)
-            U.join(addrSnd, log);
+            for (AddressSender addrSnd : addrSnds)
+                U.join(addrSnd, log);
+        }
     }
 
     /** {@inheritDoc} */
