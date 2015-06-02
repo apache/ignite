@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -227,12 +228,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             final long start = U.currentTimeMillis();
 
-            if (cctx.config().getRebalanceDelay() >= 0) {
-                U.log(log, "Starting rebalancing in " + cctx.config().getRebalanceMode() + " mode: " + cctx.name());
+            final CacheConfiguration cfg = cctx.config();
+
+            if (cfg.getRebalanceDelay() >= 0) {
+                U.log(log, "Starting rebalancing in " + cfg.getRebalanceMode() + " mode: " + cctx.name());
 
                 demandPool.syncFuture().listen(new CI1<Object>() {
                     @Override public void apply(Object t) {
-                        U.log(log, "Completed rebalancing in " + cctx.config().getRebalanceMode() + " mode " +
+                        U.log(log, "Completed rebalancing in " + cfg.getRebalanceMode() + " mode " +
                             "[cache=" + cctx.name() + ", time=" + (U.currentTimeMillis() - start) + " ms]");
                     }
                 });
