@@ -62,8 +62,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** SPIs */
-    private static final Map<UUID, CommunicationSpi<Message>> spis =
-        new ConcurrentHashMap<>();
+    private static final Map<UUID, CommunicationSpi<Message>> spis = new ConcurrentHashMap<>();
 
     /** Listeners. */
     private static final Map<UUID, MessageListener> lsnrs = new HashMap<>();
@@ -85,10 +84,17 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /**
      * @param useShmem Use shared mem.
      */
-    public GridTcpCommunicationSpiMultithreadedSelfTest(boolean useShmem) {
+    protected GridTcpCommunicationSpiMultithreadedSelfTest(boolean useShmem) {
         super(false);
 
         this.useShmem = useShmem;
+    }
+
+    /**
+     *
+     */
+    public GridTcpCommunicationSpiMultithreadedSelfTest() {
+        this(false);
     }
 
     /**
