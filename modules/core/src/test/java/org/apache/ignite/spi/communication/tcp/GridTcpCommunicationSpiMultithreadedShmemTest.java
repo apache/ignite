@@ -17,22 +17,12 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.testframework.junits.spi.*;
-
 /**
  *
  */
-@GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiTcpSelfTest extends GridTcpCommunicationSpiAbstractTest {
-    /**
-     *
-     */
-    public GridTcpCommunicationSpiTcpSelfTest() {
-        super(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean tcpNoDelay() {
-        return true;
+public class GridTcpCommunicationSpiMultithreadedShmemTest extends GridTcpCommunicationSpiMultithreadedSelfTest {
+    /** */
+    public GridTcpCommunicationSpiMultithreadedShmemTest() {
+        super(true);
     }
 }

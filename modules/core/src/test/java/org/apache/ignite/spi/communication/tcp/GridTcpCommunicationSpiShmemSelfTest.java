@@ -23,12 +23,12 @@ import org.apache.ignite.testframework.junits.spi.*;
  *
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiTcpSelfTest extends GridTcpCommunicationSpiAbstractTest {
+public class GridTcpCommunicationSpiShmemSelfTest extends GridTcpCommunicationSpiAbstractTest {
     /**
      *
      */
-    public GridTcpCommunicationSpiTcpSelfTest() {
-        super(false);
+    public GridTcpCommunicationSpiShmemSelfTest() {
+        super(true);
     }
 
     /** {@inheritDoc} */
