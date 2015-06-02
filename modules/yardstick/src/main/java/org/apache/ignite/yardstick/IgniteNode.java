@@ -104,11 +104,8 @@ public class IgniteNode implements BenchmarkServer {
 
                 if (args.isOffheapValues())
                     cc.setMemoryMode(OFFHEAP_VALUES);
-                else {
-                    LruEvictionPolicy plc = new LruEvictionPolicy();
-                    plc.setMaxSize(50000);
-                    cc.setEvictionPolicy(plc);
-                }
+                else
+                    cc.setEvictionPolicy(new LruEvictionPolicy(50000));
             }
 
             cc.setReadThrough(args.isStoreEnabled());
