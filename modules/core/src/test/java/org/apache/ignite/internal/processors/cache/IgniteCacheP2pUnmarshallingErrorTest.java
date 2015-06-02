@@ -65,26 +65,32 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (gridName.endsWith("0"))
+        if (getTestGridName(0).equals(gridName)) {
             cfg.setClientMode(true);
+
+            cfg.setCacheConfiguration();
+        }
 
         return cfg;
     }
 
     /** Test key 1. */
     public static class TestKey implements Externalizable {
-        /** Test key 1. */
+        /** Field. */
+        @QuerySqlField(index = true)
+        private String field;
+
+        /**
+         * @param field Test key 1.
+         */
         public TestKey(String field) {
             this.field = field;
         }
 
         /** Test key 1. */
         public TestKey() {
+            // No-op.
         }
-
-        /** Field. */
-        @QuerySqlField(index = true)
-        private String field;
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
@@ -112,14 +118,15 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
-            if (readCnt.decrementAndGet() <= 0) {
-                throw new IOException("Class can not be unmarshalled");
-            }
+            if (readCnt.decrementAndGet() <= 0)
+                throw new IOException("Class can not be unmarshalled.");
         }
     }
 
     /**
      * Sends put atomically and handles fail.
+     *
+     * @param k Key.
      */
     protected void failAtomicPut(int k) {
         try {
@@ -136,6 +143,8 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
     /**
      * Sends get atomically and handles fail.
+     *
+     * @param k Key.
      */
     protected void failAtomicGet(int k) {
         try {
@@ -150,6 +159,8 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
     /**
      * Tests that correct response will be sent to client node in case of unmarshalling failed.
+     *
+     * @throws Exception If failed.
      */
     public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         //GridNearAtomicUpdateRequest unmarshalling failed test

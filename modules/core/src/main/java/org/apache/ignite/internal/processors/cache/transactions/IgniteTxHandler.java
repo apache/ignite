@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -229,13 +230,21 @@ public class IgniteTxHandler {
             return null;
         }
 
+        IgniteTxEntry firstEntry = null;
+
         try {
-            for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes()))
+            for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
                 e.unmarshal(ctx, false, ctx.deploy().globalLoader());
+
+                if (firstEntry == null)
+                    firstEntry = e;
+            }
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
         }
+
+        assert firstEntry != null : req;
 
         GridDhtTxLocal tx;
 
@@ -253,36 +262,88 @@ public class IgniteTxHandler {
             }
         }
         else {
-            tx = new GridDhtTxLocal(
-                ctx,
-                nearNode.id(),
-                req.version(),
-                req.futureId(),
-                req.miniId(),
-                req.threadId(),
-                req.implicitSingle(),
-                req.implicitSingle(),
-                req.system(),
-                req.explicitLock(),
-                req.policy(),
-                req.concurrency(),
-                req.isolation(),
-                req.timeout(),
-                req.isInvalidate(),
-                false,
-                req.txSize(),
-                req.transactionNodes(),
-                req.subjectId(),
-                req.taskNameHash()
-            );
+            GridDhtPartitionTopology top = null;
 
-            tx = ctx.tm().onCreated(null, tx);
+            if (req.firstClientRequest()) {
+                assert req.concurrency().equals(OPTIMISTIC) : req;
+                assert CU.clientNode(nearNode) : nearNode;
 
-            if (tx != null)
-                tx.topologyVersion(req.topologyVersion());
-            else
-                U.warn(log, "Failed to create local transaction (was transaction rolled back?) [xid=" +
-                    req.version() + ", req=" + req + ']');
+                top = firstEntry.context().topology();
+
+                top.readLock();
+            }
+
+            try {
+                if (top != null && needRemap(req.topologyVersion(), top.topologyVersion(), req)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Client topology version mismatch, need remap transaction [" +
+                            "reqTopVer=" + req.topologyVersion() +
+                            ", locTopVer=" + top.topologyVersion() +
+                            ", req=" + req + ']');
+                    }
+
+                    GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+                        req.version(),
+                        req.futureId(),
+                        req.miniId(),
+                        req.version(),
+                        req.version(),
+                        null,
+                        null,
+                        null,
+                        top.topologyVersion());
+
+                    try {
+                        ctx.io().send(nearNode, res, req.policy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send client tx remap response, client node failed " +
+                                "[node=" + nearNode + ", req=" + req + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send client tx remap response " +
+                            "[node=" + nearNode + ", req=" + req + ']', e);
+                    }
+
+                    return new GridFinishedFuture<>(res);
+                }
+
+                tx = new GridDhtTxLocal(
+                    ctx,
+                    nearNode.id(),
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.threadId(),
+                    req.implicitSingle(),
+                    req.implicitSingle(),
+                    req.system(),
+                    req.explicitLock(),
+                    req.policy(),
+                    req.concurrency(),
+                    req.isolation(),
+                    req.timeout(),
+                    req.isInvalidate(),
+                    false,
+                    req.txSize(),
+                    req.transactionNodes(),
+                    req.subjectId(),
+                    req.taskNameHash()
+                );
+
+                tx = ctx.tm().onCreated(null, tx);
+
+                if (tx != null)
+                    tx.topologyVersion(req.topologyVersion());
+                else
+                    U.warn(log, "Failed to create local transaction (was transaction rolled back?) [xid=" +
+                        req.version() + ", req=" + req + ']');
+            }
+            finally {
+                if (top != null)
+                    top.readUnlock();
+            }
         }
 
         if (tx != null) {
@@ -340,6 +401,31 @@ public class IgniteTxHandler {
         }
         else
             return new GridFinishedFuture<>((GridNearTxPrepareResponse)null);
+    }
+
+    /**
+     * @param expVer Expected topology version.
+     * @param curVer Current topology version.
+     * @param req Request.
+     * @return {@code True} if cache affinity changed and request should be remapped.
+     */
+    private boolean needRemap(AffinityTopologyVersion expVer,
+        AffinityTopologyVersion curVer,
+        GridNearTxPrepareRequest req) {
+        if (expVer.equals(curVer))
+            return false;
+
+        for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
+            GridCacheContext ctx = e.context();
+
+            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
+            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
+
+            if (!cacheNodes0.equals(cacheNodes1))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1024,8 +1110,10 @@ public class IgniteTxHandler {
                     return null;
                 }
             }
-            else
+            else {
+                tx.writeVersion(req.writeVersion());
                 tx.transactionNodes(req.transactionNodes());
+            }
 
             if (!tx.isSystemInvalidate() && !F.isEmpty(req.writes())) {
                 int idx = 0;

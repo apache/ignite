@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.*;
+
 /**
  * Affinity cached function.
  */
@@ -218,6 +220,35 @@ public class GridAffinityAssignmentCache {
         }
 
         return updated.assignment();
+    }
+
+    /**
+     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
+     * (e.g. client node joins on leaves).
+     *
+     * @param evt Event.
+     * @param topVer Topology version.
+     */
+    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+        GridAffinityAssignment aff = head.get();
+
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
+
+        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff.assignment());
+
+        affCache.put(topVer, assignmentCpy);
+        head.set(assignmentCpy);
+
+        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+            if (entry.getKey().compareTo(topVer) <= 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Completing topology ready future (use previous affinity) " +
+                            "[locNodeId=" + ctx.localNodeId() + ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+
+                entry.getValue().onDone(topVer);
+            }
+        }
     }
 
     /**
@@ -422,6 +453,7 @@ public class GridAffinityAssignmentCache {
 
         /**
          *
+         * @param reqTopVer Required topology version.
          */
         private AffinityReadyFuture(AffinityTopologyVersion reqTopVer) {
             this.reqTopVer = reqTopVer;

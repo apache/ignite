@@ -34,6 +34,9 @@ public class TestCacheSession implements CacheStoreSession {
     /** */
     private Map<Object, Object> props;
 
+    /** */
+    private Object attachment;
+
     /**
      *
      * @param tx Transaction.
@@ -52,6 +55,21 @@ public class TestCacheSession implements CacheStoreSession {
     /** {@inheritDoc} */
     @Override public boolean isWithinTransaction() {
         return transaction() != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object attach(@Nullable Object attachment) {
+        Object prev = this.attachment;
+
+        this.attachment = attachment;
+
+        return prev;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <T> T attachment() {
+        return (T)attachment;
     }
 
     /** {@inheritDoc} */

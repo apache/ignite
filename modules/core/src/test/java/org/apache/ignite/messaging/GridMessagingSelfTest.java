@@ -45,7 +45,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
 /**
  * Various tests for Messaging public API.
  */
-public class GridMessagingSelfTest extends GridCommonAbstractTest {
+public class GridMessagingSelfTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final String MSG_1 = "MSG-1";
 
@@ -74,7 +74,10 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
 
     /** Shared IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private final transient TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static CountDownLatch rcvLatch;
 
     /**
      * A test message topic.
@@ -609,7 +612,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     public void testRemoteListen() throws Exception {
         final Collection<Object> rcvMsgs = new GridConcurrentHashSet<>();
 
-        final CountDownLatch rcvLatch = new CountDownLatch(4);
+        rcvLatch = new CountDownLatch(4);
 
         ignite2.message().remoteListen(null, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
@@ -746,7 +749,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
-        final CountDownLatch rcvLatch = new CountDownLatch(3);
+        rcvLatch = new CountDownLatch(3);
 
         ignite2.message().remoteListen(S_TOPIC_1, new P2<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
@@ -795,7 +798,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean error = new AtomicBoolean(false); //to make it modifiable
 
-        final CountDownLatch rcvLatch = new CountDownLatch(3);
+        rcvLatch = new CountDownLatch(3);
 
         ignite2.message().remoteListen(I_TOPIC_1, new P2<UUID, Object>() {
             @IgniteInstanceResource

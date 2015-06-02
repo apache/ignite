@@ -18,10 +18,9 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.util.*;
 
 /**
@@ -47,5 +46,5 @@ public interface DiscoverySpiListener {
         ClusterNode node,
         Collection<ClusterNode> topSnapshot,
         @Nullable Map<Long, Collection<ClusterNode>> topHist,
-        @Nullable Serializable data);
+        @Nullable DiscoverySpiCustomMessage data);
 }

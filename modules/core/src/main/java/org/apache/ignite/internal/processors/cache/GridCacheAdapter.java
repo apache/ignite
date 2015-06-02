@@ -348,7 +348,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Preloader.
      */
-    public abstract GridCachePreloader<K, V> preloader();
+    public abstract GridCachePreloader preloader();
 
     /** {@inheritDoc} */
     @Override public Affinity<K> affinity() {
@@ -902,7 +902,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Set<K> keySet() {
-        return keySet((CacheEntryPredicate[]) null);
+        return keySet((CacheEntryPredicate[])null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<K> keySetx() {
+        return keySetx((CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
@@ -4302,6 +4307,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
         return map.keySet(filter);
+    }
+
+    /**
+     * @param filter Filters to evaluate.
+     * @return Key set including internal keys.
+     */
+    public Set<K> keySetx(@Nullable CacheEntryPredicate... filter) {
+        return map.keySetx(filter);
     }
 
     /**

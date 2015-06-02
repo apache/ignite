@@ -68,15 +68,14 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setCommunicationSpi(new DelayCommunicationSpi());
+
+        if (testClientNode() && getTestGridName(0).equals(gridName))
+            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -106,6 +105,13 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * @return {@code True} if test updates from client node.
+     */
+    protected boolean testClientNode() {
+        return false;
     }
 
     /**
@@ -167,6 +173,8 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         awaitPartitionMapExchange();
 
         try {
+            assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+
             final IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             final int range = 100_000;
@@ -321,7 +329,10 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                     assertEquals("Failed to check value for key [key=" + k + ", node=" +
                                         locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
                                         val, CU.value(entry.rawGetOrUnmarshal(false), entry.context(), false));
-                                    assertEquals(ver, entry.version());
+
+                                    assertEquals("Failed to check version for key [key=" + k + ", node=" +
+                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                        ver, entry.version());
                                 }
                             }
                             else

@@ -41,7 +41,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridCachePreloader<K,V> preldr;
+    private GridCachePreloader preldr;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -56,7 +56,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     public GridLocalCache(GridCacheContext<K, V> ctx) {
         super(ctx, ctx.config().getStartSize());
 
-        preldr = new GridCachePreloaderAdapter<>(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx);
     }
 
     /** {@inheritDoc} */
@@ -65,7 +65,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return preldr;
     }
 
