@@ -23,5 +23,7 @@ import junit.framework.*;
  * Scheduler tests.
  */
 public class IgniteSchedulerSelfTest extends TestCase {
+    public void testName() throws Exception {
 
+    }
 }
