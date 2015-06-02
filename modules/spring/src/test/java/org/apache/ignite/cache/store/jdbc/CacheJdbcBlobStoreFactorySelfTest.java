@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.h2.jdbcx.*;
 
 /**
  * Test for Cache jdbc blob store factory.
@@ -34,7 +35,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
 
                 assertEquals("GridGain", GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
 
-                assertEquals(CacheJdbcBlobStoreFactory.class,
+                assertEquals(JdbcDataSource.class,
                     GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
             }
         }
