@@ -1447,6 +1447,17 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(myCfg.getSwapSpaceSpi());
             }
 
+            execSvc = new IgniteThreadPoolExecutor(
+                "pub-" + cfg.getGridName(),
+                cfg.getPublicThreadPoolSize(),
+                cfg.getPublicThreadPoolSize(),
+                DFLT_PUBLIC_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
+
+            if (!myCfg.isClientMode())
+                // Pre-start all threads as they are guaranteed to be needed.
+                ((ThreadPoolExecutor)execSvc).prestartAllCoreThreads();
+
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
             sysExecSvc = new IgniteThreadPoolExecutor(
@@ -1456,30 +1467,8 @@ public class IgnitionEx {
                 DFLT_SYSTEM_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
-            boolean isClientMode = Boolean.TRUE.equals(myCfg.isClientMode());
-
-            if (isClientMode) {
-                execSvc = new IgniteThreadPoolExecutor(
-                    "pub-" + cfg.getGridName(),
-                    0,
-                    cfg.getPublicThreadPoolSize(),
-                    2000,
-                    new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
-            }
-            else {
-                execSvc = new IgniteThreadPoolExecutor(
-                    "pub-" + cfg.getGridName(),
-                    cfg.getPublicThreadPoolSize(),
-                    cfg.getPublicThreadPoolSize(),
-                    DFLT_PUBLIC_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
-
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor) execSvc).prestartAllCoreThreads();
-
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor) sysExecSvc).prestartAllCoreThreads();
-            }
+            // Pre-start all threads as they are guaranteed to be needed.
+            ((ThreadPoolExecutor)sysExecSvc).prestartAllCoreThreads();
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -2007,7 +1996,6 @@ public class IgnitionEx {
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
             ccfg.setCacheMode(cfg.getCacheMode());
             ccfg.setNodeFilter(CacheConfiguration.ALL_NODES);
-            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
             if (cfg.getCacheMode() == PARTITIONED)
                 ccfg.setBackups(cfg.getBackups());

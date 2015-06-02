@@ -116,7 +116,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         b.append("    Message worker: ").append(threadStatus(msgWorker)).append(U.nl());
         b.append("    Socket reader: ").append(threadStatus(sockReader)).append(U.nl());
         b.append("    Socket writer: ").append(threadStatus(sockWriter)).append(U.nl());
-        b.append("    Socket timeout worker: ").append(threadStatus(spi.sockTimeoutWorker)).append(U.nl());
 
         b.append(U.nl());
 
@@ -524,11 +523,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         U.interrupt(sockWriter);
         U.interrupt(msgWorker);
-        U.interrupt(spi.sockTimeoutWorker);
 
         U.join(sockWriter, log);
         U.join(msgWorker, log);
-        U.join(spi.sockTimeoutWorker, log);
     }
 
     /** {@inheritDoc} */

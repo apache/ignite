@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -111,8 +112,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      * @return Cancelable to cancel task.
      */
     public CancelableTask schedule(Runnable task, long delay, long period) {
-        assert delay >= 0;
-        assert period > 0 || period == -1;
+        assert delay >= 0 : delay;
+        assert period > 0 || period == -1 : period;
 
         CancelableTask obj = new CancelableTask(task, U.currentTimeMillis() + delay, period);
 
@@ -203,7 +204,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      */
     public class CancelableTask implements GridTimeoutObject, Closeable {
         /** */
-        private final IgniteUuid id = new IgniteUuid();
+        private final IgniteUuid id = IgniteUuid.randomUuid();
 
         /** */
         private long endTime;
@@ -215,12 +216,13 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
         private volatile boolean cancel;
 
         /** */
+        @GridToStringInclude
         private final Runnable task;
 
         /**
+         * @param task Task to execute.
          * @param firstTime First time.
          * @param period Period.
-         * @param task Task to execute.
          */
         CancelableTask(Runnable task, long firstTime, long period) {
             this.task = task;
@@ -243,19 +245,10 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
             if (cancel)
                 return;
 
-            long startTime = U.currentTimeMillis();
-
             try {
                 task.run();
             }
             finally {
-                long executionTime = U.currentTimeMillis() - startTime;
-
-                if (executionTime > 10) {
-                    U.warn(log, "Timer task take a lot of time, tasks submitted to GridTimeoutProcessor must work " +
-                        "quickly [executionTime=" + executionTime + ']');
-                }
-
                 if (!cancel && period > 0) {
                     endTime = U.currentTimeMillis() + period;
 
@@ -272,6 +265,11 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                 // Just waiting for task execution end to make sure that task will not be executed anymore.
                 removeTimeoutObject(this);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CancelableTask.class, this);
         }
     }
 }
