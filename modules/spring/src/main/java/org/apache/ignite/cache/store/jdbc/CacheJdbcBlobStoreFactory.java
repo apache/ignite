@@ -63,7 +63,7 @@ import javax.sql.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class CacheJdbcBlobStoreFactory  implements Factory<CacheJdbcBlobStore> {
+public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobStore<K, V>> {
     /** Connection URL. */
     private String connUrl = CacheJdbcBlobStore.DFLT_CONN_URL;
 
@@ -100,8 +100,8 @@ public class CacheJdbcBlobStoreFactory  implements Factory<CacheJdbcBlobStore> {
     private ApplicationContext appContext;
 
     /** {@inheritDoc} */
-    @Override public CacheJdbcBlobStore create() {
-        CacheJdbcBlobStore store = new CacheJdbcBlobStore();
+    @Override public CacheJdbcBlobStore<K, V> create() {
+        CacheJdbcBlobStore<K, V> store = new CacheJdbcBlobStore();
 
         store.setInitSchema(initSchema);
         store.setConnectionUrl(connUrl);

@@ -22,22 +22,61 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.h2.jdbcx.*;
+import sun.jdbc.odbc.ee.*;
 
 /**
  * Test for Cache jdbc blob store factory.
  */
 public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
+    /** Cache name. */
+    private static final String CACHE_NAME = "test";
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/store-cache.xml")) {
-            IgniteCache<Integer, String> cache = ignite.cache("test");
+            try(Ignite ignite1 = Ignition.start("modules/spring/src/test/config/store-cache1.xml")) {
+                checkStore(ignite.<Integer, String>cache(CACHE_NAME), JdbcDataSource.class);
 
-            CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
-                getCacheStoreFactory().create();
-
-            assertEquals("GridGain", GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
-
-            assertEquals(JdbcDataSource.class,
-                GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
+                checkStore(ignite1.<Integer, String>cache(CACHE_NAME), ConnectionPoolDataSource.class);
+            }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheConfiguration() throws Exception {
+        try (Ignite ignite = Ignition.start("modules/spring/src/test/config/node.xml")) {
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+
+            CacheJdbcBlobStoreFactory<Integer, String> factory = new CacheJdbcBlobStoreFactory();
+
+            factory.setUser("GridGain");
+
+            factory.setDataSourceBean("simpleDataSource");
+
+            cfg.setCacheStoreFactory(factory);
+
+            try(IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
+                checkStore(cache, JdbcDataSource.class);
+            }
+        }
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @param dataSrcClass Data source class.
+     * @throws Exception If store parameters is not the same as in configuration xml.
+     */
+    private void checkStore(IgniteCache<Integer, String> cache, Class<?> dataSrcClass) throws Exception {
+        CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
+            getCacheStoreFactory().create();
+
+        assertEquals("GridGain", GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
+
+        assertEquals(dataSrcClass,
+            GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
     }
 }

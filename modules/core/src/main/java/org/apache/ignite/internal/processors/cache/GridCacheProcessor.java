@@ -1052,8 +1052,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     {
         assert cfg != null;
 
-        if (cfg.getCacheStoreFactory() != null)
-            ctx.resource().injectGeneric(cfg.getCacheStoreFactory());
+        prepare(cfg, cfg.getCacheStoreFactory(), false);
 
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
