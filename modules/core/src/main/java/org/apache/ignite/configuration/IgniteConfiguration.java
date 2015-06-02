@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -52,6 +53,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 
+import javax.cache.configuration.*;
 import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
@@ -334,9 +336,6 @@ public class IgniteConfiguration {
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
-    /** Client cache configurations. */
-    private NearCacheConfiguration[] nearCacheCfg;
-
     /** Client mode flag. */
     private Boolean clientMode;
 
@@ -397,6 +396,9 @@ public class IgniteConfiguration {
 
     /** User's class loader. */
     private ClassLoader classLdr;
+
+    /** Cache store session listeners. */
+    private Factory<CacheStoreSessionListener>[] storeSesLsnrs;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -478,6 +480,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
+        storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         svcCfgs = cfg.getServiceConfiguration();
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
@@ -2248,6 +2251,35 @@ public class IgniteConfiguration {
      */
     public ClassLoader getClassLoader() {
         return classLdr;
+    }
+
+    /**
+     * Gets cache store session listener factories.
+     *
+     * @return Cache store session listener factories.
+     * @see CacheStoreSessionListener
+     */
+    public Factory<CacheStoreSessionListener>[] getCacheStoreSessionListenerFactories() {
+        return storeSesLsnrs;
+    }
+
+    /**
+     * Cache store session listener factories.
+     * <p>
+     * These are global store session listeners, so they are applied to
+     * all caches. If you need to override listeners for a
+     * particular cache, use {@link CacheConfiguration#setCacheStoreSessionListenerFactories(Factory[])}
+     * configuration property.
+     *
+     * @param storeSesLsnrs Cache store session listener factories.
+     * @return {@code this} for chaining.
+     * @see CacheStoreSessionListener
+     */
+    public IgniteConfiguration setCacheStoreSessionListenerFactories(
+        Factory<CacheStoreSessionListener>... storeSesLsnrs) {
+        this.storeSesLsnrs = storeSesLsnrs;
+
+        return this;
     }
 
     /** {@inheritDoc} */
