@@ -31,6 +31,9 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "test";
 
+    /** User name. */
+    private static final String USER_NAME = "GridGain";
+
     /**
      * @throws Exception If failed.
      */
@@ -49,20 +52,33 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
      */
     public void testCacheConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start("modules/spring/src/test/config/node.xml")) {
-            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+            try (Ignite ignite1 = Ignition.start("modules/spring/src/test/config/node1.xml")) {
+                try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheConfiguration())) {
+                    try (IgniteCache<Integer, String> cache1 = ignite1.getOrCreateCache(cacheConfiguration())) {
+                        checkStore(cache, JdbcDataSource.class);
 
-            CacheJdbcBlobStoreFactory<Integer, String> factory = new CacheJdbcBlobStoreFactory();
-
-            factory.setUser("GridGain");
-
-            factory.setDataSourceBean("simpleDataSource");
-
-            cfg.setCacheStoreFactory(factory);
-
-            try(IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
-                checkStore(cache, JdbcDataSource.class);
+                        checkStore(cache1, ConnectionPoolDataSource.class);
+                    }
+                }
             }
         }
+    }
+
+    /**
+     * @return Cache configuration with store.
+     */
+    private CacheConfiguration<Integer, String> cacheConfiguration() {
+        CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+
+        CacheJdbcBlobStoreFactory<Integer, String> factory = new CacheJdbcBlobStoreFactory();
+
+        factory.setUser(USER_NAME);
+
+        factory.setDataSourceBean("simpleDataSource");
+
+        cfg.setCacheStoreFactory(factory);
+
+        return cfg;
     }
 
     /**
@@ -74,7 +90,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
         CacheJdbcBlobStore store = (CacheJdbcBlobStore) cache.getConfiguration(CacheConfiguration.class).
             getCacheStoreFactory().create();
 
-        assertEquals("GridGain", GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
+        assertEquals(USER_NAME, GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "user"));
 
         assertEquals(dataSrcClass,
             GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
