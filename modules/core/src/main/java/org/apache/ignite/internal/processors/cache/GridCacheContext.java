@@ -348,7 +348,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void awaitStarted() throws IgniteCheckedException {
         U.await(startLatch);
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         if (prldr != null)
             prldr.startFuture().get();
@@ -361,7 +361,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (startLatch.getCount() != 0)
             return false;
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         return prldr == null || prldr.startFuture().isDone();
     }
@@ -682,7 +682,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Preloader.
      */
-    public GridCachePreloader<K, V> preloader() {
+    public GridCachePreloader preloader() {
         return cache().preloader();
     }
 

@@ -938,10 +938,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param parent Parent in case of embeddable.
      * @throws IgniteCheckedException In case of error.
      */
-    static void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
+    private void processAnnotationsInClass(boolean key, Class<?> cls, TypeDescriptor type,
         @Nullable ClassProperty parent) throws IgniteCheckedException {
-        if (U.isJdk(cls))
+        if (U.isJdk(cls) || idx.isGeometryClass(cls)) {
+            if (parent == null && !key && idx.isSqlType(cls) ) { // We have to index primitive _val.
+                String idxName = "_val_idx";
+
+                type.addIndex(idxName, idx.isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
+
+                type.addFieldToIndex(idxName, "_VAL", 0, false);
+            }
+
             return;
+        }
 
         if (parent != null && parent.knowsClass(cls))
             throw new IgniteCheckedException("Recursive reference found in type: " + cls.getName());
@@ -1013,7 +1022,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Class description.
      * @throws IgniteCheckedException In case of error.
      */
-    static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
+    private void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
         Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws IgniteCheckedException {
         if (sqlAnn != null) {
             processAnnotationsInClass(key, cls, desc, prop);
@@ -1024,7 +1033,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (sqlAnn.index()) {
                 String idxName = prop.name() + "_idx";
 
-                desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+                desc.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
                 desc.addFieldToIndex(idxName, prop.name(), 0, sqlAnn.descending());
             }
@@ -1051,7 +1060,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         Class<?> keyCls = d.keyClass();
         Class<?> valCls = d.valueClass();
@@ -1066,7 +1075,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, false);
         }
@@ -1078,7 +1087,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
@@ -1138,7 +1147,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, false);
         }
@@ -1150,7 +1159,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String idxName = prop.name() + "_idx";
 
-            d.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
 
             d.addFieldToIndex(idxName, prop.name(), 0, true);
         }
@@ -1338,9 +1347,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            Method mtd = dataTypeCls.getMethod("isGeometryClass", Class.class);
+            Method method = dataTypeCls.getMethod("isGeometryClass", Class.class);
 
-            return (Boolean)mtd.invoke(null, cls);
+            return (Boolean)method.invoke(null, cls);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to invoke 'org.h2.value.DataType.isGeometryClass' method.", e);
@@ -1356,12 +1365,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         final long start = U.currentTimeMillis();
 
         Throwable err = null;
-        
+
         R res = null;
 
         try {
             res = clo.apply();
-            
+
             return res;
         }
         catch (GridClosureException e) {
@@ -1397,7 +1406,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (log.isTraceEnabled())
             log.trace("Query execution finished [startTime=" + startTime +
-                ", duration=" + duration + ", fail=" + (err != null) + ", res=" + res + ']');
+                    ", duration=" + duration + ", fail=" + (err != null) + ", res=" + res + ']');
 
     }
 

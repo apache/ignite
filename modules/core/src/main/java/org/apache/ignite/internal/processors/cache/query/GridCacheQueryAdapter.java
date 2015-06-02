@@ -462,10 +462,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx, @Nullable final ClusterGroup prj) {
         assert cctx != null;
 
-        return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
+        Collection<ClusterNode> affNodes = CU.affinityNodes(cctx);
+
+        if (prj == null)
+            return affNodes;
+
+        return F.view(affNodes, new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null);
+                return prj.node(n.id()) != null;
             }
         });
     }

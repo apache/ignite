@@ -633,14 +633,16 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             }
                         }
                         catch (Throwable ex) {
-                            uncommit();
-
-                            state(UNKNOWN);
-
                             // In case of error, we still make the best effort to commit,
                             // as there is no way to rollback at this point.
                             err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                 "(all transaction entries will be invalidated): " + CU.txString(this), ex);
+
+                            U.error(log, "Commit failed.", err);
+
+                            uncommit();
+
+                            state(UNKNOWN);
 
                             if (ex instanceof Error)
                                 throw (Error)ex;

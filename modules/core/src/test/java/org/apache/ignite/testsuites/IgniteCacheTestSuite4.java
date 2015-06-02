@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -101,6 +102,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
         suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
         suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
+        suite.addTestSuite(IgniteDynamicClientCacheStartSelfTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
@@ -125,10 +127,13 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteExchangeFutureHistoryTest.class);
 
         suite.addTestSuite(CacheNoValueClassOnServerNodeTest.class);
+        suite.addTestSuite(IgniteSystemCacheOnClientTest.class);
 
         suite.addTestSuite(CacheRemoveAllSelfTest.class);
 
         suite.addTestSuite(CacheOffheapMapEntrySelfTest.class);
+
+        suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
 
         return suite;
     }

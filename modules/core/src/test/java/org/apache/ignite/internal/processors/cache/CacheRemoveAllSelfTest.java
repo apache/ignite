@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 public class CacheRemoveAllSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 60000;
+        return 2 * 60 * 1000;
     }
 
     /** {@inheritDoc} */
