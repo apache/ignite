@@ -21,9 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
 /**
- * Test queries in off-heap tired mode.
+ * Test queries in off-heap tiered mode.
  */
-public class IgniteCacheQueryMultiThreadedOffHeapTiredSelfTest extends IgniteCacheQueryMultiThreadedSelfTest {
+public class IgniteCacheQueryMultiThreadedOffHeapTieredSelfTest extends IgniteCacheQueryMultiThreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration ccfg = super.cacheConfiguration();
