@@ -61,9 +61,6 @@
                             <include>scala-*.jar</include>
                             <include>spring-*.jar</include>
                         </includes>
-                        <excludes>
-                            <exclude>spring-jdbc-*.jar</exclude>
-                        </excludes>
                     </fileSet>
 
                     <fileSet>
@@ -93,6 +90,9 @@
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/visor-common</outputDirectory>
+                        <excludes>
+                            <exclude>spring-jdbc-*.jar</exclude>
+                        </excludes>
                     </fileSet>
 
                     <fileSet>
