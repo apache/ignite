@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.resources.*;
 import org.springframework.context.*;
@@ -115,6 +116,9 @@ public class CacheJdbcBlobStoreFactory  implements Factory<CacheJdbcBlobStore> {
         store.setPassword(passwd);
 
         if (dataSrcBean != null) {
+            if (appContext == null)
+                throw new IgniteException("Spring application context resource is not injected.");
+
             DataSource data = (DataSource) appContext.getBean(dataSrcBean);
 
             store.setDataSource(data);
