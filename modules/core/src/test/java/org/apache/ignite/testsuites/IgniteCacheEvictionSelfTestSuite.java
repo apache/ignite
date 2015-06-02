@@ -37,7 +37,6 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
-        suite.addTest(new TestSuite(RandomEvictionPolicyCacheSizeSelfTest.class));
         suite.addTest(new TestSuite(FifoEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(SortedEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(LruEvictionPolicySelfTest.class));

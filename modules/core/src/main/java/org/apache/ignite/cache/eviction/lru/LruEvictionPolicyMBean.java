@@ -70,13 +70,13 @@ public interface LruEvictionPolicyMBean {
      * @return maximum allowed cache size in bytes.
      */
     @MXBeanDescription("Maximum allowed cache size in bytes.")
-    public long getMaxMemSize();
+    public long getMaxMemorySize();
 
     /**
      * Sets maximum allowed cache size in bytes.
      */
     @MXBeanDescription("Set maximum allowed cache size in bytes.")
-    public void setMaxMemSize(long maxMemSize);
+    public void setMaxMemorySize(long maxMemSize);
 
     /**
      * Gets current queue size in bytes.
@@ -84,5 +84,5 @@ public interface LruEvictionPolicyMBean {
      * @return current queue size in bytes.
      */
     @MXBeanDescription("Current queue size in  bytes.")
-    public long getCurrentMemSize();
+    public long getCurrentMemorySize();
 }

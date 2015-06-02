@@ -121,19 +121,19 @@ public class LruEvictionPolicy<K, V> implements EvictionPolicy<K, V>, LruEvictio
     }
 
     /** {@inheritDoc} */
-    @Override public long getMaxMemSize() {
+    @Override public long getMaxMemorySize() {
         return maxMemSize;
     }
 
     /** {@inheritDoc} */
-    @Override public void setMaxMemSize(long maxMemSize) {
+    @Override public void setMaxMemorySize(long maxMemSize) {
         A.ensure(maxMemSize >= 0, "maxMemSize >= 0");
 
         this.maxMemSize = maxMemSize;
     }
 
     /** {@inheritDoc} */
-    @Override public long getCurrentMemSize() {
+    @Override public long getCurrentMemorySize() {
         return memSize.longValue();
     }
 

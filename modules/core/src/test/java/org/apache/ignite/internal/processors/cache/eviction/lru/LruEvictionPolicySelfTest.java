@@ -312,7 +312,7 @@ public class LruEvictionPolicySelfTest extends
 
         plc.setMaxSize(this.plcMax);
         plc.setBatchSize(this.plcBatchSize);
-        plc.setMaxMemSize(this.plcMaxMemSize);
+        plc.setMaxMemorySize(this.plcMaxMemSize);
 
         return plc;
     }
@@ -343,7 +343,7 @@ public class LruEvictionPolicySelfTest extends
                 for (EvictableEntry<String, String> entry : policy(i).queue())
                     size += ((CacheEvictableEntryImpl)entry).size();
 
-                assertEquals(size, ((LruEvictionPolicy)policy(i)).getCurrentMemSize());
+                assertEquals(size, ((LruEvictionPolicy)policy(i)).getCurrentMemorySize());
             }
             else
                 assertTrue(policy(i).queue().size() <= plcMax + plcBatchSize);

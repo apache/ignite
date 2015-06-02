@@ -460,7 +460,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             info(p);
 
             assertTrue(p.getCurrentSize() <= (plcMaxMemSize > 0 ? max : max + plcBatchSize));
-            assertTrue(p.getCurrentMemSize() <= (plcMaxMemSize > 0 ? max : max + plcBatchSize) * MockEntry.KEY_SIZE);
+            assertTrue(p.getCurrentMemorySize() <= (plcMaxMemSize > 0 ? max : max + plcBatchSize) * MockEntry.KEY_SIZE);
         }
         finally {
             stopAllGrids();
@@ -575,7 +575,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         EvictionPolicyProxy proxy = proxy(policy());
 
         assertEquals(expSize, proxy.getCurrentSize());
-        assertEquals(expSize * entrySize, proxy.getCurrentMemSize());
+        assertEquals(expSize * entrySize, proxy.getCurrentMemorySize());
     }
 
     /**
@@ -798,7 +798,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
                         EvictionPolicyProxy plc = proxy(policy(i));
 
-                        assertTrue(plc.getCurrentMemSize() <= memSize);
+                        assertTrue(plc.getCurrentMemorySize() <= memSize);
                     }
                 }
 
@@ -904,7 +904,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
                 for (EvictableEntry entry : proxy(policy(i)).queue())
                     size += entry.size();
 
-                assertEquals(size, proxy(policy(i)).getCurrentMemSize());
+                assertEquals(size, proxy(policy(i)).getCurrentMemorySize());
             }
             else
                 assertTrue(proxy(policy(i)).queue().size() <= plcMax + plcBatchSize);
@@ -1017,9 +1017,9 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         /**
          * Current memory size.
          */
-        public long getCurrentMemSize() {
+        public long getCurrentMemorySize() {
             try {
-                return (Long)plc.getClass().getDeclaredMethod("getCurrentMemSize").invoke(plc);
+                return (Long)plc.getClass().getDeclaredMethod("getCurrentMemorySize").invoke(plc);
             }
             catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -1053,5 +1053,4 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             }
         }
     }
-
 }

@@ -245,7 +245,7 @@ public class FifoEvictionPolicySelfTest extends
 
         plc.setMaxSize(this.plcMax);
         plc.setBatchSize(this.plcBatchSize);
-        plc.setMaxMemSize(this.plcMaxMemSize);
+        plc.setMaxMemorySize(this.plcMaxMemSize);
 
         return plc;
     }
