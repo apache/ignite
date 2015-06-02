@@ -1211,6 +1211,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
+                if (p instanceof GridLifecycleAwareMessageFilter)
+                    ((GridLifecycleAwareMessageFilter)p).initialize(ctx);
+                else
+                    ctx.resource().injectGeneric(p);
+
                 addMessageListener(TOPIC_COMM_USER,
                     new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
             }
@@ -1695,13 +1700,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             throws IgniteCheckedException {
             this.topic = topic;
             this.predLsnr = predLsnr;
-
-            if (predLsnr != null) {
-                if (predLsnr instanceof GridLifecycleAwareMessageFilter)
-                    ((GridLifecycleAwareMessageFilter)predLsnr).initialize(ctx);
-                else
-                    ctx.resource().injectGeneric(predLsnr);
-            }
         }
 
         /** {@inheritDoc} */
