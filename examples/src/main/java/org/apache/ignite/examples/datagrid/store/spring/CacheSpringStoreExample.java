@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid.store.hibernate;
+package org.apache.ignite.examples.datagrid.store.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.cache.store.hibernate.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
@@ -33,18 +33,14 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 /**
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
- * This example uses {@link CacheHibernatePersonStore} as a persistent store.
+ * This example uses {@link CacheSpringPersonStore} as a persistent store.
  * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
-public class CacheHibernateStoreExample {
-    /** Hibernate configuration resource path. */
-    private static final String HIBERNATE_CFG =
-        "/org/apache/ignite/examples/datagrid/store/hibernate/hibernate.cfg.xml";
-
+public class CacheSpringStoreExample {
     /** Cache name. */
-    private static final String CACHE_NAME = CacheHibernateStoreExample.class.getSimpleName();
+    private static final String CACHE_NAME = CacheSpringStoreExample.class.getSimpleName();
 
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
@@ -74,15 +70,15 @@ public class CacheHibernateStoreExample {
             // Set atomicity as transaction, since we are showing transactions in example.
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            // Configure Hibernate store.
-            cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheHibernatePersonStore.class));
+            // Configure Spring store.
+            cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheSpringPersonStore.class));
 
-            // Configure Hibernate session listener.
+            // Configure Spring session listener.
             cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
                 @Override public CacheStoreSessionListener create() {
-                    CacheHibernateStoreSessionListener lsnr = new CacheHibernateStoreSessionListener();
+                    CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
 
-                    lsnr.setHibernateConfigurationPath(HIBERNATE_CFG);
+                    lsnr.setDataSource(CacheSpringPersonStore.DATA_SRC);
 
                     return lsnr;
                 }
