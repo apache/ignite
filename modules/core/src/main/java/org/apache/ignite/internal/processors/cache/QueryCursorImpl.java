@@ -27,6 +27,9 @@ import java.util.*;
  * Query cursor implementation.
  */
 public class QueryCursorImpl<T> implements QueryCursorEx<T> {
+    /** Query executor. */
+    private Iterable<T> iterExec;
+
     /** */
     private Iterator<T> iter;
 
@@ -34,18 +37,18 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     private boolean iterTaken;
 
     /** */
-    private Collection<GridQueryFieldMetadata> fieldsMeta;
+    private List<GridQueryFieldMetadata> fieldsMeta;
 
     /**
-     * @param iter Iterator.
+     * @param iterExec Query executor.
      */
-    public QueryCursorImpl(Iterator<T> iter) {
-        this.iter = iter;
+    public QueryCursorImpl(Iterable<T> iterExec) {
+        this.iterExec = iterExec;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
-        if (iter == null)
+        if (iter == null && iterTaken)
             throw new IgniteException("Cursor is closed.");
 
         if (iterTaken)
@@ -53,12 +56,16 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
 
         iterTaken = true;
 
+        iter = iterExec.iterator();
+
+        assert iter != null;
+
         return iter;
     }
 
     /** {@inheritDoc} */
     @Override public List<T> getAll() {
-        ArrayList<T> all = new ArrayList<>();
+        List<T> all = new ArrayList<>();
 
         try {
             for (T t : this) // Implicitly calls iterator() to do all checks.
@@ -103,14 +110,14 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
     /**
      * @param fieldsMeta SQL Fields query result metadata.
      */
-    public void fieldsMeta(Collection<GridQueryFieldMetadata> fieldsMeta) {
+    public void fieldsMeta(List<GridQueryFieldMetadata> fieldsMeta) {
         this.fieldsMeta = fieldsMeta;
     }
 
     /**
      * @return SQL Fields query result metadata.
      */
-    public Collection<GridQueryFieldMetadata> fieldsMeta() {
+    @Override public List<GridQueryFieldMetadata> fieldsMeta() {
         return fieldsMeta;
     }
 }

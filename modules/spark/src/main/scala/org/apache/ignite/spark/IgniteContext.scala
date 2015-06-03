@@ -22,6 +22,7 @@ import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.{Ignition, Ignite}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.SQLContext
 
 /**
  * Ignite context.
@@ -41,6 +42,8 @@ class IgniteContext[K, V](
     ) {
         this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1())
     }
+
+    val sqlContext = new SQLContext(sparkContext)
 
     def fromCache(cacheName: String): IgniteRDD[K, V] = {
         new IgniteRDD[K, V](this, cacheName, null)

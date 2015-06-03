@@ -47,6 +47,6 @@ object IgniteProcessExample {
         ignite.fromCache("indexed").objectSql("Person", "age > ? and organizationId = ?", 20, 12).collect()
 
         // SQL fields query
-        val sqlRes: RDD[Seq[Any]] = ignite.fromCache("indexed").sql("select name, age from Person where age > ?", 20)
+        val df = ignite.fromCache("indexed").sql("select name, age from Person where age > ?", 20)
     }
 }

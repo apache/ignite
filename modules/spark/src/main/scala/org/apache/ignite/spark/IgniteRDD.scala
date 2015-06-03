@@ -18,14 +18,18 @@ package org.apache.ignite.spark
 
 import javax.cache.Cache
 
-import org.apache.ignite.cache.query.{SqlFieldsQuery, SqlQuery, ScanQuery}
+import org.apache.ignite.cache.query._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata
 import org.apache.ignite.lang.IgniteUuid
-import org.apache.ignite.spark.impl.{IgniteAbstractRDD, IgniteSqlRDD, IgnitePartition, IgniteQueryIterator}
+import org.apache.ignite.spark.impl._
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{TaskContext, Partition}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql._
+import org.apache.spark._
 
 import scala.collection.JavaConversions._
 
@@ -98,12 +102,16 @@ class IgniteRDD[K, V] (
         new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry ⇒ (entry.getKey, entry.getValue))
     }
 
-    def sql(sql: String, args: Any*): RDD[Seq[Any]] = {
+    def sql(sql: String, args: Any*): DataFrame = {
         val qry = new SqlFieldsQuery(sql)
 
         qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
-        new IgniteSqlRDD[Seq[Any], java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list ⇒ list)
+        val schema = buildSchema(ensureCache().query(qry).asInstanceOf[QueryCursorEx[java.util.List[_]]].fieldsMeta())
+
+        val rowRdd = new IgniteSqlRDD[Row, java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list ⇒ Row.fromSeq(list))
+
+        ic.sqlContext.createDataFrame(rowRdd, schema)
     }
 
     def saveValues(rdd: RDD[V]) = {
@@ -138,10 +146,6 @@ class IgniteRDD[K, V] (
             // Make sure to deploy the cache
             ensureCache()
 
-            val locNode = ig.cluster().localNode()
-
-            val node: Option[ClusterNode] = ig.cluster().forHost(locNode).nodes().find(!_.eq(locNode))
-
             val streamer = ig.dataStreamer[K, V](cacheName)
 
             try {
@@ -159,7 +163,49 @@ class IgniteRDD[K, V] (
         ensureCache().removeAll()
     }
 
-    private def affinityKeyFunc(value: V, node: ClusterNode): Object = {
-        IgniteUuid.randomUuid()
+    /**
+     * Builds spark schema from query metadata.
+     *
+     * @param fieldsMeta Fields metadata.
+     * @return Spark schema.
+     */
+    private def buildSchema(fieldsMeta: java.util.List[GridQueryFieldMetadata]): StructType = {
+        new StructType(fieldsMeta.map(i ⇒ new StructField(i.fieldName(), dataType(i.fieldTypeName()), nullable = true))
+            .toArray)
+    }
+
+    /**
+     * Gets Spark data type based on type name.
+     *
+     * @param typeName Type name.
+     * @return Spark data type.
+     */
+    private def dataType(typeName: String): DataType = typeName match {
+        case "java.lang.Boolean" ⇒ BooleanType
+        case "java.lang.Byte" ⇒ ByteType
+        case "java.lang.Short" ⇒ ShortType
+        case "java.lang.Integer" ⇒ IntegerType
+        case "java.lang.Long" ⇒ LongType
+        case "java.lang.Float" ⇒ FloatType
+        case "java.lang.Double" ⇒ DoubleType
+        case "java.lang.String" ⇒ StringType
+        case "java.util.Date" ⇒ DateType
+        case "java.sql.Timestamp" ⇒ TimestampType
+        case "[B" ⇒ BinaryType
+
+        case _ ⇒ StructType(new Array[StructField](0)) // TODO Do we need to fill user types?
+    }
+
+    /**
+     * Generates affinity key for given cluster node.
+     *
+     * @param value Value to generate key for.
+     * @param node Node to generate key for.
+     * @return Affinity key.
+     */
+    private def affinityKeyFunc(value: V, node: ClusterNode): IgniteUuid = {
+        val aff = ic.ignite().affinity[IgniteUuid](cacheName)
+
+        Stream.continually(IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node)).get
     }
 }

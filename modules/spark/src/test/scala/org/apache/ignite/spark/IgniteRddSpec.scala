@@ -117,39 +117,29 @@ class IgniteRddSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 
                 val cache: IgniteRDD[String, Entity] = ic.fromCache(PARTITIONED_CACHE_NAME)
 
-                cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
-
-                val res = cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000).collect()
-
-                assert(res.length == 1, "Invalid result length")
-                assert(50 == res(0).head, "Invalid result")
-                assert("name50" == res(0)(1), "Invalid result")
-                assert(5000 == res(0)(2), "Invalid result")
-
-                assert(500 == cache.sql("select id from Entity where id > 500").count(), "Invalid count")
-            }
-            finally {
-                sc.stop()
-            }
-        }
-
-        it("should successfully store values RDD") {
-            val sc = new SparkContext("local[*]", "test")
-
-            try {
-                val ic = new IgniteContext[String, Entity](sc,
-                    () ⇒ configuration("client", client = true))
-
-                val cache: IgniteRDD[String, Entity] = ic.fromCache(PARTITIONED_CACHE_NAME)
+                import ic.sqlContext.implicits._
 
                 cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "name" + i, i * 100))))
 
-                val res = cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000).collect()
+                val df = cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000)
+
+                df.printSchema()
+
+                val res = df.collect()
 
                 assert(res.length == 1, "Invalid result length")
-                assert(50 == res(0).head, "Invalid result")
+                assert(50 == res(0)(0), "Invalid result")
                 assert("name50" == res(0)(1), "Invalid result")
                 assert(5000 == res(0)(2), "Invalid result")
+
+                val df0 = cache.sql("select id, name, salary from Entity").where('NAME === "name50" and 'SALARY === 5000)
+
+                val res0 = df0.collect()
+
+                assert(res0.length == 1, "Invalid result length")
+                assert(50 == res0(0)(0), "Invalid result")
+                assert("name50" == res0(0)(1), "Invalid result")
+                assert(5000 == res0(0)(2), "Invalid result")
 
                 assert(500 == cache.sql("select id from Entity where id > 500").count(), "Invalid count")
             }
