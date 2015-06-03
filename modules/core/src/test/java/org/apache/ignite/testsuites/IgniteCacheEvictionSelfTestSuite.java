@@ -37,15 +37,13 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
-        suite.addTest(new TestSuite(GridCacheFifoEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheFifoBatchEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheSortedEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheSortedBatchEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLruEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheLruNearEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(GridCacheNearOnlyLruNearEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(FifoEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(SortedEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(LruEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(LruNearEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(LruNearOnlyNearEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(RandomEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(RandomEvictionPolicyCacheSizeSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheRandomEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionFilterSelfTest.class));

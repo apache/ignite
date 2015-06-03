@@ -3916,6 +3916,33 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testIterator() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+
+        final int KEYS = 1000;
+
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i);
+
+        // Try to initialize readers in case when near cache is enabled.
+        for (int i = 0; i < gridCount(); i++) {
+            cache = grid(i).cache(null);
+
+            for (int k = 0; k < KEYS; k++)
+                assertEquals((Object)k, cache.get(k));
+        }
+
+        int cnt = 0;
+
+        for (Cache.Entry e : cache)
+            cnt++;
+
+        assertEquals(KEYS, cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 

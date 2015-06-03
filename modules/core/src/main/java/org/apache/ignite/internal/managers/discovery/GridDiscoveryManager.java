@@ -696,7 +696,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Map<Integer, CacheMetrics> metrics = null;
 
                 for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.context().started() && cache.configuration().isStatisticsEnabled()) {
+                    if (cache.configuration().isStatisticsEnabled() &&
+                        cache.context().started() &&
+                        cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
                         if (metrics == null)
                             metrics = U.newHashMap(caches.size());
 

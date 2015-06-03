@@ -1140,32 +1140,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return;
         }
 
-        ClusterNode curOldest = oldestNode.get();
-
-        if (!nodeId.equals(curOldest.id())) {
-            if (log.isDebugEnabled())
-                log.debug("Received full partition map from unexpected node [oldest=" + curOldest.id() +
-                    ", unexpectedNodeId=" + nodeId + ']');
-
-            ClusterNode snd = cctx.discovery().node(nodeId);
-
-            if (snd == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Sender node left grid, will ignore message from unexpected node [nodeId=" + nodeId +
-                        ", exchId=" + msg.exchangeId() + ']');
-
-                return;
-            }
-
-            // Will process message later if sender node becomes oldest node.
-            if (snd.order() > curOldest.order())
-                fullMsgs.put(nodeId, msg);
-
-            return;
-        }
-
-        assert msg.exchangeId().equals(exchId);
-
         if (log.isDebugEnabled())
             log.debug("Received full partition map from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
@@ -1173,6 +1147,32 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> t) {
+                ClusterNode curOldest = oldestNode.get();
+
+                if (!nodeId.equals(curOldest.id())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received full partition map from unexpected node [oldest=" + curOldest.id() +
+                            ", unexpectedNodeId=" + nodeId + ']');
+
+                    ClusterNode snd = cctx.discovery().node(nodeId);
+
+                    if (snd == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Sender node left grid, will ignore message from unexpected node [nodeId=" + nodeId +
+                                ", exchId=" + msg.exchangeId() + ']');
+
+                        return;
+                    }
+
+                    // Will process message later if sender node becomes oldest node.
+                    if (snd.order() > curOldest.order())
+                        fullMsgs.put(nodeId, msg);
+
+                    return;
+                }
+
+                assert msg.exchangeId().equals(exchId);
+
                 assert msg.lastVersion() != null;
 
                 cctx.versions().onReceived(nodeId, msg.lastVersion());

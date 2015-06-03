@@ -39,6 +39,14 @@ formatPatch () {
     PATCHED_BRANCH=$3
     PATCH_SUFFIX=$4
 
+    if [ ${IGNITE_CURRENT_BRANCH} = ${IGNITE_DEFAULT_BRANCH} ]
+    then
+        echo $0", ERROR:"
+        echo "You are on Default branch. Please, checkout branch with changes."
+
+        exit 1
+    fi
+
     cd ${GIT_HOME}
 
     git checkout ${DEFAULT_BRANCH}
@@ -54,15 +62,15 @@ formatPatch () {
     echo "Patch file created."
 
     git checkout ${PATCHED_BRANCH}
-    
+
     git branch -D tmppatch # Delete tmp branch.
-    
-    echo 
+
+    echo
     echo "Patch created: ${PATCH_FILE}"
 }
 
 #
-# Determines current branch.
+# Determines Current branch.
 #
 # Params:
 # - Git home.
@@ -70,11 +78,11 @@ formatPatch () {
 #
 determineCurrentBranch () {
     GIT_HOME=$1
-    
+
     cd ${GIT_HOME}
-    
+
     CURRENT_BRANCH=`git rev-parse --abbrev-ref HEAD`
-    
+
     echo "$CURRENT_BRANCH"
 }
 
@@ -131,22 +139,22 @@ applyPatch () {
     PATCH_FILE=$3
 
     cd ${GIT_HOME}
-    
+
     if [ ! -f ${PATCH_FILE} ]
     then
         echo $0", ERROR:"
         echo "Expected patch file not found: $PATCH_FILE."
-        
+
         exit 1
     fi
 
     echo "Patch $PATCH_FILE will be applied to $DEFAULT_BRANCH branch."
-    
+
     git am ${PATCH_FILE}
 }
 
 #
-# Checks that given default branch and current branch are equal.
+# Checks that given Default branch and Current branch are equal.
 # Exit with code 1 in error case.
 #
 # Params:
@@ -160,12 +168,12 @@ currentAndDefaultBranchesShouldBeEqual () {
     cd ${GIT_HOME}
 
     CURRENT_BRANCH=$( determineCurrentBranch ${GIT_HOME} )
-    
+
     if [ "$CURRENT_BRANCH" != "$DEFAULT_BRANCH" ]
-    then 
+    then
         echo $0", ERROR:"
         echo "You are not on an expected branch. Your current branch at $GIT_HOME is $CURRENT_BRANCH, should be $DEFAULT_BRANCH."
-        
+
         exit 1
     fi
 }
