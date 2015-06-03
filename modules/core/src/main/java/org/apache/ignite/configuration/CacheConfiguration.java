@@ -1664,14 +1664,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         A.ensure(indexedTypes == null || (indexedTypes.length & 1) == 0,
             "Number of indexed types is expected to be even. Refer to method javadoc for details.");
 
-        int len = indexedTypes.length;
+        if (indexedTypes != null) {
+            int len = indexedTypes.length;
 
-        Class<?>[] newIndexedTypes = new Class<?>[len];
+            Class<?>[] newIndexedTypes = new Class<?>[len];
 
-        for (int i = 0; i < len; i++)
-            newIndexedTypes[i] = U.box(indexedTypes[i]);
+            for (int i = 0; i < len; i++)
+                newIndexedTypes[i] = U.box(indexedTypes[i]);
 
-        this.indexedTypes = newIndexedTypes;
+            this.indexedTypes = newIndexedTypes;
+        }
+        else
+            this.indexedTypes = null;
 
         return this;
     }
