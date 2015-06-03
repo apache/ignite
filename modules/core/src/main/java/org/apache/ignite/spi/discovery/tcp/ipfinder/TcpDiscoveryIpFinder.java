@@ -31,7 +31,7 @@ public interface TcpDiscoveryIpFinder {
      * method is completed, SPI context can be stored for future access.
      *
      * @param spiCtx Spi context.
-     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+     * @throws IgniteSpiException In case of error.
      */
     public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException;
 
@@ -46,7 +46,7 @@ public interface TcpDiscoveryIpFinder {
      * Initializes addresses discovery SPI binds to.
      *
      * @param addrs Addresses discovery SPI binds to.
-     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+     * @throws IgniteSpiException In case of error.
      */
     public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
@@ -54,7 +54,7 @@ public interface TcpDiscoveryIpFinder {
      * Gets all addresses registered in this finder.
      *
      * @return All known addresses, potentially empty, but never {@code null}.
-     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+     * @throws IgniteSpiException In case of error.
      */
     public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException;
 
@@ -76,7 +76,7 @@ public interface TcpDiscoveryIpFinder {
      * is already registered.
      *
      * @param addrs Addresses to register. Not {@code null} and not empty.
-     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+     * @throws IgniteSpiException In case of error.
      */
     public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
@@ -87,7 +87,7 @@ public interface TcpDiscoveryIpFinder {
      * registered quietly (just no-op).
      *
      * @param addrs Addresses to unregister. Not {@code null} and not empty.
-     * @throws org.apache.ignite.spi.IgniteSpiException In case of error.
+     * @throws IgniteSpiException In case of error.
      */
     public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
