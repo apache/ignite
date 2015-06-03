@@ -74,20 +74,15 @@ public class IgniteYarnClient {
         final LocalResource igniteZip = Records.newRecord(LocalResource.class);
         setupAppMasterJar(new Path("/user/ntikhonov/gridgain-community-fabric-1.0.6.zip"), igniteZip, conf);
 
-        FileSystem fileSystem = FileSystem.get(conf);
-
-        Path path = fileSystem.makeQualified(new Path("/user/ntikhonov/gridgain-community-fabric-1.0.6/bin/ignite.sh"));
-
-        System.out.println("Path: " + path);
-        System.out.println("Path URI: " + path.toUri().toString());
-
-        amContainer.setLocalResources(new HashMap<String, LocalResource>(){{
+        amContainer.setLocalResources(new HashMap<String, LocalResource>() {{
             put("ignite-yarn.jar", appMasterJar);
-            put("ignite", igniteZip);
+            put("gridgain-community-fabric-1.0.6.zip", igniteZip);
         }});
 
+
+
         // Setup CLASSPATH for ApplicationMaster
-        Map<String, String> appMasterEnv = new HashMap<String, String>();
+        Map<String, String> appMasterEnv = new HashMap<>();
         setupAppMasterEnv(appMasterEnv, conf);
         amContainer.setEnvironment(appMasterEnv);
 

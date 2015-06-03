@@ -19,6 +19,9 @@ package org.apache.ignite.yarn;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.*;
 import org.apache.hadoop.yarn.api.protocolrecords.*;
 import org.apache.hadoop.yarn.api.records.*;
@@ -33,27 +36,33 @@ import java.util.*;
  * TODO
  */
 public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
-    Configuration configuration;
+    YarnConfiguration configuration;
     NMClient nmClient;
-    int numContainersToWaitFor = 5;
+    int numContainersToWaitFor = 1;
 
     public ApplicationMaster() {
         configuration = new YarnConfiguration();
+
         nmClient = NMClient.createNMClient();
         nmClient.init(configuration);
         nmClient.start();
     }
 
+    /** {@inheritDoc} */
     public void onContainersAllocated(List<Container> containers) {
         for (Container container : containers) {
             try {
                 // Launch container by create ContainerLaunchContext
-                // bin/hadoop fs -rm /user/ntikhonov/*.jar && bin/hadoop fs -copyFromLocal ./ignite-yarn.jar /user/ntikhonov
-                ContainerLaunchContext ctx =
-                        Records.newRecord(ContainerLaunchContext.class);
+                ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
+
+                final LocalResource igniteZip = Records.newRecord(LocalResource.class);
+                setupAppMasterJar(new Path("/user/ntikhonov/gridgain-community-fabric-1.0.6.zip"), igniteZip,
+                    configuration);
+
+                ctx.setLocalResources(Collections.singletonMap("ignite", igniteZip));
                 ctx.setCommands(
                         Lists.newArrayList(
-                                "ls " +
+                                "$LOCAL_DIRS/ignite/*/bin/ignite.sh" +
                                 " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" +
                                 " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"
                         ));
@@ -65,6 +74,24 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         }
     }
 
+    /** {@inheritDoc} */
+    private static void setupAppMasterJar(Path jarPath, LocalResource appMasterJar, YarnConfiguration conf)
+        throws Exception {
+        FileSystem fileSystem = FileSystem.get(conf);
+        jarPath = fileSystem.makeQualified(jarPath);
+
+        FileStatus jarStat = fileSystem.getFileStatus(jarPath);
+
+        appMasterJar.setResource(ConverterUtils.getYarnUrlFromPath(jarPath));
+        appMasterJar.setSize(jarStat.getLen());
+        appMasterJar.setTimestamp(jarStat.getModificationTime());
+        appMasterJar.setType(LocalResourceType.ARCHIVE);
+        appMasterJar.setVisibility(LocalResourceVisibility.APPLICATION);
+
+        System.out.println("Path :" + jarPath);
+    }
+
+    /** {@inheritDoc} */
     public void onContainersCompleted(List<ContainerStatus> statuses) {
         for (ContainerStatus status : statuses) {
             System.out.println("[AM] Completed container " + status.getContainerId());
@@ -74,20 +101,21 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         }
     }
 
+    /** {@inheritDoc} */
     public void onNodesUpdated(List<NodeReport> updated) {
     }
 
-    public void onReboot() {
-    }
-
+    /** {@inheritDoc} */
     public void onShutdownRequest() {
     }
 
+    /** {@inheritDoc} */
     public void onError(Throwable t) {
     }
 
+    /** {@inheritDoc} */
     public float getProgress() {
-        return 0;
+        return 50;
     }
 
     public boolean doneWithContainers() {
@@ -101,7 +129,6 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     public static void main(String[] args) throws Exception {
         ApplicationMaster master = new ApplicationMaster();
         master.runMainLoop();
-
     }
 
     public void runMainLoop() throws Exception {
@@ -135,6 +162,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         while (!doneWithContainers()) {
             Thread.sleep(100);
         }
+
+
 
         System.out.println("[AM] unregisterApplicationMaster 0");
         // Un-register with ResourceManager
