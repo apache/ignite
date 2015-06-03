@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
+import org.apache.ignite.cache.eviction.sorted.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -100,7 +101,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyFifoLocalTwoKeys() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(1);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(1);
+
+        this.plc = plc;
 
         keyCnt = 2;
         threadCnt = Runtime.getRuntime().availableProcessors() / 2;
@@ -112,7 +116,25 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyLruLocalTwoKeys() throws Exception {
-        plc = new LruEvictionPolicy<Object, Object>(1);
+        LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
+        plc.setMaxSize(1);
+
+        this.plc = plc;
+
+        keyCnt = 2;
+        threadCnt = Runtime.getRuntime().availableProcessors() / 2;
+
+        checkPolicyConsistency();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPolicyConsistencySortedLocalTwoKeys() throws Exception {
+        SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
+        plc.setMaxSize(1);
+
+        this.plc = plc;
 
         keyCnt = 2;
         threadCnt = Runtime.getRuntime().availableProcessors() / 2;
@@ -124,7 +146,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyFifoLocalFewKeys() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(POLICY_QUEUE_SIZE);
+
+        this.plc = plc;
 
         keyCnt = POLICY_QUEUE_SIZE + 5;
 
@@ -135,7 +160,24 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyLruLocalFewKeys() throws Exception {
-        plc = new LruEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
+        plc.setMaxSize(POLICY_QUEUE_SIZE);
+
+        this.plc = plc;
+
+        keyCnt = POLICY_QUEUE_SIZE + 5;
+
+        checkPolicyConsistency();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPolicyConsistencySortedLocalFewKeys() throws Exception {
+        SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
+        plc.setMaxSize(POLICY_QUEUE_SIZE);
+
+        this.plc = plc;
 
         keyCnt = POLICY_QUEUE_SIZE + 5;
 
@@ -146,7 +188,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyFifoLocal() throws Exception {
-        plc = new FifoEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
+        plc.setMaxSize(POLICY_QUEUE_SIZE);
+
+        this.plc = plc;
 
         keyCnt = POLICY_QUEUE_SIZE * 10;
 
@@ -157,7 +202,24 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testPolicyConsistencyLruLocal() throws Exception {
-        plc = new LruEvictionPolicy<Object, Object>(POLICY_QUEUE_SIZE);
+        LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
+        plc.setMaxSize(POLICY_QUEUE_SIZE);
+
+        this.plc = plc;
+
+        keyCnt = POLICY_QUEUE_SIZE * 10;
+
+        checkPolicyConsistency();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPolicyConsistencySortedLocal() throws Exception {
+        SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
+        plc.setMaxSize(POLICY_QUEUE_SIZE);
+
+        this.plc = plc;
 
         keyCnt = POLICY_QUEUE_SIZE * 10;
 
@@ -177,8 +239,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
-                    @Override
-                    public Object call() throws Exception {
+                    @Override public Object call() throws Exception {
                         final Random rnd = new Random();
 
                         for (int i = 0; i < ITERATION_CNT; i++) {
@@ -255,6 +316,11 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         }
         else if (plc instanceof LruEvictionPolicy) {
             LruEvictionPolicy<Integer, Integer> plc0 = (LruEvictionPolicy<Integer, Integer>)plc;
+
+            return plc0.queue();
+        }
+        else if (plc instanceof SortedEvictionPolicy) {
+            SortedEvictionPolicy<Integer, Integer> plc0 = (SortedEvictionPolicy<Integer, Integer>)plc;
 
             return plc0.queue();
         }

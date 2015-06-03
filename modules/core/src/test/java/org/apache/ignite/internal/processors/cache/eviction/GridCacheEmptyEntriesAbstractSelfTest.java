@@ -120,14 +120,19 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testFifo() throws Exception {
-        plc = new FifoEvictionPolicy(50);
-        nearPlc = new FifoEvictionPolicy(50);
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(50);
+        this.plc = plc;
+
+        FifoEvictionPolicy nearPlc = new FifoEvictionPolicy();
+        nearPlc.setMaxSize(50);
+        this.nearPlc = nearPlc;
 
         checkPolicy();
     }
 
     /**
-     * Checks policy with and without store set.
+     * Checks policy with and without store queue.
      *
      * @throws Exception If failed.
      */

@@ -56,18 +56,18 @@ do
         IGNITE_HOME="$2"
         shift
         ;;
-        
+
         -idb|--ignitedefbranch)
         IGNITE_DEFAULT_BRANCH="$2"
         shift
         ;;
-        
+
         -ph|--patchhome)
         PATCHES_HOME="$2"
         shift
         ;;
         *)
-        
+
         echo "Unknown parameter: ${key}"
         ;;
     esac
@@ -75,7 +75,7 @@ do
 done
 
 echo "IGNITE_HOME    : ${IGNITE_HOME}"
-echo "Master branch  : ${IGNITE_DEFAULT_BRANCH}"
+echo "Default branch : ${IGNITE_DEFAULT_BRANCH}"
 echo "Ignite task    : ${IGNITE_TASK}"
 echo
 echo "PATCHES_HOME   : ${PATCHES_HOME}"
