@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.junits.common.*;
+
+import javax.cache.*;
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
@@ -67,7 +71,6 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setMemoryMode(OFFHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
         cacheCfg.setIndexedTypes(Long.class, Long.class);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -98,8 +101,6 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-873");
-
         IgniteCache<Long, Long> cache = grid(0).cache(null);
 
         for (long i = 0; i < 100; i++)
@@ -107,5 +108,16 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
         for (long i = 0; i < 100; i++)
             assertEquals((Long)i, cache.get(i));
+
+        SqlQuery<Long, Long> qry = new SqlQuery<>(Long.class, "_val >= 90");
+
+        List<Cache.Entry<Long, Long>> res = cache.query(qry).getAll();
+
+        assertEquals(10, res.size());
+
+        for (Cache.Entry<Long, Long> e : res) {
+            assertNotNull(e.getKey());
+            assertNotNull(e.getValue());
+        }
     }
 }

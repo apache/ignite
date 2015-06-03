@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
@@ -480,17 +480,26 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     @SuppressWarnings({"CatchGenericClass"})
     protected void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
-        CacheStoreManager store = store();
+        if (!storeEnabled() || internal())
+            return;
 
-        if (store != null && store.isWriteThrough() && storeEnabled() &&
-            !internal() && (near() || store.isWriteToStoreFromDht())) {
+        Collection<CacheStoreManager> stores = stores();
+
+        if (stores == null || stores.isEmpty())
+            return;
+
+        assert isWriteToStoreFromDhtValid(stores) : "isWriteToStoreFromDht can't be different within one transaction";
+
+        boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+
+        if (near() || isWriteToStoreFromDht) {
             try {
                 if (writeEntries != null) {
                     Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
                     List<Object> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
-                    boolean skipNear = near() && store.isWriteToStoreFromDht();
+                    boolean skipNear = near() && isWriteToStoreFromDht;
 
                     for (IgniteTxEntry e : writeEntries) {
                         if ((skipNear && e.cached().isNear()) || e.skipStore())
@@ -524,11 +533,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             }
 
                             // Batch-process puts if cache ID has changed.
-                            if (writeStore != null && writeStore != cacheCtx.store() && putMap != null && !putMap.isEmpty()) {
-                                writeStore.putAll(this, putMap);
+                            if (writeStore != null && writeStore != cacheCtx.store()) {
+                                if (putMap != null && !putMap.isEmpty()) {
+                                    writeStore.putAll(this, putMap);
 
-                                // Reset.
-                                putMap.clear();
+                                    // Reset.
+                                    putMap.clear();
+                                }
 
                                 writeStore = null;
                             }
@@ -544,12 +555,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
                             }
 
-                            if (putMap == null)
-                                putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
+                            if (writeStore == null)
+                                writeStore = cacheCtx.store();
 
-                            putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                            if (writeStore.isWriteThrough()) {
+                                if (putMap == null)
+                                    putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                            writeStore = cacheCtx.store();
+                                putMap.put(CU.value(key, cacheCtx, false), F.t(CU.value(val, cacheCtx, false), ver));
+                            }
                         }
                         else if (op == DELETE) {
                             // Batch-process all puts if needed.
@@ -564,11 +578,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                 writeStore = null;
                             }
 
-                            if (writeStore != null && writeStore != cacheCtx.store() && rmvCol != null && !rmvCol.isEmpty()) {
-                                writeStore.removeAll(this, rmvCol);
+                            if (writeStore != null && writeStore != cacheCtx.store()) {
+                                if (rmvCol != null && !rmvCol.isEmpty()) {
+                                    writeStore.removeAll(this, rmvCol);
 
-                                // Reset.
-                                rmvCol.clear();
+                                    // Reset.
+                                    rmvCol.clear();
+                                }
 
                                 writeStore = null;
                             }
@@ -581,12 +597,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                     continue;
                             }
 
-                            if (rmvCol == null)
-                                rmvCol = new ArrayList<>();
+                            if (writeStore == null)
+                                writeStore = cacheCtx.store();
 
-                            rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
+                            if (writeStore.isWriteThrough()) {
+                                if (rmvCol == null)
+                                    rmvCol = new ArrayList<>();
 
-                            writeStore = cacheCtx.store();
+                                rmvCol.add(key.value(cacheCtx.cacheObjectContext(), false));
+                            }
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Ignoring NOOP entry for batch store commit: " + e);
@@ -610,7 +629,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
 
                 // Commit while locks are held.
-                store.sessionEnd(this, true);
+                sessionEnd(stores, true);
             }
             catch (IgniteCheckedException ex) {
                 commitError(ex);
@@ -634,6 +653,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     throw (Error)ex;
 
                 throw new IgniteCheckedException("Failed to commit transaction to database: " + this, ex);
+            }
+            finally {
+                if (isRollbackOnly())
+                    sessionEnd(stores, false);
             }
         }
     }
@@ -972,24 +995,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 cctx.tm().resetContext();
             }
         }
-        else {
-            CacheStoreManager store = store();
-
-            if (store != null && !internal()) {
-                try {
-                    store.sessionEnd(this, true);
-                }
-                catch (IgniteCheckedException e) {
-                    commitError(e);
-
-                    setRollbackOnly();
-
-                    cctx.tm().removeCommittedTx(this);
-
-                    throw e;
-                }
-            }
-        }
 
         // Do not unlock transaction entries if one-phase commit.
         if (!onePhaseCommit()) {
@@ -1078,11 +1083,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 cctx.tm().rollbackTx(this);
 
-                CacheStoreManager store = store();
+                if (!internal()) {
+                    Collection<CacheStoreManager> stores = stores();
 
-                if (store != null && (near() || store.isWriteToStoreFromDht())) {
-                    if (!internal())
-                        store.sessionEnd(this, false);
+                    if (stores != null && !stores.isEmpty()) {
+                        assert isWriteToStoreFromDhtValid(stores) :
+                            "isWriteToStoreFromDht can't be different within one transaction";
+
+                        boolean isWriteToStoreFromDht = F.first(stores).isWriteToStoreFromDht();
+
+                        if (stores != null && !stores.isEmpty() && (near() || isWriteToStoreFromDht))
+                            sessionEnd(stores, false);
+                    }
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {
@@ -1090,6 +1102,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 throw e;
             }
+        }
+    }
+
+    /**
+     * @param stores Store managers.
+     * @param commit Commit flag.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private void sessionEnd(Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
+        Iterator<CacheStoreManager> it = stores.iterator();
+
+        while (it.hasNext()) {
+            CacheStoreManager store = it.next();
+
+            store.sessionEnd(this, commit, !it.hasNext());
         }
     }
 
@@ -2983,7 +3010,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {
-            if (!cctx.txCompatible(this, activeCacheIds, cacheCtx)) {
+            String err = cctx.verifyTxCompatibility(this, activeCacheIds, cacheCtx);
+
+            if (err != null) {
                 StringBuilder cacheNames = new StringBuilder();
 
                 int idx = 0;
@@ -2995,9 +3024,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                         cacheNames.append(", ");
                 }
 
-                throw new IgniteCheckedException("Failed to enlist new cache to existing transaction " +
-                    "(cache configurations are not compatible) [" +
-                    "activeCaches=[" + cacheNames + "]" +
+                throw new IgniteCheckedException("Failed to enlist new cache to existing transaction (" +
+                    err +
+                    ") [activeCaches=[" + cacheNames + "]" +
                     ", cacheName=" + cacheCtx.name() +
                     ", cacheSystem=" + cacheCtx.systemTx() +
                     ", txSystem=" + system() + ']');
@@ -3281,6 +3310,23 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         }
 
         return 0;
+    }
+
+    /**
+     * @param stores Store managers.
+     * @return If {@code isWriteToStoreFromDht} value same for all stores.
+     */
+    private boolean isWriteToStoreFromDhtValid(Collection<CacheStoreManager> stores) {
+        if (stores != null && !stores.isEmpty()) {
+            boolean exp = F.first(stores).isWriteToStoreFromDht();
+
+            for (CacheStoreManager store : stores) {
+                if (store.isWriteToStoreFromDht() != exp)
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**

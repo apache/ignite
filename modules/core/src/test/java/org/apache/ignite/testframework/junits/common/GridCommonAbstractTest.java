@@ -909,4 +909,28 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
             U.sleep(50);
     }
+
+    /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+        if (exp.size() != act.size())
+            fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+
+        Iterator<?> it1 = exp.iterator();
+        Iterator<?> it2 = act.iterator();
+
+        int idx = 0;
+
+        while (it1.hasNext()) {
+            Object item1 = it1.next();
+            Object item2 = it2.next();
+
+            if (!F.eq(item1, item2))
+                fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
+
+            idx++;
+        }
+    }
 }

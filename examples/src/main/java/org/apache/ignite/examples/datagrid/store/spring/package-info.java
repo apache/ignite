@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
-
 /**
- * Test queries in off-heap tired mode.
+ * <!-- Package description. -->
+ * Contains Spring-based cache store implementation.
  */
-public class IgniteCacheQueryMultiThreadedOffHeapTiredSelfTest extends IgniteCacheQueryMultiThreadedSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = super.cacheConfiguration();
-
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-        ccfg.setOffHeapMaxMemory(0);
-
-        return ccfg;
-    }
-}
+package org.apache.ignite.examples.datagrid.store.spring;

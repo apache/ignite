@@ -77,7 +77,11 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         ccfg.setBackups(2);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setStartSize(100000);
-        ccfg.setEvictionPolicy(new LruEvictionPolicy(100000));
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(100000);
+
+        ccfg.setEvictionPolicy(plc);
         ccfg.setEvictSynchronized(true);
 
         c.setCacheConfiguration(ccfg);
