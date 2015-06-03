@@ -176,10 +176,18 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
         Thread.sleep(duration);
 
+        info("Stopping..");
+
         done.set(true);
 
-        fut1.get();
         fut2.get();
+
+        info("Restarts stopped.");
+
+        fut1.get();
+
+        info("Queries stopped.");
+
 
         info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 

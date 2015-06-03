@@ -56,6 +56,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.*;
+
 /**
  * Reduce query executor.
  */
@@ -279,24 +281,6 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param set Set.
-     * @return Array.
-     */
-    private static int[] unbox(Set<Integer> set) {
-        if (set == null)
-            return null;
-
-        int[] arr = new int[set.size()];
-
-        int i = 0;
-
-        for (int x : set)
-            arr[i++] = x;
-
-        return arr;
-    }
-
-    /**
      * @param readyTop Latest ready topology.
      * @return {@code true} If preloading is active.
      */
@@ -308,6 +292,74 @@ public class GridReduceQueryExecutor {
         assert res <= 0 : readyTop + " " + freshTop;
 
         return res < 0;
+    }
+
+    /**
+     * @param name Cache name.
+     * @return Cache context.
+     */
+    private GridCacheContext<?,?> cacheContext(String name) {
+        return ctx.cache().internalCache(name).context();
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param cctx Cache context for main space.
+     * @param extraSpaces Extra spaces.
+     * @return Data nodes.
+     */
+    private Collection<ClusterNode> dataNodes(
+        AffinityTopologyVersion topVer,
+        final GridCacheContext<?,?> cctx,
+        List<String> extraSpaces
+    ) {
+        String space = cctx.name();
+
+        Set<ClusterNode> nodes = new HashSet<>(ctx.discovery().cacheAffinityNodes(space, topVer));
+
+        if (F.isEmpty(nodes))
+            throw new CacheException("No data nodes found for cache: " + space);
+
+        if (!F.isEmpty(extraSpaces)) {
+            for (String extraSpace : extraSpaces) {
+                GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
+
+                if (extraCctx.isLocal())
+                    continue;
+
+                if (cctx.isReplicated() && !extraCctx.isReplicated())
+                    throw new CacheException("Queries running on replicated cache should not contain JOINs " +
+                        "with partitioned tables.");
+
+                Collection<ClusterNode> extraNodes = ctx.discovery().cacheAffinityNodes(extraSpace, topVer);
+
+                if (F.isEmpty(extraNodes))
+                    throw new CacheException("No data nodes found for cache: " + extraSpace);
+
+                if (cctx.isReplicated() && extraCctx.isReplicated()) {
+                    nodes.retainAll(extraNodes);
+
+                    if (nodes.isEmpty() && !isPreloadingActive(topVer))
+                        throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
+                            "' have distinct set of data nodes.");
+                }
+                else if (!cctx.isReplicated() && extraCctx.isReplicated()) {
+                    if (!extraNodes.containsAll(nodes) && !isPreloadingActive(topVer))
+                        throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
+                            "' have distinct set of data nodes.");
+                }
+                else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
+                    if ((extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes)) &&
+                        !isPreloadingActive(topVer))
+                        throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
+                            "' have distinct set of data nodes.");
+                }
+                else
+                    throw new IllegalStateException();
+            }
+        }
+
+        return nodes;
     }
 
     /**
@@ -331,15 +383,12 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
-            Collection<ClusterNode> nodes = ctx.discovery().cacheAffinityNodes(space, topVer);
-
-            if (F.isEmpty(nodes))
-                throw new CacheException("No data nodes found for cache: " + space);
-
             List<String> extraSpaces = extraSpaces(space, qry.spaces());
 
-            // Explicit partition mapping for unstable topology: {nodeId -> {cacheName -> {parts}}}
-            Map<ClusterNode, Map<String, Set<Integer>>> gridPartsMap = null;
+            Collection<ClusterNode> nodes = dataNodes(topVer, cctx, extraSpaces);
+
+            // Explicit partition mapping for unstable topology.
+            Map<ClusterNode, IntArray> gridPartsMap = null;
 
             if (cctx.isReplicated() || qry.explain()) {
                 assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
@@ -348,14 +397,10 @@ public class GridReduceQueryExecutor {
                 nodes = Collections.singleton(F.rand(nodes));
             }
             else if (isPreloadingActive(topVer)) {
-                gridPartsMap = new HashMap<>(nodes.size(), 1f);
+                gridPartsMap = partitionLocations(cctx, extraSpaces);
 
-                collectPartitionOwners(gridPartsMap, cctx);
-
-                if (extraSpaces != null) {
-                    for (String extraSpace : extraSpaces)
-                        collectPartitionOwners(gridPartsMap, ctx.cache().internalCache(extraSpace).context());
-                }
+                if (gridPartsMap == null)
+                    continue; // Retry.
 
                 nodes = gridPartsMap.keySet();
             }
@@ -462,46 +507,114 @@ public class GridReduceQueryExecutor {
         }
     }
 
-    /**
-     * Collects actual partition owners for the cache context int the given map.
-     *
-     * @param gridPartsMap Target map.
-     * @param cctx Cache context.
-     */
-    private void collectPartitionOwners(
-        Map<ClusterNode,Map<String,Set<Integer>>> gridPartsMap,
-        GridCacheContext<?,?> cctx
-    ) {
-        int partsCnt = cctx.affinity().partitions();
+    @SuppressWarnings("unchecked")
+    private Map<ClusterNode, IntArray> partitionLocations(final GridCacheContext<?,?> cctx, List<String> extraSpaces) {
+        assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
-        for (int p = 0; p < partsCnt; p++) {
-            // We don't care about exact topology version here, we just need to get all the needed partition
-            // owners in actual state.
+        int maxParts = cctx.affinity().partitions();
+
+        if (extraSpaces != null) { // Find max number of partitions for partitioned caches.
+            for (String extraSpace : extraSpaces) {
+                GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
+
+                if (extraCctx.isReplicated() || extraCctx.isLocal())
+                    continue;
+
+                int parts = extraCctx.affinity().partitions();
+
+                if (parts > maxParts)
+                    maxParts = parts;
+            }
+        }
+
+        Set<ClusterNode>[] partLocs = new Set[maxParts];
+
+        // Fill partition locations for main cache.
+        for (int p = 0, parts =  cctx.affinity().partitions(); p < parts; p++) {
             List<ClusterNode> owners = cctx.topology().owners(p);
 
             if (F.isEmpty(owners))
-                continue; // All primary and backup nodes are dead now for this partition. We sorrow.
+                throw new CacheException("No data nodes found for cache '" + cctx.name() + "' for partition " + p);
 
-            ClusterNode owner = F.rand(owners);
+            partLocs[p] = new HashSet<>(owners);
+        }
 
-            Map<String, Set<Integer>> nodePartsMap = gridPartsMap.get(owner);
+        if (extraSpaces != null) {
+            // Find owner intersections for each participating partitioned cache partition.
+            // We need this for logical collocation between different partitioned caches with the same affinity.
+            for (String extraSpace : extraSpaces) {
+                GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
 
-            if (nodePartsMap == null) {
-                nodePartsMap = new HashMap<>();
+                if (extraCctx.isReplicated() || extraCctx.isLocal())
+                    continue;
 
-                gridPartsMap.put(owner, nodePartsMap);
+                for (int p = 0, parts =  extraCctx.affinity().partitions(); p < parts; p++) {
+                    List<ClusterNode> owners = extraCctx.topology().owners(p);
+
+                    if (F.isEmpty(owners))
+                        throw new CacheException("No data nodes found for cache '" + extraSpace +
+                            "' for partition " + p);
+
+                    if (partLocs[p] == null)
+                        partLocs[p] = new HashSet<>(owners);
+                    else {
+                        partLocs[p].retainAll(owners); // Intersection of owners.
+
+                        if (partLocs[p].isEmpty())
+                            return null; // Intersection is empty -> retry.
+                    }
+                }
             }
 
-            Set<Integer> parts = nodePartsMap.get(cctx.name());
+            // Filter nodes where not all the replicated caches loaded.
+            for (String extraSpace : extraSpaces) {
+                GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
 
-            if (parts == null) {
-                parts = new TreeSet<>(); // We need them sorted.
+                if (!extraCctx.isReplicated())
+                    continue;
 
-                nodePartsMap.put(cctx.name(), parts);
+                Set<ClusterNode> dataNodes = new HashSet<>(ctx.discovery().cacheAffinityNodes(extraSpace, NONE));
+
+                if (dataNodes.isEmpty())
+                    throw new CacheException("No data nodes found for cache '" + extraSpace + "'");
+
+                for (int p = 0, extraParts = extraCctx.affinity().partitions(); p < extraParts; p++) {
+                    dataNodes.retainAll(extraCctx.topology().owners(p));
+
+                    if (dataNodes.isEmpty())
+                        throw new CacheException("No data nodes found for cache '" + extraSpace +
+                            "' for partition " + p);
+                }
+
+                for (Set<ClusterNode> partLoc : partLocs) {
+                    partLoc.retainAll(dataNodes);
+
+                    if (partLoc.isEmpty())
+                        return null; // Intersection is empty -> retry.
+                }
             }
+        }
+
+        // Collect the final partitions mapping.
+        Map<ClusterNode, IntArray> res = new HashMap<>();
+
+        // Here partitions in all IntArray's will be sorted in ascending order, this is important.
+        for (int p = 0; p < partLocs.length; p++) {
+            Set<ClusterNode> pl = partLocs[p];
+
+            assert !F.isEmpty(pl) : pl;
+
+            ClusterNode n = pl.size() == 1 ? F.first(pl) : F.rand(pl);
+
+            IntArray parts = res.get(n);
+
+            if (parts == null)
+                res.put(n, parts = new IntArray());
 
             parts.add(p);
         }
+
+        return res;
     }
 
     /**
@@ -580,7 +693,7 @@ public class GridReduceQueryExecutor {
     private void send(
         Collection<ClusterNode> nodes,
         Message msg,
-        Map<ClusterNode, Map<String, Set<Integer>>> gridPartsMap
+        Map<ClusterNode,IntArray> gridPartsMap
     ) {
         boolean locNodeFound = false;
 
@@ -595,7 +708,7 @@ public class GridReduceQueryExecutor {
                 ctx.io().send(node, GridTopic.TOPIC_QUERY, copy(msg, node, gridPartsMap), GridIoPolicy.PUBLIC_POOL);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send message to node: " + node, e);
+                U.warn(log, e.getMessage());
             }
         }
 
@@ -609,28 +722,21 @@ public class GridReduceQueryExecutor {
      * @param gridPartsMap Partitions map.
      * @return Copy of message with partitions set.
      */
-    private Message copy(Message msg, ClusterNode node, Map<ClusterNode, Map<String, Set<Integer>>> gridPartsMap) {
+    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> gridPartsMap) {
         if (gridPartsMap == null)
             return msg;
 
-        Map<String,Set<Integer>> nodeParts = gridPartsMap.get(node);
+        GridQueryRequest res = new GridQueryRequest((GridQueryRequest)msg);
 
-        assert nodeParts != null;
+        IntArray parts = gridPartsMap.get(node);
 
-        GridQueryRequest req = (GridQueryRequest)msg;
+        assert parts != null : node;
 
-        List<int[]> parts = new ArrayList<>(nodeParts.size());
+        int[] partsArr = new int[parts.size()];
 
-        parts.add(unbox(nodeParts.get(req.space())));
+        parts.toArray(partsArr);
 
-        if (req.extraSpaces() != null) {
-            for (String extraSpace : req.extraSpaces())
-                parts.add(unbox(nodeParts.get(extraSpace)));
-        }
-
-        GridQueryRequest res = new GridQueryRequest(req);
-
-        res.partitions(parts);
+        res.partitions(partsArr);
 
         return res;
     }

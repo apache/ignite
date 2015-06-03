@@ -1357,7 +1357,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public IndexingQueryFilter backupFilter(
         @Nullable final List<String> caches,
         @Nullable final AffinityTopologyVersion topVer,
-        @Nullable final List<int[]> parts
+        @Nullable final int[] parts
     ) {
         final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
 
@@ -1371,16 +1371,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 final GridCacheAffinityManager aff = cache.context().affinity();
 
                 if (parts != null) {
-                    int idx = caches.indexOf(spaceName);
-
-                    final int[] parts0 = parts.get(idx);
-
-                    if (parts0.length < 64) { // Fast scan for small arrays.
+                    if (parts.length < 64) { // Fast scan for small arrays.
                         return new IgniteBiPredicate<K,V>() {
                             @Override public boolean apply(K k, V v) {
                                 int p = aff.partition(k);
 
-                                for (int p0 : parts0) {
+                                for (int p0 : parts) {
                                     if (p0 == p)
                                         return true;
 
@@ -1397,7 +1393,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         @Override public boolean apply(K k, V v) {
                             int p = aff.partition(k);
 
-                            return Arrays.binarySearch(parts0, p) >= 0;
+                            return Arrays.binarySearch(parts, p) >= 0;
                         }
                     };
                 }

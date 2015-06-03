@@ -222,20 +222,23 @@ public class GridMapQueryExecutor {
      * @return {@code true} If all the needed partitions successfully reserved.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean reservePartitions(Collection<String> cacheNames, AffinityTopologyVersion topVer, List<int[]> parts,
+    private boolean reservePartitions(Collection<String> cacheNames, AffinityTopologyVersion topVer, int[] parts,
         List<GridDhtLocalPartition> reserved) throws IgniteCheckedException {
-        assert parts == null || parts.size() == cacheNames.size();
-
-        int i = 0;
+        Collection<Integer> partIds = parts == null ? null : wrap(parts);
 
         for (String cacheName : cacheNames) {
             GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
 
-            Collection<Integer> partIds = parts != null ? wrap(parts.get(i++)) :
-                cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+            int partsCnt = cctx.affinity().partitions();
+
+            if (parts == null)
+                partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
             for (int partId : partIds) {
                 GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
+
+                if (partId >= partsCnt)
+                    break; // We can have more partitions because `parts` array is shared for all caches.
 
                 if (part != null) {
                     // Await for owning state.

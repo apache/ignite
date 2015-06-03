@@ -57,8 +57,7 @@ public class GridQueryRequest implements Message {
     private List<String> extraSpaces;
 
     /** */
-    @GridDirectCollection(int[].class)
-    private List<int[]> parts;
+    private int[] parts;
 
     /**
      * Default constructor.
@@ -83,7 +82,7 @@ public class GridQueryRequest implements Message {
         Collection<GridCacheSqlQuery> qrys,
         AffinityTopologyVersion topVer,
         List<String> extraSpaces,
-        List<int[]> parts) {
+        int[] parts) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
@@ -110,14 +109,14 @@ public class GridQueryRequest implements Message {
     /**
      * @return All the needed partitions for {@link #space()} and {@link #extraSpaces()}.
      */
-    public List<int[]> partitions() {
+    public int[] partitions() {
         return parts;
     }
 
     /**
      * @param parts All the needed partitions for {@link #space()} and {@link #extraSpaces()}.
      */
-    public void partitions(List<int[]> parts) {
+    public void partitions(int[] parts) {
         this.parts = parts;
     }
 
@@ -217,7 +216,7 @@ public class GridQueryRequest implements Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("partitions", parts, MessageCollectionItemType.INT_ARR))
+                if (!writer.writeIntArray("partitions", parts))
                     return false;
 
                 writer.incrementState();
@@ -283,7 +282,7 @@ public class GridQueryRequest implements Message {
                 reader.incrementState();
 
             case 6:
-                parts = reader.readCollection("partitions", MessageCollectionItemType.INT_ARR);
+                parts = reader.readIntArray("partitions");
 
                 if (!reader.isLastRead())
                     return false;
