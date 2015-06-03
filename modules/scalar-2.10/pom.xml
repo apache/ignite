@@ -83,6 +83,8 @@
     </dependencies>
 
     <build>
+        <sourceDirectory>../scalar/src/main/scala</sourceDirectory>
+
         <resources>
             <resource>
                 <directory>../scalar/src/main/scala</directory>
@@ -100,6 +102,13 @@
                 </excludes>
             </testResource>
         </testResources>
+
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
 
         <!-- TODO IGNITE-956 FIX scaladocs plugins-->
             <!--<plugin>-->

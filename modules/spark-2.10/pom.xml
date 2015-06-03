@@ -90,6 +90,8 @@
     </dependencies>
 
     <build>
+        <sourceDirectory>../spark/src/main/scala</sourceDirectory>
+
         <resources>
             <resource>
                 <directory>../spark/src/main/scala</directory>
