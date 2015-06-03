@@ -113,44 +113,62 @@
     </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>scaladoc</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>doc</goal>
-                        </goals>
-                        <configuration>
-                            <doctitle>Ignite Console Visor</doctitle>
-                            <windowtitle>Ignite Console Visor</windowtitle>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+        <resources>
+            <resource>
+                <directory>../visor-console/src/main/scala</directory>
+                <excludes>
+                    <exclude>**/*.scala</exclude>
+                </excludes>
+            </resource>
+        </resources>
 
-            <plugin>
-                 <groupId>org.apache.maven.plugins</groupId>
-                 <artifactId>maven-antrun-plugin</artifactId>
-                 <version>1.7</version>
-                 <executions>
-                     <execution>
-                         <id>javadoc-zip</id>
-                         <goals>
-                             <goal>run</goal>
-                         </goals>
-                         <phase>prepare-package</phase>
-                         <configuration>
-                             <target>
-                                 <zip destfile="target/ignite-visor-console-2.10-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />
-                             </target>
-                         </configuration>
-                     </execution>
-                 </executions>
-             </plugin>
-        </plugins>
+        <testResources>
+            <testResource>
+                <directory>../visor-console/src/test/scala</directory>
+                <excludes>
+                    <exclude>**/*.scala</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
+        <!-- TODO IGNITE-956 FIX scaladocs plugins-->
+            <!--<plugin>-->
+                <!--<groupId>net.alchim31.maven</groupId>-->
+                <!--<artifactId>scala-maven-plugin</artifactId>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>scaladoc</id>-->
+                        <!--<phase>prepare-package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>doc</goal>-->
+                        <!--</goals>-->
+                        <!--<configuration>-->
+                            <!--<doctitle>Ignite Console Visor</doctitle>-->
+                            <!--<windowtitle>Ignite Console Visor</windowtitle>-->
+                        <!--</configuration>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+
+            <!--<plugin>-->
+                 <!--<groupId>org.apache.maven.plugins</groupId>-->
+                 <!--<artifactId>maven-antrun-plugin</artifactId>-->
+                 <!--<version>1.7</version>-->
+                 <!--<executions>-->
+                     <!--<execution>-->
+                         <!--<id>javadoc-zip</id>-->
+                         <!--<goals>-->
+                             <!--<goal>run</goal>-->
+                         <!--</goals>-->
+                         <!--<phase>prepare-package</phase>-->
+                         <!--<configuration>-->
+                             <!--<target>-->
+                                 <!--<zip destfile="target/ignite-visor-console-${project.version}-javadoc.jar" basedir="target/site/scaladocs" encoding="UTF-8" />-->
+                             <!--</target>-->
+                         <!--</configuration>-->
+                     <!--</execution>-->
+                 <!--</executions>-->
+             <!--</plugin>-->
+        <!--/plugins-->
     </build>
 </project>

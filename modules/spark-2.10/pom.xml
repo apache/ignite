@@ -90,6 +90,24 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>../spark/src/main/scala</directory>
+                <excludes>
+                    <exclude>**/*.scala</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <testResources>
+            <testResource>
+                <directory>../spark/src/test/scala</directory>
+                <excludes>
+                    <exclude>**/*.scala</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
         <plugins>
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
