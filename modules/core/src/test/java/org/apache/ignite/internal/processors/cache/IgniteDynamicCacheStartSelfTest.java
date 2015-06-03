@@ -25,6 +25,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -68,6 +69,9 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     private boolean testAttribute = true;
 
     /** */
+    private boolean client;
+
+    /** */
     private boolean daemon;
 
     /**
@@ -84,6 +88,12 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        if (client) {
+            cfg.setClientMode(true);
+
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+        }
 
         cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE_NAME, testAttribute));
 
@@ -1023,5 +1033,57 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             stopGrid(nodeCount());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopWithClientJoin() throws Exception {
+        Ignite ignite1 = ignite(1);
+
+        final AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                client = true;
+
+                int iter = 0;
+
+                while (!stop.get()) {
+                    if (iter % 10 == 0)
+                        log.info("Client start/stop iteration: " + iter);
+
+                    iter++;
+
+                    try (Ignite ignite = startGrid(nodeCount())) {
+                        assertTrue(ignite.configuration().isClientMode());
+                    }
+                }
+
+                return null;
+            }
+        }, 1, "client-start-stop");
+
+        try {
+            long stopTime = U.currentTimeMillis() + 30_000;
+
+            int iter = 0;
+
+            while (System.currentTimeMillis() < stopTime) {
+                if (iter % 10 == 0)
+                    log.info("Cache start/stop iteration: " + iter);
+
+                try (IgniteCache<Object, Object> cache = ignite1.getOrCreateCache("cache-" + iter)) {
+                    assertNotNull(cache);
+                }
+
+                iter++;
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+
+        fut.get();
     }
 }
