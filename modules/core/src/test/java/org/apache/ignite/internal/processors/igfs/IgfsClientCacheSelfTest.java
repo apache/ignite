@@ -85,12 +85,15 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
         cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
             cacheConfiguration(CACHE_NAME));
 
-        if (!gridName.equals(getTestGridName(0)))
-            cfg.setClientMode(true);
-
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
+
+        if (!gridName.equals(getTestGridName(0))) {
+            cfg.setClientMode(true);
+
+            disco.setForceServerMode(true);
+        }
 
         cfg.setDiscoverySpi(disco);
 
