@@ -1389,30 +1389,34 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridTimeoutObject timeoutObj = new GridTimeoutObjectAdapter(
                 cctx.gridConfig().getNetworkTimeout() * Math.max(1, cctx.gridConfig().getCacheConfiguration().length)) {
                 @Override public void onTimeout() {
-                    if (isDone())
-                        return;
+                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            if (isDone())
+                                return;
 
-                    if (!enterBusy())
-                        return;
+                            if (!enterBusy())
+                                return;
 
-                    try {
-                        U.warn(log,
-                            "Retrying preload partition exchange due to timeout [done=" + isDone() +
-                                ", dummy=" + dummy + ", exchId=" + exchId + ", rcvdIds=" + F.id8s(rcvdIds) +
-                                ", rmtIds=" + F.id8s(rmtIds) + ", remaining=" + F.id8s(remaining()) +
-                                ", init=" + init + ", initFut=" + initFut.isDone() +
-                                ", ready=" + ready + ", replied=" + replied + ", added=" + added +
-                                ", oldest=" + U.id8(oldestNode.get().id()) + ", oldestOrder=" +
-                                oldestNode.get().order() + ", evtLatch=" + evtLatch.getCount() +
-                                ", locNodeOrder=" + cctx.localNode().order() +
-                                ", locNodeId=" + cctx.localNode().id() + ']',
-                            "Retrying preload partition exchange due to timeout.");
+                            try {
+                                U.warn(log,
+                                    "Retrying preload partition exchange due to timeout [done=" + isDone() +
+                                        ", dummy=" + dummy + ", exchId=" + exchId + ", rcvdIds=" + F.id8s(rcvdIds) +
+                                        ", rmtIds=" + F.id8s(rmtIds) + ", remaining=" + F.id8s(remaining()) +
+                                        ", init=" + init + ", initFut=" + initFut.isDone() +
+                                        ", ready=" + ready + ", replied=" + replied + ", added=" + added +
+                                        ", oldest=" + U.id8(oldestNode.get().id()) + ", oldestOrder=" +
+                                        oldestNode.get().order() + ", evtLatch=" + evtLatch.getCount() +
+                                        ", locNodeOrder=" + cctx.localNode().order() +
+                                        ", locNodeId=" + cctx.localNode().id() + ']',
+                                    "Retrying preload partition exchange due to timeout.");
 
-                        recheck();
-                    }
-                    finally {
-                        leaveBusy();
-                    }
+                                recheck();
+                            }
+                            finally {
+                                leaveBusy();
+                            }
+                        }
+                    });
                 }
             };
 
