@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
@@ -58,7 +60,7 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
-     *
+     * @return Local node ID.
      */
     public UUID getLocalNodeId() {
         return spi.getLocalNodeId();
@@ -78,42 +80,47 @@ abstract class TcpDiscoveryImpl {
     public abstract void dumpDebugInfo(IgniteLogger log);
 
     /**
-     *
+     * @return SPI state string.
      */
     public abstract String getSpiState();
 
     /**
-     *
+     * @return Message worker queue current size.
      */
     public abstract int getMessageWorkerQueueSize();
 
     /**
-     *
+     * @return Coordinator ID.
      */
     public abstract UUID getCoordinator();
 
     /**
-     *
+     * @return Collection of remote nodes.
      */
     public abstract Collection<ClusterNode> getRemoteNodes();
 
     /**
      * @param nodeId Node id.
+     * @return Node with given ID or {@code null} if node is not found.
      */
     @Nullable public abstract ClusterNode getNode(UUID nodeId);
 
     /**
      * @param nodeId Node id.
+     * @return {@code true} if node alive, {@code false} otherwise.
      */
     public abstract boolean pingNode(UUID nodeId);
 
     /**
+     * Tells discovery SPI to disconnect from topology.
      *
+     * @throws IgniteSpiException If failed.
      */
     public abstract void disconnect() throws IgniteSpiException;
 
     /**
      * @param msg Message.
+     * @throws IgniteException If failed.
      */
     public abstract void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 
@@ -124,16 +131,18 @@ abstract class TcpDiscoveryImpl {
 
     /**
      * @param gridName Grid name.
+     * @throws IgniteSpiException If failed.
      */
     public abstract void spiStart(@Nullable String gridName) throws IgniteSpiException;
 
     /**
-     *
+     * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;
 
     /**
      * @param spiCtx Spi context.
+     * @throws IgniteSpiException If failed.
      */
     public abstract void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException;
 
@@ -164,7 +173,40 @@ abstract class TcpDiscoveryImpl {
     public abstract void brakeConnection();
 
     /**
-     * FOR TEST PURPOSE ONLY!
+     * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @return Worker thread.
      */
     protected abstract IgniteSpiThread workerThread();
+
+    /**
+     * @throws IgniteSpiException If failed.
+     */
+    @SuppressWarnings("BusyWait")
+    protected final void registerLocalNodeAddress() throws IgniteSpiException {
+        // Make sure address registration succeeded.
+        while (true) {
+            try {
+                spi.ipFinder.initializeLocalAddresses(locNode.socketAddresses());
+
+                // Success.
+                break;
+            }
+            catch (IllegalStateException e) {
+                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
+                    locNode.socketAddresses(), e);
+            }
+            catch (IgniteSpiException e) {
+                LT.error(log, e, "Failed to register local node address in IP finder on start " +
+                    "(retrying every 2000 ms).");
+            }
+
+            try {
+                U.sleep(2000);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteSpiException("Thread has been interrupted.", e);
+            }
+        }
+    }
 }

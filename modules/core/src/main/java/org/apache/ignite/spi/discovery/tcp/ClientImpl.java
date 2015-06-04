@@ -165,6 +165,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         msgWorker = new MessageWorker();
         msgWorker.start();
 
+        if (spi.ipFinder.isShared())
+            registerLocalNodeAddress();
+
         try {
             joinLatch.await();
 
