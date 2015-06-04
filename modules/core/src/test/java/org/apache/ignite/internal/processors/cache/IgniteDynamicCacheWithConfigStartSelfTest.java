@@ -14,19 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 /**
  *
@@ -51,8 +47,8 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (!client)
-            cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        if (client)
+            cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setClientMode(client);
 
@@ -60,10 +56,9 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    private CacheConfiguration cacheConfiguration() {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setIndexedTypes(String.class, String.class);
@@ -82,24 +77,18 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
         try {
             client = true;
 
-            int clientCnt = 12;
+            IgniteEx client = startGrid(srvCnt);
 
-            IgniteEx[] clients = new IgniteEx[clientCnt];
+            for (int i = 0; i < 100; i++)
+                client.cache(CACHE_NAME).put(i, i);
 
-            for (int i = 0; i < clients.length; i++)
-                clients[i] = startGrid(i + srvCnt);
+            for (int i = 0; i < 100; i++)
+                assertEquals(i, grid(0).cache(CACHE_NAME).get(i));
 
-            final AtomicInteger idx = new AtomicInteger();
+            client.cache(CACHE_NAME).removeAll();
 
-            GridTestUtils.runMultiThreaded(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    final int idx0 = idx.getAndIncrement();
-
-                    ignite(idx0).cache(CACHE_NAME).get(1);
-
-                    return null;
-                }
-            }, clients.length, "runner");
+            for (int i = 0; i < 100; i++)
+                assertNull(grid(0).cache(CACHE_NAME).get(i));
         }
         finally {
             stopAllGrids();
