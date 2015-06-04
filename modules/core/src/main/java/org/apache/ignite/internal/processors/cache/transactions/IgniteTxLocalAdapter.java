@@ -40,6 +40,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -2560,6 +2561,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     ) {
         assert filter == null || invokeMap == null;
 
+        if (!cacheCtx.updatesAllowed())
+            throw new CacheException("Updates are not allowed for cache: " + cacheCtx.name());
+
         cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
 
         if (retval)
@@ -2780,6 +2784,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable GridCacheEntryEx cached,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter) {
+        if (!cacheCtx.updatesAllowed())
+            throw new CacheException("Updates are not allowed for cache: " + cacheCtx.name());
+
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
         if (retval)
