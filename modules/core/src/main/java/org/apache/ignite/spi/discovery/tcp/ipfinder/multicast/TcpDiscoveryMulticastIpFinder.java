@@ -26,6 +26,8 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
@@ -254,6 +256,20 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 "(it is recommended in production to specify at least one address in " +
                 "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
 
+        boolean clientMode;
+
+        if (ignite != null) { // Can be null if used in tests without starting Ignite.
+            DiscoverySpi discoSpi = ignite.configuration().getDiscoverySpi();
+
+            if (!(discoSpi instanceof TcpDiscoverySpi))
+                throw new IgniteSpiException("TcpDiscoveryMulticastIpFinder should be used with " +
+                    "TcpDiscoverySpi: " + discoSpi);
+
+            clientMode = ((TcpDiscoverySpi)discoSpi).isClientMode();
+        }
+        else
+            clientMode = false;
+
         InetAddress mcastAddr;
 
         try {
@@ -296,7 +312,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             if (!addr.isLoopbackAddress()) {
                 try {
-                    addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
+                    if (!clientMode)
+                        addrSnds.add(new AddressSender(mcastAddr, addr, addrs));
 
                     reqItfs.add(addr);
                 }
@@ -309,20 +326,24 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
         }
 
-        if (addrSnds.isEmpty()) {
-            try {
-                // Create non-bound socket if local host is loopback or failed to create sockets explicitly
-                // bound to interfaces.
-                addrSnds.add(new AddressSender(mcastAddr, null, addrs));
+        if (!clientMode) {
+            if (addrSnds.isEmpty()) {
+                try {
+                    // Create non-bound socket if local host is loopback or failed to create sockets explicitly
+                    // bound to interfaces.
+                    addrSnds.add(new AddressSender(mcastAddr, null, addrs));
+                }
+                catch (IOException e) {
+                    throw new IgniteSpiException("Failed to create multicast socket [mcastAddr=" + mcastAddr +
+                        ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ']', e);
+                }
             }
-            catch (IOException e) {
-                throw new IgniteSpiException("Failed to create multicast socket [mcastAddr=" + mcastAddr +
-                    ", mcastGrp=" + mcastGrp + ", mcastPort=" + mcastPort + ']', e);
-            }
-        }
 
-        for (AddressSender addrSnd :addrSnds)
-            addrSnd.start();
+            for (AddressSender addrSnd : addrSnds)
+                addrSnd.start();
+        }
+        else
+            assert addrSnds.isEmpty() : addrSnds;
 
         Collection<InetSocketAddress> ret;
 
