@@ -167,6 +167,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @GridToStringExclude
     private Timer updateNtfTimer;
 
+    /** */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask starveTask;
+
+    /** */
+    @GridToStringExclude
+    private GridTimeoutProcessor.CancelableTask metricsLogTask;
+
     /** Indicate error on grid stop. */
     @GridToStringExclude
     private boolean errOnStop;
@@ -859,7 +867,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (starveCheck) {
             final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
-            ctx.timeout().schedule(new Runnable() {
+            starveTask = ctx.timeout().schedule(new Runnable() {
                 /** Last completed task count. */
                 private long lastCompletedCnt;
 
@@ -886,7 +894,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
-            ctx.timeout().schedule(new Runnable() {
+            metricsLogTask = ctx.timeout().schedule(new Runnable() {
                 private final DecimalFormat dblFmt = new DecimalFormat("#.##");
 
                 @Override public void run() {
@@ -1699,6 +1707,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Cancel update notification timer.
             if (updateNtfTimer != null)
                 updateNtfTimer.cancel();
+
+            if (starveTask != null)
+                starveTask.close();
+
+            if (metricsLogTask != null)
+                metricsLogTask.close();
 
             boolean interrupted = false;
 
