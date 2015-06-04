@@ -1469,9 +1469,6 @@ public class GridCacheContext<K, V> implements Externalizable {
             Collection<ClusterNode> dhtNodeIds = new ArrayList<>(dhtRemoteNodes);
             Collection<ClusterNode> nearNodeIds = F.isEmpty(nearRemoteNodes) ? null : new ArrayList<>(nearRemoteNodes);
 
-            if (!F.isEmpty(nearNodeIds))
-                U.dumpStack("Added near mapped nodes: " + entry + ", " + nearNodeIds);
-
             entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
 
