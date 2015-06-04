@@ -293,6 +293,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param cacheId Cache ID to check.
+     * @param topVer Topology version.
      * @return {@code True} if cache was added during this exchange.
      */
     public boolean isCacheAdded(int cacheId, AffinityTopologyVersion topVer) {

@@ -48,7 +48,7 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
         cfg.setDiscoverySpi(discoSpi);
 
         if (client)
-            cfg.setCacheConfiguration(cacheConfiguration(gridName));
+            cfg.setCacheConfiguration(cacheConfiguration());
 
         cfg.setClientMode(client);
 
@@ -56,10 +56,9 @@ public class IgniteDynamicCacheWithConfigStartSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    private CacheConfiguration cacheConfiguration() {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setIndexedTypes(String.class, String.class);
