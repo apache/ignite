@@ -50,6 +50,6 @@ inner join (
   group by e.date, e.rootOrderId
 ) oep on (cop.date = oep.date and cop.custOrderId = oep.eRootOrderId)
 left outer join (
-  select top 1 refOrderId, date from "part".Cancel
+  select top 1 refOrderId, date from "part".Cancel order by date desc
 ) cc on (cc.refOrderId = cop.orderId and cc.date = cop.date)
 where cop.alias='CUSTOM'

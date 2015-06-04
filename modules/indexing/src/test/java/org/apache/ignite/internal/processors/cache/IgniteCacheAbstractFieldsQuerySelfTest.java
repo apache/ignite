@@ -23,6 +23,11 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.datastructures.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
@@ -67,6 +72,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setPeerClassLoadingEnabled(false);
+
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (hasCache)
@@ -94,26 +101,32 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        List<Class<?>> indexedTypes = new ArrayList<>(F.<Class<?>>asList(
-            String.class, Organization.class
-        ));
+        List<Class<?>> indexedTypes;
 
-        if (CACHE_COMPLEX_KEYS.equals(name)) {
-            indexedTypes.addAll(F.<Class<?>>asList(
-                PersonKey.class, Person.class
-            ));
-        }
+        if (EMPTY_CACHE.equals(name))
+            indexedTypes = new ArrayList<>();
         else {
-            indexedTypes.addAll(F.<Class<?>>asList(
-                AffinityKey.class, Person.class
+            indexedTypes = new ArrayList<>(F.<Class<?>>asList(
+                String.class, Organization.class
             ));
-        }
 
-        if (!CACHE_NO_PRIMITIVES.equals(name)) {
-            indexedTypes.addAll(F.<Class<?>>asList(
-                String.class, String.class,
-                Integer.class, Integer.class
-            ));
+            if (CACHE_COMPLEX_KEYS.equals(name)) {
+                indexedTypes.addAll(F.<Class<?>>asList(
+                    PersonKey.class, Person.class
+                ));
+            }
+            else {
+                indexedTypes.addAll(F.<Class<?>>asList(
+                    AffinityKey.class, Person.class
+                ));
+            }
+
+            if (!CACHE_NO_PRIMITIVES.equals(name)) {
+                indexedTypes.addAll(F.<Class<?>>asList(
+                    String.class, String.class,
+                    Integer.class, Integer.class
+                ));
+            }
         }
 
         cache.setIndexedTypes(indexedTypes.toArray(new Class[indexedTypes.size()]));
@@ -192,6 +205,217 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** @return Number of grids to start. */
     protected abstract int gridCount();
+
+    /** @throws Exception If failed. */
+    public void testCacheMetaData() throws Exception {
+        // Put internal key to test filtering of internal objects.
+        ((IgniteKernal)grid(0)).getCache(null).getAndPut(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
+
+        try {
+            Collection<GridCacheSqlMetadata> metas =
+                ((IgniteKernal)grid(0)).getCache(null).context().queries().sqlMetadata();
+
+            assert metas != null;
+
+            assertEquals("Invalid meta: " + metas, 5, metas.size());
+
+            boolean wasNull = false;
+            boolean wasNamed = false;
+            boolean wasEmpty = false;
+
+            for (GridCacheSqlMetadata meta : metas) {
+                if (meta.cacheName() == null) {
+                    Collection<String> types = meta.types();
+
+                    assert types != null;
+                    assert types.size() == 4;
+                    assert types.contains("Person");
+                    assert types.contains("Organization");
+                    assert types.contains("String");
+                    assert types.contains("Integer");
+
+                    assert AffinityKey.class.getName().equals(meta.keyClass("Person"));
+                    assert String.class.getName().equals(meta.keyClass("Organization"));
+                    assert String.class.getName().equals(meta.keyClass("String"));
+
+                    assert Person.class.getName().equals(meta.valueClass("Person"));
+                    assert Organization.class.getName().equals(meta.valueClass("Organization"));
+                    assert String.class.getName().equals(meta.valueClass("String"));
+
+                    Map<String, String> fields = meta.fields("Person");
+
+                    assert fields != null;
+                    assert fields.size() == 5;
+                    assert AffinityKey.class.getName().equals(fields.get("_KEY"));
+                    assert Person.class.getName().equals(fields.get("_VAL"));
+                    assert String.class.getName().equals(fields.get("NAME"));
+                    assert int.class.getName().equals(fields.get("AGE"));
+                    assert int.class.getName().equals(fields.get("ORGID"));
+
+                    fields = meta.fields("Organization");
+
+                    assert fields != null;
+                    assert fields.size() == 4;
+                    assert String.class.getName().equals(fields.get("_KEY"));
+                    assert Organization.class.getName().equals(fields.get("_VAL"));
+                    assert int.class.getName().equals(fields.get("ID"));
+                    assert String.class.getName().equals(fields.get("NAME"));
+
+                    fields = meta.fields("String");
+
+                    assert fields != null;
+                    assert fields.size() == 2;
+                    assert String.class.getName().equals(fields.get("_KEY"));
+                    assert String.class.getName().equals(fields.get("_VAL"));
+
+                    fields = meta.fields("Integer");
+
+                    assert fields != null;
+                    assert fields.size() == 2;
+                    assert Integer.class.getName().equals(fields.get("_KEY"));
+                    assert Integer.class.getName().equals(fields.get("_VAL"));
+
+                    Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
+
+                    assertEquals(2, indexes.size());
+
+                    wasNull = true;
+                }
+                else if (CACHE.equals(meta.cacheName()))
+                    wasNamed = true;
+                else if (EMPTY_CACHE.equals(meta.cacheName())) {
+                    assert meta.types().isEmpty();
+
+                    wasEmpty = true;
+                }
+            }
+
+            assert wasNull;
+            assert wasNamed;
+            assert wasEmpty;
+        }
+        finally {
+            ((IgniteKernal)grid(0)).getCache(null).remove(new GridCacheInternalKeyImpl("LONG"));
+        }
+    }
+
+    /**
+     *
+     */
+    public void testExplain() {
+        List<List<?>> res = grid(0).cache(null).query(new SqlFieldsQuery(
+            "explain select p.age, p.name, o.name " +
+            "from Person p, Organization o where p.orgId = o.id")).getAll();
+
+        for (List<?> row : res)
+            X.println("____ : " + row);
+
+        if (cacheMode() == PARTITIONED) {
+            assertEquals(2, res.size());
+
+            assertTrue(((String)res.get(1).get(0)).contains(GridSqlQuerySplitter.TABLE_FUNC_NAME));
+        }
+        else
+            assertEquals(1, res.size());
+    }
+
+    /** @throws Exception If failed. */
+    public void testExecuteWithMetaData() throws Exception {
+        QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)grid(0).cache(null).query(new SqlFieldsQuery(
+            "select p._KEY, p.name, p.age, o.name " +
+            "from Person p, Organization o where p.orgId = o.id"));
+
+        Collection<GridQueryFieldMetadata> meta = cursor.fieldsMeta();
+
+        assert meta != null;
+        assert meta.size() == 4;
+
+        Iterator<GridQueryFieldMetadata> metaIt = meta.iterator();
+
+        assert metaIt != null;
+        assert metaIt.hasNext();
+
+        GridQueryFieldMetadata field = metaIt.next();
+
+        assert field != null;
+        assert "".equals(field.schemaName());
+        assert "PERSON".equals(field.typeName());
+        assert "_KEY".equals(field.fieldName());
+        assert Object.class.getName().equals(field.fieldTypeName());
+
+        assert metaIt.hasNext();
+
+        field = metaIt.next();
+
+        assert field != null;
+        assert "".equals(field.schemaName());
+        assert "PERSON".equals(field.typeName());
+        assert "NAME".equals(field.fieldName());
+        assert String.class.getName().equals(field.fieldTypeName());
+
+        assert metaIt.hasNext();
+
+        field = metaIt.next();
+
+        assert field != null;
+        assert "".equals(field.schemaName());
+        assert "PERSON".equals(field.typeName());
+        assert "AGE".equals(field.fieldName());
+        assert Integer.class.getName().equals(field.fieldTypeName());
+
+        assert metaIt.hasNext();
+
+        field = metaIt.next();
+
+        assert field != null;
+        assert "".equals(field.schemaName());
+        assert "ORGANIZATION".equals(field.typeName());
+        assert "NAME".equals(field.fieldName());
+        assert String.class.getName().equals(field.fieldTypeName());
+
+        assert !metaIt.hasNext();
+
+        List<List<?>> res = cursor.getAll();
+
+        dedup(res);
+
+        assertEquals(3, res.size());
+
+        Collections.sort(res, new Comparator<List<?>>() {
+            @Override public int compare(List<?> row1, List<?> row2) {
+                return ((Integer)row1.get(2)).compareTo((Integer)row2.get(2));
+            }
+        });
+
+        int cnt = 0;
+
+        for (List<?> row : res) {
+            assert row.size() == 4;
+
+            if (cnt == 0) {
+                assert new AffinityKey<>("p1", "o1").equals(row.get(0));
+                assert "John White".equals(row.get(1));
+                assert row.get(2).equals(25);
+                assert "A".equals(row.get(3));
+            }
+            else if (cnt == 1) {
+                assert new AffinityKey<>("p2", "o1").equals(row.get(0));
+                assert "Joe Black".equals(row.get(1));
+                assert row.get(2).equals(35);
+                assert "A".equals(row.get(3));
+            }
+            if (cnt == 2) {
+                assert new AffinityKey<>("p3", "o2").equals(row.get(0));
+                assert "Mike Green".equals(row.get(1));
+                assert row.get(2).equals(40);
+                assert "B".equals(row.get(3));
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 3;
+    }
 
     /** @throws Exception If failed. */
     public void testExecute() throws Exception {

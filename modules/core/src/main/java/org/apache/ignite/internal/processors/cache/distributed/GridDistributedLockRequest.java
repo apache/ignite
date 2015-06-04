@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -31,6 +30,8 @@ import org.jetbrains.annotations.*;
 
 import java.nio.*;
 import java.util.*;
+
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Lock request message.
@@ -81,11 +82,11 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** Key count. */
     private int txSize;
 
-    /** Group lock key if this is a group-lock transaction. */
-    private IgniteTxKey grpLockKey;
-
-    /** Partition lock flag. Only if group-lock transaction. */
-    private boolean partLock;
+    /**
+     * Additional flags.
+     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
+     */
+    private byte flags;
 
     /**
      * Empty constructor.
@@ -95,6 +96,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param nearXidVer Near transaction ID.
      * @param threadId Thread ID.
@@ -107,9 +109,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      * @param timeout Lock timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock {@code True} if this is a group-lock transaction request and whole partition is
-     *      locked.
+     * @param skipStore Skip store flag.
      */
     public GridDistributedLockRequest(
         int cacheId,
@@ -125,8 +125,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock
+        boolean skipStore
     ) {
         super(lockVer, keyCnt);
 
@@ -145,10 +144,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
-        this.grpLockKey = grpLockKey;
-        this.partLock = partLock;
 
         retVals = new boolean[keyCnt];
+
+        skipStore(skipStore);
     }
 
     /**
@@ -218,6 +217,22 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * Sets skip store flag value.
+     *
+     * @param skipStore Skip store flag.
+     */
+    private void skipStore(boolean skipStore){
+        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipStore() {
+        return (flags & SKIP_STORE_FLAG_MASK) == 1;
+    }
+
+    /**
      * @return Transaction isolation or <tt>null</tt> if not in transaction.
      */
     public TransactionIsolation isolation() {
@@ -266,27 +281,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return {@code True} if lock request for group-lock transaction.
-     */
-    public boolean groupLock() {
-        return grpLockKey != null;
-    }
-
-    /**
-     * @return Group lock key.
-     */
-    @Nullable public IgniteTxKey groupLockKey() {
-        return grpLockKey;
-    }
-
-    /**
-     * @return {@code True} if partition is locked in group-lock transaction.
-     */
-    public boolean partitionLock() {
-        return partLock;
-    }
-
-    /**
      * @return Max lock wait time.
      */
     public long timeout() {
@@ -301,9 +295,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalCacheObjects(keys, cctx);
-
-        if (grpLockKey != null)
-            grpLockKey.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */
@@ -313,9 +304,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
-
-        if (grpLockKey != null)
-            grpLockKey.finishUnmarshal(cctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -334,13 +322,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("grpLockKey", grpLockKey))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -388,30 +376,24 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeBoolean("partLock", partLock))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
                 if (!writer.writeBooleanArray("retVals", retVals))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -434,7 +416,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
         switch (reader.state()) {
             case 8:
-                futId = reader.readIgniteUuid("futId");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -442,7 +424,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 9:
-                grpLockKey = reader.readMessage("grpLockKey");
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -510,14 +492,6 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 17:
-                partLock = reader.readBoolean("partLock");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
                 retVals = reader.readBooleanArray("retVals");
 
                 if (!reader.isLastRead())
@@ -525,7 +499,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -533,7 +507,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -541,7 +515,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -561,7 +535,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 21;
     }
 
     /** {@inheritDoc} */

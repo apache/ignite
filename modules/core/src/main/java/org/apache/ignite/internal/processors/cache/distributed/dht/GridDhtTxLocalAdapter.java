@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -51,15 +52,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping> nearMap =
-        new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap8<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping> dhtMap =
-        new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap8<>();
 
     /** Mapped flag. */
-    private AtomicBoolean mapped = new AtomicBoolean();
+    protected AtomicBoolean mapped = new AtomicBoolean();
 
     /** */
     private long dhtThreadId;
@@ -72,6 +71,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** Versions of pending locks for entries of this tx. */
     private Collection<GridCacheVersion> pendingVers;
+
+    /** Nodes where transactions were started on lock step. */
+    private Set<ClusterNode> lockTxNodes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -90,8 +92,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param isolation Isolation.
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock If this is a group-lock transaction and the whole partition should be locked.
      */
     protected GridDhtTxLocalAdapter(
         GridCacheSharedContext cctx,
@@ -107,13 +107,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean invalidate,
         boolean storeEnabled,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(cctx, xidVer, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, invalidate,
-            storeEnabled, txSize, grpLockKey, partLock, subjId, taskNameHash);
+            storeEnabled, txSize, subjId, taskNameHash);
 
         assert cctx != null;
 
@@ -121,6 +119,26 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         threadId = Thread.currentThread().getId();
         dhtThreadId = threadId;
+    }
+
+    /**
+     * @param node Node.
+     */
+    public void addLockTransactionNode(ClusterNode node) {
+        assert node != null;
+        assert !node.isLocal();
+
+        if (lockTxNodes == null)
+            lockTxNodes = new HashSet<>();
+
+        lockTxNodes.add(node);
+    }
+
+    /**
+     * @return Nodes where transactions were started on lock step.
+     */
+    @Nullable public Set<ClusterNode> lockTransactionNodes() {
+        return lockTxNodes;
     }
 
     /**
@@ -530,6 +548,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param msgId Message ID.
      * @param read Read flag.
      * @param accessTtl TTL for read operation.
+     * @param needRetVal Return value flag.
+     * @param skipStore Skip store flag.
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -540,7 +560,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long msgId,
         final boolean read,
         final boolean needRetVal,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore
     ) {
         try {
             checkValid();
@@ -591,7 +612,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         false,
                         -1L,
                         -1L,
-                        null);
+                        null,
+                        skipStore);
 
                     if (read)
                         txEntry.ttl(accessTtl);
@@ -621,7 +643,15 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (log.isDebugEnabled())
                 log.debug("Lock keys: " + passedKeys);
 
-            return obtainLockAsync(cacheCtx, ret, passedKeys, read, needRetVal, skipped, accessTtl, null);
+            return obtainLockAsync(cacheCtx,
+                ret,
+                passedKeys,
+                read,
+                needRetVal,
+                skipped,
+                accessTtl,
+                null,
+                skipStore);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -635,9 +665,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param ret Return value.
      * @param passedKeys Passed keys.
      * @param read {@code True} if read.
+     * @param needRetVal Return value flag.
      * @param skipped Skipped keys.
      * @param accessTtl TTL for read operation.
      * @param filter Entry write filter.
+     * @param skipStore Skip store flag.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -648,7 +680,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         final boolean needRetVal,
         final Set<KeyCacheObject> skipped,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter) {
+        @Nullable final CacheEntryPredicate[] filter,
+        boolean skipStore) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');
@@ -666,7 +699,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             needRetVal,
             isolation,
             accessTtl,
-            CU.empty0());
+            CU.empty0(),
+            skipStore);
 
         return new GridEmbeddedFuture<>(
             fut,
@@ -690,68 +724,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 }
             }
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void addGroupTxMapping(Collection<IgniteTxKey> keys) {
-        assert groupLock();
-
-        for (GridDistributedTxMapping mapping : dhtMap.values())
-            mapping.entries(Collections.unmodifiableCollection(txMap.values()), true);
-
-        // Here we know that affinity key for all given keys is our group lock key.
-        // Just add entries to dht mapping.
-        // Add near readers. If near cache is disabled on all nodes, do nothing.
-        Collection<UUID> backupIds = dhtMap.keySet();
-
-        Map<ClusterNode, List<GridDhtCacheEntry>> locNearMap = null;
-
-        for (IgniteTxKey key : keys) {
-            IgniteTxEntry txEntry = entry(key);
-
-            if (!txEntry.groupLockEntry() || txEntry.context().isNear())
-                continue;
-
-            assert txEntry.cached() instanceof GridDhtCacheEntry : "Invalid entry type: " + txEntry.cached();
-
-            while (true) {
-                try {
-                    GridDhtCacheEntry entry = (GridDhtCacheEntry)txEntry.cached();
-
-                    Collection<UUID> readers = entry.readers();
-
-                    if (!F.isEmpty(readers)) {
-                        Collection<ClusterNode> nearNodes = cctx.discovery().nodes(readers, F0.notEqualTo(nearNodeId()),
-                            F.notIn(backupIds));
-
-                        if (log.isDebugEnabled())
-                            log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" +
-                                entry + ']');
-
-                        for (ClusterNode n : nearNodes) {
-                            if (locNearMap == null)
-                                locNearMap = new HashMap<>();
-
-                            List<GridDhtCacheEntry> entries = locNearMap.get(n);
-
-                            if (entries == null)
-                                locNearMap.put(n, entries = new LinkedList<>());
-
-                            entries.add(entry);
-                        }
-                    }
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // Retry.
-                    txEntry.cached(txEntry.context().dht().entryExx(key.key(), topologyVersion()));
-                }
-            }
-        }
-
-        if (locNearMap != null)
-            addNearNodeEntryMapping(locNearMap);
     }
 
     /** {@inheritDoc} */
@@ -845,6 +817,32 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param fut Expected future.
      */
     protected abstract void clearPrepareFuture(GridDhtTxPrepareFuture fut);
+
+    /**
+     * @return {@code True} if transaction is finished on prepare step.
+     */
+    protected final boolean commitOnPrepare() {
+        return onePhaseCommit() && !near();
+    }
+
+    /**
+     * @param prepFut Prepare future.
+     * @return If transaction if finished on prepare step returns future which is completed after transaction finish.
+     */
+    protected final IgniteInternalFuture<GridNearTxPrepareResponse> chainOnePhasePrepare(
+        final GridDhtTxPrepareFuture prepFut) {
+        if (commitOnPrepare()) {
+            return finishFuture().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, GridNearTxPrepareResponse>() {
+                @Override public GridNearTxPrepareResponse applyx(IgniteInternalFuture<IgniteInternalTx> finishFut)
+                    throws IgniteCheckedException
+                {
+                    return prepFut.get();
+                }
+            });
+        }
+
+        return prepFut;
+    }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws IgniteCheckedException {

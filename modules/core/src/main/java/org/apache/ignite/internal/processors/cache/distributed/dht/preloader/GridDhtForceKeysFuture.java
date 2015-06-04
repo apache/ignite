@@ -80,7 +80,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Preloader. */
-    private GridDhtPreloader<K, V> preloader;
+    private GridDhtPreloader preloader;
 
     /** Trackable flag. */
     private boolean trackable;
@@ -95,7 +95,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         GridCacheContext<K, V> cctx,
         AffinityTopologyVersion topVer,
         Collection<KeyCacheObject> keys,
-        GridDhtPreloader<K, V> preloader
+        GridDhtPreloader preloader
     ) {
         assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
@@ -451,6 +451,12 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
          * @param res Result callback.
          */
         void onResult(GridDhtForceKeysResponse res) {
+            if (res.error() != null) {
+                onDone(res.error());
+
+                return;
+            }
+
             Collection<KeyCacheObject> missedKeys = res.missedKeys();
 
             boolean remapMissed = false;

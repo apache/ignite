@@ -134,7 +134,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             if (F.contains(failed, key))
                 continue;
 
-            if (ctx.affinity().belongs(ctx.localNode(), key, req.topologyVersion())) { // Reader became backup.
+            if (ctx.affinity().belongs(ctx.localNode(), ctx.affinity().partition(key), req.topologyVersion())) { // Reader became backup.
                 GridCacheEntryEx entry = peekEx(key);
 
                 if (entry != null && entry.markObsolete(ver))
@@ -222,6 +222,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         val,
                         null,
                         /*write-through*/false,
+                        /*read-through*/false,
                         /*retval*/false,
                         /**expiry policy*/null,
                         /*event*/true,
@@ -319,6 +320,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
                             /*write-through*/false,
+                            /*read-through*/false,
                             /*retval*/false,
                             null,
                             /*event*/true,
@@ -372,9 +374,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(null,
             ctx.cacheKeysView(keys),
@@ -383,8 +385,9 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : prj != null ? prj.expiry() : null,
-            skipVals);
+            skipVals ? null : opCtx != null ? opCtx.expiry() : null,
+            skipVals,
+            opCtx != null && opCtx.skipStore());
     }
 
     /** {@inheritDoc} */
@@ -427,6 +430,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(K key, V val) {
         return dht.putIfAbsentAsync(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
+        return dht.tryPutIfAbsent(key, val);
     }
 
     /** {@inheritDoc} */

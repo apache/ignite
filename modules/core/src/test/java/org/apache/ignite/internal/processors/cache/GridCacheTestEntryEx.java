@@ -465,6 +465,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
@@ -486,6 +487,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
@@ -841,4 +843,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onUnlock() {
+        // No-op.
+    }
 }

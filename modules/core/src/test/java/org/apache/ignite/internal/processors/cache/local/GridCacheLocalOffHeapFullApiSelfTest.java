@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
+import org.apache.ignite.cache.*;
+
 /**
  * Tests local cache with values being stored offheap.
  */
 public class GridCacheLocalOffHeapFullApiSelfTest extends GridCacheLocalFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean offHeapValues() {
-        return true;
+    @Override protected CacheMemoryMode memoryMode() {
+        return CacheMemoryMode.OFFHEAP_VALUES;
     }
 }

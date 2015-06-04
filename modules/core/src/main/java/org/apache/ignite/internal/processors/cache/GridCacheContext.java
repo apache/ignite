@@ -155,10 +155,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     private ClusterNode locNode;
 
     /**
-     * Thread local projection. If it's set it means that method call was initiated
-     * by child projection of initial cache.
+     * Thread local operation context. If it's set it means that method call was initiated
+     * by child cache of initial cache.
      */
-    private ThreadLocal<GridCacheProjectionImpl<K, V>> prjPerCall = new ThreadLocal<>();
+    private ThreadLocal<CacheOperationContext> opCtxPerCall = new ThreadLocal<>();
 
     /** Cache name. */
     private String cacheName;
@@ -348,7 +348,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void awaitStarted() throws IgniteCheckedException {
         U.await(startLatch);
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         if (prldr != null)
             prldr.startFuture().get();
@@ -361,7 +361,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (startLatch.getCount() != 0)
             return false;
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         return prldr == null || prldr.startFuture().isDone();
     }
@@ -682,7 +682,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Preloader.
      */
-    public GridCachePreloader<K, V> preloader() {
+    public GridCachePreloader preloader() {
         return cache().preloader();
     }
 
@@ -1201,24 +1201,24 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Sets thread local projection.
+     * Sets thread local cache operation context.
      *
-     * @param prj Flags to set.
+     * @param opCtx Flags to set.
      */
-    public void projectionPerCall(@Nullable GridCacheProjectionImpl<K, V> prj) {
+    public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())
-            dht().near().context().prjPerCall.set(prj);
+            dht().near().context().opCtxPerCall.set(opCtx);
         else
-            prjPerCall.set(prj);
+            opCtxPerCall.set(opCtx);
     }
 
     /**
-     * Gets thread local projection.
+     * Gets thread local cache operation context.
      *
-     * @return Projection per call.
+     * @return Operation context per call.
      */
-    public GridCacheProjectionImpl<K, V> projectionPerCall() {
-        return nearContext() ? dht().near().context().prjPerCall.get() : prjPerCall.get();
+    public CacheOperationContext operationContextPerCall() {
+        return nearContext() ? dht().near().context().opCtxPerCall.get() : opCtxPerCall.get();
     }
 
     /**
@@ -1231,19 +1231,19 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (subjId != null)
             return subjId;
 
-        return subjectIdPerCall(subjId, projectionPerCall());
+        return subjectIdPerCall(subjId, operationContextPerCall());
     }
 
     /**
      * Gets subject ID per call.
      *
      * @param subjId Optional already existing subject ID.
-     * @param prj Optional thread local projection.
+     * @param opCtx Optional thread local operation context.
      * @return Subject ID per call.
      */
-    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable GridCacheProjectionImpl<K, V> prj) {
-        if (prj != null)
-            subjId = prj.subjectId();
+    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable CacheOperationContext opCtx) {
+        if (opCtx != null)
+            subjId = opCtx.subjectId();
 
         if (subjId == null)
             subjId = ctx.localNodeId();
@@ -1258,9 +1258,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (nearContext())
             return dht().near().context().skipStore();
 
-        GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
+        CacheOperationContext opCtx = opCtxPerCall.get();
 
-        return (prj != null && prj.skipStore());
+        return (opCtx != null && opCtx.skipStore());
     }
 
 
@@ -1285,23 +1285,23 @@ public class GridCacheContext<K, V> implements Externalizable {
     public Runnable projectSafe(final Runnable r) {
         assert r != null;
 
-        // Have to get projection per call used by calling thread to use it in a new thread.
-        final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        // Have to get operation context per call used by calling thread to use it in a new thread.
+        final CacheOperationContext opCtx = operationContextPerCall();
 
-        if (prj == null)
+        if (opCtx == null)
             return r;
 
         return new GPR() {
             @Override public void run() {
-                GridCacheProjectionImpl<K, V> oldPrj = projectionPerCall();
+                CacheOperationContext old = operationContextPerCall();
 
-                projectionPerCall(prj);
+                operationContextPerCall(opCtx);
 
                 try {
                     r.run();
                 }
                 finally {
-                    projectionPerCall(oldPrj);
+                    operationContextPerCall(old);
                 }
             }
         };
@@ -1320,23 +1320,23 @@ public class GridCacheContext<K, V> implements Externalizable {
     public <T> Callable<T> projectSafe(final Callable<T> r) {
         assert r != null;
 
-        // Have to get projection per call used by calling thread to use it in a new thread.
-        final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        // Have to get operation context per call used by calling thread to use it in a new thread.
+        final CacheOperationContext opCtx = operationContextPerCall();
 
-        if (prj == null)
+        if (opCtx == null)
             return r;
 
         return new GPC<T>() {
             @Override public T call() throws Exception {
-                GridCacheProjectionImpl<K, V> oldPrj = projectionPerCall();
+                CacheOperationContext old = operationContextPerCall();
 
-                projectionPerCall(prj);
+                operationContextPerCall(opCtx);
 
                 try {
                     return r.call();
                 }
                 finally {
-                    projectionPerCall(oldPrj);
+                    operationContextPerCall(old);
                 }
             }
         };
@@ -1468,9 +1468,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (explicitLockVer != null) {
             Collection<ClusterNode> dhtNodeIds = new ArrayList<>(dhtRemoteNodes);
             Collection<ClusterNode> nearNodeIds = F.isEmpty(nearRemoteNodes) ? null : new ArrayList<>(nearRemoteNodes);
-
-            if (!F.isEmpty(nearNodeIds))
-                U.dumpStack("Added near mapped nodes: " + entry + ", " + nearNodeIds);
 
             entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
@@ -1642,9 +1639,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Keep portable flag.
      */
     public boolean keepPortable() {
-        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        CacheOperationContext opCtx = operationContextPerCall();
 
-        return prj != null && prj.isKeepPortable();
+        return opCtx != null && opCtx.isKeepPortable();
     }
 
     /**
@@ -1652,6 +1649,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean offheapTiered() {
         return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+    }
+
+    /**
+     * @return {@code True} if should use entry with offheap value pointer.
+     */
+    public boolean useOffheapEntry() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
     }
 
     /**

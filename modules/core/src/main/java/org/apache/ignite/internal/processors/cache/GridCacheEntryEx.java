@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -398,6 +399,7 @@ public interface GridCacheEntryEx {
      * @param val Value. Type depends on operation.
      * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
+     * @param readThrough Read through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy.
      * @param evt Event flag.
@@ -430,6 +432,7 @@ public interface GridCacheEntryEx {
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
@@ -456,6 +459,7 @@ public interface GridCacheEntryEx {
      * @param writeObj Value. Type depends on operation.
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param writeThrough Write through flag.
+     * @param readThrough Read through flag.
      * @param retval Return value flag.
      * @param expiryPlc Expiry policy..
      * @param evt Event flag.
@@ -474,6 +478,7 @@ public interface GridCacheEntryEx {
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
@@ -939,4 +944,9 @@ public interface GridCacheEntryEx {
      * @return {@code True} if value was removed, {@code false} otherwise.
      */
     public <V> boolean removeMeta(UUID name, V val);
+
+    /**
+     * Calls {@link GridDhtLocalPartition#onUnlock()} for this entry's partition.
+     */
+    public void onUnlock();
 }

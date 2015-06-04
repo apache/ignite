@@ -36,29 +36,37 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
 
         suite.addTestSuite(GridCacheIncrementTransformTest.class);
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
 
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
         suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
+        suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
         suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
-        //suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class); TODO IGNITE-560
+        suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
         suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
         suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
 
-        //suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);  TODO IGNITE-631.
-        //suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class); TODO IGNITE-631.
-        //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class); TODO IGNITE-631.
-
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
+        suite.addTestSuite(IgniteCacheTxFairAffinityNodeJoinTest.class);
+
+        suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
+        suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
+
+        // TODO IGNITE-882.
+        //suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
+        //suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
+        //suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
 
         return suite;
     }

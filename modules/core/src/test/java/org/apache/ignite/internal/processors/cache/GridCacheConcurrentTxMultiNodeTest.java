@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.*;
@@ -38,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
+
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -110,7 +110,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
-            cc.setEvictionPolicy(new LruEvictionPolicy(1000));
+
+            LruEvictionPolicy plc = new LruEvictionPolicy();
+            plc.setMaxSize(1000);
+
+            cc.setEvictionPolicy(plc);
             cc.setEvictSynchronized(false);
             cc.setSwapEnabled(false);
             cc.setWriteSynchronizationMode(FULL_SYNC);
@@ -675,7 +679,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param terminalId Terminal ID.
          */
         private void put(Object o, String cacheKey, String terminalId) {
-//            GridCache<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
 //
 //            AffinityKey<String> affinityKey = new AffinityKey<>(cacheKey, terminalId);
 //

@@ -64,11 +64,11 @@ public class IgfsDataManager extends IgfsManager {
     /** IGFS. */
     private IgfsEx igfs;
 
-    /** Data cache projection. */
-    private GridCacheProjectionEx<IgfsBlockKey, byte[]> dataCachePrj;
+    /** Data internal cache. */
+    private IgniteInternalCache<IgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
-    private GridCache<Object, Object> dataCache;
+    private IgniteInternalCache<Object, Object> dataCache;
 
     /** */
     private CountDownLatch dataCacheStartLatch;
@@ -202,7 +202,10 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
+        igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
         dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
+
+        igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
         dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
 
         metrics = igfsCtx.igfs().localMetrics();

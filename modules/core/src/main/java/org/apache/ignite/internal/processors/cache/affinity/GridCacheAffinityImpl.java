@@ -77,16 +77,14 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public boolean isPrimaryOrBackup(ClusterNode n, K key) {
         A.notNull(n, "n", key, "key");
 
-        return cctx.affinity().belongs(n, key, topologyVersion());
+        return cctx.affinity().belongs(n, cctx.affinity().partition(key), topologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public int[] primaryPartitions(ClusterNode n) {
         A.notNull(n, "n");
 
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
-
-        Set<Integer> parts = cctx.affinity().primaryPartitions(n.id(), topVer);
+        Set<Integer> parts = cctx.affinity().primaryPartitions(n.id(), topologyVersion());
 
         return U.toIntArray(parts);
     }
@@ -95,9 +93,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public int[] backupPartitions(ClusterNode n) {
         A.notNull(n, "n");
 
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
-
-        Set<Integer> parts = cctx.affinity().backupPartitions(n.id(), topVer);
+        Set<Integer> parts = cctx.affinity().backupPartitions(n.id(), topologyVersion());
 
         return U.toIntArray(parts);
     }
@@ -108,7 +104,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
 
         Collection<Integer> parts = new HashSet<>();
 
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(cctx.discovery().topologyVersion());
+        AffinityTopologyVersion topVer = topologyVersion();
 
         for (int partsCnt = partitions(), part = 0; part < partsCnt; part++) {
             for (ClusterNode affNode : cctx.affinity().nodes(part, topVer)) {

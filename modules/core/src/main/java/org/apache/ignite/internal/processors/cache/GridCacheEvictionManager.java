@@ -751,7 +751,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (memoryMode == OFFHEAP_TIERED) {
+        if (!cctx.isNear() && memoryMode == OFFHEAP_TIERED) {
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }
@@ -915,6 +915,8 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 
+        Set<GridCacheEntryEx> notRemove = null;
+
         Collection<GridCacheBatchSwapEntry> swapped = new ArrayList<>(keys.size());
 
         boolean recordable = cctx.events().isRecordable(EVT_CACHE_ENTRY_EVICTED);
@@ -944,6 +946,13 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 locked.add(entry);
 
+                if (entry.obsolete()) {
+                    if (notRemove == null)
+                        notRemove = new HashSet<>();
+
+                    notRemove.add(entry);
+                }
+
                 if (obsoleteVer == null)
                     obsoleteVer = cctx.versions().next();
 
@@ -971,7 +980,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             // Remove entries and fire events outside the locks.
             for (GridCacheEntryEx entry : locked) {
-                if (entry.obsolete()) {
+                if (entry.obsolete() && (notRemove == null || !notRemove.contains(entry))) {
                     entry.onMarkedObsolete();
 
                     cache.removeEntry(entry);

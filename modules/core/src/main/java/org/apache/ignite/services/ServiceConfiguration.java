@@ -30,7 +30,7 @@ import java.io.*;
  * can also be automatically deployed on startup by specifying them in {@link org.apache.ignite.configuration.IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
- * GridConfiguration gridCfg = new GridConfiguration();
+ * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
  *

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -32,6 +34,17 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
 
     /** Added node ID. */
     private final UUID nodeId;
+
+    /**
+     * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
+     * TcpDiscoveryNodeAddFinishedMessage
+     */
+    @GridToStringExclude
+    private Map<UUID, Map<Integer, byte[]>> clientDiscoData;
+
+    /** */
+    @GridToStringExclude
+    private Map<String, Object> clientNodeAttrs;
 
     /**
      * Constructor.
@@ -52,6 +65,36 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
      */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /**
+     * @return Discovery data for joined client.
+     */
+    public Map<UUID, Map<Integer, byte[]>> clientDiscoData() {
+        return clientDiscoData;
+    }
+
+    /**
+     * @param clientDiscoData Discovery data for joined client.
+     */
+    public void clientDiscoData(@Nullable Map<UUID, Map<Integer, byte[]>> clientDiscoData) {
+        this.clientDiscoData = clientDiscoData;
+
+        assert clientDiscoData == null || !clientDiscoData.containsKey(nodeId);
+    }
+
+    /**
+     * @return Client node attributes.
+     */
+    public Map<String, Object> clientNodeAttributes() {
+        return clientNodeAttrs;
+    }
+
+    /**
+     * @param clientNodeAttrs New client node attributes.
+     */
+    public void clientNodeAttributes(Map<String, Object> clientNodeAttrs) {
+        this.clientNodeAttrs = clientNodeAttrs;
     }
 
     /** {@inheritDoc} */

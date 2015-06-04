@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -81,6 +80,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** Flag indicating whether cache operation requires a previous value. */
     private boolean retVal;
 
+    /** {@code True} if first lock request for lock operation sent from client node. */
+    private boolean firstClientReq;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -99,17 +101,18 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param implicitTx Flag to indicate that transaction is implicit.
      * @param implicitSingleTx Implicit-transaction-with-one-key flag.
      * @param isRead Indicates whether implicit lock is for read or write operation.
+     * @param retVal Return value flag.
      * @param isolation Transaction isolation.
      * @param isInvalidate Invalidation flag.
      * @param timeout Lock timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param syncCommit Synchronous commit flag.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
-     * @param partLock If partition is locked.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
+     * @param skipStore Skip store flag.
+     * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -129,11 +132,11 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         int keyCnt,
         int txSize,
         boolean syncCommit,
-        @Nullable IgniteTxKey grpLockKey,
-        boolean partLock,
         @Nullable UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipStore,
+        boolean firstClientReq
     ) {
         super(
             cacheId,
@@ -149,8 +152,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             timeout,
             keyCnt,
             txSize,
-            grpLockKey,
-            partLock);
+            skipStore);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
@@ -162,8 +164,16 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
         this.retVal = retVal;
+        this.firstClientReq = firstClientReq;
 
         dhtVers = new GridCacheVersion[keyCnt];
+    }
+
+    /**
+     * @return {@code True} if first lock request for lock operation sent from client node.
+     */
+    public boolean firstClientRequest() {
+        return firstClientReq;
     }
 
     /**
@@ -353,20 +363,26 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         }
 
         switch (writer.state()) {
-            case 22:
+            case 21:
                 if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
                 writer.incrementState();
 
-            case 23:
+            case 22:
                 if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 24:
+            case 23:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeBoolean("firstClientReq", firstClientReq))
                     return false;
 
                 writer.incrementState();
@@ -447,7 +463,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             return false;
 
         switch (reader.state()) {
-            case 22:
+            case 21:
                 accessTtl = reader.readLong("accessTtl");
 
                 if (!reader.isLastRead())
@@ -455,7 +471,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 23:
+            case 22:
                 dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
@@ -463,8 +479,16 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
-            case 24:
+            case 23:
                 filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                firstClientReq = reader.readBoolean("firstClientReq");
 
                 if (!reader.isLastRead())
                     return false;

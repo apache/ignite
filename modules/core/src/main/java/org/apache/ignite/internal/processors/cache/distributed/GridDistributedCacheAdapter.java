@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -30,17 +31,17 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.datastreamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 
 /**
  * Distributed cache implementation.
@@ -142,18 +143,28 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         try {
             AffinityTopologyVersion topVer;
 
+            boolean retry;
+
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            boolean skipStore = opCtx != null && opCtx.skipStore();
+
             do {
+                retry = false;
+
                 topVer = ctx.affinity().affinityTopologyVersion();
 
                 // Send job to all data nodes.
                 Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
-                    ctx.closures().callAsyncNoFailover(BROADCAST,
-                        new GlobalRemoveAllCallable<>(name(), topVer), nodes, true).get();
+                    ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
+
+                    retry = !ctx.kernalContext().task().execute(
+                        new RemoveAllTask(ctx.name(), topVer, skipStore), null).get();
                 }
             }
-            while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) > 0);
+            while (ctx.affinity().affinityTopologyVersion().compareTo(topVer) != 0 || retry);
         }
         catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
@@ -167,7 +178,11 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        removeAllAsync(opFut, topVer);
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        boolean skipStore = opCtx != null && opCtx.skipStore();
+
+        removeAllAsync(opFut, topVer, skipStore);
 
         return opFut;
     }
@@ -175,25 +190,29 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     /**
      * @param opFut Future.
      * @param topVer Topology version.
+     * @param skipStore Skip store flag.
      */
-    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final AffinityTopologyVersion topVer) {
+    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final AffinityTopologyVersion topVer,
+        final boolean skipStore) {
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         if (!nodes.isEmpty()) {
-            IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
-                    new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
+            ctx.kernalContext().task().setThreadContext(TC_SUBGRID, nodes);
 
-            rmvFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
+            IgniteInternalFuture<Boolean> rmvAll = ctx.kernalContext().task().execute(
+                new RemoveAllTask(ctx.name(), topVer, skipStore), null);
+
+            rmvAll.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                     try {
-                        fut.get();
+                        boolean retry = !fut.get();
 
                         AffinityTopologyVersion topVer0 = ctx.affinity().affinityTopologyVersion();
 
-                        if (topVer0.equals(topVer))
+                        if (topVer0.equals(topVer) && !retry)
                             opFut.onDone();
                         else
-                            removeAllAsync(opFut, topVer0);
+                            removeAllAsync(opFut, topVer0, skipStore);
                     }
                     catch (ClusterGroupEmptyCheckedException ignore) {
                         if (log.isDebugEnabled())
@@ -222,90 +241,150 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /**
-     * Internal callable which performs remove all primary key mappings
-     * operation on a cache with the given name.
+     * Remove task.
      */
     @GridInternal
-    private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
+    private static class RemoveAllTask extends ComputeTaskAdapter<Object, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
-        private String cacheName;
+        private final String cacheName;
 
-        /** Topology version. */
-        private AffinityTopologyVersion topVer;
+        /** Affinity topology version. */
+        private final AffinityTopologyVersion topVer;
 
-        /** Injected grid instance. */
-        @IgniteInstanceResource
-        private Ignite ignite;
+        /** Skip store flag. */
+        private final boolean skipStore;
 
         /**
-         * Empty constructor for serialization.
+         * @param cacheName Cache name.
+         * @param topVer Affinity topology version.
+         * @param skipStore Skip store flag.
          */
-        public GlobalRemoveAllCallable() {
-            // No-op.
+        public RemoveAllTask(String cacheName, AffinityTopologyVersion topVer, boolean skipStore) {
+            this.cacheName = cacheName;
+            this.topVer = topVer;
+            this.skipStore = skipStore;
         }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable Object arg) throws IgniteException {
+            Map<ComputeJob, ClusterNode> jobs = new HashMap();
+
+            for (ClusterNode node : subgrid)
+                jobs.put(new GlobalRemoveAllJob(cacheName, topVer, skipStore), node);
+
+            return jobs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
+            IgniteException e = res.getException();
+
+            if (e != null) {
+                if (e instanceof ClusterTopologyException)
+                    return ComputeJobResultPolicy.WAIT;
+
+                throw new IgniteException("Remote job threw exception.", e);
+            }
+
+            return ComputeJobResultPolicy.WAIT;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteException {
+            for (ComputeJobResult locRes : results) {
+                if (locRes != null && (locRes.getException() != null || !locRes.<Boolean>getData()))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+    /**
+     * Internal job which performs remove all primary key mappings
+     * operation on a cache with the given name.
+     */
+    @GridInternal
+    private static class GlobalRemoveAllJob<K,V>  extends TopologyVersionAwareJob {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Skip store flag. */
+        private final boolean skipStore;
 
         /**
          * @param cacheName Cache name.
          * @param topVer Topology version.
+         * @param skipStore Skip store flag.
          */
-        private GlobalRemoveAllCallable(String cacheName, @NotNull AffinityTopologyVersion topVer) {
-            this.cacheName = cacheName;
-            this.topVer = topVer;
+        private GlobalRemoveAllJob(String cacheName, @NotNull AffinityTopologyVersion topVer, boolean skipStore) {
+            super(cacheName, topVer);
+
+            this.skipStore = skipStore;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override public Object call() throws Exception {
-            GridCacheAdapter<K, V> cacheAdapter = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
+        /** {@inheritDoc} */
+        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache0) {
+            GridCacheAdapter cache = ((IgniteKernal) ignite).context().cache().internalCache(cacheName);
 
-            final GridCacheContext<K, V> ctx = cacheAdapter.context();
+            if (cache == null)
+                return true;
 
-            ctx.affinity().affinityReadyFuture(topVer).get();
+            final GridCacheContext<K, V> ctx = cache.context();
 
             ctx.gate().enter();
 
             try {
                 if (!ctx.affinity().affinityTopologyVersion().equals(topVer))
-                    return null; // Ignore this remove request because remove request will be sent again.
+                    return false; // Ignore this remove request because remove request will be sent again.
 
                 GridDhtCacheAdapter<K, V> dht;
                 GridNearCacheAdapter<K, V> near = null;
 
-                if (cacheAdapter instanceof GridNearCacheAdapter) {
-                    near = ((GridNearCacheAdapter<K, V>)cacheAdapter);
+                if (cache instanceof GridNearCacheAdapter) {
+                    near = ((GridNearCacheAdapter<K, V>) cache);
                     dht = near.dht();
                 }
                 else
-                    dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
+                    dht = (GridDhtCacheAdapter<K, V>) cache;
 
                 try (DataStreamerImpl<KeyCacheObject, Object> dataLdr =
-                         (DataStreamerImpl)ignite.dataStreamer(cacheName)) {
-                    ((DataStreamerImpl)dataLdr).maxRemapCount(0);
+                         (DataStreamerImpl) ignite.dataStreamer(cacheName)) {
+                    ((DataStreamerImpl) dataLdr).maxRemapCount(0);
+
+                    dataLdr.skipStore(skipStore);
 
                     dataLdr.receiver(DataStreamerCacheUpdaters.<KeyCacheObject, Object>batched());
 
-                    for (GridDhtLocalPartition locPart : dht.topology().currentLocalPartitions()) {
-                        if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                            for (GridDhtCacheEntry o : locPart.entries()) {
-                                if (!o.obsoleteOrDeleted())
-                                    dataLdr.removeDataInternal(o.key());
+                    for (int part : ctx.affinity().primaryPartitions(ctx.localNodeId(), topVer)) {
+                        GridDhtLocalPartition locPart = dht.topology().localPartition(part, topVer, false);
+
+                        if (locPart == null || (ctx.rebalanceEnabled() && locPart.state() != OWNING) || !locPart.reserve())
+                            return false;
+
+                        try {
+                            if (!locPart.isEmpty()) {
+                                for (GridDhtCacheEntry o : locPart.entries()) {
+                                    if (!o.obsoleteOrDeleted())
+                                        dataLdr.removeDataInternal(o.key());
+                                }
+                            }
+
+                            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
+                                dht.context().swap().iterator(part);
+
+                            if (iter != null) {
+                                for (Map.Entry<byte[], GridCacheSwapEntry> e : iter)
+                                    dataLdr.removeDataInternal(ctx.toCacheKeyObject(e.getKey()));
                             }
                         }
+                        finally {
+                            locPart.release();
+                        }
                     }
-
-                    Iterator<KeyCacheObject> it = dht.context().swap().offHeapKeyIterator(true, false, topVer);
-
-                    while (it.hasNext())
-                        dataLdr.removeDataInternal(it.next());
-
-                    it = dht.context().swap().swapKeyIterator(true, false, topVer);
-
-                    while (it.hasNext())
-                        dataLdr.removeDataInternal(it.next());
                 }
 
                 if (near != null) {
@@ -317,23 +396,14 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                     }
                 }
             }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
             finally {
                 ctx.gate().leave();
             }
 
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, cacheName);
-            out.writeObject(topVer);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cacheName = U.readString(in);
-            topVer = (AffinityTopologyVersion)in.readObject();
+            return true;
         }
     }
 }

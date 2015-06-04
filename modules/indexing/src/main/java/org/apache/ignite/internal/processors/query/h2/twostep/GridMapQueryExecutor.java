@@ -27,8 +27,11 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.store.*;
@@ -43,11 +46,12 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
  * Map query executor.
  */
-public class GridMapQueryExecutor implements GridMessageListener {
+public class GridMapQueryExecutor {
     /** */
     private static final Field RESULT_FIELD;
 
@@ -77,6 +81,16 @@ public class GridMapQueryExecutor implements GridMessageListener {
     /** */
     private ConcurrentMap<UUID, ConcurrentMap<Long, QueryResults>> qryRess = new ConcurrentHashMap8<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock;
+
+    /**
+     * @param busyLock Busy lock.
+     */
+    public GridMapQueryExecutor(GridSpinBusyLock busyLock) {
+        this.busyLock = busyLock;
+    }
+
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -102,15 +116,33 @@ public class GridMapQueryExecutor implements GridMessageListener {
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (!busyLock.enterBusy())
+                    return;
+
+                try {
+                    GridMapQueryExecutor.this.onMessage(nodeId, msg);
+                }
+                finally {
+                    busyLock.leaveBusy();
+                }
+            }
+        });
     }
 
-    /** {@inheritDoc} */
-    @Override public void onMessage(UUID nodeId, Object msg) {
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
         try {
             assert msg != null;
 
             ClusterNode node = ctx.discovery().node(nodeId);
+
+            if (node == null)
+                return; // Node left, ignore.
 
             boolean processed = true;
 
@@ -177,7 +209,14 @@ public class GridMapQueryExecutor implements GridMessageListener {
         Collection<GridCacheSqlQuery> qrys;
 
         try {
-            qrys = req.queries(ctx.config().getMarshaller());
+            qrys = req.queries();
+
+            if (!node.isLocal()) {
+                Marshaller m = ctx.config().getMarshaller();
+
+                for (GridCacheSqlQuery qry : qrys)
+                    qry.unmarshallParams(m);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -244,6 +283,9 @@ public class GridMapQueryExecutor implements GridMessageListener {
             U.error(log, "Failed to execute local query: " + req, e);
 
             sendError(node, req.requestId(), e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             h2.setFilters(null);
@@ -315,7 +357,10 @@ public class GridMapQueryExecutor implements GridMessageListener {
             boolean loc = node.isLocal();
 
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
-                page == 0 ? res.rowCount : -1, loc ? null : marshallRows(rows), loc ? rows : null);
+                page == 0 ? res.rowCount : -1 ,
+                res.cols,
+                loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
+                loc ? rows : null);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
@@ -481,6 +526,9 @@ public class GridMapQueryExecutor implements GridMessageListener {
         private final UUID qrySrcNodeId;
 
         /** */
+        private final int cols;
+
+        /** */
         private int page;
 
         /** */
@@ -509,6 +557,7 @@ public class GridMapQueryExecutor implements GridMessageListener {
             }
 
             rowCount = res.getRowCount();
+            cols = res.getVisibleColumnCount();
         }
 
         /**

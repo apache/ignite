@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.local.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -383,13 +384,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             int actual = owners.size();
 
                             if (affNodes.size() != owners.size() || !affNodes.containsAll(owners)) {
-                                LT.warn(log(), null, "Waiting for topology map update [grid=" + g.name() +
-                                    ", p=" + p + ", nodes=" + exp + ", owners=" + actual +
-                                    ", affNodes=" + affNodes + ", owners=" + owners +
-                                    ", locNode=" + g.cluster().localNode().id() + ']');
+                                LT.warn(log(), null, "Waiting for topology map update [" +
+                                    "grid=" + g.name() +
+                                    ", cache=" + cfg.getName() +
+                                    ", cacheId=" + dht.context().cacheId() +
+                                    ", p=" + p +
+                                    ", affNodesCnt=" + exp +
+                                    ", ownersCnt=" + actual +
+                                    ", affNodes=" + affNodes +
+                                    ", owners=" + owners +
+                                    ", locNode=" + g.cluster().localNode() + ']');
 
                                 if (i == 0)
                                     start = System.currentTimeMillis();
+
+                                if (System.currentTimeMillis() - start > 30_000)
+                                    throw new IgniteException("Timeout of waiting for topology map update [" +
+                                        "grid=" + g.name() +
+                                        ", cache=" + cfg.getName() +
+                                        ", cacheId=" + dht.context().cacheId() +
+                                        ", p=" + p +
+                                        ", affNodesCnt=" + exp +
+                                        ", ownersCnt=" + actual +
+                                        ", affNodes=" + affNodes +
+                                        ", owners=" + owners +
+                                        ", locNode=" + g.cluster().localNode() + ']');
 
                                 Thread.sleep(200); // Busy wait.
 
@@ -406,6 +425,38 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 }
             }
         }
+    }
+
+    /**
+     * @param ignite Node.
+     */
+    public void dumpCacheDebugInfo(Ignite ignite) {
+        GridKernalContext ctx = ((IgniteKernal)ignite).context();
+
+        log.error("Cache information update [node=" + ignite.name() +
+            ", client=" + ignite.configuration().isClientMode() + ']');
+
+        GridCacheSharedContext cctx = ctx.cache().context();
+
+        log.error("Pending transactions:");
+
+        for (IgniteInternalTx tx : cctx.tm().activeTransactions())
+            log.error(">>> " + tx);
+
+        log.error("Pending explicit locks:");
+
+        for (GridCacheExplicitLockSpan lockSpan : cctx.mvcc().activeExplicitLocks())
+            log.error(">>> " + lockSpan);
+
+        log.error("Pending cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
+            log.error(">>> " + fut);
+
+        log.error("Pending atomic cache futures:");
+
+        for (GridCacheFuture<?> fut : cctx.mvcc().atomicFutures())
+            log.error(">>> " + fut);
     }
 
     /**
@@ -784,7 +835,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache for key.
      */
     protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
-        return primaryNode(key, null).cache(null);
+        return primaryNode(key, cacheName).cache(cacheName);
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Near cache for key.
+     */
+    protected IgniteCache<Integer, Integer> backupCache(Integer key, String cacheName) {
+        return backupNode(key, cacheName).cache(cacheName);
     }
 
     /**
@@ -809,6 +869,31 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Ignite instance which has primary cache for given key.
+     */
+    protected Ignite backupNode(Object key, String cacheName) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Ignite ignite = allGrids.get(0);
+
+        Affinity<Object> aff = ignite.affinity(cacheName);
+
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes +']', nodes.size() > 1);
+
+        Iterator<ClusterNode> it = nodes.iterator();
+
+        it.next(); // Skip primary.
+
+        return grid(it.next());
+    }
+
+    /**
      * In ATOMIC cache with CLOCK mode if key is updated from different nodes at same time
      * only one update wins others are ignored (can happen in test event when updates are executed from
      * different nodes sequentially), this delay is used to avoid lost updates.
@@ -823,5 +908,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             ccfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC &&
             ccfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK)
             U.sleep(50);
+    }
+
+    /**
+     * @param exp Expected.
+     * @param act Actual.
+     */
+    protected void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
+        if (exp.size() != act.size())
+            fail("Collections are not equal:\nExpected:\t" + exp + "\nActual:\t" + act);
+
+        Iterator<?> it1 = exp.iterator();
+        Iterator<?> it2 = act.iterator();
+
+        int idx = 0;
+
+        while (it1.hasNext()) {
+            Object item1 = it1.next();
+            Object item2 = it2.next();
+
+            if (!F.eq(item1, item2))
+                fail("Collections are not equal (position " + idx + "):\nExpected: " + exp + "\nActual:   " + act);
+
+            idx++;
+        }
     }
 }

@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Transaction entry. Note that it is essential that this class does not override
@@ -124,7 +125,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private AtomicBoolean prepared = new AtomicBoolean();
 
-    /** Lock flag for colocated cache. */
+    /** Lock flag for collocated cache. */
     @GridDirectTransient
     private transient boolean locked;
 
@@ -136,9 +137,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     @GridDirectTransient
     private boolean locMapped;
 
-    /** Group lock entry flag. */
-    private boolean grpLock;
-
     /** Expiry policy. */
     @GridDirectTransient
     private ExpiryPolicy expiryPlc;
@@ -149,6 +147,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Expiry policy bytes. */
     private byte[] expiryPlcBytes;
+
+    /**
+     * Additional flags.
+     * GridCacheUtils.SKIP_STORE_FLAG_MASK - for skipStore flag value.
+     */
+    private byte flags;
 
     /**
      * Required by {@link Externalizable}
@@ -168,6 +172,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param conflictExpireTime DR expire time.
      * @param entry Cache entry.
      * @param conflictVer Data center replication version.
+     * @param skipStore Skip store flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
@@ -176,7 +181,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long ttl,
         long conflictExpireTime,
         GridCacheEntryEx entry,
-        @Nullable GridCacheVersion conflictVer) {
+        @Nullable GridCacheVersion conflictVer,
+        boolean skipStore) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -190,12 +196,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.conflictExpireTime = conflictExpireTime;
         this.conflictVer = conflictVer;
 
+        skipStore(skipStore);
+
         key = entry.key();
 
         cacheId = entry.context().cacheId();
     }
 
-    /**
+     /**
      * This constructor is meant for local transactions.
      *
      * @param ctx Cache registry.
@@ -208,6 +216,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param entry Cache entry.
      * @param filters Put filters.
      * @param conflictVer Data center replication version.
+     * @param skipStore Skip store flag.
      */
     public IgniteTxEntry(GridCacheContext<?, ?> ctx,
         IgniteInternalTx tx,
@@ -218,7 +227,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long ttl,
         GridCacheEntryEx entry,
         CacheEntryPredicate[] filters,
-        GridCacheVersion conflictVer) {
+        GridCacheVersion conflictVer,
+        boolean skipStore) {
         assert ctx != null;
         assert tx != null;
         assert op != null;
@@ -231,6 +241,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         this.ttl = ttl;
         this.filters = filters;
         this.conflictVer = conflictVer;
+
+        skipStore(skipStore);
 
         if (entryProcessor != null)
             addEntryProcessor(entryProcessor, invokeArgs);
@@ -262,22 +274,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @return {@code True} if this entry was added in group lock transaction and
-     *      this is not a group lock entry.
-     */
-    public boolean groupLockEntry() {
-        return grpLock;
-    }
-
-    /**
-     * @param grpLock {@code True} if this entry was added in group lock transaction and
-     *      this is not a group lock entry.
-     */
-    public void groupLockEntry(boolean grpLock) {
-        this.grpLock = grpLock;
-    }
-
-    /**
      * @param ctx Context.
      * @return Clean copy of this entry.
      */
@@ -296,9 +292,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         cp.ttl = ttl;
         cp.conflictExpireTime = conflictExpireTime;
         cp.explicitVer = explicitVer;
-        cp.grpLock = grpLock;
         cp.conflictVer = conflictVer;
         cp.expiryPlc = expiryPlc;
+        cp.flags = flags;
 
         return cp;
     }
@@ -401,6 +397,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * Sets skip store flag value.
+     *
+     * @param skipStore Skip store flag.
+     */
+    public void skipStore(boolean skipStore){
+        flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipStore() {
+        return (flags & SKIP_STORE_FLAG_MASK) == 1;
     }
 
     /**
@@ -813,7 +825,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeBoolean("grpLock", grpLock))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
@@ -902,9 +914,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
                     return false;
 
                 reader.incrementState();
-
+                
             case 6:
-                grpLock = reader.readBoolean("grpLock");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;

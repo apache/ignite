@@ -108,10 +108,13 @@ public abstract class IgniteUtils {
     private static final int[] GRID_EVTS;
 
     /** Empty integers array. */
-    private static final int[] EMPTY_INTS = new int[0];
+    public static final int[] EMPTY_INTS = new int[0];
 
     /** Empty  longs. */
-    private static final long[] EMPTY_LONGS = new long[0];
+    public static final long[] EMPTY_LONGS = new long[0];
+
+    /** Empty  longs. */
+    public static final Field[] EMPTY_FIELDS = new Field[0];
 
     /** System line separator. */
     private static final String NL = System.getProperty("line.separator");
@@ -1529,8 +1532,10 @@ public abstract class IgniteUtils {
             return Collections.emptyList();
 
         if (addrs.size() == 1) {
-            if (reachable(addrs.get(1), reachTimeout))
-                return Collections.singletonList(addrs.get(1));
+            InetAddress addr = addrs.get(0);
+
+            if (reachable(addr, reachTimeout))
+                return Collections.singletonList(addr);
 
             return Collections.emptyList();
         }
@@ -3952,6 +3957,8 @@ public abstract class IgniteUtils {
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
+        appendClassLoaderHash(sb);
+
         appendJvmId(sb);
 
         if (gridName != null && !gridName.isEmpty())
@@ -3968,12 +3975,20 @@ public abstract class IgniteUtils {
     /**
      * @param sb Sb.
      */
-    private static void appendJvmId(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
-            String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
-                + ManagementFactory.getRuntimeMXBean().getName();
+    private static void appendClassLoaderHash(SB sb) {
+        String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
 
-            sb.a("jvmId=").a(gridId).a(',');
+        sb.a("clsLdr=").a(clsLdrHash).a(',');
+    }
+
+    /**
+     * @param sb Sb.
+     */
+    private static void appendJvmId(SB sb) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)){
+            String jvmId = ManagementFactory.getRuntimeMXBean().getName();
+
+            sb.a("jvmId=").a(jvmId).a(',');
         }
     }
 
@@ -4000,6 +4015,8 @@ public abstract class IgniteUtils {
     public static ObjectName makeCacheMBeanName(@Nullable String gridName, @Nullable String cacheName, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
+
+        appendClassLoaderHash(sb);
 
         appendJvmId(sb);
 
@@ -7975,7 +7992,7 @@ public abstract class IgniteUtils {
 
             return true;
         }
-        catch (Throwable ignored) {
+        catch (Exception ignored) {
             return false;
         }
     }
@@ -8792,6 +8809,21 @@ public abstract class IgniteUtils {
      */
     public static <T> LinkedHashSet<T> newLinkedHashSet(int expSize) {
         return new LinkedHashSet<>(capacity(expSize));
+    }
+
+    /**
+     * Creates new map that limited by size.
+     *
+     * @param limit Limit for size.
+     */
+    public static <K, V> Map<K, V> limitedMap(int limit) {
+        if (limit == 0)
+            return Collections.emptyMap();
+
+        if (limit < 5)
+            return new GridLeanMap<>(limit);
+
+        return new HashMap<>(capacity(limit), 0.75f);
     }
 
     /**

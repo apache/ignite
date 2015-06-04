@@ -19,47 +19,50 @@ package org.apache.ignite.visor
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.IgniteNodeAttributes._
-import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
-import org.apache.ignite.logger.NullLogger
-import org.apache.ignite.internal.visor.VisorTaskArgument
-import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.lang._
+import org.apache.ignite.logger.NullLogger
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.visor.commands.VisorConsole.consoleReader
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.commands.common.VisorTextTable
+
+import jline.console.ConsoleReader
 import org.jetbrains.annotations.Nullable
 
 import java.io._
+import java.lang.{Boolean => JavaBoolean}
 import java.net._
 import java.text._
 import java.util.concurrent._
 import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
 
+import org.apache.ignite.internal.visor.cache._
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node._
+import org.apache.ignite.internal.visor.util.VisorEventMapper
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
+import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
+
 import scala.collection.JavaConversions._
 import scala.collection.immutable
 import scala.language.{implicitConversions, reflectiveCalls}
 import scala.util.control.Breaks._
-import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 
 /**
  * Holder for command help information.
  */
-sealed case class VisorConsoleCommandHolder(
+sealed case class VisorCommandHolder(
     name: String,
     shortInfo: String,
     longInfo: Seq[String],
@@ -67,7 +70,8 @@ sealed case class VisorConsoleCommandHolder(
     spec: Seq[String],
     args: Seq[(String, AnyRef)],
     examples: Seq[(String, AnyRef)],
-    impl: VisorConsoleCommand
+    emptyArgs: () => Unit,
+    withArgs: (String) => Unit
     ) {
     /** Command host with optional aliases. */
     lazy val nameWithAliases: String =
@@ -150,7 +154,7 @@ object visor extends VisorTag {
     final val NA = "<n/a>"
 
     /** */
-    private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
+    private var cmdLst: Seq[VisorCommandHolder] = Nil
 
     /** Node left listener. */
     private var nodeLeftLsnr: IgnitePredicate[Event] = null
@@ -233,6 +237,14 @@ object visor extends VisorTag {
     /** */
     @volatile var ignite: IgniteEx = null
 
+    private var reader: ConsoleReader = null
+
+    def reader(reader: ConsoleReader) {
+        assert(reader != null)
+
+        this.reader = reader
+    }
+
     /**
      * Get grid node for specified ID.
      *
@@ -253,6 +265,33 @@ object visor extends VisorTag {
 
             node
         }
+    }
+
+    /**
+     * @param node Optional node.
+     * @param cacheName Cache name to take cluster group for.
+     * @return Cluster group with data nodes for specified cache or cluster group for specified node.
+     */
+    def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
+        val grp = node match {
+            case Some(n) => ignite.cluster.forNode(n)
+            case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask], cacheName))
+        }
+
+        if (grp.nodes().isEmpty)
+            throw new ClusterGroupEmptyException("Topology is empty.")
+
+        grp
+    }
+
+    /**
+     * @param nodeOpt Node.
+     * @param cacheName Cache name.
+     * @return Message about why node was not found.
+     */
+    def messageNodeNotFound(nodeOpt: Option[ClusterNode], cacheName: String) = nodeOpt match {
+        case Some(node) => "Can't find node with specified id: " + node.id()
+        case None => "Can't find nodes for cache: " + escapeName(cacheName)
     }
 
     Runtime.getRuntime.addShutdownHook(new Thread() {
@@ -286,7 +325,8 @@ object visor extends VisorTag {
             "mlist ac" ->
                 "Lists variables that start with 'a' or 'c' from Visor console memory."
         ),
-        ref = VisorConsoleCommand(mlist, mlist)
+        emptyArgs = mlist,
+        withArgs = mlist
     )
 
     addHelp(
@@ -322,7 +362,8 @@ object visor extends VisorTag {
             "mclear n2" ->
                 "Clears 'n2' Visor console variable."
         ),
-        ref = VisorConsoleCommand(mclear, mclear)
+        emptyArgs = mclear,
+        withArgs = mclear
     )
 
     addHelp(
@@ -342,7 +383,8 @@ object visor extends VisorTag {
             "mget <@v>" ->
                 "Gets Visor console variable whose name is referenced by variable 'v'."
         ),
-        ref = VisorConsoleCommand(mget, mget)
+        emptyArgs = mget,
+        withArgs = mget
     )
 
     addHelp(
@@ -362,7 +404,8 @@ object visor extends VisorTag {
             "help" ->
                 "Prints help for all command."
         ),
-        ref = VisorConsoleCommand(help, help)
+        emptyArgs = help,
+        withArgs = help
     )
 
     addHelp(
@@ -382,7 +425,8 @@ object visor extends VisorTag {
             "status -q" ->
                 "Prints Visor console status in quiet mode."
         ),
-        ref = VisorConsoleCommand(status, status)
+        emptyArgs = status,
+        withArgs = status
     )
 
     addHelp(
@@ -417,8 +461,17 @@ object visor extends VisorTag {
             "open -cpath=/gg/config/mycfg.xml" ->
                 "Connects Visor console to grid using Ignite configuration from provided file."
         ),
-        ref = VisorConsoleCommand(open, open)
+        emptyArgs = open,
+        withArgs = open
     )
+
+    /**
+     * @param name - command name.
+     */
+    private def wrongArgs(name: String) {
+        warn("Invalid arguments for command without arguments.",
+            s"Type 'help $name' to see how to use this command.")
+    }
 
     addHelp(
         name = "close",
@@ -428,7 +481,8 @@ object visor extends VisorTag {
             "close" ->
                 "Disconnects Visor console from the grid."
         ),
-        ref = VisorConsoleCommand(close)
+        emptyArgs = close,
+        withArgs = _ => wrongArgs("close")
     )
 
     addHelp(
@@ -440,7 +494,8 @@ object visor extends VisorTag {
                 "Quit from Visor console."
         ),
         aliases = Seq("exit"),
-        ref = VisorConsoleCommand(quit)
+        emptyArgs = quit,
+        withArgs = _ => wrongArgs("quit")
     )
 
     addHelp(
@@ -518,7 +573,8 @@ object visor extends VisorTag {
             "log -s" ->
                 "Stops logging."
         ),
-        ref = VisorConsoleCommand(log, log)
+        emptyArgs = log,
+        withArgs = log
     )
 
     logText("Visor started.")
@@ -812,7 +868,8 @@ object visor extends VisorTag {
      * @param spec Command specification.
      * @param args List of `(host, description)` tuples for command arguments. Optional.
      * @param examples List of `(example, description)` tuples for command examples.
-     * @param ref - command implementation.
+     * @param emptyArgs - command implementation with empty arguments.
+     * @param withArgs - command implementation with arguments.
      */
     def addHelp(
         name: String,
@@ -822,15 +879,17 @@ object visor extends VisorTag {
         spec: Seq[String],
         @Nullable args: Seq[(String, AnyRef)] = null,
         examples: Seq[(String, AnyRef)],
-        ref: VisorConsoleCommand) {
+        emptyArgs: () => Unit,
+        withArgs: (String) => Unit) {
         assert(name != null)
         assert(shortInfo != null)
         assert(spec != null && spec.nonEmpty)
         assert(examples != null && examples.nonEmpty)
-        assert(ref != null)
+        assert(emptyArgs != null)
+        assert(withArgs != null)
 
         // Add and re-sort
-        cmdLst = (cmdLst ++ Seq(VisorConsoleCommandHolder(name, shortInfo, longInfo, aliases, spec, args, examples, ref))).
+        cmdLst = (cmdLst ++ Seq(VisorCommandHolder(name, shortInfo, longInfo, aliases, spec, args, examples, emptyArgs, withArgs))).
             sortWith((a, b) => a.name.compareTo(b.name) < 0)
     }
 
@@ -1018,6 +1077,16 @@ object visor extends VisorTag {
      * @return String.
      */
     def bool2Str(bool: Boolean) = if (bool) "on" else "off"
+
+    /**
+     * Converts `java.lang.Boolean` to 'on'/'off' string.
+     *
+     * @param bool Boolean value.
+     * @param ifNull Default value in case if `bool` is `null`.
+     * @return String.
+     */
+    def javaBoolToStr(bool: JavaBoolean, ifNull: Boolean = false) =
+        bool2Str(if (bool == null) ifNull else bool.booleanValue())
 
     /**
      * Reconstructs string presentation for given argument.
@@ -1254,15 +1323,15 @@ object visor extends VisorTag {
     /**
      * Prints properly formatted error message like:
      * {{{
-     * <visor>: err: error message
+     * (wrn) <visor>: warning message
      * }}}
      *
-     * @param errMsgs Error messages to print. If `null` - this function is no-op.
+     * @param warnMsgs Error messages to print. If `null` - this function is no-op.
      */
-    def warn(errMsgs: Any*) {
-        assert(errMsgs != null)
+    def warn(warnMsgs: Any*) {
+        assert(warnMsgs != null)
 
-        errMsgs foreach (msg => scala.Console.out.println("(wrn) <visor>: " + msg))
+        warnMsgs.foreach(line => println(s"(wrn) <visor>: $line"))
     }
 
     /**
@@ -1294,19 +1363,6 @@ object visor extends VisorTag {
      * @param args Optional "-q" flag to disable ASCII logo printout.
      */
     def status(args: String) {
-        val argLst = parseArgs(args)
-
-        if (!hasArgFlag("q", argLst))
-            println(
-                " ___    _________________________ ________" + NL +
-                " __ |  / /____  _/__  ___/__  __ \\___  __ \\" + NL +
-                " __ | / /  __  /  _____ \\ _  / / /__  /_/ /" + NL +
-                " __ |/ /  __/ /   ____/ / / /_/ / _  _, _/" + NL +
-                " _____/   /___/   /____/  \\____/  /_/ |_|" + NL + NL +
-                " ADMIN CONSOLE" + NL +
-                " " + COPYRIGHT + NL
-            )
-
         val t = VisorTextTable()
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
@@ -1382,7 +1438,7 @@ object visor extends VisorTag {
                     if (opt.isEmpty)
                         warn("Invalid command name: " + n)
                     else {
-                        val hlp: VisorConsoleCommandHolder = opt.get
+                        val hlp: VisorCommandHolder = opt.get
 
                         val t = VisorTextTable()
 
@@ -1609,7 +1665,9 @@ object visor extends VisorTag {
         // Make sure visor starts without shutdown hook.
         System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
 
-        cfg.setGridLogger(new NullLogger)
+        // Set NullLoger in quite mode.
+        if ("true".equalsIgnoreCase(sys.props.getOrElse(IGNITE_QUIET, "true")))
+            cfg.setGridLogger(new NullLogger)
 
         val startedGridName = try {
              Ignition.start(cfg).name
@@ -1641,7 +1699,7 @@ object visor extends VisorTag {
         ignite.cluster.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
-            val ip = n.addresses().headOption
+            val ip = sortAddresses(n.addresses()).headOption
 
             if (ip.isDefined)
                 setVarIfAbsent(ip.get, "h")
@@ -1656,7 +1714,7 @@ object visor extends VisorTag {
                         val node = ignite.cluster.node(de.eventNode().id())
 
                         if (node != null) {
-                            val ip = node.addresses().headOption
+                            val ip = sortAddresses(node.addresses).headOption
 
                             if (ip.isDefined)
                                 setVarIfAbsent(ip.get, "h")
@@ -1685,11 +1743,11 @@ object visor extends VisorTag {
                         if (nv.isDefined)
                             mem.remove(nv.get._1)
 
-                        val ip = de.eventNode().addresses.headOption
+                        val ip = sortAddresses(de.eventNode().addresses).headOption
 
                         if (ip.isDefined) {
                             val last = !ignite.cluster.nodes().exists(n =>
-                                n.addresses.size > 0 && n.addresses.head == ip.get
+                                n.addresses.size > 0 && sortAddresses(n.addresses).head == ip.get
                             )
 
                             if (last) {
@@ -1800,7 +1858,7 @@ object visor extends VisorTag {
             id8 +
                 (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
                 ", " +
-                (if (n == null) NA else n.addresses().headOption.getOrElse(NA))
+                (if (n == null) NA else sortAddresses(n.addresses).headOption.getOrElse(NA))
         }
     }
 
@@ -1831,26 +1889,96 @@ object visor extends VisorTag {
     /** Convert to task argument. */
     def emptyTaskArgument[A](nid: UUID): VisorTaskArgument[Void] = new VisorTaskArgument(nid, false)
 
-    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void]
-        = new VisorTaskArgument(new JavaHashSet(nids), false)
+    def emptyTaskArgument[A](nids: Iterable[UUID]): VisorTaskArgument[Void] =
+        new VisorTaskArgument(new JavaHashSet(nids), false)
 
     /** Convert to task argument. */
     def toTaskArgument[A](nid: UUID, arg: A): VisorTaskArgument[A] = new VisorTaskArgument(nid, arg, false)
 
     /** Convert to task argument. */
-    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A]
-        = new VisorTaskArgument(new JavaHashSet(nids), arg, false)
+    def toTaskArgument[A](nids: Iterable[UUID], arg: A): VisorTaskArgument[A] =
+        new VisorTaskArgument(new JavaHashSet(nids), arg, false)
 
-    def compute(nid: UUID): IgniteCompute = ignite.compute(ignite.cluster.forNodeId(nid)).withNoFailover()
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
+    private def execute[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R = {
+        if (grp.nodes().isEmpty)
+            throw new ClusterGroupEmptyException("Topology is empty.")
+
+        ignite.compute(grp).withNoFailover().execute(task, toTaskArgument(grp.nodes().map(_.id()), arg))
+    }
 
     /**
-     * Gets configuration from specified node.
+     * Execute task on node.
      *
-     * @param nid Node ID to collect configuration from.
-     * @return Grid configuration.
+     * @param nid Node id.
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
      */
-    def nodeConfiguration(nid: UUID): VisorGridConfiguration =
-        compute(nid).execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(nid))
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
+    def executeOne[A, R, J](nid: UUID, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
+        execute(ignite.cluster.forNodeId(nid), task, arg)
+
+    /**
+     * Execute task on random node from specified cluster group.
+     *
+     * @param grp Cluster group to take rundom node from
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
+    def executeRandom[A, R, J](grp: ClusterGroup, task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
+        execute(grp.forRandom(), task, arg)
+
+    /**
+     * Execute task on random node.
+     *
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
+    def executeRandom[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
+        execute(ignite.cluster.forRandom(), task, arg)
+
+    /**
+     * Execute task on specified nodes.
+     *
+     * @param nids Node ids.
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
+    def executeMulti[A, R, J](nids: Iterable[UUID], task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
+        execute(ignite.cluster.forNodeIds(nids), task, arg)
+
+    /**
+     * Execute task on all nodes.
+     *
+     * @param task Task class
+     * @param arg Task argument.
+     * @tparam A Task argument type.
+     * @tparam R Task result type
+     * @tparam J Job class.
+     * @return Task result.
+     */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
+    def executeMulti[A, R, J](task: Class[_ <: VisorMultiNodeTask[A, R, J]], arg: A): R =
+        execute(ignite.cluster.forRemotes(), task, arg)
 
     /**
      * Gets caches configurations from specified node.
@@ -1858,9 +1986,10 @@ object visor extends VisorTag {
      * @param nid Node ID to collect configuration from.
      * @return Collection of cache configurations.
      */
+    @throws[ClusterGroupEmptyException]("In case of empty topology.")
     def cacheConfigurations(nid: UUID): JavaCollection[VisorCacheConfiguration] =
-        compute(nid).execute(classOf[VisorCacheConfigurationCollectorTask],
-            toTaskArgument(nid, null.asInstanceOf[JavaCollection[IgniteUuid]])).values()
+        executeOne(nid, classOf[VisorCacheConfigurationCollectorTask],
+            null.asInstanceOf[JavaCollection[IgniteUuid]]).values()
 
     /**
      * Asks user to select a node from the list.
@@ -1883,6 +2012,8 @@ object visor extends VisorTag {
 
             None
         }
+        else if (nodes.size == 1)
+            Some(nodes.head.id)
         else {
             (0 until nodes.size) foreach (i => {
                 val n = nodes(i)
@@ -1970,7 +2101,7 @@ object visor extends VisorTag {
                 neighbors.foreach(n => {
                     id8s = id8s :+ nodeId8(n.id)
 
-                    ips = ips ++ n.addresses()
+                    ips = ips ++ n.addresses
 
                     cpuLoadSum += n.metrics().getCurrentCpuLoad
 
@@ -2076,18 +2207,16 @@ object visor extends VisorTag {
      * @param prompt User prompt.
      * @param mask Mask character (if `None`, no masking will be applied).
      */
-    private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] =
-        try {
-            val s = if (mask.isDefined)
-                consoleReader().readLine(prompt, mask.get)
-            else
-                consoleReader().readLine(prompt)
+    private def readLineOpt(prompt: String, mask: Option[Char] = None): Option[String] = {
+        assert(reader != null)
 
-            Option(s)
+        try {
+            Option(mask.fold(reader.readLine(prompt))(reader.readLine(prompt, _)))
         }
         catch {
             case _: Throwable => None
         }
+    }
 
     /**
      * Asks user to choose node id8.
@@ -2336,7 +2465,7 @@ object visor extends VisorTag {
                         startLog(argValue("f", argLst), argValue("p", argLst), argValue("t", argLst),
                             hasArgFlag("dl", argLst))
                     catch {
-                        case e: Exception => scold(e.getMessage)
+                        case e: Exception => scold(e)
                     }
             else
                 scold("Invalid arguments.")
@@ -2369,6 +2498,12 @@ object visor extends VisorTag {
 
         println("<visor>: Log stopped: " + logFile.getAbsolutePath)
     }
+
+    /** Unique Visor key to get events last order. */
+    final val EVT_LAST_ORDER_KEY = UUID.randomUUID().toString
+
+    /** Unique Visor key to get events throttle counter. */
+    final val EVT_THROTTLE_CNTR_KEY = UUID.randomUUID().toString
 
     /**
      * Starts logging. If logging is already started - no-op.
@@ -2454,22 +2589,15 @@ object visor extends VisorTag {
             )
 
             override def run() {
-                val g = ignite
-
-                if (g != null) {
+                if (ignite != null) {
                     try {
                         // Discovery events collected only locally.
-                        val loc = g.compute(g.cluster.forLocal()).withName("visor-log-collector").withNoFailover().
-                            execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(g.localNode().id(),
-                            VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS ++ EVTS_DISCOVERY))).toSeq
+                        val loc = collectEvents(ignite, EVT_LAST_ORDER_KEY, EVT_THROTTLE_CNTR_KEY,
+                            LOG_EVTS ++ EVTS_DISCOVERY, new VisorEventMapper).toSeq
 
-                        val evts = if (!rmtLogDisabled) {
-                            val prj = g.cluster.forRemotes()
-
-                            loc ++ g.compute(prj).withName("visor-log-collector").withNoFailover().
-                                execute(classOf[VisorNodeEventsCollectorTask], toTaskArgument(prj.nodes().map(_.id()),
-                                    VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS))).toSeq
-                        }
+                        val evts = if (!rmtLogDisabled)
+                            loc ++ executeMulti(classOf[VisorNodeEventsCollectorTask],
+                                VisorNodeEventsCollectorTaskArg.createLogArg(key, LOG_EVTS)).toSeq
                         else
                             loc
 
@@ -2707,5 +2835,54 @@ object visor extends VisorTag {
         }
         else
             Long.MaxValue
+    }
+
+    /**
+     * Sort addresses to properly display in Visor.
+     *
+     * @param addrs Addresses to sort.
+     * @return Sorted list.
+     */
+    def sortAddresses(addrs: Iterable[String]) = {
+        def ipToLong(ip: String) = {
+            try {
+                val octets = if (ip.contains(".")) ip.split('.') else ip.split(':')
+
+                var dec = BigDecimal.valueOf(0L)
+
+                for (i <- 0 until octets.length) dec += octets(i).toLong * math.pow(256, octets.length - 1 - i).toLong
+
+                dec
+            }
+            catch {
+                case _: Exception => BigDecimal.valueOf(0L)
+            }
+        }
+
+        /**
+         * Sort addresses to properly display in Visor.
+         *
+         * @param addr Address to detect type for.
+         * @return IP class type for sorting in order: public addresses IPv4 + private IPv4 + localhost + IPv6.
+         */
+        def addrType(addr: String) = {
+            if (addr.contains(':'))
+                4 // IPv6
+            else {
+                try {
+                    InetAddress.getByName(addr) match {
+                        case ip if ip.isLoopbackAddress => 3 // localhost
+                        case ip if ip.isSiteLocalAddress => 2 // private IPv4
+                        case _ => 1 // other IPv4
+                    }
+                }
+                catch {
+                    case ignore: UnknownHostException => 5
+                }
+            }
+        }
+
+        addrs.map(addr => (addrType(addr), ipToLong(addr), addr)).toSeq.
+            sortWith((l, r) => if (l._1 == r._1) l._2.compare(r._2) < 0 else l._1 < r._1).map(_._3)
     }
 }

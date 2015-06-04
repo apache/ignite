@@ -458,6 +458,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             U.error(log, errMsg, e);
 
             finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
+
+            if (e instanceof Error)
+                throw e;
         }
     }
 
@@ -885,6 +888,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     // hence forced to fail the whole deployed task.
                     finishTask(null, tmp);
 
+                    if (e instanceof Error)
+                        throw e;
+
                     return null;
                 }
             }
@@ -938,6 +944,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             U.error(log, errMsg, e);
 
             userE = new ComputeUserUndeclaredException(errMsg ,e);
+
+            if (e instanceof Error)
+                throw e;
         }
         finally {
             finishTask(reduceRes, userE);
@@ -997,6 +1006,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             U.error(log, errMsg, e);
 
             finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
+
+            if (e instanceof Error)
+                throw (Error)e;
 
             return false;
         }

@@ -23,8 +23,10 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -39,9 +41,10 @@ public interface GridQueryIndexing {
      * Starts indexing.
      *
      * @param ctx Context.
+     * @param busyLock Busy lock.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(GridKernalContext ctx) throws IgniteCheckedException;
+    public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException;
 
     /**
      * Stops indexing.
@@ -146,6 +149,22 @@ public interface GridQueryIndexing {
     public void unregisterCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException;
 
     /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public boolean isSqlType(Class<?> cls);
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param cls Class.
+     * @return {@code true} If this is geometry.
+     */
+    public boolean isGeometryClass(Class<?> cls);
+
+    /**
      * Registers type if it was not known before or updates it otherwise.
      *
      * @param spaceName Space name.
@@ -176,8 +195,8 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, Object key, Object val, byte[] ver,
-        long expirationTime) throws IgniteCheckedException;
+    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject key, CacheObject val,
+        byte[] ver, long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -187,7 +206,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, Object key, Object val) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -196,7 +215,7 @@ public interface GridQueryIndexing {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException;
+    public void onSwap(@Nullable String spaceName, CacheObject key) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -204,10 +223,9 @@ public interface GridQueryIndexing {
      * @param spaceName Space name.
      * @param key Key.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(@Nullable String spaceName, Object key, Object val, byte[] valBytes) throws IgniteCheckedException;
+    public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
      * Rebuilds all indexes of given type.
@@ -223,4 +241,11 @@ public interface GridQueryIndexing {
      * @return Backup filter.
      */
     public IndexingQueryFilter backupFilter();
+
+    /**
+     * Gets message factory.
+     *
+     * @return Message factory.
+     */
+    public MessageFactory messageFactory();
 }

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.swapspace.*;
+
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -67,7 +67,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private String name;
 
     /** Grid SPI context. */
-    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null, false);
+    private volatile IgniteSpiContext spiCtx = new GridDummySpiContext(null, false, null);
 
     /** Discovery listener. */
     private GridLocalEventListener paramsLsnr;
@@ -190,14 +190,14 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         ClusterNode locNode = spiCtx == null ? null : spiCtx.localNode();
 
         // Set dummy no-op context.
-        spiCtx = new GridDummySpiContext(locNode, true);
+        spiCtx = new GridDummySpiContext(locNode, true, spiCtx);
     }
 
     /**
      * Inject ignite instance.
      */
     @IgniteInstanceResource
-    protected void injectResources(Ignite ignite){
+    protected void injectResources(Ignite ignite) {
         this.ignite = ignite;
 
         if (ignite != null) {
@@ -453,19 +453,20 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         boolean isSpiConsistent = false;
 
-        String tipStr = " (fix configuration or set " + "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)";
+        String tipStr = " (fix configuration or set " +
+            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)";
 
         if (rmtCls == null) {
             if (!optional && starting)
-                throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr + " [name=" + name +
-                    ", loc=" + locCls + ']');
+                throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr +
+                    " [name=" + name + ", loc=" + locCls + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }
         else if (!locCls.equals(rmtCls)) {
             if (!optional && starting)
-                throw new IgniteSpiException("Remote SPI with the same name is of different type" + tipStr + " [name=" + name +
-                    ", loc=" + locCls + ", rmt=" + rmtCls + ']');
+                throw new IgniteSpiException("Remote SPI with the same name is of different type" + tipStr +
+                    " [name=" + name + ", loc=" + locCls + ", rmt=" + rmtCls + ']');
 
             sb.a(format(">>> Remote SPI with the same name is of different type: " + name, locCls, rmtCls));
         }
@@ -551,15 +552,24 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** */
         private final boolean stopping;
 
+        /** */
+        private final MessageFactory msgFactory;
+
+        /** */
+        private final MessageFormatter msgFormatter;
+
         /**
          * Create temp SPI context.
          *
          * @param locNode Local node.
          * @param stopping Node stopping flag.
+         * @param spiCtx SPI context.
          */
-        GridDummySpiContext(ClusterNode locNode, boolean stopping) {
+        GridDummySpiContext(ClusterNode locNode, boolean stopping, @Nullable IgniteSpiContext spiCtx) {
             this.locNode = locNode;
             this.stopping = stopping;
+            this.msgFactory = spiCtx != null ? spiCtx.messageFactory() : null;
+            this.msgFormatter = spiCtx != null ? spiCtx.messageFormatter() : null;
         }
 
         /** {@inheritDoc} */
@@ -618,24 +628,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-            @Nullable ClassLoader ldr) {
-            /* No-op. */
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public int partition(String cacheName, Object key) {
             return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -704,24 +698,23 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-            @Nullable ClassLoader ldr) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public MessageFormatter messageFormatter() {
-            return null;
+            return msgFormatter;
         }
 
         /** {@inheritDoc} */
         @Override public MessageFactory messageFactory() {
-            return null;
+            return msgFactory;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isStopping() {
             return stopping;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean tryFailNode(UUID nodeId) {
+            return false;
         }
     }
 }

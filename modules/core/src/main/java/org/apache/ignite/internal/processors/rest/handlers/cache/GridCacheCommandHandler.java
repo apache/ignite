@@ -322,10 +322,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            CacheProjection<?,?> prj = localCache(cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?,?> prj = localCache(cacheName).forSubjectId(clientId).setSkipStore(skipStore);
 
-            return op.apply((CacheProjection<Object, Object>)prj, ctx).
-                chain(resultWrapper((CacheProjection<Object, Object>)prj, key));
+            return op.apply((IgniteInternalCache<Object, Object>)prj, ctx).
+                chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
         }
         else {
             ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
@@ -361,7 +361,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             ctx.cache().cache(cacheName) != null;
 
         if (locExec) {
-            final CacheProjection<Object, Object> cache = localCache(cacheName).forSubjectId(clientId);
+            final IgniteInternalCache<Object, Object> cache = localCache(cacheName).forSubjectId(clientId);
 
             return op.apply(cache, ctx).chain(resultWrapper(cache, key));
         }
@@ -389,7 +389,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      */
     private static IgniteInternalFuture<?> appendOrPrepend(
         final GridKernalContext ctx,
-        final CacheProjection<Object, Object> cache,
+        final IgniteInternalCache<Object, Object> cache,
         final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
         assert cache != null;
         assert key != null;
@@ -492,7 +492,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Rest response.
      */
     private static IgniteClosure<IgniteInternalFuture<?>, GridRestResponse> resultWrapper(
-        final CacheProjection<Object, Object> c, @Nullable final Object key) {
+        final IgniteInternalCache<Object, Object> c, @Nullable final Object key) {
         return new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
                 GridCacheRestResponse resp = new GridCacheRestResponse();
@@ -522,8 +522,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
-        GridCacheProjectionEx<Object, Object> cache = (GridCacheProjectionEx<Object, Object>)ctx.cache().cache(cacheName);
+    protected IgniteInternalCache<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
+        IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(
@@ -538,14 +538,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Instance on the named cache.
      * @throws IgniteCheckedException If cache not found.
      */
-    private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+    private static IgniteInternalCache<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
+        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(
                 "Failed to find cache for given cache name (null for default cache): " + cacheName);
 
-        return (GridCacheProjectionEx<Object, Object>)cache;
+        return cache;
     }
 
     /**
@@ -577,7 +577,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Type alias.
      */
     private abstract static class CacheCommand
-        extends IgniteClosure2X<CacheProjection<Object, Object>, GridKernalContext, IgniteInternalFuture<?>> {
+        extends IgniteClosure2X<IgniteInternalCache<Object, Object>, GridKernalContext, IgniteInternalFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -588,7 +588,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * Type alias.
      */
     private abstract static class CacheProjectionCommand
-        extends IgniteClosure2X<CacheProjection<Object, Object>, GridKernalContext, IgniteInternalFuture<?>> {
+        extends IgniteClosure2X<IgniteInternalCache<Object, Object>, GridKernalContext, IgniteInternalFuture<?>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -643,13 +643,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            CacheProjection<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).setSkipStore(skipStore);
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
             // exception processing should be consistent with local execution.
-            return op.apply((CacheProjection<Object, Object>)prj, ((IgniteKernal)g).context()).
-                chain(resultWrapper((CacheProjection<Object, Object>)prj, key)).get();
+            return op.apply((IgniteInternalCache<Object, Object>)prj, ((IgniteKernal)g).context()).
+                chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key)).get();
         }
     }
 
@@ -692,7 +692,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            final CacheProjection<Object, Object> cache = cache(g, cacheName).forSubjectId(clientId);
+            final IgniteInternalCache<Object, Object> cache = cache(g, cacheName).forSubjectId(clientId);
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
@@ -717,7 +717,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.getAsync(key);
         }
     }
@@ -738,7 +738,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.getAllAsync(keys);
         }
     }
@@ -759,7 +759,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.putAllAsync(map).chain(new FixedResult(true));
         }
     }
@@ -780,7 +780,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.removeAsync(key);
         }
     }
@@ -801,7 +801,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return (F.isEmpty(keys) ? c.removeAllAsync() : c.removeAllAsync(keys))
                 .chain(new FixedResult(true));
         }
@@ -833,7 +833,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return exp == null && val == null ? c.removeAsync(key) :
                 exp == null ? c.putIfAbsentAsync(key, val) :
                     val == null ? c.removeAsync(key, exp) :
@@ -867,11 +867,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.putAsync(key, val);
@@ -904,11 +904,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.putIfAbsentAsync(key, val);
@@ -941,11 +941,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             if (ttl != null && ttl > 0) {
                 Duration duration = new Duration(MILLISECONDS, ttl);
 
-                c = ((GridCacheProjectionEx<Object, Object>)c).withExpiryPolicy(new ModifiedExpiryPolicy(duration));
+                c = c.withExpiryPolicy(new ModifiedExpiryPolicy(duration));
             }
 
             return c.replaceAsync(key, val);
@@ -973,7 +973,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx)
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx)
             throws IgniteCheckedException {
             return appendOrPrepend(ctx, c, key, req, false);
         }
@@ -1000,7 +1000,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx)
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx)
             throws IgniteCheckedException {
             return appendOrPrepend(ctx, c, key, req, true);
         }
@@ -1012,7 +1012,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) {
+        @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             CacheMetrics metrics = c.cache().metrics();
 
             assert metrics != null;

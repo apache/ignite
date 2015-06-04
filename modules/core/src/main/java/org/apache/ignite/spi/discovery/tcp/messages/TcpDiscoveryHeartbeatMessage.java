@@ -58,13 +58,6 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     private final Map<UUID, Map<Integer, CacheMetrics>> cacheMetrics = new HashMap<>();
 
     /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryHeartbeatMessage() {
-        // No-op.
-    }
-
-    /**
      * Constructor.
      *
      * @param creatorNodeId Creator node.
@@ -211,22 +204,13 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
+    @Override public boolean highPriority() {
+        return true;
     }
 
-    /**
-     * @param metrics Metrics.
-     * @return Serialized metrics.
-     */
-    private static byte[] serializeMetrics(ClusterMetrics metrics) {
-        assert metrics != null;
-
-        byte[] buf = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
-
-        ClusterMetricsSnapshot.serialize(buf, 0, metrics);
-
-        return buf;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryHeartbeatMessage.class, this, "super", super.toString());
     }
 
     /**
@@ -273,7 +257,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         public MetricsSet(ClusterMetrics metrics) {
             assert metrics != null;
 
-            this.metrics = serializeMetrics(metrics);
+            this.metrics = ClusterMetricsSnapshot.serialize(metrics);
         }
 
         /**

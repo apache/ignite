@@ -76,6 +76,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             ) {
                 // Can't hold any locks here - this method is invoked when
                 // holding write-lock on the whole cache map.
+                if (ctx.useOffheapEntry())
+                    return new GridNearOffHeapCacheEntry(ctx, key, hash, val, next, hdrId);
+
                 return new GridNearCacheEntry(ctx, key, hash, val, next, hdrId);
             }
         });
@@ -92,7 +95,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCachePreloader<K, V> preloader() {
+    @Override public GridCachePreloader preloader() {
         return dht().preloader();
     }
 
@@ -197,7 +200,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             taskName,
             true,
             null,
-            skipVals);
+            skipVals,
+            /*skip store*/false);
     }
 
     /**
@@ -209,6 +213,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVal Skip value flag.
+     * @param skipStore Skip store flag.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
@@ -219,7 +225,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         String taskName,
         boolean deserializePortable,
         @Nullable ExpiryPolicy expiryPlc,
-        boolean skipVal
+        boolean skipVal,
+        boolean skipStore
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -230,7 +237,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
-            true,
+            !skipStore,
             reload,
             forcePrimary,
             txx,
@@ -429,16 +436,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Nullable @Override public Cache.Entry<K, V> randomEntry() {
         return ctx.affinityNode() && ctx.isNear() ? dht().randomEntry() : super.randomEntry();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> swapIterator() throws IgniteCheckedException {
-        return dht().swapIterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException {
-        return dht().offHeapIterator();
     }
 
     /** {@inheritDoc} */

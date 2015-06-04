@@ -35,6 +35,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
@@ -55,6 +56,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.*;
  * Grid communication manager.
  */
 public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+    /** Empty array of message factories. */
+    public static final MessageFactory[] EMPTY = {};
+
     /** Max closed topics to store. */
     public static final int MAX_CLOSED_TOPICS = 10240;
 
@@ -183,7 +187,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
-        affPool = Executors.newFixedThreadPool(1);
+        affPool = new IgniteThreadPoolExecutor(
+            "aff-" + ctx.gridName(),
+            1,
+            1,
+            0,
+            new LinkedBlockingQueue<Runnable>());
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -224,7 +233,24 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             };
         }
 
-        msgFactory = new GridIoMessageFactory(ctx.plugins().extensions(MessageFactory.class));
+        MessageFactory[] msgs = ctx.plugins().extensions(MessageFactory.class);
+
+        if (msgs == null)
+            msgs = EMPTY;
+
+        List<MessageFactory> compMsgs = new ArrayList<>();
+
+        for (IgniteComponentType compType : IgniteComponentType.values()) {
+            MessageFactory f = compType.messageFactory();
+
+            if (f != null)
+                compMsgs.add(f);
+        }
+
+        if (!compMsgs.isEmpty())
+            msgs = F.concat(msgs, compMsgs.toArray(new MessageFactory[compMsgs.size()]));
+
+        msgFactory = new GridIoMessageFactory(msgs);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -600,7 +626,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'GridConfiguration.getPeerClassLoadingThreadPoolSize()'. " +
+                "on 'ExecutorService' provided by 'IgniteConfiguration.getPeerClassLoadingThreadPoolSize()'. " +
                 "Will attempt to process message in the listener thread instead.", e);
 
             c.run();
@@ -639,7 +665,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'GridConfiguration.getPublicThreadPoolSize()'. " +
+                "on 'ExecutorService' provided by 'IgniteConfiguration.getPublicThreadPoolSize()'. " +
                 "Will attempt to process message in the listener thread instead.", e);
 
             c.run();
@@ -1185,6 +1211,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public void addUserMessageListener(@Nullable final Object topic, @Nullable final IgniteBiPredicate<UUID, ?> p) {
         if (p != null) {
             try {
+                if (p instanceof GridLifecycleAwareMessageFilter)
+                    ((GridLifecycleAwareMessageFilter)p).initialize(ctx);
+                else
+                    ctx.resource().injectGeneric(p);
+
                 addMessageListener(TOPIC_COMM_USER,
                     new GridUserMessageListener(topic, (IgniteBiPredicate<UUID, Object>)p));
             }
@@ -1342,7 +1373,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to process delayed message due to execution rejection. Increase the upper bound " +
-                    "on executor service provided in 'GridConfiguration.getPublicThreadPoolSize()'). Will attempt to " +
+                    "on executor service provided in 'IgniteConfiguration.getPublicThreadPoolSize()'). Will attempt to " +
                     "process message in the listener thread instead.", e);
 
                 for (GridCommunicationMessageSet msgSet : msgSets)
@@ -1383,7 +1414,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
      * @return Whether or not the lsnr was removed.
      */
     @SuppressWarnings({"deprecation", "SynchronizationOnLocalVariableOrMethodParameter"})
-    public boolean removeMessageListener(Object topic, @Nullable final GridMessageListener lsnr) {
+    public boolean removeMessageListener(Object topic, @Nullable GridMessageListener lsnr) {
         assert topic != null;
 
         boolean rmv = true;
@@ -1394,7 +1425,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (lsnr == null) {
             closedTopics.add(topic);
 
-            rmv = lsnrMap.remove(topic) != null;
+            lsnr = lsnrMap.remove(topic);
+
+            rmv = lsnr != null;
 
             Map<UUID, GridCommunicationMessageSet> map = msgSetMap.remove(topic);
 
@@ -1466,7 +1499,28 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (rmv && log.isDebugEnabled())
             log.debug("Removed message listener [topic=" + topic + ", lsnr=" + lsnr + ']');
 
+        if (lsnr instanceof ArrayListener)
+        {
+            for (GridMessageListener childLsnr : ((ArrayListener)lsnr).arr)
+                closeListener(childLsnr);
+        }
+        else
+            closeListener(lsnr);
+
         return rmv;
+    }
+
+    /**
+     * Closes a listener, if applicable.
+     * @param lsnr Listener.
+     */
+    private void closeListener(GridMessageListener lsnr) {
+        if (lsnr instanceof GridUserMessageListener) {
+            GridUserMessageListener userLsnr = (GridUserMessageListener)lsnr;
+
+            if (userLsnr.predLsnr instanceof GridLifecycleAwareMessageFilter)
+                ((GridLifecycleAwareMessageFilter)userLsnr.predLsnr).close();
+        }
     }
 
     /**
@@ -1646,9 +1700,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             throws IgniteCheckedException {
             this.topic = topic;
             this.predLsnr = predLsnr;
-
-            if (predLsnr != null)
-                ctx.resource().injectGeneric(predLsnr);
         }
 
         /** {@inheritDoc} */

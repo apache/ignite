@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
  * Future that implements a barrier after which dht topology is safe to use. Topology is considered to be
@@ -49,4 +50,11 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @return Topology version.
      */
     public AffinityTopologyVersion topologyVersion();
+
+    /**
+     * Returns is cache topology valid.
+     * @param cctx Cache context.
+     * @return valid ot not.
+     */
+    public boolean isCacheTopologyValid(GridCacheContext cctx);
 }

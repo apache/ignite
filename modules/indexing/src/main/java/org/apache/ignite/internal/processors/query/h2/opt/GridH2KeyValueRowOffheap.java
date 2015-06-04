@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
 import org.h2.store.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
@@ -87,10 +86,10 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws IgniteSpiException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public GridH2KeyValueRowOffheap(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val, int valType,
-        long expirationTime) throws IgniteSpiException {
+        long expirationTime) throws IgniteCheckedException {
         super(desc, key, keyType, val, valType, expirationTime);
     }
 
@@ -247,7 +246,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
             Value v = peekValue(VAL_COL);
 
             if (v == null) {
-                setValue(VAL_COL, wrap(val, desc.valueType()));
+                setValue(VAL_COL, desc.wrap(val, desc.valueType()));
 
                 v = peekValue(VAL_COL);
             }
@@ -273,8 +272,8 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override protected Value syncValue(int attempt) {
-        Value v = super.syncValue(attempt);
+    @Override protected Value syncValue(long waitTime) {
+        Value v = super.syncValue(waitTime);
 
         if (v != null)
             return v;

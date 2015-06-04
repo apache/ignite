@@ -20,17 +20,14 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.*;
 import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.value.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.ref.*;
-import java.math.*;
-import java.sql.Date;
 import java.sql.*;
-import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Table row implementation based on {@link GridQueryTypeDescriptor}.
@@ -61,12 +58,16 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @param val Value.
      * @param valType Value type.
      * @param expirationTime Expiration time.
-     * @throws IgniteSpiException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     protected GridH2AbstractKeyValueRow(GridH2RowDescriptor desc, Object key, int keyType, @Nullable Object val,
-        int valType, long expirationTime) throws IgniteSpiException {
-        super(wrap(key, keyType),
-            val == null ? null : wrap(val, valType)); // We remove by key only, so value can be null here.
+        int valType, long expirationTime) throws IgniteCheckedException {
+        super(null, null);
+
+        setValue(KEY_COL, desc.wrap(key, keyType));
+
+        if (val != null) // We remove by key only, so value can be null here.
+            setValue(VAL_COL, desc.wrap(val, valType));
 
         this.desc = desc;
         this.expirationTime = expirationTime;
@@ -84,72 +85,6 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /**
-     * Wraps object to respective {@link Value}.
-     *
-     * @param obj Object.
-     * @param type Value type.
-     * @return Value.
-     * @throws IgniteSpiException If failed.
-     */
-    public static Value wrap(Object obj, int type) throws IgniteSpiException {
-        assert obj != null;
-
-        switch (type) {
-            case Value.BOOLEAN:
-                return ValueBoolean.get((Boolean)obj);
-            case Value.BYTE:
-                return ValueByte.get((Byte)obj);
-            case Value.SHORT:
-                return ValueShort.get((Short)obj);
-            case Value.INT:
-                return ValueInt.get((Integer)obj);
-            case Value.FLOAT:
-                return ValueFloat.get((Float)obj);
-            case Value.LONG:
-                return ValueLong.get((Long)obj);
-            case Value.DOUBLE:
-                return ValueDouble.get((Double)obj);
-            case Value.UUID:
-                UUID uuid = (UUID)obj;
-                return ValueUuid.get(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
-            case Value.DATE:
-                return ValueDate.get((Date)obj);
-            case Value.TIME:
-                return ValueTime.get((Time)obj);
-            case Value.TIMESTAMP:
-                if (obj instanceof java.util.Date && !(obj instanceof Timestamp))
-                    obj = new Timestamp(((java.util.Date) obj).getTime());
-
-                return GridH2Utils.toValueTimestamp((Timestamp)obj);
-            case Value.DECIMAL:
-                return ValueDecimal.get((BigDecimal)obj);
-            case Value.STRING:
-                return ValueString.get(obj.toString());
-            case Value.BYTES:
-                return ValueBytes.get((byte[])obj);
-            case Value.JAVA_OBJECT:
-                return ValueJavaObject.getNoCopy(obj, null, null);
-            case Value.ARRAY:
-                Object[] arr = (Object[])obj;
-
-                Value[] valArr = new Value[arr.length];
-
-                for (int i = 0; i < arr.length; i++) {
-                    Object o = arr[i];
-
-                    valArr[i] = o == null ? ValueNull.INSTANCE : wrap(o, DataType.getTypeFromClass(o.getClass()));
-                }
-
-                return ValueArray.get(valArr);
-
-            case Value.GEOMETRY:
-                return ValueGeometry.getFromGeometry(obj);
-        }
-
-        throw new IgniteSpiException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
-    }
-
-    /**
      * @return Expiration time of respective cache entry.
      */
     public long expirationTime() {
@@ -164,7 +99,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     /**
      * Should be called to remove reference on value.
      *
-     * @throws IgniteSpiException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     public synchronized void onSwap() throws IgniteCheckedException {
         setValue(VAL_COL, null);
@@ -178,7 +113,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
      * @throws IgniteCheckedException If failed.
      */
     public synchronized void onUnswap(Object val, boolean beforeRmv) throws IgniteCheckedException {
-        setValue(VAL_COL, wrap(val, desc.valueType()));
+        setValue(VAL_COL, desc.wrap(val, desc.valueType()));
 
         notifyAll();
     }
@@ -203,19 +138,26 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
     }
 
     /**
-     * @param attempt Attempt.
+     * @param waitTime Time to await for value unswap.
      * @return Synchronized value.
      */
-    protected synchronized Value syncValue(int attempt) {
+    protected synchronized Value syncValue(long waitTime) {
         Value v = peekValue(VAL_COL);
 
-        if (v == null && attempt != 0) {
+        while (v == null && waitTime > 0) {
+            long start = System.nanoTime(); // This call must be quite rare, so performance is not a concern.
+
             try {
-                wait(attempt);
+                wait(waitTime); // Wait for value arrival to allow other threads to make a progress.
             }
             catch (InterruptedException e) {
                 throw new IgniteInterruptedException(e);
             }
+
+            long t = System.nanoTime() - start;
+
+            if (t > 0)
+                waitTime -= TimeUnit.NANOSECONDS.toMillis(t);
 
             v = peekValue(VAL_COL);
         }
@@ -258,7 +200,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
                         Object valObj = desc.readFromSwap(k);
 
                         if (valObj != null) {
-                            Value upd = wrap(valObj, desc.valueType());
+                            Value upd = desc.wrap(valObj, desc.valueType());
 
                             v = updateWeakValue(upd);
 
@@ -277,7 +219,7 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
 
                     if (start == 0)
                         start = U.currentTimeMillis();
-                    else if (U.currentTimeMillis() - start > 15_000) // Loop for at most 15 seconds.
+                    else if (U.currentTimeMillis() - start > 60_000) // Loop for at most 60 seconds.
                         throw new IgniteException("Failed to get value for key: " + k +
                             ". This can happen due to a long GC pause.");
                 }
@@ -317,9 +259,9 @@ public abstract class GridH2AbstractKeyValueRow extends GridH2Row {
             return ValueNull.INSTANCE;
 
         try {
-            return wrap(res, desc.fieldType(col));
+            return desc.wrap(res, desc.fieldType(col));
         }
-        catch (IgniteSpiException e) {
+        catch (IgniteCheckedException e) {
             throw DbException.convert(e);
         }
     }

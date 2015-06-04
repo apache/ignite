@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.visor.query;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Arguments for {@link VisorQueryTask}.
@@ -27,36 +26,29 @@ public class VisorQueryArg implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Node ID in case of local cache. */
-    private final UUID locCacheNodeId;
-
     /** Cache name for query. */
     private final String cacheName;
 
     /** Query text. */
     private final String qryTxt;
 
+    /** Flag whether to execute query locally. */
+    private final boolean local;
+
     /** Result batch size. */
-    private final Integer pageSize;
+    private final int pageSize;
 
     /**
-     * @param locCacheNodeId Node ID in case of local cache or {@code null} otherwise.
      * @param cacheName Cache name for query.
      * @param qryTxt Query text.
+     * @param local Flag whether to execute query locally.
      * @param pageSize Result batch size.
      */
-    public VisorQueryArg(UUID locCacheNodeId, String cacheName, String qryTxt, Integer pageSize) {
-        this.locCacheNodeId = locCacheNodeId;
+    public VisorQueryArg(String cacheName, String qryTxt, boolean local, int pageSize) {
         this.cacheName = cacheName;
         this.qryTxt = qryTxt;
+        this.local = local;
         this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Node ID in case of local cache or {@code null} otherwise.
-     */
-    public UUID localCacheNodeId() {
-        return locCacheNodeId;
     }
 
     /**
@@ -74,9 +66,16 @@ public class VisorQueryArg implements Serializable {
     }
 
     /**
+     * @return {@code true} if query should be executed locally.
+     */
+    public boolean local() {
+        return local;
+    }
+
+    /**
      * @return Page size.
      */
-    public Integer pageSize() {
+    public int pageSize() {
         return pageSize;
     }
 }

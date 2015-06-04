@@ -77,7 +77,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param timeout Timeout.
      * @param ctx Cache context.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param nearXidVer Near transaction ID.
      * @param txNodes Transaction nodes mapping.
      */
@@ -97,14 +96,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, grpLockKey, subjId, taskNameHash);
+            txSize, subjId, taskNameHash);
 
         assert nearNodeId != null;
         assert rmtFutId != null;
@@ -139,7 +137,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param timeout Timeout.
      * @param ctx Cache context.
      * @param txSize Expected transaction size.
-     * @param grpLockKey Group lock key if transaction is group-lock.
      */
     public GridDhtTxRemote(
         GridCacheSharedContext ctx,
@@ -158,12 +155,11 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         boolean invalidate,
         long timeout,
         int txSize,
-        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, plc, concurrency, isolation, invalidate, timeout,
-            txSize, grpLockKey, subjId, taskNameHash);
+            txSize, subjId, taskNameHash);
 
         assert nearNodeId != null;
         assert rmtFutId != null;
@@ -176,6 +172,13 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         writeMap = new ConcurrentLinkedHashMap<>(txSize, 1.0f);
 
         topologyVersion(topVer);
+    }
+
+    /**
+     * @param txNodes Transaction nodes.
+     */
+    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */
@@ -286,13 +289,15 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param val Value.
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
+     * @param skipStore Skip store flag.
      */
     public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
         IgniteTxKey key,
         @Nullable CacheObject val,
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
-        long ttl) {
+        long ttl,
+        boolean skipStore) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -307,7 +312,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             ttl,
             -1L,
             cached,
-            null);
+            null,
+            skipStore);
 
         txEntry.entryProcessors(entryProcessors);
 

@@ -455,7 +455,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            info(">>> Starting test class: " + getClass().getSimpleName() + " <<<");
+            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -676,8 +676,12 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
         // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
-            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi)
+            if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
                 cfg.setLocalHost("127.0.0.1");
+
+                if (((TcpDiscoverySpi)cfg.getDiscoverySpi()).getJoinTimeout() == 0)
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(8000);
+            }
             else
                 cfg.setLocalHost(getTestResources().getLocalHost());
         }
@@ -732,9 +736,20 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
-        List<Ignite> ignites = G.allGrids();
+        Collection<Ignite> clients = new ArrayList<>();
+        Collection<Ignite> srvs = new ArrayList<>();
 
-        for (Ignite g : ignites)
+        for (Ignite g : G.allGrids()) {
+            if (g.configuration().getDiscoverySpi().isClientMode())
+                clients.add(g);
+            else
+                srvs.add(g);
+        }
+
+        for (Ignite g : clients)
+            stopGrid(g.name(), cancel);
+
+        for (Ignite g : srvs)
             stopGrid(g.name(), cancel);
 
         assert G.allGrids().isEmpty();
@@ -985,18 +1000,22 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setNodeId(null);
 
-        return cfg;
-    }
+        if (gridName != null && gridName.matches(".*\\d")) {
+            String idStr = UUID.randomUUID().toString();
 
-    /**
-     * This method should be overridden by subclasses to change configuration parameters.
-     *
-     * @return Grid configuration used for starting of grid.
-     * @param rsrcs Resources.
-     * @throws Exception If failed.
-     */
-    protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
-        return getConfiguration(getTestGridName(), rsrcs);
+            char[] chars = idStr.toCharArray();
+
+            chars[0] = gridName.charAt(gridName.length() - 1);
+            chars[1] = '0';
+
+            chars[chars.length - 3] = '0';
+            chars[chars.length - 2] = '0';
+            chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+
+            cfg.setNodeId(UUID.fromString(new String(chars)));
+        }
+
+        return cfg;
     }
 
     /**
@@ -1186,7 +1205,7 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + getClass().getSimpleName() + " <<<");
+                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
 
                 TestCounters counters = getTestCounters();
 
@@ -1370,6 +1389,22 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected <T> Factory<T> singletonFactory(T store) {
         return notSerializableProxy(new FactoryBuilder.SingletonFactory<T>(store), Factory.class);
+    }
+
+    /**
+     * @param obj Object that should be wrap proxy
+     * @return Created proxy.
+     */
+    protected <T> T notSerializableProxy(final T obj) {
+        Class<T> cls = (Class<T>)obj.getClass();
+
+        Class<T>[] interfaces = (Class<T>[])cls.getInterfaces();
+
+        assert interfaces.length > 0;
+
+        Class<T> lastItf = interfaces[interfaces.length - 1];
+
+        return notSerializableProxy(obj, lastItf, Arrays.copyOf(interfaces, interfaces.length - 1));
     }
 
     /**

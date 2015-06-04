@@ -18,6 +18,8 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -58,7 +60,8 @@ public enum IgniteComponentType {
     INDEXING(
         null,
         "org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing",
-        "ignite-indexing"
+        "ignite-indexing",
+        "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory"
     ),
 
     /** Nodes starting using SSH. */
@@ -91,6 +94,9 @@ public enum IgniteComponentType {
     /** Module name. */
     private final String module;
 
+    /** Optional message factory for component. */
+    private final String msgFactoryCls;
+
     /**
      * Constructor.
      *
@@ -99,9 +105,22 @@ public enum IgniteComponentType {
      * @param module Module name.
      */
     IgniteComponentType(String noOpClsName, String clsName, String module) {
+        this(noOpClsName, clsName, module, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param noOpClsName Class name for no-op implementation.
+     * @param clsName Class name.
+     * @param module Module name.
+     * @param msgFactoryCls {@link MessageFactory} class for the component.
+     */
+    IgniteComponentType(String noOpClsName, String clsName, String module, String msgFactoryCls) {
         this.noOpClsName = noOpClsName;
         this.clsName = clsName;
         this.module = module;
+        this.msgFactoryCls = msgFactoryCls;
     }
 
     /**
@@ -270,6 +289,21 @@ public enum IgniteComponentType {
         catch (Exception e) {
             throw componentException(e);
         }
+    }
+
+    /**
+     * Creates message factory for the component.
+     *
+     * @return Message factory or {@code null} if none or the component is not in classpath.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public MessageFactory messageFactory() throws IgniteCheckedException {
+        Class<?> cls;
+
+        if (msgFactoryCls == null || null == (cls = U.classForName(msgFactoryCls, null)))
+            return null;
+
+        return (MessageFactory)U.newInstance(cls);
     }
 
     /**

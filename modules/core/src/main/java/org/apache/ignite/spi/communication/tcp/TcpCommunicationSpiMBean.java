@@ -237,15 +237,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getMinimumBufferedMessageCount();
 
     /**
-     * Gets the buffer size ratio for this SPI. As messages are sent,
-     * the buffer size is adjusted using this ratio.
-     *
-     * @return Buffer size ratio.
-     */
-    @MXBeanDescription("Buffer size ratio.")
-    public double getBufferSizeRatio();
-
-    /**
      * Gets socket write timeout for TCP connections. If message can not be written to
      * socket within this time then connection is closed and reconnect is attempted.
      *

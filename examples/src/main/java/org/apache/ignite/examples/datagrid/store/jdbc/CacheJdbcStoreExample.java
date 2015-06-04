@@ -18,6 +18,8 @@
 package org.apache.ignite.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.examples.datagrid.store.*;
@@ -32,9 +34,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  * Demonstrates usage of cache with underlying persistent store configured.
  * <p>
  * This example uses {@link CacheJdbcPersonStore} as a persistent store.
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Remote nodes can be started with {@link ExampleNodeStartup} in another JVM which will
  * start node with {@code examples/config/example-ignite.xml} configuration.
@@ -73,6 +72,17 @@ public class CacheJdbcStoreExample {
 
             // Configure JDBC store.
             cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(CacheJdbcPersonStore.class));
+
+            // Configure JDBC session listener.
+            cacheCfg.setCacheStoreSessionListenerFactories(new Factory<CacheStoreSessionListener>() {
+                @Override public CacheStoreSessionListener create() {
+                    CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
+
+                    lsnr.setDataSource(CacheJdbcPersonStore.DATA_SRC);
+
+                    return lsnr;
+                }
+            });
 
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);

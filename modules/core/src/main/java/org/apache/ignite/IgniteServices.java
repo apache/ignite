@@ -60,7 +60,7 @@ import java.util.*;
  * you can also automatically deploy services on startup by specifying them in {@link IgniteConfiguration}
  * like so:
  * <pre name="code" class="java">
- * GridConfiguration gridCfg = new GridConfiguration();
+ * IgniteConfiguration gridCfg = new IgniteConfiguration();
  *
  * GridServiceConfiguration svcCfg1 = new GridServiceConfiguration();
  *
@@ -126,10 +126,7 @@ import java.util.*;
  * ...
  * GridServices svcs = grid.services();
  *
- * GridFuture&lt;?&gt; fut = svcs.deployClusterSingleton("mySingleton", new MyGridService());
- *
- * // Wait for deployment to complete.
- * fut.get();
+ * svcs.deployClusterSingleton("mySingleton", new MyGridService());
  * </pre>
  */
 public interface IgniteServices extends IgniteAsyncSupport {

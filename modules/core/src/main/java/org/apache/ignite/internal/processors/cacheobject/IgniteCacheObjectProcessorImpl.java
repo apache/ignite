@@ -208,7 +208,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void onCacheProcessorStarted() {
+    @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -277,7 +277,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                         valBytes = ctx.processor().marshal(ctx, val);
 
                     ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
+                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
 
                      Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
 
