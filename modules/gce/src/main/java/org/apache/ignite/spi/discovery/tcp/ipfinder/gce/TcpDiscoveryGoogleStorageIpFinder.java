@@ -68,34 +68,37 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
  * Note that this finder is shared by default (see {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
 public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapter {
-    /* Default object's content. */
+    /** Default object's content. */
     private final static ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
 
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
 
-    /* Google Cloud Platform's project name.*/
+    /** Google Cloud Platform's project name.*/
     private String projectName;
 
-    /* Google Storage bucket name. */
+    /** Google Storage bucket name. */
     private String bucketName;
 
-    /* Service account p12 private key file name. */
-    private String serviceAccountP12FilePath;
+    /** Service account p12 private key file name. */
+    private String srvcAccountP12FilePath;
 
-    /* Service account id. */
-    private String serviceAccountId;
+    /** Service account id. */
+    private String srvcAccountId;
 
-    /* Google storage. */
+    /** Google storage. */
     private Storage storage;
 
-    /* Init routine guard. */
+    /** Init routine guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
-    /* Init routine latch. */
+    /** Init routine latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
+    /**
+     *
+     */
     public TcpDiscoveryGoogleStorageIpFinder() {
         setShared(true);
     }
@@ -221,7 +224,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      */
     @IgniteSpiConfiguration(optional = false)
     public void setServiceAccountP12FilePath(String p12FileName) {
-        this.serviceAccountP12FilePath = p12FileName;
+        this.srvcAccountP12FilePath = p12FileName;
     }
 
     /**
@@ -235,7 +238,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      */
     @IgniteSpiConfiguration(optional = false)
     public void setServiceAccountId(String id) {
-        this.serviceAccountId = id;
+        this.srvcAccountId = id;
     }
 
     /**
@@ -245,13 +248,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      */
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
-            if (serviceAccountId == null ||
-                serviceAccountP12FilePath == null ||
+            if (srvcAccountId == null ||
+                srvcAccountP12FilePath == null ||
                 projectName == null ||
                 bucketName == null) {
                 throw new IgniteSpiException(
                     "One or more of the required parameters is not set [serviceAccountId=" +
-                        serviceAccountId + ", serviceAccountP12FilePath=" + serviceAccountP12FilePath + ", projectName=" +
+                        srvcAccountId + ", serviceAccountP12FilePath=" + srvcAccountP12FilePath + ", projectName=" +
                         projectName + ", bucketName=" + bucketName + "]");
             }
 
@@ -265,12 +268,12 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
                     throw new IgniteSpiException(e);
                 }
 
-                GoogleCredential credential;
+                GoogleCredential cred;
 
                 try {
-                    credential = new GoogleCredential.Builder().setTransport(httpTransport)
-                        .setJsonFactory(JacksonFactory.getDefaultInstance()).setServiceAccountId(serviceAccountId)
-                        .setServiceAccountPrivateKeyFromP12File(new File(serviceAccountP12FilePath))
+                    cred = new GoogleCredential.Builder().setTransport(httpTransport)
+                        .setJsonFactory(JacksonFactory.getDefaultInstance()).setServiceAccountId(srvcAccountId)
+                        .setServiceAccountPrivateKeyFromP12File(new File(srvcAccountP12FilePath))
                         .setServiceAccountScopes(Collections.singleton(StorageScopes.DEVSTORAGE_FULL_CONTROL)).build();
 
                 }
@@ -279,7 +282,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
                 }
 
                 try {
-                    storage = new Storage.Builder(httpTransport, JacksonFactory.getDefaultInstance(), credential)
+                    storage = new Storage.Builder(httpTransport, JacksonFactory.getDefaultInstance(), cred)
                         .setApplicationName(projectName).build();
                 }
                 catch (Exception e) {

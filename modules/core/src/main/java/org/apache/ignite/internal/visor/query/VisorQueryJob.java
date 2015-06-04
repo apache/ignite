@@ -65,7 +65,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         try {
             UUID nid = ignite.localNode().id();
 
-            boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
+            boolean scan = arg.queryTxt() == null;
 
             String qryId = (scan ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" +
                 UUID.randomUUID();
