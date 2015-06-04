@@ -93,12 +93,12 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
 
         assert cache.query(new ScanQuery<>()).getAll().size() == 7;
 
-        assert cache.query(new SqlQuery<>(Byte.class, "1 = 1")).getAll().size() == 1;
-        assert cache.query(new SqlQuery<>(Short.class, "1 = 1")).getAll().size() == 1;
-        assert cache.query(new SqlQuery<>(Integer.class, "1 = 1")).getAll().size() == 1;
-        assert cache.query(new SqlQuery<>(Long.class, "1 = 1")).getAll().size() == 1;
-        assert cache.query(new SqlQuery<>(Float.class, "1 = 1")).getAll().size() == 1;
-        assert cache.query(new SqlQuery<>(Double.class, "1 = 1")).getAll().size() == 1;
-        assert cache.query(new SqlQuery<>(Boolean.class, "1 = 1")).getAll().size() == 1;
+        assertEquals(cache.query(new SqlQuery<>(Byte.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cache.query(new SqlQuery<>(Short.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cache.query(new SqlQuery<>(Integer.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cache.query(new SqlQuery<>(Long.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cache.query(new SqlQuery<>(Float.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cache.query(new SqlQuery<>(Double.class, "1 = 1")).getAll().size(), 1);
+        assertEquals(cache.query(new SqlQuery<>(Boolean.class, "1 = 1")).getAll().size(), 1);
     }
 }
