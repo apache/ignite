@@ -202,7 +202,7 @@ public class VisorCache implements Serializable {
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
         offHeapEntriesCnt = ca.offHeapEntriesCount();
         partitions = ca.affinity().partitions();
-        metrics = VisorCacheMetrics.from(ignite, ca);
+        metrics = VisorCacheMetrics.from(ignite, cacheName);
 
         estimateMemorySize(ignite, ca, sample);
 

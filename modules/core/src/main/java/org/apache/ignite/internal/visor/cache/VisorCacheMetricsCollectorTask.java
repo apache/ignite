@@ -99,17 +99,19 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
             GridCacheProcessor cacheProcessor = ignite.context().cache();
 
-            Collection<GridCacheAdapter<?, ?>> caches = cacheProcessor.internalCaches();
+            Collection<IgniteCacheProxy<?, ?>> caches = cacheProcessor.jcaches();
 
             Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
 
             boolean allCaches = cacheNames.isEmpty();
 
-            for (GridCacheAdapter ca : caches) {
+            for (IgniteCacheProxy ca : caches) {
                 if (ca.context().started()) {
-                    VisorCacheMetrics cm = VisorCacheMetrics.from(ignite, ca);
+                    String cacheName = ca.getName();
 
-                    if ((allCaches || cacheNames.contains(ca.name())) && (showSysCaches || !cm.system()))
+                    VisorCacheMetrics cm = VisorCacheMetrics.from(ignite, cacheName);
+
+                    if ((allCaches || cacheNames.contains(cacheName)) && (showSysCaches || !cm.system()))
                         res.add(cm);
                 }
             }
