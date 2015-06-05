@@ -1402,14 +1402,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
             if (addr.getPort() == 0) {
-                // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
-                int port = locNode.discoveryPort() != 0 ? locNode.discoveryPort() : DFLT_PORT;
+                for (int port = locPort; port < locPort + locPortRange; port++) {
+                    addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
+                        new InetSocketAddress(addr.getAddress(), port);
 
-                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
-                    new InetSocketAddress(addr.getAddress(), port);
+                    res.add(addr);
+                }
             }
-
-            res.add(addr);
+            else
+                res.add(addr);
         }
 
         return res;

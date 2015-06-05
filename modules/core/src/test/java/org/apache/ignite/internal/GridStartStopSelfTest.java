@@ -20,10 +20,13 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -75,7 +78,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     public void testStopWhileInUse() throws Exception {
         // Test works too long.
         fail("https://issues.apache.org/jira/browse/IGNITE-580");
-        
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setConnectorConfiguration(null);
@@ -180,6 +183,39 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assert e instanceof IllegalStateException : "Wrong exception type.";
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoPortInIpFinder() throws Exception {
+        try {
+            int nodesCnt = 3;
+
+            for (int i = 0; i < nodesCnt; i++) {
+                IgniteConfiguration cfg = new IgniteConfiguration();
+
+                cfg.setGridName("grid-" + i);
+
+                TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+                TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+
+                ipFinder.setAddresses(Arrays.asList("127.0.0.1"));
+
+                disco.setIpFinder(ipFinder);
+
+                cfg.setDiscoverySpi(disco);
+
+                Ignition.start(cfg);
+            }
+
+            for (int i = 0; i < nodesCnt; i++)
+                assertEquals(nodesCnt, Ignition.ignite("grid-" + i).cluster().nodes().size());
+        }
+        finally {
+            Ignition.stopAll(true);
         }
     }
 }
