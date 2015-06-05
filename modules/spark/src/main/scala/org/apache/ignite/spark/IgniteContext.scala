@@ -34,8 +34,23 @@ import org.apache.spark.sql.SQLContext
  */
 class IgniteContext[K, V](
     @scala.transient val sparkContext: SparkContext,
-    cfgF: () ⇒ IgniteConfiguration
+    cfgF: () ⇒ IgniteConfiguration,
+    client: Boolean = true
 ) extends Serializable {
+    @scala.transient private val driver = true
+
+    if (!client) {
+        val workers = sparkContext.getExecutorStorageStatus.length - 1
+
+        if (workers <= 0)
+            throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
+
+        println("Will start Ignite nodes on " + workers + " workers")
+
+        // Start ignite server node on each worker in server mode.
+        sparkContext.parallelize(1 to workers, workers).foreach(it ⇒ ignite())
+    }
+
     def this(
         sc: SparkContext,
         springUrl: String
@@ -62,7 +77,7 @@ class IgniteContext[K, V](
         catch {
             case e: Exception ⇒
                 try {
-                    igniteCfg.setClientMode(true)
+                    igniteCfg.setClientMode(client || driver)
 
                     Ignition.start(igniteCfg)
                 }

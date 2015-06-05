@@ -146,7 +146,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        IpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load(log);
 
         pid = IpcSharedMemoryUtils.pid();
 
