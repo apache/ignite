@@ -2535,6 +2535,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     }
 
     /**
+     * @param cacheCtx Cache context.
+     * @throws IgniteCheckedException If updates are not allowed.
+     */
+    private void checkUpdatesAllowed(GridCacheContext cacheCtx) throws IgniteCheckedException {
+        if (!cacheCtx.updatesAllowed()) {
+            throw new IgniteTxRollbackCheckedException(new CacheException(
+                "Updates are not allowed for transactional cache: " + cacheCtx.name() + ". Configure " +
+                "persistence store on client or use remote closure execution to start transactions " +
+                "from server nodes."));
+        }
+    }
+
+    /**
      * Internal method for all put and transform operations. Only one of {@code map}, {@code transformMap}
      * maps must be non-null.
      *
@@ -2561,8 +2574,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     ) {
         assert filter == null || invokeMap == null;
 
-        if (!cacheCtx.updatesAllowed())
-            throw new CacheException("Updates are not allowed for cache: " + cacheCtx.name());
+        try {
+            checkUpdatesAllowed(cacheCtx);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture(e);
+        }
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
 
@@ -2784,8 +2801,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable GridCacheEntryEx cached,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter) {
-        if (!cacheCtx.updatesAllowed())
-            throw new CacheException("Updates are not allowed for cache: " + cacheCtx.name());
+        try {
+            checkUpdatesAllowed(cacheCtx);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture(e);
+        }
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 

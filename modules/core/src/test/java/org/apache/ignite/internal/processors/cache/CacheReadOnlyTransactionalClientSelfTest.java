@@ -31,12 +31,17 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.processor.*;
 
+import static org.apache.ignite.IgniteSystemProperties.*;
+
 /**
  * Tests for read-only transactional cache client.
  */
 public class CacheReadOnlyTransactionalClientSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String CACHE_NAME = "test-cache";
 
     /** */
     private boolean client;
@@ -55,6 +60,7 @@ public class CacheReadOnlyTransactionalClientSelfTest extends GridCommonAbstract
 
         CacheConfiguration cc = new CacheConfiguration();
 
+        cc.setName(CACHE_NAME);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cc.setCacheStoreFactory(factory);
 
@@ -100,7 +106,7 @@ public class CacheReadOnlyTransactionalClientSelfTest extends GridCommonAbstract
 
         Ignite ignite = startGrid();
 
-        IgniteCache cache = ignite.cache(null);
+        IgniteCache cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -140,6 +146,25 @@ public class CacheReadOnlyTransactionalClientSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testDisabledConsistencyCheck() throws Exception {
+        client = false;
+        nearEnabled = false;
+        factory = new Factory2();
+
+        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
+
+        startGrid("client-1");
+
+        factory = new Factory1();
+
+        System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
+
+        startGrid("client-2");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testNoStoreNearDisabled() throws Exception {
         nearEnabled = false;
 
@@ -164,7 +189,7 @@ public class CacheReadOnlyTransactionalClientSelfTest extends GridCommonAbstract
 
         Ignite ignite = startGrid();
 
-        IgniteCache cache = ignite.cache(null);
+        IgniteCache cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -173,91 +198,104 @@ public class CacheReadOnlyTransactionalClientSelfTest extends GridCommonAbstract
             cache.getAndPut(0, 0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.getAndPutIfAbsent(0, 0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.getAndRemove(0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.getAndReplace(0, 0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.put(0, 0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.putAll(F.asMap(0, 0, 1, 1));
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.putIfAbsent(0, 0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.remove(0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.remove(0, 0);
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.removeAll(F.asSet(0, 1));
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.removeAll();
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.invoke(0, new EP());
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
 
         try {
             cache.invokeAll(F.asSet(0, 1), new EP());
         }
         catch (CacheException e) {
-            assertEquals("Updates are not allowed for cache: null", e.getMessage());
+            assert e.getMessage().startsWith("Updates are not allowed for transactional cache: " + CACHE_NAME + ".") :
+                e.getMessage();
         }
     }
 
