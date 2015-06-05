@@ -177,11 +177,16 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     }
 
     /** {@inheritDoc} */
-    @Override public void offset(int off) throws IOException {
+    @Override public void position(int pos) throws IOException {
         if (in != null)
             throw new IOException("Unable to change offset in InputStream");
 
-        this.off = off;
+        this.off = pos;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int position() throws IOException {
+        return off;
     }
 
     /**

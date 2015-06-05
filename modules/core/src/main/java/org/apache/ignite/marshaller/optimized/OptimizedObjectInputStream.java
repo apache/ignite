@@ -956,6 +956,17 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         return -1;
     }
 
+    /**
+     * Checks whether the object has a field with name {@code fieldName}.
+     *
+     * @param fieldName Field name.
+     * @return {@code true} if field exists, {@code false} otherwise.
+     */
+    public boolean hasField(String fieldName) {
+
+        return false;
+    }
+
     //TODO
     Object readField(String fieldName) throws IOException, ClassNotFoundException {
         byte type = in.readByte();
@@ -966,7 +977,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int fieldId = resolveFieldId(fieldName);
 
         int end = in.size();
-        in.offset(end - 4);
+        in.position(end - 4);
 
         int footerLen = in.readInt();
 
@@ -974,7 +985,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             return null; //TODO: IGNITE-950
 
         int footerStartOff = in.size() - footerLen;
-        in.offset(footerStartOff);
+        in.position(footerStartOff);
 
         int fieldsDataPos = in.readInt();
 
@@ -996,7 +1007,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         }
 
         if (fieldOff > 0) {
-            in.offset(fieldOff);
+            in.position(fieldOff);
             return readObject();
         }
 

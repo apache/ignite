@@ -43,12 +43,20 @@ public interface GridDataInput extends DataInput {
     public void inputStream(InputStream in) throws IOException;
 
     /**
-     * Sets offset to the new position. Supported only for {@code GridDataInput} backed by byte array.
+     * Moves stream cursor to the new position. Supported only for {@code GridDataInput} backed by byte array.
      *
-     * @param off Offset.
+     * @param pos Position.
      * @throws IOException In case of error.
      */
-    public void offset(int off) throws IOException;
+    public void position(int pos) throws IOException;
+
+    /**
+     * Returns current position in the {@code GridDataInput} stream.
+     *
+     * @return Position.
+     * @throws IOException In case of error.
+     */
+    public int position() throws IOException;
 
     /**
      * Size of {@code GridDataInput}. Supported only for instances backed by byte array.
