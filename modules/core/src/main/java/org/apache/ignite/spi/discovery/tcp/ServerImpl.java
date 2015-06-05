@@ -1752,7 +1752,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Nullable Collection<TcpDiscoveryAbstractMessage> messages(IgniteUuid lastMsgId) {
             assert lastMsgId != null;
 
-            Collection<TcpDiscoveryAbstractMessage> copy = new ArrayList<>(msgs.size());
+            Collection<TcpDiscoveryAbstractMessage> cp = new ArrayList<>(msgs.size());
 
             boolean skip = true;
 
@@ -1762,10 +1762,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         skip = false;
                 }
                 else
-                    copy.add(msg);
+                    cp.add(msg);
             }
 
-            return !skip ? copy : null;
+            return !skip ? cp : null;
         }
 
         /**
@@ -2704,8 +2704,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 node.aliveCheck(spi.maxMissedClientHbs);
 
                 if (isLocalNodeCoordinator()) {
-                    Collection<TcpDiscoveryAbstractMessage> pending =
-                        pendingMsgs.messages(msg.lastMessageId());
+                    Collection<TcpDiscoveryAbstractMessage> pending = pendingMsgs.messages(msg.lastMessageId());
 
                     if (pending != null) {
                         msg.pendingMessages(pending);
