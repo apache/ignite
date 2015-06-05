@@ -51,6 +51,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheConfigurationP2PTest.class);
 
+        suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
+
         return suite;
     }
 }

@@ -293,9 +293,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param cacheId Cache ID to check.
+     * @param topVer Topology version.
      * @return {@code True} if cache was added during this exchange.
      */
-    public boolean isCacheAdded(int cacheId) {
+    public boolean isCacheAdded(int cacheId, AffinityTopologyVersion topVer) {
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
                 if (req.start() && !req.clientStartOnly()) {
@@ -305,7 +306,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        return false;
+        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
+
+        return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
     }
 
     /**
@@ -505,11 +508,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (cacheCtx.isLocal())
                                 continue;
 
-                            cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
-
                             GridDhtPartitionTopology top = cacheCtx.topology();
 
                             top.updateTopologyVersion(exchId, this, -1, stopping(cacheCtx.cacheId()));
+
+                            if (cacheCtx.affinity().affinityTopologyVersion() == AffinityTopologyVersion.NONE) {
+                                initTopology(cacheCtx);
+
+                                top.beforeExchange(this);
+                            }
+                            else
+                                cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
                         }
 
                         if (exchId.isLeft())
@@ -566,7 +575,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 assert oldestNode.get() != null;
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                    if (isCacheAdded(cacheCtx.cacheId())) {
+                    if (isCacheAdded(cacheCtx.cacheId(), exchId.topologyVersion())) {
                         if (cacheCtx.discovery().cacheAffinityNodes(cacheCtx.name(), topologyVersion()).isEmpty())
                             U.quietAndWarn(log, "No server nodes found for cache client: " + cacheCtx.namex());
                     }
