@@ -114,7 +114,7 @@ class IgniteRDD[K, V] (
         ic.sqlContext.createDataFrame(rowRdd, schema)
     }
 
-    def saveValues(rdd: RDD[V]) = {
+    def saveValues(rdd: RDD[V], overwrite: Boolean = false) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -127,6 +127,8 @@ class IgniteRDD[K, V] (
             val streamer = ig.dataStreamer[Object, V](cacheName)
 
             try {
+                streamer.allowOverwrite(overwrite)
+
                 it.foreach(value ⇒ {
                     val key = affinityKeyFunc(value, node.orNull)
 
@@ -139,7 +141,7 @@ class IgniteRDD[K, V] (
         })
     }
 
-    def savePairs(rdd: RDD[(K, V)]) = {
+    def savePairs(rdd: RDD[(K, V)], overwrite: Boolean = false) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -149,6 +151,8 @@ class IgniteRDD[K, V] (
             val streamer = ig.dataStreamer[K, V](cacheName)
 
             try {
+                streamer.allowOverwrite(overwrite)
+
                 it.foreach(tup ⇒ {
                     streamer.addData(tup._1, tup._2)
                 })
