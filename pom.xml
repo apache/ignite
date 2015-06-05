@@ -51,7 +51,6 @@
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/hadoop</module>
-        <module>modules/spark</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
@@ -410,16 +409,32 @@
             <id>scala</id>
 
             <activation>
-                <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
+                <property><name>!scala-2.10</name></property>
             </activation>
 
             <modules>
                 <module>modules/scalar</module>
+                <module>modules/spark</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
             </modules>
         </profile>
+
+        <profile>
+            <id>scala-2.10</id>
+
+            <activation>
+                <property><name>scala-2.10</name></property>
+            </activation>
+
+            <modules>
+                <module>modules/scalar-2.10</module>
+                <module>modules/spark-2.10</module>
+                <module>modules/visor-console-2.10</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
 
         <profile>
             <id>lgpl</id>

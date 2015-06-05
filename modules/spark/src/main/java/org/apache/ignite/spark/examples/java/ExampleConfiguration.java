@@ -15,25 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.examples
+package org.apache.ignite.spark.examples.java;
 
-import org.apache.ignite.spark.IgniteContext
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 
-object ColocationTest {
-    def main(args: Array[String]) {
-        val conf = new SparkConf().setAppName("Colocation test")
-        val sc = new SparkContext(conf)
-
-        val ignite = new IgniteContext[Int, Int](sc, ExampleConfiguration.configuration _)
-
-        // Search for lines containing "Ignite".
-        val cache = ignite.fromCache("partitioned")
-
-        cache.savePairs(sc.parallelize((1 to 100000).toSeq, 48).map(i => (i, i)))
-
-        // Execute parallel sum.
-        println("Local sum: " + (1 to 100000).sum)
-        println("Distributed sum: " + cache.map(_._2).sum())
+/**
+ * Ignite example configuration provider.
+ */
+public class ExampleConfiguration implements IgniteOutClosure<IgniteConfiguration> {
+    /** {@inheritDoc} */
+    @Override public IgniteConfiguration apply() {
+        return org.apache.ignite.spark.examples.ExampleConfiguration.configuration();
     }
 }
