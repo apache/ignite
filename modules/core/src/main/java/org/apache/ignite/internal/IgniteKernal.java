@@ -963,8 +963,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             sysPoolQSize = exec.getQueue().size();
                         }
 
+                        String id = U.id8(localNode().id());
+
                         String msg = NL +
                             "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
+                            "    ^-- Node [id=" + id + ", name=" + name() + "]" + NL +
                             "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                             "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
