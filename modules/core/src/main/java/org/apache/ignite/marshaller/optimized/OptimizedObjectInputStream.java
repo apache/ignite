@@ -961,38 +961,80 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      *
      * @param fieldName Field name.
      * @return {@code true} if field exists, {@code false} otherwise.
+     * @throws IOException in case of error.
      */
-    public boolean hasField(String fieldName) {
+    public boolean hasField(String fieldName) throws IOException {
+        int pos = in.position();
 
-        return false;
+        // TODO: IGNITE-950, do we need move to start position?
+        if (!supportsFooter(in.readByte()))
+            return false;
+
+        int off = fieldOffset(fieldName);
+
+        in.position(pos);
+
+        return off > 0;
     }
 
-    //TODO
+    /**
+     * TODO: IGNITE-950
+     * @param fieldName
+     * @return
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     Object readField(String fieldName) throws IOException, ClassNotFoundException {
-        byte type = in.readByte();
+        int pos = in.position();
 
-        if (type != SERIALIZABLE)
-            return -1;
+        // TODO: IGNITE-950, do we need move to start position?
+        if (!supportsFooter(in.readByte()))
+            return false;
 
+        int off = fieldOffset(fieldName);
+
+        Object obj = null;
+
+        if (off > 0) {
+            in.position(off);
+            obj = readObject();
+        }
+
+        in.position(pos);
+
+        return obj;
+    }
+
+    /**
+     * Returns field offset in the byte stream.
+     *
+     * @param fieldName Field name.
+     * @return positive offset or -1 if the object doesn't have such a field.
+     * @throws IOException in case of error.
+     */
+    private int fieldOffset(String fieldName) throws IOException {
         int fieldId = resolveFieldId(fieldName);
 
         int end = in.size();
-        in.position(end - 4);
+
+        in.position(end - FOOTER_LEN_OFF);
 
         int footerLen = in.readInt();
 
         if (footerLen == EMPTY_FOOTER)
-            return null; //TODO: IGNITE-950
+            return -1;
 
-        int footerStartOff = in.size() - footerLen;
+        int footerStartOff = end - footerLen;
         in.position(footerStartOff);
 
         int fieldsDataPos = in.readInt();
 
         int fieldOff = -1;
 
+        // 8 - size of footer len and object total len fields.
+        int bound = end - 8;
 
-        while (footerStartOff < end - 8) {
+        while (footerStartOff < bound) {
             int id = in.readInt();
 
             if (fieldId == id) {
@@ -1006,12 +1048,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             footerStartOff += 12;
         }
 
-        if (fieldOff > 0) {
-            in.position(fieldOff);
-            return readObject();
-        }
-
-        return null; //TODO
+        return fieldOff;
     }
 
     /**

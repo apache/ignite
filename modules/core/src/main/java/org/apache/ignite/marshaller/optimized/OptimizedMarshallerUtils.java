@@ -146,6 +146,8 @@ class OptimizedMarshallerUtils {
     /** */
     static final byte EMPTY_FOOTER = -1;
 
+    /** */
+    static final byte FOOTER_LEN_OFF = 4;
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -232,6 +234,15 @@ class OptimizedMarshallerUtils {
         return typeId;
     }
 
+    /**
+     * Checks whether a given type supports and should include footer with fields info into the serialized form.
+     *
+     * @param type Type.
+     * @return {@code true} if supported, {@code false} otherwise.
+     */
+    public static boolean supportsFooter(int type) {
+        return type == SERIALIZABLE;
+    }
     /**
      * @param fieldName Field name.
      * @return Field ID.
