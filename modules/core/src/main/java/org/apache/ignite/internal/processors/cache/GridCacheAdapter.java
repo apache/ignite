@@ -1220,11 +1220,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws IgniteCheckedException {
+    @Nullable @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) throws IgniteCheckedException {
+        return getAllOutTxAsync(keys).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(keys, !ctx.config().isReadFromBackup(), /*skip tx*/true, null, null, taskName, true, false)
-            .get();
+        return getAllAsync(keys,
+            !ctx.config().isReadFromBackup(),
+            /*skip tx*/true,
+            null,
+            null,
+            taskName,
+            !ctx.keepPortable(),
+            false);
     }
 
     /**
