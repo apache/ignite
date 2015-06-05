@@ -4893,6 +4893,89 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testGetOutTx() throws Exception {
+        checkGetOutTx(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetOutTxAsync() throws Exception {
+        checkGetOutTx(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkGetOutTx(boolean async) throws Exception {
+        final AtomicInteger lockEvtCnt = new AtomicInteger();
+
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                lockEvtCnt.incrementAndGet();
+
+                return true;
+            }
+        };
+
+        try {
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+            List<String> keys = primaryKeysForCache(cache, 2);
+
+            assertEquals(2, keys.size());
+
+            cache.put(keys.get(0), 0);
+            cache.put(keys.get(1), 1);
+
+            grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
+
+            if (async)
+                cache = cache.withAsync();
+
+            try (Transaction tx = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                Integer val0 = cache.get(keys.get(0));
+
+                if (async)
+                    val0 = cache.<Integer>future().get();
+
+                assertEquals(0, val0.intValue());
+
+                Map<String, Integer> allOutTx = cache.getAllOutTx(F.asSet(keys.get(1)));
+
+                if (async)
+                    allOutTx = cache.<Map<String, Integer>>future().get();
+
+                assertEquals(1, allOutTx.size());
+
+                assertTrue(allOutTx.containsKey(keys.get(1)));
+
+                assertEquals(1, allOutTx.get(keys.get(1)).intValue());
+            }
+
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    info("Lock event count: " + lockEvtCnt.get());
+                    if (atomicityMode() == ATOMIC)
+                        return lockEvtCnt.get() == 0;
+
+                    if (cacheMode() == PARTITIONED && nearEnabled()) {
+                        if (!grid(0).configuration().isClientMode())
+                            return lockEvtCnt.get() == 4;
+                    }
+
+                    return lockEvtCnt.get() == 2;
+                }
+            }, 15000));
+        }
+        finally {
+            grid(0).events().stopLocalListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
+        }
+    }
+
+    /**
      * Sets given value, returns old value.
      */
     public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
