@@ -101,7 +101,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private IgniteInternalCache<CacheDataStructuresCacheKey, List<CacheCollectionInfo>> utilityDataCache;
 
     /** */
-    private UUID qryId;
+    private volatile UUID qryId;
 
     /**
      * @param ctx Context.
@@ -144,11 +144,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             seqView = atomicsCache;
 
             dsCacheCtx = atomicsCache.context();
+        }
+    }
 
-            qryId = dsCacheCtx.continuousQueries().executeInternalQuery(new DataStructuresEntryListener(),
-                new DataStructuresEntryFilter(),
-                dsCacheCtx.isReplicated() && dsCacheCtx.affinityNode(),
-                false);
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void startQuery() throws IgniteCheckedException {
+        if (qryId == null) {
+            synchronized (this) {
+                if (qryId == null) {
+                    qryId = dsCacheCtx.continuousQueries().executeInternalQuery(new DataStructuresEntryListener(),
+                        new DataStructuresEntryFilter(),
+                        dsCacheCtx.isReplicated() && dsCacheCtx.affinityNode(),
+                        false);
+                }
+            }
         }
     }
 
@@ -177,6 +188,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         A.notNull(name, "name");
 
         checkAtomicsConfiguration();
+
+        startQuery();
 
         return getAtomic(new IgniteOutClosureX<IgniteAtomicSequence>() {
             @Override public IgniteAtomicSequence applyx() throws IgniteCheckedException {
@@ -303,6 +316,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         A.notNull(name, "name");
 
         checkAtomicsConfiguration();
+
+        startQuery();
 
         return getAtomic(new IgniteOutClosureX<IgniteAtomicLong>() {
             @Override public IgniteAtomicLong applyx() throws IgniteCheckedException {
@@ -507,6 +522,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         checkAtomicsConfiguration();
 
+        startQuery();
+
         return getAtomic(new IgniteOutClosureX<IgniteAtomicReference>() {
             @Override public IgniteAtomicReference<T> applyx() throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
@@ -607,6 +624,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         A.notNull(name, "name");
 
         checkAtomicsConfiguration();
+
+        startQuery();
 
         return getAtomic(new IgniteOutClosureX<IgniteAtomicStamped>() {
             @Override public IgniteAtomicStamped<T, S> applyx() throws IgniteCheckedException {
@@ -915,6 +934,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             A.ensure(cnt >= 0, "count can not be negative");
 
         checkAtomicsConfiguration();
+
+        startQuery();
 
         return getAtomic(new IgniteOutClosureX<IgniteCountDownLatch>() {
             @Override public IgniteCountDownLatch applyx() throws IgniteCheckedException {

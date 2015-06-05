@@ -100,12 +100,6 @@ public interface GridCommunicationClient {
     public boolean sendMessage(@Nullable UUID nodeId, Message msg) throws IgniteCheckedException;
 
     /**
-     * @param timeout Timeout.
-     * @throws IOException If failed.
-     */
-    public void flushIfNeeded(long timeout) throws IOException;
-
-    /**
      * @return {@code True} if send is asynchronous.
      */
     public boolean async();

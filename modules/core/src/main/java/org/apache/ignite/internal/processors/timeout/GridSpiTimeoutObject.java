@@ -53,6 +53,20 @@ public class GridSpiTimeoutObject implements GridTimeoutObject {
     }
 
     /** {@inheritDoc} */
+    @Override public int hashCode() {
+        assert false;
+
+        return super.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        assert false;
+
+        return super.equals(obj);
+    }
+
+    /** {@inheritDoc} */
     @Override public final String toString() {
         return S.toString(GridSpiTimeoutObject.class, this);
     }
