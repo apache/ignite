@@ -144,7 +144,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         uri = name;
 
-        user = getFsHadoopUser(cfg);
+        user = getFsHadoopUser();
 
         try {
             initialize(name, cfg);

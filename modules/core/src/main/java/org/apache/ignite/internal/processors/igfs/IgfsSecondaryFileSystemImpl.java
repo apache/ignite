@@ -121,6 +121,6 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        igfs.stop(true);
+        // No-op.
     }
 }
