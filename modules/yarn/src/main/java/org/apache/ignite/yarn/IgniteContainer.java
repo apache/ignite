@@ -20,7 +20,7 @@ package org.apache.ignite.yarn;
 /**
  * Information about launched task.
  */
-public class IgniteTask {
+public class IgniteContainer {
     /** */
     public final String host;
 
@@ -30,22 +30,17 @@ public class IgniteTask {
     /** */
     public final double mem;
 
-    /** */
-    public final double disk;
-
     /**
      * Ignite launched task.
      *
      * @param host Host.
      * @param cpuCores Cpu cores count.
-     * @param mem Memory.
-     * @param disk Disk.
+     * @param mem Memory
      */
-    public IgniteTask(String host, double cpuCores, double mem, double disk) {
+    public IgniteContainer(String host, double cpuCores, double mem) {
         this.host = host;
         this.cpuCores = cpuCores;
         this.mem = mem;
-        this.disk = disk;
     }
 
     /**
@@ -67,13 +62,6 @@ public class IgniteTask {
      */
     public double mem() {
         return mem;
-    }
-
-    /**
-     * @return Disk.
-     */
-    public double disk() {
-        return disk;
     }
 
     @Override

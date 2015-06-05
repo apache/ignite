@@ -17,86 +17,130 @@
 
 package org.apache.ignite.yarn;
 
-import com.google.common.collect.Lists;
-import org.apache.hadoop.conf.*;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.yarn.api.*;
-import org.apache.hadoop.yarn.api.protocolrecords.*;
+import org.apache.commons.io.*;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.*;
 import org.apache.hadoop.yarn.client.api.async.*;
 import org.apache.hadoop.yarn.conf.*;
 import org.apache.hadoop.yarn.util.*;
+import org.apache.ignite.yarn.utils.*;
 
+import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * TODO
  */
 public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
-    YarnConfiguration configuration;
-    NMClient nmClient;
-    int numContainersToWaitFor = 1;
+    /** Default port range. */
+    public static final String DEFAULT_PORT = ":47500..47510";
 
-    public ApplicationMaster() {
-        configuration = new YarnConfiguration();
+    /** Delimiter char. */
+    public static final String DELIM = ",";
+
+    /** */
+    private YarnConfiguration conf;
+
+    /** */
+    private ClusterProperties props;
+
+    /** */
+    private NMClient nmClient;
+
+    /** */
+    private Path ignitePath;
+
+    /** */
+    private Path cfgPath;
+
+    /** */
+    private FileSystem fs;
+
+    /** */
+    private Map<String, IgniteContainer> containers = new HashMap<>();
+
+    /**
+     * Constructor.
+     */
+    public ApplicationMaster(String ignitePath, ClusterProperties props) throws Exception {
+        this.conf = new YarnConfiguration();
+        this.props = props;
+        this.fs = FileSystem.get(conf);
+        this.ignitePath = new Path(ignitePath);
 
         nmClient = NMClient.createNMClient();
-        nmClient.init(configuration);
+
+        nmClient.init(conf);
         nmClient.start();
     }
 
     /** {@inheritDoc} */
-    public void onContainersAllocated(List<Container> containers) {
-        for (Container container : containers) {
+    public synchronized void onContainersAllocated(List<Container> conts) {
+        for (Container container : conts) {
             try {
-                // Launch container by create ContainerLaunchContext
                 ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
 
-                final LocalResource igniteZip = Records.newRecord(LocalResource.class);
-                setupAppMasterJar(new Path("/user/ntikhonov/gridgain-community-fabric-1.0.6.zip"), igniteZip,
-                    configuration);
+                Map<String, String> env = new HashMap<>(System.getenv());
 
-                ctx.setLocalResources(Collections.singletonMap("ignite", igniteZip));
+                env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(container.getNodeId().getHost()));
+
+                ctx.setEnvironment(env);
+
+                Map<String, LocalResource> resources = new HashMap<>();
+
+                resources.put("ignite", IgniteYarnUtils.setupFile(ignitePath, fs, LocalResourceType.ARCHIVE));
+                resources.put("ignite-config.xml", IgniteYarnUtils.setupFile(cfgPath, fs, LocalResourceType.FILE));
+
+                ctx.setLocalResources(resources);
+
                 ctx.setCommands(
-                        Lists.newArrayList(
-                                "$LOCAL_DIRS/ignite/*/bin/ignite.sh" +
-                                " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" +
-                                " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"
-                        ));
+                    Collections.singletonList(
+                        "./ignite/*/bin/ignite.sh "
+                        + "./ignite-config.xml"
+                        + " -J-Xmx" + container.getResource().getMemory() + "m"
+                        + " -J-Xms" + container.getResource().getMemory() + "m"
+                        + IgniteYarnUtils.YARN_LOG_OUT
+                    ));
+
                 System.out.println("[AM] Launching container " + container.getId());
+
                 nmClient.startContainer(container, ctx);
-            } catch (Exception ex) {
+
+                containers.put(container.getNodeId().getHost(),
+                    new IgniteContainer(container.getNodeId().getHost(), container.getResource().getVirtualCores(),
+                        container.getResource().getMemory()));
+            }
+            catch (Exception ex) {
                 System.err.println("[AM] Error launching container " + container.getId() + " " + ex);
             }
         }
     }
 
-    /** {@inheritDoc} */
-    private static void setupAppMasterJar(Path jarPath, LocalResource appMasterJar, YarnConfiguration conf)
-        throws Exception {
-        FileSystem fileSystem = FileSystem.get(conf);
-        jarPath = fileSystem.makeQualified(jarPath);
+    /**
+     * @return Address running nodes.
+     */
+    private String getAddress(String address) {
+        if (containers.isEmpty()) {
+            if (address != null && !address.isEmpty())
+                return address + DEFAULT_PORT;
 
-        FileStatus jarStat = fileSystem.getFileStatus(jarPath);
+            return "";
+        }
 
-        appMasterJar.setResource(ConverterUtils.getYarnUrlFromPath(jarPath));
-        appMasterJar.setSize(jarStat.getLen());
-        appMasterJar.setTimestamp(jarStat.getModificationTime());
-        appMasterJar.setType(LocalResourceType.ARCHIVE);
-        appMasterJar.setVisibility(LocalResourceVisibility.APPLICATION);
+        StringBuilder sb = new StringBuilder();
 
-        System.out.println("Path :" + jarPath);
+        for (IgniteContainer cont : containers.values())
+            sb.append(cont.host()).append(DEFAULT_PORT).append(DELIM);
+
+        return sb.substring(0, sb.length() - 1);
     }
 
     /** {@inheritDoc} */
-    public void onContainersCompleted(List<ContainerStatus> statuses) {
+    public synchronized void onContainersCompleted(List<ContainerStatus> statuses) {
         for (ContainerStatus status : statuses) {
-            System.out.println("[AM] Completed container " + status.getContainerId());
             synchronized (this) {
-                numContainersToWaitFor--;
             }
         }
     }
@@ -111,6 +155,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /** {@inheritDoc} */
     public void onError(Throwable t) {
+        nmClient.stop();
     }
 
     /** {@inheritDoc} */
@@ -118,28 +163,35 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         return 50;
     }
 
-    public boolean doneWithContainers() {
-        return numContainersToWaitFor == 0;
-    }
-
-    public Configuration getConfiguration() {
-        return configuration;
-    }
-
+    /**
+     * @param args Args.
+     * @throws Exception If failed.
+     */
     public static void main(String[] args) throws Exception {
-        ApplicationMaster master = new ApplicationMaster();
-        master.runMainLoop();
+        ClusterProperties props = ClusterProperties.from(null);
+
+        ApplicationMaster master = new ApplicationMaster(args[0], props);
+
+        master.init();
+
+        master.run();
     }
 
-    public void runMainLoop() throws Exception {
+    /**
+     * Runs application master.
+     *
+     * @throws Exception If failed.
+     */
+    public void run() throws Exception {
+        // Create asyn application master.
+        AMRMClientAsync<AMRMClient.ContainerRequest> rmClient = AMRMClientAsync.createAMRMClientAsync(300, this);
 
-        AMRMClientAsync<AMRMClient.ContainerRequest> rmClient = AMRMClientAsync.createAMRMClientAsync(100, this);
-        rmClient.init(getConfiguration());
+        rmClient.init(conf);
         rmClient.start();
 
         // Register with ResourceManager
-        System.out.println("[AM] registerApplicationMaster 0");
         rmClient.registerApplicationMaster("", 0, "");
+
         System.out.println("[AM] registerApplicationMaster 1");
 
         // Priority for worker containers - priorities are intra-application
@@ -148,27 +200,51 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
         // Resource requirements for worker containers
         Resource capability = Records.newRecord(Resource.class);
-        capability.setMemory(128);
-        capability.setVirtualCores(1);
+        capability.setMemory(1024);
+        capability.setVirtualCores(2);
 
         // Make container requests to ResourceManager
-        for (int i = 0; i < numContainersToWaitFor; ++i) {
-            AMRMClient.ContainerRequest containerAsk = new AMRMClient.ContainerRequest(capability, null, null, priority);
+        for (int i = 0; i < 1; ++i) {
+            AMRMClient.ContainerRequest containerAsk =
+                new AMRMClient.ContainerRequest(capability, null, null, priority);
+
             System.out.println("[AM] Making res-req " + i);
+
             rmClient.addContainerRequest(containerAsk);
         }
 
         System.out.println("[AM] waiting for containers to finish");
-        while (!doneWithContainers()) {
-            Thread.sleep(100);
-        }
 
-
+        TimeUnit.MINUTES.sleep(10);
 
         System.out.println("[AM] unregisterApplicationMaster 0");
+
         // Un-register with ResourceManager
-        rmClient.unregisterApplicationMaster(
-                FinalApplicationStatus.SUCCEEDED, "", "");
+        rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
+
         System.out.println("[AM] unregisterApplicationMaster 1");
+    }
+
+    /**
+     * @throws IOException
+     */
+    public void init() throws IOException {
+        if (props.igniteConfigUrl() == null || props.igniteConfigUrl().isEmpty()) {
+            InputStream input = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(IgniteYarnUtils.DEFAULT_IGNITE_CONFIG);
+
+            cfgPath = new Path(props.igniteWorkDir() + File.separator + IgniteYarnUtils.DEFAULT_IGNITE_CONFIG);
+
+            // Create file. Override by default.
+            FSDataOutputStream outputStream = fs.create(cfgPath, true);
+
+            IOUtils.copy(input, outputStream);
+
+            IOUtils.closeQuietly(input);
+
+            IOUtils.closeQuietly(outputStream);
+        }
+        else
+            cfgPath = new Path(props.igniteConfigUrl());
     }
 }

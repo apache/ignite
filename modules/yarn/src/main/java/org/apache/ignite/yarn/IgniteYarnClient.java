@@ -17,20 +17,15 @@
 
 package org.apache.ignite.yarn;
 
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.*;
 import org.apache.hadoop.yarn.conf.*;
-import org.apache.hadoop.yarn.util.Apps;
-import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.apache.hadoop.yarn.util.Records;
+import org.apache.hadoop.yarn.util.*;
+import org.apache.ignite.yarn.utils.*;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 import java.util.logging.*;
 
 import static org.apache.hadoop.yarn.api.ApplicationConstants.*;
@@ -43,11 +38,18 @@ public class IgniteYarnClient {
     public static final Logger log = Logger.getLogger(IgniteYarnClient.class.getSimpleName());
 
     /**
-     * Main methods has only one optional parameter - path to properties files.
+     * Main methods has only one optional parameter - path to properties file.
      *
      * @param args Args.
      */
     public static void main(String[] args) throws Exception {
+        checkArguments(args);
+
+        // Set path to app master jar.
+        String pathAppMasterJar = args[0];
+
+        ClusterProperties props = ClusterProperties.from(args.length == 2 ? args[1] : null);
+
         YarnConfiguration conf = new YarnConfiguration();
         YarnClient yarnClient = YarnClient.createYarnClient();
         yarnClient.init(conf);
@@ -56,45 +58,48 @@ public class IgniteYarnClient {
         // Create application via yarnClient
         YarnClientApplication app = yarnClient.createApplication();
 
+        FileSystem fs = FileSystem.get(conf);
+
+        // Load ignite and jar
+        Path ignite = getIgnite(props, fs);
+
+        Path appJar = IgniteYarnUtils.copyLocalToHdfs(fs, pathAppMasterJar,
+            props.igniteWorkDir() + File.separator + IgniteYarnUtils.JAR_NAME);
+
         // Set up the container launch context for the application master
         ContainerLaunchContext amContainer = Records.newRecord(ContainerLaunchContext.class);
 
+        System.out.println(Environment.JAVA_HOME.$() + "/bin/java -Xmx512m " + ApplicationMaster.class.getName()
+            + IgniteYarnUtils.SPACE + ignite.toUri());
+
         amContainer.setCommands(
-                Collections.singletonList(
-                        " $JAVA_HOME/bin/java -Xmx256M org.apache.ignite.yarn.ApplicationMaster" +
-                        " 1>" + LOG_DIR_EXPANSION_VAR + "/stdout" +
-                        " 2>" + LOG_DIR_EXPANSION_VAR + "/stderr"
-                )
+            Collections.singletonList(
+                Environment.JAVA_HOME.$() + "/bin/java -Xmx512m " + ApplicationMaster.class.getName()
+                + IgniteYarnUtils.SPACE + ignite.toUri()
+                + IgniteYarnUtils.YARN_LOG_OUT
+            )
         );
 
         // Setup jar for ApplicationMaster
-        final LocalResource appMasterJar = Records.newRecord(LocalResource.class);
-        setupAppMasterJar(new Path("/user/ntikhonov/ignite-yarn.jar"), appMasterJar, conf);
+        LocalResource appMasterJar = IgniteYarnUtils.setupFile(appJar, fs, LocalResourceType.FILE);
 
-        final LocalResource igniteZip = Records.newRecord(LocalResource.class);
-        setupAppMasterJar(new Path("/user/ntikhonov/gridgain-community-fabric-1.0.6.zip"), igniteZip, conf);
-
-        amContainer.setLocalResources(new HashMap<String, LocalResource>() {{
-            put("ignite-yarn.jar", appMasterJar);
-            put("gridgain-community-fabric-1.0.6.zip", igniteZip);
-        }});
-
-
+        amContainer.setLocalResources(Collections.singletonMap(IgniteYarnUtils.JAR_NAME, appMasterJar));
 
         // Setup CLASSPATH for ApplicationMaster
-        Map<String, String> appMasterEnv = new HashMap<>();
+        Map<String, String> appMasterEnv = props.toEnvs();
+
         setupAppMasterEnv(appMasterEnv, conf);
+
         amContainer.setEnvironment(appMasterEnv);
 
         // Set up resource type requirements for ApplicationMaster
         Resource capability = Records.newRecord(Resource.class);
-        capability.setMemory(256);
+        capability.setMemory(512);
         capability.setVirtualCores(1);
 
         // Finally, set-up ApplicationSubmissionContext for the application
-        ApplicationSubmissionContext appContext =
-                app.getApplicationSubmissionContext();
-        appContext.setApplicationName("simple-yarn-app"); // application name
+        ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
+        appContext.setApplicationName("ignition"); // application name
         appContext.setAMContainerSpec(amContainer);
         appContext.setResource(capability);
         appContext.setQueue("default"); // queue
@@ -106,44 +111,57 @@ public class IgniteYarnClient {
 
         ApplicationReport appReport = yarnClient.getApplicationReport(appId);
         YarnApplicationState appState = appReport.getYarnApplicationState();
+
         while (appState != YarnApplicationState.FINISHED &&
                 appState != YarnApplicationState.KILLED &&
                 appState != YarnApplicationState.FAILED) {
             Thread.sleep(100);
+
             appReport = yarnClient.getApplicationReport(appId);
+
             appState = appReport.getYarnApplicationState();
         }
 
-        System.out.println(
-                "Application " + appId + " finished with" +
-                        " state " + appState +
-                        " at " + appReport.getFinishTime());
+        yarnClient.killApplication(appId);
+
+        System.out.println("Application " + appId + " finished with state " + appState + " at "
+            + appReport.getFinishTime());
     }
 
-    private static void setupAppMasterJar(Path jarPath, LocalResource appMasterJar, YarnConfiguration conf)
-        throws Exception {
-        FileSystem fileSystem = FileSystem.get(conf);
-        jarPath = fileSystem.makeQualified(jarPath);
-
-        FileStatus jarStat = fileSystem.getFileStatus(jarPath);
-
-        appMasterJar.setResource(ConverterUtils.getYarnUrlFromPath(jarPath));
-        appMasterJar.setSize(jarStat.getLen());
-        appMasterJar.setTimestamp(jarStat.getModificationTime());
-        appMasterJar.setType(LocalResourceType.ARCHIVE);
-        appMasterJar.setVisibility(LocalResourceVisibility.APPLICATION);
-
-        System.out.println("Path :" + jarPath);
+    /**
+     * Check input arguments.
+     *
+     * @param args Arguments.
+     */
+    private static void checkArguments(String[] args) {
+        if (args.length < 1)
+            throw new IllegalArgumentException();
     }
 
-    private static void setupAppMasterEnv(Map<String, String> appMasterEnv, YarnConfiguration conf) {
-        for (String c : conf.getStrings(
-                YarnConfiguration.YARN_APPLICATION_CLASSPATH,
-                YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH))
-            Apps.addToEnvironment(appMasterEnv, Environment.CLASSPATH.name(),
+    /**
+     * @param props Properties.
+     * @param fileSystem Hdfs file system.
+     * @return Hdfs path to ignite node.
+     * @throws Exception
+     */
+    private static Path getIgnite(ClusterProperties props, FileSystem fileSystem) throws Exception {
+        IgniteProvider provider = new IgniteProvider(props, fileSystem);
+
+        return provider.getIgnite();
+    }
+
+    /**
+     *
+     * @param envs Environment variables.
+     * @param conf Yarn configuration.
+     */
+    private static void setupAppMasterEnv(Map<String, String> envs, YarnConfiguration conf) {
+        for (String c : conf.getStrings(YarnConfiguration.YARN_APPLICATION_CLASSPATH,
+            YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH))
+            Apps.addToEnvironment(envs, Environment.CLASSPATH.name(),
                     c.trim(), File.pathSeparator);
 
-        Apps.addToEnvironment(appMasterEnv,
+        Apps.addToEnvironment(envs,
                 Environment.CLASSPATH.name(),
                 Environment.PWD.$() + File.separator + "*",
                 File.pathSeparator);

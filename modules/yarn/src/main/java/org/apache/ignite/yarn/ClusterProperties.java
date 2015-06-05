@@ -18,7 +18,6 @@
 package org.apache.ignite.yarn;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 import java.util.regex.*;
@@ -30,17 +29,11 @@ public class ClusterProperties {
     /** */
     private static final Logger log = Logger.getLogger(ClusterProperties.class.getSimpleName());
 
+    /** */
+    public static final String EMPTY_STRING = "";
+
     /** Unlimited. */
     public static final double UNLIMITED = Double.MAX_VALUE;
-
-    /** */
-    public static final String MESOS_MASTER_URL = "MESOS_MASTER_URL";
-
-    /** */
-    public static final String DEFAULT_MESOS_MASTER_URL = "zk://localhost:2181/mesos";
-
-    /** Mesos master url. */
-    private String mesosUrl = DEFAULT_MESOS_MASTER_URL;
 
     /** */
     public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
@@ -50,21 +43,6 @@ public class ClusterProperties {
 
     /** Mesos master url. */
     private String clusterName = DEFAULT_CLUSTER_NAME;
-
-    /** */
-    public static final String IGNITE_HTTP_SERVER_HOST = "IGNITE_HTTP_SERVER_HOST";
-
-    /** Http server host. */
-    private String httpServerHost = null;
-
-    /** */
-    public static final String IGNITE_HTTP_SERVER_PORT = "IGNITE_HTTP_SERVER_PORT";
-
-    /** */
-    public static final String DEFAULT_HTTP_SERVER_PORT = "48610";
-
-    /** Http server host. */
-    private int httpServerPort = Integer.valueOf(DEFAULT_HTTP_SERVER_PORT);
 
     /** */
     public static final String IGNITE_TOTAL_CPU = "IGNITE_TOTAL_CPU";
@@ -89,18 +67,6 @@ public class ClusterProperties {
 
     /** Memory limit. */
     private double memPerNode = UNLIMITED;
-
-    /** */
-    public static final String IGNITE_TOTAL_DISK_SPACE = "IGNITE_TOTAL_DISK_SPACE";
-
-    /** Disk space limit. */
-    private double disk = UNLIMITED;
-
-    /** */
-    public static final String IGNITE_DISK_SPACE_PER_NODE = "IGNITE_DISK_SPACE_PER_NODE";
-
-    /** Disk space limit. */
-    private double diskPerNode = UNLIMITED;
 
     /** */
     public static final String IGNITE_NODE_COUNT = "IGNITE_NODE_COUNT";
@@ -136,19 +102,31 @@ public class ClusterProperties {
     private String igniteVer = DEFAULT_IGNITE_VERSION;
 
     /** */
-    public static final String IGNITE_PACKAGE_URL = "IGNITE_PACKAGE_URL";
-
-    /** Ignite package url. */
-    private String ignitePackageUrl = null;
+    public static final String IGNITE_WORKING_DIR = "IGNITE_WORKING_DIR";
 
     /** */
-    public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
+    public static final String DEFAULT_IGNITE_WORK_DIR = "/ignite/workdir/";
 
-    /** */
-    public static final String DEFAULT_IGNITE_WORK_DIR = "ignite-releases/";
-
-    /** Ignite version. */
+    /** Ignite work directory. */
     private String igniteWorkDir = DEFAULT_IGNITE_WORK_DIR;
+
+    /** */
+    public static final String IGNITE_LOCAL_WORK_DIR = "IGNITE_LOCAL_WORK_DIR";
+
+    /** */
+    public static final String DEFAULT_IGNITE_LOCAL_WORK_DIR = "./ignite-releases/";
+
+    /** Ignite local work directory. */
+    private String igniteLocalWorkDir = DEFAULT_IGNITE_LOCAL_WORK_DIR;
+
+    /** */
+    public static final String IGNITE_RELEASES_DIR = "IGNITE_RELEASES_DIR";
+
+    /** */
+    public static final String DEFAULT_IGNITE_RELEASES_DIR = "/ignite/releases/";
+
+    /** Ignite local work directory. */
+    private String igniteReleasesDir = DEFAULT_IGNITE_RELEASES_DIR;
 
     /** */
     public static final String IGNITE_USERS_LIBS = "IGNITE_USERS_LIBS";
@@ -253,20 +231,6 @@ public class ClusterProperties {
     }
 
     /**
-     * @return disk limit.
-     */
-    public double disk() {
-        return disk;
-    }
-
-    /**
-     * @return disk limit per node.
-     */
-    public double diskPerNode() {
-        return diskPerNode;
-    }
-
-    /**
      * @return instance count limit.
      */
     public double instances() {
@@ -329,6 +293,20 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Local working directory.
+     */
+    public String igniteLocalWorkDir() {
+        return igniteLocalWorkDir;
+    }
+
+    /**
+     * @return Ignite releases dir.
+     */
+    public String igniteReleasesDir() {
+        return igniteReleasesDir;
+    }
+
+    /**
      * @return User's libs.
      */
     public String userLibs() {
@@ -340,34 +318,6 @@ public class ClusterProperties {
      */
     public String igniteCfg() {
         return igniteCfg;
-    }
-
-    /**
-     * @return Master url.
-     */
-    public String masterUrl() {
-        return mesosUrl;
-    }
-
-    /**
-     * @return Http server host.
-     */
-    public String httpServerHost() {
-        return httpServerHost;
-    }
-
-    /**
-     * @return Http server port.
-     */
-    public int httpServerPort() {
-        return httpServerPort;
-    }
-
-    /**
-     * @return Url to ignite package.
-     */
-    public String ignitePackageUrl() {
-        return ignitePackageUrl;
     }
 
     /**
@@ -407,36 +357,21 @@ public class ClusterProperties {
 
             ClusterProperties prop = new ClusterProperties();
 
-            prop.mesosUrl = getStringProperty(MESOS_MASTER_URL, props, DEFAULT_MESOS_MASTER_URL);
-
-            prop.httpServerHost = getStringProperty(IGNITE_HTTP_SERVER_HOST, props, getNonLoopbackAddress());
-
-            String port = System.getProperty("PORT0");
-
-            if (port != null && !port.isEmpty())
-                prop.httpServerPort = Integer.valueOf(port);
-            else
-                prop.httpServerPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
-                    DEFAULT_HTTP_SERVER_PORT));
-
             prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
 
             prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
-            prop.ignitePackageUrl = getStringProperty(IGNITE_PACKAGE_URL, props, null);
             prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, props, null);
 
             prop.cpu = getDoubleProperty(IGNITE_TOTAL_CPU, props, UNLIMITED);
             prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, UNLIMITED);
             prop.mem = getDoubleProperty(IGNITE_TOTAL_MEMORY, props, UNLIMITED);
             prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, UNLIMITED);
-            prop.disk = getDoubleProperty(IGNITE_TOTAL_DISK_SPACE, props, UNLIMITED);
-            prop.diskPerNode = getDoubleProperty(IGNITE_DISK_SPACE_PER_NODE, props, 1024.0);
             prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, UNLIMITED);
             prop.minCpu = getDoubleProperty(IGNITE_MIN_CPU_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
             prop.minMemory = getDoubleProperty(IGNITE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
-            prop.igniteWorkDir = getStringProperty(IGNITE_WORK_DIR, props, DEFAULT_IGNITE_WORK_DIR);
+            prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
             prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
             prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
 
@@ -459,6 +394,38 @@ public class ClusterProperties {
     }
 
     /**
+     * Convert to properties to map.
+     *
+     * @return Key-value map.
+     */
+    public Map<String, String> toEnvs() {
+        Map<String, String> envs = new HashMap<>();
+
+        envs.put(IGNITE_CLUSTER_NAME, toEnvVal(clusterName));
+
+        envs.put(IGNITE_USERS_LIBS_URL, toEnvVal(userLibsUrl));
+        envs.put(IGNITE_CONFIG_XML_URL, toEnvVal(igniteCfgUrl));
+
+        envs.put(IGNITE_TOTAL_CPU, toEnvVal(cpu));
+        envs.put(IGNITE_RUN_CPU_PER_NODE, toEnvVal(cpuPerNode));
+        envs.put(IGNITE_TOTAL_MEMORY, toEnvVal(mem));
+        envs.put(IGNITE_MEMORY_PER_NODE, toEnvVal(memPerNode));
+        envs.put(IGNITE_NODE_COUNT, toEnvVal(nodeCnt));
+        envs.put(IGNITE_MIN_CPU_PER_NODE, toEnvVal(minCpu));
+        envs.put(IGNITE_MIN_MEMORY_PER_NODE, toEnvVal(minMemory));
+
+        envs.put(IGNITE_VERSION, toEnvVal(igniteVer));
+        envs.put(IGNITE_WORKING_DIR, toEnvVal(igniteWorkDir));
+        envs.put(IGNITE_CONFIG_XML, toEnvVal(igniteCfg));
+        envs.put(IGNITE_USERS_LIBS, toEnvVal(userLibs));
+
+        if (hostnameConstraint != null)
+            envs.put(IGNITE_HOSTNAME_CONSTRAINT, toEnvVal(hostnameConstraint.pattern()));
+
+        return envs;
+    }
+
+    /**
      * @param name Property name.
      * @param fileProps Property file.
      * @return Property value.
@@ -472,7 +439,7 @@ public class ClusterProperties {
         if (property == null)
             property = System.getenv(name);
 
-        return property == null ? defaultVal : Double.valueOf(property);
+        return property == null || property.isEmpty() ? defaultVal : Double.valueOf(property);
     }
 
     /**
@@ -489,31 +456,14 @@ public class ClusterProperties {
         if (property == null)
             property = System.getenv(name);
 
-        return property == null ? defaultVal : property;
+        return property == null || property.isEmpty() ? defaultVal : property;
     }
 
     /**
-     * Finds a local, non-loopback, IPv4 address
-     *
-     * @return The first non-loopback IPv4 address found, or <code>null</code> if no such addresses found
-     * @throws SocketException If there was a problem querying the network interfaces
+     * @param val Value.
+     * @return If val is null {@link EMPTY_STRING} else to string.
      */
-    public static String getNonLoopbackAddress() throws SocketException {
-        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-
-        while (ifaces.hasMoreElements()) {
-            NetworkInterface iface = ifaces.nextElement();
-
-            Enumeration<InetAddress> addresses = iface.getInetAddresses();
-
-            while (addresses.hasMoreElements()) {
-                InetAddress addr = addresses.nextElement();
-
-                if (addr instanceof Inet4Address && !addr.isLoopbackAddress())
-                    return addr.getHostAddress();
-            }
-        }
-
-        throw new RuntimeException("Failed. Couldn't find non-loopback address");
+    private String toEnvVal(Object val) {
+        return val == null ? EMPTY_STRING : val.toString();
     }
 }
