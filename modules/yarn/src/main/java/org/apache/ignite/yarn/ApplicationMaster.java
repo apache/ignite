@@ -19,6 +19,7 @@ package org.apache.ignite.yarn;
 
 import org.apache.commons.io.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.*;
 import org.apache.hadoop.yarn.client.api.async.*;
@@ -198,29 +199,37 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         Priority priority = Records.newRecord(Priority.class);
         priority.setPriority(0);
 
-        // Resource requirements for worker containers
-        Resource capability = Records.newRecord(Resource.class);
-        capability.setMemory(1024);
-        capability.setVirtualCores(2);
+        // Check ignite cluster.
+        while (!nmClient.isInState(Service.STATE.STOPPED)) {
+            Resource availableRes = rmClient.getAvailableResources();
 
-        // Make container requests to ResourceManager
-        for (int i = 0; i < 1; ++i) {
-            AMRMClient.ContainerRequest containerAsk =
-                new AMRMClient.ContainerRequest(capability, null, null, priority);
+            if (containers.size() < props.instances() || availableRes.getMemory() >= props.cpusPerNode()
+                || availableRes.getVirtualCores() >= props.cpus()) {
+                // Resource requirements for worker containers
+                Resource capability = Records.newRecord(Resource.class);
+                capability.setMemory(1024);
+                capability.setVirtualCores(2);
 
-            System.out.println("[AM] Making res-req " + i);
+                for (int i = 0; i < 1; ++i) {
+                    // Make container requests to ResourceManager
+                    AMRMClient.ContainerRequest containerAsk =
+                            new AMRMClient.ContainerRequest(capability, null, null, priority);
 
-            rmClient.addContainerRequest(containerAsk);
+                    System.out.println("[AM] Making res-req " + i);
+
+                    rmClient.addContainerRequest(containerAsk);
+                }
+            }
+
+            TimeUnit.SECONDS.sleep(5);
         }
 
         System.out.println("[AM] waiting for containers to finish");
 
-        TimeUnit.MINUTES.sleep(10);
-
         System.out.println("[AM] unregisterApplicationMaster 0");
 
         // Un-register with ResourceManager
-        rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
+        rmClient.unregisterApplicationMaster(FinalApplicationStatus.KILLED, "", "");
 
         System.out.println("[AM] unregisterApplicationMaster 1");
     }
