@@ -103,9 +103,9 @@ public interface Ignite extends AutoCloseable {
     public IgniteCluster cluster();
 
     /**
-     * Gets {@code compute} facade over all cluster nodes.
+     * Gets {@code compute} facade over all cluster nodes started in server mode.
      *
-     * @return Compute instance over all cluster nodes.
+     * @return Compute instance over all cluster nodes started in server mode.
      */
     public IgniteCompute compute();
 
@@ -154,9 +154,9 @@ public interface Ignite extends AutoCloseable {
     public IgniteEvents events(ClusterGroup grp);
 
     /**
-     * Gets {@code services} facade over all cluster nodes.
+     * Gets {@code services} facade over all cluster nodes started in server mode.
      *
-     * @return Services facade over all cluster nodes.
+     * @return Services facade over all cluster nodes started in server mode.
      */
     public IgniteServices services();
 

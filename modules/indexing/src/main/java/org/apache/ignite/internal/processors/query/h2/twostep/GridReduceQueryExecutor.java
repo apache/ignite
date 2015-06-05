@@ -282,7 +282,7 @@ public class GridReduceQueryExecutor {
 
         r.conn = (JdbcConnection)h2.connectionForSpace(space);
 
-        // TODO Add topology version.
+        // TODO    Add topology version.
         ClusterGroup dataNodes = ctx.grid().cluster().forDataNodes(space);
 
         if (cctx.isReplicated() || qry.explain()) {
