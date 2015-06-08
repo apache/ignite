@@ -310,4 +310,14 @@ public interface IgniteSpiContext {
      * @return If node was failed.
      */
     public boolean tryFailNode(UUID nodeId);
+
+    /**
+     * @param c Timeout object.
+     */
+    public void addTimeoutObject(IgniteSpiTimeoutObject c);
+
+    /**
+     * @param c Timeout object.
+     */
+    public void removeTimeoutObject(IgniteSpiTimeoutObject c);
 }
