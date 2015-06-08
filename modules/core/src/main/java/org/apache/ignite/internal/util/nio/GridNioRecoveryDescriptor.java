@@ -244,9 +244,9 @@ public class GridNioRecoveryDescriptor {
         synchronized (this) {
             if (!nodeLeft)
                 ackReceived(rcvCnt);
-        }
 
-        resendCnt = msgFuts.size();
+            resendCnt = msgFuts.size();
+        }
     }
 
     /**
