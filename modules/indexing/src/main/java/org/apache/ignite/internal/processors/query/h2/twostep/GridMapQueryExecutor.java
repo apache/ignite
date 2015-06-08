@@ -48,6 +48,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
@@ -222,12 +223,15 @@ public class GridMapQueryExecutor {
      * @return {@code true} If all the needed partitions successfully reserved.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean reservePartitions(Collection<String> cacheNames, AffinityTopologyVersion topVer, int[] parts,
+    private boolean reservePartitions(Collection<String> cacheNames, AffinityTopologyVersion topVer, final int[] parts,
         List<GridDhtLocalPartition> reserved) throws IgniteCheckedException {
         Collection<Integer> partIds = parts == null ? null : wrap(parts);
 
         for (String cacheName : cacheNames) {
             GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
+
+            if (cctx == null) // Cache was not found, probably was not deployed yet.
+                return false;
 
             if (cctx.isLocal())
                 continue;
@@ -243,6 +247,9 @@ public class GridMapQueryExecutor {
 
                     // Await for owning state.
                     part.owningFuture().get();
+
+                    // We don't need to reserve partitions because they will not be evicted in replicated caches.
+                    assert part.state() == OWNING : part.state();
                 }
             }
             else { // Reserve primary partitions for partitioned cache.
@@ -255,18 +262,20 @@ public class GridMapQueryExecutor {
 
                     GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                    if (part != null) {
-                        // Await for owning state.
-                        part.owningFuture().get();
+                    if (part == null || part.state() == RENTING || !part.reserve())
+                        return false;
 
-                        if (part.reserve()) {
-                            reserved.add(part);
+                    reserved.add(part);
 
-                            continue;
-                        }
+                    // Await for owning state.
+                    part.owningFuture().get();
+
+                    if (part.state() != OWNING) {
+                        // We can't be MOVING since owningFuture is done and and can't be EVICTED since reserved.
+                        assert part.state() == RENTING : part.state();
+
+                        return false;
                     }
-
-                    return false;
                 }
             }
         }
@@ -345,9 +354,6 @@ public class GridMapQueryExecutor {
             final AffinityTopologyVersion topVer = req.topologyVersion();
 
             if (topVer != null) {
-                // Await all caches to be deployed on this node and all the needed topology changes to arrive.
-                h2.awaitForCacheAffinity(topVer);
-
                 // Reserve primary partitions.
                 if (!reservePartitions(caches, topVer, req.partitions(), reserved)) {
                     sendRetry(node, req.requestId());

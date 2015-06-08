@@ -26,6 +26,8 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
@@ -53,6 +55,7 @@ import javax.cache.*;
 import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -282,16 +285,48 @@ public class GridReduceQueryExecutor {
 
     /**
      * @param readyTop Latest ready topology.
+     * @param cctx Cache context for main space.
+     * @param extraSpaces Extra spaces.
      * @return {@code true} If preloading is active.
      */
-    private boolean isPreloadingActive(AffinityTopologyVersion readyTop) {
+    private boolean isPreloadingActive(
+        AffinityTopologyVersion readyTop,
+        final GridCacheContext<?,?> cctx,
+        List<String> extraSpaces
+    ) {
         AffinityTopologyVersion freshTop = ctx.discovery().topologyVersionEx();
 
         int res = readyTop.compareTo(freshTop);
 
         assert res <= 0 : readyTop + " " + freshTop;
 
-        return res < 0;
+        if (res < 0 || hasMovingPartitions(cctx))
+            return true;
+
+        if (extraSpaces != null) {
+            for (String extraSpace : extraSpaces) {
+                if (hasMovingPartitions(cacheContext(extraSpace)))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return {@code true} If cache context
+     */
+    private boolean hasMovingPartitions(GridCacheContext<?,?> cctx) {
+        GridDhtPartitionFullMap fullMap = cctx.topology().partitionMap(false);
+
+        for (GridDhtPartitionMap map : fullMap.values()) {
+            for (GridDhtPartitionState state : map.map().values()) {
+                if (state == GridDhtPartitionState.MOVING)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -340,7 +375,7 @@ public class GridReduceQueryExecutor {
                     nodes.retainAll(extraNodes);
 
                     if (nodes.isEmpty()) {
-                        if (isPreloadingActive(topVer))
+                        if (isPreloadingActive(topVer, cctx, extraSpaces))
                             return null; // Retry.
                         else
                             throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
@@ -349,7 +384,7 @@ public class GridReduceQueryExecutor {
                 }
                 else if (!cctx.isReplicated() && extraCctx.isReplicated()) {
                     if (!extraNodes.containsAll(nodes))
-                        if (isPreloadingActive(topVer))
+                        if (isPreloadingActive(topVer, cctx, extraSpaces))
                             return null; // Retry.
                         else
                             throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
@@ -357,7 +392,7 @@ public class GridReduceQueryExecutor {
                 }
                 else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
                     if (extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes))
-                        if (isPreloadingActive(topVer))
+                        if (isPreloadingActive(topVer, cctx, extraSpaces))
                             return null; // Retry.
                         else
                             throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
@@ -399,7 +434,7 @@ public class GridReduceQueryExecutor {
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
 
-            if (isPreloadingActive(topVer)) {
+            if (isPreloadingActive(topVer, cctx, extraSpaces)) {
                 if (cctx.isReplicated())
                     nodes = replicatedDataNodes(cctx, extraSpaces);
                 else {
@@ -501,11 +536,8 @@ public class GridReduceQueryExecutor {
 //                dropTable(r.conn, tbl.getName()); TODO
                 }
 
-                if (retry != null) {
-                    h2.awaitForCacheAffinity(retry);
-
+                if (retry != null)
                     continue;
-                }
 
                 return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
             }
@@ -770,13 +802,13 @@ public class GridReduceQueryExecutor {
     /**
      * @param nodes Nodes.
      * @param msg Message.
-     * @param gridPartsMap Partitions.
+     * @param partsMap Partitions.
      * @return {@code true} If all messages sent successfully.
      */
     private boolean send(
         Collection<ClusterNode> nodes,
         Message msg,
-        Map<ClusterNode,IntArray> gridPartsMap
+        Map<ClusterNode,IntArray> partsMap
     ) {
         boolean locNodeFound = false;
 
@@ -790,7 +822,7 @@ public class GridReduceQueryExecutor {
             }
 
             try {
-                ctx.io().send(node, GridTopic.TOPIC_QUERY, copy(msg, node, gridPartsMap), GridIoPolicy.PUBLIC_POOL);
+                ctx.io().send(node, GridTopic.TOPIC_QUERY, copy(msg, node, partsMap), GridIoPolicy.PUBLIC_POOL);
             }
             catch (IgniteCheckedException e) {
                 ok = false;
@@ -800,7 +832,7 @@ public class GridReduceQueryExecutor {
         }
 
         if (locNodeFound) // Local node goes the last to allow parallel execution.
-            h2.mapQueryExecutor().onMessage(ctx.localNodeId(), copy(msg, ctx.cluster().get().localNode(), gridPartsMap));
+            h2.mapQueryExecutor().onMessage(ctx.localNodeId(), copy(msg, ctx.cluster().get().localNode(), partsMap));
 
         return ok;
     }
@@ -808,16 +840,16 @@ public class GridReduceQueryExecutor {
     /**
      * @param msg Message to copy.
      * @param node Node.
-     * @param gridPartsMap Partitions map.
+     * @param partsMap Partitions map.
      * @return Copy of message with partitions set.
      */
-    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> gridPartsMap) {
-        if (gridPartsMap == null)
+    private Message copy(Message msg, ClusterNode node, Map<ClusterNode,IntArray> partsMap) {
+        if (partsMap == null)
             return msg;
 
         GridQueryRequest res = new GridQueryRequest((GridQueryRequest)msg);
 
-        IntArray parts = gridPartsMap.get(node);
+        IntArray parts = partsMap.get(node);
 
         assert parts != null : node;
 

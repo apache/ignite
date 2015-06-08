@@ -1410,19 +1410,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param topVer Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void awaitForCacheAffinity(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        assert topVer != null;
-
-        IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
-
-        if (fut != null)
-            fut.get();
-    }
-
-    /**
      * @return Ready topology version.
      */
     public AffinityTopologyVersion readyTopologyVersion() {

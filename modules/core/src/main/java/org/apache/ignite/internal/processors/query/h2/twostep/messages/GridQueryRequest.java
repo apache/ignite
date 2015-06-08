@@ -53,10 +53,12 @@ public class GridQueryRequest implements Message {
     private AffinityTopologyVersion topVer;
 
     /** */
+    @GridToStringInclude
     @GridDirectCollection(String.class)
     private List<String> extraSpaces;
 
     /** */
+    @GridToStringInclude
     private int[] parts;
 
     /**
@@ -216,7 +218,7 @@ public class GridQueryRequest implements Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeIntArray("partitions", parts))
+                if (!writer.writeIntArray("parts", parts))
                     return false;
 
                 writer.incrementState();
@@ -282,7 +284,7 @@ public class GridQueryRequest implements Message {
                 reader.incrementState();
 
             case 6:
-                parts = reader.readIntArray("partitions");
+                parts = reader.readIntArray("parts");
 
                 if (!reader.isLastRead())
                     return false;
