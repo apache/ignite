@@ -306,9 +306,9 @@ public class GridReduceQueryExecutor {
      * @param topVer Topology version.
      * @param cctx Cache context for main space.
      * @param extraSpaces Extra spaces.
-     * @return Data nodes.
+     * @return Data nodes or {@code null} if repartitioning started and we need to retry..
      */
-    private Collection<ClusterNode> dataNodes(
+    private Collection<ClusterNode> stableDataNodes(
         AffinityTopologyVersion topVer,
         final GridCacheContext<?,?> cctx,
         List<String> extraSpaces
@@ -325,7 +325,7 @@ public class GridReduceQueryExecutor {
                 GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
 
                 if (extraCctx.isLocal())
-                    continue;
+                    continue; // No consistency guaranties for local caches.
 
                 if (cctx.isReplicated() && !extraCctx.isReplicated())
                     throw new CacheException("Queries running on replicated cache should not contain JOINs " +
@@ -339,20 +339,29 @@ public class GridReduceQueryExecutor {
                 if (cctx.isReplicated() && extraCctx.isReplicated()) {
                     nodes.retainAll(extraNodes);
 
-                    if (nodes.isEmpty() && !isPreloadingActive(topVer))
-                        throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
-                            "' have distinct set of data nodes.");
+                    if (nodes.isEmpty()) {
+                        if (isPreloadingActive(topVer))
+                            return null; // Retry.
+                        else
+                            throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
+                                "' have distinct set of data nodes.");
+                    }
                 }
                 else if (!cctx.isReplicated() && extraCctx.isReplicated()) {
-                    if (!extraNodes.containsAll(nodes) && !isPreloadingActive(topVer))
-                        throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
-                            "' have distinct set of data nodes.");
+                    if (!extraNodes.containsAll(nodes))
+                        if (isPreloadingActive(topVer))
+                            return null; // Retry.
+                        else
+                            throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
+                                "' have distinct set of data nodes.");
                 }
                 else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
-                    if ((extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes)) &&
-                        !isPreloadingActive(topVer))
-                        throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
-                            "' have distinct set of data nodes.");
+                    if (extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes))
+                        if (isPreloadingActive(topVer))
+                            return null; // Retry.
+                        else
+                            throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
+                                "' have distinct set of data nodes.");
                 }
                 else
                     throw new IllegalStateException();
@@ -385,24 +394,33 @@ public class GridReduceQueryExecutor {
 
             List<String> extraSpaces = extraSpaces(space, qry.spaces());
 
-            Collection<ClusterNode> nodes = dataNodes(topVer, cctx, extraSpaces);
+            Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
-            Map<ClusterNode, IntArray> gridPartsMap = null;
+            Map<ClusterNode, IntArray> partsMap = null;
+
+            if (isPreloadingActive(topVer)) {
+                if (cctx.isReplicated())
+                    nodes = replicatedDataNodes(cctx, extraSpaces);
+                else {
+                    partsMap = partitionLocations(cctx, extraSpaces);
+
+                    nodes = partsMap == null ? null : partsMap.keySet();
+                }
+            }
+            else
+                nodes = stableDataNodes(topVer, cctx, extraSpaces);
+
+            if (nodes == null)
+                continue; // Retry.
+
+            assert !nodes.isEmpty();
 
             if (cctx.isReplicated() || qry.explain()) {
                 assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
                 nodes = Collections.singleton(F.rand(nodes));
-            }
-            else if (isPreloadingActive(topVer)) {
-                gridPartsMap = partitionLocations(cctx, extraSpaces);
-
-                if (gridPartsMap == null)
-                    continue; // Retry.
-
-                nodes = gridPartsMap.keySet();
             }
 
             for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
@@ -446,23 +464,24 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                send(nodes,
-                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null),
-                    gridPartsMap);
-
-                U.await(r.latch);
-
                 AffinityTopologyVersion retry = null;
 
-                Object state = r.state.get();
+                if (send(nodes,
+                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null), partsMap)) {
+                    U.await(r.latch);
 
-                if (state != null) {
-                    if (state instanceof CacheException)
-                        throw new CacheException("Failed to run map query remotely.", (CacheException)state);
+                    Object state = r.state.get();
 
-                    if (state instanceof AffinityTopologyVersion)
-                        retry = (AffinityTopologyVersion)state; // Remote nodes can ask us to retry.
+                    if (state != null) {
+                        if (state instanceof CacheException)
+                            throw new CacheException("Failed to run map query remotely.", (CacheException)state);
+
+                        if (state instanceof AffinityTopologyVersion)
+                            retry = (AffinityTopologyVersion)state; // Remote nodes can ask us to retry.
+                    }
                 }
+                else // Send failed.
+                    retry = topVer;
 
                 ResultSet res = null;
 
@@ -507,6 +526,80 @@ public class GridReduceQueryExecutor {
         }
     }
 
+    /**
+     * Calculates data nodes for replicated caches on unstable topology.
+     *
+     * @param cctx Cache context for main space.
+     * @param extraSpaces Extra spaces.
+     * @return Collection of all data nodes owning all the caches or {@code null} for retry.
+     */
+    private Collection<ClusterNode> replicatedDataNodes(final GridCacheContext<?,?> cctx, List<String> extraSpaces) {
+        assert cctx.isReplicated() : cctx.name() + " must be replicated";
+
+        Set<ClusterNode> nodes = owningReplicatedDataNodes(cctx);
+
+        if (!F.isEmpty(extraSpaces)) {
+            for (String extraSpace : extraSpaces) {
+                GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
+
+                if (extraCctx.isLocal())
+                    continue;
+
+                if (!extraCctx.isReplicated())
+                    throw new CacheException("Queries running on replicated cache should not contain JOINs " +
+                        "with partitioned tables.");
+
+                nodes.retainAll(owningReplicatedDataNodes(extraCctx));
+
+                if (nodes.isEmpty())
+                    return null; // Retry.
+            }
+        }
+
+        return nodes;
+    }
+
+    /**
+     * Collects all the nodes owning all the partitions for the given replicated cache.
+     *
+     * @param cctx Cache context.
+     * @return Owning nodes.
+     */
+    private Set<ClusterNode> owningReplicatedDataNodes(GridCacheContext<?,?> cctx) {
+        assert cctx.isReplicated() : cctx.name() + " must be replicated";
+
+        String space = cctx.name();
+
+        Set<ClusterNode> dataNodes = new HashSet<>(ctx.discovery().cacheAffinityNodes(space, NONE));
+
+        if (dataNodes.isEmpty())
+            throw new CacheException("No data nodes found for cache '" + space + "'");
+
+        // Find all the nodes owning all the partitions for replicated cache.
+        for (int p = 0, extraParts = cctx.affinity().partitions(); p < extraParts; p++) {
+            List<ClusterNode> owners = cctx.topology().owners(p);
+
+            if (owners.isEmpty())
+                throw new CacheException("No data nodes found for cache '" + space +
+                    "' for partition " + p);
+
+            dataNodes.retainAll(owners);
+
+            if (dataNodes.isEmpty())
+                throw new CacheException("No data nodes found for cache '" + space +
+                    "' owning all the partitions.");
+        }
+
+        return dataNodes;
+    }
+
+    /**
+     * Calculates partition mapping for partitioned cache on unstable topology.
+     *
+     * @param cctx Cache context for main space.
+     * @param extraSpaces Extra spaces.
+     * @return Partition mapping or {@code null} if we can't calculate it due to repartitioning and we need to retry.
+     */
     @SuppressWarnings("unchecked")
     private Map<ClusterNode, IntArray> partitionLocations(final GridCacheContext<?,?> cctx, List<String> extraSpaces) {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
@@ -573,24 +666,13 @@ public class GridReduceQueryExecutor {
                 if (!extraCctx.isReplicated())
                     continue;
 
-                Set<ClusterNode> dataNodes = new HashSet<>(ctx.discovery().cacheAffinityNodes(extraSpace, NONE));
-
-                if (dataNodes.isEmpty())
-                    throw new CacheException("No data nodes found for cache '" + extraSpace + "'");
-
-                for (int p = 0, extraParts = extraCctx.affinity().partitions(); p < extraParts; p++) {
-                    dataNodes.retainAll(extraCctx.topology().owners(p));
-
-                    if (dataNodes.isEmpty())
-                        throw new CacheException("No data nodes found for cache '" + extraSpace +
-                            "' for partition " + p);
-                }
+                Set<ClusterNode> dataNodes = owningReplicatedDataNodes(extraCctx);
 
                 for (Set<ClusterNode> partLoc : partLocs) {
                     partLoc.retainAll(dataNodes);
 
                     if (partLoc.isEmpty())
-                        return null; // Intersection is empty -> retry.
+                        return null; // Retry.
                 }
             }
         }
@@ -689,13 +771,16 @@ public class GridReduceQueryExecutor {
      * @param nodes Nodes.
      * @param msg Message.
      * @param gridPartsMap Partitions.
+     * @return {@code true} If all messages sent successfully.
      */
-    private void send(
+    private boolean send(
         Collection<ClusterNode> nodes,
         Message msg,
         Map<ClusterNode,IntArray> gridPartsMap
     ) {
         boolean locNodeFound = false;
+
+        boolean ok = true;
 
         for (ClusterNode node : nodes) {
             if (node.isLocal()) {
@@ -708,12 +793,16 @@ public class GridReduceQueryExecutor {
                 ctx.io().send(node, GridTopic.TOPIC_QUERY, copy(msg, node, gridPartsMap), GridIoPolicy.PUBLIC_POOL);
             }
             catch (IgniteCheckedException e) {
+                ok = false;
+
                 U.warn(log, e.getMessage());
             }
         }
 
         if (locNodeFound) // Local node goes the last to allow parallel execution.
             h2.mapQueryExecutor().onMessage(ctx.localNodeId(), copy(msg, ctx.cluster().get().localNode(), gridPartsMap));
+
+        return ok;
     }
 
     /**

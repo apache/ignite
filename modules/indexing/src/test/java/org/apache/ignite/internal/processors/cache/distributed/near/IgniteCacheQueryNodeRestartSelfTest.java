@@ -100,7 +100,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         int duration = 60 * 1000;
         int qryThreadNum = 10;
         final long nodeLifeTime = 2 * 1000;
-        final int logFreq = 20;
+        final int logFreq = 50;
 
         final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 

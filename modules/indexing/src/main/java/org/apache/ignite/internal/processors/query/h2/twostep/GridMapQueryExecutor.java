@@ -229,29 +229,45 @@ public class GridMapQueryExecutor {
         for (String cacheName : cacheNames) {
             GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
 
+            if (cctx.isLocal())
+                continue;
+
             int partsCnt = cctx.affinity().partitions();
 
-            if (parts == null)
-                partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+            if (cctx.isReplicated()) { // Check all the partitions are in owning state for replicated cache.
+                for (int p = 0; p < partsCnt; p++) {
+                    GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, false);
 
-            for (int partId : partIds) {
-                GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
+                    if (part == null)
+                        return false;
 
-                if (partId >= partsCnt)
-                    break; // We can have more partitions because `parts` array is shared for all caches.
-
-                if (part != null) {
                     // Await for owning state.
                     part.owningFuture().get();
-
-                    if (part.reserve()) {
-                        reserved.add(part);
-
-                        continue;
-                    }
                 }
+            }
+            else { // Reserve primary partitions for partitioned cache.
+                if (parts == null)
+                    partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
-                return false;
+                for (int partId : partIds) {
+                    if (partId >= partsCnt)
+                        break; // We can have more partitions because `parts` array is shared for all caches.
+
+                    GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
+
+                    if (part != null) {
+                        // Await for owning state.
+                        part.owningFuture().get();
+
+                        if (part.reserve()) {
+                            reserved.add(part);
+
+                            continue;
+                        }
+                    }
+
+                    return false;
+                }
             }
         }
 
@@ -382,7 +398,7 @@ public class GridMapQueryExecutor {
                 if (qr.canceled) {
                     qr.result(i).close();
 
-                    throw new IgniteException("Query was canceled.");
+                    return;
                 }
 
                 // Send the first page.
