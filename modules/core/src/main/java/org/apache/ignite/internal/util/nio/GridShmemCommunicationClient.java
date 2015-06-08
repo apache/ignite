@@ -140,11 +140,6 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public void flushIfNeeded(long timeout) throws IOException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridShmemCommunicationClient.class, this, super.toString());
     }
