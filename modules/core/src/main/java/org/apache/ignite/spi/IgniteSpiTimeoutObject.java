@@ -20,7 +20,11 @@ package org.apache.ignite.spi;
 import org.apache.ignite.lang.*;
 
 /**
- *
+ * Provides possibility to schedule delayed execution,
+ * see {@link IgniteSpiContext#addTimeoutObject(IgniteSpiTimeoutObject)}.
+ * <p>
+ * Note: all timeout objects are executed in single dedicated thread, so implementation
+ * of {@link #onTimeout()} should not use time consuming and blocking method.
  */
 public interface IgniteSpiTimeoutObject {
     /**
