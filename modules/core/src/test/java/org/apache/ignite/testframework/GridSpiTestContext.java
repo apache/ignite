@@ -501,6 +501,16 @@ public class GridSpiTestContext implements IgniteSpiContext {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
+        // No-op.
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.
