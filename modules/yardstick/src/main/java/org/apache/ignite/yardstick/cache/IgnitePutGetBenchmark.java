@@ -20,7 +20,10 @@ package org.apache.ignite.yardstick.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.yardstick.cache.model.*;
 
+import java.lang.*;
 import java.util.*;
+
+import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
  * Ignite benchmark that performs put and get operations.
@@ -28,14 +31,19 @@ import java.util.*;
 public class IgnitePutGetBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
+        try {
+            int key = nextRandom(args.range());
 
-        Object val = cache.get(key);
+            Object val = cache.get(key);
 
-        if (val != null)
-            key = nextRandom(args.range());
+            if (val != null)
+                key = nextRandom(args.range());
 
-        cache.put(key, new SampleValue(key));
+            cache.put(key, new SampleValue(key));
+        }
+        catch (Exception e) {
+            error("Operation failed.", e);
+        }
 
         return true;
     }
