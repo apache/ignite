@@ -21,7 +21,7 @@ package org.apache.ignite.spark
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.{Ignition, Ignite}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
-import org.apache.spark.SparkContext
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.SQLContext
 
 /**
@@ -36,7 +36,7 @@ class IgniteContext[K, V](
     @scala.transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
     client: Boolean = true
-) extends Serializable {
+) extends Serializable with Logging {
     @scala.transient private val driver = true
 
     if (!client) {
@@ -45,7 +45,7 @@ class IgniteContext[K, V](
         if (workers <= 0)
             throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
 
-        println("Will start Ignite nodes on " + workers + " workers")
+        logInfo("Will start Ignite nodes on " + workers + " workers")
 
         // Start ignite server node on each worker in server mode.
         sparkContext.parallelize(1 to workers, workers).foreach(it ⇒ ignite())
@@ -60,14 +60,34 @@ class IgniteContext[K, V](
 
     val sqlContext = new SQLContext(sparkContext)
 
+    /**
+     * Creates an `IgniteRDD` instance from the given cache name. If the cache does not exist, it will be
+     * automatically started from template on the first invoked RDD action.
+     *
+     * @param cacheName Cache name.
+     * @return `IgniteRDD` instance.
+     */
     def fromCache(cacheName: String): IgniteRDD[K, V] = {
         new IgniteRDD[K, V](this, cacheName, null)
     }
 
+    /**
+     * Creates an `IgniteRDD` instance from the given cache configuration. If the cache does not exist, it will be
+     * automatically started using the configuration provided on the first invoked RDD action.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return `IgniteRDD` instance.
+     */
     def fromCache(cacheCfg: CacheConfiguration[K, V]) = {
         new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg)
     }
 
+    /**
+     * Gets an Ignite instance supporting this context. Ignite instance will be started
+     * if it has not been started yet.
+     *
+     * @return Ignite instance.
+     */
     def ignite(): Ignite = {
         val igniteCfg = cfgF()
 
@@ -87,6 +107,10 @@ class IgniteContext[K, V](
         }
     }
 
+    /**
+     * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
+     * a no-op.
+     */
     def close() = {
         val igniteCfg = cfgF()
 

@@ -82,7 +82,7 @@ class IgniteRDD[K, V] (
     }
 
     /**
-     * Gets prefferred locations for the given partition.
+     * Gets preferred locations for the given partition.
      *
      * @param split Split partition.
      * @return
@@ -94,6 +94,14 @@ class IgniteRDD[K, V] (
             .map(_.asInstanceOf[TcpDiscoveryNode].socketAddresses()).flatten.map(_.getHostName).toList
     }
 
+    /**
+     * Runs an object SQL on corresponding Ignite cache.
+     *
+     * @param typeName Type name to run SQL against.
+     * @param sql SQL query to run.
+     * @param args Optional SQL query arguments.
+     * @return RDD with query results.
+     */
     def objectSql(typeName: String, sql: String, args: Any*): RDD[(K, V)] = {
         val qry: SqlQuery[K, V] = new SqlQuery[K, V](typeName, sql)
 
@@ -102,6 +110,13 @@ class IgniteRDD[K, V] (
         new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry ⇒ (entry.getKey, entry.getValue))
     }
 
+    /**
+     * Runs an SQL fields query.
+     *
+     * @param sql SQL statement to run.
+     * @param args Optional SQL query arguments.
+     * @return `DataFrame` instance with the query results.
+     */
     def sql(sql: String, args: Any*): DataFrame = {
         val qry = new SqlFieldsQuery(sql)
 
@@ -114,7 +129,12 @@ class IgniteRDD[K, V] (
         ic.sqlContext.createDataFrame(rowRdd, schema)
     }
 
-    def saveValues(rdd: RDD[V], overwrite: Boolean = false) = {
+    /**
+     * Saves values from given RDD into Ignite. A unique key will be generated for each value of the given RDD.
+     *
+     * @param rdd RDD instance to save values from.
+     */
+    def saveValues(rdd: RDD[V]) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
 
@@ -127,8 +147,6 @@ class IgniteRDD[K, V] (
             val streamer = ig.dataStreamer[Object, V](cacheName)
 
             try {
-                streamer.allowOverwrite(overwrite)
-
                 it.foreach(value ⇒ {
                     val key = affinityKeyFunc(value, node.orNull)
 
@@ -141,6 +159,13 @@ class IgniteRDD[K, V] (
         })
     }
 
+    /**
+     * Saves values from the given key-value RDD into Ignite.
+     *
+     * @param rdd RDD instance to save values from.
+     * @param overwrite Boolean flag indicating whether the call on this method should overwrite existing
+     *      values in Ignite cache.
+     */
     def savePairs(rdd: RDD[(K, V)], overwrite: Boolean = false) = {
         rdd.foreachPartition(it ⇒ {
             val ig = ic.ignite()
@@ -163,6 +188,9 @@ class IgniteRDD[K, V] (
         })
     }
 
+    /**
+     * Removes all values from the underlying Ignite cache.
+     */
     def clear(): Unit = {
         ensureCache().removeAll()
     }
@@ -197,7 +225,7 @@ class IgniteRDD[K, V] (
         case "java.sql.Timestamp" ⇒ TimestampType
         case "[B" ⇒ BinaryType
 
-        case _ ⇒ StructType(new Array[StructField](0)) // TODO Do we need to fill user types?
+        case _ ⇒ StructType(new Array[StructField](0))
     }
 
     /**
@@ -210,6 +238,7 @@ class IgniteRDD[K, V] (
     private def affinityKeyFunc(value: V, node: ClusterNode): IgniteUuid = {
         val aff = ic.ignite().affinity[IgniteUuid](cacheName)
 
-        Stream.continually(IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node)).get
+        Stream.from(1, 1000).map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
+            .getOrElse(IgniteUuid.randomUuid())
     }
 }
