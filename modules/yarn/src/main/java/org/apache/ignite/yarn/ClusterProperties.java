@@ -41,26 +41,14 @@ public class ClusterProperties {
     /** */
     public static final String DEFAULT_CLUSTER_NAME = "ignite-cluster";
 
-    /** Mesos master url. */
+    /** Cluster name. */
     private String clusterName = DEFAULT_CLUSTER_NAME;
-
-    /** */
-    public static final String IGNITE_TOTAL_CPU = "IGNITE_TOTAL_CPU";
-
-    /** CPU limit. */
-    private double cpu = UNLIMITED;
 
     /** */
     public static final String IGNITE_RUN_CPU_PER_NODE = "IGNITE_RUN_CPU_PER_NODE";
 
     /** CPU limit. */
     private double cpuPerNode = UNLIMITED;
-
-    /** */
-    public static final String IGNITE_TOTAL_MEMORY = "IGNITE_TOTAL_MEMORY";
-
-    /** Memory limit. */
-    private double mem = UNLIMITED;
 
     /** */
     public static final String IGNITE_MEMORY_PER_NODE = "IGNITE_MEMORY_PER_NODE";
@@ -72,25 +60,7 @@ public class ClusterProperties {
     public static final String IGNITE_NODE_COUNT = "IGNITE_NODE_COUNT";
 
     /** Node count limit. */
-    private double nodeCnt = UNLIMITED;
-
-    /** */
-    public static final String IGNITE_MIN_CPU_PER_NODE = "IGNITE_MIN_CPU_PER_NODE";
-
-    /** */
-    public static final double DEFAULT_RESOURCE_MIN_CPU = 1;
-
-    /** Min memory per node. */
-    private double minCpu = DEFAULT_RESOURCE_MIN_CPU;
-
-    /** */
-    public static final String IGNITE_MIN_MEMORY_PER_NODE = "IGNITE_MIN_MEMORY_PER_NODE";
-
-    /** */
-    public static final double DEFAULT_RESOURCE_MIN_MEM = 256;
-
-    /** Min memory per node. */
-    private double minMemory = DEFAULT_RESOURCE_MIN_MEM;
+    private double nodeCnt = 3;
 
     /** */
     public static final String IGNITE_VERSION = "IGNITE_VERSION";
@@ -170,19 +140,6 @@ public class ClusterProperties {
         return clusterName;
     }
 
-    /**
-     * @return CPU count limit.
-     */
-    public double cpus() {
-        return cpu;
-    }
-
-    /**
-     * Sets CPU count limit.
-     */
-    public void cpus(double cpu) {
-        this.cpu = cpu;
-    }
 
     /**
      * @return CPU count limit.
@@ -196,22 +153,6 @@ public class ClusterProperties {
      */
     public void cpusPerNode(double cpu) {
         this.cpuPerNode = cpu;
-    }
-
-    /**
-     * @return mem limit.
-     */
-    public double memory() {
-        return mem;
-    }
-
-    /**
-     * Sets mem limit.
-     *
-     * @param mem Memory.
-     */
-    public void memory(double mem) {
-        this.mem = mem;
     }
 
     /**
@@ -238,44 +179,12 @@ public class ClusterProperties {
     }
 
     /**
-     * @return min memory per node.
-     */
-    public double minMemoryPerNode() {
-        return minMemory;
-    }
-
-    /**
-     * Sets min memory.
-     *
-     * @param minMemory Min memory.
-     */
-    public void minMemoryPerNode(double minMemory) {
-        this.minMemory = minMemory;
-    }
-
-    /**
      * Sets hostname constraint.
      *
      * @param pattern Hostname pattern.
      */
     public void hostnameConstraint(Pattern pattern) {
         this.hostnameConstraint = pattern;
-    }
-
-    /**
-     * @return min cpu count per node.
-     */
-    public double minCpuPerNode() {
-        return minCpu;
-    }
-
-    /**
-     * Sets min cpu count per node.
-     *
-     * @param minCpu min cpu count per node.
-     */
-    public void minCpuPerNode(double minCpu) {
-        this.minCpu = minCpu;
     }
 
     /**
@@ -362,13 +271,9 @@ public class ClusterProperties {
             prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
             prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, props, null);
 
-            prop.cpu = getDoubleProperty(IGNITE_TOTAL_CPU, props, UNLIMITED);
-            prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, UNLIMITED);
-            prop.mem = getDoubleProperty(IGNITE_TOTAL_MEMORY, props, UNLIMITED);
-            prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, UNLIMITED);
-            prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, UNLIMITED);
-            prop.minCpu = getDoubleProperty(IGNITE_MIN_CPU_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
-            prop.minMemory = getDoubleProperty(IGNITE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);
+            prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, 1.0);
+            prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, 2048.0);
+            prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, 2.0);
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
             prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
@@ -394,6 +299,40 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Cluster configuration.
+     */
+    public static ClusterProperties from() {
+        ClusterProperties prop = new ClusterProperties();
+
+        prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, null, DEFAULT_CLUSTER_NAME);
+
+        prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, null, null);
+        prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, null, null);
+
+        prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, null, 1.0);
+        prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, null, 2048.0);
+        prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, 2.0);
+
+        prop.igniteVer = getStringProperty(IGNITE_VERSION, null, DEFAULT_IGNITE_VERSION);
+        prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, null, DEFAULT_IGNITE_WORK_DIR);
+        prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, null, null);
+        prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, null, null);
+
+        String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, null, null);
+
+        if (pattern != null) {
+            try {
+                prop.hostnameConstraint = Pattern.compile(pattern);
+            }
+            catch (PatternSyntaxException e) {
+                log.log(Level.WARNING, "IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
+            }
+        }
+
+        return prop;
+    }
+
+    /**
      * Convert to properties to map.
      *
      * @return Key-value map.
@@ -406,13 +345,9 @@ public class ClusterProperties {
         envs.put(IGNITE_USERS_LIBS_URL, toEnvVal(userLibsUrl));
         envs.put(IGNITE_CONFIG_XML_URL, toEnvVal(igniteCfgUrl));
 
-        envs.put(IGNITE_TOTAL_CPU, toEnvVal(cpu));
         envs.put(IGNITE_RUN_CPU_PER_NODE, toEnvVal(cpuPerNode));
-        envs.put(IGNITE_TOTAL_MEMORY, toEnvVal(mem));
         envs.put(IGNITE_MEMORY_PER_NODE, toEnvVal(memPerNode));
         envs.put(IGNITE_NODE_COUNT, toEnvVal(nodeCnt));
-        envs.put(IGNITE_MIN_CPU_PER_NODE, toEnvVal(minCpu));
-        envs.put(IGNITE_MIN_MEMORY_PER_NODE, toEnvVal(minMemory));
 
         envs.put(IGNITE_VERSION, toEnvVal(igniteVer));
         envs.put(IGNITE_WORKING_DIR, toEnvVal(igniteWorkDir));
@@ -461,7 +396,7 @@ public class ClusterProperties {
 
     /**
      * @param val Value.
-     * @return If val is null {@link EMPTY_STRING} else to string.
+     * @return If val is null {@code EMPTY_STRING} else to string.
      */
     private String toEnvVal(Object val) {
         return val == null ? EMPTY_STRING : val.toString();

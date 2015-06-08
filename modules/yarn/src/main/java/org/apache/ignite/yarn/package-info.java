@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains classes to support integration with Apache Mesos.
+ * Contains classes to support integration with Apache Hadoop Yarn.
  */
 package org.apache.ignite.yarn;

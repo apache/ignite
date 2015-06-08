@@ -17,12 +17,17 @@
 
 package org.apache.ignite.yarn;
 
+import org.apache.hadoop.yarn.api.records.*;
+
 /**
  * Information about launched task.
  */
 public class IgniteContainer {
     /** */
-    public final String host;
+    public final ContainerId id;
+
+    /** */
+    public final NodeId nodeId;
 
     /** */
     public final double cpuCores;
@@ -33,21 +38,29 @@ public class IgniteContainer {
     /**
      * Ignite launched task.
      *
-     * @param host Host.
+     * @param nodeId Node id.
      * @param cpuCores Cpu cores count.
      * @param mem Memory
      */
-    public IgniteContainer(String host, double cpuCores, double mem) {
-        this.host = host;
+    public IgniteContainer(ContainerId id, NodeId nodeId, double cpuCores, double mem) {
+        this.id = id;
+        this.nodeId = nodeId;
         this.cpuCores = cpuCores;
         this.mem = mem;
     }
 
     /**
+     * @return Id.
+     */
+    public ContainerId id() {
+        return id;
+    }
+
+    /**
      * @return Host.
      */
-    public String host() {
-        return host;
+    public NodeId nodeId() {
+        return nodeId;
     }
 
     /**
@@ -64,10 +77,12 @@ public class IgniteContainer {
         return mem;
     }
 
-    @Override
-    public String toString() {
+    /**
+     * {@inheritDoc}
+     */
+    @Override public String toString() {
         return "IgniteTask " +
-            "host: [" + host + ']' +
+            "host: [" + nodeId.getHost() + ']' +
             ", cpuCores: [" + cpuCores + "]" +
             ", mem: [" + mem + "]";
     }

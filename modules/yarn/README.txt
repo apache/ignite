@@ -1,9 +1,9 @@
-Apache Ignite Mesos Module
+Apache Ignite Yarn Module
 ------------------------
 
-Apache Ignite Mesos module provides integration Apache Ignite with Apache Mesos.
+Apache Ignite Yarn module provides integration Apache Ignite with Apache Hadoop Yarn.
 
-Importing Apache Ignite Mesos Module In Maven Project
+Importing Apache Ignite Yarn Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Cloud module
@@ -19,7 +19,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-mesos</artifactId>
+            <artifactId>ignite-yarn</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

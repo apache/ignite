@@ -19,7 +19,7 @@ package org.apache.ignite.yarn;
 
 import org.apache.commons.io.*;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.service.Service;
+import org.apache.hadoop.service.*;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.*;
 import org.apache.hadoop.yarn.client.api.async.*;
@@ -30,11 +30,16 @@ import org.apache.ignite.yarn.utils.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * TODO
+ * Application master request containers from Yarn and decides how many resources will be occupied.
  */
 public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
+    /** */
+    public static final Logger log = Logger.getLogger(ApplicationMaster.class.getSimpleName());
+
     /** Default port range. */
     public static final String DEFAULT_PORT = ":47500..47510";
 
@@ -51,6 +56,9 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private NMClient nmClient;
 
     /** */
+    AMRMClientAsync<AMRMClient.ContainerRequest> rmClient;
+
+    /** */
     private Path ignitePath;
 
     /** */
@@ -60,7 +68,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private FileSystem fs;
 
     /** */
-    private Map<String, IgniteContainer> containers = new HashMap<>();
+    private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -79,44 +87,78 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /** {@inheritDoc} */
     public synchronized void onContainersAllocated(List<Container> conts) {
-        for (Container container : conts) {
-            try {
-                ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
+        for (Container c : conts) {
+            if (checkContainer(c)) {
+                try {
+                    ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
 
-                Map<String, String> env = new HashMap<>(System.getenv());
+                    Map<String, String> env = new HashMap<>(System.getenv());
 
-                env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(container.getNodeId().getHost()));
+                    //env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));
 
-                ctx.setEnvironment(env);
+                    ctx.setEnvironment(env);
 
-                Map<String, LocalResource> resources = new HashMap<>();
+                    Map<String, LocalResource> resources = new HashMap<>();
 
-                resources.put("ignite", IgniteYarnUtils.setupFile(ignitePath, fs, LocalResourceType.ARCHIVE));
-                resources.put("ignite-config.xml", IgniteYarnUtils.setupFile(cfgPath, fs, LocalResourceType.FILE));
+                    resources.put("ignite", IgniteYarnUtils.setupFile(ignitePath, fs, LocalResourceType.ARCHIVE));
+                    resources.put("ignite-config.xml", IgniteYarnUtils.setupFile(cfgPath, fs, LocalResourceType.FILE));
 
-                ctx.setLocalResources(resources);
+                    ctx.setLocalResources(resources);
 
-                ctx.setCommands(
-                    Collections.singletonList(
-                        "./ignite/*/bin/ignite.sh "
-                        + "./ignite-config.xml"
-                        + " -J-Xmx" + container.getResource().getMemory() + "m"
-                        + " -J-Xms" + container.getResource().getMemory() + "m"
-                        + IgniteYarnUtils.YARN_LOG_OUT
-                    ));
+                    ctx.setCommands(
+                        Collections.singletonList(
+                            "./ignite/*/bin/ignite.sh "
+                            + "./ignite-config.xml"
+                            + " -J-Xmx" + c.getResource().getMemory() + "m"
+                            + " -J-Xms" + c.getResource().getMemory() + "m"
+                            + IgniteYarnUtils.YARN_LOG_OUT
+                        ));
 
-                System.out.println("[AM] Launching container " + container.getId());
+                    log.log(Level.INFO, "Launching container: {0}.", c.getId());
 
-                nmClient.startContainer(container, ctx);
+                    nmClient.startContainer(c, ctx);
 
-                containers.put(container.getNodeId().getHost(),
-                    new IgniteContainer(container.getNodeId().getHost(), container.getResource().getVirtualCores(),
-                        container.getResource().getMemory()));
+                    containers.put(c.getId(),
+                        new IgniteContainer(
+                            c.getId(),
+                            c.getNodeId(),
+                            c.getResource().getVirtualCores(),
+                            c.getResource().getMemory()));
+                }
+                catch (Exception ex) {
+                    System.err.println("[AM] Error launching container " + c.getId() + " " + ex);
+                }
             }
-            catch (Exception ex) {
-                System.err.println("[AM] Error launching container " + container.getId() + " " + ex);
-            }
+            else
+                rmClient.releaseAssignedContainer(c.getId());
         }
+    }
+
+    /**
+     * Checks that container
+     *
+     * @param cont Container.
+     * @return {@code True} if
+     */
+    private boolean checkContainer(Container cont) {
+        // Check limit on running nodes.
+        if (props.instances() <= containers.size())
+            return false;
+
+        // Check host name
+        if (props.hostnameConstraint() != null
+                && props.hostnameConstraint().matcher(cont.getNodeId().getHost()).matches())
+            return false;
+
+        // Check that slave satisfies min requirements.
+        if (cont.getResource().getVirtualCores() < props.cpusPerNode()
+            || cont.getResource().getMemory() < props.memoryPerNode()) {
+            //log.log(Level.FINE, "Offer not sufficient for slave request: {0}", offer.getResourcesList());
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -133,7 +175,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         StringBuilder sb = new StringBuilder();
 
         for (IgniteContainer cont : containers.values())
-            sb.append(cont.host()).append(DEFAULT_PORT).append(DELIM);
+            sb.append(cont.nodeId.getHost()).append(DEFAULT_PORT).append(DELIM);
 
         return sb.substring(0, sb.length() - 1);
     }
@@ -141,13 +183,30 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /** {@inheritDoc} */
     public synchronized void onContainersCompleted(List<ContainerStatus> statuses) {
         for (ContainerStatus status : statuses) {
-            synchronized (this) {
-            }
+            containers.remove(status.getContainerId());
+
+            //log.log(Level.FINE, "Offer not sufficient for slave request: {0}", offer.getResourcesList());
         }
     }
 
     /** {@inheritDoc} */
-    public void onNodesUpdated(List<NodeReport> updated) {
+    public synchronized void onNodesUpdated(List<NodeReport> updated) {
+        for (NodeReport node : updated) {
+            // If node unusable.
+            if (node.getNodeState().isUnusable()) {
+                for (IgniteContainer cont : containers.values()) {
+                    if (cont.nodeId().equals(node.getNodeId())) {
+                        containers.remove(cont.id());
+
+                        log.log(Level.WARNING, "Node is unusable. Node: {0}, state: {1}.",
+                            new Object[]{node.getNodeId().getHost(), node.getNodeState()});
+                    }
+                }
+
+                log.log(Level.WARNING, "Node is unusable. Node: {0}, state: {1}.",
+                    new Object[]{node.getNodeId().getHost(), node.getNodeState()});
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -169,7 +228,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        ClusterProperties props = ClusterProperties.from(null);
+        ClusterProperties props = ClusterProperties.from();
 
         ApplicationMaster master = new ApplicationMaster(args[0], props);
 
@@ -184,60 +243,72 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      * @throws Exception If failed.
      */
     public void run() throws Exception {
-        // Create asyn application master.
-        AMRMClientAsync<AMRMClient.ContainerRequest> rmClient = AMRMClientAsync.createAMRMClientAsync(300, this);
-
         rmClient.init(conf);
         rmClient.start();
 
         // Register with ResourceManager
         rmClient.registerApplicationMaster("", 0, "");
 
-        System.out.println("[AM] registerApplicationMaster 1");
+        log.log(Level.INFO, "Application master registered.");
 
         // Priority for worker containers - priorities are intra-application
         Priority priority = Records.newRecord(Priority.class);
         priority.setPriority(0);
 
-        // Check ignite cluster.
-        while (!nmClient.isInState(Service.STATE.STOPPED)) {
-            Resource availableRes = rmClient.getAvailableResources();
+        try {
+            // Check ignite cluster.
+            while (!nmClient.isInState(Service.STATE.STOPPED)) {
+                int runningCnt = containers.size();
 
-            if (containers.size() < props.instances() || availableRes.getMemory() >= props.cpusPerNode()
-                || availableRes.getVirtualCores() >= props.cpus()) {
-                // Resource requirements for worker containers
-                Resource capability = Records.newRecord(Resource.class);
-                capability.setMemory(1024);
-                capability.setVirtualCores(2);
+                if (runningCnt < props.instances() && checkAvailableResource(rmClient.getAvailableResources())) {
+                    // Resource requirements for worker containers.
+                    Resource capability = Records.newRecord(Resource.class);
 
-                for (int i = 0; i < 1; ++i) {
-                    // Make container requests to ResourceManager
-                    AMRMClient.ContainerRequest containerAsk =
+                    capability.setMemory((int)props.memoryPerNode());
+                    capability.setVirtualCores((int)props.cpusPerNode());
+
+                    for (int i = 0; i < props.instances() - runningCnt; ++i) {
+                        // Make container requests to ResourceManager
+                        AMRMClient.ContainerRequest containerAsk =
                             new AMRMClient.ContainerRequest(capability, null, null, priority);
 
-                    System.out.println("[AM] Making res-req " + i);
+                        rmClient.addContainerRequest(containerAsk);
 
-                    rmClient.addContainerRequest(containerAsk);
+                        log.log(Level.INFO, "Making request. Memory: {0}, cpu {1}.",
+                            new Object[]{props.memoryPerNode(), props.cpusPerNode()});
+                    }
                 }
+
+                TimeUnit.SECONDS.sleep(5);
             }
-
-            TimeUnit.SECONDS.sleep(5);
         }
+        catch (Exception e) {
+            // Un-register with ResourceManager
+            rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, "", "");
 
-        System.out.println("[AM] waiting for containers to finish");
-
-        System.out.println("[AM] unregisterApplicationMaster 0");
+            System.exit(1);
+        }
 
         // Un-register with ResourceManager
         rmClient.unregisterApplicationMaster(FinalApplicationStatus.KILLED, "", "");
+    }
 
-        System.out.println("[AM] unregisterApplicationMaster 1");
+    /**
+     * @param availableRes Available resources.
+     * @return {@code True} if cluster contains available resources.
+     */
+    private boolean checkAvailableResource(Resource availableRes) {
+        return availableRes == null || availableRes.getMemory() >= props.memoryPerNode()
+            && availableRes.getVirtualCores() >= props.cpusPerNode();
     }
 
     /**
      * @throws IOException
      */
     public void init() throws IOException {
+        // Create async application master.
+        rmClient = AMRMClientAsync.createAMRMClientAsync(300, this);
+
         if (props.igniteConfigUrl() == null || props.igniteConfigUrl().isEmpty()) {
             InputStream input = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(IgniteYarnUtils.DEFAULT_IGNITE_CONFIG);

@@ -21,12 +21,10 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.util.*;
 
-import java.io.IOException;
-
 import static org.apache.hadoop.yarn.api.ApplicationConstants.*;
 
 /**
- *
+ * Utils.
  */
 public class IgniteYarnUtils {
     /** */

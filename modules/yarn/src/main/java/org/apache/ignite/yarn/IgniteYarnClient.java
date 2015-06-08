@@ -26,6 +26,7 @@ import org.apache.ignite.yarn.utils.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.*;
 
 import static org.apache.hadoop.yarn.api.ApplicationConstants.*;
@@ -69,9 +70,6 @@ public class IgniteYarnClient {
         // Set up the container launch context for the application master
         ContainerLaunchContext amContainer = Records.newRecord(ContainerLaunchContext.class);
 
-        System.out.println(Environment.JAVA_HOME.$() + "/bin/java -Xmx512m " + ApplicationMaster.class.getName()
-            + IgniteYarnUtils.SPACE + ignite.toUri());
-
         amContainer.setCommands(
             Collections.singletonList(
                 Environment.JAVA_HOME.$() + "/bin/java -Xmx512m " + ApplicationMaster.class.getName()
@@ -106,8 +104,10 @@ public class IgniteYarnClient {
 
         // Submit application
         ApplicationId appId = appContext.getApplicationId();
-        System.out.println("Submitting application " + appId);
+
         yarnClient.submitApplication(appContext);
+
+        log.log(Level.INFO, "Submitted application. Application id: [{0}]", appId);
 
         ApplicationReport appReport = yarnClient.getApplicationReport(appId);
         YarnApplicationState appState = appReport.getYarnApplicationState();
@@ -115,7 +115,7 @@ public class IgniteYarnClient {
         while (appState != YarnApplicationState.FINISHED &&
                 appState != YarnApplicationState.KILLED &&
                 appState != YarnApplicationState.FAILED) {
-            Thread.sleep(100);
+            TimeUnit.SECONDS.sleep(1L);
 
             appReport = yarnClient.getApplicationReport(appId);
 
@@ -124,8 +124,7 @@ public class IgniteYarnClient {
 
         yarnClient.killApplication(appId);
 
-        System.out.println("Application " + appId + " finished with state " + appState + " at "
-            + appReport.getFinishTime());
+        log.log(Level.INFO, "Application [{0}] finished with state [{1}]", new Object[]{appId, appState});
     }
 
     /**

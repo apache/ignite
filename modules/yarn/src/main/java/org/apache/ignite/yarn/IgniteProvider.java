@@ -18,7 +18,7 @@
 package org.apache.ignite.yarn;
 
 import org.apache.hadoop.fs.*;
-import org.apache.ignite.yarn.utils.IgniteYarnUtils;
+import org.apache.ignite.yarn.utils.*;
 
 import java.io.*;
 import java.net.*;
@@ -26,7 +26,7 @@ import java.nio.channels.*;
 import java.util.*;
 
 /**
- * Class downloads and stores Ignite.
+ * Downloads and stores Ignite.
  */
 public class IgniteProvider {
     /** */
