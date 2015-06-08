@@ -1417,6 +1417,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void awaitForReadyTopologyVersion(AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
+
+        if (fut != null)
+            fut.get();
+    }
+
+    /**
      * Wrapper to store connection and flag is schema set or not.
      */
     private static class ConnectionWrapper {

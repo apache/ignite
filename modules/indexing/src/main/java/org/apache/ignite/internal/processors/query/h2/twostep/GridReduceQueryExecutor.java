@@ -26,7 +26,6 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
@@ -284,23 +283,12 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * @param readyTop Latest ready topology.
      * @param cctx Cache context for main space.
      * @param extraSpaces Extra spaces.
      * @return {@code true} If preloading is active.
      */
-    private boolean isPreloadingActive(
-        AffinityTopologyVersion readyTop,
-        final GridCacheContext<?,?> cctx,
-        List<String> extraSpaces
-    ) {
-        AffinityTopologyVersion freshTop = ctx.discovery().topologyVersionEx();
-
-        int res = readyTop.compareTo(freshTop);
-
-        assert res <= 0 : readyTop + " " + freshTop;
-
-        if (res < 0 || hasMovingPartitions(cctx))
+    private boolean isPreloadingActive(final GridCacheContext<?,?> cctx, List<String> extraSpaces) {
+        if (hasMovingPartitions(cctx))
             return true;
 
         if (extraSpaces != null) {
@@ -320,10 +308,8 @@ public class GridReduceQueryExecutor {
         GridDhtPartitionFullMap fullMap = cctx.topology().partitionMap(false);
 
         for (GridDhtPartitionMap map : fullMap.values()) {
-            for (GridDhtPartitionState state : map.map().values()) {
-                if (state == GridDhtPartitionState.MOVING)
-                    return true;
-            }
+            if (map.hasMovingPartitions())
+                return true;
         }
 
         return false;
@@ -375,7 +361,7 @@ public class GridReduceQueryExecutor {
                     nodes.retainAll(extraNodes);
 
                     if (nodes.isEmpty()) {
-                        if (isPreloadingActive(topVer, cctx, extraSpaces))
+                        if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
                             throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
@@ -384,7 +370,7 @@ public class GridReduceQueryExecutor {
                 }
                 else if (!cctx.isReplicated() && extraCctx.isReplicated()) {
                     if (!extraNodes.containsAll(nodes))
-                        if (isPreloadingActive(topVer, cctx, extraSpaces))
+                        if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
                             throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
@@ -392,7 +378,7 @@ public class GridReduceQueryExecutor {
                 }
                 else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
                     if (extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes))
-                        if (isPreloadingActive(topVer, cctx, extraSpaces))
+                        if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
                             throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
@@ -434,7 +420,7 @@ public class GridReduceQueryExecutor {
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;
 
-            if (isPreloadingActive(topVer, cctx, extraSpaces)) {
+            if (isPreloadingActive(cctx, extraSpaces)) {
                 if (cctx.isReplicated())
                     nodes = replicatedDataNodes(cctx, extraSpaces);
                 else {
@@ -499,7 +485,7 @@ public class GridReduceQueryExecutor {
                         mapQry.marshallParams(m);
                 }
 
-                AffinityTopologyVersion retry = null;
+                boolean retry = false;
 
                 if (send(nodes,
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null), partsMap)) {
@@ -511,16 +497,21 @@ public class GridReduceQueryExecutor {
                         if (state instanceof CacheException)
                             throw new CacheException("Failed to run map query remotely.", (CacheException)state);
 
-                        if (state instanceof AffinityTopologyVersion)
-                            retry = (AffinityTopologyVersion)state; // Remote nodes can ask us to retry.
+                        if (state instanceof AffinityTopologyVersion) {
+                            retry = true;
+
+                            // If remote node asks us to retry then we have outdated full partition map.
+                            // TODO is this correct way to wait for a new map??
+                            h2.awaitForReadyTopologyVersion((AffinityTopologyVersion)state);
+                        }
                     }
                 }
                 else // Send failed.
-                    retry = topVer;
+                    retry = true;
 
                 ResultSet res = null;
 
-                if (retry == null) {
+                if (!retry) {
                     if (qry.explain())
                         return explainPlan(r.conn, space, qry);
 
@@ -536,8 +527,12 @@ public class GridReduceQueryExecutor {
 //                dropTable(r.conn, tbl.getName()); TODO
                 }
 
-                if (retry != null)
+                if (retry) {
+                    if (Thread.currentThread().isInterrupted())
+                        throw new IgniteInterruptedCheckedException("Query was interrupted.");
+
                     continue;
+                }
 
                 return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
             }

@@ -242,14 +242,10 @@ public class GridMapQueryExecutor {
                 for (int p = 0; p < partsCnt; p++) {
                     GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, false);
 
-                    if (part == null)
+                    if (part == null || part.state() != OWNING)
                         return false;
 
-                    // Await for owning state.
-                    part.owningFuture().get();
-
                     // We don't need to reserve partitions because they will not be evicted in replicated caches.
-                    assert part.state() == OWNING : part.state();
                 }
             }
             else { // Reserve primary partitions for partitioned cache.
@@ -262,20 +258,13 @@ public class GridMapQueryExecutor {
 
                     GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                    if (part == null || part.state() == RENTING || !part.reserve())
+                    if (part == null || part.state() != OWNING || !part.reserve())
                         return false;
 
                     reserved.add(part);
 
-                    // Await for owning state.
-                    part.owningFuture().get();
-
-                    if (part.state() != OWNING) {
-                        // We can't be MOVING since owningFuture is done and and can't be EVICTED since reserved.
-                        assert part.state() == RENTING : part.state();
-
+                    if (part.state() != OWNING)
                         return false;
-                    }
                 }
             }
         }
@@ -533,7 +522,10 @@ public class GridMapQueryExecutor {
 
         msg.retry(h2.readyTopologyVersion());
 
-        ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+        if (loc)
+            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+        else
+            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
     }
 
     /**
