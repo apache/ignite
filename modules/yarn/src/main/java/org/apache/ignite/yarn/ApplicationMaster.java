@@ -91,7 +91,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
                     Map<String, String> env = new HashMap<>(System.getenv());
 
-                    //env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));
+                    env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));
 
                     ctx.setEnvironment(env);
 
@@ -284,15 +284,18 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                 TimeUnit.MILLISECONDS.sleep(schedulerTimeout);
             }
         }
+        catch (InterruptedException e) {
+            // Un-register with ResourceManager
+            rmClient.unregisterApplicationMaster(FinalApplicationStatus.KILLED, "", "");
+
+            log.log(Level.WARNING, "Application master killed.");
+        }
         catch (Exception e) {
             // Un-register with ResourceManager
             rmClient.unregisterApplicationMaster(FinalApplicationStatus.FAILED, "", "");
 
-            System.exit(1);
+            log.log(Level.SEVERE, "Application master failed.", e);
         }
-
-        // Un-register with ResourceManager
-        rmClient.unregisterApplicationMaster(FinalApplicationStatus.KILLED, "", "");
     }
 
     /**
@@ -363,5 +366,23 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      */
     public void setSchedulerTimeout(long schedulerTimeout) {
         this.schedulerTimeout = schedulerTimeout;
+    }
+
+    /**
+     * Sets file system.
+     * @param fs File system.
+     */
+    public void setFs(FileSystem fs) {
+        this.fs = fs;
+    }
+
+    /**
+     * JUST FOR TESTING!!!
+     *
+     * @return Running containers.
+     */
+    @Deprecated
+    public Map<ContainerId, IgniteContainer> getContainers() {
+        return containers;
     }
 }

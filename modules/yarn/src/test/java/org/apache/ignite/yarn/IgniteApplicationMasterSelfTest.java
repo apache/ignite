@@ -18,8 +18,9 @@
 package org.apache.ignite.yarn;
 
 import junit.framework.*;
-import org.apache.curator.utils.ThreadUtils;
-import org.apache.hadoop.util.ThreadUtil;
+import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.*;
+import org.apache.hadoop.util.*;
 import org.apache.hadoop.yarn.api.protocolrecords.*;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.*;
@@ -27,8 +28,11 @@ import org.apache.hadoop.yarn.client.api.async.*;
 import org.apache.hadoop.yarn.exceptions.*;
 
 import java.io.*;
+import java.net.*;
 import java.nio.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.regex.*;
 
 /**
  * Application master tests.
@@ -52,7 +56,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
         props = new ClusterProperties();
         appMaster = new ApplicationMaster("test", props);
 
-        appMaster.setSchedulerTimeout(100000);
+        appMaster.setSchedulerTimeout(10000);
 
         rmMock.clear();
     }
@@ -82,7 +86,6 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
         }
     }
 
-
     /**
      * @throws Exception If failed.
      */
@@ -98,11 +101,122 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
 
         Thread thread = runAppMaster(appMaster);
 
-        interruptedThread(thread);
-
         List<AMRMClient.ContainerRequest> contRequests = collectRequests(rmMock, 1, 1000);
 
+        interruptedThread(thread);
+
         assertEquals(0, contRequests.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClusterAllocatedResource() throws Exception {
+        rmMock.availableRes(new MockResource(1024, 2));
+
+        appMaster.setRmClient(rmMock);
+        appMaster.setNmClient(new NMMock());
+
+        appMaster.setFs(new MockFileSystem());
+
+        props.cpusPerNode(8);
+        props.memoryPerNode(5000);
+        props.instances(3);
+
+        // Check that container resources
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 5, 2000)));
+        assertEquals(0, appMaster.getContainers().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 10, 2000)));
+        assertEquals(0, appMaster.getContainers().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 1, 7000)));
+        assertEquals(0, appMaster.getContainers().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 8, 5000)));
+        assertEquals(1, appMaster.getContainers().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 10, 7000)));
+        assertEquals(2, appMaster.getContainers().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartReleaseContainer() throws Exception {
+        rmMock.availableRes(new MockResource(1024, 2));
+
+        NMMock nmClient = new NMMock();
+
+        appMaster.setRmClient(rmMock);
+        appMaster.setNmClient(nmClient);
+
+        appMaster.setFs(new MockFileSystem());
+
+        props.cpusPerNode(8);
+        props.memoryPerNode(5000);
+        props.instances(3);
+
+        // Check that container resources
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 5, 2000)));
+        assertEquals(1, rmMock.releasedResources().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 5, 7000)));
+        assertEquals(2, rmMock.releasedResources().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 9, 2000)));
+        assertEquals(3, rmMock.releasedResources().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 8, 5000)));
+        assertEquals(3, rmMock.releasedResources().size());
+        assertEquals(1, nmClient.startedContainer().size());
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHostnameConstraint() throws Exception {
+        rmMock.availableRes(new MockResource(1024, 2));
+
+        NMMock nmClient = new NMMock();
+
+        appMaster.setRmClient(rmMock);
+        appMaster.setNmClient(nmClient);
+
+        appMaster.setFs(new MockFileSystem());
+
+        props.cpusPerNode(8);
+        props.memoryPerNode(5000);
+        props.instances(3);
+        props.hostnameConstraint(Pattern.compile("ignoreHost"));
+
+        // Check that container resources
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("simple", 8, 5000)));
+        assertEquals(0, rmMock.releasedResources().size());
+        assertEquals(1, nmClient.startedContainer().size());
+
+        appMaster.onContainersAllocated(Collections.singletonList(createContainer("ignoreHost", 8, 5000)));
+        assertEquals(1, rmMock.releasedResources().size());
+        assertEquals(1, nmClient.startedContainer().size());
+    }
+
+    /**
+     * @param host Host.
+     * @param cpu Cpu count.
+     * @param mem Memory.
+     * @return Container.
+     */
+    private Container createContainer(String host, int cpu, int mem) {
+        return Container.newInstance(
+            ContainerId.newContainerId(ApplicationAttemptId.newInstance(ApplicationId.newInstance(0l, 0), 0),
+                ThreadLocalRandom.current().nextLong()),
+            NodeId.newInstance(host, 0),
+            "example.com",
+            new MockResource(mem, cpu),
+            Priority.newInstance(0),
+            null
+        );
     }
 
     /**
@@ -147,7 +261,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
     }
 
     /**
-     * Interrupt thread and wait.
+     * Interrupt thread and join.
      *
      * @param thread Thread.
      */
@@ -165,6 +279,9 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
         private List<AMRMClient.ContainerRequest> contRequests = new ArrayList<>();
 
         /** */
+        private List<ContainerId> releasedConts = new ArrayList<>();
+
+        /** */
         private Resource availableRes;
 
         /** */
@@ -177,6 +294,13 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
          */
         public List<AMRMClient.ContainerRequest> requests() {
             return contRequests;
+        }
+
+        /**
+         * @return Released resources.
+         */
+        public List<ContainerId> releasedResources() {
+            return releasedConts;
         }
 
         /**
@@ -193,6 +317,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
          */
         public void clear() {
             contRequests.clear();
+            releasedConts.clear();
             availableRes = null;
         }
 
@@ -226,7 +351,7 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
 
         /** {@inheritDoc} */
         @Override public void releaseAssignedContainer(ContainerId containerId) {
-            // No-op.
+            releasedConts.add(containerId);
         }
 
         /** {@inheritDoc} */
@@ -250,13 +375,26 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
      */
     public static class NMMock extends NMClient {
         /** */
-        protected NMMock() {
+        private List<ContainerLaunchContext> startedContainer = new ArrayList<>();
+
+        /** */
+        public NMMock() {
             super("name");
+        }
+
+        /**
+         * @return Started containers.
+         */
+        public List<ContainerLaunchContext> startedContainer() {
+            return startedContainer;
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, ByteBuffer> startContainer(Container container,
             ContainerLaunchContext containerLaunchContext) throws YarnException, IOException {
+
+            startedContainer.add(containerLaunchContext);
+
             return null;
         }
 
@@ -319,6 +457,76 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
         /** {@inheritDoc} */
         @Override public int compareTo(Resource resource) {
             return 0;
+        }
+    }
+
+    /**
+     * Mock file system.
+     */
+    public static class MockFileSystem extends FileSystem {
+        /** */
+        public MockFileSystem() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public Path makeQualified(Path path) {
+            return new Path("/test/path");
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileStatus getFileStatus(Path f) throws IOException {
+            return new FileStatus();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean mkdirs(Path f, FsPermission permission) throws IOException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Path getWorkingDirectory() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setWorkingDirectory(Path new_dir) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
+            return new FileStatus[0];
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean delete(Path f, boolean recursive) throws IOException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean rename(Path src, Path dst) throws IOException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FSDataOutputStream append(Path f, int bufferSize, Progressable progress) throws IOException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize,
+            short replication, long blockSize, Progressable progress) throws IOException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FSDataInputStream open(Path f, int bufferSize) throws IOException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public URI getUri() {
+            return null;
         }
     }
 }
