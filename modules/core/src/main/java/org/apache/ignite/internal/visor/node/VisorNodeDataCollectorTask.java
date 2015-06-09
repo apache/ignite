@@ -23,6 +23,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -87,7 +88,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
                 else {
                     // Ignore nodes that left topology.
                     if (!(unhandledEx instanceof ClusterGroupEmptyException))
-                        taskRes.unhandledEx().put(nid, unhandledEx);
+                        taskRes.unhandledEx().put(nid, new VisorExceptionWrapper(unhandledEx));
                 }
             }
         }
@@ -116,13 +117,13 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
             taskRes.events().addAll(jobRes.events());
 
         if (jobRes.eventsEx() != null)
-            taskRes.eventsEx().put(nid, jobRes.eventsEx());
+            taskRes.eventsEx().put(nid, new VisorExceptionWrapper(jobRes.eventsEx()));
 
         if (!jobRes.caches().isEmpty())
             taskRes.caches().put(nid, jobRes.caches());
 
         if (jobRes.cachesEx() != null)
-            taskRes.cachesEx().put(nid, jobRes.cachesEx());
+            taskRes.cachesEx().put(nid, new VisorExceptionWrapper(jobRes.cachesEx()));
 
         if (!jobRes.igfss().isEmpty())
             taskRes.igfss().put(nid, jobRes.igfss());
@@ -131,6 +132,6 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
             taskRes.igfsEndpoints().put(nid, jobRes.igfsEndpoints());
 
         if (jobRes.igfssEx() != null)
-            taskRes.igfssEx().put(nid, jobRes.igfssEx());
+            taskRes.igfssEx().put(nid, new VisorExceptionWrapper(jobRes.igfssEx()));
     }
 }
