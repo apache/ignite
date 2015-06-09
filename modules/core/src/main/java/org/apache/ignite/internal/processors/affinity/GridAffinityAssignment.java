@@ -68,6 +68,18 @@ class GridAffinityAssignment implements Serializable {
     }
 
     /**
+     * @param topVer Topology version.
+     * @param aff Assignment to copy from.
+     */
+    GridAffinityAssignment(AffinityTopologyVersion topVer, GridAffinityAssignment aff) {
+        this.topVer = topVer;
+
+        assignment = aff.assignment;
+        primary = aff.primary;
+        backup = aff.backup;
+    }
+
+    /**
      * @return Affinity assignment.
      */
     public List<List<ClusterNode>> assignment() {
