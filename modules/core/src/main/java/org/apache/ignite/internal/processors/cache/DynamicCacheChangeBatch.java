@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -39,6 +40,9 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     @GridToStringInclude
     private Map<String, Map<UUID, Boolean>> clientNodes;
 
+    /** Custom message ID. */
+    private IgniteUuid id = IgniteUuid.randomUuid();
+
     /**
      * @param reqs Requests.
      */
@@ -46,6 +50,11 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
         Collection<DynamicCacheChangeRequest> reqs
     ) {
         this.reqs = reqs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /**
@@ -70,11 +79,6 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(DynamicCacheChangeBatch.class, this);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean incrementMinorTopologyVersion() {
         return true;
     }
@@ -87,5 +91,10 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DynamicCacheChangeBatch.class, this);
     }
 }

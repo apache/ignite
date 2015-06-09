@@ -42,8 +42,8 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setSocketTimeout(5000);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setAckTimeout(5000);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setSocketTimeout(50);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setAckTimeout(50);
 
         return cfg;
     }
