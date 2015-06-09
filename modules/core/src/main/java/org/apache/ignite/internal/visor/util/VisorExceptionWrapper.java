@@ -24,11 +24,11 @@ public class VisorExceptionWrapper extends Throwable {
     /** Detail message string of this throwable */
     private String detailMsg;
 
-    /** Simple class name of original throwable */
-    private String originalName;
+    /** Simple class name of base throwable object. */
+    private String classSimpleName;
 
-    /** Full class name of original throwable */
-    private String fullName;
+    /** Class name of base throwable object. */
+    private String className;
 
     /**
      * Wrap throwable by presented on Visor throwable object.
@@ -38,8 +38,8 @@ public class VisorExceptionWrapper extends Throwable {
     public VisorExceptionWrapper(Throwable cause) {
         assert cause != null;
 
-        originalName = cause.getClass().getSimpleName();
-        fullName = cause.getClass().getName();
+        classSimpleName = cause.getClass().getSimpleName();
+        className = cause.getClass().getName();
 
         detailMsg = cause.getMessage();
 
@@ -53,17 +53,17 @@ public class VisorExceptionWrapper extends Throwable {
     }
 
     /**
-     * @return Simple name of base throwable object.
+     * @return Class simple name of base throwable object.
      */
-    public String getOriginalName() {
-        return originalName;
+    public String getClassSimpleName() {
+        return classSimpleName;
     }
 
     /**
-     * @return Full name of base throwable object.
+     * @return Class name of base throwable object.
      */
-    public String getFullName() {
-        return fullName;
+    public String getClassName() {
+        return className;
     }
 
     /** {@inheritDoc} */
@@ -73,6 +73,6 @@ public class VisorExceptionWrapper extends Throwable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return (detailMsg != null) ? (fullName + ": " + detailMsg) : fullName;
+        return (detailMsg != null) ? (className + ": " + detailMsg) : className;
     }
 }
