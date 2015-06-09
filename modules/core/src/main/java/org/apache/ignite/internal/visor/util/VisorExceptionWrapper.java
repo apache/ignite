@@ -21,14 +21,17 @@ package org.apache.ignite.internal.visor.util;
  * Exception wrapper for safe for transferring to Visor.
  */
 public class VisorExceptionWrapper extends Throwable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Detail message string of this throwable */
     private String detailMsg;
 
     /** Simple class name of base throwable object. */
-    private String classSimpleName;
+    private String clsSimpleName;
 
     /** Class name of base throwable object. */
-    private String className;
+    private String clsName;
 
     /**
      * Wrap throwable by presented on Visor throwable object.
@@ -38,8 +41,8 @@ public class VisorExceptionWrapper extends Throwable {
     public VisorExceptionWrapper(Throwable cause) {
         assert cause != null;
 
-        classSimpleName = cause.getClass().getSimpleName();
-        className = cause.getClass().getName();
+        clsSimpleName = cause.getClass().getSimpleName();
+        clsName = cause.getClass().getName();
 
         detailMsg = cause.getMessage();
 
@@ -56,14 +59,14 @@ public class VisorExceptionWrapper extends Throwable {
      * @return Class simple name of base throwable object.
      */
     public String getClassSimpleName() {
-        return classSimpleName;
+        return clsSimpleName;
     }
 
     /**
      * @return Class name of base throwable object.
      */
     public String getClassName() {
-        return className;
+        return clsName;
     }
 
     /** {@inheritDoc} */
@@ -73,6 +76,6 @@ public class VisorExceptionWrapper extends Throwable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return (detailMsg != null) ? (className + ": " + detailMsg) : className;
+        return (detailMsg != null) ? (clsName + ": " + detailMsg) : clsName;
     }
 }

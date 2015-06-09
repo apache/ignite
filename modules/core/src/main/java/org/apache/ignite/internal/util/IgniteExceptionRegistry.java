@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.visor.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -161,7 +160,7 @@ public class IgniteExceptionRegistry {
 
         /** */
         @GridToStringExclude
-        private final VisorExceptionWrapper error;
+        private final Throwable error;
 
         /** */
         private final long threadId;
@@ -187,7 +186,7 @@ public class IgniteExceptionRegistry {
          */
         public ExceptionInfo(long order, Throwable error, String msg, long threadId, String threadName, long time) {
             this.order = order;
-            this.error = new VisorExceptionWrapper(error);
+            this.error = error;
             this.threadId = threadId;
             this.threadName = threadName;
             this.time = time;
@@ -211,7 +210,7 @@ public class IgniteExceptionRegistry {
         /**
          * @return Suppressed error.
          */
-        public VisorExceptionWrapper error() {
+        public Throwable error() {
             return error;
         }
 
