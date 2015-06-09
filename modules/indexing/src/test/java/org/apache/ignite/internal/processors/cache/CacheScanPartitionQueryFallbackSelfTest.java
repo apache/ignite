@@ -31,6 +31,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -46,6 +48,9 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
     /** Keys count. */
     private static final int KEYS_CNT = 5000;
+
+    /** Ip finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Backups. */
     private int backups;
@@ -75,6 +80,13 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setClientMode(clientMode);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setForceServerMode(true);
+        cfg.setDiscoverySpi(discoSpi);
+
         cfg.setCommunicationSpi(commSpiFactory.create());
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -84,8 +96,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
         ccfg.setNearConfiguration(null);
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setClientMode(clientMode);
 
         return cfg;
     }
@@ -183,6 +193,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
                 if (!test.get()) {
                     candidates.addAll(localPartitions(ignite1));
+
                     candidates.retainAll(localPartitions(ignite2));
                 }
 
@@ -195,8 +206,9 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
                             awaitPartitionMapExchange();
 
                             if (!test.get()) {
-                                Set<Integer> parts = localPartitions(ignite1);
-                                candidates.removeAll(parts);
+                                candidates.removeAll(localPartitions(ignite1));
+
+                                F.retain(candidates, false, localPartitions(ignite2));
                             }
 
                             latch.countDown();
