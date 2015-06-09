@@ -74,7 +74,7 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
                 int iter = 0;
 
                 while (System.currentTimeMillis() < stopTime) {
-                    String cacheName = "cache-" + threadIdx + "-" + iter;
+                    String cacheName = "cache-" + threadIdx + "-" + (iter % 10);
 
                     try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName)) {
                         try (IgniteDataStreamer<Object, Object> stmr = ignite.dataStreamer(cacheName)) {
