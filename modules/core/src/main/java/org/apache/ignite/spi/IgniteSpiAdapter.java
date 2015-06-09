@@ -543,12 +543,18 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         return U.spiAttribute(this, attrName);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param obj Timeout object.
+     * @see IgniteSpiContext#addTimeoutObject(IgniteSpiTimeoutObject)
+     */
     protected void addTimeoutObject(IgniteSpiTimeoutObject obj) {
         spiCtx.addTimeoutObject(obj);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param obj Timeout object.
+     * @see IgniteSpiContext#removeTimeoutObject(IgniteSpiTimeoutObject)
+     */
     protected void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
         spiCtx.removeTimeoutObject(obj);
     }
