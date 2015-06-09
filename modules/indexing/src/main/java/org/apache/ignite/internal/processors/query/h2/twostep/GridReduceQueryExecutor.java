@@ -631,9 +631,9 @@ public class GridReduceQueryExecutor {
     private Map<ClusterNode, IntArray> partitionLocations(final GridCacheContext<?,?> cctx, List<String> extraSpaces) {
         assert !cctx.isReplicated() && !cctx.isLocal() : cctx.name() + " must be partitioned";
 
-        int maxParts = cctx.affinity().partitions();
+        final int partsCnt = cctx.affinity().partitions();
 
-        if (extraSpaces != null) { // Find max number of partitions for partitioned caches.
+        if (extraSpaces != null) { // Check correct number of partitions for partitioned caches.
             for (String extraSpace : extraSpaces) {
                 GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
 
@@ -642,12 +642,13 @@ public class GridReduceQueryExecutor {
 
                 int parts = extraCctx.affinity().partitions();
 
-                if (parts > maxParts)
-                    maxParts = parts;
+                if (parts != partsCnt)
+                    throw new CacheException("Number of partitions must be the same for correct collocation in " +
+                        "caches " + cctx.name() + " and " + extraSpace + ".");
             }
         }
 
-        Set<ClusterNode>[] partLocs = new Set[maxParts];
+        Set<ClusterNode>[] partLocs = new Set[partsCnt];
 
         // Fill partition locations for main cache.
         for (int p = 0, parts =  cctx.affinity().partitions(); p < parts; p++) {

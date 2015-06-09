@@ -97,7 +97,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
             cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setRebalanceMode(CacheRebalanceMode.SYNC);
-            cc.setAffinity(new RendezvousAffinityFunction(false, name.equals("pe") ? 50 : 60));
+            cc.setAffinity(new RendezvousAffinityFunction(false, 60));
 
             if (name.equals("pe")) {
                 cc.setIndexedTypes(
@@ -178,7 +178,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
     public void testRestarts() throws Exception {
         int duration = 150 * 1000;
         int qryThreadNum = 4;
-        int restartThreadsNum = 1; // 4 + 2 = 6 nodes
+        int restartThreadsNum = 2; // 4 + 2 = 6 nodes
         final int nodeLifeTime = 2 * 1000;
         final int logFreq = 50;
 
@@ -198,13 +198,13 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         final AtomicInteger qryCnt = new AtomicInteger();
 
-        final AtomicBoolean done = new AtomicBoolean();
+        final AtomicBoolean qrysDone = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 GridRandom rnd = new GridRandom();
 
-                while (!done.get()) {
+                while (!qrysDone.get()) {
                     int g;
 
                     do {
@@ -212,16 +212,16 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     }
                     while (!locks.compareAndSet(g, 0, 1));
 
-//                    if (rnd.nextBoolean()) { // Partitioned query.
+                    if (rnd.nextBoolean()) { // Partitioned query.
                         IgniteCache<?,?> cache = grid(g).cache("pu");
 
                         assertEquals(pRes, cache.query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll());
-//                    }
-//                    else { // Replicated query.
-//                        IgniteCache<?,?> cache = grid(g).cache("co");
-//
-//                        assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
-//                    }
+                    }
+                    else { // Replicated query.
+                        IgniteCache<?,?> cache = grid(g).cache("co");
+
+                        assertEquals(rRes, cache.query(new SqlFieldsQuery(REPLICATED_QRY)).getAll());
+                    }
 
                     locks.set(g, 0);
 
@@ -235,12 +235,14 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
+        final AtomicBoolean restartsDone = new AtomicBoolean();
+
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
                 GridRandom rnd = new GridRandom();
 
-                while (!done.get()) {
+                while (!restartsDone.get()) {
                     int g;
 
                     do {
@@ -272,11 +274,13 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
         info("Stopping..");
 
-        done.set(true);
+        restartsDone.set(true);
 
         fut2.get();
 
         info("Restarts stopped.");
+
+        qrysDone.set(true);
 
         fut1.get();
 
