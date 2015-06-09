@@ -59,8 +59,11 @@ public class ClusterProperties {
     /** */
     public static final String IGNITE_NODE_COUNT = "IGNITE_NODE_COUNT";
 
+    /** */
+    public static final int DEFAULT_IGNITE_NODE_COUNT = 3;
+
     /** Node count limit. */
-    private double nodeCnt = 3;
+    private double nodeCnt = DEFAULT_IGNITE_NODE_COUNT;
 
     /** */
     public static final String IGNITE_VERSION = "IGNITE_VERSION";
@@ -105,22 +108,10 @@ public class ClusterProperties {
     private String userLibs = null;
 
     /** */
-    public static final String IGNITE_USERS_LIBS_URL = "IGNITE_USERS_LIBS_URL";
-
-    /** URL to users libs. */
-    private String userLibsUrl = null;
-
-    /** */
     public static final String IGNITE_CONFIG_XML = "IGNITE_XML_CONFIG";
 
     /** Ignite config. */
     private String igniteCfg = null;
-
-    /** */
-    public static final String IGNITE_CONFIG_XML_URL = "IGNITE_CONFIG_XML_URL";
-
-    /** Url to ignite config. */
-    private String igniteCfgUrl = null;
 
     /** */
     public static final String IGNITE_HOSTNAME_CONSTRAINT = "IGNITE_HOSTNAME_CONSTRAINT";
@@ -179,6 +170,13 @@ public class ClusterProperties {
     }
 
     /**
+     * Sets instance count limit.
+     */
+    public void instances(int nodeCnt) {
+        this.nodeCnt = nodeCnt;
+    }
+
+    /**
      * Sets hostname constraint.
      *
      * @param pattern Hostname pattern.
@@ -230,20 +228,6 @@ public class ClusterProperties {
     }
 
     /**
-     * @return Url to ignite configuration.
-     */
-    public String igniteConfigUrl() {
-        return igniteCfgUrl;
-    }
-
-    /**
-     * @return Url to users libs configuration.
-     */
-    public String usersLibsUrl() {
-        return userLibsUrl;
-    }
-
-    /**
      * @return Host name constraint.
      */
     public Pattern hostnameConstraint() {
@@ -268,15 +252,14 @@ public class ClusterProperties {
 
             prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
 
-            prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
-            prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, props, null);
-
             prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, 1.0);
             prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, 2048.0);
             prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, 2.0);
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
             prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
+            prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, props, DEFAULT_IGNITE_LOCAL_WORK_DIR);
+            prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, props, DEFAULT_IGNITE_RELEASES_DIR);
             prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
             prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
 
@@ -306,15 +289,14 @@ public class ClusterProperties {
 
         prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, null, DEFAULT_CLUSTER_NAME);
 
-        prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, null, null);
-        prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, null, null);
-
         prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, null, 1.0);
         prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, null, 2048.0);
         prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, 2.0);
 
         prop.igniteVer = getStringProperty(IGNITE_VERSION, null, DEFAULT_IGNITE_VERSION);
         prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, null, DEFAULT_IGNITE_WORK_DIR);
+        prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, null, DEFAULT_IGNITE_LOCAL_WORK_DIR);
+        prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, null, DEFAULT_IGNITE_RELEASES_DIR);
         prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, null, null);
         prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, null, null);
 
@@ -342,15 +324,14 @@ public class ClusterProperties {
 
         envs.put(IGNITE_CLUSTER_NAME, toEnvVal(clusterName));
 
-        envs.put(IGNITE_USERS_LIBS_URL, toEnvVal(userLibsUrl));
-        envs.put(IGNITE_CONFIG_XML_URL, toEnvVal(igniteCfgUrl));
-
         envs.put(IGNITE_RUN_CPU_PER_NODE, toEnvVal(cpuPerNode));
         envs.put(IGNITE_MEMORY_PER_NODE, toEnvVal(memPerNode));
         envs.put(IGNITE_NODE_COUNT, toEnvVal(nodeCnt));
 
         envs.put(IGNITE_VERSION, toEnvVal(igniteVer));
         envs.put(IGNITE_WORKING_DIR, toEnvVal(igniteWorkDir));
+        envs.put(IGNITE_LOCAL_WORK_DIR, toEnvVal(igniteLocalWorkDir));
+        envs.put(IGNITE_RELEASES_DIR, toEnvVal(igniteReleasesDir));
         envs.put(IGNITE_CONFIG_XML, toEnvVal(igniteCfg));
         envs.put(IGNITE_USERS_LIBS, toEnvVal(userLibs));
 

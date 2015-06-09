@@ -47,27 +47,30 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     public static final String DELIM = ",";
 
     /** */
+    private long schedulerTimeout = TimeUnit.SECONDS.toMillis(1);
+
+    /** Yarn configuration. */
     private YarnConfiguration conf;
 
-    /** */
+    /** Cluster properties. */
     private ClusterProperties props;
 
-    /** */
+    /** Network manager. */
     private NMClient nmClient;
 
-    /** */
-    AMRMClientAsync<AMRMClient.ContainerRequest> rmClient;
+    /** Resource manager. */
+    private AMRMClientAsync<AMRMClient.ContainerRequest> rmClient;
 
-    /** */
+    /** Ignite path. */
     private Path ignitePath;
 
-    /** */
+    /** Config path. */
     private Path cfgPath;
 
-    /** */
+    /** Hadoop file system. */
     private FileSystem fs;
 
-    /** */
+    /** Running containers. */
     private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
@@ -76,13 +79,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     public ApplicationMaster(String ignitePath, ClusterProperties props) throws Exception {
         this.conf = new YarnConfiguration();
         this.props = props;
-        this.fs = FileSystem.get(conf);
         this.ignitePath = new Path(ignitePath);
-
-        nmClient = NMClient.createNMClient();
-
-        nmClient.init(conf);
-        nmClient.start();
     }
 
     /** {@inheritDoc} */
@@ -103,11 +100,16 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     resources.put("ignite", IgniteYarnUtils.setupFile(ignitePath, fs, LocalResourceType.ARCHIVE));
                     resources.put("ignite-config.xml", IgniteYarnUtils.setupFile(cfgPath, fs, LocalResourceType.FILE));
 
+                    if (props.userLibs() != null)
+                        resources.put("libs", IgniteYarnUtils.setupFile(new Path(props.userLibs()), fs,
+                            LocalResourceType.FILE));
+
                     ctx.setLocalResources(resources);
 
                     ctx.setCommands(
                         Collections.singletonList(
-                            "./ignite/*/bin/ignite.sh "
+                            "cp -r ./libs/* ./ignite/*/libs/ || true && "
+                            + "./ignite/*/bin/ignite.sh "
                             + "./ignite-config.xml"
                             + " -J-Xmx" + c.getResource().getMemory() + "m"
                             + " -J-Xms" + c.getResource().getMemory() + "m"
@@ -153,7 +155,9 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         // Check that slave satisfies min requirements.
         if (cont.getResource().getVirtualCores() < props.cpusPerNode()
             || cont.getResource().getMemory() < props.memoryPerNode()) {
-            //log.log(Level.FINE, "Offer not sufficient for slave request: {0}", offer.getResourcesList());
+            log.log(Level.FINE, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
+                new Object[]{cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
+                   cont.getResource().getMemory()});
 
             return false;
         }
@@ -185,7 +189,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         for (ContainerStatus status : statuses) {
             containers.remove(status.getContainerId());
 
-            //log.log(Level.FINE, "Offer not sufficient for slave request: {0}", offer.getResourcesList());
+            log.log(Level.INFO, "Container stopped. Container id: {0}. State: {1}.",
+                new Object[]{status.getContainerId(), status.getState()});
         }
     }
 
@@ -243,9 +248,6 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      * @throws Exception If failed.
      */
     public void run() throws Exception {
-        rmClient.init(conf);
-        rmClient.start();
-
         // Register with ResourceManager
         rmClient.registerApplicationMaster("", 0, "");
 
@@ -260,7 +262,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
             while (!nmClient.isInState(Service.STATE.STOPPED)) {
                 int runningCnt = containers.size();
 
-                if (runningCnt < props.instances() && checkAvailableResource(rmClient.getAvailableResources())) {
+                if (runningCnt < props.instances() && checkAvailableResource()) {
                     // Resource requirements for worker containers.
                     Resource capability = Records.newRecord(Resource.class);
 
@@ -279,7 +281,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     }
                 }
 
-                TimeUnit.SECONDS.sleep(5);
+                TimeUnit.MILLISECONDS.sleep(schedulerTimeout);
             }
         }
         catch (Exception e) {
@@ -294,10 +296,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /**
-     * @param availableRes Available resources.
      * @return {@code True} if cluster contains available resources.
      */
-    private boolean checkAvailableResource(Resource availableRes) {
+    private boolean checkAvailableResource() {
+        Resource availableRes = rmClient.getAvailableResources();
+
         return availableRes == null || availableRes.getMemory() >= props.memoryPerNode()
             && availableRes.getVirtualCores() >= props.cpusPerNode();
     }
@@ -306,10 +309,17 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      * @throws IOException
      */
     public void init() throws IOException {
+        fs = FileSystem.get(conf);
+
+        nmClient = NMClient.createNMClient();
+
+        nmClient.init(conf);
+        nmClient.start();
+
         // Create async application master.
         rmClient = AMRMClientAsync.createAMRMClientAsync(300, this);
 
-        if (props.igniteConfigUrl() == null || props.igniteConfigUrl().isEmpty()) {
+        if (props.igniteCfg() == null || props.igniteCfg().isEmpty()) {
             InputStream input = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(IgniteYarnUtils.DEFAULT_IGNITE_CONFIG);
 
@@ -325,6 +335,33 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
             IOUtils.closeQuietly(outputStream);
         }
         else
-            cfgPath = new Path(props.igniteConfigUrl());
+            cfgPath = new Path(props.igniteCfg());
+    }
+
+    /**
+     * Sets NMClient.
+     *
+     * @param nmClient NMClient.
+     */
+    public void setNmClient(NMClient nmClient) {
+        this.nmClient = nmClient;
+    }
+
+    /**
+     * Sets RMClient
+     *
+     * @param rmClient AMRMClientAsync.
+     */
+    public void setRmClient(AMRMClientAsync<AMRMClient.ContainerRequest> rmClient) {
+        this.rmClient = rmClient;
+    }
+
+    /**
+     * Sets scheduler timeout.
+     *
+     * @param schedulerTimeout Scheduler timeout.
+     */
+    public void setSchedulerTimeout(long schedulerTimeout) {
+        this.schedulerTimeout = schedulerTimeout;
     }
 }

@@ -39,9 +39,9 @@ public class IgniteYarnClient {
     public static final Logger log = Logger.getLogger(IgniteYarnClient.class.getSimpleName());
 
     /**
-     * Main methods has only one optional parameter - path to properties file.
+     * Main methods has one mandatory parameter and one optional parameter.
      *
-     * @param args Args.
+     * @param args Path to jar mandatory parameter and property file is optional.
      */
     public static void main(String[] args) throws Exception {
         checkArguments(args);
@@ -107,24 +107,27 @@ public class IgniteYarnClient {
 
         yarnClient.submitApplication(appContext);
 
-        log.log(Level.INFO, "Submitted application. Application id: [{0}]", appId);
+        log.log(Level.INFO, "Submitted application. Application id: {0}", appId);
 
         ApplicationReport appReport = yarnClient.getApplicationReport(appId);
         YarnApplicationState appState = appReport.getYarnApplicationState();
 
-        while (appState != YarnApplicationState.FINISHED &&
-                appState != YarnApplicationState.KILLED &&
-                appState != YarnApplicationState.FAILED) {
+        while (appState == YarnApplicationState.NEW ||
+            appState == YarnApplicationState.NEW_SAVING ||
+            appState == YarnApplicationState.SUBMITTED ||
+            appState == YarnApplicationState.ACCEPTED) {
             TimeUnit.SECONDS.sleep(1L);
 
             appReport = yarnClient.getApplicationReport(appId);
 
+            if (appState != YarnApplicationState.ACCEPTED
+                && appReport.getYarnApplicationState() == YarnApplicationState.ACCEPTED)
+                log.log(Level.INFO, "Application {0} is ACCEPTED.", appId);
+
             appState = appReport.getYarnApplicationState();
         }
 
-        yarnClient.killApplication(appId);
-
-        log.log(Level.INFO, "Application [{0}] finished with state [{1}]", new Object[]{appId, appState});
+        log.log(Level.INFO, "Application {0} is {1}.", new Object[]{appId, appState});
     }
 
     /**
@@ -134,7 +137,7 @@ public class IgniteYarnClient {
      */
     private static void checkArguments(String[] args) {
         if (args.length < 1)
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Invalid arguments.");
     }
 
     /**
@@ -146,11 +149,14 @@ public class IgniteYarnClient {
     private static Path getIgnite(ClusterProperties props, FileSystem fileSystem) throws Exception {
         IgniteProvider provider = new IgniteProvider(props, fileSystem);
 
-        return provider.getIgnite();
+        if (props.igniteVer() == null
+            || props.igniteVer().equalsIgnoreCase(ClusterProperties.DEFAULT_IGNITE_VERSION))
+            return provider.getIgnite();
+        else
+            return provider.getIgnite(props.igniteVer());
     }
 
     /**
-     *
      * @param envs Environment variables.
      * @param conf Yarn configuration.
      */
