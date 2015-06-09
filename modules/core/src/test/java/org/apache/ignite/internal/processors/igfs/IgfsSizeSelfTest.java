@@ -309,7 +309,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
-            GridCacheProjectionEx cache = (GridCacheProjectionEx)g.cachex(DATA_CACHE_NAME).cache();
+            IgniteInternalCache cache = g.cachex(DATA_CACHE_NAME).cache();
 
             assert cache.isIgfsDataCache();
         }
@@ -404,7 +404,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             // Await for actual delete to occur.
             for (IgfsBlock block : file.blocks()) {
                 for (int i = 0; i < GRID_CNT; i++) {
-                    while (cache(grid(i).localNode().id()).peek(block.key()) != null)
+                    while (localPeek(cache(grid(i).localNode().id()), block.key()) != null)
                         U.sleep(100);
                 }
             }
@@ -489,7 +489,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         os.write(chunk((int)igfsMaxData));
         os.close();
 
-        final GridCache<IgniteUuid, IgfsFileInfo> metaCache = igfs.context().kernalContext().cache().cache(
+        final IgniteCache<IgniteUuid, IgfsFileInfo> metaCache = igfs.context().kernalContext().cache().jcache(
             igfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.
@@ -503,7 +503,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 @Override public void run() {
                     try {
 
-                        try (Transaction tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (Transaction tx = metaCache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             metaCache.get(id);
 
                             latch.await();
@@ -521,7 +521,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
             // Now add file ID to trash listing so that delete worker could "see" it.
 
-            try (Transaction tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = metaCache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Map<String, IgfsListingEntry> listing = Collections.singletonMap(path.name(),
                     new IgfsListingEntry(info));
 
@@ -651,39 +651,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Create block key.
-     *
-     * @param path Path.
-     * @param blockId Block ID.
-     * @return Block key.
-     * @throws Exception If failed.
-     */
-    private IgfsBlockKey blockKey(IgfsPath path, long blockId) throws Exception {
-        IgfsEx igfs0 = (IgfsEx)grid(0).fileSystem(IGFS_NAME);
-
-        IgniteUuid fileId = igfs0.context().meta().fileId(path);
-
-        return new IgfsBlockKey(fileId, null, true, blockId);
-    }
-
-    /**
-     * Determine primary node for the given block key.
-     *
-     * @param key Block key.
-     * @return Node ID.
-     */
-    private UUID primary(IgfsBlockKey key) {
-        IgniteEx grid = grid(0);
-
-        for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimary(node, key))
-                return node.id();
-        }
-
-        return null;
-    }
-
-    /**
      * Determine primary and backup node IDs for the given block key.
      *
      * @param key Block key.
@@ -695,7 +662,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         Collection<UUID> ids = new HashSet<>();
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimaryOrBackup(node, key))
+            if (grid.affinity(DATA_CACHE_NAME).isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }
 
@@ -711,17 +678,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      */
     private IgfsImpl igfs(int idx) throws Exception {
         return (IgfsImpl)grid(idx).fileSystem(IGFS_NAME);
-    }
-
-    /**
-     * Get IGFS of the given node.
-     *
-     * @param ignite Node;
-     * @return IGFS.
-     * @throws Exception If failed.
-     */
-    private IgfsImpl igfs(Ignite ignite) throws Exception {
-        return (IgfsImpl) ignite.fileSystem(IGFS_NAME);
     }
 
     /**

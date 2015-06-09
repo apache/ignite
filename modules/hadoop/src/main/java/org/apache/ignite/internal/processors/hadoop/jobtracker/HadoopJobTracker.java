@@ -57,10 +57,10 @@ public class HadoopJobTracker extends HadoopComponent {
     private final GridMutex mux = new GridMutex();
 
     /** */
-    private volatile GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> jobMetaPrj;
+    private volatile IgniteInternalCache<HadoopJobId, HadoopJobMetadata> jobMetaPrj;
 
     /** Projection with expiry policy for finished job updates. */
-    private volatile GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> finishedJobMetaPrj;
+    private volatile IgniteInternalCache<HadoopJobId, HadoopJobMetadata> finishedJobMetaPrj;
 
     /** Map-reduce execution planner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -107,14 +107,14 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job meta projection.
      */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    private GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> jobMetaCache() {
-        GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> prj = jobMetaPrj;
+    private IgniteInternalCache<HadoopJobId, HadoopJobMetadata> jobMetaCache() {
+        IgniteInternalCache<HadoopJobId, HadoopJobMetadata> prj = jobMetaPrj;
 
         if (prj == null) {
             synchronized (mux) {
                 if ((prj = jobMetaPrj) == null) {
-                    CacheProjection<Object, Object> sysCache = ctx.kernalContext().cache()
-                        .cache(CU.SYS_CACHE_HADOOP_MR);
+                    GridCacheAdapter<HadoopJobId, HadoopJobMetadata> sysCache = ctx.kernalContext().cache()
+                        .internalCache(CU.SYS_CACHE_HADOOP_MR);
 
                     assert sysCache != null;
 
@@ -129,8 +129,7 @@ public class HadoopJobTracker extends HadoopComponent {
                         throw new IllegalStateException(e);
                     }
 
-                    jobMetaPrj = prj = (GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata>)
-                        sysCache.projection(HadoopJobId.class, HadoopJobMetadata.class);
+                    jobMetaPrj = prj = sysCache;
 
                     if (ctx.configuration().getFinishedJobInfoTtl() > 0) {
                         ExpiryPolicy finishedJobPlc = new ModifiedExpiryPolicy(
@@ -150,8 +149,8 @@ public class HadoopJobTracker extends HadoopComponent {
     /**
      * @return Projection with expiry policy for finished job updates.
      */
-    private GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> finishedJobMetaCache() {
-        GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> prj = finishedJobMetaPrj;
+    private IgniteInternalCache<HadoopJobId, HadoopJobMetadata> finishedJobMetaCache() {
+        IgniteInternalCache<HadoopJobId, HadoopJobMetadata> prj = finishedJobMetaPrj;
 
         if (prj == null) {
             jobMetaCache();
@@ -276,7 +275,7 @@ public class HadoopJobTracker extends HadoopComponent {
             perfCntr.onJobPrepare(jobPrepare);
             perfCntr.onJobStart(jobStart);
 
-            if (jobMetaCache().putIfAbsent(jobId, meta) != null)
+            if (jobMetaCache().getAndPutIfAbsent(jobId, meta) != null)
                 throw new IgniteCheckedException("Failed to submit job. Job with the same ID already exists: " + jobId);
 
             return completeFut;
@@ -471,7 +470,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 case COMMIT:
                 case ABORT: {
-                    GridCacheProjectionEx<HadoopJobId, HadoopJobMetadata> cache = finishedJobMetaCache();
+                    IgniteInternalCache<HadoopJobId, HadoopJobMetadata> cache = finishedJobMetaCache();
 
                     cache.invokeAsync(info.jobId(), new UpdatePhaseProcessor(incrCntrs, PHASE_COMPLETE)).
                         listen(failsLog);
@@ -826,8 +825,6 @@ public class HadoopJobTracker extends HadoopComponent {
 
                 jobs.remove(jobId);
 
-                job.dispose(false);
-
                 if (ctx.jobUpdateLeader()) {
                     ClassLoader ldr = job.getClass().getClassLoader();
 
@@ -848,6 +845,8 @@ public class HadoopJobTracker extends HadoopComponent {
                         log.error("Can't write statistic due to: ", e);
                     }
                 }
+
+                job.dispose(false);
 
                 break;
             }
@@ -1043,7 +1042,7 @@ public class HadoopJobTracker extends HadoopComponent {
             try {
                 fut.get();
             }
-            catch (Throwable e) {
+            catch (Exception e) {
                 if (e.getCause() instanceof HadoopTaskCancelledException)
                     return true;
             }
@@ -1087,6 +1086,9 @@ public class HadoopJobTracker extends HadoopComponent {
             }
             catch (Throwable e) {
                 U.error(log, "Unhandled exception while processing event.", e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
             }
             finally {
                 busyLock.readUnlock();

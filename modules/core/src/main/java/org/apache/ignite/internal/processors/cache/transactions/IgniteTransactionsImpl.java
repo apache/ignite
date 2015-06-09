@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -99,11 +100,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.ensure(timeout >= 0, "timeout cannot be negative");
         A.ensure(txSize >= 0, "transaction size cannot be negative");
 
+        checkTransactional(ctx);
+
         return txStart0(concurrency,
             isolation,
             timeout,
             txSize,
-            ctx.system() ? ctx : null);
+            ctx.systemTx() ? ctx : null);
     }
 
     /** {@inheritDoc} */
@@ -115,13 +118,15 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
+        checkTransactional(ctx);
+
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
-            ctx.system() ? ctx : null);
+            ctx.systemTx() ? ctx : null);
     }
 
     /**
@@ -154,7 +159,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             concurrency,
             isolation,
             timeout,
-            false,
             true,
             txSize,
             /** group lock keys */null,
@@ -181,5 +185,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         cctx.resetTxMetrics();
+    }
+
+    /**
+     * @param ctx Cache context.
+     */
+    private void checkTransactional(GridCacheContext ctx) {
+        if (!ctx.transactional())
+            throw new IgniteException("Failed to start transaction on non-transactional cache: " + ctx.name());
     }
 }

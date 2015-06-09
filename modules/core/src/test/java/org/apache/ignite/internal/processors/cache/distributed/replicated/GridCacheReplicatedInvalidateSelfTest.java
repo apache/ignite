@@ -153,23 +153,14 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         TransactionIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
-        GridCache<Integer, String> cache = cache(idx);
+        IgniteCache<Integer, String> cache = jcache(idx);
 
-        Transaction tx = cache.txStart(concurrency, isolation, 0, 0);
+        Transaction tx = grid(idx).transactions().txStart(concurrency, isolation, 0, 0);
 
         try {
             cache.put(KEY, VAL);
 
             tx.commit();
-        }
-        catch (IgniteTxOptimisticCheckedException e) {
-            log.warning("Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
-
-            tx.rollback();
-
-            assert concurrency == OPTIMISTIC && isolation == SERIALIZABLE;
-
-            assert false : "Invalid optimistic failure: " + tx;
         }
         catch (Throwable e) {
             error("Transaction failed (will rollback): " + tx, e);

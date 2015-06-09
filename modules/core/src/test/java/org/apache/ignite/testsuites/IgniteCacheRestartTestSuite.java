@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
@@ -32,17 +33,20 @@ public class IgniteCacheRestartTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Restart Test Suite");
 
-        // Common restart tests.
-        // TODO: GG-7419: Enable when fixed.
-//        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-//        suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
-
-        // TODO: uncomment when fix GG-1969
-//        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
-
-        // The rest.
         suite.addTestSuite(GridCachePartitionedTxSalvageSelfTest.class);
-//        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class); TODO IGNITE-157
+
+        // TODO: IGNITE-157.
+        // suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+        // suite.addTestSuite(GridCachePartitionedOptimisticTxNodeRestartTest.class);
+        // suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicNodeRestartTest.class);
+        // suite.addTestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class); // TODO IGNITE-747
+
+        suite.addTestSuite(IgniteCacheAtomicPutAllFailoverSelfTest.class);
+        suite.addTestSuite(IgniteCachePutAllRestartTest.class);
+        suite.addTestSuite(GridCachePutAllFailoverSelfTest.class);
+        suite.addTestSuite(CacheGetFromJobTest.class);
 
         return suite;
     }

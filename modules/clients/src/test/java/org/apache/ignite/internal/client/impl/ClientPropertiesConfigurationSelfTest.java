@@ -85,8 +85,8 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
         for (Map.Entry<Object, Object> e : props.entrySet())
             props2.put("new." + e.getKey(), e.getValue());
 
-        validateConfig(0, new GridClientConfiguration("new.gg.client", props2));
-        validateConfig(0, new GridClientConfiguration("new.gg.client.", props2));
+        validateConfig(0, new GridClientConfiguration("new.ignite.client", props2));
+        validateConfig(0, new GridClientConfiguration("new.ignite.client.", props2));
 
         // Validate loaded test configuration.
         File tmp = uncommentProperties(GRID_CLIENT_CONFIG);
@@ -100,14 +100,14 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
         for (Map.Entry<Object, Object> e : props.entrySet())
             props2.put("new." + e.getKey(), e.getValue());
 
-        validateConfig(2, new GridClientConfiguration("new.gg.client", props2));
-        validateConfig(2, new GridClientConfiguration("new.gg.client.", props2));
+        validateConfig(2, new GridClientConfiguration("new.ignite.client", props2));
+        validateConfig(2, new GridClientConfiguration("new.ignite.client.", props2));
 
         // Validate loaded test configuration with empty key prefixes.
         props2 = new Properties();
 
         for (Map.Entry<Object, Object> e : props.entrySet())
-            props2.put(e.getKey().toString().replace("gg.client.", ""), e.getValue());
+            props2.put(e.getKey().toString().replace("ignite.client.", ""), e.getValue());
 
         validateConfig(2, new GridClientConfiguration("", props2));
         validateConfig(2, new GridClientConfiguration(".", props2));
@@ -156,7 +156,7 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
         Collection<String> lines = new ArrayList<>();
 
         while (it.hasNext())
-            lines.add(it.nextLine().replace("#gg.client.", "gg.client."));
+            lines.add(it.nextLine().replace("#ignite.client.", "ignite.client."));
 
         IgniteUtils.closeQuiet(in);
 

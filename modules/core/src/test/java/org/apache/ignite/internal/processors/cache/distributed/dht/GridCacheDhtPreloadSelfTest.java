@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -139,14 +138,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
-    }
-
-    /**
-     * @param c Cache.
-     * @return {@code True} if synchronous preloading.
-     */
-    private boolean isSync(GridCache<?, ?> c) {
-        return c.configuration().getRebalanceMode() == SYNC;
     }
 
     /**
@@ -275,7 +266,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                         ClusterNode node = evt.discoveryNode();
 
                         return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
-                            evt.discoveryEventType() == EVT_NODE_LEFT;
+                            (evt.discoveryEventType() == EVT_NODE_LEFT || evt.discoveryEventType() == EVT_NODE_FAILED);
                     }
                 }, EVT_CACHE_REBALANCE_STOPPED));
 
@@ -542,7 +533,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                                 ClusterNode node = evt.discoveryNode();
 
                                 return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
-                                    evt.discoveryEventType() == EVT_NODE_LEFT;
+                                    (evt.discoveryEventType() == EVT_NODE_LEFT ||
+                                    evt.discoveryEventType() == EVT_NODE_FAILED);
                             }
                         }, EVT_CACHE_REBALANCE_STOPPED));
 

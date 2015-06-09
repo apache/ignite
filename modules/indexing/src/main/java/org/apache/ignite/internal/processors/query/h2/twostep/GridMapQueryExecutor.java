@@ -23,11 +23,15 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.store.*;
@@ -42,11 +46,12 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
  * Map query executor.
  */
-public class GridMapQueryExecutor implements GridMessageListener {
+public class GridMapQueryExecutor {
     /** */
     private static final Field RESULT_FIELD;
 
@@ -76,6 +81,16 @@ public class GridMapQueryExecutor implements GridMessageListener {
     /** */
     private ConcurrentMap<UUID, ConcurrentMap<Long, QueryResults>> qryRess = new ConcurrentHashMap8<>();
 
+    /** */
+    private final GridSpinBusyLock busyLock;
+
+    /**
+     * @param busyLock Busy lock.
+     */
+    public GridMapQueryExecutor(GridSpinBusyLock busyLock) {
+        this.busyLock = busyLock;
+    }
+
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -101,15 +116,33 @@ public class GridMapQueryExecutor implements GridMessageListener {
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, this);
+        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg) {
+                if (!busyLock.enterBusy())
+                    return;
+
+                try {
+                    GridMapQueryExecutor.this.onMessage(nodeId, msg);
+                }
+                finally {
+                    busyLock.leaveBusy();
+                }
+            }
+        });
     }
 
-    /** {@inheritDoc} */
-    @Override public void onMessage(UUID nodeId, Object msg) {
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessage(UUID nodeId, Object msg) {
         try {
             assert msg != null;
 
             ClusterNode node = ctx.discovery().node(nodeId);
+
+            if (node == null)
+                return; // Node left, ignore.
 
             boolean processed = true;
 
@@ -176,13 +209,22 @@ public class GridMapQueryExecutor implements GridMessageListener {
         Collection<GridCacheSqlQuery> qrys;
 
         try {
-            qrys = req.queries(ctx.config().getMarshaller());
+            qrys = req.queries();
+
+            if (!node.isLocal()) {
+                Marshaller m = ctx.config().getMarshaller();
+
+                for (GridCacheSqlQuery qry : qrys)
+                    qry.unmarshallParams(m);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
 
-        QueryResults qr = new QueryResults(req.requestId(), qrys.size());
+        GridCacheContext<?,?> cctx = ctx.cache().internalCache(req.space()).context();
+
+        QueryResults qr = new QueryResults(req.requestId(), qrys.size(), cctx);
 
         if (nodeRess.put(req.requestId(), qr) != null)
             throw new IllegalStateException();
@@ -206,20 +248,20 @@ public class GridMapQueryExecutor implements GridMessageListener {
                         node,
                         "SQL query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL,
-                        null,
+                        CacheQueryType.SQL.name(),
+                        cctx.namex(),
                         null,
                         qry.query(),
                         null,
                         null,
                         qry.parameters(),
-                        null,
+                        node.id(),
                         null));
                 }
 
                 assert rs instanceof JdbcResultSet : rs.getClass();
 
-                qr.addResult(i, rs);
+                qr.addResult(i, qry, node.id(), rs);
 
                 if (qr.canceled) {
                     qr.result(i).close();
@@ -241,6 +283,9 @@ public class GridMapQueryExecutor implements GridMessageListener {
             U.error(log, "Failed to execute local query: " + req, e);
 
             sendError(node, req.requestId(), e);
+
+            if (e instanceof Error)
+                throw (Error)e;
         }
         finally {
             h2.setFilters(null);
@@ -309,10 +354,15 @@ public class GridMapQueryExecutor implements GridMessageListener {
         }
 
         try {
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
-                page == 0 ? res.rowCount : -1, marshallRows(rows));
+            boolean loc = node.isLocal();
 
-            if (node.isLocal())
+            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.qryReqId, qry, page,
+                page == 0 ? res.rowCount : -1 ,
+                res.cols,
+                loc ? null : toMessages(rows, new ArrayList<Message>(res.cols)),
+                loc ? rows : null);
+
+            if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             else
                 ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
@@ -391,14 +441,19 @@ public class GridMapQueryExecutor implements GridMessageListener {
         private final AtomicReferenceArray<QueryResult> results;
 
         /** */
+        private final GridCacheContext<?,?> cctx;
+
+        /** */
         private volatile boolean canceled;
 
         /**
          * @param qryReqId Query request ID.
          * @param qrys Number of queries.
+         * @param cctx Cache context.
          */
-        private QueryResults(long qryReqId, int qrys) {
+        private QueryResults(long qryReqId, int qrys, GridCacheContext<?,?> cctx) {
             this.qryReqId = qryReqId;
+            this.cctx = cctx;
 
             results = new AtomicReferenceArray<>(qrys);
         }
@@ -413,10 +468,12 @@ public class GridMapQueryExecutor implements GridMessageListener {
 
         /**
          * @param qry Query result index.
+         * @param q Query object.
+         * @param qrySrcNodeId Query source node.
          * @param rs Result set.
          */
-        void addResult(int qry, ResultSet rs) {
-            if (!results.compareAndSet(qry, null, new QueryResult(rs)))
+        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs) {
+            if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q)))
                 throw new IllegalStateException();
         }
 
@@ -460,6 +517,18 @@ public class GridMapQueryExecutor implements GridMessageListener {
         private final ResultSet rs;
 
         /** */
+        private final GridCacheContext<?,?> cctx;
+
+        /** */
+        private final GridCacheSqlQuery qry;
+
+        /** */
+        private final UUID qrySrcNodeId;
+
+        /** */
+        private final int cols;
+
+        /** */
         private int page;
 
         /** */
@@ -470,9 +539,15 @@ public class GridMapQueryExecutor implements GridMessageListener {
 
         /**
          * @param rs Result set.
+         * @param cctx Cache context.
+         * @param qrySrcNodeId Query source node.
+         * @param qry Query.
          */
-        private QueryResult(ResultSet rs) {
+        private QueryResult(ResultSet rs, GridCacheContext<?,?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
             this.rs = rs;
+            this.cctx = cctx;
+            this.qry = qry;
+            this.qrySrcNodeId = qrySrcNodeId;
 
             try {
                 res = (ResultInterface)RESULT_FIELD.get(rs);
@@ -482,6 +557,7 @@ public class GridMapQueryExecutor implements GridMessageListener {
             }
 
             rowCount = res.getRowCount();
+            cols = res.getVisibleColumnCount();
         }
 
         /**
@@ -493,16 +569,55 @@ public class GridMapQueryExecutor implements GridMessageListener {
             if (closed)
                 return true;
 
+            boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
             page++;
 
             for (int i = 0 ; i < pageSize; i++) {
                 if (!res.next())
                     return true;
 
+                Value[] row = res.currentRow();
+
+                assert row != null;
+
+                if (readEvt) {
+                    cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                        cctx.localNode(),
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL.name(),
+                        cctx.namex(),
+                        null,
+                        qry.query(),
+                        null,
+                        null,
+                        qry.parameters(),
+                        qrySrcNodeId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row(row)));
+                }
+
                 rows.add(res.currentRow());
             }
 
             return false;
+        }
+
+        /**
+         * @param row Values array row.
+         * @return Objects list row.
+         */
+        private List<?> row(Value[] row) {
+            List<Object> res = new ArrayList<>(row.length);
+
+            for (Value v : row)
+                res.add(v.getObject());
+
+            return res;
         }
 
         /** {@inheritDoc} */

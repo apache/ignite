@@ -75,6 +75,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isPortableObject(Object obj);
 
     /**
+     * Checks whether given class is portable.
+     *
+     * @param cls Class.
+     * @return {@code true} If the class was registered as portable.
+     */
+    public boolean isPortableClass(Class<?> cls);
+
+    /**
      * @param obj Portable object to get field from.
      * @param fieldName Field name.
      * @return Field value.
@@ -108,12 +116,9 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
-     * @param node Node.
-     * @param cacheName Cache name.
      * @return Cache object context.
      */
-    public CacheObjectContext contextForCache(ClusterNode node, @Nullable String cacheName,
-        @Nullable CacheConfiguration ccfg);
+    public CacheObjectContext contextForCache(CacheConfiguration ccfg);
 
     /**
      * @param ctx Cache context.
@@ -152,14 +157,7 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param obj Value.
-     * @return {@code True} if object is of known immutable type of it is marked
-     *          with {@link IgniteImmutable} annotation.
+     * @return {@code True} if object is of known immutable type.
      */
     public boolean immutable(Object obj);
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if portable format should be preserved when passing values to cache store.
-     */
-    public boolean keepPortableInStore(@Nullable String cacheName);
 }

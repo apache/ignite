@@ -113,7 +113,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
             if (grid(i).affinity(null).isBackup(grid(i).localNode(), 1)) {
                 assert cache.localPeek(1, CachePeekMode.ONHEAP) == 1;
 
-                cache(i).clearLocally(1);
+                jcache(i).localClear(1);
 
                 assert cache.localPeek(1, CachePeekMode.ONHEAP) == null;
 

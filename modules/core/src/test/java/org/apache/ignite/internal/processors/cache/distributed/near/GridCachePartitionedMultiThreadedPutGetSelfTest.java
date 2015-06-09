@@ -106,9 +106,9 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
             grid(0).cache(null).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            internalCache(i).clearLocally();
+            grid(i).cache(null).clear();
 
-            assert internalCache(i).isEmpty();
+            assert grid(i).cache(null).localSize() == 0;
         }
     }
 

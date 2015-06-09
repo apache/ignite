@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -82,14 +81,14 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         final int keyCnt = 5000;
         final int logFreq = 500;
 
-        final GridCache<String, Integer> c = cache();
+        final GridCacheAdapter<String, Integer> c = internalCache(jcache());
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
             @Override public Object call() throws Exception {
                 for (int i = 1; i < keyCnt; i++) {
-                    assertTrue(c.putx(String.valueOf(i), i));
+                    c.getAndPut(String.valueOf(i), i);
 
                     startLatch.countDown();
 
@@ -102,15 +101,15 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         }, 1);
 
         // Create query.
-        final CacheQuery<Map.Entry<String, Integer>> sumQry =
-            c.queries().createSqlQuery(Integer.class, "_val > 0").timeout(TEST_TIMEOUT);
+        final CacheQuery<List<?>> sumQry = c.context().queries().
+            createSqlFieldsQuery("select _val from Integer", false).timeout(TEST_TIMEOUT);
 
-        final R1<Map.Entry<String, Integer>, Integer> rmtRdc = new R1<Map.Entry<String, Integer>, Integer>() {
+        final R1<List<?>, Integer> rmtRdc = new R1<List<?>, Integer>() {
             /** */
             private AtomicInteger sum = new AtomicInteger();
 
-            @Override public boolean collect(Map.Entry<String, Integer> e) {
-                sum.addAndGet(e.getValue());
+            @Override public boolean collect(List<?> e) {
+                sum.addAndGet((Integer)e.get(0));
 
                 return true;
             }

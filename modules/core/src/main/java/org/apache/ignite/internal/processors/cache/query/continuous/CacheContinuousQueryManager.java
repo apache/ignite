@@ -129,7 +129,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         assert e != null;
         assert key != null;
 
-        boolean internal = e.isInternal();
+        boolean internal = e.isInternal() || !e.context().userCache();
 
         if (preload && !internal)
             return;
@@ -360,7 +360,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     private UUID executeQuery0(CacheEntryUpdatedListener locLsnr, final CacheEntryEventSerializableFilter rmtFilter,
         int bufSize, long timeInterval, boolean autoUnsubscribe, boolean internal, boolean notifyExisting,
         boolean oldValRequired, boolean sync, boolean ignoreExpired, ClusterGroup grp) throws IgniteCheckedException {
-        cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (grp == null)
             grp = cctx.kernalContext().grid().cluster();

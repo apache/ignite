@@ -63,6 +63,9 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
     /** Evict near sync. */
     protected boolean evictNearSync = true;
 
+    /** Policy batch size. */
+    protected int plcBatchSize = 0;
+
     /** Policy max. */
     protected int plcMax = 10;
 
@@ -168,7 +171,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)internalCache().configuration().getEvictionPolicy();
+        return (T)grid().cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -177,7 +180,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)internalCache(i).configuration().getEvictionPolicy();
+        return (T)grid(i).cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -186,7 +189,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        CacheConfiguration cfg = internalCache(i).configuration();
+        CacheConfiguration cfg = grid(i).cache(null).getConfiguration(CacheConfiguration.class);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -338,7 +341,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends EvictionPolicy<?, 
                     int actual = colocated(i).size();
 
                     assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
-                        actual <= endSize);
+                        actual <= endSize + plcBatchSize);
                 }
 
                 checkPolicies(endPlcSize);

@@ -26,14 +26,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Test that in {@link CacheMode#PARTITIONED} mode cache writes values only to the near cache store. <p/> This check
- * is needed because in current implementation if {@link GridCacheWriteBehindStore} assumes that and user store is
+ * is needed because in current implementation if {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore} assumes that and user store is
  * wrapped only in near cache (see {@link GridCacheProcessor} init logic).
  */
 @SuppressWarnings({"unchecked"})

@@ -18,16 +18,27 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.*;
+import java.io.*;
 
 /**
  *
  */
-public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
+public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     /** */
-    private final K key;
+    private static final long serialVersionUID = 0L;
 
     /** */
-    private final V val;
+    private K key;
+
+    /** */
+    private V val;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public CacheEntryImpl() {
+        // No-op.
+    }
 
     /**
      * @param key Key.
@@ -55,6 +66,18 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
             return cls.cast(this);
 
         throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(key);
+        out.writeObject(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        key = (K)in.readObject();
+        val = (V)in.readObject();
     }
 
     /** {@inheritDoc} */

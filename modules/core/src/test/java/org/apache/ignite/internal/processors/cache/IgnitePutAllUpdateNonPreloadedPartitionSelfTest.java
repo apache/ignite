@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -78,11 +79,11 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
             startGrid(GRID_CNT - 1);
 
-            GridCache<Object, Object> cache = ((IgniteKernal)grid(0)).getCache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             final int keyCnt = 100;
 
-            try (Transaction tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (Transaction tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int k = 0; k < keyCnt; k++)
                     cache.get(k);
 

@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -137,8 +136,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     /** Task name hash. */
     private final int taskNameHash;
 
-    /** Map time. */
-    private volatile long mapTime;
+    /** Skip store flag. */
+    private final boolean skipStore;
 
     /**
      * @param cctx Cache context.
@@ -156,6 +155,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param filter Entry filter.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param skipStore Skip store flag.
      */
     public GridNearAtomicUpdateFuture(
         GridCacheContext cctx,
@@ -172,7 +172,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         @Nullable ExpiryPolicy expiryPlc,
         final CacheEntryPredicate[] filter,
         UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        boolean skipStore
     ) {
         this.rawRetval = rawRetval;
 
@@ -195,6 +196,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.skipStore = skipStore;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
@@ -269,15 +271,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void checkTimeout(long timeout) {
-        long mapTime0 = mapTime;
-
-        if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
-            onDone(new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
-                "(consider increasing networkTimeout configuration property)."));
     }
 
     /** {@inheritDoc} */
@@ -429,6 +422,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (!fut.isCacheTopologyValid(cctx)) {
+                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                        cctx.name()));
+
+                    return;
+                }
+
                 topVer = fut.topologyVersion();
 
                 if (futVer == null)
@@ -448,8 +448,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 return;
             }
-
-            mapTime = U.currentTimeMillis();
 
             if (!remap && (cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC))
                 cctx.mvcc().addAtomicFuture(version(), this);
@@ -565,12 +563,14 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (op != TRANSFORM)
                 val = cctx.toCacheObject(val);
 
-            Collection<ClusterNode> primaryNodes = mapKey(cacheKey, topVer, fastMap);
+            ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
 
-            // One key and no backups.
-            assert primaryNodes.size() == 1 : "Should be mapped to single node: " + primaryNodes;
+            if (primary == null) {
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
+                    "left the grid)."));
 
-            ClusterNode primary = F.first(primaryNodes);
+                return;
+            }
 
             GridNearAtomicUpdateRequest req = new GridNearAtomicUpdateRequest(
                 cctx.cacheId(),
@@ -582,12 +582,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 syncMode,
                 op,
                 retval,
-                op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                 expiryPlc,
                 invokeArgs,
                 filter,
                 subjId,
-                taskNameHash);
+                taskNameHash,
+                skipStore);
 
             req.addUpdateEntry(cacheKey,
                 val,
@@ -687,9 +687,23 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 Collection<ClusterNode> affNodes = mapKey(cacheKey, topVer, fastMap);
 
+                if (affNodes.isEmpty()) {
+                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                        "(all partition nodes left the grid)."));
+
+                    return;
+                }
+
                 int i = 0;
 
                 for (ClusterNode affNode : affNodes) {
+                    if (affNode == null) {
+                        onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+                            "(all partition nodes left the grid)."));
+
+                        return;
+                    }
+
                     UUID nodeId = affNode.id();
 
                     GridNearAtomicUpdateRequest mapped = pendingMappings.get(nodeId);
@@ -705,12 +719,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             syncMode,
                             op,
                             retval,
-                            op == TRANSFORM && cctx.hasFlag(FORCE_TRANSFORM_BACKUP),
                             expiryPlc,
                             invokeArgs,
                             filter,
                             subjId,
-                            taskNameHash);
+                            taskNameHash,
+                            skipStore);
 
                         pendingMappings.put(nodeId, mapped);
 

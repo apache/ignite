@@ -24,17 +24,17 @@ public class ClusterTopologyServerNotFoundException extends ClusterTopologyCheck
     private static final long serialVersionUID = 0L;
 
     /**
-     * @param message Error message.
+     * @param msg Error message.
      */
-    public ClusterTopologyServerNotFoundException(String message) {
-        super(message);
+    public ClusterTopologyServerNotFoundException(String msg) {
+        super(msg);
     }
 
     /**
-     * @param message Error message.
+     * @param msg Error message.
      * @param cause Exception cause.
      */
-    public ClusterTopologyServerNotFoundException(String message, Throwable cause) {
-        super(message, cause);
+    public ClusterTopologyServerNotFoundException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

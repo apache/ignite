@@ -42,6 +42,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache start configuration. */
     private CacheConfiguration startCfg;
 
+    /** Cache type. */
+    private CacheType cacheType;
+
     /** Near node ID in case if near cache is being started. */
     private UUID initiatingNodeId;
 
@@ -56,6 +59,9 @@ public class DynamicCacheChangeRequest implements Serializable {
 
     /** Fail if exists flag. */
     private boolean failIfExists;
+
+    /** Template configuration flag. */
+    private boolean template;
 
     /**
      * Constructor creates cache stop request.
@@ -82,6 +88,20 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * @param template {@code True} if this is request for adding template configuration.
+     */
+    public void template(boolean template) {
+        this.template = template;
+    }
+
+    /**
+     * @return {@code True} if this is template configuration.
+     */
+    public boolean template() {
+        return template;
+    }
+
+    /**
      * @return Deployment ID.
      */
     public IgniteUuid deploymentId() {
@@ -99,7 +119,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a start request.
      */
     public boolean start() {
-        return startCfg != null;
+        return !template && startCfg != null;
     }
 
     /**
@@ -156,6 +176,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void startCacheConfiguration(CacheConfiguration startCfg) {
         this.startCfg = startCfg;
+    }
+
+    /**
+     * @param cacheType Cache type.
+     */
+    public void cacheType(CacheType cacheType) {
+        this.cacheType = cacheType;
+    }
+
+    /**
+     * @return Cache type.
+     */
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**

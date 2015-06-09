@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -62,16 +64,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final Map<TypeId, TypeDescriptor> types = new ConcurrentHashMap8<>();
 
     /** Type descriptors. */
-    private final Map<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<TypeName, TypeDescriptor> typesByName = new ConcurrentHashMap8<>();
 
     /** */
     private ExecutorService execSvc;
 
     /** */
     private final GridQueryIndexing idx;
-
-    /** Portable ID to name mapping. */
-    private final Map<Integer, String> portableIds = new ConcurrentHashMap8<>();
 
     /**
      * @param ctx Kernal context.
@@ -97,7 +96,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             execSvc = ctx.getExecutorService();
 
-            idx.start(ctx);
+            idx.start(ctx, busyLock);
         }
     }
 
@@ -111,79 +110,104 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param ccfg Cache configuration.
+     * @throws IgniteCheckedException If failed.
      */
     public void initializeCache(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        Map<TypeName,CacheTypeMetadata> declaredTypes = new HashMap<>();
-
         idx.registerCache(ccfg);
 
-        if (!F.isEmpty(ccfg.getTypeMetadata())) {
-            for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
-                declaredTypes.put(new TypeName(ccfg.getName(), meta.getValueType()), meta);
+        try {
+            if (!F.isEmpty(ccfg.getTypeMetadata())) {
+                for (CacheTypeMetadata meta : ccfg.getTypeMetadata()) {
+                    if (F.isEmpty(meta.getValueType()))
+                        throw new IgniteCheckedException("Value type is not set: " + meta);
 
-                int valTypeId = ctx.cacheObjects().typeId(meta.getValueType());
+                    TypeDescriptor desc = new TypeDescriptor(ccfg);
 
-                portableIds.put(valTypeId, meta.getValueType());
+                    Class<?> valCls = U.classForName(meta.getValueType(), null);
 
-                TypeDescriptor desc = processPortableMeta(ccfg, meta);
+                    desc.name(valCls != null ? typeName(valCls) : meta.getValueType());
 
-                desc.registered(idx.registerType(ccfg.getName(), desc));
+                    desc.valueClass(valCls != null ? valCls : Object.class);
+                    desc.keyClass(
+                        meta.getKeyType() == null ?
+                            Object.class :
+                            U.classForName(meta.getKeyType(), Object.class));
 
-                typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
-                types.put(new TypeId(ccfg.getName(), valTypeId), desc);
+                    TypeId typeId;
+
+                    if (valCls == null || ctx.cacheObjects().isPortableClass(valCls)) {
+                        processPortableMeta(meta, desc);
+
+                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
+                    }
+                    else {
+                        processClassMeta(meta, desc);
+
+                        typeId = new TypeId(ccfg.getName(), valCls);
+                    }
+
+                    addTypeByName(ccfg, desc);
+                    types.put(typeId, desc);
+
+                    desc.registered(idx.registerType(ccfg.getName(), desc));
+                }
+            }
+
+            Class<?>[] clss = ccfg.getIndexedTypes();
+
+            if (!F.isEmpty(clss)) {
+                for (int i = 0; i < clss.length; i += 2) {
+                    Class<?> keyCls = clss[i];
+                    Class<?> valCls = clss[i + 1];
+
+                    TypeDescriptor desc = processKeyAndValueClasses(ccfg, keyCls, valCls);
+
+                    addTypeByName(ccfg, desc);
+                    types.put(new TypeId(ccfg.getName(), valCls), desc);
+
+                    desc.registered(idx.registerType(ccfg.getName(), desc));
+                }
             }
         }
+        catch (IgniteCheckedException | RuntimeException e) {
+            idx.unregisterCache(ccfg);
 
-        Class<?>[] clss = ccfg.getIndexedTypes();
-
-        if (!F.isEmpty(clss)) {
-            for (int i = 0; i < clss.length; i += 2) {
-                Class<?> keyCls = clss[i];
-                Class<?> valCls = clss[i + 1];
-
-                TypeDescriptor desc = processKeyAndValueClasses(ccfg, keyCls, valCls, declaredTypes);
-
-                desc.registered(idx.registerType(ccfg.getName(), desc));
-
-                typesByName.put(new TypeName(ccfg.getName(), desc.name()), desc);
-                types.put(new TypeId(ccfg.getName(), valCls), desc);
-            }
+            throw e;
         }
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @param desc Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void addTypeByName(CacheConfiguration<?,?> ccfg, TypeDescriptor desc) throws IgniteCheckedException {
+        if (typesByName.putIfAbsent(new TypeName(ccfg.getName(), desc.name()), desc) != null)
+            throw new IgniteCheckedException("Type with name '" + desc.name() + "' already indexed " +
+                "in cache '" + ccfg.getName() + "'.");
     }
 
     /**
      * @param ccfg Cache configuration.
      * @param keyCls Key class.
      * @param valCls Value class.
-     * @param declaredTypes Knows types.
      * @return Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private TypeDescriptor processKeyAndValueClasses(CacheConfiguration<?,?> ccfg, Class<?> keyCls, Class<?> valCls,
-        Map<TypeName,CacheTypeMetadata> declaredTypes)
+    private TypeDescriptor processKeyAndValueClasses(CacheConfiguration<?,?> ccfg, Class<?> keyCls, Class<?> valCls)
         throws IgniteCheckedException {
         TypeDescriptor d = new TypeDescriptor(ccfg);
 
         d.keyClass(keyCls);
         d.valueClass(valCls);
 
-        CacheTypeMetadata keyMeta = declaredTypes.get(new TypeName(ccfg.getName(), keyCls.getName()));
-
-        if (keyMeta == null)
-            processAnnotationsInClass(true, d.keyCls, d, null);
-        else
-            processClassMeta(true, d.keyCls, keyMeta, d);
+        processAnnotationsInClass(true, d.keyCls, d, null);
 
         String valTypeName = typeName(valCls);
 
         d.name(valTypeName);
 
-        CacheTypeMetadata typeMeta = declaredTypes.get(new TypeName(ccfg.getName(), valCls.getName()));
-
-        if (typeMeta == null)
-            processAnnotationsInClass(false, d.valCls, d, null);
-        else
-            processClassMeta(false, d.valCls, typeMeta, d);
+        processAnnotationsInClass(false, d.valCls, d, null);
 
         return d;
     }
@@ -329,6 +353,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     log.error("Failed to rebuild indexes for type: " + desc.name(), e);
 
                     fut.onDone(e);
+
+                    if (e instanceof Error)
+                        throw e;
                 }
             }
         };
@@ -366,27 +393,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param space Space name.
+     * @return Cache object context.
+     */
+    private CacheObjectContext cacheObjectContext(String space) {
+        return ctx.cache().internalCache(space).context().cacheObjectContext();
+    }
+
+    /**
      * Writes key-value pair to index.
      *
      * @param space Space.
      * @param key Key.
-     * @param keyBytes Byte array with key data.
      * @param val Value.
-     * @param valBytes Byte array with value data.
      * @param ver Cache entry version.
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void store(final String space, final K key, @Nullable byte[] keyBytes, final V val,
-        @Nullable byte[] valBytes, byte[] ver, long expirationTime) throws IgniteCheckedException {
+    public void store(final String space, final CacheObject key, final CacheObject val,
+        byte[] ver, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
         if (log.isDebugEnabled())
             log.debug("Store [space=" + space + ", key=" + key + ", val=" + val + "]");
 
-        ctx.indexing().store(space, key, val, expirationTime);
+        CacheObjectContext coctx = null;
+
+        if (ctx.indexing().enabled()) {
+            coctx = cacheObjectContext(space);
+
+            ctx.indexing().store(space, key.value(coctx, false), val.value(coctx, false), expirationTime);
+        }
 
         if (idx == null)
             return;
@@ -395,36 +434,43 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            final Class<?> valCls = val.getClass();
+            if (coctx == null)
+                coctx = cacheObjectContext(space);
+
+            Class<?> valCls = null;
 
             TypeId id;
 
-            if (ctx.cacheObjects().isPortableObject(val)) {
+            boolean portableVal = ctx.cacheObjects().isPortableObject(val);
+
+            if (portableVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
-
-                String typeName = portableName(typeId);
-
-                if (typeName == null)
-                    return;
 
                 id = new TypeId(space, typeId);
             }
-            else
+            else {
+                valCls = val.value(coctx, false).getClass();
+
                 id = new TypeId(space, valCls);
+            }
 
             TypeDescriptor desc = types.get(id);
 
             if (desc == null || !desc.registered())
                 return;
 
-            if (!desc.valueClass().isAssignableFrom(valCls))
+            if (!portableVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!desc.keyClass().isAssignableFrom(key.getClass()))
-                throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
-                    desc.keyClass().getName() + ", actualCls=" + key.getClass().getName() + "]");
+            if (!ctx.cacheObjects().isPortableObject(key)) {
+                Class<?> keyCls = key.value(coctx, false).getClass();
+
+                if (!desc.keyClass().isAssignableFrom(keyCls))
+                    throw new IgniteCheckedException("Failed to update index, incorrect key class [expCls=" +
+                        desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
+            }
 
             idx.store(space, desc, key, val, ver, expirationTime);
         }
@@ -566,7 +612,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     ctx.discovery().localNode(),
                     "SQL query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SQL,
+                    CacheQueryType.SQL.name(),
                     null,
                     null,
                     sqlQry,
@@ -606,6 +652,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Message factory for {@link GridIoManager}.
+     */
+    public MessageFactory messageFactory() {
+        return idx == null ? null : idx.messageFactory();
+    }
+
+    /**
      * Closeable iterator.
      */
     private static interface ClIter<X> extends AutoCloseable, Iterator<X> {
@@ -633,7 +686,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         ctx.discovery().localNode(),
                         "SQL query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.SQL,
+                        CacheQueryType.SQL.name(),
                         null,
                         null,
                         sql,
@@ -665,13 +718,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("unchecked")
-    public void remove(String space, Object key, Object val) throws IgniteCheckedException {
+    public void remove(String space, CacheObject key, CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         if (log.isDebugEnabled())
             log.debug("Remove [space=" + space + ", key=" + key + ", val=" + val + "]");
 
-        ctx.indexing().remove(space, key);
+        if (ctx.indexing().enabled()) {
+            CacheObjectContext coctx = cacheObjectContext(space);
+
+            ctx.indexing().remove(space, key.value(coctx, false));
+        }
 
         if (idx == null)
             return;
@@ -710,16 +767,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return typeName;
-    }
-
-    /**
-     * Gets portable type name by portable ID.
-     *
-     * @param typeId Type ID.
-     * @return Name.
-     */
-    private String portableName(int typeId) {
-        return portableIds.get(typeId);
     }
 
     /**
@@ -783,11 +830,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String spaceName, Object key) throws IgniteCheckedException {
+    public void onSwap(String spaceName, CacheObject key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
 
-        ctx.indexing().onSwap(spaceName, key);
+        if (ctx.indexing().enabled()) {
+            CacheObjectContext coctx = cacheObjectContext(spaceName);
+
+            ctx.indexing().onSwap(spaceName, key.value(coctx, false));
+        }
 
         if (idx == null)
             return;
@@ -809,15 +860,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param spaceName Space name.
      * @param key Key.
      * @param val Value.
-     * @param valBytes Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(String spaceName, Object key, Object val, byte[] valBytes)
+    public void onUnswap(String spaceName, CacheObject key, CacheObject val)
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
 
-        ctx.indexing().onUnswap(spaceName, key, val);
+        if (ctx.indexing().enabled()) {
+            CacheObjectContext coctx = cacheObjectContext(spaceName);
+
+            ctx.indexing().onUnswap(spaceName, key.value(coctx, false), val.value(coctx, false));
+        }
 
         if (idx == null)
             return;
@@ -826,7 +880,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");
 
         try {
-            idx.onUnswap(spaceName, key, val, valBytes);
+            idx.onUnswap(spaceName, key, val);
         }
         finally {
             busyLock.leaveBusy();
@@ -991,16 +1045,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Processes declarative metadata for class.
      *
-     * @param key Key or value flag.
-     * @param cls Class to process.
      * @param meta Type metadata.
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processClassMeta(boolean key, Class<?> cls, CacheTypeMetadata meta, TypeDescriptor d)
+    static void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
+        Class<?> keyCls = d.keyClass();
+        Class<?> valCls = d.valueClass();
+
+        assert keyCls != null;
+        assert valCls != null;
+
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(key, cls, entry.getKey(), entry.getValue());
+            ClassProperty prop = buildClassProperty(keyCls, valCls, entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
 
@@ -1012,7 +1070,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(key, cls, entry.getKey(), entry.getValue());
+            ClassProperty prop = buildClassProperty(keyCls, valCls, entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
 
@@ -1024,7 +1082,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            ClassProperty prop = buildClassProperty(key, cls, txtIdx, String.class);
+            ClassProperty prop = buildClassProperty(keyCls, valCls, txtIdx, String.class);
 
             d.addProperty(prop, false);
 
@@ -1042,7 +1100,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    ClassProperty prop = buildClassProperty(key, cls, idxField.getKey(), idxField.getValue().get1());
+                    ClassProperty prop = buildClassProperty(keyCls, valCls, idxField.getKey(), idxField.getValue().get1());
 
                     d.addProperty(prop, false);
 
@@ -1056,7 +1114,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            ClassProperty prop = buildClassProperty(key, cls, entry.getKey(), entry.getValue());
+            ClassProperty prop = buildClassProperty(keyCls, valCls, entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
         }
@@ -1065,15 +1123,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Processes declarative metadata for portable object.
      *
-     * @param ccfg Cache configuration.
      * @param meta Declared metadata.
-     * @return Type descriptor.
+     * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private TypeDescriptor processPortableMeta(CacheConfiguration<?,?> ccfg, CacheTypeMetadata meta)
+    private void processPortableMeta(CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
-        TypeDescriptor d = new TypeDescriptor(ccfg);
-
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
 
@@ -1136,18 +1191,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
         }
-
-        if (F.isEmpty(meta.getValueType()))
-            throw new IgniteCheckedException("Value type is not set: " + meta);
-
-        Class<?> valCls = U.classForName(meta.getValueType(), null);
-
-        d.name(valCls != null ? typeName(valCls) : meta.getValueType());
-
-        d.valueClass(valCls != null ? valCls : Object.class);
-        d.keyClass(meta.getKeyType() == null ? Object.class : U.classForName(meta.getKeyType(), Object.class));
-
-        return d;
     }
 
     /**
@@ -1165,6 +1208,29 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         for (String prop : path)
             res = new PortableProperty(prop, res, resType);
+
+        return res;
+    }
+
+    /**
+     * @param keyCls Key class.
+     * @param valCls Value class.
+     * @param pathStr Path string.
+     * @param resType Result type.
+     * @return Class property.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType)
+        throws IgniteCheckedException {
+        ClassProperty res = buildClassProperty(true, keyCls, pathStr, resType);
+
+        if (res == null) // We check key before value consistently with PortableProperty.
+            res = buildClassProperty(false, valCls, pathStr, resType);
+
+        if (res == null)
+            throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
+                "key class '" + keyCls + "' and value class '" + valCls + "'. " +
+                "Make sure that one of these classes contains respective getter method or field.");
 
         return res;
     }
@@ -1200,8 +1266,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     tmp = new ClassProperty(cls.getDeclaredField(prop), key);
                 }
                 catch (NoSuchFieldException ignored) {
-                    throw new IgniteCheckedException("Failed to find getter method or field for property named " +
-                        "'" + prop + "': " + cls.getName());
+                    return null;
                 }
             }
 
@@ -1213,9 +1278,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!U.box(resType).isAssignableFrom(U.box(res.type())))
-            throw new IgniteCheckedException("Failed to create property for given path (actual property type is not assignable" +
-                " to declared type [path=" + pathStr + ", actualType=" + res.type().getName() +
-                ", declaredType=" + resType.getName() + ']');
+            return null;
 
         return res;
     }
@@ -1454,7 +1517,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             else {
                 int isKeyProp0 = isKeyProp;
 
-                if (isKeyProp0 == 0) { // Key is allowed to be a non-portable object here.
+                if (isKeyProp0 == 0) {
+                    // Key is allowed to be a non-portable object here.
+                    // We check key before value consistently with ClassProperty.
                     if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName))
                         isKeyProp = isKeyProp0 = 1;
                     else if (ctx.cacheObjects().hasField(val, propName))

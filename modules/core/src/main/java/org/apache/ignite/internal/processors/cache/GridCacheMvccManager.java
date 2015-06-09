@@ -174,17 +174,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");
 
-            for (GridDistributedCacheEntry entry : locked()) {
-                try {
-                    entry.removeExplicitNodeLocks(discoEvt.eventNode().id());
-                }
-                catch (GridCacheEntryRemovedException ignore) {
-                    if (log.isDebugEnabled())
-                        log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
-                            "disco callback (will ignore): " + entry);
-                }
-            }
-
             for (Collection<GridCacheFuture<?>> futsCol : futs.values()) {
                 for (GridCacheFuture<?> fut : futsCol) {
                     if (!fut.trackable()) {
@@ -239,6 +228,39 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Collection of pending explicit locks.
+     */
+    public Collection<GridCacheExplicitLockSpan> activeExplicitLocks() {
+        return pendingExplicit.values();
+    }
+
+    /**
+     * @return Collection of active futures.
+     */
+    public Collection<GridCacheFuture<?>> activeFutures() {
+        return F.flatCollections(futs.values());
+    }
+
+    /**
+     * @param leftNodeId Left node ID.
+     * @param topVer Topology version.
+     */
+    public void removeExplicitNodeLocks(UUID leftNodeId, AffinityTopologyVersion topVer) {
+        for (GridDistributedCacheEntry entry : locked()) {
+            try {
+                entry.removeExplicitNodeLocks(leftNodeId);
+
+                entry.context().evicts().touch(entry, topVer);
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                if (log.isDebugEnabled())
+                    log.debug("Attempted to remove node locks from removed entry in mvcc manager " +
+                        "disco callback (will ignore): " + entry);
+            }
+        }
+    }
+
+    /**
      * @param from From version.
      * @param to To version.
      */
@@ -273,7 +295,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Cancels all client futures.
      */
     public void cancelClientFutures() {
-        IgniteException e = new IgniteException("Operation has been cancelled (grid is stopping).");
+        IgniteCheckedException e = new IgniteCheckedException("Operation has been cancelled (grid is stopping).");
 
         for (Collection<GridCacheFuture<?>> futures : futs.values()) {
             for (GridCacheFuture<?> future : futures)

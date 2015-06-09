@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -29,22 +31,20 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     private static final long serialVersionUID = 0L;
 
     /** */
-    private Serializable msg;
+    private transient Serializable msg;
 
-    /**
-     * Public default no-arg constructor for {@link Externalizable} interface.
-     */
-    public TcpDiscoveryCustomEventMessage() {
-        // No-op.
-    }
+    /** */
+    private final byte[] msgBytes;
 
     /**
      * @param creatorNodeId Creator node id.
+     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, Serializable msg, byte[] msgBytes) {
         super(creatorNodeId);
 
         this.msg = msg;
+        this.msgBytes = msgBytes;
     }
 
     /**
@@ -54,17 +54,15 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
         return msg;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeObject(msg);
+    /**
+     * @return Serialized message.
+     */
+    public byte[] messageBytes() {
+        return msgBytes;
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        msg = (Serializable)in.readObject();
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
     }
 }

@@ -109,6 +109,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Skip store flag. */
+    private final boolean skipStore;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -118,6 +121,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param timeout Lock acquisition timeout.
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
+     * @param skipStore
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<K, V> cctx,
@@ -127,7 +131,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         boolean retval,
         long timeout,
         long accessTtl,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        boolean skipStore) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -140,6 +145,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         this.timeout = timeout;
         this.accessTtl = accessTtl;
         this.filter = filter;
+        this.skipStore = skipStore;
+
+        ignoreInterrupts(true);
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -517,10 +525,28 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     void map() {
         // Obtain the topology version to use.
-        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersionSnapshot() :
-            cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
+
+        if (topVer != null && tx != null)
+            tx.topologyVersion(topVer);
+
+        if (topVer == null && tx != null)
+            topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
+                if (fut.topologyVersion().equals(topVer)){
+                    if (!fut.isCacheTopologyValid(cctx)) {
+                        onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                            cctx.name()));
+
+                        return;
+                    }
+
+                    break;
+                }
+            }
+
             // Continue mapping on the same topology version as it was before.
             this.topVer.compareAndSet(null, topVer);
 
@@ -554,6 +580,13 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
+                if (!fut.isCacheTopologyValid(cctx)) {
+                    onDone(new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
+                        cctx.name()));
+
+                    return;
+                }
+
                 AffinityTopologyVersion topVer = fut.topologyVersion();
 
                 if (tx != null)
@@ -651,15 +684,30 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 Collection<KeyCacheObject> distributedKeys = new ArrayList<>(mappedKeys.size());
 
                 for (KeyCacheObject key : mappedKeys) {
-                    boolean explicit;
-
                     IgniteTxKey txKey = cctx.txKey(key);
 
-                    while (true) {
-                        GridDistributedCacheEntry entry = null;
+                    GridDistributedCacheEntry entry = null;
 
+                    if (tx != null) {
+                        IgniteTxEntry txEntry = tx.entry(txKey);
+
+                        if (txEntry != null) {
+                            entry = (GridDistributedCacheEntry)txEntry.cached();
+
+                            if (entry != null && !(loc ^ entry.detached())) {
+                                entry = cctx.colocated().entryExx(key, topVer, true);
+
+                                txEntry.cached(entry);
+                            }
+                        }
+                    }
+
+                    boolean explicit;
+
+                    while (true) {
                         try {
-                            entry = cctx.colocated().entryExx(key, topVer, true);
+                            if (entry == null)
+                                entry = cctx.colocated().entryExx(key, topVer, true);
 
                             if (!cctx.isAll(entry, filter)) {
                                 if (log.isDebugEnabled())
@@ -710,7 +758,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
-                                        read ? accessTtl : -1L);
+                                        read ? accessTtl : -1L,
+                                        skipStore);
 
                                     mapping.request(req);
                                 }
@@ -876,7 +925,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             retval,
             timeout,
             accessTtl,
-            filter);
+            filter,
+            skipStore);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
@@ -941,6 +991,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         // Assign keys to primary nodes.
         Collection<KeyCacheObject> distributedKeys = new ArrayList<>(keys.size());
 
+        boolean explicit = false;
+
         for (KeyCacheObject key : keys) {
             if (!cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                 // Remove explicit locks added so far.
@@ -950,7 +1002,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 return false;
             }
 
-            addLocalKey(key, topVer, distributedKeys);
+            explicit |= addLocalKey(key, topVer, distributedKeys);
 
             if (isDone())
                 return true;
@@ -958,8 +1010,12 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
         trackable = false;
 
-        if (tx != null)
+        if (tx != null) {
+            if (explicit)
+                tx.markExplicit(cctx.localNodeId());
+
             tx.colocatedLocallyMapped(true);
+        }
 
         if (!distributedKeys.isEmpty()) {
             if (tx != null) {
@@ -984,7 +1040,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      */
     private boolean addLocalKey(
         KeyCacheObject key,
-        AffinityTopologyVersion topVer, 
+        AffinityTopologyVersion topVer,
         Collection<KeyCacheObject> distributedKeys
     ) throws IgniteCheckedException {
         GridDistributedCacheEntry entry = cctx.colocated().entryExx(key, topVer, false);
@@ -1016,13 +1072,17 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @throws IgniteCheckedException If mapping failed.
      */
     private GridNearLockMapping map(
-        KeyCacheObject key, 
+        KeyCacheObject key,
         @Nullable GridNearLockMapping mapping,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         assert mapping == null || mapping.node() != null;
 
         ClusterNode primary = cctx.affinity().primary(key, topVer);
+
+        if (primary == null)
+            throw new ClusterTopologyServerNotFoundException("Failed to lock keys " +
+                "(all partition nodes left the grid).");
 
         if (cctx.discovery().node(primary.id()) == null)
             // If primary node left the grid before lock acquisition, fail the whole future.

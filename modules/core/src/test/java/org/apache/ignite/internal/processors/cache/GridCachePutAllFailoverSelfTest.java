@@ -40,6 +40,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -50,7 +53,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Size of the test map. */
-    private static final int TEST_MAP_SIZE = 30000;
+    private static final int TEST_MAP_SIZE = 30_000;
 
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
@@ -339,12 +342,18 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).localSize());
+                info("Cache size [node=" + g.name() +
+                    ", localSize=" + g.cache(CACHE_NAME).localSize() +
+                    ", localPrimarySize=" + g.cache(CACHE_NAME).localSize(PRIMARY) +
+                    ']');
 
                 primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
 
             assertEquals(TEST_MAP_SIZE, primaryCacheSize);
+
+            for (Ignite g : runningWorkers)
+                assertEquals(TEST_MAP_SIZE, g.cache(CACHE_NAME).size(PRIMARY));
         }
         finally {
             stopAllGrids();
@@ -388,9 +397,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         try {
-            // Dummy call to fetch affinity function from remote node
-            master.cluster().mapKeyToNode(CACHE_NAME, "Dummy");
-
             Map<UUID, Collection<Integer>> dataChunks = new HashMap<>();
 
             int chunkCntr = 0;
@@ -539,12 +545,18 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).localSize());
+                info("Cache size [node=" + g.name() +
+                    ", localSize=" + g.cache(CACHE_NAME).localSize() +
+                    ", localPrimarySize=" + g.cache(CACHE_NAME).localSize(PRIMARY) +
+                    ']');
 
-                primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
+                primaryCacheSize += g.cache(CACHE_NAME).localSize(PRIMARY);
             }
 
             assertEquals(TEST_MAP_SIZE, primaryCacheSize);
+
+            for (Ignite g : runningWorkers)
+                assertEquals(TEST_MAP_SIZE, g.cache(CACHE_NAME).size(PRIMARY));
         }
         finally {
             stopAllGrids();
@@ -585,6 +597,13 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         return ret;
     }
 
+    /**
+     * @return Cache atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -602,10 +621,12 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoverySpi);
 
         if (gridName.startsWith("master")) {
+            cfg.setClientMode(true);
+
             cfg.setUserAttributes(ImmutableMap.of("segment", "master"));
 
             // For sure.
-            failoverSpi.setMaximumFailoverAttempts(50);
+            failoverSpi.setMaximumFailoverAttempts(100);
 
             cfg.setFailoverSpi(failoverSpi);
         }
@@ -614,7 +635,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
             cacheCfg.setName("partitioned");
-            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+            cacheCfg.setAtomicityMode(atomicityMode());
+            cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setStartSize(4500000);
 
             cacheCfg.setBackups(backups);

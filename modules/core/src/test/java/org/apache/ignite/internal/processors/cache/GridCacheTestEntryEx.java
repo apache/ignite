@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -466,6 +465,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
@@ -487,6 +487,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable Object val,
         @Nullable Object[] invokeArgs,
         boolean writeThrough,
+        boolean readThrough,
         boolean retval,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
@@ -605,34 +606,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** @inheritDoc */
     @Override public GridCacheVersion version() {
         return ver;
-    }
-
-    /** @inheritDoc */
-    @Override public CacheObject peek(GridCachePeekMode mode, CacheEntryPredicate[] filter) {
-        return val;
-    }
-
-    /** @inheritDoc */
-    @Override public GridTuple<CacheObject> peek0(boolean failFast, GridCachePeekMode mode,
-        CacheEntryPredicate[] filter, IgniteInternalTx tx)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
-        return F.t(val);
-    }
-
-    /** @inheritDoc */
-    @Override public CacheObject peek(Collection<GridCachePeekMode> modes,
-        CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject poke(CacheObject val) throws GridCacheEntryRemovedException, IgniteCheckedException {
-        CacheObject old = this.val;
-
-        this.val = val;
-
-        return old;
     }
 
     /** @inheritDoc */
@@ -826,7 +799,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject unswap(boolean ignoreFlags, boolean needVal) throws IgniteCheckedException {
+    @Override public CacheObject unswap(boolean needVal) throws IgniteCheckedException {
         return null;
     }
 
@@ -859,4 +832,15 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject peek(
+        boolean heap,
+        boolean offheap,
+        boolean swap,
+        @Nullable IgniteCacheExpiryPolicy plc)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        return null;
+    }
+
 }

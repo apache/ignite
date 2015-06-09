@@ -71,7 +71,7 @@ public class GridCacheDhtTestUtils {
         for (int i = 0; i < keyCnt; i++) {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(i);
 
-            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i), 0);
+            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i));
 
             dht.preloader().request(Collections.singleton(cacheKey), AffinityTopologyVersion.NONE);
 
@@ -81,16 +81,6 @@ public class GridCacheDhtTestUtils {
 
             part.own();
         }
-    }
-
-    /**
-     * @param cache Dht cache.
-     */
-    static void printAffinityInfo(GridCache<?, ?> cache) {
-        System.out.println("Affinity info.");
-        System.out.println("----------------------------------");
-        System.out.println("Number of key backups: " + cache.configuration().getBackups());
-        System.out.println("Number of cache partitions: " + cache.affinity().partitions());
     }
 
     /**

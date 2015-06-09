@@ -62,7 +62,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-        c.setNearCacheConfiguration(nearCfg);
+        cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
 
@@ -164,7 +164,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                final GridCache cache = internalCache(i);
+                final GridCacheAdapter cache = internalCache(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {

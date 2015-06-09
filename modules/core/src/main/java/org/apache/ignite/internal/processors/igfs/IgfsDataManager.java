@@ -64,11 +64,11 @@ public class IgfsDataManager extends IgfsManager {
     /** IGFS. */
     private IgfsEx igfs;
 
-    /** Data cache projection. */
-    private GridCacheProjectionEx<IgfsBlockKey, byte[]> dataCachePrj;
+    /** Data internal cache. */
+    private IgniteInternalCache<IgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
-    private GridCache<Object, Object> dataCache;
+    private IgniteInternalCache<Object, Object> dataCache;
 
     /** */
     private CountDownLatch dataCacheStartLatch;
@@ -202,7 +202,10 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
+        igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
         dataCachePrj = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
+
+        igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
         dataCache = igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName());
 
         metrics = igfsCtx.igfs().localMetrics();
@@ -689,7 +692,7 @@ public class IgfsDataManager extends IgfsManager {
                                 byte[] val = vals.get(colocatedKey);
 
                                 if (val != null) {
-                                    dataCachePrj.putx(key, val);
+                                    dataCachePrj.put(key, val);
 
                                     tx.commit();
                                 }
@@ -1117,7 +1120,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // If writing from block beginning, just put and return.
         if (startOff == 0) {
-            dataCachePrj.putx(colocatedKey, data);
+            dataCachePrj.put(colocatedKey, data);
 
             return;
         }
@@ -1208,7 +1211,7 @@ public class IgfsDataManager extends IgfsManager {
         Runnable task = new Runnable() {
             @Override public void run() {
                 try {
-                    dataCachePrj.putx(key, data);
+                    dataCachePrj.put(key, data);
                 }
                 catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to put IGFS data block into cache [key=" + key + ", err=" + e + ']');
@@ -1350,7 +1353,7 @@ public class IgfsDataManager extends IgfsManager {
             return new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), block);
 
         // If range is done, no colocated writes are attempted.
-        if (locRange == null || locRange.done())
+        if (locRange == null)
             return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
 
         long blockStart = block * fileInfo.blockSize();
@@ -1360,15 +1363,6 @@ public class IgfsDataManager extends IgfsManager {
             IgniteUuid affKey = fileInfo.fileMap().affinityKey(blockStart, false);
 
             return new IgfsBlockKey(fileInfo.id(), affKey, fileInfo.evictExclude(), block);
-        }
-
-        // Check if we have enough free space to do colocated writes.
-        if (dataCachePrj.igfsDataSpaceUsed() > dataCachePrj.igfsDataSpaceMax() *
-            igfsCtx.configuration().getFragmentizerLocalWritesRatio()) {
-            // Forbid further co-location.
-            locRange.markDone();
-
-            return new IgfsBlockKey(fileInfo.id(), null, fileInfo.evictExclude(), block);
         }
 
         if (!locRange.belongs(blockStart))

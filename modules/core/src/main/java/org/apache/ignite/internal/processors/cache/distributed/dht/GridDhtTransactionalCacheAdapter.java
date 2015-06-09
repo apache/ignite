@@ -196,7 +196,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.topologyVersion(),
                                     req.version(),
                                     /*commitVer*/null,
-                                    ctx.system(),
+                                    ctx.systemTx(),
                                     ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
@@ -220,7 +220,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 txKey,
                                 null,
                                 null,
-                                req.accessTtl());
+                                req.accessTtl(),
+                                req.skipStore());
 
                             if (req.groupLock())
                                 tx.groupLockKey(txKey);
@@ -559,8 +560,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isRead,
         boolean retval,
         TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter) {
+        long accessTtl) {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         return lockAllAsyncInternal(
             keys,
             timeout,
@@ -570,7 +572,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             retval,
             isolation,
             accessTtl,
-            filter);
+            CU.empty0(),
+            opCtx != null && opCtx.skipStore());
     }
 
     /**
@@ -585,6 +588,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param isolation Transaction isolation.
      * @param accessTtl TTL for read operation.
      * @param filter Optional filter.
+     * @param skipStore Skip store flag.
      * @return Lock future.
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
@@ -595,7 +599,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean retval,
         TransactionIsolation isolation,
         long accessTtl,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate[] filter,
+        boolean skipStore) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
@@ -615,7 +620,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx,
             tx.threadId(),
             accessTtl,
-            filter);
+            filter,
+            skipStore);
 
         for (KeyCacheObject key : keys) {
             try {
@@ -731,7 +737,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx,
                                 req.threadId(),
                                 req.accessTtl(),
-                                filter);
+                                filter,
+                                req.skipStore());
 
                             // Add before mapping.
                             if (!ctx.mvcc().addFuture(fut))
@@ -794,7 +801,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.threadId(),
                                     req.implicitTx(),
                                     req.implicitSingleTx(),
-                                    ctx.system(),
+                                    ctx.systemTx(),
+                                    false,
                                     ctx.ioPolicy(),
                                     PESSIMISTIC,
                                     req.isolation(),
@@ -839,7 +847,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 req.messageId(),
                                 req.txRead(),
                                 req.needReturnValue(),
-                                req.accessTtl());
+                                req.accessTtl(),
+                                req.skipStore());
 
                             final GridDhtTxLocal t = tx;
 
@@ -1165,13 +1174,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 while (true) {
                     GridDistributedCacheEntry entry = peekExx(key);
 
-                    boolean created = false;
-
-                    if (entry == null) {
-                        entry = entryExx(key);
-
-                        created = true;
-                    }
+                    if (entry == null)
+                        // Nothing to unlock.
+                        break;
 
                     try {
                         entry.doneRemote(
@@ -1194,9 +1199,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 log.debug("Received unlock request for unknown candidate " +
                                     "(added to cancelled locks set): " + req);
                         }
-
-                        if (created && entry.markObsolete(req.version()))
-                            removeEntry(entry);
 
                         ctx.evicts().touch(entry, ctx.affinity().affinityTopologyVersion());
 

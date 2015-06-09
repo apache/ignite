@@ -227,6 +227,56 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @throws Exception If failed.
      */
+    public void testPutConsistencyMultithreaded() throws Exception {
+        for (int i = 0; i < 20; i++) {
+            log.info("Iteration: " + i);
+
+            final int range = 100;
+
+            final int iterCnt = 100;
+
+            final AtomicInteger threadId = new AtomicInteger();
+
+            final AtomicInteger iters = new AtomicInteger();
+
+            multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Random rnd = new Random();
+
+                    int g = threadId.getAndIncrement();
+
+                    Ignite ignite = grid(g);
+
+                    IgniteCache<Object, Object> cache = ignite.cache(null);
+
+                    log.info("Update thread: " + ignite.name());
+
+                    Thread.currentThread().setName("UpdateThread-" + ignite.name());
+
+                    Long val = (long)g;
+
+                    while (true) {
+                        int i = iters.getAndIncrement();
+
+                        if (i >= iterCnt)
+                            break;
+
+                        int k = rnd.nextInt(range);
+
+                        cache.put(k, val);
+                    }
+
+                    return null;
+                }
+            }, gridCount()).get();
+
+            checkConsistency(range);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
        for (int i = 0; i < 10; i++) {
            log.info("Iteration: " + i);
@@ -278,6 +328,13 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             }
         }, THREAD_CNT).get();
 
+        checkConsistency(range);
+    }
+
+    /**
+     * @param range Key range.
+     */
+    private void checkConsistency(int range) {
         int present = 0;
         int absent = 0;
 
@@ -360,7 +417,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @param g Grid to check.
      */
     private void checkKeySet(Ignite g) {
-        GridCache<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
+        GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
 
         Set<Object> keys = cache.keySet();
 

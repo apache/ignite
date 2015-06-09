@@ -206,7 +206,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
+    @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
         boolean failFast,
         KeyCacheObject key,
         CacheEntryPredicate[] filter)
@@ -502,7 +502,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
                                     if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
-                                        txEntry.cached().unswap(true, false);
+                                        txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res =
                                         applyTransformClosures(txEntry, false);
@@ -659,6 +659,9 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             // as there is no way to rollback at this point.
                             err = new IgniteTxHeuristicCheckedException("Commit produced a runtime exception " +
                                 "(all transaction entries will be invalidated): " + CU.txString(this), ex);
+
+                            if (ex instanceof Error)
+                                throw (Error)ex;
                         }
                     }
                 }

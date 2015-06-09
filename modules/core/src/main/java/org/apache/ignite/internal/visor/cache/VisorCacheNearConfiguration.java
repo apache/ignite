@@ -33,7 +33,7 @@ public class VisorCacheNearConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Flag to enable/disable near cache eviction policy. */
+    /** Flag indicating if near cache enabled. */
     private boolean nearEnabled;
 
     /** Near cache start size. */
@@ -53,15 +53,20 @@ public class VisorCacheNearConfiguration implements Serializable {
         VisorCacheNearConfiguration cfg = new VisorCacheNearConfiguration();
 
         cfg.nearEnabled = GridCacheUtils.isNearEnabled(ccfg);
-//        cfg.nearStartSize = ccfg.getNearStartSize(); TODO IGNTIE-45
-//        cfg.nearEvictPlc = compactClass(ccfg.getNearEvictionPolicy());
-//        cfg.nearEvictMaxSize = evictionPolicyMaxSize(ccfg.getNearEvictionPolicy());
+
+        if (cfg.nearEnabled) {
+            NearCacheConfiguration nccfg = ccfg.getNearConfiguration();
+
+            cfg.nearStartSize = nccfg.getNearStartSize();
+            cfg.nearEvictPlc = compactClass(nccfg.getNearEvictionPolicy());
+            cfg.nearEvictMaxSize = evictionPolicyMaxSize(nccfg.getNearEvictionPolicy());
+        }
 
         return cfg;
     }
 
     /**
-     * @return Flag to enable/disable near cache eviction policy.
+     * @return {@code true} if near cache enabled.
      */
     public boolean nearEnabled() {
         return nearEnabled;

@@ -322,13 +322,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                     throw e;
                 }
             }
-            catch (IgniteTxOptimisticCheckedException e) {
-                err.compareAndSet(null, e);
-            }
-            catch (ClusterTopologyCheckedException e) {
-                err.compareAndSet(null, e);
-            }
-            catch (IgniteFutureCancelledCheckedException e) {
+            catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
+                ClusterTopologyCheckedException e) {
                 err.compareAndSet(null, e);
             }
             catch (IgniteCheckedException e) {

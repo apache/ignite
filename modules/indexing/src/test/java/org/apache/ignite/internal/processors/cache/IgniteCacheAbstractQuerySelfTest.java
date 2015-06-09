@@ -50,7 +50,6 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -91,8 +90,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     /**
      * @return Distribution.
      */
-    protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+    protected NearCacheConfiguration nearCacheConfiguration() {
+        return new NearCacheConfiguration();
     }
 
     /** {@inheritDoc} */
@@ -122,6 +121,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
+            cc.setNearConfiguration(nearCacheConfiguration());
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setCacheStoreFactory(new StoreFactory());
             cc.setReadThrough(true);
@@ -198,13 +198,13 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        GridCache<Integer, Object> cache = ((IgniteKernal)ignite).getCache(null);
+        IgniteCache<Integer, Object> cache = ignite.cache(null);
 
-        cache.putx(7, "value");
+        cache.put(7, "value");
 
         // Put value of different type but for the same key type.
         // Operation should succeed but with warning log message.
-        cache.putx(7, 1);
+        cache.put(7, 1);
     }
 
     /**
@@ -489,16 +489,16 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, new ObjectValue("test" + i, i));
 
         for (Ignite g : G.allGrids()) {
-            GridCache<Integer, ObjectValue> c = ((IgniteKernal)g).getCache(null);
+            IgniteCache<Integer, ObjectValue> c = g.cache(null);
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
-                    assertNotNull(c.peek(i));
+                    assertNotNull(c.localPeek(i, CachePeekMode.ONHEAP));
 
-                    c.evict(i); // Swap.
+                    c.localEvict(Collections.singleton(i)); // Swap.
 
-                    if (!partitioned || c.affinity().mapKeyToNode(i).isLocal()) {
-                        ObjectValue peekVal = c.peek(i);
+                    if (!partitioned || g.affinity(null).mapKeyToNode(i).isLocal()) {
+                        ObjectValue peekVal = c.localPeek(i, CachePeekMode.ONHEAP);
 
                         assertNull("Non-null value for peek [key=" + i + ", val=" + peekVal + ']', peekVal);
                     }
@@ -1004,7 +1004,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
 
-                    assertEquals(SCAN, qe.queryType());
+                    assertEquals(SCAN.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertNull(qe.className());
@@ -1027,7 +1027,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertEquals(SCAN, qe.queryType());
+                    assertEquals(SCAN.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertNull(qe.className());
@@ -1080,7 +1080,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryReadEvent<UUID, Person> qe = (CacheQueryReadEvent<UUID, Person>)evt;
 
-                    assertEquals(FULL_TEXT, qe.queryType());
+                    assertEquals(FULL_TEXT.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals("Person", qe.className());
@@ -1103,7 +1103,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
-                    assertEquals(FULL_TEXT, qe.queryType());
+                    assertEquals(FULL_TEXT.name(), qe.queryType());
                     assertNull(qe.cacheName());
 
                     assertEquals("Person", qe.className());

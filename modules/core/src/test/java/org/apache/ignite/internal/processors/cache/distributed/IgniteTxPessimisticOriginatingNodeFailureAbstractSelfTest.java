@@ -149,14 +149,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(1)).internalCache();
-
         info("Node being checked: " + grid(1).localNode().id());
 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(cache.affinity().mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(null).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(txNode);
 
@@ -178,6 +176,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                 assertNotNull(cache);
 
                 Transaction tx = originatingNodeGrid.transactions().txStart();
+
+                assertEquals(PESSIMISTIC, tx.concurrency());
 
                 try {
                     cache.putAll(map);
@@ -317,8 +317,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             nodeMap.put(key, nodes);
         }
 
-        info("Starting tx [values=" + map + ", topVer=" +
-            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
+        info("Starting tx [values=" + map + ", topVer=" + grid(1).context().discovery().topologyVersion() + ']');
 
         assertNotNull(cache);
 
@@ -331,6 +330,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             TransactionProxyImpl txProxy = (TransactionProxyImpl)tx;
 
             IgniteInternalTx txEx = txProxy.tx();
+
+            assertTrue(txEx.pessimistic());
 
             if (commmit) {
                 txEx.prepare();

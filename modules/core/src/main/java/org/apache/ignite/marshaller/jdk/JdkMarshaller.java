@@ -31,11 +31,11 @@ import java.io.*;
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
- * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller}.
+ * {@code JdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller}.
  * <pre name="code" class="java">
- * GridJdkMarshaller marshaller = new GridJdkMarshaller();
+ * JdkMarshaller marshaller = new JdkMarshaller();
  *
- * GridConfiguration cfg = new GridConfiguration();
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Override default marshaller.
  * cfg.setMarshaller(marshaller);
@@ -44,12 +44,12 @@ import java.io.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * GridJdkMarshaller can be configured from Spring XML configuration file:
+ * JdkMarshaller can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.apache.ignite.marshaller.jdk.GridJdkMarshaller"/&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.jdk.JdkMarshaller"/&gt;
  *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;

@@ -302,7 +302,7 @@ public interface IgniteSpiContext {
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.
@@ -310,7 +310,7 @@ public interface IgniteSpiContext {
      * @return Collection of authenticated subjects.
      * @throws IgniteException If any exception occurs.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteException;
+    public Collection<SecuritySubject> authenticatedSubjects() throws IgniteException;
 
     /**
      * Gets security subject based on subject ID.
@@ -319,7 +319,7 @@ public interface IgniteSpiContext {
      * @return Authorized security subject.
      * @throws IgniteException If any exception occurs.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
+    public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
 
     /**
      * Reads swapped cache value from off-heap and swap.
@@ -346,4 +346,15 @@ public interface IgniteSpiContext {
      * @return Message factory.
      */
     public MessageFactory messageFactory();
+
+    /**
+     * @return {@code True} if node started shutdown sequence.
+     */
+    public boolean isStopping();
+
+    /**
+     * @param nodeId Node ID.
+     * @return If node was failed.
+     */
+    public boolean tryFailNode(UUID nodeId);
 }

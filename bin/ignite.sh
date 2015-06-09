@@ -58,7 +58,7 @@ fi
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
+. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in release.
 CP="${IGNITE_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
@@ -130,7 +130,7 @@ fi
 # Remote debugging (JPDA).
 # Uncomment and change if remote debugging is required.
 #
-# JVM_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n ${JVM_OPTS}"
+# JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${JVM_OPTS}"
 
 ERRORCODE="-1"
 

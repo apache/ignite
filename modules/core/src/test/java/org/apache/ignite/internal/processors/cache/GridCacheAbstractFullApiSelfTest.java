@@ -47,9 +47,10 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
@@ -269,7 +270,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             // Will actually delete entry from map.
-            CU.invalidate(cache(i), "key0");
+            CU.invalidate(jcache(i), "key0");
 
             assertNull("Failed check for grid: " + i, jcache(i).localPeek("key0", CachePeekMode.ONHEAP));
 
@@ -287,20 +288,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
                     sum++;
 
-            assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize());
+            assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(CachePeekMode.ALL));
         }
 
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keysCol = mapped.get(grid(i).localNode());
 
             assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
-                cache(i).primarySize());
+                jcache(i).localSize(CachePeekMode.PRIMARY));
         }
 
         int globalPrimarySize = map.size();
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalPrimarySize, cache(i).globalPrimarySize());
+            assertEquals(globalPrimarySize, jcache(i).size(CachePeekMode.PRIMARY));
 
         int times = 1;
 
@@ -312,7 +313,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         int globalSize = globalPrimarySize * times;
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(globalSize, cache(i).globalSize());
+            assertEquals(globalSize, jcache(i).size(CachePeekMode.ALL));
     }
 
     /**
@@ -1368,8 +1369,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 f = tx.future();
             }
 
-            fut1.get();
-            fut2.get();
+            assertNull(fut1.get());
+            assertNull(fut2.get());
 
             assert f == null || f.get().state() == COMMITTED;
         }
@@ -2965,87 +2966,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testPeekMode() throws Exception {
-        String key = "testPeekMode";
-
-        Ignite ignite = primaryIgnite(key);
-
-        GridCache<String, Integer> cache = ((IgniteKernal)ignite).getCache(null);
-
-        cache.put(key, 1);
-
-        assert cache.peek(key, F.asList(TX)) == null;
-        assert cache.peek(key, F.asList(SWAP)) == null;
-        assert cache.peek(key, F.asList(DB)) == 1;
-        assert cache.peek(key, F.asList(TX, GLOBAL)) == 1;
-
-        if (cacheMode() == LOCAL) {
-            assert cache.peek(key, F.asList(TX, NEAR_ONLY)) == 1;
-            assert cache.peek(key, F.asList(TX, PARTITIONED_ONLY)) == 1;
-        }
-
-        assert cache.peek(key, F.asList(SMART)) == 1;
-
-        assert cache.peek("wrongKey", F.asList(TX, GLOBAL, SWAP, DB)) == null;
-
-        if (cacheMode() == LOCAL) {
-            assert cache.peek("wrongKey", F.asList(TX, NEAR_ONLY, SWAP, DB)) == null;
-            assert cache.peek("wrongKey", F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
-        }
-
-        if (txEnabled()) {
-            try (Transaction tx = ignite.transactions().txStart()) {
-                cache.replace(key, 2);
-
-                assert cache.peek(key, F.asList(GLOBAL)) == 1;
-
-                if (cacheMode() == LOCAL) {
-                    assert cache.peek(key, F.asList(NEAR_ONLY)) == 1;
-                    assert cache.peek(key, F.asList(PARTITIONED_ONLY)) == 1;
-                }
-
-                assert cache.peek(key, F.asList(TX)) == 2;
-                assert cache.peek(key, F.asList(SMART)) == 2;
-                assert cache.peek(key, F.asList(SWAP)) == null;
-                assert cache.peek(key, F.asList(DB)) == 1;
-
-                tx.commit();
-            }
-        }
-        else
-            cache.replace(key, 2);
-
-        assertEquals((Integer)2, cache.peek(key, F.asList(GLOBAL)));
-
-        if (cacheMode() == LOCAL) {
-            assertEquals((Integer)2, cache.peek(key, F.asList(NEAR_ONLY)));
-            assertEquals((Integer)2, cache.peek(key, F.asList(PARTITIONED_ONLY)));
-        }
-
-        assertNull(cache.peek(key, F.asList(TX)));
-        assertNull(cache.peek(key, F.asList(SWAP)));
-        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
-
-        assertTrue(cache.evict(key));
-
-        assertNull(cache.peek(key, F.asList(SMART)));
-        assertNull(cache.peek(key, F.asList(TX, GLOBAL)));
-
-        if (cacheMode() == LOCAL) {
-            assertNull(cache.peek(key, F.asList(TX, NEAR_ONLY)));
-            assertNull(cache.peek(key, F.asList(TX, PARTITIONED_ONLY)));
-        }
-
-        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
-        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
-        assertEquals((Integer)2, cache.peek(key, F.asList(SMART, SWAP, DB)));
-
-        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -3471,7 +3391,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testUnswap() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
         List<String> keys = primaryKeysForCache(jcache(), 3);
 
@@ -3479,16 +3399,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         String k2 = keys.get(1);
         String k3 = keys.get(2);
 
-        cache.put(k1, 1);
-        cache.put(k2, 2);
-        cache.put(k3, 3);
+        cache.getAndPut(k1, 1);
+        cache.getAndPut(k2, 2);
+        cache.getAndPut(k3, 3);
 
         final AtomicInteger swapEvts = new AtomicInteger(0);
         final AtomicInteger unswapEvts = new AtomicInteger(0);
 
         Collection<String> locKeys = new HashSet<>();
 
-        if (cache.affinityNode()) {
+        if (cache.context().affinityNode()) {
             locKeys.addAll(cache.primaryKeySet());
 
             info("Local keys (primary): " + locKeys);
@@ -3524,8 +3444,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
         }
 
-        assert cache.evict(k2);
-        assert cache.evict(k3);
+        cache.evictAll(Collections.singleton(k2));
+        cache.evictAll(Collections.singleton(k3));
 
         assertNotNull(cache.localPeek(k1, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
         assertNull(cache.localPeek(k2, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
@@ -3534,25 +3454,39 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         int cnt = 0;
 
         if (locKeys.contains(k2)) {
-            assertEquals((Integer)2, cache.promote(k2));
+            assertNull(cache.localPeek(k2, ONHEAP_PEEK_MODES, null));
+
+            cache.promoteAll(Collections.singleton(k2));
+
+            assertEquals((Integer) 2, cache.localPeek(k2, ONHEAP_PEEK_MODES, null));
 
             cnt++;
         }
-        else
-            assertNull(cache.promote(k2));
+        else {
+            cache.promoteAll(Collections.singleton(k2));
+
+            assertNull(cache.localPeek(k2, ONHEAP_PEEK_MODES, null));
+        }
 
         if (locKeys.contains(k3)) {
-            assertEquals((Integer)3, cache.promote(k3));
+            assertNull(cache.localPeek(k3, ONHEAP_PEEK_MODES, null));
+
+            cache.promoteAll(Collections.singleton(k3));
+
+            assertEquals((Integer)3, cache.localPeek(k3, ONHEAP_PEEK_MODES, null));
 
             cnt++;
         }
-        else
-            assertNull(cache.promote(k3));
+        else {
+            cache.promoteAll(Collections.singleton(k3));
+
+            assertNull(cache.localPeek(k3, ONHEAP_PEEK_MODES, null));
+        }
 
         assertEquals(cnt, swapEvts.get());
         assertEquals(cnt, unswapEvts.get());
 
-        assert cache.evict(k1);
+        cache.evictAll(Collections.singleton(k1));
 
         assertEquals((Integer)1, cache.get(k1));
 
@@ -3565,15 +3499,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.clear();
 
         // Check with multiple arguments.
-        cache.put(k1, 1);
-        cache.put(k2, 2);
-        cache.put(k3, 3);
+        cache.getAndPut(k1, 1);
+        cache.getAndPut(k2, 2);
+        cache.getAndPut(k3, 3);
 
         swapEvts.set(0);
         unswapEvts.set(0);
 
-        cache.evict(k2);
-        cache.evict(k3);
+        cache.evictAll(Collections.singleton(k2));
+        cache.evictAll(Collections.singleton(k3));
 
         assertNotNull(cache.localPeek(k1, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
         assertNull(cache.localPeek(k2, new CachePeekMode[] {CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP}, null));
@@ -3812,12 +3746,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected void checkSize(Collection<String> keys) throws Exception {
         if (nearEnabled())
-            assertEquals(keys.size(), jcache().localSize());
+            assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
                 GridCacheContext<String, Integer> ctx = context(i);
 
-                if (offheapTiered(ctx.cache()))
+                if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
                     continue;
 
                 int size = 0;
@@ -3834,7 +3768,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     }
                 }
 
-                assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize());
+                assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(CachePeekMode.ALL));
             }
         }
     }
@@ -3845,7 +3779,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected void checkKeySize(Collection<String> keys) throws Exception {
         if (nearEnabled())
-            assertEquals("Invalid key size: " + jcache().localSize(), keys.size(), jcache().localSize());
+            assertEquals("Invalid key size: " + jcache().localSize(CachePeekMode.ALL),
+                keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
                 GridCacheContext<String, Integer> ctx = context(i);
@@ -3856,7 +3791,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                         size++;
 
-                assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize());
+                assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize(CachePeekMode.ALL));
             }
         }
     }
@@ -4344,7 +4279,547 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testWithSkipStore() throws Exception {
+        IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+        IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
+
+        List<String> keys = primaryKeysForCache(cache, 10);
+
+        for (int i = 0; i < keys.size(); ++i)
+            putToStore(keys.get(i), i);
+
+        assertFalse(cacheSkipStore.iterator().hasNext());
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+
+            assertNotNull(cache.get(key));
+        }
+
+        for (String key : keys) {
+            cacheSkipStore.remove(key);
+
+            assertNotNull(cache.get(key));
+        }
+
+        cache.removeAll(new HashSet<>(keys));
+
+        for (String key : keys)
+            assertNull(cache.get(key));
+
+        final int KEYS = 250;
+
+        // Put/remove data from multiple nodes.
+
+        keys = new ArrayList<>(KEYS);
+
+        for (int i = 0; i < KEYS; i++)
+            keys.add("key_" + i);
+
+        for (int i = 0; i < keys.size(); ++i)
+            cache.put(keys.get(i), i);
+
+        for (int i = 0; i < keys.size(); ++i) {
+            String key = keys.get(i);
+
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertEquals(i, map.get(key));
+        }
+
+        for (int i = 0; i < keys.size(); ++i) {
+            String key = keys.get(i);
+
+            Integer val1 = -1;
+
+            cacheSkipStore.put(key, val1);
+            assertEquals(i, map.get(key));
+            assertEquals(val1, cacheSkipStore.get(key));
+
+            Integer val2 = -2;
+
+            assertEquals(val1, cacheSkipStore.invoke(key, new SetValueProcessor(val2)));
+            assertEquals(i, map.get(key));
+            assertEquals(val2, cacheSkipStore.get(key));
+        }
+
+        for (String key : keys) {
+            cacheSkipStore.remove(key);
+
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        for (String key : keys) {
+            cache.remove(key);
+
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+
+            map.put(key, 0);
+
+            Integer val = -1;
+
+            assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
+            assertEquals(0, map.get(key));
+            assertEquals(val, cacheSkipStore.get(key));
+
+            cache.remove(key);
+
+            map.put(key, 0);
+
+            assertTrue(cacheSkipStore.putIfAbsent(key, val));
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(0, map.get(key));
+
+            cache.remove(key);
+
+            map.put(key, 0);
+
+            assertNull(cacheSkipStore.getAndPut(key, val));
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(0, map.get(key));
+
+            cache.remove(key);
+        }
+
+        assertFalse(cacheSkipStore.iterator().hasNext());
+        assertTrue(map.size() == 0);
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+
+        // putAll/removeAll from multiple nodes.
+
+        Map<String, Integer> data = new LinkedHashMap<>();
+
+        for (int i = 0; i < keys.size(); i++)
+            data.put(keys.get(i), i);
+
+        cacheSkipStore.putAll(data);
+
+        for (String key : keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        cache.putAll(data);
+
+        for (String key : keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cacheSkipStore.removeAll(data.keySet());
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cacheSkipStore.putAll(data);
+
+        for (String key : keys) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cacheSkipStore.removeAll(data.keySet());
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cache.removeAll(data.keySet());
+
+        for (String key : keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        assertTrue(map.size() == 0);
+
+        // Miscellaneous checks.
+
+        String newKey = "New key";
+
+        assertFalse(map.containsKey(newKey));
+
+        cacheSkipStore.put(newKey, 1);
+
+        assertFalse(map.containsKey(newKey));
+
+        cache.put(newKey, 1);
+
+        assertTrue(map.containsKey(newKey));
+
+        Iterator<Cache.Entry<String, Integer>> it = cacheSkipStore.iterator();
+
+        assertTrue(it.hasNext());
+
+        Cache.Entry<String, Integer> entry = it.next();
+
+        String rmvKey = entry.getKey();
+
+        assertTrue(map.containsKey(rmvKey));
+
+        it.remove();
+
+        assertNull(cacheSkipStore.get(rmvKey));
+
+        assertTrue(map.containsKey(rmvKey));
+
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+
+        cache.remove(rmvKey);
+
+        assertTrue(map.size() == 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWithSkipStoreRemoveAll() throws Exception {
+        if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
+            return;
+
+        IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+        IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
+
+        Map<String, Integer> data = new HashMap<>();
+
+        for (int i = 0; i < 100; i++)
+            data.put("key_" + i, i);
+
+        cache.putAll(data);
+
+        for (String key : data.keySet()) {
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cacheSkipStore.removeAll();
+
+        for (String key : data.keySet()) {
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cache.removeAll();
+
+        for (String key : data.keySet()) {
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWithSkipStoreTx() throws Exception {
+        if (txEnabled()) {
+            IgniteCache<String, Integer> cache = grid(0).cache(null);
+
+            IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
+
+            final int KEYS = 250;
+
+            // Put/remove data from multiple nodes.
+
+            List<String> keys = new ArrayList<>(KEYS);
+
+            for (int i = 0; i < KEYS; i++)
+                keys.add("key_" + i);
+
+            Map<String, Integer> data = new LinkedHashMap<>();
+
+            for (int i = 0; i < keys.size(); i++)
+                data.put(keys.get(i), i);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, READ_COMMITTED);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, REPEATABLE_READ);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, OPTIMISTIC, SERIALIZABLE);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, READ_COMMITTED);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, REPEATABLE_READ);
+
+            checkSkipStoreWithTransaction(cache, cacheSkipStore, data, keys, PESSIMISTIC, SERIALIZABLE);
+        }
+    }
+
+    /**
+     * @param cache Cache instance.
+     * @param cacheSkipStore Cache skip store projection.
+     * @param data Data set.
+     * @param keys Keys list.
+     * @param txConcurrency Concurrency mode.
+     * @param txIsolation Isolation mode.
      *
+     * @throws Exception If failed.
+     */
+    private void checkSkipStoreWithTransaction(IgniteCache<String, Integer> cache,
+        IgniteCache<String, Integer> cacheSkipStore,
+        Map<String, Integer> data,
+        List<String> keys,
+        TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation)
+        throws  Exception
+    {
+        log.info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
+
+        cache.removeAll(data.keySet());
+        checkEmpty(cache, cacheSkipStore);
+
+        IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+        Integer val = -1;
+
+        // Several put check.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key: keys)
+                cacheSkipStore.put(key, val);
+
+            for (String key: keys) {
+                assertEquals(val, cacheSkipStore.get(key));
+                assertEquals(val, cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
+
+            tx.commit();
+        }
+
+        for (String key: keys) {
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        assertEquals(0, map.size());
+
+        // cacheSkipStore putAll(..)/removeAll(..) check.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            cacheSkipStore.putAll(data);
+
+            tx.commit();
+        }
+
+        for (String key: keys) {
+            val = data.get(key);
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        map.putAll(data);
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            cacheSkipStore.removeAll(data.keySet());
+
+            tx.commit();
+        }
+
+        for (String key: keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+
+            cache.remove(key);
+        }
+
+        assertTrue(map.size() == 0);
+
+        // cache putAll(..)/removeAll(..) check.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            cache.putAll(data);
+
+            for (String key: keys) {
+                assertNotNull(cacheSkipStore.get(key));
+                assertNotNull(cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
+
+            cache.removeAll(data.keySet());
+
+            for (String key: keys) {
+                assertNull(cacheSkipStore.get(key));
+                assertNull(cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
+
+            tx.commit();
+        }
+
+        assertTrue(map.size() == 0);
+
+        // putAll(..) from both cacheSkipStore and cache.
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            Map<String, Integer> subMap = new HashMap<>();
+
+            for (int i = 0; i < keys.size() / 2; i++)
+                subMap.put(keys.get(i), i);
+
+            cacheSkipStore.putAll(subMap);
+
+            subMap.clear();
+
+            for (int i = keys.size() / 2; i < keys.size(); i++)
+                subMap.put(keys.get(i), i);
+
+            cache.putAll(subMap);
+
+            for (String key: keys) {
+                assertNotNull(cacheSkipStore.get(key));
+                assertNotNull(cache.get(key));
+                assertFalse(map.containsKey(key));
+            }
+
+            tx.commit();
+        }
+
+        for (int i = 0; i < keys.size() / 2; i++) {
+            String key = keys.get(i);
+
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        for (int i = keys.size() / 2; i < keys.size(); i++) {
+            String key = keys.get(i);
+
+            assertNotNull(cacheSkipStore.get(key));
+            assertNotNull(cache.get(key));
+            assertTrue(map.containsKey(key));
+        }
+
+        cache.removeAll(data.keySet());
+
+        for (String key: keys) {
+            assertNull(cacheSkipStore.get(key));
+            assertNull(cache.get(key));
+            assertFalse(map.containsKey(key));
+        }
+
+        // Check that read-through is disabled when cacheSkipStore is used.
+        for (int i = 0; i < keys.size(); i++)
+            putToStore(keys.get(i), i);
+
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(map.size() != 0);
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
+
+            for (String key : keys) {
+                assertNull(cacheSkipStore.get(key));
+
+                if (txIsolation == READ_COMMITTED) {
+                    assertNotNull(cache.get(key));
+                    assertNotNull(cacheSkipStore.get(key));
+                }
+            }
+
+            tx.commit();
+        }
+
+        cache.removeAll(data.keySet());
+
+        val = -1;
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key : data.keySet()) {
+                map.put(key, 0);
+
+                assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
+            }
+
+            tx.commit();
+        }
+
+        for (String key : data.keySet()) {
+            assertEquals(0, map.get(key));
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+        }
+
+        cache.removeAll(data.keySet());
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key : data.keySet()) {
+                map.put(key, 0);
+
+                assertTrue(cacheSkipStore.putIfAbsent(key, val));
+            }
+
+            tx.commit();
+        }
+
+        for (String key : data.keySet()) {
+            assertEquals(0, map.get(key));
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+        }
+
+        cache.removeAll(data.keySet());
+
+        try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
+            for (String key : data.keySet()) {
+                map.put(key, 0);
+
+                assertNull(cacheSkipStore.getAndPut(key, val));
+            }
+
+            tx.commit();
+        }
+
+        for (String key : data.keySet()) {
+            assertEquals(0, map.get(key));
+
+            assertEquals(val, cacheSkipStore.get(key));
+            assertEquals(val, cache.get(key));
+        }
+
+        cache.removeAll(data.keySet());
+        checkEmpty(cache, cacheSkipStore);
+    }
+
+    /**
+     * @param cache Cache instance.
+     * @param cacheSkipStore Cache skip store projection.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkEmpty(IgniteCache<String, Integer> cache, IgniteCache<String, Integer> cacheSkipStore)
+        throws Exception {
+        assertTrue(cache.size(CachePeekMode.ALL) == 0);
+        assertTrue(cacheSkipStore.size(CachePeekMode.ALL) == 0);
+        assertTrue(map.size() == 0);
+    }
+
+    /**
+     * @return Cache start mode.
      */
     protected CacheStartMode cacheStartType() {
         String mode = System.getProperty("cache.start.mode");
@@ -4356,6 +4831,30 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return CacheStartMode.ONE_BY_ONE;
 
         return CacheStartMode.STATIC;
+    }
+
+    /**
+     * Sets given value, returns old value.
+     */
+    public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
+        /** */
+        private Integer newVal;
+
+        /**
+         * @param newVal New value to set.
+         */
+        SetValueProcessor(Integer newVal) {
+            this.newVal = newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> entry, Object... arguments) throws EntryProcessorException {
+            Integer val = entry.getValue();
+
+            entry.setValue(newVal);
+
+            return val;
+        }
     }
 
     /**

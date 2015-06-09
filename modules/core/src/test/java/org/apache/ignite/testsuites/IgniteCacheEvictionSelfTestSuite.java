@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.eviction.*;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.*;
 import org.apache.ignite.internal.processors.cache.eviction.lru.*;
 import org.apache.ignite.internal.processors.cache.eviction.random.*;
+import org.apache.ignite.internal.processors.cache.eviction.sorted.*;
 
 /**
  * Test suite for cache eviction.
@@ -37,6 +38,9 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Cache Eviction Test Suite");
 
         suite.addTest(new TestSuite(GridCacheFifoEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheFifoBatchEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheSortedEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheSortedBatchEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheLruEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheLruNearEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOnlyLruNearEvictionPolicySelfTest.class));

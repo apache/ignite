@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -91,6 +92,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
+            final CountDownLatch latch = new CountDownLatch(3);
+
             g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
@@ -98,6 +101,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                     assert evt.type() == EVT_NODE_JOINED;
 
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+
+                    latch.countDown();
 
                     return true;
                 }
@@ -107,9 +112,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             UUID id2 = startGrid(2).cluster().localNode().id();
             UUID id3 = startGrid(3).cluster().localNode().id();
 
-            U.sleep(100);
-
-            assertEquals("Wrong count of events received", 3, evts.size());
+            assertTrue("Wrong count of events received: " + evts, latch.await(3000, MILLISECONDS));
 
             Collection<ClusterNode> top0 = evts.get(0);
 
@@ -154,6 +157,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
+            final CountDownLatch latch = new CountDownLatch(3);
+
             g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
@@ -162,17 +167,17 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
+                    latch.countDown();
+
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid(3);
             stopGrid(2);
             stopGrid(1);
 
-            U.sleep(100);
-
-            assertEquals("Wrong count of events received", 3, evts.size());
+            assertTrue("Wrong count of events received: " + evts, latch.await(3000, MILLISECONDS));
 
             Collection<ClusterNode> top2 = evts.get(0);
 
@@ -217,6 +222,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
+            final CountDownLatch latch = new CountDownLatch(8);
+
             g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
@@ -225,9 +232,11 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
+                    latch.countDown();
+
                     return true;
                 }
-            }, EVT_NODE_JOINED, EVT_NODE_LEFT);
+            }, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             UUID id1 = startGrid(1).cluster().localNode().id();
             UUID id2 = startGrid(2).cluster().localNode().id();
@@ -241,9 +250,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             stopGrid(4);
 
-            U.sleep(100);
-
-            assertEquals("Wrong count of events received", 8, evts.size());
+            assertTrue("Wrong count of events received [cnt= " + evts.size() + ", evts=" + evts + ']',
+                latch.await(3000, MILLISECONDS));
 
             Collection<ClusterNode> top0 = evts.get(0);
 

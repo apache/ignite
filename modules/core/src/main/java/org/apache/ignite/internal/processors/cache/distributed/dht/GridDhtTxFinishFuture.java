@@ -243,30 +243,94 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /**
-     * Completes this future.
+     * Initializes future.
      */
-    void complete() {
-        onComplete();
+    @SuppressWarnings("SimplifiableIfStatement")
+    public void finish() {
+        boolean sync;
+
+        if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
+            sync = finish(dhtMap, nearMap);
+        else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
+            sync = rollbackLockTransactions(tx.lockTransactionNodes());
+        else
+            // No backup or near nodes to send commit message to (just complete then).
+            sync = false;
+
+        markInitialized();
+
+        if (!sync)
+            onComplete();
     }
 
     /**
-     * Initializes future.
+     * @param nodes Nodes.
+     * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    public void finish() {
-        if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap)) {
-            boolean sync = finish(dhtMap, nearMap);
+    private boolean rollbackLockTransactions(Set<ClusterNode> nodes) {
+        assert !commit;
+        assert !F.isEmpty(nodes);
 
-            markInitialized();
+        if (tx.onePhaseCommit())
+            return false;
 
-            if (!sync)
-                onComplete();
+        boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
+
+        if (tx.explicitLock())
+            sync = true;
+
+        boolean res = false;
+
+        for (ClusterNode n : nodes) {
+            assert !n.isLocal();
+
+            MiniFuture fut = new MiniFuture(n);
+
+            add(fut); // Append new future.
+
+            GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
+                tx.nearNodeId(),
+                futId,
+                fut.futureId(),
+                tx.topologyVersion(),
+                tx.xidVersion(),
+                tx.commitVersion(),
+                tx.threadId(),
+                tx.isolation(),
+                commit,
+                tx.isInvalidate(),
+                tx.system(),
+                tx.ioPolicy(),
+                tx.isSystemInvalidate(),
+                sync,
+                sync,
+                tx.completedBase(),
+                tx.committedVersions(),
+                tx.rolledbackVersions(),
+                tx.pendingVersions(),
+                tx.size(),
+                tx.groupLockKey(),
+                tx.subjectId(),
+                tx.taskNameHash());
+
+            try {
+                cctx.io().send(n, req, tx.ioPolicy());
+
+                if (sync)
+                    res = true;
+                else
+                    fut.onDone();
+            }
+            catch (IgniteCheckedException e) {
+                // Fail the whole thing.
+                if (e instanceof ClusterTopologyCheckedException)
+                    fut.onResult((ClusterTopologyCheckedException)e);
+                else
+                    fut.onResult(e);
+            }
         }
-        else {
-            markInitialized();
 
-            // No backup or near nodes to send commit message to (just complete then).
-            onComplete();
-        }
+        return res;
     }
 
     /**
@@ -279,9 +343,12 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         if (tx.onePhaseCommit())
             return false;
 
-        boolean res = false;
-
         boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
+
+        if (tx.explicitLock())
+            sync = true;
+
+        boolean res = false;
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
@@ -313,8 +380,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.system(),
                 tx.ioPolicy(),
                 tx.isSystemInvalidate(),
-                tx.syncCommit(),
-                tx.syncRollback(),
+                sync,
+                sync,
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
@@ -365,8 +432,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.system(),
                     tx.ioPolicy(),
                     tx.isSystemInvalidate(),
-                    tx.syncCommit(),
-                    tx.syncRollback(),
+                    sync,
+                    sync,
                     tx.completedBase(),
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
@@ -424,12 +491,23 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         @GridToStringInclude
         private GridDistributedTxMapping nearMapping;
 
+        /** */
+        @GridToStringInclude
+        private ClusterNode node;
+
+        /**
+         * @param node Node.
+         */
+        public MiniFuture(ClusterNode node) {
+            this.node = node;
+        }
+
         /**
          * @param dhtMapping Mapping.
          * @param nearMapping nearMapping.
          */
         MiniFuture(GridDistributedTxMapping dhtMapping, GridDistributedTxMapping nearMapping) {
-            assert dhtMapping == null || nearMapping == null || dhtMapping.node() == nearMapping.node();
+            assert dhtMapping == null || nearMapping == null || dhtMapping.node().equals(nearMapping.node());
 
             this.dhtMapping = dhtMapping;
             this.nearMapping = nearMapping;
@@ -446,7 +524,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
          * @return Node ID.
          */
         public ClusterNode node() {
-            return dhtMapping != null ? dhtMapping.node() : nearMapping.node();
+            return node != null ? node : dhtMapping != null ? dhtMapping.node() : nearMapping.node();
         }
 
         /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
 import org.objectweb.asm.*;
@@ -43,6 +44,9 @@ public class HadoopClassLoader extends URLClassLoader {
         registerAsParallelCapable();
     }
 
+    /** Name of the Hadoop daemon class. */
+    public static final String HADOOP_DAEMON_CLASS_NAME = "org.apache.hadoop.util.Daemon";
+
     /** */
     private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
 
@@ -58,13 +62,19 @@ public class HadoopClassLoader extends URLClassLoader {
     /** */
     private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
 
+    /** Diagnostic name of this class loader. */
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
+    private final String name;
+
     /**
      * @param urls Urls.
      */
-    public HadoopClassLoader(URL[] urls) {
+    public HadoopClassLoader(URL[] urls, String name) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
+
+        this.name = name;
     }
 
     /**
@@ -96,6 +106,10 @@ public class HadoopClassLoader extends URLClassLoader {
                     return loadFromBytes(name, HadoopShutdownHookManager.class.getName());
                 else if (name.endsWith(".util.NativeCodeLoader"))
                     return loadFromBytes(name, HadoopNativeCodeLoader.class.getName());
+                else if (name.equals(HADOOP_DAEMON_CLASS_NAME))
+                    // We replace this in order to be able to forcibly stop some daemon threads
+                    // that otherwise never stop (e.g. PeerCache runnables):
+                    return loadFromBytes(name, HadoopDaemon.class.getName());
 
                 return loadClassExplicitly(name, resolve);
             }
@@ -548,5 +562,10 @@ public class HadoopClassLoader extends URLClassLoader {
 
             return hadoopUrls;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HadoopClassLoader.class, this);
     }
 }

@@ -89,9 +89,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     public <K, V> void store(final String space, final K key, final V val, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
-
-        if (!enabled())
-            return;
+        assert enabled();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
@@ -115,9 +113,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
     @SuppressWarnings("unchecked")
     public void remove(String space, Object key) throws IgniteCheckedException {
         assert key != null;
-
-        if (!enabled())
-            return;
+        assert enabled();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
@@ -190,8 +186,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      * @throws IgniteSpiException If failed.
      */
     public void onSwap(String spaceName, Object key) throws IgniteSpiException {
-        if (!enabled())
-            return;
+        assert enabled();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");
@@ -214,8 +209,7 @@ public class GridIndexingManager extends GridManagerAdapter<IndexingSpi> {
      */
     public void onUnswap(String spaceName, Object key, Object val)
         throws IgniteSpiException {
-        if (!enabled())
-            return;
+        assert enabled();
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");

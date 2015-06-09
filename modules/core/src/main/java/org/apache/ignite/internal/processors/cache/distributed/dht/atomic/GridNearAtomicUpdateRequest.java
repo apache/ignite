@@ -120,14 +120,14 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** Flag indicating whether request contains primary keys. */
     private boolean hasPrimary;
 
-    /** Force transform backups flag. */
-    private boolean forceTransformBackups;
-
     /** Subject ID. */
     private UUID subjId;
 
     /** Task name hash. */
     private int taskNameHash;
+
+    /** Skip write-through to a persistent storage. */
+    private boolean skipStore;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -148,12 +148,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
      * @param retval Return value required flag.
-     * @param forceTransformBackups Force transform backups flag.
      * @param expiryPlc Expiry policy.
      * @param invokeArgs Optional arguments for entry processor.
      * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param skipStore Skip write-through to a persistent storage.
      */
     public GridNearAtomicUpdateRequest(
         int cacheId,
@@ -165,12 +165,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
-        boolean forceTransformBackups,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        boolean skipStore
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -182,12 +182,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.syncMode = syncMode;
         this.op = op;
         this.retval = retval;
-        this.forceTransformBackups = forceTransformBackups;
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;
         this.filter = filter;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.skipStore = skipStore;
 
         keys = new ArrayList<>();
     }
@@ -279,6 +279,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      */
     @Nullable public CacheEntryPredicate[] filter() {
         return filter;
+    }
+
+    /**
+     * @return Skip write-through to a persistent storage.
+     */
+    public boolean skipStore() {
+        return skipStore;
     }
 
     /**
@@ -478,20 +485,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return hasPrimary;
     }
 
-    /**
-     * @return Force transform backups flag.
-     */
-    public boolean forceTransformBackups() {
-        return forceTransformBackups;
-    }
-
-    /**
-     * @param forceTransformBackups Force transform backups flag.
-     */
-    public void forceTransformBackups(boolean forceTransformBackups) {
-        this.forceTransformBackups = forceTransformBackups;
-    }
-
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -611,43 +604,43 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
                 if (!writer.writeMessage("futVer", futVer))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeBoolean("hasPrimary", hasPrimary))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeBoolean("retval", retval))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
+                if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
                 writer.incrementState();
@@ -761,14 +754,6 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 10:
-                forceTransformBackups = reader.readBoolean("forceTransformBackups");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
                 futVer = reader.readMessage("futVer");
 
                 if (!reader.isLastRead())
@@ -776,7 +761,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 hasPrimary = reader.readBoolean("hasPrimary");
 
                 if (!reader.isLastRead())
@@ -784,7 +769,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
@@ -792,7 +777,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -800,7 +785,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 byte opOrd;
 
                 opOrd = reader.readByte("op");
@@ -812,8 +797,16 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 retval = reader.readBoolean("retval");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 16:
+                skipStore = reader.readBoolean("skipStore");
 
                 if (!reader.isLastRead())
                     return false;

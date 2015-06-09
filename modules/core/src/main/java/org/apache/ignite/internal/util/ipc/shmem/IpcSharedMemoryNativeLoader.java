@@ -33,17 +33,14 @@ import static org.apache.ignite.internal.IgniteVersionUtils.*;
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class IpcSharedMemoryNativeLoader {
-    /** Loaded flag. */
-    private static volatile boolean loaded;
-
     /** Library name base. */
     private static final String LIB_NAME_BASE = "igniteshmem";
 
-    /** Lock file path. */
-    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "igniteshmem.lock");
-
     /** Library name. */
     static final String LIB_NAME = LIB_NAME_BASE + "-" + VER_STR;
+
+    /** Loaded flag. */
+    private static volatile boolean loaded;
 
     /**
      * @return Operating system name to resolve path to library.
@@ -121,16 +118,20 @@ public class IpcSharedMemoryNativeLoader {
             errs.add(e);
         }
 
+        File tmpDir = getUserSpecificTempDir();
+
+        File lockFile = new File(tmpDir, "igniteshmem.lock");
+
         // Obtain lock on file to prevent concurrent extracts.
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(LOCK_FILE, "rws");
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(lockFile, "rws");
              FileLock ignored = randomAccessFile.getChannel().lock()) {
-            if (extractAndLoad(errs, platformSpecificResourcePath()))
+            if (extractAndLoad(errs, tmpDir, platformSpecificResourcePath()))
                 return;
 
-            if (extractAndLoad(errs, osSpecificResourcePath()))
+            if (extractAndLoad(errs, tmpDir, osSpecificResourcePath()))
                 return;
 
-            if (extractAndLoad(errs, resourcePath()))
+            if (extractAndLoad(errs, tmpDir, resourcePath()))
                 return;
 
             // Failed to find the library.
@@ -139,8 +140,29 @@ public class IpcSharedMemoryNativeLoader {
             throw new IgniteCheckedException("Failed to load native IPC library: " + errs);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to obtain file lock: " + LOCK_FILE, e);
+            throw new IgniteCheckedException("Failed to obtain file lock: " + lockFile, e);
         }
+    }
+
+    /**
+     * Gets temporary directory unique for each OS user.
+     * The directory guaranteed to exist, though may not be empty.
+     */
+    private static File getUserSpecificTempDir() throws IgniteCheckedException {
+        String tmp = System.getProperty("java.io.tmpdir");
+
+        String userName = System.getProperty("user.name");
+
+        File tmpDir = new File(tmp, userName);
+
+        if (!tmpDir.exists())
+            //noinspection ResultOfMethodCallIgnored
+            tmpDir.mkdirs();
+
+        if (!(tmpDir.exists() && tmpDir.isDirectory()))
+            throw new IgniteCheckedException("Failed to create temporary directory [dir=" + tmpDir + ']');
+
+        return tmpDir;
     }
 
     /**
@@ -181,13 +203,13 @@ public class IpcSharedMemoryNativeLoader {
      * @param rsrcPath Path.
      * @return {@code True} if library was found and loaded.
      */
-    private static boolean extractAndLoad(Collection<Throwable> errs, String rsrcPath) {
+    private static boolean extractAndLoad(Collection<Throwable> errs, File tmpDir, String rsrcPath) {
         ClassLoader clsLdr = U.detectClassLoader(IpcSharedMemoryNativeLoader.class);
 
         URL rsrc = clsLdr.getResource(rsrcPath);
 
         if (rsrc != null)
-            return extract(errs, rsrc, new File(System.getProperty("java.io.tmpdir"), mapLibraryName(LIB_NAME)));
+            return extract(errs, rsrc, new File(tmpDir, mapLibraryName(LIB_NAME)));
         else {
             errs.add(new IllegalStateException("Failed to find resource with specified class loader " +
                 "[rsrc=" + rsrcPath + ", clsLdr=" + clsLdr + ']'));

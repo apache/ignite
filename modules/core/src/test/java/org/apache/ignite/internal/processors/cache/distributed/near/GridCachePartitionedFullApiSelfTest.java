@@ -64,7 +64,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
         for (int i = 0; i < 100; i++) {
             String key = String.valueOf(i);
 
-            cache.put(key, i);
+            cache.getAndPut(key, i);
         }
 
         Affinity aff = grid(0).affinity(cache.name());

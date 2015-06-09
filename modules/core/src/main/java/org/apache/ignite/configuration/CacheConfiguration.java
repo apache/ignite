@@ -26,10 +26,9 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -61,12 +60,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     public static final long DFLT_REBALANCE_THROTTLE = 0;
-
-    /**
-     * Default time to live. The value is <tt>0</tt> which means that
-     * cached objects never expire based on time.
-     */
-    public static final long DFLT_TIME_TO_LIVE = 0;
 
     /** Default number of backups. */
     public static final int DFLT_BACKUPS = 0;
@@ -153,16 +146,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public static final boolean DFLT_READ_FROM_BACKUP = true;
 
     /** Filter that accepts only server nodes. */
-    public static final IgnitePredicate<ClusterNode> SERVER_NODES = new IgnitePredicate<ClusterNode>() {
-        @Override public boolean apply(ClusterNode n) {
-            Boolean attr = n.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
-
-            return attr != null && !attr;
-        }
-    };
+    public static final IgnitePredicate<ClusterNode> SERVER_NODES = new IgniteServerNodePredicate();
 
     /** Filter that accepts all nodes. */
-    public static final IgnitePredicate<ClusterNode> ALL_NODES = F.alwaysTrue();
+    public static final IgnitePredicate<ClusterNode> ALL_NODES = new IgniteAllNodesPredicate();
 
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
@@ -179,9 +166,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
-    /** Default time to live for cache entries. */
-    private long ttl = DFLT_TIME_TO_LIVE;
-
     /** Cache expiration policy. */
     private EvictionPolicy evictPlc;
 
@@ -191,7 +175,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Eviction key buffer size. */
     private int evictKeyBufSize = DFLT_EVICT_KEY_BUFFER_SIZE;
 
-    /** Synchronous eviction timeout. */
+    /** Synchronous eviction concurrency level. */
     private int evictSyncConcurrencyLvl = DFLT_EVICT_SYNCHRONIZED_CONCURRENCY_LEVEL;
 
     /** Synchronous eviction timeout. */
@@ -326,6 +310,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
 
+    /** Cache plugin configurations. */
+    private CachePluginConfiguration[] pluginCfgs;
+
+    /** Cache topology validator. */
+    private TopologyValidator topValidator;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -401,7 +391,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeFactory = cc.getCacheStoreFactory();
         swapEnabled = cc.isSwapEnabled();
         tmLookupClsName = cc.getTransactionManagerLookupClassName();
-        ttl = cc.getDefaultTimeToLive();
+        topValidator = cc.getTopologyValidator();
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
@@ -409,10 +399,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        pluginCfgs = cc.getPluginConfigurations();
     }
 
     /**
-     * Cache name. If not provided or {@code null}, then this will be considered a default
+     * Cache name or {@code null} if not provided, then this will be considered a default
      * cache which can be accessed via {@link Ignite#cache(String)} method. Otherwise, if name
      * is provided, the cache will be accessed via {@link Ignite#cache(String)} method.
      *
@@ -426,30 +417,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache name.
      *
      * @param name Cache name. May be <tt>null</tt>, but may not be empty string.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public CacheConfiguration setName(String name) {
         A.ensure(name == null || !name.isEmpty(), "Name cannot be null or empty.");
 
         this.name = name;
-    }
 
-    /**
-     * Gets time to live for all objects in cache. This value can be overridden for individual objects.
-     * If not set, then value is {@code 0} which means that objects never expire.
-     *
-     * @return Time to live for all objects in cache.
-     */
-    public long getDefaultTimeToLive() {
-        return ttl;
-    }
-
-    /**
-     * Sets time to live for all objects in cache. This value can be override for individual objects.
-     *
-     * @param ttl Time to live for all objects in cache.
-     */
-    public void setDefaultTimeToLive(long ttl) {
-        this.ttl = ttl;
+        return this;
     }
 
     /**
@@ -467,9 +442,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache eviction policy.
      *
      * @param evictPlc Cache expiration policy.
+     * @return {@code this} for chaining.
      */
-    public void setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
+    public CacheConfiguration setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
+
+        return this;
     }
 
     /**
@@ -481,9 +459,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * @param nearCfg Near cache configuration.
+     * @return {@code this} for chaining.
      */
-    public void setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
+    public CacheConfiguration setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
         this.nearCfg = nearCfg;
+
+        return this;
     }
 
     /**
@@ -500,9 +481,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets write synchronization mode.
      *
      * @param writeSync Write synchronization mode.
+     * @return {@code this} for chaining.
      */
-    public void setWriteSynchronizationMode(CacheWriteSynchronizationMode writeSync) {
+    public CacheConfiguration setWriteSynchronizationMode(CacheWriteSynchronizationMode writeSync) {
         this.writeSync = writeSync;
+
+        return this;
     }
 
     /**
@@ -518,9 +502,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets filter which determines on what nodes the cache should be started.
      *
      * @param nodeFilter Predicate specifying on which nodes the cache should be started.
+     * @return {@code this} for chaining.
      */
-    public void setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
+    public CacheConfiguration setNodeFilter(IgnitePredicate<ClusterNode> nodeFilter) {
         this.nodeFilter = nodeFilter;
+
+        return this;
     }
 
     /**
@@ -547,9 +534,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * (or the rest of the nodes for replicated cache).
      *
      * @param evictSync {@code true} if synchronized, {@code false} if not.
+     * @return {@code this} for chaining.
      */
-    public void setEvictSynchronized(boolean evictSync) {
+    public CacheConfiguration setEvictSynchronized(boolean evictSync) {
         this.evictSync = evictSync;
+
+        return this;
     }
 
     /**
@@ -567,9 +557,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets eviction key buffer size.
      *
      * @param evictKeyBufSize Eviction key buffer size.
+     * @return {@code this} for chaining.
      */
-    public void setEvictSynchronizedKeyBufferSize(int evictKeyBufSize) {
+    public CacheConfiguration setEvictSynchronizedKeyBufferSize(int evictKeyBufSize) {
         this.evictKeyBufSize = evictKeyBufSize;
+
+        return this;
     }
 
     /**
@@ -598,9 +591,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets concurrency level for synchronized evictions.
      *
      * @param evictSyncConcurrencyLvl Concurrency level for synchronized evictions.
+     * @return {@code this} for chaining.
      */
-    public void setEvictSynchronizedConcurrencyLevel(int evictSyncConcurrencyLvl) {
+    public CacheConfiguration setEvictSynchronizedConcurrencyLevel(int evictSyncConcurrencyLvl) {
         this.evictSyncConcurrencyLvl = evictSyncConcurrencyLvl;
+
+        return this;
     }
 
     /**
@@ -621,9 +617,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets timeout for synchronized evictions.
      *
      * @param evictSyncTimeout Timeout for synchronized evictions.
+     * @return {@code this} for chaining.
      */
-    public void setEvictSynchronizedTimeout(long evictSyncTimeout) {
+    public CacheConfiguration setEvictSynchronizedTimeout(long evictSyncTimeout) {
         this.evictSyncTimeout = evictSyncTimeout;
+
+        return this;
     }
 
     /**
@@ -650,9 +649,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets maximum eviction overflow ratio.
      *
      * @param evictMaxOverflowRatio Maximum eviction overflow ratio.
+     * @return {@code this} for chaining.
      */
-    public void setEvictMaxOverflowRatio(float evictMaxOverflowRatio) {
+    public CacheConfiguration setEvictMaxOverflowRatio(float evictMaxOverflowRatio) {
         this.evictMaxOverflowRatio = evictMaxOverflowRatio;
+
+        return this;
     }
 
     /**
@@ -676,9 +678,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets eviction filter.
      *
      * @param evictFilter Eviction filter.
+     * @return {@code this} for chaining.
      */
-    public void setEvictionFilter(EvictionFilter<K, V> evictFilter) {
+    public CacheConfiguration setEvictionFilter(EvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
+
+        return this;
     }
 
     /**
@@ -702,9 +707,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param eagerTtl {@code True} if Ignite should eagerly remove expired cache entries.
      * @see #isEagerTtl()
+     * @return {@code this} for chaining.
      */
-    public void setEagerTtl(boolean eagerTtl) {
+    public CacheConfiguration setEagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
+
+        return this;
     }
 
     /**
@@ -721,9 +729,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Initial size for internal hash map.
      *
      * @param startSize Cache start size.
+     * @return {@code this} for chaining.
      */
-    public void setStartSize(int startSize) {
+    public CacheConfiguration setStartSize(int startSize) {
         this.startSize = startSize;
+
+        return this;
     }
 
     /**
@@ -762,9 +773,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * When not set, default value is {@link #DFLT_LOAD_PREV_VAL}.
      *
      * @param loadPrevVal Load previous value flag.
+     * @return {@code this} for chaining.
+     * @return {@code this} for chaining.
      */
-    public void setLoadPreviousValue(boolean loadPrevVal) {
+    public CacheConfiguration setLoadPreviousValue(boolean loadPrevVal) {
         this.loadPrevVal = loadPrevVal;
+
+        return this;
     }
 
     /**
@@ -783,8 +798,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param storeFactory Cache store factory.
      */
     @SuppressWarnings("unchecked")
-    public void setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
+    public CacheConfiguration setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {
         this.storeFactory = storeFactory;
+
+        return this;
     }
 
     /**
@@ -800,9 +817,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets affinity for cache keys.
      *
      * @param aff Cache key affinity.
+     * @return {@code this} for chaining.
      */
-    public void setAffinity(AffinityFunction aff) {
+    public CacheConfiguration setAffinity(AffinityFunction aff) {
         this.aff = aff;
+
+        return this;
     }
 
     /**
@@ -820,9 +840,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets caching mode.
      *
      * @param cacheMode Caching mode.
+     * @return {@code this} for chaining.
      */
-    public void setCacheMode(CacheMode cacheMode) {
+    public CacheConfiguration setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
+
+        return this;
     }
 
     /**
@@ -840,9 +863,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache atomicity mode.
      *
      * @param atomicityMode Cache atomicity mode.
+     * @return {@code this} for chaining.
      */
-    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
+    public CacheConfiguration setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
+
+        return this;
     }
 
     /**
@@ -860,9 +886,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * cache (for other atomicity modes it will be ignored).
      *
      * @param atomicWriteOrderMode Cache write ordering mode.
+     * @return {@code this} for chaining.
      */
-    public void setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
+    public CacheConfiguration setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
+
+        return this;
     }
 
     /**
@@ -882,9 +911,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * If not set, default value is {@link #DFLT_BACKUPS}.
      *
      * @param backups Number of backup nodes for one partition.
+     * @return {@code this} for chaining.
      */
-    public void setBackups(int backups) {
+    public CacheConfiguration setBackups(int backups) {
         this.backups = backups;
+
+        return this;
     }
 
     /**
@@ -901,9 +933,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets default lock timeout in milliseconds. By default this value is defined by {@link #DFLT_LOCK_TIMEOUT}.
      *
      * @param dfltLockTimeout Default lock timeout.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultLockTimeout(long dfltLockTimeout) {
+    public CacheConfiguration setDefaultLockTimeout(long dfltLockTimeout) {
         this.dfltLockTimeout = dfltLockTimeout;
+
+        return this;
     }
 
     /**
@@ -919,9 +954,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets invalidation flag for near cache entries in this transaction. Default is {@code false}.
      *
      * @param invalidate Flag to set this cache into invalidation-based mode. Default value is {@code false}.
+     * @return {@code this} for chaining.
      */
-    public void setInvalidate(boolean invalidate) {
+    public CacheConfiguration setInvalidate(boolean invalidate) {
         this.invalidate = invalidate;
+
+        return this;
     }
 
     /**
@@ -938,18 +976,24 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
+     * @return {@code this} for chaining.
      */
-    public void setTransactionManagerLookupClassName(String tmLookupClsName) {
+    public CacheConfiguration setTransactionManagerLookupClassName(String tmLookupClsName) {
         this.tmLookupClsName = tmLookupClsName;
+
+        return this;
     }
 
     /**
      * Sets cache rebalance mode.
      *
      * @param rebalanceMode Rebalance mode.
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceMode(CacheRebalanceMode rebalanceMode) {
+    public CacheConfiguration setRebalanceMode(CacheRebalanceMode rebalanceMode) {
         this.rebalanceMode = rebalanceMode;
+
+        return this;
     }
 
     /**
@@ -987,9 +1031,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceOrder Cache rebalance order.
      * @see #getRebalanceOrder()
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceOrder(int rebalanceOrder) {
+    public CacheConfiguration setRebalanceOrder(int rebalanceOrder) {
         this.rebalanceOrder = rebalanceOrder;
+
+        return this;
     }
 
     /**
@@ -1008,9 +1055,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets rebalance batch size.
      *
      * @param rebalanceBatchSize Rebalance batch size.
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceBatchSize(int rebalanceBatchSize) {
+    public CacheConfiguration setRebalanceBatchSize(int rebalanceBatchSize) {
         this.rebalanceBatchSize = rebalanceBatchSize;
+
+        return this;
     }
 
     /**
@@ -1027,9 +1077,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Flag indicating whether swap storage is enabled or not.
      *
      * @param swapEnabled {@code True} if swap storage is enabled.
+     * @return {@code this} for chaining.
      */
-    public void setSwapEnabled(boolean swapEnabled) {
+    public CacheConfiguration setSwapEnabled(boolean swapEnabled) {
         this.swapEnabled = swapEnabled;
+
+        return this;
     }
 
     /**
@@ -1053,9 +1106,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param maxConcurrentAsyncOps Maximum number of concurrent asynchronous operations.
      * @see #getMaxConcurrentAsyncOperations()
+     * @return {@code this} for chaining.
      */
-    public void setMaxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
+    public CacheConfiguration setMaxConcurrentAsyncOperations(int maxConcurrentAsyncOps) {
         this.maxConcurrentAsyncOps = maxConcurrentAsyncOps;
+
+        return this;
     }
 
     /**
@@ -1073,9 +1129,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets flag indicating whether write-behind is enabled.
      *
      * @param writeBehindEnabled {@code true} if write-behind is enabled.
+     * @return {@code this} for chaining.
      */
-    public void setWriteBehindEnabled(boolean writeBehindEnabled) {
+    public CacheConfiguration setWriteBehindEnabled(boolean writeBehindEnabled) {
         this.writeBehindEnabled = writeBehindEnabled;
+
+        return this;
     }
 
     /**
@@ -1098,9 +1157,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param writeBehindFlushSize Write-behind cache flush size.
      * @see #getWriteBehindFlushSize()
+     * @return {@code this} for chaining.
      */
-    public void setWriteBehindFlushSize(int writeBehindFlushSize) {
+    public CacheConfiguration setWriteBehindFlushSize(int writeBehindFlushSize) {
         this.writeBehindFlushSize = writeBehindFlushSize;
+
+        return this;
     }
 
     /**
@@ -1124,9 +1186,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param writeBehindFlushFreq Write-behind flush frequency in milliseconds.
      * @see #getWriteBehindFlushFrequency()
+     * @return {@code this} for chaining.
      */
-    public void setWriteBehindFlushFrequency(long writeBehindFlushFreq) {
+    public CacheConfiguration setWriteBehindFlushFrequency(long writeBehindFlushFreq) {
         this.writeBehindFlushFreq = writeBehindFlushFreq;
+
+        return this;
     }
 
     /**
@@ -1148,9 +1213,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param writeBehindFlushThreadCnt Count of flush threads.
      * @see #getWriteBehindFlushThreadCount()
+     * @return {@code this} for chaining.
      */
-    public void setWriteBehindFlushThreadCount(int writeBehindFlushThreadCnt) {
+    public CacheConfiguration setWriteBehindFlushThreadCount(int writeBehindFlushThreadCnt) {
         this.writeBehindFlushThreadCnt = writeBehindFlushThreadCnt;
+
+        return this;
     }
 
     /**
@@ -1172,9 +1240,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param writeBehindBatchSize Maximum batch size.
      * @see #getWriteBehindBatchSize()
+     * @return {@code this} for chaining.
      */
-    public void setWriteBehindBatchSize(int writeBehindBatchSize) {
+    public CacheConfiguration setWriteBehindBatchSize(int writeBehindBatchSize) {
         this.writeBehindBatchSize = writeBehindBatchSize;
+
+        return this;
     }
 
     /**
@@ -1194,9 +1265,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * for rebalancing than specified here (but never less threads).
      *
      * @param rebalancePoolSize Size of rebalancing thread pool.
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceThreadPoolSize(int rebalancePoolSize) {
+    public CacheConfiguration setRebalanceThreadPoolSize(int rebalancePoolSize) {
         this.rebalancePoolSize = rebalancePoolSize;
+
+        return this;
     }
 
     /**
@@ -1214,9 +1288,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets rebalance timeout (ms).
      *
      * @param rebalanceTimeout Rebalance timeout (ms).
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceTimeout(long rebalanceTimeout) {
+    public CacheConfiguration setRebalanceTimeout(long rebalanceTimeout) {
         this.rebalanceTimeout = rebalanceTimeout;
+
+        return this;
     }
 
     /**
@@ -1234,7 +1311,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * <p>
      * Default value is {@code 0} which means that repartitioning and rebalancing will start
      * immediately upon node leaving topology. If {@code -1} is returned, then rebalancing
-     * will only be started manually by calling {@link GridCache#forceRepartition()} method or
+     * will only be started manually by calling {@link IgniteCache#rebalance()} method or
      * from management console.
      *
      * @return Rebalancing delay, {@code 0} to start rebalancing immediately, {@code -1} to
@@ -1249,9 +1326,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets rebalance delay (see {@link #getRebalanceDelay()} for more information).
      *
      * @param rebalanceDelay Rebalance delay to set.
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceDelay(long rebalanceDelay) {
+    public CacheConfiguration setRebalanceDelay(long rebalanceDelay) {
         this.rebalanceDelay = rebalanceDelay;
+
+        return this;
     }
 
     /**
@@ -1282,9 +1362,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
      * {@code 0} to disable throttling.
+     * @return {@code this} for chaining.
      */
-    public void setRebalanceThrottle(long rebalanceThrottle) {
+    public CacheConfiguration setRebalanceThrottle(long rebalanceThrottle) {
         this.rebalanceThrottle = rebalanceThrottle;
+
+        return this;
     }
 
     /**
@@ -1306,9 +1389,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * described in {@link AffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityMapper(AffinityKeyMapper affMapper) {
+    public CacheConfiguration setAffinityMapper(AffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
+
+        return this;
     }
 
     /**
@@ -1350,9 +1436,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * off-heap space without affecting JVM performance at all.
      *
      * @param offHeapMaxMem Maximum memory in bytes available to off-heap memory space.
+     * @return {@code this} for chaining.
      */
-    public void setOffHeapMaxMemory(long offHeapMaxMem) {
+    public CacheConfiguration setOffHeapMaxMemory(long offHeapMaxMem) {
         this.offHeapMaxMem = offHeapMaxMem;
+
+        return this;
     }
 
     /**
@@ -1371,9 +1460,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets memory mode for cache.
      *
      * @param memMode Memory mode.
+     * @return {@code this} for chaining.
      */
-    public void setMemoryMode(CacheMemoryMode memMode) {
+    public CacheConfiguration setMemoryMode(CacheMemoryMode memMode) {
         this.memMode = memMode;
+
+        return this;
     }
 
     /**
@@ -1390,9 +1482,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets cache interceptor.
      *
      * @param interceptor Cache interceptor.
+     * @return {@code this} for chaining.
      */
-    public void setInterceptor(CacheInterceptor<K, V> interceptor) {
+    public CacheConfiguration setInterceptor(CacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
+
+        return this;
     }
 
     /**
@@ -1408,9 +1503,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets collection of type metadata objects.
      *
      * @param typeMeta Collection of type metadata.
+     * @return {@code this} for chaining.
      */
-    public void setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
+    public CacheConfiguration setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
         this.typeMeta = typeMeta;
+
+        return this;
     }
 
     /**
@@ -1430,33 +1528,36 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Sets read from backup flag.
      *
      * @param readFromBackup {@code true} to allow reads from backups.
+     * @return {@code this} for chaining.
      */
-    public void setReadFromBackup(boolean readFromBackup) {
+    public CacheConfiguration setReadFromBackup(boolean readFromBackup) {
         this.readFromBackup = readFromBackup;
+
+        return this;
     }
 
     /**
      * Gets flag indicating whether copy of of the value stored in cache should be created
      * for cache operation implying return value. Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
-     * <p>
-     * Copies are not created for immutable types, see {@link IgniteImmutable}.
      *
-     * @return Copy on get flag.
-     * @see IgniteImmutable
+     * @return Copy on read flag.
      */
     public boolean isCopyOnRead() {
         return cpOnRead;
     }
 
     /**
-     * Set copy on get flag.
+     * Sets copy on read flag.
      *
-     * @param cpOnGet Copy on get flag.
+     * @param cpOnRead Copy on get flag.
      * @see #isCopyOnRead
+     * @return {@code this} for chaining.
      */
-    public void setCopyOnRead(boolean cpOnGet) {
-        this.cpOnRead = cpOnGet;
+    public CacheConfiguration setCopyOnRead(boolean cpOnRead) {
+        this.cpOnRead = cpOnRead;
+
+        return this;
     }
 
     /**
@@ -1464,9 +1565,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * to be used as user-defined functions from SQL queries.
      *
      * @param cls One or more classes with SQL functions.
+     * @return {@code this} for chaining.
      */
-    public void setSqlFunctionClasses(Class<?>... cls) {
+    public CacheConfiguration setSqlFunctionClasses(Class<?>... cls) {
         this.sqlFuncCls = cls;
+
+        return this;
     }
 
     /**
@@ -1492,9 +1596,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets timeout in milliseconds after which long query warning will be printed.
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setLongQueryWarningTimeout(long longQryWarnTimeout) {
+    public CacheConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
     }
 
     /**
@@ -1514,13 +1621,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * also allows having special characters in table and field names.
      *
      * @param sqlEscapeAll Flag value.
+     * @return {@code this} for chaining.
      */
-    public void setSqlEscapeAll(boolean sqlEscapeAll) {
+    public CacheConfiguration setSqlEscapeAll(boolean sqlEscapeAll) {
         this.sqlEscapeAll = sqlEscapeAll;
+
+        return this;
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1537,7 +1647,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Array of key and value type pairs to be indexed.
+     * Array of key and value type pairs to be indexed (thus array length must be always even).
      * It means each even (0,2,4...) class in the array will be considered as key type for cache entry,
      * each odd (1,3,5...) class will be considered as value type for cache entry.
      * <p>
@@ -1548,16 +1658,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * from package {@link org.apache.ignite.cache.query.annotations}.
      *
      * @param indexedTypes Key and value type pairs.
+     * @return {@code this} for chaining.
      */
-    public void setIndexedTypes(Class<?>... indexedTypes) {
+    public CacheConfiguration setIndexedTypes(Class<?>... indexedTypes) {
+        A.ensure(indexedTypes == null || (indexedTypes.length & 1) == 0,
+            "Number of indexed types is expected to be even. Refer to method javadoc for details.");
+
         this.indexedTypes = indexedTypes;
+
+        return this;
     }
 
     /**
      * Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
      * This setting only makes sense when offheap is enabled for this cache.
      *
-     * @return size Cache size.
+     * @return Cache size.
      * @see #setOffHeapMaxMemory(long)
      */
     public int getSqlOnheapRowCacheSize() {
@@ -1570,13 +1686,96 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param size Cache size.
      * @see #setOffHeapMaxMemory(long)
+     * @return {@code this} for chaining.
      */
-    public void setSqlOnheapRowCacheSize(int size) {
+    public CacheConfiguration setSqlOnheapRowCacheSize(int size) {
         this.sqlOnheapRowCacheSize = size;
+
+        return this;
+    }
+
+    /**
+     * Gets array of cache plugin configurations.
+     *
+     * @return Cache plugin configurations.
+     */
+    public CachePluginConfiguration[] getPluginConfigurations() {
+        return pluginCfgs != null ? pluginCfgs : new CachePluginConfiguration[0];
+    }
+
+    /**
+     * Sets cache plugin configurations.
+     *
+     * @param pluginCfgs Cache plugin configurations.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration setPluginConfigurations(CachePluginConfiguration... pluginCfgs) {
+        this.pluginCfgs = pluginCfgs;
+
+        return this;
+    }
+
+    /**
+     * Gets topology validator.
+     * @return validator.
+     */
+    public TopologyValidator getTopologyValidator() {
+        return topValidator;
+    }
+
+    /**
+     * Sets topology validator.
+     * @param topValidator validator.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration setTopologyValidator(TopologyValidator topValidator) {
+        this.topValidator = topValidator;
+
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfiguration.class, this);
+    }
+
+    /**
+     * Filter that accepts only server nodes.
+     */
+    public static class IgniteServerNodePredicate implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        @Override public boolean apply(ClusterNode n) {
+            Boolean attr = n.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            return attr != null && !attr;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+
+            return obj.getClass().equals(this.getClass());
+        }
+    }
+
+    /**
+     *  Filter that accepts all nodes.
+     */
+    public static class IgniteAllNodesPredicate  implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return true;
+        }
+
+        @Override public boolean equals(Object obj) {
+            if (obj == null)
+                return false;
+
+            return obj.getClass().equals(this.getClass());
+        }
     }
 }

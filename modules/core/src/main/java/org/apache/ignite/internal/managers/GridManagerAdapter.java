@@ -281,6 +281,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         for (final IgniteSpi spi : spis) {
             try {
                 spi.onContextInitialized(new IgniteSpiContext() {
+                    @Override public boolean isStopping() {
+                        return ctx.isStopping();
+                    }
+
                     @Override public Collection<ClusterNode> remoteNodes() {
                         return ctx.discovery().remoteNodes();
                     }
@@ -394,27 +398,37 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Nullable @Override public <K, V> V put(String cacheName, K key, V val, long ttl) {
-                        if (ttl > 0) {
-                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+                        try {
+                            if (ttl > 0) {
+                                ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
+                                IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                            return cache.getAndPut(key, val);
+                                return cache.getAndPut(key, val);
+                            }
+                            else
+                                return ctx.cache().<K, V>jcache(cacheName).getAndPut(key, val);
                         }
-                        else
-                            return ctx.cache().<K, V>jcache(cacheName).getAndPut(key, val);
+                        catch (IgniteCheckedException e) {
+                            throw CU.convertToCacheException(e);
+                        }
                     }
 
                     @Nullable @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
-                        if (ttl > 0) {
-                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+                        try {
+                            if (ttl > 0) {
+                                ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
+                                IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                            return cache.getAndPutIfAbsent(key, val);
+                                return cache.getAndPutIfAbsent(key, val);
+                            }
+                            else
+                                return ctx.cache().<K, V>jcache(cacheName).getAndPutIfAbsent(key, val);
                         }
-                        else
-                            return ctx.cache().<K, V>jcache(cacheName).getAndPutIfAbsent(key, val);
+                        catch (IgniteCheckedException e) {
+                            throw CU.convertToCacheException(e);
+                        }
                     }
 
                     @Nullable @Override public <K, V> V remove(String cacheName, K key) {
@@ -465,9 +479,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+                    @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
                         for (GridComponent comp : ctx) {
-                            IgniteSpiNodeValidationResult err = comp.validateNode(node);
+                            IgniteNodeValidationResult err = comp.validateNode(node);
 
                             if (err != null)
                                 return err;
@@ -476,7 +490,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return null;
                     }
 
-                    @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
+                    @Override public Collection<SecuritySubject> authenticatedSubjects() {
                         try {
                             return ctx.security().authenticatedSubjects();
                         }
@@ -485,7 +499,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
                     }
 
-                    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
+                    @Override public SecuritySubject authenticatedSubject(UUID subjId) {
                         try {
                             return ctx.security().authenticatedSubject(subjId);
                         }
@@ -498,9 +512,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
                         Object key, @Nullable ClassLoader ldr) {
                         try {
-                            GridCache<Object, V> cache = ctx.cache().cache(spaceName);
+                            IgniteInternalCache<Object, V> cache = ctx.cache().cache(spaceName);
 
-                            GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
+                            GridCacheContext cctx = cache.context();
 
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();
@@ -520,6 +534,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public MessageFactory messageFactory() {
                         return ctx.io().messageFactory();
+                    }
+
+                    @Override public boolean tryFailNode(UUID nodeId) {
+                        return ctx.discovery().tryFailNode(nodeId);
                     }
 
                     /**
@@ -557,12 +575,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Object collectDiscoveryData(UUID nodeId) {
+    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Object data) {
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         // No-op.
     }
 
@@ -608,7 +626,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         return null;
     }
 

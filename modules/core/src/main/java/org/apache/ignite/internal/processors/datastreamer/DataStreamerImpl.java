@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -43,6 +44,7 @@ import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
@@ -179,12 +181,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (log == null)
             log = U.logger(ctx, logRef, DataStreamerImpl.class);
 
-        ClusterNode node = F.first(ctx.grid().cluster().forCacheNodes(cacheName).nodes());
+        CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-        if (node == null)
-            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
-
-        this.cacheObjCtx = ctx.cacheObjects().contextForCache(node, cacheName, null);
+        this.cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
         this.cacheName = cacheName;
         this.flushQ = flushQ;
 
@@ -1174,7 +1173,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     dep != null ? dep.userVersion() : null,
                     dep != null ? dep.participants() : null,
                     dep != null ? dep.classLoaderId() : null,
-                    dep == null);
+                    dep == null,
+                    ctx.cache().context().exchange().readyAffinityVersion());
 
                 try {
                     ctx.io().send(node, TOPIC_DATASTREAM, req, PUBLIC_POOL);
@@ -1376,50 +1376,61 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Map.Entry<KeyCacheObject, CacheObject>> entries) {
             IgniteCacheProxy<KeyCacheObject, CacheObject> proxy = (IgniteCacheProxy<KeyCacheObject, CacheObject>)cache;
 
-            proxy.gate().enter();
+            GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
 
-            try {
-                GridCacheAdapter<KeyCacheObject, CacheObject> internalCache = proxy.context().cache();
+            if (internalCache.isNear())
+                internalCache = internalCache.context().near().dht();
 
-                if (internalCache.isNear())
-                    internalCache = internalCache.context().near().dht();
+            GridCacheContext cctx = internalCache.context();
 
-                GridCacheContext cctx = internalCache.context();
+            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-                AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+            GridCacheVersion ver = cctx.versions().next(topVer);
 
-                GridCacheVersion ver = cctx.versions().next(topVer);
+            long ttl = CU.TTL_ETERNAL;
+            long expiryTime = CU.EXPIRE_TIME_ETERNAL;
 
-                for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                    try {
-                        e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+            ExpiryPolicy plc = cctx.expiry();
 
-                        GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
+            for (Entry<KeyCacheObject, CacheObject> e : entries) {
+                try {
+                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                        entry.unswap(true, false);
+                    GridCacheEntryEx entry = internalCache.entryEx(e.getKey(), topVer);
 
-                        entry.initialValue(e.getValue(),
-                            ver,
-                            CU.TTL_ETERNAL,
-                            CU.EXPIRE_TIME_ETERNAL,
-                            false,
-                            topVer,
-                            GridDrType.DR_LOAD);
+                    entry.unswap(false);
 
-                        cctx.evicts().touch(entry, topVer);
+                    if (plc != null) {
+                        ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                        if (ttl == CU.TTL_ZERO)
+                            continue;
+                        else if (ttl == CU.TTL_NOT_CHANGED)
+                            ttl = 0;
+
+                        expiryTime = CU.toExpireTime(ttl);
                     }
-                    catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                        // No-op.
-                    }
-                    catch (IgniteCheckedException ex) {
-                        IgniteLogger log = cache.unwrap(Ignite.class).log();
 
-                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
-                    }
+                    entry.initialValue(e.getValue(),
+                        ver,
+                        ttl,
+                        expiryTime,
+                        false,
+                        topVer,
+                        GridDrType.DR_LOAD);
+
+                    cctx.evicts().touch(entry, topVer);
+
+                    CU.unwindEvicts(cctx);
                 }
-            }
-            finally {
-                proxy.gate().leave();
+                catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
+                catch (IgniteCheckedException ex) {
+                    IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                    U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                }
             }
         }
     }

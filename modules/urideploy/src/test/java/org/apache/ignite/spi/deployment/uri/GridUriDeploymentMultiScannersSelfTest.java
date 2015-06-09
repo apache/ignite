@@ -42,8 +42,7 @@ public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbs
     public List<String> getUriList() {
         List<String> uriList = new ArrayList<>();
 
-        // Fake URIs.
-        uriList.add(GridTestProperties.getProperty("deploy.uri.ftp"));
+        // Fake URI.
         uriList.add(GridTestProperties.getProperty("deploy.uri.http"));
 
         // One real URI.

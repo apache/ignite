@@ -42,6 +42,9 @@ import org.apache.ignite.examples.datagrid.store.*;
  * start node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheAutoStoreLoadDataExample {
+    /** Cache name. */
+    public static final String CACHE_NAME = CacheAutoStoreLoadDataExample.class.getSimpleName();
+
     /** Heap size required to run this example. */
     public static final int MIN_MEMORY = 1024 * 1024 * 1024;
 
@@ -58,7 +61,7 @@ public class CacheAutoStoreLoadDataExample {
             System.out.println();
             System.out.println(">>> Cache auto store load data example started.");
 
-            CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache();
+            CacheConfiguration<Long, Person> cacheCfg = CacheConfig.jdbcPojoStoreCache(CACHE_NAME);
 
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
                 // Load cache on all data nodes with custom SQL statement.

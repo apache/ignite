@@ -82,6 +82,8 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-170");
+
         IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
         final int ITEMS = 10_000;
@@ -109,7 +111,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                     try {
                         int size = set.size();
 
-                        // TODO: GG-7952, check for equality when GG-7952 fixed.
+                        // TODO: IGNITE-584, check for equality when IGNITE-584 fixed.
                         assertTrue(size > 0);
                     }
                     catch (IgniteException ignore) {
@@ -127,7 +129,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                             cnt++;
                         }
 
-                        // TODO: GG-7952, check for equality when GG-7952 fixed.
+                        // TODO: IGNITE-584, check for equality when IGNITE-584 fixed.
                         assertTrue(cnt > 0);
                     }
                     catch (IgniteException ignore) {
@@ -162,7 +164,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
 
         set.close();
 
-        if (false) { // TODO GG-8962: enable check when fixed.
+        if (false) { // TODO IGNITE-600: enable check when fixed.
             int cnt = 0;
 
             Set<IgniteUuid> setIds = new HashSet<>();

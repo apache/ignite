@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> {
     /** Maximum size for delete queue. */
-    private static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
+    public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
 
     /** Static logger to avoid re-creation. */
@@ -494,7 +494,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
         try {
             GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
 
-            boolean isLocStore = cctx.store().isLocalStore();
+            boolean isLocStore = cctx.store().isLocal();
 
             if (it != null) {
                 // We can safely remove these values because no entries will be created for evicted partition.
@@ -508,7 +508,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
                     cctx.swap().remove(key);
 
                     if (isLocStore)
-                        cctx.store().removeFromStore(null, key.value(cctx.cacheObjectContext(), false));
+                        cctx.store().remove(null, key.value(cctx.cacheObjectContext(), false));
                 }
             }
         }
@@ -616,7 +616,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
                     lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
 
-                    lastEntry.unswap(true, true);
+                    lastEntry.unswap(true);
 
                     return lastEntry;
                 }

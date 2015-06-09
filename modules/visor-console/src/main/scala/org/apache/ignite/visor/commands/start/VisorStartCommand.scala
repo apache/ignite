@@ -18,14 +18,14 @@
 package org.apache.ignite.visor.commands.start
 
 import org.apache.ignite._
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
+import org.apache.ignite.visor.visor._
 
 import java.io._
 import java.util.concurrent._
-
-import org.apache.ignite.visor.VisorTag
-import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -115,26 +115,14 @@ private case class Result(
  *         Starts topology defined in 'start-nodes.ini' file. Existing nodes are stopped.
  * }}}
  */
-class VisorStartCommand {
+class VisorStartCommand extends VisorConsoleCommand {
+    @impl protected val name = "start"
+
     /** Default maximum number of parallel connections. */
     private final val DFLT_MAX_CONN = 5
 
     /** Default connection timeout. */
     private final val DFLT_TIMEOUT = 2000
-
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        nl()
-
-        warn(errMsgs: _*)
-        warn("Type 'help start' to see how to use this command.")
-    }
 
     /**
      * Catch point for missing arguments case.
@@ -229,10 +217,10 @@ class VisorStartCommand {
 
                 try
                     res = ignite.cluster.startNodes(file, restart, timeout, maxConn).map(t => {
-                        Result(t.get1, t.get2, t.get3)
+                        Result(t.getHostName, t.isSuccess, t.getError)
                     }).toSeq
                 catch {
-                    case e: IgniteException => scold(e.getMessage).^^
+                    case e: IgniteException => scold(e).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }
@@ -285,9 +273,9 @@ class VisorStartCommand {
 
                 try
                     res = ignite.cluster.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
-                        map(t => Result(t.get1, t.get2, t.get3)).toSeq
+                        map(t => Result(t.getHostName, t.isSuccess, t.getError)).toSeq
                 catch {
-                    case e: IgniteException => scold(e.getMessage).^^
+                    case e: IgniteException => scold(e).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }
@@ -310,7 +298,15 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
+                val ue = "java.lang.UnsupportedOperationException: "
+
+                res.filter(!_.ok).groupBy(r => r).foreach {
+                    case (r, _) if r.errMsg.lines.next().startsWith(ue)  =>
+                        errT += (r.host, r.errMsg.lines.next().replace(ue, ""))
+
+                    case (r, _) =>
+                        errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq)
+                }
 
                 errT.render()
             }
@@ -333,6 +329,9 @@ class VisorStartCommand {
  * Companion object that does initialization of the command.
  */
 object VisorStartCommand {
+    /** Singleton command. */
+    private val cmd = new VisorStartCommand
+
     addHelp(
         name = "start",
         shortInfo = "Starts or restarts nodes on remote hosts.",
@@ -408,11 +407,9 @@ object VisorStartCommand {
             "start -f=start-nodes.ini -r" ->
                 "Starts topology defined in 'start-nodes.ini' file. Existing nodes are stopped."
         ),
-        ref = VisorConsoleCommand(cmd.start, cmd.start)
+        emptyArgs = cmd.start,
+        withArgs = cmd.start
     )
-
-    /** Singleton command. */
-    private val cmd = new VisorStartCommand
 
     /**
      * Singleton.

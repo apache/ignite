@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -33,7 +34,7 @@ public interface DiscoverySpiDataExchange {
      * @param joiningNodeId ID of new node that joins topology.
      * @return Collection of discovery data objects from different components.
      */
-    public Map<Integer, Object> collect(UUID joiningNodeId);
+    public Map<Integer, Serializable> collect(UUID joiningNodeId);
 
     /**
      * Notifies discovery manager about data received from remote node.
@@ -41,5 +42,5 @@ public interface DiscoverySpiDataExchange {
      * @param joiningNodeId Remote node ID.
      * @param data Collection of discovery data objects from different components.
      */
-    public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Object> data);
+    public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data);
 }

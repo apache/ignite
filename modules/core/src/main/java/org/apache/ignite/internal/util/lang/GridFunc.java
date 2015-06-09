@@ -550,7 +550,7 @@ public class GridFunc {
 
                     return (R)mtd.invoke(t, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -586,7 +586,7 @@ public class GridFunc {
 
                     mtd.invoke(t, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -624,7 +624,7 @@ public class GridFunc {
 
                     return (R)mtd.invoke(o, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -661,7 +661,7 @@ public class GridFunc {
 
                     mtd.invoke(o, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -701,7 +701,7 @@ public class GridFunc {
 
                     return (R)mtd.invoke(null, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -738,7 +738,7 @@ public class GridFunc {
 
                     mtd.invoke(null, args);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     throw wrap(e);
                 }
             }
@@ -5426,6 +5426,39 @@ public class GridFunc {
                 return !c.contains(t);
             }
         };
+    }
+
+    /**
+     * @param c Target collection.
+     * @param it Iterable to fetch.
+     * @return Modified target collection.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T, C extends Collection<T>> C addAll(C c, Iterable<? extends T> it) {
+        if (it == null)
+            return c;
+
+        if (it instanceof Collection<?>) {
+            c.addAll((Collection<? extends T>)it);
+
+            return c;
+        }
+
+        return addAll(c, it.iterator());
+    }
+
+    /**
+     * @param c Target collection.
+     * @param it Iterator to fetch.
+     * @return Modified target collection.
+     */
+    public static <T, C extends Collection<T>> C addAll(C c, Iterator<? extends T> it) {
+        if (it != null) {
+            while (it.hasNext())
+                c.add(it.next());
+        }
+
+        return c;
     }
 
     /**

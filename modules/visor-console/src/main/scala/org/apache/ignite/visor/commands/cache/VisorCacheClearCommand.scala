@@ -17,18 +17,14 @@
 
 package org.apache.ignite.visor.commands.cache
 
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
+import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.apache.ignite.visor.visor._
+
 import org.apache.ignite.internal.visor.cache.VisorCacheClearTask
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
-import org.apache.ignite.cluster.ClusterNode
-
-import org.apache.ignite.visor.commands.VisorTextTable
-import org.apache.ignite.visor.visor
-import visor._
-
-import scala.collection.JavaConversions._
 import scala.language.reflectiveCalls
-import scala.util.control.Breaks._
 
 /**
  * ==Overview==
@@ -85,7 +81,7 @@ class VisorCacheClearCommand {
      *
      * @param argLst Command arguments.
      */
-    def clear(argLst: ArgList, node: Option[ClusterNode]) = breakable {
+    def clear(argLst: ArgList, node: Option[ClusterNode]) {
         val cacheArg = argValue("c", argLst)
 
         val cacheName = cacheArg match {
@@ -93,42 +89,32 @@ class VisorCacheClearCommand {
 
             case Some(s) if s.startsWith("@") =>
                 warn("Can't find cache variable with specified name: " + s,
-                    "Type 'cache' to see available cache variables."
-                )
+                    "Type 'cache' to see available cache variables.")
 
-                break()
+                return
 
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) ignite.cluster.forNode(node.get) else ignite.cluster.forCacheNodes(cacheName)
+        try {
+            val nid = groupForDataNode(node, cacheName).forRandom().node().id()
 
-        if (prj.nodes().isEmpty) {
-            val msg =
-                if (cacheName == null)
-                    "Can't find nodes with default cache."
-                else
-                    "Can't find nodes with specified cache: " + cacheName
+            val t = VisorTextTable()
 
-            scold(msg).^^
+            t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
+
+            val res = executeOne(nid, classOf[VisorCacheClearTask], cacheName)
+
+            t += (nodeId8(nid), res.get1(), res.get2())
+
+            println("Cleared cache with name: " + escapeName(cacheName))
+
+            t.render()
         }
-
-        val t = VisorTextTable()
-
-        t #= ("Node ID8(@)", "Cache Size Before", "Cache Size After")
-
-        prj.nodes().headOption.foreach(node => {
-            val res = ignite.compute(ignite.cluster.forNode(node))
-                .withName("visor-cclear-task")
-                .withNoFailover()
-                .execute(classOf[VisorCacheClearTask], toTaskArgument(node.id(), cacheName))
-
-            t += (nodeId8(node.id()), res.get1(), res.get2())
-        })
-
-        println("Cleared cache with name: " + escapeName(cacheName))
-
-        t.render()
+        catch {
+            case e: ClusterGroupEmptyException => scold(messageNodeNotFound(node, cacheName))
+            case e: Throwable =>  scold(e)
+        }
     }
 }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -28,19 +29,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Colocated cache.
@@ -88,10 +84,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 int hash,
                 CacheObject val,
                 GridCacheMapEntry next,
-                long ttl,
                 int hdrId)
             {
-                return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val, next, ttl, hdrId);
+                return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
             }
         });
     }
@@ -131,26 +126,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean allowDetached
     ) {
         return allowDetached && !ctx.affinity().primary(ctx.localNode(), key, topVer) ?
-            new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0, 0) : entryExx(key, topVer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
-        GridTuple<V> val = null;
-
-        if (!modes.contains(NEAR_ONLY)) {
-            try {
-                val = peek0(true, key, modes, ctx.tm().txx());
-            }
-            catch (GridCacheFilterFailedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter validation failed for key: " + key);
-
-                return null;
-            }
-        }
-
-        return val != null ? val.get() : null;
+            new GridDhtDetachedCacheEntry(ctx, key, key.hashCode(), null, null, 0) : entryExx(key, topVer);
     }
 
     /** {@inheritDoc} */
@@ -178,8 +154,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean deserializePortable,
         final boolean skipVals
     ) {
-        ctx.denyOnFlag(LOCAL);
-        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -189,6 +164,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
+        final CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
@@ -197,27 +174,26 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         entry,
                         deserializePortable,
                         skipVals,
-                        false);
+                        false,
+                        opCtx != null && opCtx.skipStore());
                 }
             });
         }
 
         AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() : tx.topologyVersion();
 
-        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
-
-        subjId = ctx.subjectIdPerCall(subjId, prj);
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
         return loadAsync(
             ctx.cacheKeysView(keys),
-            true,
+            opCtx == null || !opCtx.skipStore(),
             false,
             forcePrimary,
             topVer,
             subjId,
             taskName,
             deserializePortable,
-            skipVals ? null : expiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals);
     }
 
@@ -381,12 +357,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean isRead,
         boolean retval,
         @Nullable TransactionIsolation isolation,
-        long accessTtl,
-        CacheEntryPredicate[] filter
+        long accessTtl
     ) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
         GridNearTxLocal txx = (GridNearTxLocal)tx;
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         GridDhtColocatedLockFuture<K, V> fut = new GridDhtColocatedLockFuture<>(ctx,
             keys,
@@ -395,7 +372,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.empty0(),
+            opCtx != null && opCtx.skipStore());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -411,13 +389,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        return new CacheEntryImpl<>(key, peek(key));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        CacheEntryPredicate[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -435,9 +407,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                if (!ctx.isAll(entry, filter))
-                    break; // While.
-
                 GridCacheMvccCandidate lock =
                     ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), cacheKey, null);
 
@@ -445,6 +414,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     final AffinityTopologyVersion topVer = lock.topologyVersion();
 
                     assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
+
+                    // Send request to remove from remote nodes.
+                    ClusterNode primary = ctx.affinity().primary(key, topVer);
+
+                    if (primary == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to unlock keys (all partition nodes left the grid).");
+
+                        continue;
+                    }
 
                     if (map == null) {
                         Collection<ClusterNode> affNodes = CU.allNodes(ctx, topVer);
@@ -456,9 +435,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                     if (ver == null)
                         ver = lock.version();
-
-                    // Send request to remove from remote nodes.
-                    ClusterNode primary = ctx.affinity().primary(key, topVer);
 
                     if (!lock.reentry()) {
                         if (!ver.equals(lock.version()))
@@ -503,9 +479,20 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 assert !n.isLocal();
 
-                if (!F.isEmpty(req.keys()))
-                    // We don't wait for reply to this message.
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                if (!F.isEmpty(req.keys())) {
+                    try {
+                        // We don't wait for reply to this message.
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                                ", n=" + n + ", e=" + e + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                    }
+                }
             }
         }
         catch (IgniteCheckedException ex) {
@@ -548,6 +535,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                     ClusterNode primary = ctx.affinity().primary(key, topVer);
 
+                    if (primary == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to remove locks (all partition nodes left the grid).");
+
+                        continue;
+                    }
+
                     if (!primary.isLocal()) {
                         // Send request to remove from remote nodes.
                         GridNearUnlockRequest req = map.get(primary);
@@ -586,8 +580,18 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);
 
-                    // We don't wait for reply to this message.
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                    try {
+                        // We don't wait for reply to this message.
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send unlock request (node has left the grid) [keys=" + req.keys() +
+                                ", n=" + n + ", e=" + e + ']');
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send unlock request [keys=" + req.keys() + ", n=" + n + ']', e);
+                    }
                 }
             }
         }
@@ -604,9 +608,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param keys Mapped keys.
      * @param txRead Tx read.
+     * @param retval Return value flag.
      * @param timeout Lock timeout.
      * @param accessTtl TTL for read operation.
      * @param filter filter Optional filter.
+     * @param skipStore Skip store flag.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -620,7 +626,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean retval,
         final long timeout,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter
+        @Nullable final CacheEntryPredicate[] filter,
+        final boolean skipStore
     ) {
         assert keys != null;
 
@@ -642,7 +649,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     retval,
                     timeout,
                     accessTtl,
-                    filter);
+                    filter,
+                    skipStore);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
@@ -665,7 +673,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             retval,
                             timeout,
                             accessTtl,
-                            filter);
+                            filter,
+                            skipStore);
                     }
                 }
             );
@@ -680,9 +689,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param topVer Topology version.
      * @param keys Mapped keys.
      * @param txRead Tx read.
+     * @param retval Return value flag.
      * @param timeout Lock timeout.
      * @param accessTtl TTL for read operation.
      * @param filter filter Optional filter.
+     * @param skipStore Skip store flag.
      * @return Lock future.
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(
@@ -696,7 +707,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean retval,
         final long timeout,
         final long accessTtl,
-        @Nullable final CacheEntryPredicate[] filter) {
+        @Nullable final CacheEntryPredicate[] filter,
+        boolean skipStore) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -711,7 +723,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 tx,
                 threadId,
                 accessTtl,
-                filter);
+                filter,
+                skipStore);
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))
@@ -777,7 +790,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 keys,
                 tx.implicit(),
                 txRead,
-                accessTtl);
+                accessTtl,
+                skipStore);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {

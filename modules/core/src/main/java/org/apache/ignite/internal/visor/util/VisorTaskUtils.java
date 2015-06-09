@@ -120,6 +120,16 @@ public class VisorTaskUtils {
     }
 
     /**
+     * @param name Escaped name.
+     * @return Name or {@code null} for default name.
+     */
+    public static String unescapeName(String name) {
+        assert name != null;
+
+        return DFLT_EMPTY_NAME.equals(name) ? null : name;
+    }
+
+    /**
      * @param a First name.
      * @param b Second name.
      * @return {@code true} if both names equals.
@@ -331,7 +341,7 @@ public class VisorTaskUtils {
     };
 
     /** Mapper from grid event to Visor data transfer object. */
-    private static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
+    public static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
     /**
      * Grabs local events and detects if events was lost since last poll.
@@ -377,6 +387,9 @@ public class VisorTaskUtils {
         final AtomicBoolean lastFound = new AtomicBoolean(lastOrder < 0);
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
             @Override public boolean apply(Event e) {
                 // Detects that events were lost.
                 if (!lastFound.get() && (lastOrder == e.localOrder()))
@@ -678,8 +691,8 @@ public class VisorTaskUtils {
                 log.warning(msg);
         }
         else
-            X.println("[" + DEBUG_DATE_FMT.get().format(time) + "]" +
-                String.format("%30s %s", "<" + Thread.currentThread().getName() + ">", msg));
+            X.println(String.format("[%s][%s]%s",
+                DEBUG_DATE_FMT.get().format(time), Thread.currentThread().getName(), msg));
     }
 
     /**
@@ -731,6 +744,16 @@ public class VisorTaskUtils {
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
         return end;
+    }
+
+    /**
+     * Log message.
+     *
+     * @param log Logger.
+     * @param msg Message.
+     */
+    public static void log(@Nullable IgniteLogger log, String msg) {
+        log0(log, U.currentTimeMillis(), " " + msg);
     }
 
     /**
@@ -810,7 +833,7 @@ public class VisorTaskUtils {
      *
      * @param input Input bytes.
      * @return Zipped byte array.
-     * @throws java.io.IOException If failed.
+     * @throws IOException If failed.
      */
     public static byte[] zipBytes(byte[] input) throws IOException {
         return zipBytes(input, 4096);
@@ -822,7 +845,7 @@ public class VisorTaskUtils {
      * @param input Input bytes.
      * @param initBufSize Initial buffer size.
      * @return Zipped byte array.
-     * @throws java.io.IOException If failed.
+     * @throws IOException If failed.
      */
     public static byte[] zipBytes(byte[] input, int initBufSize) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(initBufSize);
@@ -836,7 +859,8 @@ public class VisorTaskUtils {
                 zos.putNextEntry(entry);
 
                 zos.write(input);
-            } finally {
+            }
+            finally {
                 zos.closeEntry();
             }
         }
