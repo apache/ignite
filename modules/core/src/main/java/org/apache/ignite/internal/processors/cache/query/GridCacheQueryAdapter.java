@@ -123,6 +123,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean keepPortable) {
         assert cctx != null;
         assert type != null;
+        assert part == null || part >= 0;
 
         this.cctx = cctx;
         this.type = type;

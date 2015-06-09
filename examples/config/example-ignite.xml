@@ -30,16 +30,14 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
-<!--
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                &lt;!&ndash; Set to false to allow non-serializable objects in examples, default is true. &ndash;&gt;
+                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
         </property>
--->
 
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">
