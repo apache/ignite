@@ -867,4 +867,14 @@ public class VisorTaskUtils {
 
         return bos.toByteArray();
     }
+
+    /**
+     * Wrap throwable object of any type to presented on Visor throwable object.
+     *
+     * @param e Base throwable object.
+     * @return Wrapped throwable object.
+     */
+    public static VisorExceptionWrapper wrap(Throwable e) {
+        return new VisorExceptionWrapper(e);
+    }
 }

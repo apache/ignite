@@ -2779,14 +2779,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (guard.compareAndSet(false, true)) {
-                writeLock().lock();
+                ctx.closures().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        writeLock().lock();
 
-                try {
-                    finish();
-                }
-                finally {
-                    writeLock().unlock();
-                }
+                        try {
+                            finish();
+                        }
+                        finally {
+                            writeLock().unlock();
+                        }
+                    }
+                });
             }
         }
 

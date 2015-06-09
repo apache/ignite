@@ -15,23 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.query;
+package org.apache.ignite.spi;
 
-import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
-import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 
 /**
- * Task for execute SCAN or SQL query and get first page of results.
+ * Provides possibility to schedule delayed execution,
+ * see {@link IgniteSpiContext#addTimeoutObject(IgniteSpiTimeoutObject)}.
+ * <p>
+ * Note: all timeout objects are executed in single dedicated thread, so implementation
+ * of {@link #onTimeout()} should not use time consuming and blocking method.
  */
-@GridInternal
-public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx>> {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface IgniteSpiTimeoutObject {
+    /**
+     * @return Unique object ID.
+     */
+    public IgniteUuid id();
 
-    /** {@inheritDoc} */
-    @Override protected VisorQueryJob job(VisorQueryArg arg) {
-        return new VisorQueryJob(arg, debug);
-    }
+    /**
+     * @return End time.
+     */
+    public long endTime();
+
+    /**
+     * Timeout callback.
+     */
+    public void onTimeout();
 }

@@ -157,12 +157,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Default idle connection timeout (value is <tt>30000</tt>ms). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
 
-    /** Default value for connection buffer flush frequency (value is <tt>100</tt> ms). */
-    public static final long DFLT_CONN_BUF_FLUSH_FREQ = 100;
-
-    /** Default value for connection buffer size (value is <tt>0</tt>). */
-    public static final int DFLT_CONN_BUF_SIZE = 0;
-
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
@@ -267,7 +261,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                                 log.debug("Session was closed but there are unacknowledged messages, " +
                                                     "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
 
-                                            recoveryWorker.addReconnectRequest(recoveryData);
+                                            commWorker.addReconnectRequest(recoveryData);
                                         }
                                     }
                                     else
@@ -603,13 +597,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Idle connection timeout. */
     private long idleConnTimeout = DFLT_IDLE_CONN_TIMEOUT;
 
-    /** Connection buffer flush frequency. */
-    private volatile long connBufFlushFreq = DFLT_CONN_BUF_FLUSH_FREQ;
-
-    /** Connection buffer size. */
-    @SuppressWarnings("RedundantFieldInitialization")
-    private int connBufSize = DFLT_CONN_BUF_SIZE;
-
     /** Connect timeout. */
     private long connTimeout = DFLT_CONN_TIMEOUT;
 
@@ -647,17 +634,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Socket write timeout. */
     private long sockWriteTimeout = DFLT_SOCK_WRITE_TIMEOUT;
 
-    /** Idle client worker. */
-    private IdleClientWorker idleClientWorker;
-
-    /** Flush client worker. */
-    private ClientFlushWorker clientFlushWorker;
-
-    /** Socket timeout worker. */
-    private SocketTimeoutWorker sockTimeoutWorker;
-
-    /** Recovery worker. */
-    private RecoveryWorker recoveryWorker;
+    /** Recovery and idle clients handler. */
+    private CommunicationWorker commWorker;
 
     /** Clients. */
     private final ConcurrentMap<UUID, GridCommunicationClient> clients = GridConcurrentFactory.newMap();
@@ -882,31 +860,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /**
      * Sets connection buffer size. If set to {@code 0} connection buffer is disabled.
-     * <p>
-     * If not provided, default value is {@link #DFLT_CONN_BUF_SIZE}.
      *
      * @param connBufSize Connection buffer size.
      * @see #setConnectionBufferFlushFrequency(long)
      */
     @IgniteSpiConfiguration(optional = true)
     public void setConnectionBufferSize(int connBufSize) {
-        this.connBufSize = connBufSize;
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public int getConnectionBufferSize() {
-        return connBufSize;
+        return 0;
     }
 
     /** {@inheritDoc} */
     @IgniteSpiConfiguration(optional = true)
     @Override public void setConnectionBufferFlushFrequency(long connBufFlushFreq) {
-        this.connBufFlushFreq = connBufFlushFreq;
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public long getConnectionBufferFlushFrequency() {
-        return connBufFlushFreq;
+        return 0;
     }
 
     /**
@@ -1174,8 +1150,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
         assertParameter(locPortRange >= 0, "locPortRange >= 0");
         assertParameter(idleConnTimeout > 0, "idleConnTimeout > 0");
-        assertParameter(connBufFlushFreq > 0, "connBufFlushFreq > 0");
-        assertParameter(connBufSize >= 0, "connBufSize >= 0");
         assertParameter(sockRcvBuf >= 0, "sockRcvBuf >= 0");
         assertParameter(sockSndBuf >= 0, "sockSndBuf >= 0");
         assertParameter(msgQueueLimit >= 0, "msgQueueLimit >= 0");
@@ -1245,8 +1219,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             log.debug(configInfo("idleConnTimeout", idleConnTimeout));
             log.debug(configInfo("directBuf", directBuf));
             log.debug(configInfo("directSendBuf", directSndBuf));
-            log.debug(configInfo("connBufSize", connBufSize));
-            log.debug(configInfo("connBufFlushFreq", connBufFlushFreq));
             log.debug(configInfo("selectorsCnt", selectorsCnt));
             log.debug(configInfo("tcpNoDelay", tcpNoDelay));
             log.debug(configInfo("sockSndBuf", sockSndBuf));
@@ -1261,11 +1233,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             log.debug(configInfo("unackedMsgsBufSize", unackedMsgsBufSize));
         }
 
-        if (connBufSize > 8192)
-            U.warn(log, "Specified communication IO buffer size is larger than recommended (ignore if done " +
-                "intentionally) [specified=" + connBufSize + ", recommended=8192]",
-                "Specified communication IO buffer size is larger than recommended (ignore if done intentionally).");
-
         if (!tcpNoDelay)
             U.quietAndWarn(log, "'TCP_NO_DELAY' for communication is off, which should be used with caution " +
                 "since may produce significant delays with some scenarios.");
@@ -1274,23 +1241,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        idleClientWorker = new IdleClientWorker();
+        commWorker = new CommunicationWorker();
 
-        idleClientWorker.start();
-
-        recoveryWorker = new RecoveryWorker();
-
-        recoveryWorker.start();
-
-        if (connBufSize > 0) {
-            clientFlushWorker = new ClientFlushWorker();
-
-            clientFlushWorker.start();
-        }
-
-        sockTimeoutWorker = new SocketTimeoutWorker();
-
-        sockTimeoutWorker.start();
+        commWorker.start();
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -1445,15 +1398,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(idleClientWorker);
-        U.interrupt(clientFlushWorker);
-        U.interrupt(sockTimeoutWorker);
-        U.interrupt(recoveryWorker);
+        U.interrupt(commWorker);
 
-        U.join(idleClientWorker, log);
-        U.join(clientFlushWorker, log);
-        U.join(sockTimeoutWorker, log);
-        U.join(recoveryWorker, log);
+        U.join(commWorker, log);
 
         // Force closing on stop (safety).
         for (GridCommunicationClient client : clients.values())
@@ -1461,7 +1408,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         // Clear resources.
         nioSrvr = null;
-        idleClientWorker = null;
+        commWorker = null;
 
         boundTcpPort = -1;
 
@@ -1899,7 +1846,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject<T> obj = new HandshakeTimeoutObject<>(client, U.currentTimeMillis() + timeout);
 
-        sockTimeoutWorker.addTimeoutObject(obj);
+        addTimeoutObject(obj);
 
         long rcvCnt = 0;
 
@@ -2005,7 +1952,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             boolean cancelled = obj.cancel();
 
             if (cancelled)
-                sockTimeoutWorker.removeTimeoutObject(obj);
+                removeTimeoutObject(obj);
 
             // Ignoring whatever happened after timeout - reporting only timeout event.
             if (!cancelled)
@@ -2041,15 +1988,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(idleClientWorker);
-        U.interrupt(clientFlushWorker);
-        U.interrupt(sockTimeoutWorker);
-        U.interrupt(recoveryWorker);
+        U.interrupt(commWorker);
 
-        U.join(idleClientWorker, log);
-        U.join(clientFlushWorker, log);
-        U.join(sockTimeoutWorker, log);
-        U.join(recoveryWorker, log);
+        U.join(commWorker, log);
 
         for (GridCommunicationClient client : clients.values())
             client.forceClose();
@@ -2156,80 +2097,95 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      *
      */
-    private class IdleClientWorker extends IgniteSpiThread {
+    private class CommunicationWorker extends IgniteSpiThread {
+        /** */
+        private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
+
         /**
          *
          */
-        IdleClientWorker() {
-            super(gridName, "nio-idle-client-collector", log);
+        private CommunicationWorker() {
+            super(gridName, "tcp-comm-worker", log);
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"BusyWait"})
         @Override protected void body() throws InterruptedException {
+            if (log.isDebugEnabled())
+                log.debug("Tcp communication worker has been started.");
+
             while (!isInterrupted()) {
-                cleanupRecovery();
+                GridNioRecoveryDescriptor recoveryDesc = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
-                for (Map.Entry<UUID, GridCommunicationClient> e : clients.entrySet()) {
-                    UUID nodeId = e.getKey();
+                if (recoveryDesc != null)
+                    processRecovery(recoveryDesc);
+                else
+                    processIdle();
+            }
+        }
 
-                    GridCommunicationClient client = e.getValue();
+        /**
+         *
+         */
+        private void processIdle() {
+            cleanupRecovery();
 
-                    ClusterNode node = getSpiContext().node(nodeId);
+            for (Map.Entry<UUID, GridCommunicationClient> e : clients.entrySet()) {
+                UUID nodeId = e.getKey();
 
-                    if (node == null) {
+                GridCommunicationClient client = e.getValue();
+
+                ClusterNode node = getSpiContext().node(nodeId);
+
+                if (node == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Forcing close of non-existent node connection: " + nodeId);
+
+                    client.forceClose();
+
+                    clients.remove(nodeId, client);
+
+                    continue;
+                }
+
+                GridNioRecoveryDescriptor recovery = null;
+
+                if (client instanceof GridTcpNioCommunicationClient) {
+                    recovery = recoveryDescs.get(new ClientKey(node.id(), node.order()));
+
+                    if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
+                        RecoveryLastReceivedMessage msg = new RecoveryLastReceivedMessage(recovery.received());
+
                         if (log.isDebugEnabled())
-                            log.debug("Forcing close of non-existent node connection: " + nodeId);
+                            log.debug("Send recovery acknowledgement on timeout [rmtNode=" + nodeId +
+                                ", rcvCnt=" + msg.received() + ']');
 
-                        client.forceClose();
+                        nioSrvr.sendSystem(((GridTcpNioCommunicationClient)client).session(), msg);
 
-                        clients.remove(nodeId, client);
+                        recovery.lastAcknowledged(msg.received());
+
+                        continue;
+                    }
+                }
+
+                long idleTime = client.getIdleTime();
+
+                if (idleTime >= idleConnTimeout) {
+                    if (recovery != null &&
+                        recovery.nodeAlive(getSpiContext().node(nodeId)) &&
+                        !recovery.messagesFutures().isEmpty()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Node connection is idle, but there are unacknowledged messages, " +
+                                "will wait: " + nodeId);
 
                         continue;
                     }
 
-                    GridNioRecoveryDescriptor recovery = null;
+                    if (log.isDebugEnabled())
+                        log.debug("Closing idle node connection: " + nodeId);
 
-                    if (client instanceof GridTcpNioCommunicationClient) {
-                        recovery = recoveryDescs.get(new ClientKey(node.id(), node.order()));
-
-                        if (recovery != null && recovery.lastAcknowledged() != recovery.received()) {
-                            RecoveryLastReceivedMessage msg = new RecoveryLastReceivedMessage(recovery.received());
-
-                            if (log.isDebugEnabled())
-                                log.debug("Send recovery acknowledgement on timeout [rmtNode=" + nodeId +
-                                    ", rcvCnt=" + msg.received() + ']');
-
-                            nioSrvr.sendSystem(((GridTcpNioCommunicationClient)client).session(), msg);
-
-                            recovery.lastAcknowledged(msg.received());
-
-                            continue;
-                        }
-                    }
-
-                    long idleTime = client.getIdleTime();
-
-                    if (idleTime >= idleConnTimeout) {
-                        if (recovery != null &&
-                            recovery.nodeAlive(getSpiContext().node(nodeId)) &&
-                            !recovery.messagesFutures().isEmpty()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Node connection is idle, but there are unacknowledged messages, " +
-                                    "will wait: " + nodeId);
-
-                            continue;
-                        }
-
-                        if (log.isDebugEnabled())
-                            log.debug("Closing idle node connection: " + nodeId);
-
-                        if (client.close() || client.closed())
-                            clients.remove(nodeId, client);
-                    }
+                    if (client.close() || client.closed())
+                        clients.remove(nodeId, client);
                 }
-
-                Thread.sleep(idleConnTimeout);
             }
         }
 
@@ -2264,212 +2220,39 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 }
             }
         }
-    }
 
-    /**
-     *
-     */
-    private class ClientFlushWorker extends IgniteSpiThread {
         /**
-         *
+         * @param recoveryDesc Recovery descriptor.
          */
-        ClientFlushWorker() {
-            super(gridName, "nio-client-flusher", log);
-        }
+        private void processRecovery(GridNioRecoveryDescriptor recoveryDesc) {
+            ClusterNode node = recoveryDesc.node();
 
-        /** {@inheritDoc} */
-        @SuppressWarnings({"BusyWait"})
-        @Override protected void body() throws InterruptedException {
-            while (!isInterrupted()) {
-                long connBufFlushFreq0 = connBufFlushFreq;
+            if (clients.containsKey(node.id()) || !recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
+                return;
 
-                for (Map.Entry<UUID, GridCommunicationClient> entry : clients.entrySet()) {
-                    GridCommunicationClient client = entry.getValue();
+            try {
+                if (log.isDebugEnabled())
+                    log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
 
-                    if (client.reserve()) {
-                        boolean err = true;
+                GridCommunicationClient client = reserveClient(node);
 
-                        try {
-                            client.flushIfNeeded(connBufFlushFreq0);
-
-                            err = false;
-                        }
-                        catch (IOException e) {
-                            if (getSpiContext().pingNode(entry.getKey()))
-                                U.error(log, "Failed to flush client: " + client, e);
-                            else {
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to flush client (node left): " + client);
-
-                                onException("Failed to flush client (node left): " + client, e);
-                            }
-                        }
-                        finally {
-                            if (err)
-                                client.forceClose();
-                            else
-                                client.release();
-                        }
-                    }
-                }
-
-                Thread.sleep(connBufFlushFreq0);
+                client.release();
             }
-        }
-    }
-
-    /**
-     * Handles sockets timeouts.
-     */
-    private class SocketTimeoutWorker extends IgniteSpiThread {
-        /** Time-based sorted set for timeout objects. */
-        private final GridConcurrentSkipListSet<HandshakeTimeoutObject> timeoutObjs =
-            new GridConcurrentSkipListSet<>(new Comparator<HandshakeTimeoutObject>() {
-                @Override public int compare(HandshakeTimeoutObject o1, HandshakeTimeoutObject o2) {
-                    long time1 = o1.endTime();
-                    long time2 = o2.endTime();
-
-                    long id1 = o1.id();
-                    long id2 = o2.id();
-
-                    return time1 < time2 ? -1 : time1 > time2 ? 1 :
-                        id1 < id2 ? -1 : id1 > id2 ? 1 : 0;
-                }
-            });
-
-        /** Mutex. */
-        private final Object mux0 = new Object();
-
-        /**
-         *
-         */
-        SocketTimeoutWorker() {
-            super(gridName, "tcp-comm-sock-timeout-worker", log);
-        }
-
-        /**
-         * @param timeoutObj Timeout object to add.
-         */
-        @SuppressWarnings({"NakedNotify"})
-        public void addTimeoutObject(HandshakeTimeoutObject timeoutObj) {
-            assert timeoutObj != null && timeoutObj.endTime() > 0 && timeoutObj.endTime() != Long.MAX_VALUE;
-
-            timeoutObjs.add(timeoutObj);
-
-            if (timeoutObjs.firstx() == timeoutObj) {
-                synchronized (mux0) {
-                    mux0.notifyAll();
-                }
-            }
-        }
-
-        /**
-         * @param timeoutObj Timeout object to remove.
-         */
-        public void removeTimeoutObject(HandshakeTimeoutObject timeoutObj) {
-            assert timeoutObj != null;
-
-            timeoutObjs.remove(timeoutObj);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
-            if (log.isDebugEnabled())
-                log.debug("Socket timeout worker has been started.");
-
-            while (!isInterrupted()) {
-                long now = U.currentTimeMillis();
-
-                for (Iterator<HandshakeTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
-                    HandshakeTimeoutObject timeoutObj = iter.next();
-
-                    if (timeoutObj.endTime() <= now) {
-                        iter.remove();
-
-                        timeoutObj.onTimeout();
-                    }
-                    else
-                        break;
-                }
-
-                synchronized (mux0) {
-                    while (true) {
-                        // Access of the first element must be inside of
-                        // synchronization block, so we don't miss out
-                        // on thread notification events sent from
-                        // 'addTimeoutObject(..)' method.
-                        HandshakeTimeoutObject first = timeoutObjs.firstx();
-
-                        if (first != null) {
-                            long waitTime = first.endTime() - U.currentTimeMillis();
-
-                            if (waitTime > 0)
-                                mux0.wait(waitTime);
-                            else
-                                break;
-                        }
-                        else
-                            mux0.wait(5000);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private class RecoveryWorker extends IgniteSpiThread {
-        /** */
-        private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
-
-        /**
-         *
-         */
-        private RecoveryWorker() {
-            super(gridName, "tcp-comm-recovery-worker", log);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
-            if (log.isDebugEnabled())
-                log.debug("Recovery worker has been started.");
-
-            while (!isInterrupted()) {
-                GridNioRecoveryDescriptor recoveryDesc = q.take();
-
-                assert recoveryDesc != null;
-
-                ClusterNode node = recoveryDesc.node();
-
-                if (clients.containsKey(node.id()) || !recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
-                    continue;
-
-                try {
+            catch (IgniteCheckedException | IgniteException e) {
+                if (recoveryDesc.nodeAlive(getSpiContext().node(node.id()))) {
                     if (log.isDebugEnabled())
-                        log.debug("Recovery reconnect [rmtNode=" + recoveryDesc.node().id() + ']');
+                        log.debug("Recovery reconnect failed, will retry " +
+                            "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
 
-                    GridCommunicationClient client = reserveClient(node);
-
-                    client.release();
+                    addReconnectRequest(recoveryDesc);
                 }
-                catch (IgniteCheckedException | IgniteException e) {
-                    if (recoveryDesc.nodeAlive(getSpiContext().node(node.id()))) {
-                        if (log.isDebugEnabled())
-                            log.debug("Recovery reconnect failed, will retry " +
-                                "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Recovery reconnect failed, " +
+                            "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
 
-                        addReconnectRequest(recoveryDesc);
-                    }
-                    else {
-                        if (log.isDebugEnabled())
-                            log.debug("Recovery reconnect failed, " +
-                                "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
-
-                        onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
-                            e);
-                    }
-
+                    onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
+                        e);
                 }
             }
         }
@@ -2497,12 +2280,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /**
      *
      */
-    private static class HandshakeTimeoutObject<T> {
+    private static class HandshakeTimeoutObject<T> implements IgniteSpiTimeoutObject {
         /** */
-        private static final AtomicLong idGen = new AtomicLong();
-
-        /** */
-        private final long id = idGen.incrementAndGet();
+        private final IgniteUuid id = IgniteUuid.randomUuid();
 
         /** */
         private final T obj;
@@ -2533,34 +2313,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             return done.compareAndSet(false, true);
         }
 
-        /**
-         * @return {@code True} if object has not yet been canceled.
-         */
-        boolean onTimeout() {
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
             if (done.compareAndSet(false, true)) {
                 // Close socket - timeout occurred.
                 if (obj instanceof GridCommunicationClient)
                     ((GridCommunicationClient)obj).forceClose();
                 else
                     U.closeQuiet((AbstractInterruptibleChannel)obj);
-
-                return true;
             }
-
-            return false;
         }
 
-        /**
-         * @return End time.
-         */
-        long endTime() {
+        /** {@inheritDoc} */
+        @Override public long endTime() {
             return endTime;
         }
 
-        /**
-         * @return ID.
-         */
-        long id() {
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
             return id;
         }
 
