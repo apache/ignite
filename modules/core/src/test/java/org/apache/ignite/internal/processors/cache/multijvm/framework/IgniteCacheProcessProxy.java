@@ -244,6 +244,14 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         });
     }
 
+    @Override public Map<K, V> getAllOutTx(final Set<? extends K> keys) {
+        return (Map<K, V>)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return cache().getAllOutTx(keys);
+            }
+        });
+    }
+
     /** {@inheritDoc} */
     @Override public boolean containsKey(final K key) {
         return (boolean)compute.call(new IgniteCallable<Object>() {
