@@ -221,18 +221,19 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
         if (topVer != null) {
             tx.topologyVersion(topVer);
 
-            prepare0();
+            prepare0(false);
 
             return;
         }
 
-        prepareOnTopology();
+        prepareOnTopology(false, null);
     }
 
     /**
-     *
+     * @param remap Remap flag.
+     * @param c Optional closure to run after map.
      */
-    private void prepareOnTopology() {
+    private void prepareOnTopology(final boolean remap, @Nullable final Runnable c) {
         GridDhtTopologyFuture topFut = topologyReadLock();
 
         try {
@@ -265,16 +266,22 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                     return;
                 }
 
-                tx.topologyVersion(topFut.topologyVersion());
+                if (remap)
+                    tx.onRemap(topFut.topologyVersion());
+                else
+                    tx.topologyVersion(topFut.topologyVersion());
 
-                prepare0();
+                prepare0(remap);
+
+                if (c != null)
+                    c.run();
             }
             else {
                 topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                         cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
-                                prepareOnTopology();
+                                prepareOnTopology(remap, c);
                             }
                         });
                     }
@@ -346,10 +353,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
 
     /**
      * Initializes future.
+     *
+     * @param remap Remap flag.
      */
-    private void prepare0() {
+    private void prepare0(boolean remap) {
         try {
-            if (!tx.state(PREPARING)) {
+            boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
+
+            if (!txStateCheck) {
                 if (tx.setRollbackOnly()) {
                     if (tx.timedOut())
                         onError(null, null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
@@ -366,7 +377,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             }
 
             // Make sure to add future before calling prepare.
-            cctx.mvcc().addFuture(this);
+            if (!remap)
+                cctx.mvcc().addFuture(this);
 
             prepare(
                 tx.optimistic() && tx.serializable() ? tx.readEntries() : Collections.<IgniteTxEntry>emptyList(),
@@ -502,7 +514,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
             tx.implicitSingle(),
             m.explicitLock(),
             tx.subjectId(),
-            tx.taskNameHash());
+            tx.taskNameHash(),
+            m.clientFirst());
 
         for (IgniteTxEntry txEntry : m.writes()) {
             if (txEntry.op() == TRANSFORM)
@@ -560,13 +573,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
      * @param entry Transaction entry.
      * @param topVer Topology version.
      * @param cur Current mapping.
+     * @param waitLock Wait lock flag.
      * @throws IgniteCheckedException If transaction is group-lock and local node is not primary for key.
      * @return Mapping.
      */
     private GridDistributedTxMapping map(
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer,
-        GridDistributedTxMapping cur,
+        @Nullable GridDistributedTxMapping cur,
         boolean waitLock
     ) throws IgniteCheckedException {
         GridCacheContext cacheCtx = entry.context();
@@ -599,10 +613,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
         }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
+            boolean clientFirst = cur == null && cctx.kernalContext().clientNode();
+
             cur = new GridDistributedTxMapping(primary);
 
             // Initialize near flag right away.
             cur.near(cacheCtx.isNear());
+
+            cur.clientFirst(clientFirst);
         }
 
         cur.add(entry);
@@ -748,16 +766,45 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearTxPrepareFutureAd
                     onError(nodeId, mappings, res.error());
                 }
                 else {
-                    onPrepareResponse(m, res);
+                    if (res.clientRemapVersion() != null) {
+                        assert cctx.kernalContext().clientNode();
+                        assert m.clientFirst();
 
-                    // Proceed prepare before finishing mini future.
-                    if (mappings != null)
-                        proceedPrepare(mappings);
+                        IgniteInternalFuture<?> affFut = cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
-                    // Finish this mini future.
-                    onDone(tx);
+                        if (affFut != null && !affFut.isDone()) {
+                            affFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                @Override public void apply(IgniteInternalFuture<?> fut) {
+                                    remap();
+                                }
+                            });
+                        }
+                        else
+                            remap();
+                    }
+                    else {
+                        onPrepareResponse(m, res);
+
+                        // Proceed prepare before finishing mini future.
+                        if (mappings != null)
+                            proceedPrepare(mappings);
+
+                        // Finish this mini future.
+                        onDone(tx);
+                    }
                 }
             }
+        }
+
+        /**
+         *
+         */
+        private void remap() {
+            prepareOnTopology(true, new Runnable() {
+                @Override public void run() {
+                    onDone(tx);
+                }
+            });
         }
 
         /** {@inheritDoc} */

@@ -18,12 +18,19 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
+
+import javax.cache.*;
+import java.io.*;
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
@@ -67,8 +74,7 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setMemoryMode(OFFHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setOffHeapMaxMemory(OFFHEAP_MEM);
-        cacheCfg.setIndexedTypes(Long.class, Long.class);
+        cacheCfg.setIndexedTypes(Long.class, Long.class, String.class, TestEntity.class);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -98,8 +104,6 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-873");
-
         IgniteCache<Long, Long> cache = grid(0).cache(null);
 
         for (long i = 0; i < 100; i++)
@@ -107,5 +111,73 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
 
         for (long i = 0; i < 100; i++)
             assertEquals((Long)i, cache.get(i));
+
+        SqlQuery<Long, Long> qry = new SqlQuery<>(Long.class, "_val >= 90");
+
+        List<Cache.Entry<Long, Long>> res = cache.query(qry).getAll();
+
+        assertEquals(10, res.size());
+
+        for (Cache.Entry<Long, Long> e : res) {
+            assertNotNull(e.getKey());
+            assertNotNull(e.getValue());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutGet() throws Exception {
+        IgniteCache<Object, Object> cache = grid(0).cache(null);
+
+        Map map = new HashMap();
+
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.REPEATABLE_READ, 100000, 1000)) {
+
+            for (int i = 4; i < 400; i++) {
+                map.put("key" + i, new TestEntity("value"));
+                map.put(i, "value");
+            }
+
+            cache.putAll(map);
+
+            tx.commit();
+        }
+
+        for (int i = 0; i < 100; i++) {
+            cache.get("key" + i);
+            cache.get(i);
+        }
+    }
+
+    /**
+     * Test entry class.
+     */
+    private static class TestEntity implements Serializable {
+        /** Value. */
+        @QuerySqlField(index = true)
+        private String val;
+
+        /**
+         * @param value Value.
+         */
+        public TestEntity(String value) {
+            this.val = value;
+        }
+
+        /**
+         * @return Value.
+         */
+        public String getValue() {
+            return val;
+        }
+
+        /**
+         * @param val Value
+         */
+        public void setValue(String val) {
+            this.val = val;
+        }
     }
 }

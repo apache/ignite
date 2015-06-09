@@ -241,8 +241,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
             lsnr.apply(this);
         }
         catch (IllegalStateException e) {
-            U.warn(null, "Failed to notify listener (is grid stopped?) [fut=" + this +
-                ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']');
+            U.error(null, "Failed to notify listener (is grid stopped?) [fut=" + this +
+                ", lsnr=" + lsnr + ", err=" + e.getMessage() + ']', e);
         }
         catch (RuntimeException | Error e) {
             U.error(null, "Failed to notify listener: " + lsnr, e);
