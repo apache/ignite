@@ -187,7 +187,7 @@ public class IgniteExceptionRegistry {
          */
         public ExceptionInfo(long order, Throwable error, String msg, long threadId, String threadName, long time) {
             this.order = order;
-            this.error = VisorTaskUtils.wrap(error);
+            this.error = new VisorExceptionWrapper(error);
             this.threadId = threadId;
             this.threadName = threadName;
             this.time = time;

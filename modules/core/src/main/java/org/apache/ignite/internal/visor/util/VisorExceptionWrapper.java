@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.util;
 
 /**
- * Wrapper of exceptions for transferring to Visor with absent exception classes.
+ * Exception wrapper for safe for transferring to Visor.
  */
 public class VisorExceptionWrapper extends Throwable {
     /** Detail message string of this throwable */

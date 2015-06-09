@@ -112,7 +112,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                 if (meta == null)
                     return new IgniteBiTuple<>(
-                        VisorTaskUtils.wrap(new SQLException("Fail to execute query. No metadata available.")), null);
+                        new VisorExceptionWrapper(new SQLException("Fail to execute query. No metadata available.")), null);
                 else {
                     List<VisorQueryField> names = new ArrayList<>(meta.size());
 
