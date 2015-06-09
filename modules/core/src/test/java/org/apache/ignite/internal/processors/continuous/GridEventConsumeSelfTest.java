@@ -114,8 +114,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                 GridContinuousProcessor proc = grid.context().continuous();
 
                 try {
-                    if (!noAutoUnsubscribe)
-                        assertEquals(0, U.<Map>field(proc, "rmtInfos").size());
+                    if (!noAutoUnsubscribe) {
+                        Map rmtInfos = U.field(proc, "rmtInfos");
+
+                        assertTrue("Unexpected remote infos: " + rmtInfos, rmtInfos.isEmpty());
+                    }
                 }
                 finally {
                     U.<Map>field(proc, "rmtInfos").clear();
