@@ -623,7 +623,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             sqlQry,
                             F.asList(params),
                             typeDesc,
-                            idx.backupFilter());
+                            idx.backupFilter(null, null, null));
 
                         sendQueryExecutedEvent(
                             sqlQry,
@@ -684,13 +684,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Message factory for {@link GridIoManager}.
-     */
-    public MessageFactory messageFactory() {
-        return idx == null ? null : idx.messageFactory();
-    }
-
-    /**
      * Closeable iterator.
      */
     private static interface ClIter<X> extends AutoCloseable, Iterator<X> {
@@ -713,7 +706,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String sql = qry.getSql();
                     Object[] args = qry.getArgs();
 
-                    GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
+                    GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
+                        idx.backupFilter(null, null, null));
 
                     sendQueryExecutedEvent(sql, args);
 
