@@ -228,7 +228,7 @@ public class GridMapQueryExecutor {
         Collection<Integer> partIds = parts == null ? null : wrap(parts);
 
         for (String cacheName : cacheNames) {
-            GridCacheContext<?,?> cctx = cacheContext(cacheName, topVer);
+            GridCacheContext<?, ?> cctx = cacheContext(cacheName, topVer);
 
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
