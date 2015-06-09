@@ -175,7 +175,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }, 4, "grid-starter");
 
-            Collection<TcpDiscoveryNode> nodes = discoMap.get(g1.name()).ring().allNodes();
+            Collection<TcpDiscoveryNode> nodes = ((ServerImpl)discoMap.get(g1.name()).impl).ring().allNodes();
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 

@@ -52,9 +52,14 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoverySpi());
 
-        cfg.setCacheConfiguration(
-            cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false),
-            cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+        List<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        if (gridName.equals(getTestGridName(0)))
+            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false));
+        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
+            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+
+        cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
         return cfg;
     }

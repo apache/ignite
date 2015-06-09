@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.0.7-SNAPSHOT</version>
+    <version>1.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -69,6 +69,7 @@
         <module>modules/codegen</module>
         <module>modules/gce</module>
         <module>modules/cloud</module>
+        <module>modules/mesos</module>
     </modules>
 
     <profiles>
@@ -587,12 +588,12 @@
                                         </copy>
 
                                         <!-- appending filename to md5 and sha1 files. to be improved. -->
-                                        <concat destfile="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true">&#160;${project.artifactId}-fabric-${project.version}-bin.zip</concat>
-                                        <concat destfile="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true">&#160;${project.artifactId}-fabric-${project.version}-bin.zip</concat>
-                                        <concat destfile="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true">&#160;${project.artifactId}-hadoop-${project.version}-bin.zip</concat>
-                                        <concat destfile="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true">&#160;${project.artifactId}-hadoop-${project.version}-bin.zip</concat>
-                                        <concat destfile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true">&#160;${project.artifactId}-${project.version}-src.zip</concat>
-                                        <concat destfile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true">&#160;${project.artifactId}-${project.version}-src.zip</concat>
+                                        <concat destfile="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.md5" append="true"> ${project.artifactId}-fabric-${project.version}-bin.zip</concat>
+                                        <concat destfile="${basedir}/target/site/${project.artifactId}-fabric-${project.version}-bin.zip.sha1" append="true"> ${project.artifactId}-fabric-${project.version}-bin.zip</concat>
+                                        <concat destfile="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.md5" append="true"> ${project.artifactId}-hadoop-${project.version}-bin.zip</concat>
+                                        <concat destfile="${basedir}/target/site/${project.artifactId}-hadoop-${project.version}-bin.zip.sha1" append="true"> ${project.artifactId}-hadoop-${project.version}-bin.zip</concat>
+                                        <concat destfile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.md5" append="true"> ${project.artifactId}-${project.version}-src.zip</concat>
+                                        <concat destfile="${basedir}/target/site/${project.artifactId}-${project.version}-src.zip.sha1" append="true"> ${project.artifactId}-${project.version}-src.zip</concat>
 
                                         <copy file="${basedir}/KEYS" todir="${basedir}/target/site" failonerror="false" />
                                     </target>

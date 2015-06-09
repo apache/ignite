@@ -82,7 +82,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi().setForceServerMode(true);
 
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 

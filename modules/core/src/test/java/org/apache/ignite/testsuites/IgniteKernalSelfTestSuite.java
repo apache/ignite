@@ -55,9 +55,11 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMessageSelfTest.class);
         suite.addTestSuite(GridDeploymentManagerStopSelfTest.class);
         suite.addTestSuite(GridManagerStopSelfTest.class);
-        suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.class);
+        suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class);
+        suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAliveCacheSelfTest.class);
-        suite.addTestSuite(GridDiscoveryManagerSelfTest.class);
+        suite.addTestSuite(GridDiscoveryManagerSelfTest.RegularDiscovery.class);
+        suite.addTestSuite(GridDiscoveryManagerSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
@@ -76,6 +78,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProcessorMultiNodeConfigSelfTest.class);
         suite.addTestSuite(GridServiceProcessorProxySelfTest.class);
         suite.addTestSuite(GridServiceReassignmentSelfTest.class);
+        suite.addTestSuite(GridServiceClientNodeTest.class);
 
         return suite;
     }

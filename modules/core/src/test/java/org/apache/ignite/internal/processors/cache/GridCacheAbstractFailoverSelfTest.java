@@ -74,7 +74,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         discoSpi.setSocketTimeout(10_000);
         discoSpi.setAckTimeout(10_000);
-        discoSpi.setNetworkTimeout(10_000);
+        discoSpi.setNetworkTimeout(60_000);
 
         return cfg;
     }

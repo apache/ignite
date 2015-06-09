@@ -45,10 +45,32 @@ def checkprocess = { process ->
 
     if (process.exitValue() != 0) {
         println "Return code: " + process.exitValue()
-        println "Errout:\n" + process.err.text
+//        println "Errout:\n" + process.err.text
 
         assert process.exitValue() == 0 || process.exitValue() == 128
     }
+}
+
+def exec = {command, envp, dir ->
+    println "Executing command '$command'..."
+
+    def ps = command.execute(envp, dir)
+
+    try {
+        println "Command output:"
+
+        println ps.text
+    }
+    catch (Throwable e) {
+        // Do nothing.
+        println "Error: could not get caommand output."
+    }
+
+    checkprocess ps
+}
+
+def execGit = {command ->
+    exec(command, null, new File("../"))
 }
 
 /**
@@ -252,8 +274,6 @@ def tryGitAmAbort = {
     }
     catch (Throwable e) {
         println "Error: git am --abort fails: "
-
-        e.printStackTrace()
     }
 }
 
@@ -261,50 +281,69 @@ def tryGitAmAbort = {
  * Applys patch from jira to given git state.
  */
 def applyPatch = { jira, attachementURL ->
+    // Delete all old IGNITE-*-*.patch files.
+    def directory = new File("./")
+
+    println "Remove IGNITE-*-*.patch files in ${directory.absolutePath} and its subdirectories..."
+
+    def classPattern = ~/.*IGNITE-.*-.*\.patch/
+
+    directory.eachFileRecurse(groovy.io.FileType.FILES)
+        { file ->
+            if (file ==~ classPattern){
+                println "Deleting ${file}..."
+
+                file.delete()
+            }
+        }
+
+    // Main logic.
+    println "Patch apllying with jira='$jira' and attachment='$ATTACHMENT_URL/$attachementURL/'."
+
     def userEmail = System.getenv("env.GIT_USER_EMAIL");
     def userName = System.getenv("env.GIT_USER_NAME");
 
-    println "Patch apllying with jira='$jira' and attachment='$ATTACHMENT_URL/$attachementURL/'."
-
     def patchFile = new File("${jira}-${attachementURL}.patch")
 
+    println "Getting patch content."
+
+    def attachmentUrl = new URL("$ATTACHMENT_URL/$attachementURL/")
+
+    HttpURLConnection conn = (HttpURLConnection)attachmentUrl.openConnection();
+    conn.setRequestProperty("Content-Type", "text/x-patch;charset=utf-8");
+    conn.setRequestProperty("X-Content-Type-Options", "nosniff");
+    conn.connect();
+
+    patchFile << conn.getInputStream()
+
+    println "Got patch content."
+
     try {
-        println "Getting patch content."
+        tryGitAmAbort()
 
-        patchFile << new URL("$ATTACHMENT_URL/$attachementURL/").text
+        execGit "git branch"
 
-        println "Got patch content."
+        execGit "git config user.email \"$userEmail\""
+        execGit "git config user.name \"$userName\""
 
-        try {
-            tryGitAmAbort()
+        // Create a new uniqueue branch to applying patch
+        def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
+        execGit "git checkout -b ${newTestBranch}"
 
-            checkprocess "git branch".execute()
+        execGit "git branch"
 
-            checkprocess "git config user.email \"$userEmail\"".execute(null, new File("../"))
-            checkprocess "git config user.name \"$userName\"".execute(null, new File("../"))
+        println "Trying to apply patch."
 
-            // Create a new uniqueue branch to applying patch
-            def newTestBranch = "test-branch-${jira}-${attachementURL}-${System.currentTimeMillis()}"
-            checkprocess "git checkout -b ${newTestBranch}".execute(null, new File("../"))
+        execGit "git am dev-tools/${patchFile.name}"
 
-            checkprocess "git branch".execute()
-
-            println "Trying to apply patch."
-
-            checkprocess "git am dev-tools/${patchFile.name}".execute(null, new File("../"))
-
-            println "Patch was applied successfully."
-        }
-        catch (Exception e) {
-            println "Patch was not applied successfully. Aborting patch applying."
-
-            tryGitAmAbort()
-
-            throw e;
-        }
+        println "Patch was applied successfully."
     }
-    finally {
-        assert patchFile.delete(), 'Could not delete patch file.'
+    catch (Throwable e) {
+        println "Patch was not applied successfully. Aborting patch applying."
+
+        tryGitAmAbort()
+
+        throw e;
     }
 }
 
@@ -381,6 +420,9 @@ def runAllTestBuilds = {builds, jiraNum ->
             else {
                 postData = "<build>" +
                         "  <buildType id='$it'/>" +
+                        "  <comment>" +
+                        "    <text>Auto triggered build to validate last attached patch file at $jiraNum.</text>" +
+                        "  </comment>" +
                         "  <properties>" +
                         "    <property name='env.JIRA_NUM' value='$jiraNum'/>" +
                         "  </properties>" +
@@ -407,10 +449,17 @@ def runAllTestBuilds = {builds, jiraNum ->
         }
     }
 
+    // Format comment for jira.
     def triggeredBuildsComment = "There was triggered next test builds for last attached patch-file:\\n"
 
+    def n = 1;
+
     triggeredBuilds.each { name, url ->
-        triggeredBuildsComment += "${name as String} - ${url as String}\\n"
+        def prefix = n < 10 ? "0" : ""
+
+        triggeredBuildsComment += "${prefix}${n}. ${url as String} - ${name as String}\\n"
+
+        n++
     }
 
     addJiraComment(jiraNum, triggeredBuildsComment)

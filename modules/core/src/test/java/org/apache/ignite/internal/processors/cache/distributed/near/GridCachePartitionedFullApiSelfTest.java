@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+
+import javax.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -71,5 +74,34 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
         for (int i = 0 ; i < aff.partitions(); i++)
             String.valueOf(cache.entrySet(i));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUpdate() throws Exception {
+        if (gridCount() > 1) {
+            IgniteCache<Object, Object> cache = grid(0).cache(null);
+
+            Integer key = nearKey(cache);
+
+            primaryCache(key, null).put(key, 1);
+
+            assertEquals(1, cache.get(key));
+
+            primaryCache(key, null).put(key, 2);
+
+            if (cache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null)
+                assertEquals(2, cache.localPeek(key));
+
+            assertEquals(2, cache.get(key));
+
+            int cnt = 0;
+
+            for (Cache.Entry e : cache)
+                cnt++;
+
+            assertEquals(1, cnt);
+        }
     }
 }
