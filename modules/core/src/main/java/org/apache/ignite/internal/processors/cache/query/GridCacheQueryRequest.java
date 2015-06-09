@@ -112,7 +112,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private int taskHash;
 
     /** Partition. */
-    private Integer part;
+    private int part;
 
     /**
      * Required by {@link Externalizable}
@@ -218,7 +218,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.clause = clause;
         this.clsName = clsName;
         this.keyValFilter = keyValFilter;
-        this.part = part;
+        this.part = part == null ? -1 : part;
         this.rdc = rdc;
         this.trans = trans;
         this.pageSize = pageSize;
@@ -426,7 +426,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @return partition.
      */
     @Nullable public Integer partition() {
-        return part;
+        return part == -1 ? null : part;
     }
 
     /** {@inheritDoc} */
@@ -523,40 +523,41 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeByteArray("rdcBytes", rdcBytes))
+                if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeByteArray("rdcBytes", rdcBytes))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeInt("taskHash", taskHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeByteArray("transBytes", transBytes))
+                if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
+                if (!writer.writeByteArray("transBytes", transBytes))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeInt("part", part != null ? part : -1))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -678,7 +679,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 16:
-                rdcBytes = reader.readByteArray("rdcBytes");
+                part = reader.readInt("part");
 
                 if (!reader.isLastRead())
                     return false;
@@ -686,7 +687,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 17:
-                subjId = reader.readUuid("subjId");
+                rdcBytes = reader.readByteArray("rdcBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -694,7 +695,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 18:
-                taskHash = reader.readInt("taskHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -702,7 +703,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 19:
-                transBytes = reader.readByteArray("transBytes");
+                taskHash = reader.readInt("taskHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -710,6 +711,14 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 20:
+                transBytes = reader.readByteArray("transBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 21:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -721,15 +730,6 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
                 reader.incrementState();
 
-            case 21:
-                int part0 = reader.readInt("part");
-
-                part = part0 == -1 ? null : part0;
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return true;
