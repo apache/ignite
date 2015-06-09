@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.processors.cache.multijvm.framework.*;
 
 /**
  * Multy Jvm tests.
@@ -27,19 +26,5 @@ public class GridCachePartitionedMultiJvmFullApiSelfTest extends GridCachePartit
     /** {@inheritDoc} */
     protected boolean isMultiJvm() {
         return true;
-    }
-
-    @Override protected void afterTest() throws Exception {
-        super.afterTest(); // TODO: CODE: implement.
-
-        IgniteExProcessProxy.killAll();
-    }
-
-    @Override public void testPutAllRemoveAll() throws Exception {
-        super.testPutAllRemoveAll(); // TODO: CODE: implement.
-    }
-
-    @Override public void testPutAllPutAll() throws Exception {
-        super.testPutAllPutAll(); // TODO: CODE: implement.
     }
 }

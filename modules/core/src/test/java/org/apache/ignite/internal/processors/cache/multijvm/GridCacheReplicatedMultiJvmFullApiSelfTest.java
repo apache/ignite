@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.multijvm;
 
 import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
-import org.apache.ignite.internal.processors.cache.multijvm.framework.*;
 
 /**
  * Multy Jvm tests.
@@ -27,11 +26,5 @@ public class GridCacheReplicatedMultiJvmFullApiSelfTest extends GridCacheReplica
     /** {@inheritDoc} */
     protected boolean isMultiJvm() {
         return true;
-    }
-
-    @Override protected void afterTest() throws Exception {
-        super.afterTest(); // TODO: CODE: implement.
-
-        IgniteExProcessProxy.killAll();
     }
 }
