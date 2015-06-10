@@ -132,9 +132,14 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
         IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
 
-        generateTestFile(inFile.toString(), "red", 100000, "blue", 200000, "green", 150000, "yellow", 70000 );
+        final int red = 10_000;
+        final int blue = 20_000;
+        final int green = 15_000;
+        final int yellow = 7_000;
 
-        for (int i = 0; i < 8; i++) {
+        generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow );
+
+        for (int i = 0; i < 3; i++) {
             igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
             boolean useNewMapper = (i & 1) == 0;
@@ -185,13 +190,13 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
             checkOwner(new IgfsPath(outFile));
 
             assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
-                    useNewReducer,
-                "blue\t200000\n" +
-                    "green\t150000\n" +
-                    "red\t100000\n" +
-                    "yellow\t70000\n",
+                useNewReducer,
+                "blue\t" + blue + "\n" +
+                "green\t" + green + "\n" +
+                "red\t" + red + "\n" +
+                "yellow\t" + yellow + "\n",
                 readAndSortFile(outFile)
-                );
+            );
         }
     }
 
