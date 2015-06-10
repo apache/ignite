@@ -31,6 +31,7 @@ import org.yardstickframework.*;
 
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
@@ -43,6 +44,9 @@ public class IgniteNode implements BenchmarkServer {
 
     /** Client mode. */
     private boolean clientMode;
+
+    /** */
+    private static final AtomicInteger idSeq = new AtomicInteger(0);
 
     /** */
     public IgniteNode() {
@@ -68,7 +72,7 @@ public class IgniteNode implements BenchmarkServer {
 
         IgniteConfiguration c = loadConfiguration(args.configuration());
 
-        c.setGridName(String.valueOf(System.currentTimeMillis()));
+        c.setGridName(String.valueOf(idSeq.incrementAndGet()));
 
         assert c != null;
 
@@ -129,16 +133,16 @@ public class IgniteNode implements BenchmarkServer {
             commSpi = new TcpCommunicationSpi();
 
         commSpi.setLocalPortRange(200);
-        commSpi.setSocketWriteTimeout(3000);
+        commSpi.setSocketWriteTimeout(30_000);
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
 
         if (spi == null)
             spi = new TcpDiscoverySpi();
 
-        spi.setNetworkTimeout(3000);
-        spi.setSocketTimeout(3000);
-        spi.setJoinTimeout(10_000);
+        spi.setNetworkTimeout(30_000);
+        spi.setSocketTimeout(30_000);
+        spi.setJoinTimeout(30_000);
 
         c.setCommunicationSpi(commSpi);
         c.setDiscoverySpi(spi);
