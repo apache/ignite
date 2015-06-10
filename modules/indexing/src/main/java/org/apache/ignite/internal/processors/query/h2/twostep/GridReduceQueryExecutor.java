@@ -269,7 +269,7 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
+    public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepPortable) {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();
@@ -356,7 +356,7 @@ public class GridReduceQueryExecutor {
 //                dropTable(r.conn, tbl.getName()); TODO
             }
 
-            return new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable());
+            return new GridQueryCacheObjectsIterator(new Iter(res), cctx, keepPortable);
         }
         catch (IgniteCheckedException | InterruptedException | RuntimeException e) {
             U.closeQuiet(r.conn);

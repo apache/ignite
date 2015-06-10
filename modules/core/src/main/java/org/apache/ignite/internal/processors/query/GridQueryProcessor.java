@@ -546,9 +546,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
+            GridCacheContext<Object, Object> cacheCtx = ctx.cache().internalCache(space).context();
+
             return idx.queryTwoStep(
-                ctx.cache().internalCache(space).context(),
-                qry);
+                cacheCtx,
+                qry,
+                cacheCtx.keepPortable());
         }
         finally {
             busyLock.leaveBusy();
