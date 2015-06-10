@@ -134,7 +134,7 @@ class OptimizedClassDescriptor {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
-        this.metaHandler = this.metaHandler;
+        this.metaHandler = metaHandler;
 
         name = cls.getName();
 
@@ -492,7 +492,7 @@ class OptimizedClassDescriptor {
 
                         for (ClassFields clsFields : this.fields.fields)
                             for (FieldInfo info : clsFields.fields)
-                                meta.addMeta(info.id(), (byte)info.type().ordinal());
+                                meta.addMeta(info.id(), info.type());
 
                         U.debug("putting to cache: " + typeId);
 

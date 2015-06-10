@@ -17,9 +17,12 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
+
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.marshaller.optimized.OptimizedFieldType.*;
 /**
  * Metadata that keeps fields information. Used in conjunction with the footer that is added to some objects during
  * marshalling.
@@ -39,11 +42,44 @@ public class OptimizedObjectMetadata implements Externalizable {
      * @param fieldId Field ID.
      * @param fieldType Field type.
      */
-    public void addMeta(int fieldId, byte fieldType) {
+    public void addMeta(int fieldId, OptimizedFieldType fieldType) {
         if (fieldsInfo == null)
             fieldsInfo = new ArrayList<>();
 
-        fieldsInfo.add(new FieldInfo(fieldId, fieldType));
+        int len = 1;
+
+        switch (fieldType) {
+            case BYTE:
+            case BOOLEAN:
+                len += 1;
+                break;
+
+            case SHORT:
+            case CHAR:
+                len += 2;
+                break;
+
+            case INT:
+            case FLOAT:
+                len += 4;
+                break;
+
+            case LONG:
+            case DOUBLE:
+                len += 8;
+                break;
+
+            case OTHER:
+                len = OptimizedMarshallerUtils.VARIABLE_LEN;
+                break;
+
+            default:
+                throw new IgniteException("Unknown field type: " + fieldType);
+        }
+
+        assert len != 1;
+
+        fieldsInfo.add(new FieldInfo(fieldId, len));
     }
 
     /**
@@ -75,7 +111,7 @@ public class OptimizedObjectMetadata implements Externalizable {
 
         for (FieldInfo fieldInfo : fieldsInfo) {
             out.writeInt(fieldInfo.id);
-            out.writeByte(fieldInfo.type);
+            out.writeInt(fieldInfo.len);
         }
     }
 
@@ -86,7 +122,7 @@ public class OptimizedObjectMetadata implements Externalizable {
         fieldsInfo = new ArrayList<>(size);
 
         for (int i = 0; i < size; i++)
-            fieldsInfo.add(new FieldInfo(in.readInt(), in.readByte()));
+            fieldsInfo.add(new FieldInfo(in.readInt(), in.readInt()));
     }
 
     /**
@@ -97,17 +133,17 @@ public class OptimizedObjectMetadata implements Externalizable {
         int id;
 
         /** Field type. */
-        byte type;
+        int len;
 
         /**
          * Constructor.
          *
          * @param id Field ID.
-         * @param type Field type.
+         * @param len Field len.
          */
-        public FieldInfo(int id, byte type) {
+        public FieldInfo(int id, int len) {
             this.id = id;
-            this.type = type;
+            this.len = len;
         }
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import com.sun.javaws.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
@@ -262,6 +263,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return new CacheObjectContext(ctx,
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode == ONHEAP_TIERED,
+            GridCacheUtils.isSystemCache(ccfg.getName()),
             storeVal);
     }
 

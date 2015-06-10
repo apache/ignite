@@ -149,6 +149,9 @@ class OptimizedMarshallerUtils {
     /** */
     static final byte FOOTER_LEN_OFF = 4;
 
+    /** */
+    static final byte VARIABLE_LEN = -1;
+
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
@@ -221,7 +224,7 @@ class OptimizedMarshallerUtils {
      * @param mapper Mapper.
      * @return Type ID.
      */
-    private static int resolveTypeId(String clsName, OptimizedMarshallerIdMapper mapper) {
+    public static int resolveTypeId(String clsName, OptimizedMarshallerIdMapper mapper) {
         int typeId;
 
         if (mapper != null) {
@@ -236,15 +239,6 @@ class OptimizedMarshallerUtils {
         return typeId;
     }
 
-    /**
-     * Checks whether a given type supports and should include footer with fields info into the serialized form.
-     *
-     * @param type Type.
-     * @return {@code true} if supported, {@code false} otherwise.
-     */
-    public static boolean supportsFooter(int type) {
-        return type == SERIALIZABLE;
-    }
     /**
      * @param fieldName Field name.
      * @return Field ID.

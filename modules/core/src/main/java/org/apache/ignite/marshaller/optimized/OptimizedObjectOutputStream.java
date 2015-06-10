@@ -561,7 +561,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             if (t.field() != null) {
                 int fieldLen = out.size() - size;
 
-                footer.put(t.id(), (byte)t.type().ordinal(), fieldLen);
+                footer.put(t.id(), t.type(), fieldLen);
             }
         }
     }
@@ -819,7 +819,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
             int fieldLen = out.size() - size;
 
-            footer.put(t.get1().id(), (byte)t.get1().type().ordinal(), fieldLen);
+            footer.put(t.get1().id(), t.get1().type(), fieldLen);
         }
     }
 
@@ -986,12 +986,12 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
          * @param fieldType Field type.
          * @param len Total number of bytes occupied by type's value.
          */
-        private void put(int fieldId, byte fieldType, int len) {
+        private void put(int fieldId, OptimizedFieldType fieldType, int len) {
             if (data == null)
                 return;
 
             // Considering that field's length will be no longer 2^15 (32 MB)
-            if (fieldType == OptimizedFieldType.OTHER.ordinal())
+            if (fieldType == OptimizedFieldType.OTHER)
                 data.add((short)len);
         }
 
@@ -1011,8 +1011,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             if (data == null)
                 writeInt(EMPTY_FOOTER);
             else {
-                int footerStartPos = out.size();
-
                 //12 - 4 bytes for len at the beginning, 4 bytes for len at the end, 4 bytes for object len.
                 int footerLen = data.size() * 2 + 12;
 

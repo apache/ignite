@@ -965,14 +965,16 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int pos = in.position();
 
         // TODO: IGNITE-950, do we need move to start position?
-        if (!supportsFooter(in.readByte()))
+        if (in.readByte() != SERIALIZABLE) {
+            in.position(pos);
             return false;
+        }
 
-        int off = fieldOffset(fieldName);
+        FieldRange range = fieldRange(fieldName);
 
         in.position(pos);
 
-        return off > 0;
+        return range != null && range.start > 0;
     }
 
     /**
@@ -986,15 +988,17 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int pos = in.position();
 
         // TODO: IGNITE-950, do we need move to start position?
-        if (!supportsFooter(in.readByte()))
+        if (in.readByte() != SERIALIZABLE) {
+            in.position(pos);
             return false;
+        }
 
-        int off = fieldOffset(fieldName);
+        FieldRange range = fieldRange(fieldName);
 
         Object obj = null;
 
-        if (off > 0) {
-            in.position(off);
+        if (range != null && range.start > 0) {
+            in.position(range.start);
             obj = readObject();
         }
 
@@ -1007,11 +1011,29 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * Returns field offset in the byte stream.
      *
      * @param fieldName Field name.
-     * @return positive offset or -1 if the object doesn't have such a field.
+     * @return positive range or {@code null} if the object doesn't have such a field.
      * @throws IOException in case of error.
      */
-    private int fieldOffset(String fieldName) throws IOException {
+    private FieldRange fieldRange(String fieldName) throws IOException {
         int fieldId = resolveFieldId(fieldName);
+
+        int typeId = readInt();
+
+        int clsNameLen = 0;
+
+        if (typeId == 0) {
+            int pos = in.position();
+
+            typeId = OptimizedMarshallerUtils.resolveTypeId(readUTF(), mapper);
+
+            clsNameLen = in.position() - pos;
+        }
+
+        OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
+
+        if (meta == null)
+            // TODO: IGNITE-950 add warning!
+            return null;
 
         int end = in.size();
 
@@ -1020,33 +1042,28 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int footerLen = in.readInt();
 
         if (footerLen == EMPTY_FOOTER)
-            return -1;
+            return null;
 
-        int footerStartOff = end - footerLen;
-        in.position(footerStartOff);
+        // 4 - skipping length at the beginning
+        int footerOff = (end - footerLen) + 4;
+        in.position(footerOff);
 
-        int fieldsDataPos = in.readInt();
+        int fieldOff = 0;
 
-        int fieldOff = -1;
+        for (OptimizedObjectMetadata.FieldInfo info : meta.getMeta()) {
+            if (info.id == fieldId) {
+                //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
+                fieldOff += 1 + 4 + clsNameLen + 2;
 
-        // 8 - size of footer len and object total len fields.
-        int bound = end - 8;
+                FieldRange range = new FieldRange(fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
 
-        while (footerStartOff < bound) {
-            int id = in.readInt();
-
-            if (fieldId == id) {
-                fieldOff = fieldsDataPos + in.readInt();
-                break;
+                return range;
             }
             else
-                // skip offset and len
-                in.skipBytes(8);
-
-            footerStartOff += 12;
+                fieldOff += info.len == VARIABLE_LEN ? in.readShort() : info.len;
         }
 
-        return fieldOff;
+        return null;
     }
 
     /**
@@ -1292,6 +1309,26 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         @SuppressWarnings("unchecked")
         private <T> T value(String name, T dflt) {
             return objs[fieldInfo.getIndex(name)] != null ? (T)objs[fieldInfo.getIndex(name)] : dflt;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FieldRange {
+        /** */
+        private int start;
+
+        /** */
+        private int len;
+
+        /**
+         * @param start Start.
+         * @param len   Length.
+         */
+        public FieldRange(int start, int len) {
+            this.start = start;
+            this.len = len;
         }
     }
 }
