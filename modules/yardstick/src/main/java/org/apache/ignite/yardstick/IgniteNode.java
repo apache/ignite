@@ -67,6 +67,8 @@ public class IgniteNode implements BenchmarkServer {
 
         IgniteConfiguration c = loadConfiguration(args.configuration());
 
+        c.setGridName(String.valueOf(System.currentTimeMillis()));
+
         assert c != null;
 
         for (CacheConfiguration cc : c.getCacheConfiguration()) {
