@@ -322,6 +322,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         // Create async application master.
         rmClient = AMRMClientAsync.createAMRMClientAsync(300, this);
 
+        rmClient.init(conf);
+
+        rmClient.start();
+
         if (props.igniteCfg() == null || props.igniteCfg().isEmpty()) {
             InputStream input = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(IgniteYarnUtils.DEFAULT_IGNITE_CONFIG);
