@@ -35,8 +35,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
         // Data structures.
-        // TODO: IGNITE-264
-        // suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheLocalSequenceApiSelfTest.class));
@@ -54,8 +53,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheReplicatedQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedQueueRotativeMultiNodeTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedSetSelfTest.class));
-        // TODO: GG-5306
-        // suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
         suite.addTest(new TestSuite(IgniteReplicatedCountDownLatchSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
@@ -68,10 +66,9 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueMultiNodeSelfTest.class));
 
-        // TODO: IGNITE-80.
-        //suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
-        //suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
-        //suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedOffHeapValuesSetSelfTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedSetNoBackupsSelfTest.class));
@@ -86,14 +83,11 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueRotativeMultiNodeTest.class));
         suite.addTest(new TestSuite(GridCacheQueueCleanupSelfTest.class));
 
-        // TODO: GG-5620 Uncomment when fix
-        //suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedQueueEntryMoveSelfTest.class));
 
-        // TODO: GG-2699
-        //suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
-        //suite.addTest(new TestSuite(GridCachePartitionedOffheapDataStructuresFailoverSelfTest.class));
-        // TODO: GG-4807 Uncomment when fix
-        // suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedDataStructuresFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedOffheapDataStructuresFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
         suite.addTest(new TestSuite(IgniteLocalAtomicLongApiSelfTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedAtomicLongApiSelfTest.class));

@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.context.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.datastreamer.*;
 
 /**
@@ -122,7 +124,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheTtlManagerSelfTest.class);
         suite.addTestSuite(GridCacheLifecycleAwareSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicStopBusySelfTest.class);
-        // suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class); TODO Ignite-257.
+        suite.addTestSuite(IgniteCacheTransactionalStopBusySelfTest.class);
         suite.addTestSuite(GridCacheAtomicNearCacheSelfTest.class);
         suite.addTestSuite(CacheAtomicNearUpdateTopologyChangeTest.class);
         suite.addTestSuite(CacheTxNearUpdateTopologyChangeTest.class);
@@ -151,12 +153,12 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTest(IgniteCacheTcpClientDiscoveryTestSuite.suite());
 
-        // Heuristic exception handling. TODO IGNITE-257
-//        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
-//        suite.addTestSuite(GridCacheStopSelfTest.class); TODO IGNITE-257
+        // Heuristic exception handling.
+        suite.addTestSuite(GridCacheColocatedTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheLocalTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheNearTxExceptionSelfTest.class);
+        suite.addTestSuite(GridCacheStopSelfTest.class);
 
         suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
 
