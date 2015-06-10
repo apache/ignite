@@ -163,7 +163,7 @@ public class IpcSharedMemoryNativeLoader {
                 }
             }
             catch (IgniteCheckedException ignore) {
-
+                // No-op.
             }
 
             // Failed to find the library.
