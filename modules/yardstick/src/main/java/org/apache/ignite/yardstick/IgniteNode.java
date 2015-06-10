@@ -22,6 +22,7 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
@@ -127,7 +128,21 @@ public class IgniteNode implements BenchmarkServer {
         if (commSpi == null)
             commSpi = new TcpCommunicationSpi();
 
+        commSpi.setLocalPortRange(200);
+        commSpi.setSocketWriteTimeout(3000);
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
+
+        if (spi == null)
+            spi = new TcpDiscoverySpi();
+
+        spi.setNetworkTimeout(3000);
+        spi.setSocketTimeout(3000);
+        spi.setJoinTimeout(10_000);
+
         c.setCommunicationSpi(commSpi);
+        c.setDiscoverySpi(spi);
+        c.setTimeServerPortBase(200);
 
         ignite = Ignition.start(c);
     }
