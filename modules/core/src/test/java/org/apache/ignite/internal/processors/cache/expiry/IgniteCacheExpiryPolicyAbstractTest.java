@@ -759,10 +759,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
-     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void _testNearCreateUpdate() throws Exception {
+    public void testNearCreateUpdate() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-518");
+
         if (cacheMode() != PARTITIONED)
             return;
 
@@ -883,10 +884,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     }
 
     /**
-     * TODO IGNITE-518
      * @throws Exception If failed.
      */
-    public void _testNearAccess() throws Exception {
+    public void testNearAccess() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-518");
+
         if (cacheMode() != PARTITIONED)
             return;
 

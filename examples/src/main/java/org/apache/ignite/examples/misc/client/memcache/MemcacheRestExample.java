@@ -85,22 +85,22 @@ public class MemcacheRestExample {
             // Check that cache is empty.
             System.out.println(">>> Current cache size: " + cache.size() + " (expected: 0).");
 
-            // Create atomic long.
-            IgniteAtomicLong l = ignite.atomicLong("atomicLong", 10, true);
+            // Create atomic long and close it after test is done.
+            try (IgniteAtomicLong l = ignite.atomicLong("atomicLong", 10, true)) {
+                // Increment atomic long by 5 using Memcache client.
+                if (client.incr("atomicLong", 5, 0) == 15)
+                    System.out.println(">>> Successfully incremented atomic long by 5.");
 
-            // Increment atomic long by 5 using Memcache client.
-            if (client.incr("atomicLong", 5, 0) == 15)
-                System.out.println(">>> Successfully incremented atomic long by 5.");
+                // Increment atomic long using Ignite API and check that value is correct.
+                System.out.println(">>> New atomic long value: " + l.incrementAndGet() + " (expected: 16).");
 
-            // Increment atomic long using Ignite API and check that value is correct.
-            System.out.println(">>> New atomic long value: " + l.incrementAndGet() + " (expected: 16).");
+                // Decrement atomic long by 3 using Memcache client.
+                if (client.decr("atomicLong", 3, 0) == 13)
+                    System.out.println(">>> Successfully decremented atomic long by 3.");
 
-            // Decrement atomic long by 3 using Memcache client.
-            if (client.decr("atomicLong", 3, 0) == 13)
-                System.out.println(">>> Successfully decremented atomic long by 3.");
-
-            // Decrement atomic long using Ignite API and check that value is correct.
-            System.out.println(">>> New atomic long value: " + l.decrementAndGet() + " (expected: 12).");
+                // Decrement atomic long using Ignite API and check that value is correct.
+                System.out.println(">>> New atomic long value: " + l.decrementAndGet() + " (expected: 12).");
+            }
         }
         finally {
             if (client != null)
