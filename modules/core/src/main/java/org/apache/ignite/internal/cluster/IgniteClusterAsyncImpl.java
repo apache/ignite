@@ -232,6 +232,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forHost(String host, String... hosts) {
+	return cluster.forHost(host, hosts);
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterGroup forDaemons() {
         return cluster.forDaemons();
     }

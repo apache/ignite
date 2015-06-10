@@ -577,6 +577,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public final ClusterGroup forHost(String host, String... hosts) {
+	return forPredicate(new HostsFilter(host, hosts));
+    }
+
+    /** {@inheritDoc} */
     @Override public final ClusterGroup forDaemons() {
         return forPredicate(new DaemonFilter());
     }
@@ -757,6 +762,43 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
             return val == null ? n.attributes().containsKey(name) : val.equals(n.attribute(name));
+        }
+    }
+
+    /**
+     */
+    private static class HostsFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Hosts Names. */
+        private final HashSet hashInputHostNames;
+
+        /**
+         * @param name  First host name.
+	  * @param names Host names
+         */
+        private HostsFilter(String name, String[] names) {
+            hashInputHostNames = new HashSet();
+
+            if (name != null)
+                hashInputHostNames.add(name);
+
+            if (names != null && (names.length > 0)) {
+                for (String currentInputHostName : names)
+                    hashInputHostNames.add(currentInputHostName);
+	    }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode n) {
+	    for (String currentHostName : n.hostNames()) {
+                if (hashInputHostNames.contains(currentHostName)) {
+		    return true;
+		}
+            }
+
+            return false;
         }
     }
 

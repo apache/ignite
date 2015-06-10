@@ -248,4 +248,23 @@ public class GridProjectionSelfTest extends GridProjectionAbstractTest {
 
         return even ? cnt - 1 : cnt - 2;
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForHost() throws Exception {
+        Collection<ClusterNode> allNodes = ignite.cluster().nodes();
+        ClusterNode localNode = ignite.cluster().localNode();
+        ArrayList<String> inputHostNames = new ArrayList<String> ();
+
+        for (ClusterNode currentNode : allNodes)
+            Collections.addAll(inputHostNames, currentNode.hostNames().toArray(new String[0]));
+
+        String[] inputHostNamesArray = inputHostNames.toArray(new String[] {});
+        ClusterGroup resultGroup = ignite.cluster().forHost(inputHostNamesArray[0], inputHostNamesArray);
+	ClusterGroup nullTestGroup = ignite.cluster().forHost(null, null);
+
+        assert((resultGroup.node(localNode.id())) != null);
+        assert((nullTestGroup.node(localNode.id())) == null);
+    }
 }
