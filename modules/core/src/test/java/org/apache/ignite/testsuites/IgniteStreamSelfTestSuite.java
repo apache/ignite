@@ -24,7 +24,7 @@ import junit.framework.*;
 /**
  * Stream test suite.
  */
-public class IgniteStreamTestSuite extends TestSuite {
+public class IgniteStreamSelfTestSuite extends TestSuite {
     /**
      * @return Stream tests suite.
      * @throws Exception If failed.

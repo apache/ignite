@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Tests for {@link GridNioDelimitedBuffer}.
  */
-public class GridNioDelimitedBufferTest extends TestCase {
+public class GridNioDelimitedBufferSelfTest extends TestCase {
     /** */
     private static final String ASCII = "ASCII";
 
