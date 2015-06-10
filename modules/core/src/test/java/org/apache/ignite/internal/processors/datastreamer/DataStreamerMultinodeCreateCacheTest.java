@@ -42,8 +42,8 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setSocketTimeout(5000);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setAckTimeout(5000);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setSocketTimeout(50);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setAckTimeout(50);
 
         return cfg;
     }
@@ -74,7 +74,7 @@ public class DataStreamerMultinodeCreateCacheTest extends GridCommonAbstractTest
                 int iter = 0;
 
                 while (System.currentTimeMillis() < stopTime) {
-                    String cacheName = "cache-" + threadIdx + "-" + iter;
+                    String cacheName = "cache-" + threadIdx + "-" + (iter % 10);
 
                     try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheName)) {
                         try (IgniteDataStreamer<Object, Object> stmr = ignite.dataStreamer(cacheName)) {
