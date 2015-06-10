@@ -1136,6 +1136,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param clientCnt Number of client nodes.
      */
     private void checkNodes(int srvCnt, int clientCnt) {
+        long topVer = -1;
+
         for (int i = 0; i < srvCnt; i++) {
             Ignite g = G.ignite("server-" + i);
 
@@ -1144,6 +1146,11 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             assertFalse(g.cluster().localNode().isClient());
 
             checkRemoteNodes(g, srvCnt + clientCnt - 1);
+
+            if (topVer < 0)
+                topVer = g.cluster().topologyVersion();
+            else
+                assertEquals(topVer, g.cluster().topologyVersion());
         }
 
         for (int i = 0; i < clientCnt; i++) {
@@ -1156,6 +1163,11 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             assertTrue(g.cluster().localNode().isClient());
 
             checkRemoteNodes(g, srvCnt + clientCnt - 1);
+
+            if (topVer < 0)
+                topVer = g.cluster().topologyVersion();
+            else
+                assertEquals(topVer, g.cluster().topologyVersion());
         }
     }
 
