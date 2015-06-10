@@ -8,7 +8,7 @@
  * The latest version of the file was copied from the following CVS repository:
  * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/
  *
- * Corresponding commit version in CVS repository is unknown (lost in our side).
+ * Corresponding commit version in CVS repository is unknown (lost on our side).
  * On the other hand we can't simply synch the latest version from CVS here, because Ignite uses functionality that
  * is no longer supported.
  */
