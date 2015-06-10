@@ -189,7 +189,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         for (ContainerStatus status : statuses) {
             containers.remove(status.getContainerId());
 
-            log.log(Level.INFO, "Container stopped. Container id: {0}. State: {1}.",
+            log.log(Level.INFO, "Container completed. Container id: {0}. State: {1}.",
                 new Object[]{status.getContainerId(), status.getState()});
         }
     }
