@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.igfs.*;
+import org.apache.ignite.internal.visor.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -32,7 +33,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Unhandled exceptions from nodes. */
-    private final Map<UUID, Throwable> unhandledEx = new HashMap<>();
+    private final Map<UUID, VisorExceptionWrapper> unhandledEx = new HashMap<>();
 
     /** Nodes grid names. */
     private final Map<UUID, String> gridNames = new HashMap<>();
@@ -50,13 +51,13 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     private final List<VisorGridEvent> evts = new ArrayList<>();
 
     /** Exceptions caught during collecting events from nodes. */
-    private final Map<UUID, Throwable> evtsEx = new HashMap<>();
+    private final Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
 
     /** All caches collected from nodes. */
     private final Map<UUID, Collection<VisorCache>> caches = new HashMap<>();
 
     /** Exceptions caught during collecting caches from nodes. */
-    private final Map<UUID, Throwable> cachesEx = new HashMap<>();
+    private final Map<UUID, VisorExceptionWrapper> cachesEx = new HashMap<>();
 
     /** All IGFS collected from nodes. */
     private final Map<UUID, Collection<VisorIgfs>> igfss = new HashMap<>();
@@ -65,7 +66,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     private final Map<UUID, Collection<VisorIgfsEndpoint>> igfsEndpoints = new HashMap<>();
 
     /** Exceptions caught during collecting IGFS from nodes. */
-    private final Map<UUID, Throwable> igfssEx = new HashMap<>();
+    private final Map<UUID, VisorExceptionWrapper> igfssEx = new HashMap<>();
 
     /**
      * @return {@code true} If no data was collected.
@@ -88,7 +89,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /**
      * @return Unhandled exceptions from nodes.
      */
-    public Map<UUID, Throwable> unhandledEx() {
+    public Map<UUID, VisorExceptionWrapper> unhandledEx() {
         return unhandledEx;
     }
 
@@ -123,7 +124,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /**
      * @return Exceptions caught during collecting events from nodes.
      */
-    public Map<UUID, Throwable> eventsEx() {
+    public Map<UUID, VisorExceptionWrapper> eventsEx() {
         return evtsEx;
     }
 
@@ -137,7 +138,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /**
      * @return Exceptions caught during collecting caches from nodes.
      */
-    public Map<UUID, Throwable> cachesEx() {
+    public Map<UUID, VisorExceptionWrapper> cachesEx() {
         return cachesEx;
     }
 
@@ -158,7 +159,7 @@ public class VisorNodeDataCollectorTaskResult implements Serializable {
     /**
      * @return Exceptions caught during collecting IGFS from nodes.
      */
-    public Map<UUID, Throwable> igfssEx() {
+    public Map<UUID, VisorExceptionWrapper> igfssEx() {
         return igfssEx;
     }
 

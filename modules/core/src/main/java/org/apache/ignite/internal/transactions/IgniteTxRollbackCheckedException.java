@@ -36,6 +36,15 @@ public class IgniteTxRollbackCheckedException extends IgniteCheckedException {
     }
 
     /**
+     * Creates new exception with given nested exception.
+     *
+     * @param cause Nested exception.
+     */
+    public IgniteTxRollbackCheckedException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
      * Creates new rollback exception with given error message and optional nested exception.
      *
      * @param msg Error message.

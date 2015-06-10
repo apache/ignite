@@ -67,7 +67,11 @@ public abstract class CacheTtlAbstractSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setMemoryMode(memoryMode());
         ccfg.setOffHeapMaxMemory(0);
-        ccfg.setEvictionPolicy(new LruEvictionPolicy(MAX_CACHE_SIZE));
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxSize(MAX_CACHE_SIZE);
+
+        ccfg.setEvictionPolicy(plc);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setBackups(2);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

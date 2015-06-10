@@ -311,10 +311,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
 
+    /**
+     * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
+     * and will not lock any keys if pessimistic transaction is started by thread.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return A map of entries that were found for the given keys.
+     */
+    @IgniteAsyncSupported
+    public Map<K, V> getAllOutTx(Set<? extends K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public boolean containsKey(K key);
 
+    /**
+     * Determines if the {@link Cache} contains entries for the specified keys.
+     *
+     * @param keys Key whose presence in this cache is to be tested.
+     * @return {@code True} if this cache contains a mapping for the specified keys.
+     */
     @IgniteAsyncSupported
     public boolean containsKeys(Set<? extends K> keys);
 

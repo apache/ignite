@@ -118,8 +118,8 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
         g.message().remoteListen(null, new MessagingListenActor<String>() {
             @Override protected void receive(UUID nodeId, String rcvMsg) throws Throwable {
-                assert locNodeId.equals(nodeId);
-                assert msg.equals(rcvMsg);
+                assertEquals(locNodeId, nodeId);
+                assertEquals(msg, rcvMsg);
 
                 stop(rcvMsg);
             }

@@ -93,7 +93,10 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         if (hasNearCache())
             ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-        ccfg.setEvictionPolicy(new FifoEvictionPolicy(HEAP_ENTRIES));
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxSize(HEAP_ENTRIES);
+
+        ccfg.setEvictionPolicy(plc);
 
         return ccfg;
     }
