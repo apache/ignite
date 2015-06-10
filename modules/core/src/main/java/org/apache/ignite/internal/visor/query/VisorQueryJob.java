@@ -139,7 +139,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
             }
         }
         catch (Exception e) {
-            return new IgniteBiTuple<>(VisorTaskUtils.wrap(e), null);
+            return new IgniteBiTuple<>(new VisorExceptionWrapper(e), null);
         }
     }
 
