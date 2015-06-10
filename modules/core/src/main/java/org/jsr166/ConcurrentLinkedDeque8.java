@@ -5,8 +5,12 @@
  */
 
 /*
- * The initial version of this file was copied from JSR-166:
- * http://gee.cs.oswego.edu/dl/concurrency-interest/
+ * The latest version of the file corresponds to the following CVS commit:
+ * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/concurrent/
+ *  ConcurrentLinkedDeque.java?pathrev=1.33
+ *
+ * The later versions use JDK 8 specific classes that are unavailable in JDK 7.
+ * Thus those commits can't be imported.
  */
 
 package org.jsr166;
@@ -17,6 +21,7 @@ import java.lang.reflect.*;
 import java.security.*;
 import java.util.*;
 import java.util.Queue;
+
 
 /**
  * An unbounded concurrent {@linkplain Deque deque} based on linked nodes.
@@ -55,13 +60,21 @@ import java.util.Queue;
  * <a href="package-summary.html#MemoryVisibility"><i>happen-before</i></a>
  * actions subsequent to the access or removal of that element from
  * the {@code ConcurrentLinkedDeque} in another thread.
- * <p>
- * Written by Doug Lea and Martin Buchholz with assistance from members of
- * JCP JSR-166 Expert Group and released to the public domain, as explained
- * at http://creativecommons.org/publicdomain/zero/1.0/
+ *
+ * <p>This class is a member of the
+ * <a href="{@docRoot}/../technotes/guides/collections/index.html">
+ * Java Collections Framework</a>.
+ *
+ * @since 1.7
+ * @author Doug Lea
+ * @author Martin Buchholz
+ * @param <E> the type of elements held in this collection
  */
-@SuppressWarnings( {"ALL"})
-public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements Deque<E> {
+@SuppressWarnings("ALL")
+public class ConcurrentLinkedDeque8<E>
+    extends AbstractCollection<E>
+    implements Deque<E>, java.io.Serializable {
+
     /*
      * This is an implementation of a concurrent lock-free deque
      * supporting interior removes but not interior insertions, as
@@ -213,6 +226,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * good as we can hope for.
      */
 
+    private static final long serialVersionUID = 876323262645176354L;
+
     /**
      * A node from which the first node on list (that is, the unique node p
      * with p.prev == null && p.next != p) can be reached in O(1) time.
@@ -226,7 +241,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * - head.item may or may not be null
      * - head may not be reachable from the first or last node, or from tail
      */
-    private volatile Node<E> head;
+    private transient volatile Node<E> head;
 
     /**
      * A node from which the last node on list (that is, the unique node p
@@ -240,12 +255,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * - tail.item may or may not be null
      * - tail may not be reachable from the first or last node, or from head
      */
-    private volatile Node<E> tail;
+    private transient volatile Node<E> tail;
 
     /** */
     private final LongAdder8 size = new LongAdder8();
 
-    /** Previous and next terminators. */
     private static final Node<Object> PREV_TERMINATOR, NEXT_TERMINATOR;
 
     @SuppressWarnings("unchecked")
@@ -258,29 +272,17 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         return (Node<E>) NEXT_TERMINATOR;
     }
 
-    /**
-     * Internal node element.
-     *
-     * @param <E> Node item.
-     */
-    @SuppressWarnings( {"PackageVisibleField", "PackageVisibleInnerClass"})
     public static final class Node<E> {
         volatile Node<E> prev;
         volatile E item;
         volatile Node<E> next;
 
-        /**
-         * Default constructor for NEXT_TERMINATOR, PREV_TERMINATOR.
-         */
-        Node() {
-            // No-op.
+        Node() {  // default constructor for NEXT_TERMINATOR, PREV_TERMINATOR
         }
 
         /**
          * Constructs a new node.  Uses relaxed write because item can
          * only be seen after publication via casNext or casPrev.
-         *
-         * @param item Item to initialize.
          */
         Node(E item) {
             UNSAFE.putObject(this, itemOffset, item);
@@ -293,73 +295,44 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             return item;
         }
 
-        /**
-         * @param cmp Compare value.
-         * @param val New value.
-         * @return {@code True} if set.
-         */
         boolean casItem(E cmp, E val) {
             return UNSAFE.compareAndSwapObject(this, itemOffset, cmp, val);
         }
 
-        /**
-         * @param val New value.
-         */
         void lazySetNext(Node<E> val) {
             UNSAFE.putOrderedObject(this, nextOffset, val);
         }
 
-        /**
-         * @param cmp Compare value.
-         * @param val New value.
-         * @return {@code True} if set.
-         */
         boolean casNext(Node<E> cmp, Node<E> val) {
             return UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
         }
 
-        /**
-         * @param val New value.
-         */
         void lazySetPrev(Node<E> val) {
             UNSAFE.putOrderedObject(this, prevOffset, val);
         }
 
-        /**
-         * @param cmp Compare value.
-         * @param val New value.
-         * @return {@code True} if set.
-         */
         boolean casPrev(Node<E> cmp, Node<E> val) {
             return UNSAFE.compareAndSwapObject(this, prevOffset, cmp, val);
         }
 
-        /** Unsafe. */
-        private static final Unsafe UNSAFE;
+        // Unsafe mechanics
 
-        /** Previous field offset. */
+        private static final sun.misc.Unsafe UNSAFE;
         private static final long prevOffset;
-
-        /** Item field offset. */
         private static final long itemOffset;
-
-        /** Next field offset. */
         private static final long nextOffset;
 
-        /**
-         * Initialize offsets.
-         */
         static {
             try {
                 UNSAFE = unsafe();
-
-                Class k = Node.class;
-
-                prevOffset = UNSAFE.objectFieldOffset(k.getDeclaredField("prev"));
-                itemOffset = UNSAFE.objectFieldOffset(k.getDeclaredField("item"));
-                nextOffset = UNSAFE.objectFieldOffset(k.getDeclaredField("next"));
-            }
-            catch (Exception e) {
+                Class<?> k = Node.class;
+                prevOffset = UNSAFE.objectFieldOffset
+                    (k.getDeclaredField("prev"));
+                itemOffset = UNSAFE.objectFieldOffset
+                    (k.getDeclaredField("item"));
+                nextOffset = UNSAFE.objectFieldOffset
+                    (k.getDeclaredField("next"));
+            } catch (Exception e) {
                 throw new Error(e);
             }
         }
@@ -376,9 +349,10 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         final Node<E> newNode = new Node<E>(e);
 
         restartFromHead:
-        for (;;) {
+        for (;;)
             for (Node<E> h = head, p = h, q;;) {
-                if ((q = p.prev) != null && (q = (p = q).prev) != null)
+                if ((q = p.prev) != null &&
+                    (q = (p = q).prev) != null)
                     // Check for head updates every other hop.
                     // If p == q, we are sure to follow head instead.
                     p = (h != (h = head)) ? h : q;
@@ -386,21 +360,18 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
                     continue restartFromHead;
                 else {
                     // p is first node
-                    newNode.lazySetNext(p); // CAS piggyback.
-
+                    newNode.lazySetNext(p); // CAS piggyback
                     if (p.casPrev(null, newNode)) {
                         // Successful CAS is the linearization point
                         // for e to become an element of this deque,
                         // and for newNode to become "live".
                         if (p != h) // hop two nodes at a time
                             casHead(h, newNode);  // Failure is OK.
-
                         return;
                     }
                     // Lost CAS race to another thread; re-read prev
                 }
             }
-        }
     }
 
     /**
@@ -446,8 +417,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
 
     /**
      * Links e as last element.
-     *
-     * @param e Element to link.
      */
     private void linkLast(E e) {
         checkNotNull(e);
@@ -457,9 +426,10 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         final Node<E> newNode = new Node<E>(e);
 
         restartFromTail:
-        for (;;) {
+        for (;;)
             for (Node<E> t = tail, p = t, q;;) {
-                if ((q = p.next) != null && (q = (p = q).next) != null)
+                if ((q = p.next) != null &&
+                    (q = (p = q).next) != null)
                     // Check for tail updates every other hop.
                     // If p == q, we are sure to follow tail instead.
                     p = (t != (t = tail)) ? t : q;
@@ -467,21 +437,18 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
                     continue restartFromTail;
                 else {
                     // p is last node
-                    newNode.lazySetPrev(p); // CAS piggyback.
-
+                    newNode.lazySetPrev(p); // CAS piggyback
                     if (p.casNext(null, newNode)) {
                         // Successful CAS is the linearization point
                         // for e to become an element of this deque,
                         // and for newNode to become "live".
                         if (p != t) // hop two nodes at a time
                             casTail(t, newNode);  // Failure is OK.
-
                         return;
                     }
                     // Lost CAS race to another thread; re-read next
                 }
             }
-        }
     }
 
     /**
@@ -563,7 +530,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         }
     }
 
-    /** Number of HOPs before unlinking head or tail. */
     private static final int HOPS = 2;
 
     /**
@@ -589,7 +555,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     /**
      * Unlinks non-null node x.
      */
-    private void unlink(Node<E> x) {
+    void unlink(Node<E> x) {
         // assert x != null;
         // assert x.item == null;
         // assert x != PREV_TERMINATOR;
@@ -601,11 +567,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         // Unlink should not be called twice for the same node.
         size.decrement();
 
-        if (prev == null)
+        if (prev == null) {
             unlinkFirst(x, next);
-        else if (next == null)
+        } else if (next == null) {
             unlinkLast(x, prev);
-        else {
+        } else {
             // Unlink interior node.
             //
             // This is the common case, since a series of polls at the
@@ -626,31 +592,22 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             // tail/head, before setting x's prev/next links to their
             // logical approximate replacements, self/TERMINATOR.
             Node<E> activePred, activeSucc;
-
             boolean isFirst, isLast;
-
             int hops = 1;
 
             // Find active predecessor
             for (Node<E> p = prev; ; ++hops) {
                 if (p.item != null) {
                     activePred = p;
-
                     isFirst = false;
-
                     break;
                 }
-
                 Node<E> q = p.prev;
-
                 if (q == null) {
                     if (p.next == p)
                         return;
-
                     activePred = p;
-
                     isFirst = true;
-
                     break;
                 }
                 else if (p == q)
@@ -663,22 +620,15 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             for (Node<E> p = next; ; ++hops) {
                 if (p.item != null) {
                     activeSucc = p;
-
                     isLast = false;
-
                     break;
                 }
-
                 Node<E> q = p.next;
-
                 if (q == null) {
                     if (p.prev == p)
                         return;
-
                     activeSucc = p;
-
                     isLast = true;
-
                     break;
                 }
                 else if (p == q)
@@ -688,8 +638,9 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             }
 
             // TODO: better HOP heuristics
-            // Always squeeze out interior deleted nodes.
-            if (hops < HOPS && (isFirst | isLast))
+            if (hops < HOPS
+                // always squeeze out interior deleted nodes
+                && (isFirst | isLast))
                 return;
 
             // Squeeze out deleted nodes between activePred and
@@ -699,6 +650,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
 
             // Try to gc-unlink, if possible
             if ((isFirst | isLast) &&
+
                 // Recheck expected state of predecessor and successor
                 (activePred.next == activeSucc) &&
                 (activeSucc.prev == activePred) &&
@@ -793,11 +745,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         // Either head already points to an active node, or we keep
         // trying to cas it to the first node until it does.
         Node<E> h, p, q;
-
         restartFromHead:
         while ((h = head).item == null && (p = h.prev) != null) {
             for (;;) {
-                if ((q = p.prev) == null || (q = (p = q).prev) == null) {
+                if ((q = p.prev) == null ||
+                    (q = (p = q).prev) == null) {
                     // It is possible that p is PREV_TERMINATOR,
                     // but if so, the CAS is guaranteed to fail.
                     if (casHead(h, p))
@@ -823,11 +775,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         // Either tail already points to an active node, or we keep
         // trying to cas it to the last node until it does.
         Node<E> t, p, q;
-
         restartFromTail:
         while ((t = tail).item == null && (p = t.next) != null) {
             for (;;) {
-                if ((q = p.next) == null || (q = (p = q).next) == null) {
+                if ((q = p.next) == null ||
+                    (q = (p = q).next) == null) {
                     // It is possible that p is NEXT_TERMINATOR,
                     // but if so, the CAS is guaranteed to fail.
                     if (casTail(t, p))
@@ -843,9 +795,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         }
     }
 
-    /**
-     * @param x Node to start from.
-     */
     private void skipDeletedPredecessors(Node<E> x) {
         whileActive:
         do {
@@ -854,18 +803,14 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             // assert x != NEXT_TERMINATOR;
             // assert x != PREV_TERMINATOR;
             Node<E> p = prev;
-
             findActive:
             for (;;) {
                 if (p.item != null)
                     break findActive;
-
                 Node<E> q = p.prev;
-
                 if (q == null) {
                     if (p.next == p)
                         continue whileActive;
-
                     break findActive;
                 }
                 else if (p == q)
@@ -881,9 +826,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         } while (x.item != null || x.next == null);
     }
 
-    /**
-     * @param x Node to start from.
-     */
     private void skipDeletedSuccessors(Node<E> x) {
         whileActive:
         do {
@@ -892,19 +834,14 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             // assert x != NEXT_TERMINATOR;
             // assert x != PREV_TERMINATOR;
             Node<E> p = next;
-
             findActive:
-
             for (;;) {
                 if (p.item != null)
                     break findActive;
-
                 Node<E> q = p.next;
-
                 if (q == null) {
                     if (p.prev == p)
                         continue whileActive;
-
                     break findActive;
                 }
                 else if (p == q)
@@ -917,22 +854,17 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             if (next == p || x.casNext(next, p))
                 return;
 
-        }
-        while (x.item != null || x.prev == null);
+        } while (x.item != null || x.prev == null);
     }
 
     /**
      * Returns the successor of p, or the first node if p.next has been
      * linked to self, which will only be true if traversing with a
      * stale pointer that is now off the list.
-     *
-     * @param p Node to find successor for.
-     * @return Successor node.
      */
-    final Node<E> successor(Node<E> p) {
+    final Node<E> succ(Node<E> p) {
         // TODO: should we skip deleted nodes here?
         Node<E> q = p.next;
-
         return (p == q) ? first() : q;
     }
 
@@ -940,11 +872,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * Returns the predecessor of p, or the last node if p.prev has been
      * linked to self, which will only be true if traversing with a
      * stale pointer that is now off the list.
-     *
-     * @param p Node to find predecessor for.
-     * @return Predecessor node.
      */
-    final Node<E> predecessor(Node<E> p) {
+    final Node<E> pred(Node<E> p) {
         Node<E> q = p.prev;
         return (p == q) ? last() : q;
     }
@@ -954,10 +883,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *     p.prev == null && p.next != p
      * The returned node may or may not be logically deleted.
      * Guarantees that head is set to the returned node.
-     *
-     * @return First node.
      */
-    @SuppressWarnings( {"TooBroadScope"})
     Node<E> first() {
         restartFromHead:
         for (;;)
@@ -982,10 +908,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *     p.next == null && p.prev != p
      * The returned node may or may not be logically deleted.
      * Guarantees that tail is set to the returned node.
-     *
-     * @return Last node.
      */
-    @SuppressWarnings( {"TooBroadScope"})
     Node<E> last() {
         restartFromTail:
         for (;;)
@@ -1004,6 +927,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
                     continue restartFromTail;
             }
     }
+
+    // Minor convenience utilities
 
     /**
      * Throws NullPointerException if argument is null.
@@ -1025,7 +950,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
     private E screenNullResult(E v) {
         if (v == null)
             throw new NoSuchElementException();
-
         return v;
     }
 
@@ -1033,18 +957,15 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * Creates an array list and fills it with elements of this list.
      * Used by toArray.
      *
-     * @return the arrayList
+     * @return the array list
      */
     private ArrayList<E> toArrayList() {
         ArrayList<E> list = new ArrayList<E>();
-
-        for (Node<E> p = first(); p != null; p = successor(p)) {
+        for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
-
             if (item != null)
                 list.add(item);
         }
-
         return list;
     }
 
@@ -1052,7 +973,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * Constructs an empty deque.
      */
     public ConcurrentLinkedDeque8() {
-        head = tail = new Node<E>();
+        head = tail = new Node<E>(null);
     }
 
     /**
@@ -1064,15 +985,12 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @throws NullPointerException if the specified collection or any
      *         of its elements are null
      */
-    public ConcurrentLinkedDeque8(Iterable<? extends E> c) {
+    public ConcurrentLinkedDeque8(Collection<? extends E> c) {
         // Copy c into a private chain of Nodes
         Node<E> h = null, t = null;
-
         for (E e : c) {
             checkNotNull(e);
-
             Node<E> newNode = new Node<E>(e);
-
             if (h == null)
                 h = t = newNode;
             else {
@@ -1081,15 +999,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
                 t = newNode;
             }
         }
-
         initHeadTail(h, t);
     }
 
     /**
      * Initializes head and tail, ensuring invariants hold.
-     *
-     * @param h Head.
-     * @param t Tail.
      */
     private void initHeadTail(Node<E> h, Node<E> t) {
         if (h == t) {
@@ -1098,15 +1012,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             else {
                 // Avoid edge case of a single Node with non-null item.
                 Node<E> newNode = new Node<E>(null);
-
                 t.lazySetNext(newNode);
-
                 newNode.lazySetPrev(t);
-
                 t = newNode;
             }
         }
-
         head = h;
         tail = t;
     }
@@ -1118,18 +1028,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @throws NullPointerException if the specified element is null
      */
-    @Override public void addFirst(E e) {
+    public void addFirst(E e) {
         linkFirst(e);
-    }
-
-    /**
-     * Same as {@link #addFirst(Object)}, but returns new node.
-     *
-     * @param e Element to add.
-     * @return New node.
-     */
-    public Node<E> addFirstx(E e) {
-        return linkFirstx(e);
     }
 
     /**
@@ -1141,7 +1041,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @throws NullPointerException if the specified element is null
      */
-    @Override public void addLast(E e) {
+    public void addLast(E e) {
         linkLast(e);
     }
 
@@ -1162,9 +1062,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} (as specified by {@link Deque#offerFirst})
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean offerFirst(E e) {
+    public boolean offerFirst(E e) {
         linkFirst(e);
-
         return true;
     }
 
@@ -1187,9 +1086,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} (as specified by {@link Deque#offerLast})
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean offerLast(E e) {
+    public boolean offerLast(E e) {
         linkLast(e);
-
         return true;
     }
 
@@ -1203,15 +1101,12 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         return linkLastx(e);
     }
 
-    /** {@inheritDoc} */
-    @Override public E peekFirst() {
-        for (Node<E> p = first(); p != null; p = successor(p)) {
+    public E peekFirst() {
+        for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
-
             if (item != null)
                 return item;
         }
-
         return null;
     }
 
@@ -1222,7 +1117,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return The header node of this deque, or <tt>null</tt> if this deque is empty
      */
     public Node<E> peekFirstx() {
-        for (Node<E> p = first(); p != null; p = successor(p)) {
+        for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
 
             if (item != null)
@@ -1232,75 +1127,66 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public E peekLast() {
-        for (Node<E> p = last(); p != null; p = predecessor(p)) {
+    public E peekLast() {
+        for (Node<E> p = last(); p != null; p = pred(p)) {
             E item = p.item;
-
             if (item != null)
                 return item;
         }
-
         return null;
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @Override public E getFirst() {
+    public E getFirst() {
         return screenNullResult(peekFirst());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @Override public E getLast() {
+    public E getLast() {
         return screenNullResult(peekLast());
     }
 
-    /** {@inheritDoc} */
-    @Override public E pollFirst() {
-        for (Node<E> p = first(); p != null; p = successor(p)) {
+    public E pollFirst() {
+        for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
-
             if (item != null && p.casItem(item, null)) {
                 unlink(p);
-
                 return item;
             }
         }
-
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public E pollLast() {
-        for (Node<E> p = last(); p != null; p = predecessor(p)) {
+    public E pollLast() {
+        for (Node<E> p = last(); p != null; p = pred(p)) {
             E item = p.item;
-
             if (item != null && p.casItem(item, null)) {
                 unlink(p);
-
                 return item;
             }
         }
-
         return null;
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @Override public E removeFirst() {
+    public E removeFirst() {
         return screenNullResult(pollFirst());
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    @Override public E removeLast() {
+    public E removeLast() {
         return screenNullResult(pollLast());
     }
+
+    // *** Queue and stack methods ***
 
     /**
      * Inserts the specified element at the tail of this deque.
@@ -1309,18 +1195,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} (as specified by {@link Queue#offer})
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean offer(E e) {
+    public boolean offer(E e) {
         return offerLast(e);
-    }
-
-    /**
-     * Same as {@link #offer(Object)}, but returns new {@link Node}.
-     *
-     * @param e Element to add.
-     * @return New node.
-     */
-    public Node<E> offerx(E e) {
-        return offerLastx(e);
     }
 
     /**
@@ -1331,7 +1207,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} (as specified by {@link Collection#add})
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean add(E e) {
+    public boolean add(E e) {
         return offerLast(e);
     }
 
@@ -1345,20 +1221,12 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         return offerLastx(e);
     }
 
-    /** {@inheritDoc} */
-    @Override public E poll() {
-        return pollFirst();
-    }
-
-    /** {@inheritDoc} */
-    @Override public E remove() {
-        return removeFirst();
-    }
-
-    /** {@inheritDoc} */
-    @Override public E peek() {
-        return peekFirst();
-    }
+    public E poll()           { return pollFirst(); }
+    public E remove()         { return removeFirst(); }
+    public E peek()           { return peekFirst(); }
+    public E element()        { return getFirst(); }
+    public void push(E e)     { addFirst(e); }
+    public E pop()            { return removeFirst(); }
 
     /**
      * Retrieves, but does not remove, the header node of the queue represented by
@@ -1374,21 +1242,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
         return peekFirstx();
     }
 
-    /** {@inheritDoc} */
-    @Override public E element() {
-        return getFirst();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void push(E e) {
-        addFirst(e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public E pop() {
-        return removeFirst();
-    }
-
     /**
      * Removes the first element {@code e} such that
      * {@code o.equals(e)}, if such an element exists in this deque.
@@ -1398,19 +1251,15 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} if the deque contained the specified element
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean removeFirstOccurrence(Object o) {
+    public boolean removeFirstOccurrence(Object o) {
         checkNotNull(o);
-
-        for (Node<E> p = first(); p != null; p = successor(p)) {
+        for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
-
             if (item != null && o.equals(item) && p.casItem(item, null)) {
                 unlink(p);
-
                 return true;
             }
         }
-
         return false;
     }
 
@@ -1423,19 +1272,15 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} if the deque contained the specified element
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean removeLastOccurrence(Object o) {
+    public boolean removeLastOccurrence(Object o) {
         checkNotNull(o);
-
-        for (Node<E> p = last(); p != null; p = predecessor(p)) {
+        for (Node<E> p = last(); p != null; p = pred(p)) {
             E item = p.item;
-
             if (item != null && o.equals(item) && p.casItem(item, null)) {
                 unlink(p);
-
                 return true;
             }
         }
-
         return false;
     }
 
@@ -1446,17 +1291,13 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @param o element whose presence in this deque is to be tested
      * @return {@code true} if this deque contains the specified element
      */
-    @Override public boolean contains(Object o) {
-        if (o == null)
-            return false;
-
-        for (Node<E> p = first(); p != null; p = successor(p)) {
+    public boolean contains(Object o) {
+        if (o == null) return false;
+        for (Node<E> p = first(); p != null; p = succ(p)) {
             E item = p.item;
-
             if (item != null && o.equals(item))
                 return true;
         }
-
         return false;
     }
 
@@ -1465,7 +1306,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @return {@code true} if this collection contains no elements
      */
-    @Override public boolean isEmpty() {
+    public boolean isEmpty() {
         return peekFirst() == null;
     }
 
@@ -1497,16 +1338,14 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @return the number of elements in this deque
      */
-    @Override public int size() {
-        int cnt = 0;
-
-        for (Node<E> p = first(); p != null; p = successor(p))
+    public int size() {
+        int count = 0;
+        for (Node<E> p = first(); p != null; p = succ(p))
             if (p.item != null)
                 // Collection.size() spec says to max out
-                if (++cnt == Integer.MAX_VALUE)
+                if (++count == Integer.MAX_VALUE)
                     break;
-
-        return cnt;
+        return count;
     }
 
     /**
@@ -1525,7 +1364,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * @return {@code true} if the deque contained the specified element
      * @throws NullPointerException if the specified element is null
      */
-    @Override public boolean remove(Object o) {
+    public boolean remove(Object o) {
         return removeFirstOccurrence(o);
     }
 
@@ -1541,8 +1380,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *         of its elements are null
      * @throws IllegalArgumentException if the collection is this deque
      */
-    @SuppressWarnings( {"TooBroadScope"})
-    @Override public boolean addAll(Collection<? extends E> c) {
+    public boolean addAll(Collection<? extends E> c) {
         if (c == this)
             // As historically specified in AbstractQueue#addAll
             throw new IllegalArgumentException();
@@ -1554,19 +1392,14 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
 
         for (E e : c) {
             checkNotNull(e);
-
             Node<E> newNode = new Node<E>(e);
-
             if (beginningOfTheEnd == null) {
                 beginningOfTheEnd = last = newNode;
-
                 s++;
             }
             else {
                 last.lazySetNext(newNode);
-
                 newNode.lazySetPrev(last);
-
                 last = newNode;
 
                 s++;
@@ -1580,9 +1413,10 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
 
         // Atomically append the chain at the tail of this collection
         restartFromTail:
-        for (;;) {
+        for (;;)
             for (Node<E> t = tail, p = t, q;;) {
-                if ((q = p.next) != null && (q = (p = q).next) != null)
+                if ((q = p.next) != null &&
+                    (q = (p = q).next) != null)
                     // Check for tail updates every other hop.
                     // If p == q, we are sure to follow tail instead.
                     p = (t != (t = tail)) ? t : q;
@@ -1591,7 +1425,6 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
                 else {
                     // p is last node
                     beginningOfTheEnd.lazySetPrev(p); // CAS piggyback
-
                     if (p.casNext(null, beginningOfTheEnd)) {
                         // Successful CAS is the linearization point
                         // for all elements to be added to this deque.
@@ -1599,26 +1432,22 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
                             // Try a little harder to update tail,
                             // since we may be adding many elements.
                             t = tail;
-
                             if (last.next == null)
                                 casTail(t, last);
                         }
-
                         return true;
                     }
                     // Lost CAS race to another thread; re-read next
                 }
             }
-        }
     }
 
     /**
      * Removes all of the elements from this deque.
      */
-    @Override public void clear() {
-        while (pollFirst() != null) {
-            // No-op.
-        }
+    public void clear() {
+        while (pollFirst() != null)
+            ;
     }
 
     /**
@@ -1634,7 +1463,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @return an array containing all of the elements in this deque
      */
-    @Override public Object[] toArray() {
+    public Object[] toArray() {
         return toArrayList().toArray();
     }
 
@@ -1661,8 +1490,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      * The following code can be used to dump the deque into a newly
      * allocated array of {@code String}:
      *
-     * <pre>
-     *     String[] y = x.toArray(new String[0]);</pre>
+     *  <pre> {@code String[] y = x.toArray(new String[0]);}</pre>
      *
      * Note that {@code toArray(new Object[0])} is identical in function to
      * {@code toArray()}.
@@ -1676,8 +1504,7 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *         this deque
      * @throws NullPointerException if the specified array is null
      */
-    @SuppressWarnings( {"SuspiciousToArrayCall"})
-    @Override public <T> T[] toArray(T[] a) {
+    public <T> T[] toArray(T[] a) {
         return toArrayList().toArray(a);
     }
 
@@ -1694,8 +1521,8 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @return an iterator over the elements in this deque in proper sequence
      */
-    @Override public Iterator<E> iterator() {
-        return new Iter();
+    public Iterator<E> iterator() {
+        return new Itr();
     }
 
     /**
@@ -1712,26 +1539,11 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
      *
      * @return an iterator over the elements in this deque in reverse order
      */
-    @Override public Iterator<E> descendingIterator() {
-        return new DescendingIter();
+    public Iterator<E> descendingIterator() {
+        return new DescendingItr();
     }
 
-    /**
-     * Extended iterator interface.
-     */
-    public interface IteratorEx<E> extends Iterator<E> {
-        /**
-         * Same semantics as iterator's remove, but will return {@code false} if remove did not happen.
-         *
-         * @return {@code True} if element was removed by this call, {@code false} otherwise.
-         */
-        public boolean removex();
-    }
-
-    /**
-     * Abstract iterator.
-     */
-    private abstract class AbstractIter implements IteratorEx<E> {
+    private abstract class AbstractItr implements Iterator<E> {
         /**
          * Next node to return item for.
          */
@@ -1751,21 +1563,10 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
          */
         private Node<E> lastRet;
 
-        /**
-         * @return Starting node.
-         */
         abstract Node<E> startNode();
-
-        /**
-         * @param p Node.
-         * @return Next node.
-         */
         abstract Node<E> nextNode(Node<E> p);
 
-        /**
-         * Advances to first element.
-         */
-        AbstractIter() {
+        AbstractItr() {
             advance();
         }
 
@@ -1777,150 +1578,127 @@ public class ConcurrentLinkedDeque8<E> extends AbstractCollection<E> implements 
             lastRet = nextNode;
 
             Node<E> p = (nextNode == null) ? startNode() : nextNode(nextNode);
-
             for (;; p = nextNode(p)) {
                 if (p == null) {
                     // p might be active end or TERMINATOR node; both are OK
                     nextNode = null;
                     nextItem = null;
-
                     break;
                 }
-
                 E item = p.item;
-
                 if (item != null) {
                     nextNode = p;
                     nextItem = item;
-
                     break;
                 }
             }
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
+        public boolean hasNext() {
             return nextItem != null;
         }
 
-        /** {@inheritDoc} */
-        @Override public E next() {
+        public E next() {
             E item = nextItem;
-
-            if (item == null)
-                throw new NoSuchElementException();
-
+            if (item == null) throw new NoSuchElementException();
             advance();
-
             return item;
         }
 
-        /** {@inheritDoc} */
-        @Override public void remove() {
+        public void remove() {
             Node<E> l = lastRet;
-
-            if (l == null)
-                throw new IllegalStateException();
-
-            unlinkx(l);
-
+            if (l == null) throw new IllegalStateException();
+            l.item = null;
+            unlink(l);
             lastRet = null;
         }
+    }
 
-        /** {@inheritDoc} */
-        @Override public boolean removex() {
-            Node<E> l = lastRet;
+    /** Forward iterator */
+    private class Itr extends AbstractItr {
+        Node<E> startNode() { return first(); }
+        Node<E> nextNode(Node<E> p) { return succ(p); }
+    }
 
-            if (l == null)
-                throw new IllegalStateException();
-
-            boolean res = unlinkx(l);
-
-            lastRet = null;
-
-            return res;
-        }
+    /** Descending iterator */
+    private class DescendingItr extends AbstractItr {
+        Node<E> startNode() { return last(); }
+        Node<E> nextNode(Node<E> p) { return pred(p); }
     }
 
     /**
-     * Forward iterator
-     */
-    private class Iter extends AbstractIter {
-        /** {@inheritDoc} */
-        @Override Node<E> startNode() {
-            return first();
-        }
-
-        /** {@inheritDoc} */
-        @Override Node<E> nextNode(Node<E> p) {
-            return successor(p);
-        }
-    }
-
-    /**
-     * Descending iterator.
-     */
-    private class DescendingIter extends AbstractIter {
-        /** {@inheritDoc} */
-        @Override Node<E> startNode() {
-            return last();
-        }
-
-        /** {@inheritDoc} */
-        @Override Node<E> nextNode(Node<E> p) {
-            return predecessor(p);
-        }
-    }
-
-    /**
-     * CAS for head.
+     * Saves this deque to a stream (that is, serializes it).
      *
-     * @param cmp Compare value.
-     * @param val New value.
-     * @return {@code True} if set.
+     * @serialData All of the elements (each an {@code E}) in
+     * the proper order, followed by a null
      */
+    private void writeObject(java.io.ObjectOutputStream s)
+        throws java.io.IOException {
+
+        // Write out any hidden stuff
+        s.defaultWriteObject();
+
+        // Write out all elements in the proper order.
+        for (Node<E> p = first(); p != null; p = succ(p)) {
+            E item = p.item;
+            if (item != null)
+                s.writeObject(item);
+        }
+
+        // Use trailing null as sentinel
+        s.writeObject(null);
+    }
+
+    /**
+     * Reconstitutes this deque from a stream (that is, deserializes it).
+     */
+    private void readObject(java.io.ObjectInputStream s)
+        throws java.io.IOException, ClassNotFoundException {
+        s.defaultReadObject();
+
+        // Read in elements until trailing null sentinel found
+        Node<E> h = null, t = null;
+        Object item;
+        while ((item = s.readObject()) != null) {
+            @SuppressWarnings("unchecked")
+            Node<E> newNode = new Node<E>((E) item);
+            if (h == null)
+                h = t = newNode;
+            else {
+                t.lazySetNext(newNode);
+                newNode.lazySetPrev(t);
+                t = newNode;
+            }
+        }
+        initHeadTail(h, t);
+    }
+
     private boolean casHead(Node<E> cmp, Node<E> val) {
         return UNSAFE.compareAndSwapObject(this, headOffset, cmp, val);
     }
 
-    /**
-     * CAS for tail.
-     *
-     * @param cmp Compare value.
-     * @param val New value.
-     * @return {@code True} if set.
-     */
     private boolean casTail(Node<E> cmp, Node<E> val) {
         return UNSAFE.compareAndSwapObject(this, tailOffset, cmp, val);
     }
 
-    /** Unsafe. */
-    private static final Unsafe UNSAFE;
+    // Unsafe mechanics
 
-    /** Head offset. */
+    private static final sun.misc.Unsafe UNSAFE;
     private static final long headOffset;
-
-    /** Tail offset. */
     private static final long tailOffset;
-
-    /**
-     * Initialize terminators using unsafe semantics.
-     */
     static {
         PREV_TERMINATOR = new Node<Object>();
         PREV_TERMINATOR.next = PREV_TERMINATOR;
         NEXT_TERMINATOR = new Node<Object>();
         NEXT_TERMINATOR.prev = NEXT_TERMINATOR;
-
         try {
             UNSAFE = unsafe();
-
-            Class cls = ConcurrentLinkedDeque8.class;
-
-            headOffset = UNSAFE.objectFieldOffset(cls.getDeclaredField("head"));
-            tailOffset = UNSAFE.objectFieldOffset(cls.getDeclaredField("tail"));
-        }
-        catch (Exception e) {
+            Class<?> k = ConcurrentLinkedDeque8.class;
+            headOffset = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("head"));
+            tailOffset = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("tail"));
+        } catch (Exception e) {
             throw new Error(e);
         }
     }
