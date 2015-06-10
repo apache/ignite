@@ -27,10 +27,13 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import java.math.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
@@ -43,6 +46,18 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
+
+    /** */
+    private static final OptimizedObjectMetadata EMPTY_META = new OptimizedObjectMetadata();
+
+    /** */
+    private volatile IgniteCacheProxy<OptimizedObjectMetadataKey, OptimizedObjectMetadata> metaDataCache;
+
+    /** Metadata updates collected before metadata cache is initialized. */
+    private final ConcurrentHashMap<Integer, OptimizedObjectMetadata> metaBuf = new ConcurrentHashMap<>();
+
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /**
      *
@@ -67,6 +82,56 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      */
     public IgniteCacheObjectProcessorImpl(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        if (marsh instanceof OptimizedMarshaller) {
+            OptimizedObjectMetadataHandler metaHandler = new OptimizedObjectMetadataHandler() {
+                @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
+                    if (metaBuf.contains(typeId))
+                        return;
+
+                    metaBuf.put(typeId, meta);
+
+                    if (metaDataCache != null)
+                        metaDataCache.putIfAbsent(new OptimizedObjectMetadataKey(typeId), meta);
+                }
+
+                @Override public OptimizedObjectMetadata metadata(int typeId) {
+                    if (metaDataCache == null)
+                        U.awaitQuiet(startLatch);
+
+                    OptimizedObjectMetadata meta = metaBuf.get(typeId);
+
+                    if (meta != null)
+                        return meta == EMPTY_META ? null : meta;
+
+                    meta = metaDataCache.localPeek(new OptimizedObjectMetadataKey(typeId));
+
+                    if (meta == null)
+                        meta = EMPTY_META;
+
+                    return meta == EMPTY_META ? null : meta;
+                }
+            };
+
+            ((OptimizedMarshaller)marsh).setMetadataHandler(metaHandler);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheProcessorStarted() {
+        metaDataCache = ctx.cache().jcache(CU.UTILITY_CACHE_NAME);
+
+        startLatch.countDown();
+
+        for (Map.Entry<Integer, OptimizedObjectMetadata> e : metaBuf.entrySet())
+            metaDataCache.putIfAbsent(new OptimizedObjectMetadataKey(e.getKey()), e.getValue());
     }
 
     /** {@inheritDoc} */
@@ -205,11 +270,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         assert obj != null;
 
         return IMMUTABLE_CLS.contains(obj.getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onCacheProcessorStarted() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

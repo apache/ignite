@@ -85,6 +85,9 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     /** ID mapper. */
     private OptimizedMarshallerIdMapper mapper;
 
+    /** Metadata handler. */
+    private OptimizedObjectMetadataHandler metaHandler;
+
     /** Class descriptors by class. */
     private final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
 
@@ -128,6 +131,15 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /**
+     * Sets metadata handler.
+     *
+     * @param metaHandler Metadata handler.
+     */
+    public void setMetadataHandler(OptimizedObjectMetadataHandler metaHandler) {
+        this.metaHandler = metaHandler;
+    }
+
+    /**
      * Specifies size of cached object streams used by marshaller. Object streams are cached for
      * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
      * pool is not used and each thread has its own cached object stream which it keeps reusing.
@@ -155,7 +167,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+            objOut.context(clsMap, ctx, mapper, metaHandler, requireSer);
 
             objOut.out().outputStream(out);
 
@@ -176,7 +188,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+            objOut.context(clsMap, ctx, mapper, metaHandler, requireSer);
 
             objOut.writeObject(obj);
 
@@ -200,7 +212,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, metaHandler, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().inputStream(in);
 
@@ -229,7 +241,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, metaHandler, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);
 
@@ -257,7 +269,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, metaHandler, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);
 

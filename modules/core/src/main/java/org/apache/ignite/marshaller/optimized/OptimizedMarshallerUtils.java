@@ -177,6 +177,7 @@ class OptimizedMarshallerUtils {
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param metaHandler Metadata handler.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
@@ -184,7 +185,8 @@ class OptimizedMarshallerUtils {
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         Class cls,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
+        OptimizedMarshallerIdMapper mapper,
+        OptimizedObjectMetadataHandler metaHandler)
         throws IOException
     {
         OptimizedClassDescriptor desc = clsMap.get(cls);
@@ -201,7 +203,7 @@ class OptimizedMarshallerUtils {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
-            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper);
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper, metaHandler);
 
             if (registered) {
                 OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
@@ -259,6 +261,7 @@ class OptimizedMarshallerUtils {
      * @param ldr Class loader.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param metaHandler Metadata handler.
      * @return Descriptor.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
@@ -268,7 +271,8 @@ class OptimizedMarshallerUtils {
         int id,
         ClassLoader ldr,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
+        OptimizedMarshallerIdMapper mapper,
+        OptimizedObjectMetadataHandler metaHandler) throws IOException, ClassNotFoundException {
         Class cls;
 
         try {
@@ -282,7 +286,8 @@ class OptimizedMarshallerUtils {
 
         if (desc == null) {
             OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper,
+                    metaHandler));
 
             if (old != null)
                 desc = old;

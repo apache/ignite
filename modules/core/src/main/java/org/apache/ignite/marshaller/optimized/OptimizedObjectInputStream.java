@@ -68,6 +68,9 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
+    /** */
+    private OptimizedObjectMetadataHandler metaHandler;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
@@ -80,18 +83,21 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param metaHandler Metadata handler.
      * @param clsLdr Class loader.
      */
     void context(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
+        OptimizedObjectMetadataHandler metaHandler,
         ClassLoader clsLdr)
     {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.clsLdr = clsLdr;
+        this.metaHandler = metaHandler;
     }
 
     /**
@@ -244,8 +250,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
-                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper, metaHandler):
+                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper, metaHandler);
 
                 curCls = desc.describedClass();
 
@@ -275,7 +281,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int compTypeId = readInt();
 
         return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
-            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
+            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper, metaHandler).describedClass();
     }
 
     /**
@@ -534,18 +540,10 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             }
         }
 
-        byte flag = (byte)in.readInt();
+        int footerLen = in.readInt();
 
-        if (flag != EMPTY_FOOTER) {
-            int skip = 2;
-
-            for (int i = 0; i < fields.hierarchyLevels(); i++)
-                skip += fields.fields(i).size() * 3;
-
-            skip *= 4; // all the values are integers
-
-            in.skipBytes(skip);
-        }
+        if (footerLen != EMPTY_FOOTER)
+            in.skipBytes(footerLen - 4);
 
         return obj;
     }

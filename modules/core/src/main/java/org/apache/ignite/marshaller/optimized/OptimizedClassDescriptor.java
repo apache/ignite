@@ -107,6 +107,9 @@ class OptimizedClassDescriptor {
     /** Access order field offset. */
     private long accessOrderFieldOff;
 
+    /** Metadata handler */
+    private OptimizedObjectMetadataHandler metaHandler;
+
     /**
      * Creates descriptor for class.
      *
@@ -115,6 +118,7 @@ class OptimizedClassDescriptor {
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param metaHandler Metadata handler.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -122,13 +126,15 @@ class OptimizedClassDescriptor {
         int typeId,
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
+        OptimizedMarshallerIdMapper mapper,
+        OptimizedObjectMetadataHandler metaHandler)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
+        this.metaHandler = this.metaHandler;
 
         name = cls.getName();
 
@@ -336,8 +342,9 @@ class OptimizedClassDescriptor {
 
                     writeObjMtds = new ArrayList<>();
                     readObjMtds = new ArrayList<>();
+
                     List<ClassFields> fields = new ArrayList<>();
-                    HashSet<String> fieldsSet = new HashSet<>();
+                    Set<String> fieldsSet = new HashSet<>();
 
                     boolean fieldsIndexingEnabled = true;
 
@@ -349,8 +356,10 @@ class OptimizedClassDescriptor {
 
                             int mod = mtd.getModifiers();
 
-                            if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE)
+                            if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE) {
                                 mtd.setAccessible(true);
+                                fieldsIndexingEnabled = false;
+                            }
                             else
                                 // Set method back to null if it has incorrect signature.
                                 mtd = null;
@@ -366,8 +375,10 @@ class OptimizedClassDescriptor {
 
                             int mod = mtd.getModifiers();
 
-                            if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE)
+                            if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE) {
                                 mtd.setAccessible(true);
+                                fieldsIndexingEnabled = false;
+                            }
                             else
                                 // Set method back to null if it has incorrect signature.
                                 mtd = null;
@@ -385,6 +396,7 @@ class OptimizedClassDescriptor {
                         for (Field f : clsFields0) {
                             fieldNames.put(f.getName(), f);
 
+                            // Check for fields duplicate names in classes hierarchy
                             if (!fieldsSet.add(f.getName()))
                                 fieldsIndexingEnabled = false;
                         }
@@ -401,6 +413,8 @@ class OptimizedClassDescriptor {
                             if (serFieldsDesc.getType() == ObjectStreamField[].class &&
                                 isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
                                 hasSerialPersistentFields = true;
+
+                                fieldsIndexingEnabled = false;
 
                                 serFieldsDesc.setAccessible(true);
 
@@ -472,6 +486,23 @@ class OptimizedClassDescriptor {
                     Collections.reverse(fields);
 
                     this.fields = new Fields(fields, fieldsIndexingEnabled);
+
+                    if (fieldsIndexingEnabled && metaHandler.metadata(typeId) == null) {
+                        OptimizedObjectMetadata meta = new OptimizedObjectMetadata();
+
+                        for (ClassFields clsFields : this.fields.fields)
+                            for (FieldInfo info : clsFields.fields)
+                                meta.addMeta(info.id(), (byte)info.type().ordinal());
+
+                        U.debug("putting to cache: " + typeId);
+
+                        if (typeId == 2104067130) {
+                            System.out.println();
+                        }
+                        metaHandler.addMeta(typeId, meta);
+
+                        U.debug("put to cache: " + typeId);
+                    }
                 }
             }
         }
@@ -630,7 +661,7 @@ class OptimizedClassDescriptor {
                 OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
                     ctx,
-                    mapper);
+                    mapper, metaHandler);
 
                 compDesc.writeTypeData(out);
 
@@ -689,7 +720,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper, metaHandler);
 
                 clsDesc.writeTypeData(out);
 

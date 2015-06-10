@@ -72,6 +72,9 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
+    /** */
+    private OptimizedObjectMetadataHandler metaHandler;
+
     /**
      * @param out Output.
      * @throws IOException In case of error.
@@ -84,15 +87,18 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param metaHandler Metadata handler.
      * @param requireSer Require {@link Serializable} flag.
      */
     void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
+        OptimizedObjectMetadataHandler metaHandler,
         boolean requireSer) {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
+        this.metaHandler = metaHandler;
         this.requireSer = requireSer;
     }
 
@@ -187,7 +193,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
                     ctx,
-                    mapper);
+                    mapper,
+                    metaHandler);
 
                 if (desc.excluded()) {
                     writeByte(NULL);
@@ -204,7 +211,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 }
 
                 if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
-                    handle = handles.lookup(obj, out.size());
+                    handle = handles.lookup(obj);
 
                 if (obj0 != obj) {
                     obj = obj0;
@@ -212,7 +219,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
                         ctx,
-                        mapper);
+                        mapper,
+                        metaHandler);
                 }
 
                 if (handle >= 0) {
@@ -312,7 +320,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         Footer footer = new Footer(fields);
 
         footer.headerPos(headerPos);
-        footer.fieldsDataPos(out.size());
 
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -471,8 +478,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     private void writeFields(Object obj, OptimizedClassDescriptor.ClassFields fields, Footer footer)
         throws IOException {
         int size;
-        int relOff = 0;
-        boolean skipPut = false;
 
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);
@@ -548,22 +553,15 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     if (t.field() != null) {
                         int handle = writeObject0(getObject(obj, t.offset()));
 
-                        if (handle >= 0) {
-                            footer.putHandle(handle, t.id());
-                            skipPut = true;
-                        }
+                        if (handle >= 0)
+                            footer.disable();
                     }
             }
 
             if (t.field() != null) {
                 int fieldLen = out.size() - size;
 
-                if (!skipPut)
-                    footer.put(t.id(), relOff, fieldLen);
-                else
-                    skipPut = false;
-
-                relOff += fieldLen;
+                footer.put(t.id(), (byte)t.type().ordinal(), fieldLen);
             }
         }
     }
@@ -756,8 +754,6 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             throw new NotActiveException("putFields() was not called.");
 
         int size;
-        int relOff = 0;
-        boolean skipPut = false;
 
         Footer footer = curPut.curFooter;
 
@@ -817,20 +813,13 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 case OTHER:
                     int handle = writeObject0(t.get2());
 
-                    if (handle >= 0) {
-                        footer.putHandle(handle, t.get1().id());
-                        skipPut = true;
-                    }
+                    if (handle >= 0)
+                        footer.disable();
             }
 
             int fieldLen = out.size() - size;
 
-            if (!skipPut)
-                footer.put(t.get1().id(), relOff, fieldLen);
-            else
-                skipPut = false;
-
-            relOff += fieldLen;
+            footer.put(t.get1().id(), (byte)t.get1().type().ordinal(), fieldLen);
         }
     }
 
@@ -964,19 +953,10 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      */
     private class Footer {
         /** */
-        private int[] data;
-
-        /** */
-        private int pos;
-
-        /** */
-        private int fieldsDataPos;
+        private ArrayList<Short> data;
 
         /** */
         private int headerPos;
-
-        /** */
-        private HashMap<Integer, Integer> lenForOff;
 
         /**
          * Constructor.
@@ -984,36 +964,10 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
          * @param fields Fields.
          */
         private Footer(OptimizedClassDescriptor.Fields fields) {
-            if (fields.fieldsIndexingEnabled()) {
-                int totalFooterSize = 0;
-
-                for (int i = 0; i < fields.hierarchyLevels(); i++)
-                    totalFooterSize += fields.fields(i).size() * 3;
-
-                data = new int[totalFooterSize];
-
-                lenForOff = new HashMap<>();
-            }
+            if (fields.fieldsIndexingEnabled())
+                data = new ArrayList<>();
             else
                 data = null;
-        }
-
-        /**
-         * Returns start position of fields' data section.
-         *
-         * @return Absolute position.
-         */
-        private int fieldsDataPos() {
-            return fieldsDataPos;
-        }
-
-        /**
-         * Sets field's data section absolute position.
-         *
-         * @param pos Absolute position.
-         */
-        private void fieldsDataPos(int pos) {
-            fieldsDataPos = pos;
         }
 
         /**
@@ -1028,48 +982,25 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         /**
          * Puts type ID and its value len to the footer.
          *
-         * @param typeId Type ID.
-         * @param relOff Offset of an object in fields' data section.
+         * @param fieldId Field ID.
+         * @param fieldType Field type.
          * @param len Total number of bytes occupied by type's value.
          */
-        private void put(int typeId, int relOff, int len) {
+        private void put(int fieldId, byte fieldType, int len) {
             if (data == null)
                 return;
 
-            data[pos++] = typeId;
-            data[pos++] = relOff;
-            data[pos++] = len;
-
-            lenForOff.put(relOff, len);
+            // Considering that field's length will be no longer 2^15 (32 MB)
+            if (fieldType == OptimizedFieldType.OTHER.ordinal())
+                data.add((short)len);
         }
 
         /**
-         * Puts handle's info to the footer.
-         *
-         * @param handle Handle.
-         * @param typeId Type ID.
+         * Disable footer and indexing for the given Object.
          */
-        private void putHandle(int handle, int typeId) {
-            if (data == null)
-                return;
-
-            int handleOff = handles.objectOffset(handle);
-            int relOff = fieldsDataPos - handleOff;
-
-            Integer len = lenForOff.get(relOff);
-
-            if (len == null) {
-                // this can be a handle to an outer object, we won't be able to process such cases when a field
-                // is detached
-                data = null;
-                lenForOff = null;
-
-                return;
-            }
-
-            put(typeId, relOff, len);
+        private void disable() {
+            data = null;
         }
-
 
         /**
          * Writes footer content to the OutputStream.
@@ -1082,15 +1013,18 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             else {
                 int footerStartPos = out.size();
 
-                writeInt(fieldsDataPos);
+                //12 - 4 bytes for len at the beginning, 4 bytes for len at the end, 4 bytes for object len.
+                int footerLen = data.size() * 2 + 12;
 
-                for (int i = 0; i < data.length; i++)
-                    writeInt(data[i]);
+                writeInt(footerLen);
+
+                for (short fieldLen : data)
+                    writeShort(fieldLen);
 
                 // object total len
-                writeInt((out.size() - headerPos) + 4);
-                // footer len
-                writeInt((out.size() - footerStartPos) + 4);
+                writeInt((out.size() - headerPos) + 8);
+
+                writeInt(footerLen);
             }
         }
     }
