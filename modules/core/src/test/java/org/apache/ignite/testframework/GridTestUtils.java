@@ -137,7 +137,7 @@ public final class GridTestUtils {
                 }
             }
 
-            if (msg != null && (e.getMessage() == null || !e.getMessage().startsWith(msg))) {
+            if (msg != null && (e.getMessage() == null || !e.getMessage().contains(msg))) {
                 U.error(log, "Unexpected exception message.", e);
 
                 fail("Exception message is not as expected [expected=" + msg + ", actual=" + e.getMessage() + ']', e);
