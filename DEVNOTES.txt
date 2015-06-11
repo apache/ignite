@@ -3,8 +3,14 @@ Ignite Fabric Maven Build Instructions
 Without LGPL dependencies (default):
   mvn clean package -DskipTests
 
+Without LGPL dependencies and Scala 2.10:
+  mvn clean package -DskipTests -Dscala-2.10
+
 With LGPL dependencies:
   mvn clean package -DskipTests -Prelease,lgpl
+
+With LGPL dependencies and Scala 2.10:
+  mvn clean package -DskipTests -Prelease,lgpl -Dscala-2.10
 
 Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
 
