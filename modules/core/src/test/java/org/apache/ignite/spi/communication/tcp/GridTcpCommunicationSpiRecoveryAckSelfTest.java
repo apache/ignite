@@ -324,6 +324,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         spi.setTcpNoDelay(true);
         spi.setAckSendThreshold(ackCnt);
         spi.setMessageQueueLimit(queueLimit);
+        spi.setSharedMemoryPort(-1);
 
         return spi;
     }

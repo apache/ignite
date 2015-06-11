@@ -591,7 +591,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws SQLException If failed.
      */
     private static List<GridQueryFieldMetadata> meta(ResultSetMetaData rsMeta) throws SQLException {
-        ArrayList<GridQueryFieldMetadata> meta = new ArrayList<>(rsMeta.getColumnCount());
+        List<GridQueryFieldMetadata> meta = new ArrayList<>(rsMeta.getColumnCount());
 
         for (int i = 1; i <= rsMeta.getColumnCount(); i++) {
             String schemaName = rsMeta.getSchemaName(i);
@@ -770,8 +770,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
-        return rdcQryExec.query(cctx, qry);
+    @Override public Iterable<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
+        final boolean keepCacheObj) {
+        return new Iterable<List<?>>() {
+            @Override public Iterator<List<?>> iterator() {
+                return rdcQryExec.query(cctx, qry, keepCacheObj);
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -801,25 +806,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry);
 
-        final Iterator<List<?>> iter0 = res.iterator();
+        final Iterable<Cache.Entry<K, V>> converted = new Iterable<Cache.Entry<K, V>>() {
+            @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                final Iterator<List<?>> iter0 = res.iterator();
 
-        Iterator<Cache.Entry<K,V>> iter = new Iterator<Cache.Entry<K,V>>() {
-            @Override public boolean hasNext() {
-                return iter0.hasNext();
-            }
+                return new Iterator<Cache.Entry<K,V>>() {
+                    @Override public boolean hasNext() {
+                        return iter0.hasNext();
+                    }
 
-            @Override public Cache.Entry<K,V> next() {
-                List<?> l = iter0.next();
+                    @Override public Cache.Entry<K,V> next() {
+                        List<?> l = iter0.next();
 
-                return new CacheEntryImpl<>((K)l.get(0),(V)l.get(1));
-            }
+                        return new CacheEntryImpl<>((K)l.get(0),(V)l.get(1));
+                    }
 
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
             }
         };
 
-        return new QueryCursorImpl<Cache.Entry<K,V>>(iter) {
+        // No metadata for SQL queries.
+        return new QueryCursorImpl<Cache.Entry<K,V>>(converted) {
             @Override public void close() {
                 res.close();
             }
@@ -843,7 +853,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         GridCacheTwoStepQuery twoStepQry;
-        Collection<GridQueryFieldMetadata> meta;
+        List<GridQueryFieldMetadata> meta;
 
         try {
             twoStepQry = GridSqlQuerySplitter.split((JdbcPreparedStatement)stmt, qry.getArgs(), qry.isCollocated());
@@ -862,7 +872,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)queryTwoStep(cctx, twoStepQry);
+        QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(queryTwoStep(cctx, twoStepQry, cctx.keepPortable()));
 
         cursor.fieldsMeta(meta);
 

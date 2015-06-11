@@ -397,7 +397,7 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry) {
+    public QueryCursor<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepPortable) {
         for (;;) {
             long qryReqId = reqIdGen.incrementAndGet();
 
@@ -687,22 +687,7 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            // Filter nodes where not all the replicated caches loaded.
-            for (String extraSpace : extraSpaces) {
-                GridCacheContext<?,?> extraCctx = cacheContext(extraSpace);
-
-                if (!extraCctx.isReplicated())
-                    continue;
-
-                Set<ClusterNode> dataNodes = owningReplicatedDataNodes(extraCctx);
-
-                for (Set<ClusterNode> partLoc : partLocs) {
-                    partLoc.retainAll(dataNodes);
-
-                    if (partLoc.isEmpty())
-                        return null; // Retry.
-                }
-            }
+            return new QueryCursorImpl<>(new GridQueryCacheObjectsIterator(new Iter(res), cctx, cctx.keepPortable()));
         }
 
         // Collect the final partitions mapping.
@@ -753,7 +738,7 @@ public class GridReduceQueryExecutor {
      * @return Cursor for plans.
      * @throws IgniteCheckedException if failed.
      */
-    private QueryCursor<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
+    private Iterator<List<?>> explainPlan(JdbcConnection c, String space, GridCacheTwoStepQuery qry)
         throws IgniteCheckedException {
         List<List<?>> lists = new ArrayList<>();
 
@@ -775,7 +760,7 @@ public class GridReduceQueryExecutor {
 
         lists.add(F.asList(getPlan(rs)));
 
-        return new QueryCursorImpl<>(lists.iterator());
+        return lists.iterator();
     }
 
     /**

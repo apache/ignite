@@ -187,6 +187,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
+     * @return Keys belonging to partition.
+     */
+    public Set<KeyCacheObject> keySet() {
+        return map.keySet();
+    }
+
+    /**
      * @return Entries belonging to partition.
      */
     public Collection<GridDhtCacheEntry> entries() {

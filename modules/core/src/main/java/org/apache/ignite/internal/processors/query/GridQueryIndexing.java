@@ -58,9 +58,11 @@ public interface GridQueryIndexing {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param keepCacheObjects If {@code true}, cache objects representation will be preserved.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry);
+    public Iterable<List<?>> queryTwoStep(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry,
+        boolean keepCacheObjects);
 
     /**
      * Parses SQL query into two step query and executes it.
