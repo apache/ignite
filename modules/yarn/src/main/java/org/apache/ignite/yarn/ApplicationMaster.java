@@ -128,7 +128,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                             c.getResource().getMemory()));
                 }
                 catch (Exception ex) {
-                    System.err.println("[AM] Error launching container " + c.getId() + " " + ex);
+                    log.log(Level.WARNING, "Error launching container " + c.getId(), ex);
                 }
             }
             else
