@@ -127,9 +127,17 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
 
-        Object cnt = qryProc.queryTwoStep(cache, q).getAll().iterator().next().get(0);
+        Iterator<List<?>> it = qryProc.queryTwoStep(cache, q).iterator();
 
-        assertEquals(10L, cnt);
+        try {
+            Object cnt = it.next().get(0);
+
+            assertEquals(10L, cnt);
+        }
+        finally {
+            if (it instanceof AutoCloseable)
+                ((AutoCloseable)it).close();
+        }
     }
 
     /**

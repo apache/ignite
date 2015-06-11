@@ -774,7 +774,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param loadPrevVal Load previous value flag.
      * @return {@code this} for chaining.
-     * @return {@code this} for chaining.
      */
     public CacheConfiguration setLoadPreviousValue(boolean loadPrevVal) {
         this.loadPrevVal = loadPrevVal;
