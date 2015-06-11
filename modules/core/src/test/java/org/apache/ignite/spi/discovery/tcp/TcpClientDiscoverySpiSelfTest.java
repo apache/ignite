@@ -984,6 +984,23 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testJoinError() throws Exception {
+        startServerNodes(1);
+
+        Ignite ignite = G.ignite("server-0");
+
+        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        srvSpi.failNodeAddedMessage();
+
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+    }
+
+    /**
      * @param clientIdx Client index.
      * @param srvIdx Server index.
      * @throws Exception In case of error.
@@ -1231,6 +1248,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /** */
         private final AtomicBoolean openSockLock = new AtomicBoolean();
 
+        /** */
+        private AtomicInteger failNodeAdded = new AtomicInteger();
+
         /**
          * @param lock Lock.
          */
@@ -1246,6 +1266,13 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
                 throw new RuntimeException(e);
             }
+        }
+
+        /**
+         *
+         */
+        void failNodeAddedMessage() {
+            failNodeAdded.set(1);
         }
 
         /**
@@ -1265,6 +1292,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             GridByteArrayOutputStream bout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
+
+            if (msg instanceof TcpDiscoveryNodeAddedMessage && failNodeAdded.getAndDecrement() > 0) {
+                log.info("Close socket on message write [msg=" + msg + "]");
+
+                sock.close();
+            }
 
             super.writeToSocket(sock, msg, bout);
         }

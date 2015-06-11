@@ -398,8 +398,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     continue;
                 }
 
-                assert sockAndRes.get1() != null;
-                assert sockAndRes.get2() != null;
+                assert sockAndRes.get1() != null && sockAndRes.get2() != null : sockAndRes;
 
                 Socket sock = sockAndRes.get1();
 
@@ -440,6 +439,10 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     @Nullable private T2<Socket, Integer> sendJoinRequest(boolean recon, InetSocketAddress addr) {
         assert addr != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Send join request [addr=" + addr + ", reconnect=" + recon +
+                ", locNodeId=" + getLocalNodeId() + ']');
 
         Collection<Throwable> errs = null;
 
@@ -1385,8 +1388,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 pending = true;
 
                 try {
-                    for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages())
+                    for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
+                        if (log.isDebugEnabled())
+                            log.debug("Process message on reconnect [msg=" + pendingMsg + ']');
+
                         processDiscoveryMessage(pendingMsg);
+                    }
                 }
                 finally {
                     pending = false;
