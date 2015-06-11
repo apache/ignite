@@ -32,14 +32,17 @@ public class ClusterProperties {
     /** */
     public static final String EMPTY_STRING = "";
 
-    /** Unlimited. */
-    public static final double UNLIMITED = Double.MAX_VALUE;
-
     /** */
     public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
 
     /** */
     public static final String DEFAULT_CLUSTER_NAME = "ignite-cluster";
+
+    /** */
+    public static final double DEFAULT_CPU_PER_NODE = 2;
+
+    /** */
+    public static final double DEFAULT_MEM_PER_NODE = 2048;
 
     /** Cluster name. */
     private String clusterName = DEFAULT_CLUSTER_NAME;
@@ -48,19 +51,19 @@ public class ClusterProperties {
     public static final String IGNITE_RUN_CPU_PER_NODE = "IGNITE_RUN_CPU_PER_NODE";
 
     /** CPU limit. */
-    private double cpuPerNode = UNLIMITED;
+    private double cpuPerNode = DEFAULT_CPU_PER_NODE;
 
     /** */
     public static final String IGNITE_MEMORY_PER_NODE = "IGNITE_MEMORY_PER_NODE";
 
     /** Memory limit. */
-    private double memPerNode = UNLIMITED;
+    private double memPerNode = DEFAULT_MEM_PER_NODE;
 
     /** */
     public static final String IGNITE_NODE_COUNT = "IGNITE_NODE_COUNT";
 
     /** */
-    public static final int DEFAULT_IGNITE_NODE_COUNT = 3;
+    public static final double DEFAULT_IGNITE_NODE_COUNT = 3;
 
     /** Node count limit. */
     private double nodeCnt = DEFAULT_IGNITE_NODE_COUNT;
@@ -252,9 +255,9 @@ public class ClusterProperties {
 
             prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
 
-            prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, 1.0);
-            prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, 2048.0);
-            prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, 2.0);
+            prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, DEFAULT_CPU_PER_NODE);
+            prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, DEFAULT_MEM_PER_NODE);
+            prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, DEFAULT_IGNITE_NODE_COUNT);
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
             prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
@@ -289,9 +292,9 @@ public class ClusterProperties {
 
         prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, null, DEFAULT_CLUSTER_NAME);
 
-        prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, null, 1.0);
-        prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, null, 2048.0);
-        prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, 2.0);
+        prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, null, DEFAULT_CPU_PER_NODE);
+        prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, null, DEFAULT_MEM_PER_NODE);
+        prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, DEFAULT_IGNITE_NODE_COUNT);
 
         prop.igniteVer = getStringProperty(IGNITE_VERSION, null, DEFAULT_IGNITE_VERSION);
         prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, null, DEFAULT_IGNITE_WORK_DIR);
