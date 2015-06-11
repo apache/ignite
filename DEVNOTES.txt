@@ -91,6 +91,14 @@ To test compliance with JCache TCK use:
 
 mvn test -P-release,jcache-tck -pl :ignite-core -am
 
+Ignite Mesos Maven Build Instructions
+============================================
+cd to ./modules/mesos
+
+mvn clean package
+
+Look for ignite-mesos-<version>-jar-with-dependencies.jar in ./target directory.
+
 Run tests
 ==========
 To run tests locally use:
