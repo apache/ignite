@@ -216,6 +216,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /** {@inheritDoc} */
     public void onShutdownRequest() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
