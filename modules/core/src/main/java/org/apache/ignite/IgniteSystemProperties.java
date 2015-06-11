@@ -337,6 +337,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SQL_MERGE_TABLE_MAX_SIZE = "IGNITE_SQL_MERGE_TABLE_MAX_SIZE";
 
+    /** Maximum size for affinity assignment history. */
+    public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
+
     /**
      * Enforces singleton.
      */
