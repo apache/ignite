@@ -528,7 +528,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (state.getReference() == RENTING && state.getStamp() == 0 && !groupReserved())
             clearAll();
 
-        if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0) && !groupReserved()) {
+        if (map.isEmpty() && !groupReserved() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
