@@ -87,6 +87,10 @@ public class GridMapQueryExecutor {
     /** */
     private final GridSpinBusyLock busyLock;
 
+    /** */
+    private final ConcurrentMap<T2<String, AffinityTopologyVersion>, GridReservable> reservations =
+        new ConcurrentHashMap8<>();
+
     /**
      * @param busyLock Busy lock.
      */
@@ -202,15 +206,13 @@ public class GridMapQueryExecutor {
 
     /**
      * @param cacheName Cache name.
-     * @param topVer Topology version.
      * @return Cache context or {@code null} if none.
      */
-    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName, AffinityTopologyVersion topVer) {
+    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName) {
         GridCacheAdapter<?,?> cache = ctx.cache().internalCache(cacheName);
 
-        if (cache == null) // Since we've waited for for cache affinity updates, this must be a misconfiguration.
-            throw new CacheException("Cache does not exist on current node: [nodeId=" + ctx.localNodeId() +
-                ", cache=" + cacheName + ", topVer=" + topVer + "]");
+        if (cache == null)
+            return null;
 
         return cache.context();
     }
@@ -218,17 +220,23 @@ public class GridMapQueryExecutor {
     /**
      * @param cacheNames Cache names.
      * @param topVer Topology version.
-     * @param parts Explicit partitions.
+     * @param explicitParts Explicit partitions list.
      * @param reserved Reserved list.
      * @return {@code true} If all the needed partitions successfully reserved.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean reservePartitions(Collection<String> cacheNames, AffinityTopologyVersion topVer, final int[] parts,
-        List<GridDhtLocalPartition> reserved) throws IgniteCheckedException {
-        Collection<Integer> partIds = parts == null ? null : wrap(parts);
+    private boolean reservePartitions(
+        Collection<String> cacheNames,
+        AffinityTopologyVersion topVer,
+        final int[] explicitParts,
+        List<GridReservable> reserved
+    ) throws IgniteCheckedException {
+        assert topVer != null;
+
+        Collection<Integer> partIds = wrap(explicitParts);
 
         for (String cacheName : cacheNames) {
-            GridCacheContext<?, ?> cctx = cacheContext(cacheName, topVer);
+            GridCacheContext<?, ?> cctx = cacheContext(cacheName);
 
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
@@ -236,35 +244,75 @@ public class GridMapQueryExecutor {
             if (cctx.isLocal())
                 continue;
 
-            int partsCnt = cctx.affinity().partitions();
+            final T2<String,AffinityTopologyVersion> grpKey = new T2<>(cctx.name(), topVer);
 
-            if (cctx.isReplicated()) { // Check all the partitions are in owning state for replicated cache.
-                for (int p = 0; p < partsCnt; p++) {
-                    GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, false);
+            GridReservable r = reservations.get(grpKey);
 
-                    if (part == null || part.state() != OWNING)
-                        return false;
+            if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
+                if (!r.reserve())
+                    return false; // We need explicit partitions here -> retry.
 
-                    // We don't need to reserve partitions because they will not be evicted in replicated caches.
-                }
+                reserved.add(r);
             }
-            else { // Reserve primary partitions for partitioned cache.
-                if (parts == null)
-                    partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+            else { // Try to reserve partitions one by one.
+                int partsCnt = cctx.affinity().partitions();
 
-                for (int partId : partIds) {
-                    if (partId >= partsCnt)
-                        break; // We can have more partitions because `parts` array is shared for all caches.
+                if (cctx.isReplicated()) { // Check all the partitions are in owning state for replicated cache.
+                    if (r == null) { // Check only once.
+                        for (int p = 0; p < partsCnt; p++) {
+                            GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, false);
 
-                    GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
+                            // We don't need to reserve partitions because they will not be evicted in replicated caches.
+                            if (part == null || part.state() != OWNING)
+                                return false;
 
-                    if (part == null || part.state() != OWNING || !part.reserve())
-                        return false;
+                            // Mark that we checked this replicated cache.
+                            reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
+                        }
+                    }
+                }
+                else { // Reserve primary partitions for partitioned cache (if no explicit given).
+                    if (explicitParts == null)
+                        partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
-                    reserved.add(part);
+                    for (int partId : partIds) {
+                        GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
 
-                    if (part.state() != OWNING)
-                        return false;
+                        if (part == null || part.state() != OWNING || !part.reserve())
+                            return false;
+
+                        reserved.add(part);
+
+                        // Double check that we are still in owning state and partition contents are not cleared.
+                        if (part.state() != OWNING)
+                            return false;
+                    }
+
+                    if (explicitParts == null) {
+                        // We reserved all the primary partitions for cache, attempt to add group reservation.
+                        GridDhtPartitionsReservation reservation = new GridDhtPartitionsReservation(topVer, cctx,
+                            new CI1<GridDhtPartitionsReservation>() {
+                                @Override public void apply(GridDhtPartitionsReservation r) {
+                                    reservations.remove(grpKey, r);
+                                }
+                            });
+
+                        for (int p = reserved.size() - partIds.size(); p < reserved.size(); p++) {
+                            if (!((GridDhtLocalPartition)reserved.get(p)).addReservation(reservation)) {
+                                // Can fail to add only on the first partition because of the same order of partitions.
+                                assert p == reserved.size() - partIds.size() : p;
+
+                                reservation = null;
+
+                                break;
+                            }
+                        }
+
+                        if (reservation != null) { // If we were able to add reservation to all partitions, publish it.
+                            if (reservations.putIfAbsent(grpKey, reservation) != null)
+                                throw new IllegalStateException();
+                        }
+                    }
                 }
             }
         }
@@ -277,7 +325,10 @@ public class GridMapQueryExecutor {
      * @return Collection wrapper.
      */
     private static Collection<Integer> wrap(final int[] ints) {
-        if (F.isEmpty(ints))
+        if (ints == null)
+            return null;
+
+        if (ints.length == 0)
             return Collections.emptySet();
 
         return new AbstractCollection<Integer>() {
@@ -317,7 +368,7 @@ public class GridMapQueryExecutor {
 
         QueryResults qr = null;
 
-        List<GridDhtLocalPartition> reserved = new ArrayList<>();
+        List<GridReservable> reserved = new ArrayList<>();
 
         try {
             // Unmarshall query params.
@@ -343,7 +394,7 @@ public class GridMapQueryExecutor {
             final AffinityTopologyVersion topVer = req.topologyVersion();
 
             if (topVer != null) {
-                // Reserve primary partitions.
+                // Reserve primary for topology version or explicit partitions.
                 if (!reservePartitions(caches, topVer, req.partitions(), reserved)) {
                     sendRetry(node, req.requestId());
 
@@ -352,7 +403,10 @@ public class GridMapQueryExecutor {
             }
 
             // Prepare to run queries.
-            GridCacheContext<?,?> mainCctx = cacheContext(req.space(), topVer);
+            GridCacheContext<?,?> mainCctx = cacheContext(req.space());
+
+            if (mainCctx == null)
+                throw new CacheException("Cache was destroyed: " + req.space());
 
             qr = new QueryResults(req.requestId(), qrys.size(), mainCctx);
 
@@ -420,8 +474,8 @@ public class GridMapQueryExecutor {
             h2.setFilters(null);
 
             // Release reserved partitions.
-            for (GridDhtLocalPartition part : reserved)
-                part.release();
+            for (GridReservable r : reserved)
+                r.release();
         }
     }
 
@@ -736,6 +790,24 @@ public class GridMapQueryExecutor {
 
             U.close(rs, log);
             U.close(stmt, log);
+        }
+    }
+
+    /**
+     * Fake reservation object for replicated caches.
+     */
+    private static class ReplicatedReservation implements GridReservable {
+        /** */
+        static final ReplicatedReservation INSTANCE = new ReplicatedReservation();
+
+        /** {@inheritDoc} */
+        @Override public boolean reserve() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void release() {
+            // No-op.
         }
     }
 }
