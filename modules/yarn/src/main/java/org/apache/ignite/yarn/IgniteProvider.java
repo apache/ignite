@@ -90,10 +90,9 @@ public class IgniteProvider {
         if (latestVersion != null && newVersion.equals(latestVersion)) {
             if (hdfs)
                 return new Path(formatPath(props.igniteReleasesDir(), latestVersion));
-            else {
+            else
                 return IgniteYarnUtils.copyLocalToHdfs(fs, formatPath(props.igniteLocalWorkDir(), latestVersion),
                     formatPath(props.igniteReleasesDir(), latestVersion));
-            }
         }
         else {
             latestVersion = newVersion;
