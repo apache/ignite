@@ -265,7 +265,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         // Suppress warning if at least one ATOMIC cache found.
         perf.add("Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)",
-            cfg.getAtomicityMode() == ATOMIC);
+                 cfg.getAtomicityMode() == ATOMIC);
 
         // Suppress warning if at least one non-FULL_SYNC mode found.
         perf.add("Disable fully synchronous writes (set 'writeSynchronizationMode' to PRIMARY_SYNC or FULL_ASYNC)",
@@ -784,8 +784,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
 
-        boolean utilityCacheStarted = false;
-
         // Wait for caches in SYNC preload mode.
         for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
             GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
@@ -796,11 +794,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0)) {
                         cache.preloader().syncFuture().get();
 
-                        if (CU.isUtilityCache(cache.name())) {
+                        if (CU.isUtilityCache(cache.name()))
                             ctx.cacheObjects().onUtilityCacheStarted();
-
-                            utilityCacheStarted = true;
-                        }
                     }
                 }
             }
@@ -808,7 +803,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         assert caches.containsKey(CU.MARSH_CACHE_NAME) : "Marshaller cache should be started";
         assert caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
-        assert utilityCacheStarted;
     }
 
     /** {@inheritDoc} */

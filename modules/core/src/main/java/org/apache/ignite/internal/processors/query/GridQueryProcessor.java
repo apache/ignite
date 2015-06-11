@@ -135,7 +135,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     TypeId typeId;
 
-                    if (valCls == null || ctx.cacheObjects().isPortableClass(valCls)) {
+                    if (valCls == null || ctx.cacheObjects().isPortableEnabled()) {
                         processPortableMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));

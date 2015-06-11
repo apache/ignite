@@ -90,13 +90,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         try {
             old = cache0.tryPutIfAbsent(id, clsName);
 
-            if (old != null && !old.equals(clsName)) {
-                U.quietAndWarn(log, "Type ID collision detected, may affect performance " +
-                    "(set idMapper property on marshaller to fix) [id=" + id + ", clsName1=" + clsName +
-                    "clsName2=" + old + ']');
-
-                return false;
-            }
+            if (old != null && !old.equals(clsName))
+                throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
+                    ", clsName2=" + old + ']');
 
             failedCnt = 0;
 

@@ -78,6 +78,11 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     };
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000; //10 minutes.
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

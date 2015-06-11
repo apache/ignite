@@ -193,6 +193,7 @@ public class IgniteTestResources {
     }
 
     /**
+     * @param cls Class.
      * @return Logger for specified class.
      */
     public static IgniteLogger getLogger(Class<?> cls) {
@@ -226,17 +227,17 @@ public class IgniteTestResources {
      */
     @SuppressWarnings("unchecked")
     public synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName = GridTestProperties.getProperty("marshaller.class");
+        String marshallerName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
 
-        Marshaller marshaller;
+        Marshaller marsh;
 
         if (marshallerName == null)
-            marshaller = new OptimizedMarshaller();
+            marsh = new OptimizedMarshaller();
         else {
             try {
                 Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
 
-                marshaller = cls.newInstance();
+                marsh = cls.newInstance();
             }
             catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                 throw new IgniteCheckedException("Failed to create test marshaller [marshaller=" +
@@ -244,8 +245,11 @@ public class IgniteTestResources {
             }
         }
 
-        marshaller.setContext(new MarshallerContextTestImpl());
+        if (marsh instanceof OptimizedMarshaller)
+            ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
-        return marshaller;
+        marsh.setContext(new MarshallerContextTestImpl());
+
+        return marsh;
     }
 }

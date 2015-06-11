@@ -41,6 +41,9 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     /** */
     private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
 
+    /** */
+    private final Set<String> registeredSystemTypes = new HashSet<>();
+
     /**
      * Initializes context.
      */
@@ -107,7 +110,17 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
                 String clsName = line.trim();
 
-                map.put(clsName.hashCode(), clsName);
+                int typeId = clsName.hashCode();
+
+                String oldClsName;
+
+                if ((oldClsName = map.put(typeId, clsName)) != null) {
+                    if (!oldClsName.equals(clsName))
+                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", clsName=" + clsName +
+                        ", oldClsName=" + oldClsName + ']');
+                }
+
+                registeredSystemTypes.add(clsName);
             }
         }
     }
@@ -116,12 +129,17 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     @Override public boolean registerClass(int id, Class cls) throws IgniteCheckedException {
         boolean registered = true;
 
-        if (!map.containsKey(id)) {
+        String clsName = map.get(id);
+
+        if (clsName == null) {
             registered = registerClassName(id, cls.getName());
 
             if (registered)
                 map.putIfAbsent(id, cls.getName());
         }
+        else if (!clsName.equals(cls.getName()))
+            throw new IgniteCheckedException("Duplicate ID [id=" + id + ", oldCls=" + clsName +
+                ", newCls=" + cls.getName());
 
         return registered;
     }
@@ -133,7 +151,8 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         if (clsName == null) {
             clsName = className(id);
 
-            assert clsName != null : id;
+            if (clsName == null)
+                throw new ClassNotFoundException("Unknown type ID: " + id);
 
             String old = map.putIfAbsent(id, clsName);
 
@@ -142,6 +161,11 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         }
 
         return U.forName(clsName, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSystemType(String typeName) {
+        return registeredSystemTypes.contains(typeName);
     }
 
     /**
