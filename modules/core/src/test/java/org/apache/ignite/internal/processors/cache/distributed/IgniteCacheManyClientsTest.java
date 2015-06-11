@@ -18,15 +18,17 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -54,12 +56,24 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setConnectorConfiguration(null);
+        cfg.setPeerClassLoadingEnabled(false);
+        cfg.setTimeServerPortRange(200);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
+
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         if (!clientDiscovery)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setClientMode(client);
+
+        if (client) {
+//            cfg.setPublicThreadPoolSize(1);
+//            cfg.setPeerClassLoadingThreadPoolSize(1);
+//            cfg.setIgfsThreadPoolSize(1);
+        }
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -85,6 +99,11 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -104,6 +123,66 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testManyClientsSequentiallyClientDiscovery() throws Exception {
+        clientDiscovery = true;
+
+        manyClientsSequentially();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void manyClientsSequentially() throws Exception {
+        client = true;
+
+        List<Ignite> clients = new ArrayList<>();
+
+        final int CLIENTS = 50;
+
+        int idx = SRVS;
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite ignite = startGrid(idx++);
+
+            log.info("Started node: " + ignite.name());
+
+            assertTrue(ignite.configuration().isClientMode());
+
+            clients.add(ignite);
+
+            IgniteCache<Object, Object> cache = ignite.cache(null);
+
+            Integer key = rnd.nextInt(0, 1000);
+
+            cache.put(key, i);
+
+            assertNotNull(cache.get(key));
+        }
+
+        log.info("All clients started.");
+
+        assertEquals(SRVS + CLIENTS, G.allGrids().size());
+
+        long topVer = -1L;
+
+        for (Ignite ignite : G.allGrids()) {
+            assertEquals(SRVS + CLIENTS, ignite.cluster().nodes().size());
+
+            if (topVer == -1L)
+                topVer = ignite.cluster().topologyVersion();
+            else
+                assertEquals(topVer, ignite.cluster().topologyVersion());
+        }
+
+        for (Ignite client : clients)
+            client.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void manyClientsPutGet() throws Exception {
         client = true;
 
@@ -111,7 +190,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final int THREADS = 30;
+        final int THREADS = 50;
 
         final CountDownLatch latch = new CountDownLatch(THREADS);
 
@@ -143,6 +222,8 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
                             cache.put(key, iter++);
 
                             assertNotNull(cache.get(key));
+
+                            Thread.sleep(1);
                         }
 
                         log.info("Stopping node: " + ignite.name());
@@ -153,6 +234,8 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
             }, THREADS, "client-thread");
 
             latch.await();
+
+            log.info("All clients started.");
 
             Thread.sleep(10_000);
 

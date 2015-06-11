@@ -125,39 +125,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
 
-    /** Debug mode. */
-    private boolean debugMode;
-
-    /** Debug messages history. */
-    private int debugMsgHist = 512;
-
-    /** Received messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private ConcurrentLinkedDeque<String> debugLog;
-
     /**
      * @param adapter Adapter.
      */
     ServerImpl(TcpDiscoverySpi adapter) {
         super(adapter);
-    }
-
-    /**
-     * This method is intended for troubleshooting purposes only.
-     *
-     * @param debugMode {code True} to start SPI in debug mode.
-     */
-    public void setDebugMode(boolean debugMode) {
-        this.debugMode = debugMode;
-    }
-
-    /**
-     * This method is intended for troubleshooting purposes only.
-     *
-     * @param debugMsgHist Message history log size.
-     */
-    public void setDebugMessageHistory(int debugMsgHist) {
-        this.debugMsgHist = debugMsgHist;
     }
 
     /** {@inheritDoc} */
@@ -1060,23 +1032,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * @param ackTimeout Acknowledgement timeout.
-     * @return {@code True} if acknowledgement timeout is less or equal to
-     * maximum acknowledgement timeout, {@code false} otherwise.
-     */
-    private boolean checkAckTimeout(long ackTimeout) {
-        if (ackTimeout > spi.maxAckTimeout) {
-            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
-                "(consider increasing 'maxAckTimeout' configuration property) " +
-                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.maxAckTimeout + ']');
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Notify external listener on discovery event.
      *
      * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
@@ -1418,25 +1373,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             U.quietAndInfo(log, b.toString());
         }
-    }
-
-    /**
-     * @param msg Message.
-     */
-    private void debugLog(String msg) {
-        assert debugMode;
-
-        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
-            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
-            "-" + locNode.internalOrder() + "] " +
-            msg;
-
-        debugLog.add(msg0);
-
-        int delta = debugLog.size() - debugMsgHist;
-
-        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
-            debugLog.poll();
     }
 
     /**
