@@ -127,7 +127,7 @@ public class GridCacheGateway<K, V> {
         try {
             GridCacheAdapter<K, V> cache = ctx.cache();
 
-            GridCachePreloader<K, V> preldr = cache != null ? cache.preloader() : null;
+            GridCachePreloader preldr = cache != null ? cache.preloader() : null;
 
             if (preldr == null)
                 throw new IllegalStateException("Grid is in invalid state to perform this operation. " +

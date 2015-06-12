@@ -42,6 +42,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.*;
  */
 public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteCollectionAbstractTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-80");
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }

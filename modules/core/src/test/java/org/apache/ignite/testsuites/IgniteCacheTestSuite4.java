@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -38,9 +39,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         // Multi node update.
         suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
-        // TODO: GG-5353.
-        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
-        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
 
@@ -87,9 +87,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalPeekModesTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedPeekModesTest.class);
 
-        // TODO: IGNITE-114.
-        // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
-        // suite.addTestSuite(GridCacheVersionMultinodeTest.class);
+        suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
+        suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
         suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
@@ -98,9 +97,11 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxPreloadNoWriteTest.class);
 
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
+        suite.addTestSuite(IgniteDynamicCacheWithConfigStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
         suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
         suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
+        suite.addTestSuite(IgniteDynamicClientCacheStartSelfTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
@@ -125,10 +126,20 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteExchangeFutureHistoryTest.class);
 
         suite.addTestSuite(CacheNoValueClassOnServerNodeTest.class);
+        suite.addTestSuite(IgniteSystemCacheOnClientTest.class);
 
         suite.addTestSuite(CacheRemoveAllSelfTest.class);
 
         suite.addTestSuite(CacheOffheapMapEntrySelfTest.class);
+
+        suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
+
+        suite.addTestSuite(CacheReadOnlyTransactionalClientSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheManyClientsTest.class);
+
+        suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
+        suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
 
         return suite;
     }

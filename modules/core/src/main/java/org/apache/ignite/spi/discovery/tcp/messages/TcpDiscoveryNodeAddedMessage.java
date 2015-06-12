@@ -148,7 +148,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Map with topology snapshots history.
      */
-    @Nullable public Map<Long, Collection<ClusterNode>> topologyHistory() {
+    public Map<Long, Collection<ClusterNode>> topologyHistory() {
         return topHist;
     }
 

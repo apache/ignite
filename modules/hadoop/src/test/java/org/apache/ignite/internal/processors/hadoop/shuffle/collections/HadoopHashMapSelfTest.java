@@ -32,7 +32,9 @@ import java.util.concurrent.*;
  */
 public class HadoopHashMapSelfTest extends HadoopAbstractMapTest {
 
-    public void _testAllocation() throws Exception {
+    public void testAllocation() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-826");
+
         final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
         long size = 3L * 1024 * 1024 * 1024;

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.processor.*;
@@ -61,6 +62,8 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
         ccfg.setAtomicWriteOrderMode(writeOrderMode);
 
         cfg.setCacheConfiguration(ccfg);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (!cache)
             cfg.setClientMode(true);

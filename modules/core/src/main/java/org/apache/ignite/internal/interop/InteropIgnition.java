@@ -53,6 +53,8 @@ public class InteropIgnition {
 
         if (gridName != null)
             cfg.setGridName(gridName);
+        else
+            gridName = cfg.getGridName();
 
         InteropBootstrap bootstrap = bootstrap(factoryId);
 

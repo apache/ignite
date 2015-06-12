@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
 
 /**
@@ -100,7 +100,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent)evt).topologyNodes());
 
                     latch.countDown();
 
@@ -147,6 +147,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLeaveSequenceEvents() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-932");
+
         try {
             Ignite g0 = startGrid(0);
 
@@ -163,8 +165,6 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() == EVT_NODE_LEFT;
-
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
                     latch.countDown();
@@ -215,6 +215,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMixedSequenceEvents() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-932");
+
         try {
             Ignite g0 = startGrid(0);
 
@@ -228,7 +230,8 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
                 private AtomicInteger cnt = new AtomicInteger();
 
                 @Override public boolean apply(Event evt) {
-                    assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT;
+                    assert evt.type() == EVT_NODE_JOINED
+                        || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
                     evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 

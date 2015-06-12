@@ -43,6 +43,12 @@ public class ClusterProperties {
     private String mesosUrl = DEFAULT_MESOS_MASTER_URL;
 
     /** */
+    public static final String IGNITE_JVM_OPTS = "IGNITE_JVM_OPTS";
+
+    /** JVM options. */
+    private String jvmOpts = "";
+
+    /** */
     public static final String IGNITE_CLUSTER_NAME = "IGNITE_CLUSTER_NAME";
 
     /** */
@@ -253,6 +259,13 @@ public class ClusterProperties {
     }
 
     /**
+     * @return JVM opts for ignite.
+     */
+    public String jmvOpts() {
+        return this.jvmOpts;
+    }
+
+    /**
      * @return disk limit.
      */
     public double disk() {
@@ -434,6 +447,8 @@ public class ClusterProperties {
             prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, UNLIMITED);
             prop.minCpu = getDoubleProperty(IGNITE_MIN_CPU_PER_NODE, props, DEFAULT_RESOURCE_MIN_CPU);
             prop.minMemory = getDoubleProperty(IGNITE_MIN_MEMORY_PER_NODE, props, DEFAULT_RESOURCE_MIN_MEM);
+
+            prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, props, "");
 
             prop.igniteVer = getStringProperty(IGNITE_VERSION, props, DEFAULT_IGNITE_VERSION);
             prop.igniteWorkDir = getStringProperty(IGNITE_WORK_DIR, props, DEFAULT_IGNITE_WORK_DIR);

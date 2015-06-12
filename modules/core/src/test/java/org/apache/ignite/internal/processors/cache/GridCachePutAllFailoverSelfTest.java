@@ -49,6 +49,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  * Tests putAll() method along with failover and different configurations.
  */
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-157");
+    }
+
     /** IP finder. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -617,6 +622,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         discoverySpi.setAckTimeout(60000);
         discoverySpi.setIpFinder(ipFinder);
+        discoverySpi.setForceServerMode(true);
 
         cfg.setDiscoverySpi(discoverySpi);
 

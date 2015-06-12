@@ -96,12 +96,12 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
 
     /**
      * @param node Node.
-     * @param res Reponse.
+     * @param res Response.
      */
     public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
         if (!res.topologyVersion().equals(topVer)) {
             if (log.isDebugEnabled())
-                log.debug("Received affinity assignment for wrong topolgy version (will ignore) " +
+                log.debug("Received affinity assignment for wrong topology version (will ignore) " +
                     "[node=" + node + ", res=" + res + ", topVer=" + topVer + ']');
 
             return;

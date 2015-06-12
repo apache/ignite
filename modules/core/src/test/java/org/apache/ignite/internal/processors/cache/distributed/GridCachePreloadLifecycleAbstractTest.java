@@ -21,7 +21,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -80,7 +79,6 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
         c.setDeploymentMode(DeploymentMode.SHARED);
         c.setNetworkTimeout(10000);
         c.setConnectorConfiguration(null);
-        c.setMarshaller(new OptimizedMarshaller(false));
 
 //        c.setPeerClassLoadingLocalClassPathExclude(GridCachePreloadLifecycleAbstractTest.class.getName(),
 //            MyValue.class.getName());

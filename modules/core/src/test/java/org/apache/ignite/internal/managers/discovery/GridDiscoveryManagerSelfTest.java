@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
+public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -50,12 +50,6 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disc = new TcpDiscoverySpi();
-
-        disc.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disc);
-
         CacheConfiguration ccfg1 = defaultCacheConfiguration();
 
         ccfg1.setName(CACHE_NAME);
@@ -66,14 +60,21 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         if (gridName.equals(getTestGridName(1)))
             cfg.setClientMode(true);
+        else {
+            ccfg1.setNearConfiguration(null);
+            ccfg2.setNearConfiguration(null);
 
-        ccfg1.setNearConfiguration(null);
-        ccfg2.setNearConfiguration(null);
+            ccfg1.setCacheMode(PARTITIONED);
+            ccfg2.setCacheMode(PARTITIONED);
 
-        ccfg1.setCacheMode(PARTITIONED);
-        ccfg2.setCacheMode(PARTITIONED);
+            cfg.setCacheConfiguration(ccfg1, ccfg2);
+        }
 
-        cfg.setCacheConfiguration(ccfg1, ccfg2);
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+
+        discoverySpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoverySpi);
 
         return cfg;
     }
@@ -185,5 +186,26 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g0.context().discovery().hasNearCache(null, three));
         assertTrue(g0.context().discovery().hasNearCache(null, four));
         assertFalse(g0.context().discovery().hasNearCache(null, five));
+    }
+
+    /**
+     *
+     */
+    public static class RegularDiscovery extends GridDiscoveryManagerSelfTest {
+        /** {@inheritDoc} */
+        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
+            return cfg;
+        }
+    }
+
+    /**
+     *
+     */
+    public static class ClientDiscovery extends GridDiscoveryManagerSelfTest {
+        // No-op.
     }
 }

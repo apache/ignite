@@ -119,9 +119,13 @@ public class IgniteScheduler implements Scheduler {
             clusterProps.igniteConfigUrl() : resourceProvider.igniteConfigUrl();
 
         Protos.CommandInfo.Builder builder = Protos.CommandInfo.newBuilder()
-            .setEnvironment(Protos.Environment.newBuilder().addVariables(Protos.Environment.Variable.newBuilder()
-                .setName("IGNITE_TCP_DISCOVERY_ADDRESSES")
-                .setValue(getAddress(offer.getHostname()))))
+            .setEnvironment(Protos.Environment.newBuilder()
+                .addVariables(Protos.Environment.Variable.newBuilder()
+                    .setName("IGNITE_TCP_DISCOVERY_ADDRESSES")
+                    .setValue(getAddress(offer.getHostname())))
+                .addVariables(Protos.Environment.Variable.newBuilder()
+                    .setName("JVM_OPTS")
+                    .setValue(clusterProps.jmvOpts())))
             .addUris(Protos.CommandInfo.URI.newBuilder()
                 .setValue(clusterProps.ignitePackageUrl() != null ?
                     clusterProps.ignitePackageUrl() : resourceProvider.igniteUrl())
