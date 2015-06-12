@@ -1705,6 +1705,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             List<GridComponent> comps = ctx.components();
 
+            ctx.marshallerContext().onKernalStop();
+
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.
             for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {

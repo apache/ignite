@@ -83,6 +83,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         latch.countDown();
     }
 
+    /**
+     * Release marshaller context.
+     */
+    public void onKernalStop() {
+        latch.countDown();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
