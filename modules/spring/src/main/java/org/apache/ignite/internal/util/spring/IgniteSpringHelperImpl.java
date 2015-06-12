@@ -405,31 +405,47 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
         BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                throws BeansException {
-                for (String beanName : beanFactory.getBeanDefinitionNames()) {
-                    BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+            /**
+             * @param beanFactory The bean factory used by the application context.
+             * @param beanName Bean name.
+             * @param def Registered BeanDefinition.
+             * @throws BeansException in case of errors.
+             */
+            private void processBeanDefinition(ConfigurableListableBeanFactory beanFactory, String beanName,
+                BeanDefinition def) throws BeansException {
+                if (def.getBeanClassName() != null) {
+                    try {
+                        Class.forName(def.getBeanClassName());
 
-                    if (def.getBeanClassName() != null) {
-                        try {
-                            Class.forName(def.getBeanClassName());
-                        }
-                        catch (ClassNotFoundException ignored) {
-                            ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
+                        MutablePropertyValues vals = def.getPropertyValues();
 
-                            continue;
+                        for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
+                            for (String excludedProp : excludedProps) {
+                                if (val.getName().equals(excludedProp)) {
+                                    vals.removePropertyValue(val);
+
+                                    return;
+                                }
+                            }
+
+                            if (val.getValue() instanceof Iterable)
+                                for (Object beanDef : (Iterable)val.getValue())
+                                    if (beanDef instanceof BeanDefinitionHolder)
+                                        processBeanDefinition(beanFactory, beanName,
+                                            ((BeanDefinitionHolder)beanDef).getBeanDefinition());
                         }
                     }
-
-                    MutablePropertyValues vals = def.getPropertyValues();
-
-                    for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                        for (String excludedProp : excludedProps) {
-                            if (val.getName().equals(excludedProp))
-                                vals.removePropertyValue(val);
-                        }
+                    catch (ClassNotFoundException ignored) {
+                        ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
                     }
                 }
+            }
+
+            /** {@inheritDoc} */
+            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                throws BeansException {
+                for (String beanName : beanFactory.getBeanDefinitionNames())
+                    processBeanDefinition(beanFactory, beanName, beanFactory.getBeanDefinition(beanName));
             }
         };
 
