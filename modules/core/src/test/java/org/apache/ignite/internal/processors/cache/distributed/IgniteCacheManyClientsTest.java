@@ -63,17 +63,12 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(2 * 60_000);
 
         if (!clientDiscovery)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setClientMode(client);
-
-        if (client) {
-//            cfg.setPublicThreadPoolSize(1);
-//            cfg.setPeerClassLoadingThreadPoolSize(1);
-//            cfg.setIgfsThreadPoolSize(1);
-        }
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -197,43 +192,62 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         try {
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (Ignite ignite = startGrid(idx.getAndIncrement())) {
-                        log.info("Started node: " + ignite.name());
+                    boolean counted = false;
 
-                        assertTrue(ignite.configuration().isClientMode());
+                    try {
+                        int nodeIdx = idx.getAndIncrement();
 
-                        IgniteCache<Object, Object> cache = ignite.cache(null);
+                        Thread.currentThread().setName("client-thread-node-" + nodeIdx);
 
-                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                        try (Ignite ignite = startGrid(nodeIdx)) {
+                            log.info("Started node: " + ignite.name());
 
-                        int iter = 0;
+                            assertTrue(ignite.configuration().isClientMode());
 
-                        Integer key = rnd.nextInt(0, 1000);
+                            IgniteCache<Object, Object> cache = ignite.cache(null);
 
-                        cache.put(key, iter++);
+                            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                        assertNotNull(cache.get(key));
+                            int iter = 0;
 
-                        latch.countDown();
-
-                        while (!stop.get()) {
-                            key = rnd.nextInt(0, 1000);
+                            Integer key = rnd.nextInt(0, 1000);
 
                             cache.put(key, iter++);
 
                             assertNotNull(cache.get(key));
 
-                            Thread.sleep(1);
+                            latch.countDown();
+
+                            counted = true;
+
+                            while (!stop.get()) {
+                                key = rnd.nextInt(0, 1000);
+
+                                cache.put(key, iter++);
+
+                                assertNotNull(cache.get(key));
+
+                                Thread.sleep(1);
+                            }
+
+                            log.info("Stopping node: " + ignite.name());
                         }
 
-                        log.info("Stopping node: " + ignite.name());
+                        return null;
                     }
+                    catch (Throwable e) {
+                        log.error("Unexpected error in client thread: " + e, e);
 
-                    return null;
+                        throw e;
+                    }
+                    finally {
+                        if (!counted)
+                            latch.countDown();
+                    }
                 }
             }, THREADS, "client-thread");
 
-            latch.await();
+            assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
             log.info("All clients started.");
 
@@ -244,6 +258,11 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
             stop.set(true);
 
             fut.get();
+        }
+        catch (Throwable e) {
+            log.error("Unexpected error: " + e, e);
+
+            throw e;
         }
         finally {
             stop.set(true);
