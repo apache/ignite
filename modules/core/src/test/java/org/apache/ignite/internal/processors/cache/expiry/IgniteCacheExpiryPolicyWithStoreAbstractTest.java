@@ -137,7 +137,9 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
-    public void _testReadThrough() throws Exception {
+    public void testReadThrough() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-821");
+
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);

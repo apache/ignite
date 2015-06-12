@@ -26,8 +26,8 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * NOTE: Native library should be loaded, before methods of this class are called. Native library is loaded with: {@link
- * IpcSharedMemoryNativeLoader#load()}.
+ * NOTE: Native library should be loaded, before methods of this class are called.
+ * Native library is loaded with: {@link IpcSharedMemoryNativeLoader#load(org.apache.ignite.IgniteLogger)}.
  */
 public class IpcSharedMemoryUtils {
     /**

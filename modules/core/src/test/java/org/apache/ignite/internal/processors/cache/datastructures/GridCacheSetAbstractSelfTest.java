@@ -48,15 +48,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CollectionConfiguration collectionConfiguration() {
         CollectionConfiguration colCfg = super.collectionConfiguration();
 
