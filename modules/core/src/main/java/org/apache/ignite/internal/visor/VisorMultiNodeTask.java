@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
-    protected IgniteEx ignite;
+    protected transient IgniteEx ignite;
 
     /** Debug flag. */
     protected boolean debug;

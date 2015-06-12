@@ -417,7 +417,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
     }
 
-    public void _testResultReuse() throws Exception {
+    public void testResultReuse() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-828");
+
         final IgniteH2Indexing spi = getIndexing();
 
         multithreaded(new Callable<Object>() {

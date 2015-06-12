@@ -40,6 +40,11 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Cache queue test with changing topology.
  */
 public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollectionAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-802");
+    }
+
     /** Queue capacity. */
     private static final int QUEUE_CAP = 5;
 

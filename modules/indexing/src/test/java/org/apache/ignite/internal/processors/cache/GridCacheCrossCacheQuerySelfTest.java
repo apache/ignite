@@ -58,8 +58,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new OptimizedMarshaller(false));
-
         c.setCacheConfiguration(createCache("replicated", CacheMode.REPLICATED),
             createCache("partitioned", CacheMode.PARTITIONED));
 
@@ -115,7 +113,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testTwoStep() throws Exception {
+    public void testTwoStep() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-827");
+
         String cache = "partitioned";
 
         GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
@@ -257,7 +257,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //        return 10 * 60 * 1000;
 //    }
 
-    public void _testLoop() throws Exception {
+    public void testLoop() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-827");
+
         final IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
         X.println("___ GET READY");

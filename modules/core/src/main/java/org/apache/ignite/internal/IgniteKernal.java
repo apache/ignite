@@ -686,7 +686,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 try {
                     verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
 
-                    updateNtfTimer = new Timer("ignite-update-notifier-timer");
+                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
                     // Setup periodic version check.
                     updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {

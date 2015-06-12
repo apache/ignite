@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * TODO: IGNITE-809.
+ * Check starting cache in transaction.
  */
-public class GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest extends GridCacheMultinodeUpdateNearEnabledSelfTest {
+public class IgniteStartCacheInTransactionAtomicSelfTest extends IgniteStartCacheInTransactionSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setBackups(0);
-
-        return ccfg;
+    @Override public CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

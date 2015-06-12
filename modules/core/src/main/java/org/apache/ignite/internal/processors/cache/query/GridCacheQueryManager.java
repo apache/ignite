@@ -791,8 +791,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         locPart = dht.topology().localPartition(part, topVer, false);
 
-                        if (locPart == null || (locPart.state() != OWNING && locPart.state() != RENTING) ||
-                            !locPart.reserve())
+                        // double check for owning state
+                        if (locPart == null || locPart.state() != OWNING || !locPart.reserve() ||
+                            locPart.state() != OWNING)
                             throw new GridDhtInvalidPartitionException(part, "Partition can't be reserved");
 
                         iter = new Iterator<K>() {

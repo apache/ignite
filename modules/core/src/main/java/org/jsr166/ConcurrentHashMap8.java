@@ -5,8 +5,12 @@
  */
 
 /*
- * The initial version of this file was copied from JSR-166:
- * http://gee.cs.oswego.edu/dl/concurrency-interest/
+ * The latest version of the file was copied from the following CVS repository:
+ * http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/
+ *
+ * Corresponding commit version in CVS repository is unknown (lost on our side).
+ * On the other hand we can't simply synch the latest version from CVS here, because Ignite uses functionality that
+ * is no longer supported.
  */
 
 package org.jsr166;

@@ -1092,7 +1092,9 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** @throws Exception If failed. */
-    public void _testRenameDirectoryIfDstPathExists() throws Exception {
+    public void testRenameDirectoryIfDstPathExists() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-825"); 
+        
         Path fsHome = new Path(primaryFsUri);
         Path srcDir = new Path(fsHome, "/tmp/");
         Path dstDir = new Path(fsHome, "/tmpNew/");

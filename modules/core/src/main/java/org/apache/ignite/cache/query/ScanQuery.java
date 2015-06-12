@@ -111,12 +111,9 @@ public final class ScanQuery<K, V> extends Query<Cache.Entry<K, V>> {
      * all partitions in the cache. Must be in the range [0, N) where N is partition number in the cache.
      *
      * @param part Partition number over which this query should iterate.
-     * @return {@code this} for chaining.
      */
-    public ScanQuery<K, V> setPartition(@Nullable Integer part) {
+    public void setPartition(@Nullable Integer part) {
         this.part = part;
-
-        return this;
     }
 
     /** {@inheritDoc} */

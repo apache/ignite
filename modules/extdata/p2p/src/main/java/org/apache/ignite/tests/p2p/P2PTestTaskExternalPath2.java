@@ -64,11 +64,11 @@ public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer
             sleep = false;
         }
 
-        Map<TestJob, ClusterNode> jobs = U.newHashMap(subgrid.size());
+        Map<TestJob2, ClusterNode> jobs = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid) {
             if (nodeIds.contains(node.id()))
-                jobs.put(new TestJob(node.id(), sleep), node);
+                jobs.put(new TestJob2(node.id(), sleep), node);
         }
 
         if (!jobs.isEmpty())
@@ -88,7 +88,7 @@ public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer
      * Simple job class
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestJob extends ComputeJobAdapter {
+    public static class TestJob2 extends ComputeJobAdapter {
         /** Ignite instance. */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -108,7 +108,7 @@ public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer
          * @param nodeId Node ID for node this job is supposed to execute on.
          * @param sleep Sleep flag.
          */
-        public TestJob(UUID nodeId, boolean sleep) {
+        public TestJob2(UUID nodeId, boolean sleep) {
             super(nodeId);
 
             this.sleep = sleep;
