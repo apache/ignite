@@ -2231,8 +2231,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             onException("Failed to send message to next node [next=" + next.id() + ", msg=" + msg + ']',
                                 e);
 
-                            log.error("Will resend [msg=" + msg + ", e=" + e + ']');
-
                             if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
                                 ackTimeout0 *= 2;
 

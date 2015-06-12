@@ -1145,7 +1145,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 if (joinLatch.getCount() > 0) {
                     // This should not occurs.
-                    joinErr = new IgniteSpiException("Some error occur in join process.");
+                    joinErr = new IgniteSpiException("Some error in join process.");
 
                     joinLatch.countDown();
                 }
