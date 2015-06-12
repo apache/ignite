@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -214,7 +215,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     res = f.get();
                 }
                 catch (Exception e) {
-                    LT.error(log, e, "Failed to handle request: " + req.command());
+                    if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                        LT.error(log, e, "Failed to handle request: " + req.command());
 
                     if (log.isDebugEnabled())
                         log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -134,7 +135,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
             return handleAsyncUnsafe(req);
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to execute task command: " + req, e);
+            if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                U.error(log, "Failed to execute task command: " + req, e);
 
             return new GridFinishedFuture<>(e);
         }
@@ -237,9 +239,11 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                     U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
                                         "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
                                         ", err=" + e + ']');
-                                else
-                                    U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
-                                        req.clientId() + ']', e);
+                                else {
+                                    if (!X.hasCause(e, VisorClusterGroupEmptyException.class))
+                                        U.error(log, "Failed to execute task [name=" + name + ", clientId=" +
+                                            req.clientId() + ']', e);
+                                }
 
                                 desc = new TaskDescriptor(true, null, e);
                             }

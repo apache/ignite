@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.visor.util;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 
 /**
- * Marker exception for indication of empty topology in Visor tasks.
+ * Exception to throw from Visor tasks in case of empty topology.
  */
-public class VisorEmptyTopologyException extends IgniteException {
+public class VisorClusterGroupEmptyException extends ClusterGroupEmptyException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** @inheritDoc */
-    public VisorEmptyTopologyException(String msg) {
+    public VisorClusterGroupEmptyException(String msg) {
         super(msg);
     }
 }

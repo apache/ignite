@@ -750,12 +750,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             new GridClientFutureCallback<GridClientTaskResultBean, R>() {
                 @Override public R onComplete(GridClientFuture<GridClientTaskResultBean> fut)
                     throws GridClientException {
-                    GridClientTaskResultBean resBean = fut.get();
-
-                    if (resBean != null)
-                        return resBean.getResult();
-                    else
-                        return null;
+                    return fut.get().getResult();
                 }
             });
     }

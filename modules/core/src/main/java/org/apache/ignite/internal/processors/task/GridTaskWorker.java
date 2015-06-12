@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.internal.visor.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
@@ -443,7 +444,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         }
         catch (IgniteException | IgniteCheckedException e) {
             if (!fut.isCancelled()) {
-                U.error(log, "Failed to map task jobs to nodes: " + ses, e);
+                if (!(e instanceof VisorClusterGroupEmptyException))
+                    U.error(log, "Failed to map task jobs to nodes: " + ses, e);
 
                 finishTask(null, e);
             }

@@ -49,7 +49,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         Set<UUID> nodeIds = taskArg.keySet();
 
         if (nodeIds.isEmpty())
-            throw new VisorEmptyTopologyException("Nothing to clear. List with node IDs is empty!");
+            throw new VisorClusterGroupEmptyException("Nothing to clear. List with node IDs is empty!");
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
 
@@ -64,7 +64,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
                 for (UUID nid : nodeIds)
                     notFoundNodes = notFoundNodes + (notFoundNodes.isEmpty() ? "" : ",")  + U.id8(nid);
 
-                throw new VisorEmptyTopologyException("Failed to clear query results. Nodes are not available: [" +
+                throw new VisorClusterGroupEmptyException("Failed to clear query results. Nodes are not available: [" +
                     notFoundNodes + "]");
             }
 
