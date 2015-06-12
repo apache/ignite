@@ -41,7 +41,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** Sender of the message (transient). */
-    private transient UUID senderNodeId;
+    private transient UUID sndNodeId;
 
     /** Message ID. */
     private IgniteUuid id;
@@ -99,16 +99,16 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * @return Sender node ID.
      */
     public UUID senderNodeId() {
-        return senderNodeId;
+        return sndNodeId;
     }
 
     /**
      * Sets sender node ID.
      *
-     * @param senderNodeId Sender node ID.
+     * @param sndNodeId Sender node ID.
      */
-    public void senderNodeId(UUID senderNodeId) {
-        this.senderNodeId = senderNodeId;
+    public void senderNodeId(UUID sndNodeId) {
+        this.sndNodeId = sndNodeId;
     }
 
     /**
