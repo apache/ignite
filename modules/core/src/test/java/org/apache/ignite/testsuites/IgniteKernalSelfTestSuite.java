@@ -77,7 +77,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridHomePathSelfTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridStartupWithSpecifiedWorkDirectorySelfTest.class, ignoredTests);
         suite.addTestSuite(GridStartupWithUndefinedIgniteHomeSelfTest.class);
-        suite.addTestSuite(GridVersionSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridVersionSelfTest.class, ignoredTests);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);
