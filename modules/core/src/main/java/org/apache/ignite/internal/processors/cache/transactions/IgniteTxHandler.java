@@ -325,7 +325,7 @@ public class IgniteTxHandler {
                     req.isolation(),
                     req.timeout(),
                     req.isInvalidate(),
-                    true,
+                    false,
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
