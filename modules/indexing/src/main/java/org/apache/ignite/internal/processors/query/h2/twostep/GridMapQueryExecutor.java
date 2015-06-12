@@ -290,27 +290,17 @@ public class GridMapQueryExecutor {
 
                     if (explicitParts == null) {
                         // We reserved all the primary partitions for cache, attempt to add group reservation.
-                        GridDhtPartitionsReservation reservation = new GridDhtPartitionsReservation(topVer, cctx,
-                            new CI1<GridDhtPartitionsReservation>() {
+                        GridDhtPartitionsReservation grp = new GridDhtPartitionsReservation(topVer, cctx, "SQL");
+
+                        if (grp.register(reserved.subList(reserved.size() - partIds.size(), reserved.size()))) {
+                            if (reservations.putIfAbsent(grpKey, grp) != null)
+                                throw new IllegalStateException("Reservation already exists.");
+
+                            grp.onPublish(new CI1<GridDhtPartitionsReservation>() {
                                 @Override public void apply(GridDhtPartitionsReservation r) {
                                     reservations.remove(grpKey, r);
                                 }
                             });
-
-                        for (int p = reserved.size() - partIds.size(); p < reserved.size(); p++) {
-                            if (!((GridDhtLocalPartition)reserved.get(p)).addReservation(reservation)) {
-                                // Can fail to add only on the first partition because of the same order of partitions.
-                                assert p == reserved.size() - partIds.size() : p;
-
-                                reservation = null;
-
-                                break;
-                            }
-                        }
-
-                        if (reservation != null) { // If we were able to add reservation to all partitions, publish it.
-                            if (reservations.putIfAbsent(grpKey, reservation) != null)
-                                throw new IllegalStateException();
                         }
                     }
                 }

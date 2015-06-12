@@ -143,19 +143,15 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         assert state.getReference() != EVICTED : "we can reserve only active partitions";
         assert state.getStamp() != 0 : "partition must be already reserved before adding group reservation";
 
-        if (!reservations.addIfAbsent(r))
-            return false;
-
-        r.register(this);
-
-        return true;
+        return reservations.addIfAbsent(r);
     }
 
     /**
      * @param r Reservation.
      */
     public void removeReservation(GridDhtPartitionsReservation r) {
-        reservations.remove(r);
+        if (!reservations.remove(r))
+            throw new IllegalStateException("Reservation was already removed.");
     }
 
     /**
