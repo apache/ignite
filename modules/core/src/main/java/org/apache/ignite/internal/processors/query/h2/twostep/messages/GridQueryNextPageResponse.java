@@ -196,6 +196,7 @@ public class GridQueryNextPageResponse implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
