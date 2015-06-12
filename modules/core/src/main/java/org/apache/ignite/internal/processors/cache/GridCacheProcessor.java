@@ -2278,16 +2278,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
                 "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
-            boolean checkStore;
-
-            if (!isLocAff && isRmtAff && locCfg.getAtomicityMode() == TRANSACTIONAL) {
-                checkStore = locAttr.storeFactoryClassName() != null;
-
-                if (locAttr.storeFactoryClassName() == null && rmtAttr.storeFactoryClassName() != null)
-                    desc.updatesAllowed(false);
-            }
-            else
-                checkStore = isLocAff && isRmtAff;
+            boolean checkStore = isLocAff && isRmtAff;
 
             if (checkStore)
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "storeFactory", "Store factory",
