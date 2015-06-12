@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import java.io.*;
@@ -46,8 +48,10 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
     /**
      * Initializes context.
+     *
+     * @param plugins Plugins.
      */
-    public MarshallerContextAdapter() {
+    public MarshallerContextAdapter(@Nullable List<PluginProvider> plugins) {
         try {
             ClassLoader ldr = U.gridClassLoader();
 
@@ -76,6 +80,16 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
             checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(GridDhtPartitionMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
+
+            if (plugins != null && !plugins.isEmpty()) {
+                for (PluginProvider plugin : plugins) {
+                    URL pluginClsNames = ldr.getResource("META-INF/" + plugin.name().toLowerCase()
+                        + ".classnames.properties");
+
+                    if (pluginClsNames != null)
+                        processResource(pluginClsNames);
+                }
+            }
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -87,7 +101,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @param ldr Class loader used to get properties file.
      * @param fileName File name.
      */
-    private void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
+    public void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
         if (!map.containsKey(clsName.hashCode()))
             throw new IgniteException("Failed to read class name from class names properties file. " +
                 "Make sure class names properties file packaged with ignite binaries is not corrupted " +
