@@ -197,7 +197,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
-            storeVal);
+            storeVal,
+            GridCacheUtils.isSystemCache(ccfg.getName()));
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 
