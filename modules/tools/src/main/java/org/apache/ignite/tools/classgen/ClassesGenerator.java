@@ -215,6 +215,18 @@ public class ClassesGenerator {
                     catch (NoSuchFieldException ignored) {
                         errs.add("No serialVersionUID field in class: " + cls.getName());
                     }
+
+                    if (Externalizable.class.isAssignableFrom(cls)) {
+                        try {
+                            Constructor<?> cons = cls.getConstructor();
+
+                            if (!Modifier.isPublic(cons.getModifiers()))
+                                errs.add("Default constructor in Externalizable class is not public: " + cls.getName());
+                        }
+                        catch (NoSuchMethodException e) {
+                            errs.add("No default constructor in Externalizable class: " + cls.getName());
+                        }
+                    }
                 }
 
                 classes.add((Class)cls);
