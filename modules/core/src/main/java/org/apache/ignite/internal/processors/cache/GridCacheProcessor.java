@@ -57,6 +57,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
+import org.jsr166.*;
 
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
@@ -117,6 +118,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Cache templates. */
     private ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
+
+    /** Start contexts. */
+    private ConcurrentMap<String, CacheStartContext> startCtxs = new ConcurrentHashMap8<>();
 
     /** */
     private IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
@@ -222,7 +226,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cfg.getCacheStoreFactory() == null) {
-            Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();
+            Factory<CacheLoader> ldrFactory = cfg.isReadThrough() ? cfg.getCacheLoaderFactory() : null;
             Factory<CacheWriter> writerFactory = cfg.isWriteThrough() ? cfg.getCacheWriterFactory() : null;
 
             if (ldrFactory != null || writerFactory != null)
@@ -1072,7 +1076,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     {
         assert cfg != null;
 
-        CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
+        CacheStartContext startCtx = startCtxs.remove(maskNull(cfg.getName()));
+
+        if (startCtx == null)
+            startCtx = new CacheStartContext(ctx, cfg);
+
+        CacheStore cfgStore = startCtx.store();
 
         validate(ctx.config(), cfg, cacheType, cfgStore);
 
@@ -1957,6 +1966,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.nearCacheConfiguration(nearCfg);
 
         req.cacheType(cacheType);
+
+        startCtxs.putIfAbsent(maskNull(cacheName), new CacheStartContext(ctx, req.startCacheConfiguration()));
 
         return F.first(initiateCacheChanges(F.asList(req), failIfExists));
     }
@@ -3040,6 +3051,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(maskNull(cacheName), this);
+            startCtxs.remove(maskNull(cacheName));
 
             return super.onDone(res, err);
         }
@@ -3143,4 +3155,3 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
     }
 }
-

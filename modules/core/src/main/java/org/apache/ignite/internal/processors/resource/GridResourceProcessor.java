@@ -556,6 +556,14 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param bean Spring bean.
+     */
+    public void autowireSpringBean(@Nullable Object bean) {
+        if (rsrcCtx != null)
+            rsrcCtx.autowireBean(bean);
+    }
+
+    /**
      * Returns GridResourceIoc object. For tests only!!!
      *
      * @return GridResourceIoc object.

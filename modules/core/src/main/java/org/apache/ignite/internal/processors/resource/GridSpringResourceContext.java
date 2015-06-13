@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.jetbrains.annotations.*;
 
 /**
  * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
@@ -44,5 +45,10 @@ public interface GridSpringResourceContext {
      * @throws IgniteCheckedException If unwrap failed.
      */
     public Object unwrapTarget(Object target) throws IgniteCheckedException;
+
+    /**
+     * @param bean Spring bean.
+     */
+    public void autowireBean(@Nullable Object bean);
 }
 

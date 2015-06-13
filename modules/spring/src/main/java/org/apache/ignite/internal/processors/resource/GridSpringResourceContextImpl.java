@@ -26,16 +26,21 @@ import org.springframework.context.*;
  * Implementation of {@link GridSpringResourceContext}.
  */
 public class GridSpringResourceContextImpl implements GridSpringResourceContext {
+    /** Spring context. */
+    private final ApplicationContext springCtx;
+
     /** Spring application context injector. */
-    private GridResourceInjector springCtxInjector;
+    private final GridResourceInjector springCtxInjector;
 
     /** Spring bean resources injector. */
-    private GridResourceInjector springBeanInjector;
+    private final GridResourceInjector springBeanInjector;
 
     /**
      * @param springCtx Spring application context.
      */
     public GridSpringResourceContextImpl(@Nullable ApplicationContext springCtx) {
+        this.springCtx = springCtx;
+
         springCtxInjector = new GridResourceBasicInjector<>(springCtx);
         springBeanInjector = new GridResourceSpringBeanInjector(springCtx);
     }
@@ -63,5 +68,11 @@ public class GridSpringResourceContextImpl implements GridSpringResourceContext 
         }
 
         return target;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void autowireBean(@Nullable Object bean) {
+        if (springCtx != null && bean != null)
+            springCtx.getAutowireCapableBeanFactory().autowireBean(bean);
     }
 }
