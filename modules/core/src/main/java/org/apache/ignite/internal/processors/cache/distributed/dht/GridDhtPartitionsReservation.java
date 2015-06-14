@@ -46,10 +46,10 @@ public class GridDhtPartitionsReservation implements GridReservable {
     private final AtomicReference<GridDhtLocalPartition[]> parts = new AtomicReference<>();
 
     /** */
-    private final AtomicInteger reservations = new AtomicInteger();
+    private final AtomicReference<CI1<GridDhtPartitionsReservation>> unpublish = new AtomicReference<>();
 
     /** */
-    private volatile CI1<GridDhtPartitionsReservation> unpublish;
+    private final AtomicInteger reservations = new AtomicInteger();
 
     /**
      * @param topVer AffinityTopologyVersion version.
@@ -123,6 +123,8 @@ public class GridDhtPartitionsReservation implements GridReservable {
         if (!this.parts.compareAndSet(null, arr))
             throw new IllegalStateException("Partitions can be registered only once.");
 
+        assert reservations.get() != -1 : "all the partitions must be reserved before register, we can't be invalidated";
+
         return true;
     }
 
@@ -133,9 +135,9 @@ public class GridDhtPartitionsReservation implements GridReservable {
      */
     public void onPublish(CI1<GridDhtPartitionsReservation> unpublish) {
         assert unpublish != null;
-        assert this.unpublish == null;
 
-        this.unpublish = unpublish;
+        if (!this.unpublish.compareAndSet(null, unpublish))
+            throw new IllegalStateException("Unpublishing closure can be set only once.");
 
         if (reservations.get() == -1)
             unregister();
@@ -202,12 +204,13 @@ public class GridDhtPartitionsReservation implements GridReservable {
     }
 
     /**
-     * Unregisters this reservation from all the partitions.
+     * Unregisters from all the partitions and unpublishes this reservation.
      */
     private void unregister() {
         GridDhtLocalPartition[] arr = parts.get();
 
-        if (!F.isEmpty(arr) && unpublish != null && parts.compareAndSet(arr, EMPTY)) {
+        // Unregister from partitions.
+        if (!F.isEmpty(arr) && parts.compareAndSet(arr, EMPTY)) {
             // Reverse order makes sure that addReservation on the same topVer reservation will fail on the first partition.
             for (int i = arr.length - 1; i >= 0; i--) {
                 GridDhtLocalPartition part = arr[i];
@@ -216,9 +219,13 @@ public class GridDhtPartitionsReservation implements GridReservable {
 
                 tryEvict(part);
             }
-
-            unpublish.apply(this);
         }
+
+        // Unpublish.
+        CI1<GridDhtPartitionsReservation> u = unpublish.get();
+
+        if (u != null && unpublish.compareAndSet(u, null))
+            u.apply(this);
     }
 
     /**
@@ -231,6 +238,8 @@ public class GridDhtPartitionsReservation implements GridReservable {
      * @return {@code true} If this reservation is NOT reserved and partition CAN be evicted.
      */
     public boolean canEvict() {
+        assert parts.get() != null : "all parts must be reserved before registration";
+
         int r = reservations.get();
 
         assert r >= -1 : r;

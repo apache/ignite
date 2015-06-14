@@ -137,7 +137,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Adds group reservation to this partition.
      *
      * @param r Reservation.
-     * @return {@code true} If reservation added successfully.
+     * @return {@code false} If such reservation already added.
      */
     public boolean addReservation(GridDhtPartitionsReservation r) {
         assert state.getReference() != EVICTED : "we can reserve only active partitions";
@@ -509,7 +509,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         for (GridDhtPartitionsReservation reservation : reservations) {
             if (!reservation.canEvict())
-                reserved = true;
+                reserved = true; // Calling all the reservations to allow them unregister themselves.
         }
 
         return reserved;
@@ -520,11 +520,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if entry has been transitioned to state EVICTED.
      */
     boolean tryEvict(boolean updateSeq) {
-        // Attempt to evict partition entries from cache.
-        if (state.getReference() == RENTING && state.getStamp() == 0 && !groupReserved())
-            clearAll();
+        if (state.getReference() != RENTING || state.getStamp() != 0 || groupReserved())
+            return false;
 
-        if (map.isEmpty() && !groupReserved() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
+        // Attempt to evict partition entries from cache.
+        clearAll();
+
+        if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 

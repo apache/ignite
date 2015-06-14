@@ -180,7 +180,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         int qryThreadNum = 4;
         int restartThreadsNum = 2; // 4 + 2 = 6 nodes
         final int nodeLifeTime = 2 * 1000;
-        final int logFreq = 50;
+        final int logFreq = 10;
 
         startGridsMultiThreaded(GRID_CNT);
 
