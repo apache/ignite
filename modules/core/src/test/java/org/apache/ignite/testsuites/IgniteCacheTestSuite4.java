@@ -141,8 +141,6 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
         suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
 
-        suite.addTestSuite(IgniteCacheManyClientsTest.class);
-
         return suite;
     }
 }
