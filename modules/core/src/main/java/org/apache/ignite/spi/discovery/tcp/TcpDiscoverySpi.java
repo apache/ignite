@@ -821,7 +821,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /**
      * @param srvPort Server port.
      */
-    void initLocalNode(int srvPort, boolean addExtAddrAttr) {
+    protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
         // Init local node.
         IgniteBiTuple<Collection<String>, Collection<String>> addrs;
 

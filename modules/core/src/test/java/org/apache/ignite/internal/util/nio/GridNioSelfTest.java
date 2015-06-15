@@ -644,7 +644,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             try {
                                 client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
 
-                                MessageWithId msg = new MessageWithId();
+                                MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
 
                                 byte[] data = serializeMessage(msg);
 
@@ -746,7 +746,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         client = createClient(U.getLocalHost(), PORT, U.getLocalHost());
 
                         while (cntr.getAndIncrement() < MSG_CNT * THREAD_CNT) {
-                            MessageWithId msg = new MessageWithId();
+                            MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
 
                             byte[] data = serializeMessage(msg);
 
@@ -1408,7 +1408,14 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     private static class MessageWithId implements Serializable {
         /** */
-        private final int id = idProvider.getAndIncrement();
+        private final int id;
+
+        /**
+         * @param id Message ID.
+         */
+        public MessageWithId(int id) {
+            this.id = id;
+        }
 
         /** */
         @SuppressWarnings({"unused"})

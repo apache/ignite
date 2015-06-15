@@ -1135,11 +1135,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Boolean> removeAsync(K key, V val);
 
     /**
-     * Removes given key mappings from cache for entries for which the optionally passed in filters do
-     * pass.
+     * Removes given key mappings from cache.
      * <p>
-     * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via <code>@link CacheStore#removeAll(Transaction, Collection)</code> method.
+     * If write-through is enabled, the values will be removed from {@link CacheStore} via {@link IgniteDataStreamer}.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1150,11 +1148,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public void removeAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
-     * Asynchronously removes given key mappings from cache for entries for which the optionally
-     * passed in filters do pass.
+     * Asynchronously removes given key mappings from cache for entries.
      * <p>
-     * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via <code>@link CacheStore#removeAll(Transaction, Collection)</code> method.
+     * If write-through is enabled, the values will be removed from {@link CacheStore} via {@link IgniteDataStreamer}.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1166,20 +1162,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys);
 
     /**
-     * Removes mappings from cache for entries for which the optionally passed in filters do
-     * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
-     * into transaction.
+     * Removes mappings from cache.
      * <p>
-     * <b>USE WITH CARE</b> - if your cache has many entries that pass through the filter or if filter
-     * is empty, then transaction will quickly become very heavy and slow. Also, locks
-     * are acquired in undefined order, so it may cause a deadlock when used with
-     * other concurrent transactional updates.
+     * <b>USE WITH CARE</b> - if your cache has many entries then transaction will quickly become very heavy and slow.
      * <p>
-     * If write-through is enabled, the values will be removed from {@link CacheStore}
-     * via <code>@link CacheStore#removeAll(Transaction, Collection)</code> method.
+     * If write-through is enabled, the values will be removed from {@link CacheStore} via {@link IgniteDataStreamer}.
      * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
+     * This method is not transactional.
      *
      * @throws IgniteCheckedException If remove failed.
      */

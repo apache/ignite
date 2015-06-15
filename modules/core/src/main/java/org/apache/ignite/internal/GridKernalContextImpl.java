@@ -340,7 +340,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService igfsExecSvc,
-        ExecutorService restExecSvc) throws IgniteCheckedException {
+        ExecutorService restExecSvc,
+        List<PluginProvider> plugins) throws IgniteCheckedException {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -357,7 +358,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.igfsExecSvc = igfsExecSvc;
         this.restExecSvc = restExecSvc;
 
-        marshCtx = new MarshallerContextImpl();
+        marshCtx = new MarshallerContextImpl(plugins);
 
         try {
             spring = SPRING.create(false);

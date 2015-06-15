@@ -81,7 +81,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        // No-op.
+        fail("https://issues.apache.org/jira/browse/IGNITE-114");
     }
 
     /** {@inheritDoc} */

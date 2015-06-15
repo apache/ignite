@@ -39,9 +39,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         // Multi node update.
         suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);
-        // TODO: GG-5353.
-        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
-        // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledSelfTest.class);
+        suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
 
@@ -88,9 +87,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalPeekModesTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedPeekModesTest.class);
 
-        // TODO: IGNITE-114.
-        // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
-        // suite.addTestSuite(GridCacheVersionMultinodeTest.class);
+        suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
+        suite.addTestSuite(GridCacheVersionMultinodeTest.class);
 
         suite.addTestSuite(IgniteCacheNearReadCommittedTest.class);
         suite.addTestSuite(IgniteCacheAtomicCopyOnReadDisabledTest.class);
@@ -137,6 +135,11 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
 
         suite.addTestSuite(CacheReadOnlyTransactionalClientSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheManyClientsTest.class);
+
+        suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
+        suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
 
         return suite;
     }

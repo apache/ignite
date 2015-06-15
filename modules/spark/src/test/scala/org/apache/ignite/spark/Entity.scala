@@ -15,25 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.spark
 
-import org.apache.ignite.stream.socket.*;
+import org.apache.ignite.spark.IgniteRddSpec.ScalarCacheQuerySqlField
 
-import junit.framework.*;
+class Entity (
+    @ScalarCacheQuerySqlField(index = true) val id: Int,
+    @ScalarCacheQuerySqlField(index = true) val name: String,
+    @ScalarCacheQuerySqlField(index = true) val salary: Int
+) extends Serializable {
 
-/**
- * Stream test suite.
- */
-public class IgniteStreamTestSuite extends TestSuite {
-    /**
-     * @return Stream tests suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Stream Test Suite");
-
-        suite.addTest(new TestSuite(SocketStreamerSelfTest.class));
-
-        return suite;
-    }
 }

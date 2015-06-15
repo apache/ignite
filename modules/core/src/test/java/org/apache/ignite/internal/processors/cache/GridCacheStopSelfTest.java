@@ -36,6 +36,11 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Tests correct cache stopping.
  */
 public class GridCacheStopSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-257");
+    }
+
     /** */
     private static final String EXPECTED_MSG = "Grid is in invalid state to perform this operation. " +
         "It either not started yet or has already being or have stopped";

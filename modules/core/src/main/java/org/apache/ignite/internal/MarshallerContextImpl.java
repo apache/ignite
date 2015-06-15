@@ -20,9 +20,11 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.*;
 
 import javax.cache.event.*;
 import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -45,9 +47,12 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private int failedCnt;
 
     /**
+     * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl() throws IgniteCheckedException {
+    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+        super(plugins);
+
         workDir = U.resolveWorkDirectory("marshaller", false);
     }
 
@@ -78,6 +83,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         latch.countDown();
     }
 
+    /**
+     * Release marshaller context.
+     */
+    public void onKernalStop() {
+        latch.countDown();
+    }
+
     /** {@inheritDoc} */
     @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
@@ -90,13 +102,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         try {
             old = cache0.tryPutIfAbsent(id, clsName);
 
-            if (old != null && !old.equals(clsName)) {
-                U.quietAndWarn(log, "Type ID collision detected, may affect performance " +
-                    "(set idMapper property on marshaller to fix) [id=" + id + ", clsName1=" + clsName +
-                    "clsName2=" + old + ']');
-
-                return false;
-            }
+            if (old != null && !old.equals(clsName))
+                throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
+                    ", clsName2=" + old + ']');
 
             failedCnt = 0;
 

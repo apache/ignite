@@ -51,7 +51,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        IpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load(log());
     }
 
     /**

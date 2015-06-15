@@ -44,15 +44,6 @@ public class IgniteComputeTopologyExceptionTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */

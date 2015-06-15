@@ -183,7 +183,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 
-        this.cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
+        try {
+            this.cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to initialize cache context.", e);
+        }
+
         this.cacheName = cacheName;
         this.flushQ = flushQ;
 

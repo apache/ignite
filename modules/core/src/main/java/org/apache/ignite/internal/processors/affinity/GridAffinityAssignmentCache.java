@@ -235,7 +235,7 @@ public class GridAffinityAssignmentCache {
         assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
         assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
 
-        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff.assignment());
+        GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
 
         affCache.put(topVer, assignmentCpy);
         head.set(assignmentCpy);
@@ -244,7 +244,7 @@ public class GridAffinityAssignmentCache {
             if (entry.getKey().compareTo(topVer) <= 0) {
                 if (log.isDebugEnabled())
                     log.debug("Completing topology ready future (use previous affinity) " +
-                            "[locNodeId=" + ctx.localNodeId() + ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+                        "[locNodeId=" + ctx.localNodeId() + ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
 
                 entry.getValue().onDone(topVer);
             }
@@ -406,8 +406,12 @@ public class GridAffinityAssignmentCache {
 
             if (cache == null) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
-                    "calculated [locNodeId=" + ctx.localNodeId() + ", topVer=" + topVer +
-                    ", head=" + head.get().topologyVersion() + ']');
+                    "calculated [locNodeId=" + ctx.localNodeId() +
+                    ", cache=" + cacheName +
+                    ", topVer=" + topVer +
+                    ", head=" + head.get().topologyVersion() +
+                    ", history=" + affCache.keySet() +
+                    ']');
             }
         }
 

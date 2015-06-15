@@ -29,6 +29,9 @@ import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.messaging.*;
 import org.apache.ignite.spi.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
  * Basic test suite.
@@ -39,27 +42,38 @@ public class IgniteBasicTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
         suite.addTest(IgniteLangSelfTestSuite.suite());
-        suite.addTest(IgniteUtilSelfTestSuite.suite());
-        suite.addTest(IgniteMarshallerSelfTestSuite.suite());
-        suite.addTest(IgniteKernalSelfTestSuite.suite());
+        suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
+        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
+
+        suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStartUpTestSuite.suite());
         suite.addTest(IgniteExternalizableSelfTestSuite.suite());
         suite.addTest(IgniteP2PSelfTestSuite.suite());
-        suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite());
+        suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
+        suite.addTest(IgniteStreamSelfTestSuite.suite());
 
         suite.addTest(new TestSuite(GridSelfTest.class));
-        suite.addTest(new TestSuite(GridProjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridMessagingSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridProjectionSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
         suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
-        suite.addTest(new TestSuite(GridMessagingNoPeerClassLoadingSelfTest.class));
+        GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
 
         if (U.isLinux() || U.isMacOs())
             suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
 
-        suite.addTestSuite(GridReleaseTypeSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);

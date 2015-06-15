@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -420,7 +420,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         assert nodeId != null;
 
         if (log.isDebugEnabled())
-            log.debug("Pinging node: " + nodeId + "].");
+            log.debug("Pinging node: " + nodeId + "]");
 
         if (nodeId == getLocalNodeId())
             return true;
@@ -1752,6 +1752,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Nullable Collection<TcpDiscoveryAbstractMessage> messages(IgniteUuid lastMsgId) {
             assert lastMsgId != null;
 
+            if (msgs.isEmpty())
+                return Collections.emptyList();
+
             Collection<TcpDiscoveryAbstractMessage> cp = new ArrayList<>(msgs.size());
 
             boolean skip = true;
@@ -1766,30 +1769,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             return !skip ? cp : null;
-        }
-
-        /**
-         * Resets pending messages.
-         *
-         * @param msgs Message.
-         * @param discardId Discarded message ID.
-         */
-        void reset(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardId) {
-            this.msgs.clear();
-
-            if (msgs != null)
-                this.msgs.addAll(msgs);
-
-            this.discardId = discardId;
-        }
-
-        /**
-         * Clears pending messages.
-         */
-        void clear() {
-            msgs.clear();
-
-            discardId = null;
         }
 
         /**
@@ -2921,8 +2900,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
 
-                            // Restore pending messages.
-                            pendingMsgs.reset(msg.messages(), msg.discardedMessageId());
+                            pendingMsgs.discard(msg.discardedMessageId());
 
                             // Clear data to minimize message size.
                             msg.messages(null, null);
@@ -3180,10 +3158,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     log.debug("Removed node from topology: " + leftNode);
 
-                // Clear pending messages map.
-                if (!ring.hasRemoteNodes())
-                    pendingMsgs.clear();
-
                 long topVer;
 
                 if (locNodeCoord) {
@@ -3346,10 +3320,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 node = ring.removeNode(nodeId);
 
                 assert node != null;
-
-                // Clear pending messages map.
-                if (!ring.hasRemoteNodes())
-                    pendingMsgs.clear();
 
                 long topVer;
 

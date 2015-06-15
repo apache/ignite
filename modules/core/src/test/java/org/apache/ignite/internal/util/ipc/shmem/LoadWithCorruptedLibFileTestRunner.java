@@ -37,7 +37,7 @@ public class LoadWithCorruptedLibFileTestRunner {
 
         createCorruptedLibFile();
 
-        IpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load(null);
     }
 
     /**

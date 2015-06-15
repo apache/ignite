@@ -103,11 +103,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean longSockTimeouts;
 
+    /** */
+    private int maxMissedClientHbs = TcpDiscoverySpi.DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
+
+        disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
 
         if (gridName.startsWith("server"))
             disco.setIpFinder(IP_FINDER);
@@ -494,6 +499,96 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testClientReconnectTopologyChange1() throws Exception {
+        maxMissedClientHbs = 100;
+
+        clientsPerSrv = 1;
+
+        startServerNodes(2);
+        startClientNodes(1);
+
+        checkNodes(2, 1);
+
+        srvLeftLatch = new CountDownLatch(3);
+        srvFailedLatch = new CountDownLatch(1);
+
+        attachListeners(2, 0);
+
+        Ignite ignite = G.ignite("client-0");
+
+        TestTcpDiscoverySpi spi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        spi.pauseAll();
+
+        try {
+            spi.brakeConnection();
+
+            Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+
+            g.close();
+
+            spi.resumeAll();
+
+            assertFalse(srvFailedLatch.await(2000, TimeUnit.MILLISECONDS));
+
+            assertEquals(1L, srvLeftLatch.getCount());
+
+            checkNodes(2, 1);
+        }
+        finally {
+            spi.resumeAll();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectTopologyChange2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-998");
+
+        maxMissedClientHbs = 100;
+
+        clientsPerSrv = 1;
+
+        startServerNodes(1);
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+
+        srvLeftLatch = new CountDownLatch(2);
+        srvFailedLatch = new CountDownLatch(1);
+
+        attachListeners(1, 0);
+
+        Ignite ignite = G.ignite("client-0");
+
+        TestTcpDiscoverySpi spi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        spi.pauseAll();
+
+        try {
+            spi.brakeConnection();
+
+            Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+
+            g.close();
+
+            spi.resumeAll();
+
+            assertFalse(srvFailedLatch.await(2000, TimeUnit.MILLISECONDS));
+
+            assertEquals(1L, srvLeftLatch.getCount());
+
+            checkNodes(1, 1);
+        }
+        finally {
+            spi.resumeAll();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetMissedMessagesOnReconnect() throws Exception {
         clientsPerSrv = 1;
 
@@ -731,8 +826,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * TODO: IGNITE-587.
-     *
      * @throws Exception If failed.
      */
     public void testDataExchangeFromClient() throws Exception {
@@ -740,6 +833,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param masterName Node name
      * @throws Exception If failed.
      */
     private void testDataExchange(String masterName) throws Exception {
@@ -890,7 +984,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param clientIdx Index.
+     * @param clientIdx Client index.
+     * @param srvIdx Server index.
      * @throws Exception In case of error.
      */
     private void setClientRouter(int clientIdx, int srvIdx) throws Exception {
@@ -948,6 +1043,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /**
      * @param srvCnt Number of server nodes.
      * @param clientCnt Number of client nodes.
+     * @throws Exception If failed.
      */
     private void attachListeners(int srvCnt, int clientCnt) throws Exception {
         if (srvJoinedLatch != null) {
@@ -1040,6 +1136,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @param clientCnt Number of client nodes.
      */
     private void checkNodes(int srvCnt, int clientCnt) {
+        long topVer = -1;
+
         for (int i = 0; i < srvCnt; i++) {
             Ignite g = G.ignite("server-" + i);
 
@@ -1048,6 +1146,11 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             assertFalse(g.cluster().localNode().isClient());
 
             checkRemoteNodes(g, srvCnt + clientCnt - 1);
+
+            if (topVer < 0)
+                topVer = g.cluster().topologyVersion();
+            else
+                assertEquals(topVer, g.cluster().topologyVersion());
         }
 
         for (int i = 0; i < clientCnt; i++) {
@@ -1060,6 +1163,11 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             assertTrue(g.cluster().localNode().isClient());
 
             checkRemoteNodes(g, srvCnt + clientCnt - 1);
+
+            if (topVer < 0)
+                topVer = g.cluster().topologyVersion();
+            else
+                assertEquals(topVer, g.cluster().topologyVersion());
         }
     }
 
