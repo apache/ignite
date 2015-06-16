@@ -585,8 +585,32 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         GridDummySpiContext(ClusterNode locNode, boolean stopping, @Nullable IgniteSpiContext spiCtx) {
             this.locNode = locNode;
             this.stopping = stopping;
-            this.msgFactory = spiCtx != null ? spiCtx.messageFactory() : null;
-            this.msgFormatter = spiCtx != null ? spiCtx.messageFormatter() : null;
+
+            MessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
+            MessageFormatter msgFormatter0 = spiCtx != null ? spiCtx.messageFormatter() : null;
+
+            if (msgFactory0 == null) {
+                msgFactory0 = new MessageFactory() {
+                    @Nullable @Override public Message create(byte type) {
+                        throw new IgniteException("Failed to read message, node is not started.");
+                    }
+                };
+            }
+
+            if (msgFormatter0 == null) {
+                msgFormatter0 = new MessageFormatter() {
+                    @Override public MessageWriter writer() {
+                        throw new IgniteException("Failed to write message, node is not started.");
+                    }
+
+                    @Override public MessageReader reader(MessageFactory factory) {
+                        throw new IgniteException("Failed to read message, node is not started.");
+                    }
+                };
+            }
+
+            this.msgFactory = msgFactory0;
+            this.msgFormatter = msgFormatter0;
         }
 
         /** {@inheritDoc} */

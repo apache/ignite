@@ -195,7 +195,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     U.warn(log, "Failed to left node: timeout [nodeId=" + locNode + ']');
             }
             catch (InterruptedException ignored) {
-
+                // No-op.
             }
         }
 
@@ -282,7 +282,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             return false;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSpiException(e); // Should newer occur
+            throw new IgniteSpiException(e); // Should newer occur.
         }
     }
 
@@ -311,7 +311,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             for (ClusterNode n : rmts) {
                 rmtNodes.remove(n.id());
 
-                Collection<ClusterNode> top = updateTopologyHistory(topVer + 1);
+                Collection<ClusterNode> top = updateTopologyHistory(topVer + 1, null);
 
                 lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, new TreeMap<>(topHist), null);
             }
@@ -347,11 +347,15 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * @param recon {@code True} if reconnects.
+     * @param timeout Timeout.
      * @return Opened socket or {@code null} if timeout.
+     * @throws InterruptedException If interrupted.
+     * @throws IgniteSpiException If failed.
      * @see TcpDiscoverySpi#joinTimeout
      */
     @SuppressWarnings("BusyWait")
-    @Nullable private Socket joinTopology(boolean recon) throws IgniteSpiException, InterruptedException {
+    @Nullable private Socket joinTopology(boolean recon, long timeout) throws IgniteSpiException, InterruptedException {
         Collection<InetSocketAddress> addrs = null;
 
         long startTime = U.currentTimeMillis();
@@ -368,10 +372,10 @@ class ClientImpl extends TcpDiscoveryImpl {
                         log.debug("Resolved addresses from IP finder: " + addrs);
                 }
                 else {
-                    U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + spi.ipFinder);
-
-                    if (spi.joinTimeout > 0 && (U.currentTimeMillis() - startTime) > spi.joinTimeout)
+                    if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
                         return null;
+
+                    U.warn(log, "No addresses registered in the IP finder (will retry in 2000ms): " + spi.ipFinder);
 
                     Thread.sleep(2000);
                 }
@@ -387,65 +391,42 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 InetSocketAddress addr = it.next();
 
-                Socket sock = null;
+                T2<Socket, Integer> sockAndRes = sendJoinRequest(recon, addr);
 
-                try {
-                    long ts = U.currentTimeMillis();
-
-                    IgniteBiTuple<Socket, UUID> t = initConnection(addr);
-
-                    sock = t.get1();
-
-                    UUID rmtNodeId = t.get2();
-
-                    spi.stats.onClientSocketInitialized(U.currentTimeMillis() - ts);
-
-                    locNode.clientRouterNodeId(rmtNodeId);
-
-                    TcpDiscoveryAbstractMessage msg = recon ?
-                        new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId,
-                            lastMsgId) :
-                        new TcpDiscoveryJoinRequestMessage(locNode, spi.collectExchangeData(getLocalNodeId()));
-
-                    msg.client(true);
-
-                    spi.writeToSocket(sock, msg);
-
-                    int res = spi.readReceipt(sock, spi.ackTimeout);
-
-                    switch (res) {
-                        case RES_OK:
-                            return sock;
-
-                        case RES_CONTINUE_JOIN:
-                        case RES_WAIT:
-                            U.closeQuiet(sock);
-
-                            break;
-
-                        default:
-                            if (log.isDebugEnabled())
-                                log.debug("Received unexpected response to join request: " + res);
-
-                            U.closeQuiet(sock);
-                    }
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        U.error(log, "Failed to establish connection with address: " + addr, e);
-
-                    U.closeQuiet(sock);
-
+                if (sockAndRes == null) {
                     it.remove();
+
+                    continue;
+                }
+
+                assert sockAndRes.get1() != null && sockAndRes.get2() != null : sockAndRes;
+
+                Socket sock = sockAndRes.get1();
+
+                switch (sockAndRes.get2()) {
+                    case RES_OK:
+                        return sock;
+
+                    case RES_CONTINUE_JOIN:
+                    case RES_WAIT:
+                        U.closeQuiet(sock);
+
+                        break;
+
+                    default:
+                        if (log.isDebugEnabled())
+                            log.debug("Received unexpected response to join request: " + sockAndRes.get2());
+
+                        U.closeQuiet(sock);
                 }
             }
 
             if (addrs.isEmpty()) {
+                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                    return null;
+
                 U.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "in 2000ms): " + addrs0);
-
-                if (spi.joinTimeout > 0 && (U.currentTimeMillis() - startTime) > spi.joinTimeout)
-                    return null;
 
                 Thread.sleep(2000);
             }
@@ -453,17 +434,125 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * @param recon {@code True} if reconnects.
+     * @param addr Address.
+     * @return Socket and connect response.
+     */
+    @Nullable private T2<Socket, Integer> sendJoinRequest(boolean recon, InetSocketAddress addr) {
+        assert addr != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Send join request [addr=" + addr + ", reconnect=" + recon +
+                ", locNodeId=" + getLocalNodeId() + ']');
+
+        Collection<Throwable> errs = null;
+
+        long ackTimeout0 = spi.ackTimeout;
+
+        int connectAttempts = 1;
+
+        UUID locNodeId = getLocalNodeId();
+
+        for (int i = 0; i < spi.reconCnt; i++) {
+            boolean openSock = false;
+
+            Socket sock = null;
+
+            try {
+                long tstamp = U.currentTimeMillis();
+
+                sock = spi.openSocket(addr);
+
+                openSock = true;
+
+                TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
+
+                req.client(true);
+
+                spi.writeToSocket(sock, req);
+
+                TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
+
+                UUID rmtNodeId = res.creatorNodeId();
+
+                assert rmtNodeId != null;
+                assert !getLocalNodeId().equals(rmtNodeId);
+
+                spi.stats.onClientSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                locNode.clientRouterNodeId(rmtNodeId);
+
+                tstamp = U.currentTimeMillis();
+
+                TcpDiscoveryAbstractMessage msg = recon ?
+                    new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId) :
+                    new TcpDiscoveryJoinRequestMessage(locNode, spi.collectExchangeData(getLocalNodeId()));
+
+                msg.client(true);
+
+                spi.writeToSocket(sock, msg);
+
+                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+
+                if (log.isDebugEnabled())
+                    log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
+                        ", rmtNodeId=" + rmtNodeId + ']');
+
+                return new T2<>(sock, spi.readReceipt(sock, ackTimeout0));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                U.closeQuiet(sock);
+
+                if (log.isDebugEnabled())
+                    log.error("Exception on joining: " + e.getMessage(), e);
+
+                onException("Exception on joining: " + e.getMessage(), e);
+
+                if (errs == null)
+                    errs = new ArrayList<>();
+
+                errs.add(e);
+
+                if (!openSock) {
+                    // Reconnect for the second time, if connection is not established.
+                    if (connectAttempts < 2) {
+                        connectAttempts++;
+
+                        continue;
+                    }
+
+                    break; // Don't retry if we can not establish connection.
+                }
+
+                if (e instanceof SocketTimeoutException || X.hasCause(e, SocketTimeoutException.class)) {
+                    ackTimeout0 *= 2;
+
+                    if (!checkAckTimeout(ackTimeout0))
+                        break;
+                }
+            }
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Failed to join to address [addr=" + addr + ", recon=" + recon + ", errs=" + errs + ']');
+
+        return null;
+    }
+
+
+    /**
      * @param topVer New topology version.
+     * @param msg Discovery message.
      * @return Latest topology snapshot.
      */
-    private NavigableSet<ClusterNode> updateTopologyHistory(long topVer) {
+    private NavigableSet<ClusterNode> updateTopologyHistory(long topVer, @Nullable TcpDiscoveryAbstractMessage msg) {
         this.topVer = topVer;
 
         NavigableSet<ClusterNode> allNodes = allVisibleNodes();
 
         if (!topHist.containsKey(topVer)) {
             assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
-                "lastVer=" + topHist.lastKey() + ", newVer=" + topVer;
+                "lastVer=" + topHist.lastKey() + ", newVer=" + topVer + ", locNode=" + locNode + ", msg=" + msg;
 
             topHist.put(topVer, allNodes);
 
@@ -491,33 +580,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         allNodes.add(locNode);
 
         return allNodes;
-    }
-
-    /**
-     * @param addr Address.
-     * @return Remote node ID.
-     * @throws IOException In case of I/O error.
-     * @throws IgniteCheckedException In case of other error.
-     */
-    private IgniteBiTuple<Socket, UUID> initConnection(InetSocketAddress addr) throws IOException, IgniteCheckedException {
-        assert addr != null;
-
-        Socket sock = spi.openSocket(addr);
-
-        TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(getLocalNodeId());
-
-        req.client(true);
-
-        spi.writeToSocket(sock, req);
-
-        TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, spi.ackTimeout);
-
-        UUID nodeId = res.creatorNodeId();
-
-        assert nodeId != null;
-        assert !getLocalNodeId().equals(nodeId);
-
-        return F.t(sock, nodeId);
     }
 
     /** {@inheritDoc} */
@@ -556,6 +618,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    /**
+     * @param err Error.
+     */
+    private void joinError(IgniteSpiException err) {
+        assert err != null;
+
+        joinErr = err;
+
+        joinLatch.countDown();
     }
 
     /**
@@ -667,7 +740,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         spi.stats.onMessageReceived(msg);
 
-                        if (spi.ensured(msg))
+                        if (spi.ensured(msg) && joinLatch.getCount() == 0L)
                             lastMsgId = msg.id();
 
                         msgWorker.addMessage(msg);
@@ -736,7 +809,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         *
+         * @return {@code True} if connection is alive.
          */
         public boolean isOnline() {
             synchronized (mux) {
@@ -780,7 +853,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
-                        U.error(log, "Failed to send node left message (will stop anyway) [sock=" + sock + ']', e);
+                        U.error(log, "Failed to send node left message (will stop anyway) " +
+                            "[sock=" + sock + ", msg=" + msg + ']', e);
 
                     U.closeQuiet(sock);
 
@@ -805,11 +879,16 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private volatile Socket sock;
 
+        /** */
+        private boolean join;
+
         /**
-         *
+         * @param join {@code True} if reconnects during join.
          */
-        protected Reconnector() {
+        protected Reconnector(boolean join) {
             super(spi.ignite().name(), "tcp-client-disco-msg-worker", log);
+
+            this.join = join;
         }
 
         /**
@@ -827,51 +906,94 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             boolean success = false;
 
+            Exception err = null;
+
+            long timeout = join ? spi.joinTimeout : spi.netTimeout;
+
+            long startTime = U.currentTimeMillis();
+
             try {
-                sock = joinTopology(true);
+                while (true) {
+                    sock = joinTopology(true, timeout);
 
-                if (sock == null) {
-                    U.error(log, "Failed to reconnect to cluster: timeout.");
-
-                    return;
-                }
-
-                if (isInterrupted())
-                    throw new InterruptedException();
-
-                InputStream in = new BufferedInputStream(sock.getInputStream());
-
-                sock.setKeepAlive(true);
-                sock.setTcpNoDelay(true);
-
-                // Wait for
-                while (!isInterrupted()) {
-                    TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
-
-                    if (msg instanceof TcpDiscoveryClientReconnectMessage) {
-                        TcpDiscoveryClientReconnectMessage res = (TcpDiscoveryClientReconnectMessage)msg;
-
-                        if (res.creatorNodeId().equals(getLocalNodeId())) {
-                            if (res.success()) {
-                                msgWorker.addMessage(res);
-
-                                success = true;
-                            }
-
-                            break;
+                    if (sock == null) {
+                        if (join) {
+                            joinError(new IgniteSpiException("Join process timed out, connection failed and " +
+                                "failed to reconnect (consider increasing 'joinTimeout' configuration property) " +
+                                "[networkTimeout=" + spi.joinTimeout + ", sock=" + sock + ']'));
                         }
+                        else
+                            U.error(log, "Failed to reconnect to cluster (consider increasing 'networkTimeout' " +
+                                "configuration  property) [networkTimeout=" + spi.netTimeout + ", sock=" + sock + ']');
+
+                        return;
                     }
 
+                    if (isInterrupted())
+                        throw new InterruptedException();
+
+                    int oldTimeout = 0;
+
+                    try {
+                        oldTimeout = sock.getSoTimeout();
+
+                        sock.setSoTimeout((int)spi.netTimeout);
+
+                        InputStream in = new BufferedInputStream(sock.getInputStream());
+
+                        sock.setKeepAlive(true);
+                        sock.setTcpNoDelay(true);
+
+                        // Wait for
+                        while (!isInterrupted()) {
+                            TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+
+                            if (msg instanceof TcpDiscoveryClientReconnectMessage) {
+                                TcpDiscoveryClientReconnectMessage res = (TcpDiscoveryClientReconnectMessage)msg;
+
+                                if (res.creatorNodeId().equals(getLocalNodeId())) {
+                                    if (res.success()) {
+                                        msgWorker.addMessage(res);
+
+                                        success = true;
+                                    }
+
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    catch (IOException | IgniteCheckedException e) {
+                        U.closeQuiet(sock);
+
+                        if (log.isDebugEnabled())
+                            log.error("Reconnect error [join=" + join + ", timeout=" + timeout + ']', e);
+
+                        if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                            throw e;
+                        else
+                            U.warn(log, "Failed to reconnect to cluster (will retry): " + e);
+                    }
+                    finally {
+                        if (success)
+                            sock.setSoTimeout(oldTimeout);
+                    }
                 }
             }
             catch (IOException | IgniteCheckedException e) {
+                err = e;
+
                 U.error(log, "Failed to reconnect", e);
             }
             finally {
                 if (!success) {
                     U.closeQuiet(sock);
 
-                    msgWorker.addMessage(SPI_RECONNECT_FAILED);
+                    if (join)
+                        joinError(new IgniteSpiException("Failed to connect to cluster, connection failed and failed " +
+                            "to reconnect.", err));
+                    else
+                        msgWorker.addMessage(SPI_RECONNECT_FAILED);
                 }
             }
         }
@@ -906,10 +1028,10 @@ class ClientImpl extends TcpDiscoveryImpl {
             spi.stats.onJoinStarted();
 
             try {
-                final Socket sock = joinTopology(false);
+                final Socket sock = joinTopology(false, spi.joinTimeout);
 
                 if (sock == null) {
-                    joinErr = new IgniteSpiException("Join process timed out");
+                    joinErr = new IgniteSpiException("Join process timed out.");
 
                     joinLatch.countDown();
 
@@ -920,12 +1042,14 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 sockWriter.setSocket(sock);
 
-                timer.schedule(new TimerTask() {
-                    @Override public void run() {
-                        if (joinLatch.getCount() > 0)
-                            queue.add(JOIN_TIMEOUT);
-                    }
-                }, spi.netTimeout);
+                if (spi.joinTimeout > 0) {
+                    timer.schedule(new TimerTask() {
+                        @Override public void run() {
+                            if (joinLatch.getCount() > 0)
+                                queue.add(JOIN_TIMEOUT);
+                        }
+                    }, spi.joinTimeout);
+                }
 
                 sockReader.setSocket(sock, locNode.clientRouterNodeId());
 
@@ -934,8 +1058,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (msg == JOIN_TIMEOUT) {
                         if (joinLatch.getCount() > 0) {
-                            joinErr = new IgniteSpiException("Join process timed out [sock=" + sock +
-                                ", timeout=" + spi.netTimeout + ']');
+                            joinErr = new IgniteSpiException("Join process timed out, did not receive response for " +
+                                "join request (consider increasing 'joinTimeout' configuration property) " +
+                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock +']');
 
                             joinLatch.countDown();
 
@@ -959,30 +1084,23 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (((SocketClosedMessage)msg).sock == currSock) {
                             currSock = null;
 
-                            if (joinLatch.getCount() > 0) {
-                                joinErr = new IgniteSpiException("Failed to connect to cluster: socket closed.");
+                            boolean join = joinLatch.getCount() > 0;
 
-                                joinLatch.countDown();
+                            if (spi.getSpiContext().isStopping() || segmented) {
+                                leaveLatch.countDown();
 
-                                break;
+                                if (join) {
+                                    joinError(new IgniteSpiException("Failed to connect to cluster: socket closed."));
+
+                                    break;
+                                }
                             }
                             else {
-                                if (spi.getSpiContext().isStopping() || segmented)
-                                    leaveLatch.countDown();
-                                else {
-                                    assert reconnector == null;
+                                assert reconnector == null;
 
-                                    final Reconnector reconnector = new Reconnector();
-                                    this.reconnector = reconnector;
-                                    reconnector.start();
-
-                                    timer.schedule(new TimerTask() {
-                                        @Override public void run() {
-                                            if (reconnector.isAlive())
-                                                reconnector.cancel();
-                                        }
-                                    }, spi.netTimeout);
-                                }
+                                final Reconnector reconnector = new Reconnector(join);
+                                this.reconnector = reconnector;
+                                reconnector.start();
                             }
                         }
                     }
@@ -1027,7 +1145,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 if (joinLatch.getCount() > 0) {
                     // This should not occurs.
-                    joinErr = new IgniteSpiException("Some error occurs in joinig process");
+                    joinErr = new IgniteSpiException("Some error in join process.");
 
                     joinLatch.countDown();
                 }
@@ -1146,7 +1264,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     locNode.order(topVer);
 
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, updateTopologyHistory(topVer));
+                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, updateTopologyHistory(topVer, msg));
 
                     joinErr = null;
 
@@ -1168,6 +1286,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
+                if (!topHist.isEmpty() && msg.topologyVersion() <= topHist.lastKey()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node add finished message since topology already updated " +
+                            "[msg=" + msg + ", lastHistKey=" + topHist.lastKey() + ", node=" + node + ']');
+
+                    return;
+                }
+
                 long topVer = msg.topologyVersion();
 
                 node.order(topVer);
@@ -1176,7 +1302,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (spi.locNodeVer.equals(node.version()))
                     node.version(spi.locNodeVer);
 
-                NavigableSet<ClusterNode> top = updateTopologyHistory(topVer);
+                NavigableSet<ClusterNode> top = updateTopologyHistory(topVer, msg);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1214,7 +1340,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
+                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1236,8 +1362,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping()) {
                 if (!getLocalNodeId().equals(msg.creatorNodeId()) && getLocalNodeId().equals(msg.failedNodeId())) {
                     if (leaveLatch.getCount() > 0) {
-                        log.debug("Remote node fail this node while node is stopping [locNode=" + getLocalNodeId()
-                            + ", rmtNode=" + msg.creatorNodeId() + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Remote node fail this node while node is stopping [locNode=" + getLocalNodeId()
+                                + ", rmtNode=" + msg.creatorNodeId() + ']');
 
                         leaveLatch.countDown();
                     }
@@ -1256,7 +1383,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion());
+                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1313,24 +1440,32 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                assert msg.success();
+                assert msg.success() : msg;
 
-                currSock = reconnector.sock;
+                if (reconnector != null) {
+                    currSock = reconnector.sock;
 
-                sockWriter.setSocket(currSock);
-                sockReader.setSocket(currSock, locNode.clientRouterNodeId());
+                    sockWriter.setSocket(currSock);
+                    sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
-                reconnector = null;
+                    reconnector = null;
 
-                pending = true;
+                    pending = true;
 
-                try {
-                    for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages())
-                        processDiscoveryMessage(pendingMsg);
+                    try {
+                        for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Process message on reconnect [msg=" + pendingMsg + ']');
+
+                            processDiscoveryMessage(pendingMsg);
+                        }
+                    }
+                    finally {
+                        pending = false;
+                    }
                 }
-                finally {
-                    pending = false;
-                }
+                else if (log.isDebugEnabled())
+                    log.debug("Discarding reconnect message, reconnect is completed: " + msg);
             }
             else if (log.isDebugEnabled())
                 log.debug("Discarding reconnect message for another client: " + msg);
