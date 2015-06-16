@@ -22,9 +22,11 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.h2.jdbcx.*;
-import sun.jdbc.odbc.ee.*;
 
+import java.io.*;
+import java.sql.*;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 /**
  * Test for Cache jdbc blob store factory.
@@ -44,7 +46,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
             try(Ignite ignite1 = Ignition.start("modules/spring/src/test/config/store-cache1.xml")) {
                 checkStore(ignite.<Integer, String>cache(CACHE_NAME), JdbcDataSource.class);
 
-                checkStore(ignite1.<Integer, String>cache(CACHE_NAME), ConnectionPoolDataSource.class);
+                checkStore(ignite1.<Integer, String>cache(CACHE_NAME), DummyDataSource.class);
             }
         }
     }
@@ -59,7 +61,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
                     try (IgniteCache<Integer, String> cache1 = ignite1.getOrCreateCache(cacheConfiguration())) {
                         checkStore(cache, JdbcDataSource.class);
 
-                        checkStore(cache1, ConnectionPoolDataSource.class);
+                        checkStore(cache1, DummyDataSource.class);
                     }
                 }
             }
@@ -111,5 +113,60 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
 
         assertEquals(dataSrcClass,
             GridTestUtils.getFieldValue(store, CacheJdbcBlobStore.class, "dataSrc").getClass());
+    }
+
+    /**
+     *
+     */
+    public static class DummyDataSource implements javax.sql.DataSource, Serializable {
+        /** */
+        public DummyDataSource() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Connection getConnection() throws SQLException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Connection getConnection(String username, String password) throws SQLException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public PrintWriter getLogWriter() throws SQLException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setLogWriter(PrintWriter out) throws SQLException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setLoginTimeout(int seconds) throws SQLException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLoginTimeout() throws SQLException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T unwrap(Class<T> iface) throws SQLException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isWrapperFor(Class<?> iface) throws SQLException {
+            return false;
+        }
     }
 }
