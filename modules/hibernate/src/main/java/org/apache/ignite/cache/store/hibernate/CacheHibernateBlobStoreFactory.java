@@ -121,6 +121,9 @@ import java.util.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibernateBlobStore<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Session factory. */
     @GridToStringExclude
     private transient SessionFactory sesFactory;

@@ -60,6 +60,9 @@ import javax.sql.*;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobStore<K, V>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Connection URL. */
     private String connUrl = CacheJdbcBlobStore.DFLT_CONN_URL;
 
