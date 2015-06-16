@@ -160,10 +160,13 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         log.info("All clients started.");
 
-        checkNodes(SRVS + CLIENTS);
-
-        for (Ignite client : clients)
-            client.close();
+        try {
+            checkNodes(SRVS + CLIENTS);
+        }
+        finally {
+            for (Ignite client : clients)
+                client.close();
+        }
     }
 
     /**
