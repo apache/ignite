@@ -15,36 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized.ext;
 
 /**
- * Field type used to calculate {@code Unsafe} offsets into objects.
+ * Metadata handler for optimized objects.
  */
-public enum OptimizedFieldType {
-    /** */
-    BYTE,
+public interface OptimizedMarshallerExtMetaHandler {
+    /**
+     * Adds meta data.
+     *
+     * @param typeId Type ID.
+     * @param meta Meta data.
+     */
+    void addMeta(int typeId, OptimizedObjectMetadata meta);
 
-    /** */
-    SHORT,
 
-    /** */
-    INT,
-
-    /** */
-    LONG,
-
-    /** */
-    FLOAT,
-
-    /** */
-    DOUBLE,
-
-    /** */
-    CHAR,
-
-    /** */
-    BOOLEAN,
-
-    /** */
-    OTHER
+    /**
+     * Gets meta data for provided type ID.
+     *
+     * @param typeId Type ID.
+     * @return Meta data.
+     */
+    OptimizedObjectMetadata metadata(int typeId);
 }

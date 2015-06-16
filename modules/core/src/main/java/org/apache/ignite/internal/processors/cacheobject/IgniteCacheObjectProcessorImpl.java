@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.marshaller.optimized.ext.*;
 import org.jetbrains.annotations.*;
 
 import java.math.*;
@@ -60,7 +61,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** */
-    private OptimizedMarshaller optMarsh;
+    private OptimizedMarshallerExt optMarshExt;
 
     /**
      *
@@ -86,10 +87,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         Marshaller marsh = ctx.config().getMarshaller();
 
-        if (marsh instanceof OptimizedMarshaller) {
-            optMarsh = (OptimizedMarshaller)marsh;
+        if (marsh instanceof OptimizedMarshallerExt) {
+            optMarshExt = (OptimizedMarshallerExt)marsh;
 
-            OptimizedObjectMetadataHandler metaHandler = new OptimizedObjectMetadataHandler() {
+            OptimizedMarshallerExtMetaHandler metaHandler = new OptimizedMarshallerExtMetaHandler() {
                 @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
                     if (metaBuf.contains(typeId))
                         return;
@@ -118,7 +119,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 }
             };
 
-            optMarsh.setMetadataHandler(metaHandler);
+            optMarshExt.setMetadataHandler(metaHandler);
         }
     }
 
@@ -319,8 +320,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean footerSupported(Object obj) throws IgniteCheckedException {
-        return optMarsh != null && optMarsh.footerSupported(obj);
+    @Override public boolean footerSupported(Class<?> cls) throws IgniteCheckedException {
+        return optMarshExt != null && optMarshExt.metaSupported(cls);
     }
 
     /**

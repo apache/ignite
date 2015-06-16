@@ -67,6 +67,13 @@ public interface GridDataInput extends DataInput {
     public int size() throws IOException;
 
     /**
+     * Returns byte array that is backed by this GridDataInput.
+     *
+     * @return Byte array.
+     */
+    public byte[] array();
+
+    /**
      * Resets data output.
      *
      * @throws IOException In case of error.

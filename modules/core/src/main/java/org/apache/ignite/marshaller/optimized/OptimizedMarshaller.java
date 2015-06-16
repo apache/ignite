@@ -77,19 +77,16 @@ import java.util.concurrent.*;
  */
 public class OptimizedMarshaller extends AbstractMarshaller {
     /** Default class loader. */
-    private final ClassLoader dfltClsLdr = getClass().getClassLoader();
+    protected final ClassLoader dfltClsLdr = getClass().getClassLoader();
 
     /** Whether or not to require an object to be serializable in order to be marshalled. */
-    private boolean requireSer = true;
+    protected boolean requireSer = true;
 
     /** ID mapper. */
-    private OptimizedMarshallerIdMapper mapper;
-
-    /** Metadata handler. */
-    private OptimizedObjectMetadataHandler metaHandler;
+    protected OptimizedMarshallerIdMapper mapper;
 
     /** Class descriptors by class. */
-    private final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
+    protected final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
 
     /**
      * Creates new marshaller will all defaults.
@@ -131,20 +128,10 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /**
-     * Sets metadata handler.
-     *
-     * @param metaHandler Metadata handler.
-     */
-    public void setMetadataHandler(OptimizedObjectMetadataHandler metaHandler) {
-        this.metaHandler = metaHandler;
-    }
-
-    /**
      * Specifies size of cached object streams used by marshaller. Object streams are cached for
      * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
      * pool is not used and each thread has its own cached object stream which it keeps reusing.
      * <p>
-     *     
      * Since each stream has an internal buffer, creating a stream for each thread can lead to
      * high memory consumption if many large messages are marshalled or unmarshalled concurrently.
      * Consider using pool in this case. This will limit number of streams that can be created and,
@@ -168,7 +155,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, metaHandler, requireSer);
+            objOut.context(clsMap, ctx, mapper, requireSer);
 
             objOut.out().outputStream(out);
 
@@ -189,7 +176,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, metaHandler, requireSer);
+            objOut.context(clsMap, ctx, mapper, requireSer);
 
             objOut.writeObject(obj);
 
@@ -213,7 +200,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, metaHandler, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().inputStream(in);
 
@@ -242,7 +229,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, metaHandler, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
 
             objIn.in().bytes(arr, arr.length);
 
@@ -258,54 +245,6 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);
-        }
-    }
-
-    //TODO:
-    public <T> T unmarshal(String fieldName, byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        assert arr != null && fieldName != null;
-
-        OptimizedObjectInputStream objIn = null;
-
-        try {
-            objIn = OptimizedObjectStreamRegistry.in();
-
-            objIn.context(clsMap, ctx, mapper, metaHandler, clsLdr != null ? clsLdr : dfltClsLdr);
-
-            objIn.in().bytes(arr, arr.length);
-
-            return (T)objIn.readField(fieldName);
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
-        }
-        catch (ClassNotFoundException e) {
-            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
-                                                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
-                                                 clsLdr, e);
-        }
-        finally {
-            OptimizedObjectStreamRegistry.closeIn(objIn);
-        }
-    }
-
-    /**
-     * Checks whether a footer injection into a serialized form of the object is supported.
-     * Footer contains information on fields location in the serialized form, thus enabling fast queries without a need
-     * to deserialize the object.
-     *
-     * @param obj Object.
-     * @return {@code true} if the footer is supported.
-     */
-    public boolean footerSupported(Object obj) throws IgniteCheckedException {
-        try {
-            OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, obj.getClass(), ctx,
-                mapper, metaHandler, true);
-
-            return  metaHandler.metadata(desc.typeId()) != null;
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to get class descriptor.", e);
         }
     }
 

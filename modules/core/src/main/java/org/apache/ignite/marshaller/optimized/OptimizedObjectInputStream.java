@@ -34,7 +34,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 /**
  * Optimized object input stream.
  */
-class OptimizedObjectInputStream extends ObjectInputStream {
+public class OptimizedObjectInputStream extends ObjectInputStream {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -42,19 +42,19 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private static final Object DUMMY = new Object();
 
     /** */
-    private final HandleTable handles = new HandleTable(10);
+    protected MarshallerContext ctx;
 
     /** */
-    private MarshallerContext ctx;
+    protected OptimizedMarshallerIdMapper mapper;
 
     /** */
-    private OptimizedMarshallerIdMapper mapper;
+    protected ClassLoader clsLdr;
 
     /** */
-    private ClassLoader clsLdr;
+    protected GridDataInput in;
 
     /** */
-    private GridDataInput in;
+    protected ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
     /** */
     private Object curObj;
@@ -66,16 +66,13 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     private Class<?> curCls;
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
-
-    /** */
-    private OptimizedObjectMetadataHandler metaHandler;
+    private final HandleTable handles = new HandleTable(10);
 
     /**
      * @param in Input.
      * @throws IOException In case of error.
      */
-    OptimizedObjectInputStream(GridDataInput in) throws IOException {
+    protected OptimizedObjectInputStream(GridDataInput in) throws IOException {
         this.in = in;
     }
 
@@ -83,21 +80,18 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
      * @param mapper ID mapper.
-     * @param metaHandler Metadata handler.
      * @param clsLdr Class loader.
      */
-    void context(
+    protected void context(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler,
         ClassLoader clsLdr)
     {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
         this.clsLdr = clsLdr;
-        this.metaHandler = metaHandler;
     }
 
     /**
@@ -250,8 +244,8 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper, metaHandler, false):
-                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper, metaHandler);
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
+                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();
 
@@ -281,7 +275,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         int compTypeId = readInt();
 
         return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
-            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper, metaHandler).describedClass();
+            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
     }
 
     /**
@@ -358,7 +352,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             switch ((t.type())) {
                 case BYTE:
-                    readByte(); //type
+                    readFieldType();
 
                     byte resByte = readByte();
 
@@ -368,7 +362,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case SHORT:
-                    readByte(); //type
+                    readFieldType();
 
                     short resShort = readShort();
 
@@ -378,7 +372,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case INT:
-                    readByte(); //type
+                    readFieldType();
 
                     int resInt = readInt();
 
@@ -388,7 +382,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case LONG:
-                    readByte(); //type
+                    readFieldType();
 
                     long resLong = readLong();
 
@@ -398,7 +392,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case FLOAT:
-                    readByte(); //type
+                    readFieldType();
 
                     float resFloat = readFloat();
 
@@ -408,7 +402,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case DOUBLE:
-                    readByte(); //type
+                    readFieldType();
 
                     double resDouble = readDouble();
 
@@ -418,7 +412,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case CHAR:
-                    readByte(); //type
+                    readFieldType();
 
                     char resChar = readChar();
 
@@ -428,7 +422,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                     break;
 
                 case BOOLEAN:
-                    readByte(); //type
+                    readFieldType();
 
                     boolean resBoolean = readBoolean();
 
@@ -540,12 +534,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             }
         }
 
-        if (metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
-            int footerLen = in.readInt();
-
-            if (footerLen != EMPTY_FOOTER)
-                in.skipBytes(footerLen - 4);
-        }
+        readFooter(cls);
 
         return obj;
     }
@@ -946,6 +935,26 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         return new GetFieldImpl(this);
     }
 
+    /**
+     * Reads object footer from the underlying stream.
+     *
+     * @param cls Class.
+     * @throws IOException In case of error.
+     */
+    protected void readFooter(Class<?> cls) throws IOException {
+        // No-op
+    }
+
+    /**
+     * Reads field's type during its deserialization.
+     *
+     * @return Field type.
+     * @throws IOException In case of error.
+     */
+    protected int readFieldType() throws IOException {
+        return 0;
+    }
+
     /** {@inheritDoc} */
     @Override public void registerValidation(ObjectInputValidation obj, int pri) {
         // No-op.
@@ -954,118 +963,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     /** {@inheritDoc} */
     @Override public int available() throws IOException {
         return -1;
-    }
-
-    /**
-     * Checks whether the object has a field with name {@code fieldName}.
-     *
-     * @param fieldName Field name.
-     * @return {@code true} if field exists, {@code false} otherwise.
-     * @throws IOException in case of error.
-     */
-    public boolean hasField(String fieldName) throws IOException {
-        int pos = in.position();
-
-        // TODO: IGNITE-950, do we need move to start position?
-        if (in.readByte() != SERIALIZABLE) {
-            in.position(pos);
-            return false;
-        }
-
-        FieldRange range = fieldRange(fieldName);
-
-        in.position(pos);
-
-        return range != null && range.start > 0;
-    }
-
-    /**
-     * TODO: IGNITE-950
-     * @param fieldName
-     * @return
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    Object readField(String fieldName) throws IOException, ClassNotFoundException {
-        int pos = in.position();
-
-        // TODO: IGNITE-950, do we need move to start position?
-        if (in.readByte() != SERIALIZABLE) {
-            in.position(pos);
-            return false;
-        }
-
-        FieldRange range = fieldRange(fieldName);
-
-        Object obj = null;
-
-        if (range != null && range.start > 0) {
-            in.position(range.start);
-            obj = readObject();
-        }
-
-        in.position(pos);
-
-        return obj;
-    }
-
-    /**
-     * Returns field offset in the byte stream.
-     *
-     * @param fieldName Field name.
-     * @return positive range or {@code null} if the object doesn't have such a field.
-     * @throws IOException in case of error.
-     */
-    private FieldRange fieldRange(String fieldName) throws IOException {
-        int fieldId = resolveFieldId(fieldName);
-
-        int typeId = readInt();
-
-        int clsNameLen = 0;
-
-        if (typeId == 0) {
-            int pos = in.position();
-
-            typeId = OptimizedMarshallerUtils.resolveTypeId(readUTF(), mapper);
-
-            clsNameLen = in.position() - pos;
-        }
-
-        OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
-
-        if (meta == null)
-            // TODO: IGNITE-950 add warning!
-            return null;
-
-        int end = in.size();
-
-        in.position(end - FOOTER_LEN_OFF);
-
-        int footerLen = in.readInt();
-
-        if (footerLen == EMPTY_FOOTER)
-            return null;
-
-        // 4 - skipping length at the beginning
-        int footerOff = (end - footerLen) + 4;
-        in.position(footerOff);
-
-        int fieldOff = 0;
-
-        for (OptimizedObjectMetadata.FieldInfo info : meta.getMeta()) {
-            if (info.id == fieldId) {
-                //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
-                fieldOff += 1 + 4 + clsNameLen + 2;
-
-                FieldRange range = new FieldRange(fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
-
-                return range;
-            }
-            else
-                fieldOff += info.len == VARIABLE_LEN ? in.readShort() : info.len;
-        }
-
-        return null;
     }
 
     /**
@@ -1185,56 +1082,56 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
                 switch (t.type()) {
                     case BYTE:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readByte();
 
                         break;
 
                     case SHORT:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readShort();
 
                         break;
 
                     case INT:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readInt();
 
                         break;
 
                     case LONG:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readLong();
 
                         break;
 
                     case FLOAT:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readFloat();
 
                         break;
 
                     case DOUBLE:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readDouble();
 
                         break;
 
                     case CHAR:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readChar();
 
                         break;
 
                     case BOOLEAN:
-                        in.readByte(); //type
+                        in.readFieldType();
 
                         obj = in.readBoolean();
 
@@ -1311,26 +1208,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         @SuppressWarnings("unchecked")
         private <T> T value(String name, T dflt) {
             return objs[fieldInfo.getIndex(name)] != null ? (T)objs[fieldInfo.getIndex(name)] : dflt;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class FieldRange {
-        /** */
-        private int start;
-
-        /** */
-        private int len;
-
-        /**
-         * @param start Start.
-         * @param len   Length.
-         */
-        public FieldRange(int start, int len) {
-            this.start = start;
-            this.len = len;
         }
     }
 }

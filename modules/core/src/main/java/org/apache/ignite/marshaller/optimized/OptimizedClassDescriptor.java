@@ -34,7 +34,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.EN
 /**
  * Class descriptor.
  */
-class OptimizedClassDescriptor {
+public class OptimizedClassDescriptor {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -107,9 +107,6 @@ class OptimizedClassDescriptor {
     /** Access order field offset. */
     private long accessOrderFieldOff;
 
-    /** Metadata handler */
-    private OptimizedObjectMetadataHandler metaHandler;
-
     /**
      * Creates descriptor for class.
      *
@@ -118,9 +115,6 @@ class OptimizedClassDescriptor {
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
-     * @param metaHandler Metadata handler.
-     * @param tryEnableMeta Try to enable meta during {@code OptimizedClassDescriptor} registration. Meta is supported,
-     *                      only for objects that support footer injection is their serialized form.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -128,16 +122,13 @@ class OptimizedClassDescriptor {
         int typeId,
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler,
-        boolean tryEnableMeta)
+        OptimizedMarshallerIdMapper mapper)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
-        this.metaHandler = metaHandler;
 
         name = cls.getName();
 
@@ -349,7 +340,7 @@ class OptimizedClassDescriptor {
                     List<ClassFields> fields = new ArrayList<>();
                     Set<String> fieldsSet = new HashSet<>();
 
-                    boolean fieldsIndexingEnabled = true;
+                    boolean fieldsIndexingSupported = true;
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -361,7 +352,7 @@ class OptimizedClassDescriptor {
 
                             if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE) {
                                 mtd.setAccessible(true);
-                                fieldsIndexingEnabled = false;
+                                fieldsIndexingSupported = false;
                             }
                             else
                                 // Set method back to null if it has incorrect signature.
@@ -380,7 +371,7 @@ class OptimizedClassDescriptor {
 
                             if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE) {
                                 mtd.setAccessible(true);
-                                fieldsIndexingEnabled = false;
+                                fieldsIndexingSupported = false;
                             }
                             else
                                 // Set method back to null if it has incorrect signature.
@@ -401,7 +392,7 @@ class OptimizedClassDescriptor {
 
                             // Check for fields duplicate names in classes hierarchy
                             if (!fieldsSet.add(f.getName()))
-                                fieldsIndexingEnabled = false;
+                                fieldsIndexingSupported = false;
                         }
 
                         List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
@@ -417,7 +408,7 @@ class OptimizedClassDescriptor {
                                 isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
                                 hasSerialPersistentFields = true;
 
-                                fieldsIndexingEnabled = false;
+                                fieldsIndexingSupported = false;
 
                                 serFieldsDesc.setAccessible(true);
 
@@ -488,21 +479,7 @@ class OptimizedClassDescriptor {
                     Collections.reverse(readObjMtds);
                     Collections.reverse(fields);
 
-                    this.fields = new Fields(fields, fieldsIndexingEnabled);
-
-                    if (tryEnableMeta && fieldsIndexingEnabled && metaHandler.metadata(typeId) == null) {
-                        OptimizedObjectMetadata meta = new OptimizedObjectMetadata();
-
-                        for (ClassFields clsFields : this.fields.fields)
-                            for (FieldInfo info : clsFields.fields)
-                                meta.addMeta(info.id(), info.type());
-
-                        U.debug("putting to cache: " + typeId);
-
-                        metaHandler.addMeta(typeId, meta);
-
-                        U.debug("put to cache: " + typeId);
-                    }
+                    this.fields = new Fields(fields, fieldsIndexingSupported);
                 }
             }
         }
@@ -659,8 +636,9 @@ class OptimizedClassDescriptor {
 
             case OBJ_ARR:
                 OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
-                    obj.getClass().getComponentType(), ctx,
-                    mapper, metaHandler, false);
+                    obj.getClass().getComponentType(),
+                    ctx,
+                    mapper);
 
                 compDesc.writeTypeData(out);
 
@@ -719,8 +697,7 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper, metaHandler,
-                                                       false);
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
 
                 clsDesc.writeTypeData(out);
 
@@ -827,6 +804,15 @@ class OptimizedClassDescriptor {
     }
 
     /**
+     * Returns class fields.
+     *
+     * @return Fields.
+     */
+    public Fields fields() {
+        return fields;
+    }
+
+    /**
      * @param cls Class.
      * @return Type.
      */
@@ -860,7 +846,7 @@ class OptimizedClassDescriptor {
      * Information about one field.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class FieldInfo {
+    public static class FieldInfo {
         /** Field. */
         private final Field field;
 
@@ -891,6 +877,20 @@ class OptimizedClassDescriptor {
         }
 
         /**
+         * @return Field ID.
+         */
+        public int id() {
+            return fieldId;
+        }
+
+        /**
+         * @return Type.
+         */
+        public OptimizedFieldType type() {
+            return fieldType;
+        }
+
+        /**
          * @return Returns field.
          */
         Field field() {
@@ -905,31 +905,17 @@ class OptimizedClassDescriptor {
         }
 
         /**
-         * @return Type.
-         */
-        OptimizedFieldType type() {
-            return fieldType;
-        }
-
-        /**
          * @return Name.
          */
         String name() {
             return fieldName;
-        }
-
-        /**
-         * @return Field ID.
-         */
-        int id() {
-            return fieldId;
         }
     }
 
     /**
      * Information about one class.
      */
-    static class ClassFields {
+    public static class ClassFields {
         /** Fields. */
         private final List<FieldInfo> fields;
 
@@ -979,13 +965,22 @@ class OptimizedClassDescriptor {
 
             return nameToIndex.get(name);
         }
+
+        /**
+         * Returns field info list.
+         *
+         * @return Fields info list.
+         */
+        public List<FieldInfo> fieldInfoList() {
+            return fields;
+        }
     }
 
     /**
      * Encapsulates data about class fields.
      */
     @SuppressWarnings("PackageVisibleInnerClass")
-    static class Fields {
+    public static class Fields {
         /** Fields. */
         private final List<ClassFields> fields;
 
@@ -993,16 +988,16 @@ class OptimizedClassDescriptor {
         private final List<Field> ownFields;
 
         /** Fields indexing flag. */
-        private final boolean fieldsIndexingEnabled;
+        private final boolean fieldsIndexingSupported;
 
         /**
          * Creates new instance.
          *
          * @param fields Fields.
          */
-        Fields(List<ClassFields> fields, boolean fieldsIndexingEnabled) {
+        Fields(List<ClassFields> fields, boolean fieldsIndexingSupported) {
             this.fields = fields;
-            this.fieldsIndexingEnabled = fieldsIndexingEnabled;
+            this.fieldsIndexingSupported = fieldsIndexingSupported;
 
             if (fields.isEmpty())
                 ownFields = null;
@@ -1036,21 +1031,21 @@ class OptimizedClassDescriptor {
         }
 
         /**
-         * Whether fields indexing is enabled for a given object or not.
+         * Whether fields indexing is supported for a given object or not.
          *
-         * @return {@code true} if enabled, {@code false} otherwise.
+         * @return {@code true} if supported, {@code false} otherwise.
          */
-        boolean fieldsIndexingEnabled() {
-            return fieldsIndexingEnabled;
+        public boolean fieldsIndexingSupported() {
+            return fieldsIndexingSupported;
         }
 
         /**
-         * Returns a total number of hierarchy levels.
+         * Returns fields list.
          *
-         * @return number of hierarchy levels.
+         * @return Fields list.
          */
-        int hierarchyLevels() {
-            return fields.size();
+        public List<ClassFields> fieldsList() {
+            return fields;
         }
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -46,17 +45,6 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
     /** */
     private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
-
-    /** */
-    private static final OptimizedObjectMetadataHandler META_HANDLER = new OptimizedObjectMetadataHandler() {
-        @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
-
-        }
-
-        @Override public OptimizedObjectMetadata metadata(int typeId) {
-            return null;
-        }
-    };
 
     /**
      * @throws Exception If failed.
@@ -1033,7 +1021,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = OptimizedObjectStreamRegistry.out();
 
-            out.context(clsMap, CTX, null, META_HANDLER, true);
+            out.context(clsMap, CTX, null, true);
 
             out.writeObject(obj);
 
@@ -1041,7 +1029,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
-            in.context(clsMap, CTX, null, META_HANDLER, getClass().getClassLoader());
+            in.context(clsMap, CTX, null, getClass().getClassLoader());
 
             in.in().bytes(arr, arr.length);
 

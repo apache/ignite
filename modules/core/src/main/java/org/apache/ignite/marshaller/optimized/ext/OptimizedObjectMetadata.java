@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized;
+package org.apache.ignite.marshaller.optimized.ext;
 
 import org.apache.ignite.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.marshaller.optimized.OptimizedFieldType.*;
 /**
  * Metadata that keeps fields information. Used in conjunction with the footer that is added to some objects during
  * marshalling.
@@ -70,7 +70,7 @@ public class OptimizedObjectMetadata implements Externalizable {
                 break;
 
             case OTHER:
-                len = OptimizedMarshallerUtils.VARIABLE_LEN;
+                len = OptimizedMarshallerExt.VARIABLE_LEN;
                 break;
 
             default:
@@ -83,7 +83,7 @@ public class OptimizedObjectMetadata implements Externalizable {
     }
 
     /**
-     * Gets {@link org.apache.ignite.marshaller.optimized.OptimizedObjectMetadata.FieldInfo} at the {@code index}.
+     * Gets {@link OptimizedObjectMetadata.FieldInfo} at the {@code index}.
      *
      * @param index Position.
      * @return Field meta info.

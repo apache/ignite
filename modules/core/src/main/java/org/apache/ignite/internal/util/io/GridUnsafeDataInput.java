@@ -189,6 +189,11 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
         return off;
     }
 
+    /** {@inheritDoc} */
+    @Override public byte[] array() {
+        return buf;
+    }
+
     /**
      * @param more Bytes to move forward.
      * @return Old offset value.

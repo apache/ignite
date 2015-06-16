@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
-class OptimizedMarshallerUtils {
+public class OptimizedMarshallerUtils {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -141,16 +141,7 @@ class OptimizedMarshallerUtils {
     static final byte EXTERNALIZABLE = 101;
 
     /** */
-    static final byte SERIALIZABLE = 102;
-
-    /** */
-    static final byte EMPTY_FOOTER = -1;
-
-    /** */
-    static final byte FOOTER_LEN_OFF = 4;
-
-    /** */
-    static final byte VARIABLE_LEN = -1;
+    public static final byte SERIALIZABLE = 102;
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -180,19 +171,14 @@ class OptimizedMarshallerUtils {
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
-     * @param metaHandler Metadata handler.
-     * @param tryEnableMeta Try to enable meta during {@code OptimizedClassDescriptor} registration. Meta is supported,
-     *                      only for objects that support footer injection is their serialized form.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static OptimizedClassDescriptor classDescriptor(
+    public static OptimizedClassDescriptor classDescriptor(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         Class cls,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler,
-        boolean tryEnableMeta)
+        OptimizedMarshallerIdMapper mapper)
         throws IOException
     {
         OptimizedClassDescriptor desc = clsMap.get(cls);
@@ -209,8 +195,7 @@ class OptimizedMarshallerUtils {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
-            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper, metaHandler,
-                       tryEnableMeta);
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper);
 
             if (registered) {
                 OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
@@ -247,7 +232,7 @@ class OptimizedMarshallerUtils {
      * @param fieldName Field name.
      * @return Field ID.
      */
-    static int resolveFieldId(String fieldName) {
+    public static int resolveFieldId(String fieldName) {
         return fieldName.hashCode();
     }
 
@@ -259,7 +244,6 @@ class OptimizedMarshallerUtils {
      * @param ldr Class loader.
      * @param ctx Context.
      * @param mapper ID mapper.
-     * @param metaHandler Metadata handler.
      * @return Descriptor.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
@@ -269,8 +253,7 @@ class OptimizedMarshallerUtils {
         int id,
         ClassLoader ldr,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler) throws IOException, ClassNotFoundException {
+        OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
         Class cls;
 
         try {
@@ -284,8 +267,7 @@ class OptimizedMarshallerUtils {
 
         if (desc == null) {
             OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper,
-                    metaHandler, false));
+                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
 
             if (old != null)
                 desc = old;

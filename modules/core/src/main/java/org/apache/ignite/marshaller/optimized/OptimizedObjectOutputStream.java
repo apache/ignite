@@ -34,7 +34,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 /**
  * Optimized object output stream.
  */
-class OptimizedObjectOutputStream extends ObjectOutputStream {
+public class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",
@@ -43,19 +43,22 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     );
 
     /** */
+    protected final GridDataOutput out;
+
+    /** */
+    protected MarshallerContext ctx;
+
+    /** */
+    protected OptimizedMarshallerIdMapper mapper;
+
+    /** */
+    protected ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+
+    /** */
+    protected boolean requireSer;
+
+    /** */
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
-
-    /** */
-    private final GridDataOutput out;
-
-    /** */
-    private MarshallerContext ctx;
-
-    /** */
-    private OptimizedMarshallerIdMapper mapper;
-
-    /** */
-    private boolean requireSer;
 
     /** */
     private Object curObj;
@@ -69,17 +72,11 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private PutFieldImpl curPut;
 
-    /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
-
-    /** */
-    private OptimizedObjectMetadataHandler metaHandler;
-
     /**
      * @param out Output.
      * @throws IOException In case of error.
      */
-    OptimizedObjectOutputStream(GridDataOutput out) throws IOException {
+    protected OptimizedObjectOutputStream(GridDataOutput out) throws IOException {
         this.out = out;
     }
 
@@ -87,18 +84,15 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param clsMap Class descriptors by class map.
      * @param ctx Context.
      * @param mapper ID mapper.
-     * @param metaHandler Metadata handler.
      * @param requireSer Require {@link Serializable} flag.
      */
-    void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+    protected void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler,
         boolean requireSer) {
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
-        this.metaHandler = metaHandler;
         this.requireSer = requireSer;
     }
 
@@ -193,9 +187,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
                     ctx,
-                    mapper,
-                    metaHandler,
-                    false);
+                    mapper);
 
                 if (desc.excluded()) {
                     writeByte(NULL);
@@ -220,9 +212,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
                         ctx,
-                        mapper,
-                        metaHandler,
-                        false);
+                        mapper);
                 }
 
                 if (handle >= 0) {
@@ -319,11 +309,10 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields, int headerPos)
         throws IOException {
-        Footer footer = null;
+        Footer footer = createFooter(obj.getClass());
 
-        if (metaHandler.metadata(resolveTypeId(obj.getClass().getName(), mapper)) != null) {
-            footer = new Footer(fields);
-
+        if (footer != null) {
+            footer.fields(fields);
             footer.headerPos(headerPos);
         }
 
@@ -494,7 +483,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
             switch (t.type()) {
                 case BYTE:
                     if (t.field() != null) {
-                        writeByte(BYTE);
+                        writeFieldType(BYTE);
                         writeByte(getByte(obj, t.offset()));
                     }
 
@@ -502,7 +491,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case SHORT:
                     if (t.field() != null) {
-                        writeByte(SHORT);
+                        writeFieldType(SHORT);
                         writeShort(getShort(obj, t.offset()));
                     }
 
@@ -510,7 +499,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case INT:
                     if (t.field() != null) {
-                        writeByte(INT);
+                        writeFieldType(INT);
                         writeInt(getInt(obj, t.offset()));
                     }
 
@@ -518,7 +507,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case LONG:
                     if (t.field() != null) {
-                        writeByte(LONG);
+                        writeFieldType(LONG);
                         writeLong(getLong(obj, t.offset()));
                     }
 
@@ -526,7 +515,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case FLOAT:
                     if (t.field() != null) {
-                        writeByte(FLOAT);
+                        writeFieldType(FLOAT);
                         writeFloat(getFloat(obj, t.offset()));
                     }
 
@@ -534,7 +523,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case DOUBLE:
                     if (t.field() != null) {
-                        writeByte(DOUBLE);
+                        writeFieldType(DOUBLE);
                         writeDouble(getDouble(obj, t.offset()));
                     }
 
@@ -542,7 +531,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case CHAR:
                     if (t.field() != null) {
-                        writeByte(CHAR);
+                        writeFieldType(CHAR);
                         writeChar(getChar(obj, t.offset()));
                     }
 
@@ -550,7 +539,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case BOOLEAN:
                     if (t.field() != null) {
-                        writeByte(BOOLEAN);
+                        writeFieldType(BOOLEAN);
                         writeBoolean(getBoolean(obj, t.offset()));
                     }
 
@@ -561,7 +550,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                         int handle = writeObject0(getObject(obj, t.offset()));
 
                         if (footer != null && handle >= 0)
-                            footer.disable();
+                            footer.putHandle(t.id(), handle);
                     }
             }
 
@@ -770,49 +759,49 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
             switch (t.get1().type()) {
                 case BYTE:
-                    writeByte(BYTE);
+                    writeFieldType(BYTE);
                     writeByte((Byte)t.get2());
 
                     break;
 
                 case SHORT:
-                    writeByte(SHORT);
+                    writeFieldType(SHORT);
                     writeShort((Short)t.get2());
 
                     break;
 
                 case INT:
-                    writeByte(INT);
+                    writeFieldType(INT);
                     writeInt((Integer)t.get2());
 
                     break;
 
                 case LONG:
-                    writeByte(LONG);
+                    writeFieldType(LONG);
                     writeLong((Long)t.get2());
 
                     break;
 
                 case FLOAT:
-                    writeByte(FLOAT);
+                    writeFieldType(FLOAT);
                     writeFloat((Float)t.get2());
 
                     break;
 
                 case DOUBLE:
-                    writeByte(DOUBLE);
+                    writeFieldType(DOUBLE);
                     writeDouble((Double)t.get2());
 
                     break;
 
                 case CHAR:
-                    writeByte(CHAR);
+                    writeFieldType(CHAR);
                     writeChar((Character)t.get2());
 
                     break;
 
                 case BOOLEAN:
-                    writeByte(BOOLEAN);
+                    writeFieldType(BOOLEAN);
                     writeBoolean((Boolean)t.get2());
 
                     break;
@@ -821,7 +810,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     int handle = writeObject0(t.get2());
 
                     if (footer != null && handle >= 0)
-                        footer.disable();
+                        footer.putHandle(t.get1().id(), handle);
             }
 
             if (footer != null) {
@@ -850,6 +839,26 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** {@inheritDoc} */
     @Override public void drain() throws IOException {
         // No-op.
+    }
+
+    /**
+     * Writes field's type to an OutputStream during field serialization.
+     *
+     * @param type Field type.
+     * @throws IOException If error.
+     */
+    protected void writeFieldType(byte type) throws IOException {
+        // No-op
+    }
+
+    /**
+     * Creates new instance of {@code Footer}.
+     *
+     * @param cls Class.
+     * @return {@code Footer} instance.
+     */
+    protected Footer createFooter(Class<?> cls) {
+        return null;
     }
 
     /**
@@ -960,79 +969,44 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     /**
      *
      */
-    private class Footer {
-        /** */
-        private ArrayList<Short> data;
-
-        /** */
-        private int headerPos;
-
+    protected interface Footer {
         /**
-         * Constructor.
+         * Sets fields.
          *
          * @param fields Fields.
          */
-        private Footer(OptimizedClassDescriptor.Fields fields) {
-            if (fields.fieldsIndexingEnabled())
-                data = new ArrayList<>();
-            else
-                data = null;
-        }
+        void fields(OptimizedClassDescriptor.Fields fields);
 
         /**
          * Sets field's header absolute position.
          *
          * @param pos Absolute position.
          */
-        private void headerPos(int pos) {
-            headerPos = pos;
-        }
+        void headerPos(int pos);
 
         /**
          * Puts type ID and its value len to the footer.
          *
-         * @param fieldId Field ID.
+         * @param fieldId   Field ID.
          * @param fieldType Field type.
-         * @param len Total number of bytes occupied by type's value.
+         * @param len       Total number of bytes occupied by type's value.
          */
-        private void put(int fieldId, OptimizedFieldType fieldType, int len) {
-            if (data == null)
-                return;
+        void put(int fieldId, OptimizedFieldType fieldType, int len);
 
-            // Considering that field's length will be no longer 2^15 (32 MB)
-            if (fieldType == OptimizedFieldType.OTHER)
-                data.add((short)len);
-        }
 
         /**
-         * Disable footer and indexing for the given Object.
+         * Puts handle ID for the given field ID.
+         *
+         * @param fieldId Field ID.
+         * @param handleId Handle ID.
          */
-        private void disable() {
-            data = null;
-        }
+        void putHandle(int fieldId, int handleId);
 
         /**
          * Writes footer content to the OutputStream.
          *
          * @throws IOException In case of error.
          */
-        private void write() throws IOException {
-            if (data == null)
-                writeInt(EMPTY_FOOTER);
-            else {
-                //12 - 4 bytes for len at the beginning, 4 bytes for len at the end, 4 bytes for object len.
-                int footerLen = data.size() * 2 + 12;
-
-                writeInt(footerLen);
-
-                for (short fieldLen : data)
-                    writeShort(fieldLen);
-
-                // object total len
-                writeInt((out.size() - headerPos) + 8);
-
-                writeInt(footerLen);
-            }
-        }
+        void write() throws IOException;
     }
 }

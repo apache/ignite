@@ -111,19 +111,6 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testFieldUnmarshalling() throws Exception {
-        TestObject2 obj = new TestObject2(5);
-
-        byte[] data = marshal(obj);
-
-        Integer i = ((OptimizedMarshaller)marsh).unmarshal("i", data, Thread.currentThread().getContextClassLoader());
-
-        assertEquals(obj.i, (int)i);
-    }
-
-    /**
      * Class for nested execution test.
      */
     private static class NestedTestObject implements Serializable {

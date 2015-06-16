@@ -101,11 +101,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * Footer contains information on fields location in the serialized form, thus enabling fast queries without a need
      * to deserialize the object.
      *
-     * @param obj Object.
+     * @param cls Class.
      * @return {@code true} if the footer is supported.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean footerSupported(Object obj) throws IgniteCheckedException;
+    public boolean footerSupported(Class<?> cls) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache object context.

@@ -104,6 +104,27 @@ public class CacheObjectImpl extends CacheObjectAdapter {
             val = ctx.processor().unmarshal(ctx, valBytes, ldr);
     }
 
+    /**
+     * Gets field value.
+     *
+     * @param fieldName Field name.
+     * @return Field value.
+     * @throws IgniteCheckedException In case of any other error.
+     */
+    @Nullable public <F> F field(String fieldName) throws IgniteCheckedException {
+        return null;
+    }
+
+    /**
+     * Checks whether field is set.
+     *
+     * @param fieldName Field name.
+     * @return {@code true} if field is set.
+     */
+    public boolean hasField(String fieldName) {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 89;
