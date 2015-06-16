@@ -18,7 +18,9 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.springframework.context.*;
 
@@ -28,7 +30,7 @@ import javax.sql.*;
 /**
  * {@link Factory} implementation for {@link CacheJdbcBlobStore}.
  *
- * Use this factory to pass {@link CacheJdbcBlobStore} to {@link org.apache.ignite.configuration.CacheConfiguration}.
+ * Use this factory to pass {@link CacheJdbcBlobStore} to {@link CacheConfiguration}.
  *
  * <h2 class="header">Spring Example</h2>
  * <pre name="code" class="xml"> *
@@ -63,7 +65,7 @@ import javax.sql.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobStore<K, V>> {
+public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobStore<K, V>> {
     /** Connection URL. */
     private String connUrl = CacheJdbcBlobStore.DFLT_CONN_URL;
 
@@ -101,7 +103,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
 
     /** {@inheritDoc} */
     @Override public CacheJdbcBlobStore<K, V> create() {
-        CacheJdbcBlobStore<K, V> store = new CacheJdbcBlobStore();
+        CacheJdbcBlobStore<K, V> store = new CacheJdbcBlobStore<>();
 
         store.setInitSchema(initSchema);
         store.setConnectionUrl(connUrl);
@@ -118,9 +120,10 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
                 throw new IgniteException("Spring application context resource is not injected.");
 
             if (!appContext.containsBean(dataSrcBean))
-                throw new IgniteException("Cannot find bean in application context. [beanName=" + dataSrcBean + "].");
+                throw new IgniteException("Failed to find bean in application context [beanName=" + dataSrcBean +
+                    ", appContext=" + appContext + ']');
 
-            DataSource data = (DataSource) appContext.getBean(dataSrcBean);
+            DataSource data = (DataSource)appContext.getBean(dataSrcBean);
 
             store.setDataSource(data);
         }
@@ -129,25 +132,31 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setInitSchema(boolean)}.
+     * Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or
+     * was explicitly created by user.
      *
      * @param initSchema Initialized schema flag.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setInitSchema(boolean)
      */
-    public void setInitSchema(boolean initSchema) {
+    public CacheJdbcBlobStoreFactory setInitSchema(boolean initSchema) {
         this.initSchema = initSchema;
+
+        return this;
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setConnectionUrl(String)}.
+     * Sets connection URL.
      *
      * @param connUrl Connection URL.
+     * @see CacheJdbcBlobStore#setConnectionUrl(String)
      */
     public void setConnectionUrl(String connUrl) {
         this.connUrl = connUrl;
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setCreateTableQuery(String)}.
+     * See {@link CacheJdbcBlobStore#setCreateTableQuery(String)}.
      *
      * @param createTblQry Create table query.
      */
@@ -156,7 +165,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setLoadQuery(String)}.
+     * See {@link CacheJdbcBlobStore#setLoadQuery(String)}.
      *
      * @param loadQry Load query
      */
@@ -165,7 +174,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setUpdateQuery(String)}.
+     * See {@link CacheJdbcBlobStore#setUpdateQuery(String)}.
      *
      * @param updateQry Update entry query.
      */
@@ -174,7 +183,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setInsertQuery(String)}.
+     * See {@link CacheJdbcBlobStore#setInsertQuery(String)}.
      *
      * @param insertQry Insert entry query.
      */
@@ -183,7 +192,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setDeleteQuery(String)}.
+     * See {@link CacheJdbcBlobStore#setDeleteQuery(String)}.
      *
      * @param delQry Delete entry query.
      */
@@ -192,7 +201,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setUser(String)}.
+     * See {@link CacheJdbcBlobStore#setUser(String)}.
      *
      * @param user User name.
      */
@@ -201,7 +210,7 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     }
 
     /**
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setPassword(String)}.
+     * See {@link CacheJdbcBlobStore#setPassword(String)}.
      *
      * @param passwd Password.
      */
@@ -212,12 +221,17 @@ public class CacheJdbcBlobStoreFactory<K, V>  implements Factory<CacheJdbcBlobSt
     /**
      * Sets name of the data source bean.
      *
-     * See {@link org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore#setDataSource(javax.sql.DataSource)}
+     * See {@link CacheJdbcBlobStore#setDataSource(DataSource)}
      * for more information.
      *
      * @param dataSrcBean Data source bean name.
      */
     public void setDataSourceBean(String dataSrcBean) {
         this.dataSrcBean = dataSrcBean;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheJdbcBlobStoreFactory.class, this);
     }
 }
