@@ -1686,7 +1686,9 @@ public class GridCacheUtils {
      * @param factory Factory.
      * @return Object.
      */
-    public static <T> T create(GridKernalContext ctx, Factory<T> factory) {
+    @Nullable public static <T> T create(GridKernalContext ctx, @Nullable Factory<T> factory) {
+        assert ctx != null;
+
         T obj = factory != null ? factory.create() : null;
 
         ctx.resource().autowireSpringBean(obj);
@@ -1699,7 +1701,12 @@ public class GridCacheUtils {
      * @param factories Factories.
      * @return Objects.
      */
-    public static <T> Collection<T> create(GridKernalContext ctx, Factory[] factories) {
+    @Nullable public static <T> Collection<T> create(GridKernalContext ctx, @Nullable Factory[] factories) {
+        assert ctx != null;
+
+        if (factories == null)
+            return null;
+
         Collection<T> col = new ArrayList<>(factories.length);
 
         for (Factory<T> factory : factories) {
