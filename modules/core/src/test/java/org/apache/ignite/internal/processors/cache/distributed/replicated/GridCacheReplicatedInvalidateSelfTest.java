@@ -21,9 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.clock.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -111,6 +109,8 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-601");
+
         for (int i = 0; i < GRID_CNT; i++)
             ioSpi(i).clearCounts();
     }

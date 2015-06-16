@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -543,9 +544,25 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
+     * @param obj Timeout object.
+     * @see IgniteSpiContext#addTimeoutObject(IgniteSpiTimeoutObject)
+     */
+    protected void addTimeoutObject(IgniteSpiTimeoutObject obj) {
+        spiCtx.addTimeoutObject(obj);
+    }
+
+    /**
+     * @param obj Timeout object.
+     * @see IgniteSpiContext#removeTimeoutObject(IgniteSpiTimeoutObject)
+     */
+    protected void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
+        spiCtx.removeTimeoutObject(obj);
+    }
+
+    /**
      * Temporarily SPI context.
      */
-    private static class GridDummySpiContext implements IgniteSpiContext {
+    private class GridDummySpiContext implements IgniteSpiContext {
         /** */
         private final ClusterNode locNode;
 
@@ -568,8 +585,32 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         GridDummySpiContext(ClusterNode locNode, boolean stopping, @Nullable IgniteSpiContext spiCtx) {
             this.locNode = locNode;
             this.stopping = stopping;
-            this.msgFactory = spiCtx != null ? spiCtx.messageFactory() : null;
-            this.msgFormatter = spiCtx != null ? spiCtx.messageFormatter() : null;
+
+            MessageFactory msgFactory0 = spiCtx != null ? spiCtx.messageFactory() : null;
+            MessageFormatter msgFormatter0 = spiCtx != null ? spiCtx.messageFormatter() : null;
+
+            if (msgFactory0 == null) {
+                msgFactory0 = new MessageFactory() {
+                    @Nullable @Override public Message create(byte type) {
+                        throw new IgniteException("Failed to read message, node is not started.");
+                    }
+                };
+            }
+
+            if (msgFormatter0 == null) {
+                msgFormatter0 = new MessageFormatter() {
+                    @Override public MessageWriter writer() {
+                        throw new IgniteException("Failed to write message, node is not started.");
+                    }
+
+                    @Override public MessageReader reader(MessageFactory factory) {
+                        throw new IgniteException("Failed to read message, node is not started.");
+                    }
+                };
+            }
+
+            this.msgFactory = msgFactory0;
+            this.msgFormatter = msgFormatter0;
         }
 
         /** {@inheritDoc} */
@@ -715,6 +756,20 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Override public boolean tryFailNode(UUID nodeId) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
+            assert ignite instanceof IgniteKernal : ignite;
+
+            ((IgniteKernal)ignite).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
+            assert ignite instanceof IgniteKernal : ignite;
+
+            ((IgniteKernal)ignite).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
     }
 }

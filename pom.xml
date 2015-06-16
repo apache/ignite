@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.1.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -409,16 +409,32 @@
             <id>scala</id>
 
             <activation>
-                <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
+                <property><name>!scala-2.10</name></property>
             </activation>
 
             <modules>
                 <module>modules/scalar</module>
+                <module>modules/spark</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
             </modules>
         </profile>
+
+        <profile>
+            <id>scala-2.10</id>
+
+            <activation>
+                <property><name>scala-2.10</name></property>
+            </activation>
+
+            <modules>
+                <module>modules/scalar-2.10</module>
+                <module>modules/spark-2.10</module>
+                <module>modules/visor-console-2.10</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
 
         <profile>
             <id>lgpl</id>

@@ -44,6 +44,14 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getLocalPort();
 
     /**
+     * Gets local port for shared memory communication.
+     *
+     * @return Port number.
+     */
+    @MXBeanDescription("Shared memory endpoint port number.")
+    public int getSharedMemoryPort();
+
+    /**
      * Gets maximum number of local ports tried if all previously
      * tried ports are occupied.
      *
@@ -170,8 +178,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * Client connections to other nodes in topology use buffered output.
      * This frequency defines how often system will advice to flush
      * connection buffer.
-     * <p>
-     * If not provided, default value is {@link TcpCommunicationSpi#DFLT_CONN_BUF_FLUSH_FREQ}.
      * <p>
      * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
      *

@@ -19,12 +19,16 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.text.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -48,6 +52,16 @@ abstract class TcpDiscoveryImpl {
     /** */
     protected TcpDiscoveryNode locNode;
 
+    /** Debug mode. */
+    protected boolean debugMode;
+
+    /** Debug messages history. */
+    private int debugMsgHist = 512;
+
+    /** Received messages. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
+    protected ConcurrentLinkedDeque<String> debugLog;
+
     /**
      * @param spi Adapter.
      */
@@ -58,7 +72,44 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * This method is intended for troubleshooting purposes only.
      *
+     * @param debugMode {code True} to start SPI in debug mode.
+     */
+    public void setDebugMode(boolean debugMode) {
+        this.debugMode = debugMode;
+    }
+
+    /**
+     * This method is intended for troubleshooting purposes only.
+     *
+     * @param debugMsgHist Message history log size.
+     */
+    public void setDebugMessageHistory(int debugMsgHist) {
+        this.debugMsgHist = debugMsgHist;
+    }
+
+    /**
+     * @param msg Message.
+     */
+    protected void debugLog(String msg) {
+        assert debugMode;
+
+        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
+            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
+            "-" + locNode.internalOrder() + "] " +
+            msg;
+
+        debugLog.add(msg0);
+
+        int delta = debugLog.size() - debugMsgHist;
+
+        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
+            debugLog.poll();
+    }
+
+    /**
+     * @return Local node ID.
      */
     public UUID getLocalNodeId() {
         return spi.getLocalNodeId();
@@ -78,42 +129,47 @@ abstract class TcpDiscoveryImpl {
     public abstract void dumpDebugInfo(IgniteLogger log);
 
     /**
-     *
+     * @return SPI state string.
      */
     public abstract String getSpiState();
 
     /**
-     *
+     * @return Message worker queue current size.
      */
     public abstract int getMessageWorkerQueueSize();
 
     /**
-     *
+     * @return Coordinator ID.
      */
     public abstract UUID getCoordinator();
 
     /**
-     *
+     * @return Collection of remote nodes.
      */
     public abstract Collection<ClusterNode> getRemoteNodes();
 
     /**
      * @param nodeId Node id.
+     * @return Node with given ID or {@code null} if node is not found.
      */
     @Nullable public abstract ClusterNode getNode(UUID nodeId);
 
     /**
      * @param nodeId Node id.
+     * @return {@code true} if node alive, {@code false} otherwise.
      */
     public abstract boolean pingNode(UUID nodeId);
 
     /**
+     * Tells discovery SPI to disconnect from topology.
      *
+     * @throws IgniteSpiException If failed.
      */
     public abstract void disconnect() throws IgniteSpiException;
 
     /**
      * @param msg Message.
+     * @throws IgniteException If failed.
      */
     public abstract void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException;
 
@@ -124,16 +180,18 @@ abstract class TcpDiscoveryImpl {
 
     /**
      * @param gridName Grid name.
+     * @throws IgniteSpiException If failed.
      */
     public abstract void spiStart(@Nullable String gridName) throws IgniteSpiException;
 
     /**
-     *
+     * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;
 
     /**
      * @param spiCtx Spi context.
+     * @throws IgniteSpiException If failed.
      */
     public abstract void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException;
 
@@ -164,7 +222,57 @@ abstract class TcpDiscoveryImpl {
     public abstract void brakeConnection();
 
     /**
-     * FOR TEST PURPOSE ONLY!
+     * <strong>FOR TEST ONLY!!!</strong>
+     *
+     * @return Worker thread.
      */
     protected abstract IgniteSpiThread workerThread();
+
+    /**
+     * @throws IgniteSpiException If failed.
+     */
+    @SuppressWarnings("BusyWait")
+    protected final void registerLocalNodeAddress() throws IgniteSpiException {
+        // Make sure address registration succeeded.
+        while (true) {
+            try {
+                spi.ipFinder.initializeLocalAddresses(locNode.socketAddresses());
+
+                // Success.
+                break;
+            }
+            catch (IllegalStateException e) {
+                throw new IgniteSpiException("Failed to register local node address with IP finder: " +
+                    locNode.socketAddresses(), e);
+            }
+            catch (IgniteSpiException e) {
+                LT.error(log, e, "Failed to register local node address in IP finder on start " +
+                    "(retrying every 2000 ms).");
+            }
+
+            try {
+                U.sleep(2000);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IgniteSpiException("Thread has been interrupted.", e);
+            }
+        }
+    }
+
+    /**
+     * @param ackTimeout Acknowledgement timeout.
+     * @return {@code True} if acknowledgement timeout is less or equal to
+     * maximum acknowledgement timeout, {@code false} otherwise.
+     */
+    protected boolean checkAckTimeout(long ackTimeout) {
+        if (ackTimeout > spi.maxAckTimeout) {
+            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
+                "(consider increasing 'maxAckTimeout' configuration property) " +
+                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.maxAckTimeout + ']');
+
+            return false;
+        }
+
+        return true;
+    }
 }

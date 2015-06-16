@@ -50,9 +50,12 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
      * Sends put with optimistic lock and handles fail.
      */
     protected void failOptimistic() {
-        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+        IgniteCache<Object, Object> cache = jcache(0);
 
-            jcache(0).put(new TestKey(String.valueOf(++key)), "");
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC,
+            TransactionIsolation.REPEATABLE_READ)) {
+
+            cache.put(new TestKey(String.valueOf(++key)), "");
 
             tx.commit();
 
@@ -69,9 +72,12 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
      * Sends put with pessimistic lock and handles fail.
      */
     protected void failPessimictic() {
-        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+        IgniteCache<Object, Object> cache = jcache(0);
 
-            jcache(0).put(new TestKey(String.valueOf(++key)), "");
+        try (Transaction tx = grid(0).transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.REPEATABLE_READ)) {
+
+            cache.put(new TestKey(String.valueOf(++key)), "");
 
             assert false : "p2p marshalling failed, but error response was not sent";
         }

@@ -343,16 +343,19 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (!ctx.isDaemon() && data != null) {
             for (DiscoveryDataItem item : data.items) {
-                // Register handler only if local node passes projection predicate.
-                if (item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) {
-                    try {
+                try {
+                    if (item.prjPred != null)
+                        ctx.resource().injectGeneric(item.prjPred);
+
+                    // Register handler only if local node passes projection predicate.
+                    if (item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) {
                         if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
                     }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to register continuous handler.", e);
-                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to register continuous handler.", e);
                 }
             }
 
@@ -709,6 +712,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (err == null) {
             try {
                 IgnitePredicate<ClusterNode> prjPred = data.projectionPredicate();
+
+                ctx.resource().injectGeneric(prjPred);
 
                 if (prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) {
                     registered = registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),

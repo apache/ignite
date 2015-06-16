@@ -29,6 +29,9 @@ import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
  * Kernal self test suite.
@@ -39,6 +42,15 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
 
         suite.addTestSuite(GridSameVmStartupSelfTest.class);
@@ -63,9 +75,9 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridDiscoveryEventSelfTest.class);
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
-        suite.addTestSuite(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridStartupWithSpecifiedWorkDirectorySelfTest.class, ignoredTests);
         suite.addTestSuite(GridStartupWithUndefinedIgniteHomeSelfTest.class);
-        suite.addTestSuite(GridVersionSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridVersionSelfTest.class, ignoredTests);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);

@@ -3,8 +3,14 @@ Ignite Fabric Maven Build Instructions
 Without LGPL dependencies (default):
   mvn clean package -DskipTests
 
+Without LGPL dependencies and Scala 2.10:
+  mvn clean package -DskipTests -Dscala-2.10
+
 With LGPL dependencies:
   mvn clean package -DskipTests -Prelease,lgpl
+
+With LGPL dependencies and Scala 2.10:
+  mvn clean package -DskipTests -Prelease,lgpl -Dscala-2.10
 
 Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
 
@@ -24,11 +30,13 @@ NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
 Ignite Release Instructions
 ===========================
-Use people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
-Execute these commands at source root:
+Use your people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
+Download https://dist.apache.org/repos/dist/release/incubator/ignite/KEYS and append you key using commands:
 
 gpg --list-sigs <keyname> >> KEYS
 gpg --armor --export <keyname> >> KEYS
+
+Upload modified KEYS file.
 
 Specify gpg profile at settings.xml. It will be used to sign sources and artifacts.
 
@@ -43,24 +51,38 @@ Specify gpg profile at settings.xml. It will be used to sign sources and artifac
 Ensure you have RELEASE (not SNAPSHOT) version at Ignite poms.
 Maven release plugin release:prepare goal can be used to make release tag.
 
-Deploy Ignite release candidate to maven repository and dev-svn:
+Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
-   mvn deploy -P apache-release,gpg,release,scala,lgpl,deploy-ignite-site -Dignite.edition=fabric -DskipTests -B
+   Following command deploys Ignite to maven repository, prepares sources and fabric edition binaries.
+      mvn deploy -P apache-release,gpg,release,scala,lgpl,deploy-ignite-site -Dignite.edition=fabric -DskipTests -B
 
-   Binary artifact name can be changed by setting additional property -Dignite.zip.pattern.
-   Sources package name is fixed. Sources package zip will be created automatically when apache-release profile used.
+   In case you want to release both fabric and hadoop editions you have to build hadoop edition first using command
+      mvn package -P apache-release,gpg,release,scala,lgpl -Dignite.edition=hadoop -DskipTests -B
+   save /target/bin/*.zip, make "mvn clean" and restore saved files before deploying fabric.
 
-   In case you want to release both fabric and hadoop editions you have to build hadoop first, save /target/bin/*.zip,
-   make "mvn clean" and restore them before deploy step.
+   Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
+   created inside /target/bin folder when release profile is used.
 
-   Nexus staging (repository.apache.org) should be closed when mvn deploy finished.
-   Checkout https://dist.apache.org/repos/dist/dev/incubator/ignite svn. Create new folder with name equals to released
-   version at svn root. Copy target/site folder content to svn/ignite/<version> folder and commit.
+   Sources artifact name is fixed. Sources artifact will be created inside /target dir when apache-release profile is used.
 
-Start vote based on https://dist.apache.org/repos/dist/dev/incubator/ignite/<version>.
+   Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
+   release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.
 
-Release nexus staging and copy binaries and sources from https://dist.apache.org/repos/dist/dev/incubator/ignite/<version>
+   Checkout https://dist.apache.org/repos/dist/dev/incubator/ignite svn. Create release candidate folder with name
+   equals to release version with "-rc*" ending, for example "1.0.0-rc7", at svn root.
+   Copy /target/site folder content to svn/ignite/<rc-version> folder and commit with appropriate comment.
+
+   Make appropriate git tag for release candidate, for example "ignite-1.0.0-incubating-rc7".
+
+Start vote based on https://dist.apache.org/repos/dist/dev/incubator/ignite/<rc-version>.
+
+Release nexus staging, move binaries and sources from https://dist.apache.org/repos/dist/dev/incubator/ignite/<rc-version>
 to https://dist.apache.org/repos/dist/release/incubator/ignite/<version> when version accepted.
+Use svn mv ^/dev/incubator/ignite/<rc-version> ^/release/incubator/ignite/<version> command for proper moving.
+
+Make appropriate git tag for released version, for example "ignite-1.0.0-incubating".
+
+Send an email to dev@ignite.incubator.apache.org contains release svn url.
 
 
 JCache TCK compliance
@@ -69,6 +91,21 @@ To test compliance with JCache TCK use:
 
 mvn test -P-release,jcache-tck -pl :ignite-core -am
 
+Ignite Mesos Maven Build Instructions
+============================================
+cd to ./modules/mesos
+
+mvn clean package
+
+Look for ignite-mesos-<version>-jar-with-dependencies.jar in ./target directory.
+
+Run tests
+==========
+To run tests locally use:
+
+mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
+
+For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
 
 Apache RAT Instructions
 =======================

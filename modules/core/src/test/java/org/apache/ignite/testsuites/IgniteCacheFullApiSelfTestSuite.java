@@ -130,16 +130,10 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOffHeapTieredMultiNodeFullApiSelfTest.class);
 
-        // Private cache API.
-        suite.addTestSuite(GridCacheExLocalFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheExReplicatedFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheExNearFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheExColocatedFullApiSelfTest.class);
-
-//        Multithreaded // TODO: GG-708
-//        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
-//        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
+        // Multithreaded
+        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
 
         return suite;
     }

@@ -112,7 +112,7 @@ public class IpcSharedMemoryClientEndpoint implements IpcEndpoint {
         boolean clear = true;
 
         try {
-            IpcSharedMemoryNativeLoader.load();
+            IpcSharedMemoryNativeLoader.load(log);
 
             sock.connect(new InetSocketAddress("127.0.0.1", port), timeout);
 

@@ -6,7 +6,7 @@ Apache Ignite Mesos module provides integration Apache Ignite with Apache Mesos.
 Importing Apache Ignite Mesos Module In Maven Project
 -------------------------------------
 
-If you are using Maven to manage dependencies of your project, you can add Cloud module
+If you are using Maven to manage dependencies of your project, you can add Mesos module
 dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 

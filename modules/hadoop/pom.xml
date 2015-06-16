@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-hadoop</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.1.2-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -96,6 +96,7 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-shmem</artifactId>
+            <scope>test</scope>
             <version>1.0.0</version>
         </dependency>
 

@@ -84,7 +84,6 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         cfg.setDiscoverySpi(disco);
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -104,7 +103,16 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setBackups(1);
-        cacheCfg.setEvictionPolicy(evictsEnabled() ? new LruEvictionPolicy(100) : null);
+
+        LruEvictionPolicy plc = null;
+
+        if (evictsEnabled()) {
+            plc = new LruEvictionPolicy();
+            plc.setMaxSize(100);
+        }
+
+        cacheCfg.setEvictionPolicy(plc);
+
         cacheCfg.setSqlOnheapRowCacheSize(128);
         cacheCfg.setIndexedTypes(
             Integer.class, Integer.class,
