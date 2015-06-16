@@ -192,6 +192,23 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> T loadBeanFromAppContext(Object appContext, String beanName) throws IgniteCheckedException {
+        ApplicationContext springCtx = (ApplicationContext)appContext;
+
+        try {
+            return (T)springCtx.getBean(beanName);
+        }
+        catch (NoSuchBeanDefinitionException e) {
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
+                    ", beanName=" + beanName + ']');
+        }
+        catch (BeansException e) {
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
+                    ", beanName=" + beanName + ']', e);
+        }
+    }
+
     /**
      * @param stream Input stream containing Spring XML configuration.
      * @return Context.

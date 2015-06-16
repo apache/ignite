@@ -134,12 +134,12 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
 
-        suite.addTestSuite(CacheReadOnlyTransactionalClientSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheManyClientsTest.class);
+        suite.addTestSuite(CacheClientStoreSelfTest.class);
 
         suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
         suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheManyClientsTest.class);
 
         return suite;
     }

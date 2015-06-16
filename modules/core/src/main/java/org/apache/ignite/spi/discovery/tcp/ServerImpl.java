@@ -41,7 +41,6 @@ import org.jsr166.*;
 
 import java.io.*;
 import java.net.*;
-import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -125,39 +124,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final ConcurrentMap<InetSocketAddress, IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
 
-    /** Debug mode. */
-    private boolean debugMode;
-
-    /** Debug messages history. */
-    private int debugMsgHist = 512;
-
-    /** Received messages. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private ConcurrentLinkedDeque<String> debugLog;
-
     /**
      * @param adapter Adapter.
      */
     ServerImpl(TcpDiscoverySpi adapter) {
         super(adapter);
-    }
-
-    /**
-     * This method is intended for troubleshooting purposes only.
-     *
-     * @param debugMode {code True} to start SPI in debug mode.
-     */
-    public void setDebugMode(boolean debugMode) {
-        this.debugMode = debugMode;
-    }
-
-    /**
-     * This method is intended for troubleshooting purposes only.
-     *
-     * @param debugMsgHist Message history log size.
-     */
-    public void setDebugMessageHistory(int debugMsgHist) {
-        this.debugMsgHist = debugMsgHist;
     }
 
     /** {@inheritDoc} */
@@ -1060,23 +1031,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * @param ackTimeout Acknowledgement timeout.
-     * @return {@code True} if acknowledgement timeout is less or equal to
-     * maximum acknowledgement timeout, {@code false} otherwise.
-     */
-    private boolean checkAckTimeout(long ackTimeout) {
-        if (ackTimeout > spi.maxAckTimeout) {
-            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
-                "(consider increasing 'maxAckTimeout' configuration property) " +
-                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.maxAckTimeout + ']');
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Notify external listener on discovery event.
      *
      * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
@@ -1237,7 +1191,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (node.id().equals(destNodeId)) {
                 Collection<TcpDiscoveryNode> allNodes = ring.allNodes();
-                Collection<TcpDiscoveryNode> topToSend = new ArrayList<>(allNodes.size());
+                Collection<TcpDiscoveryNode> topToSnd = new ArrayList<>(allNodes.size());
 
                 for (TcpDiscoveryNode n0 : allNodes) {
                     assert n0.internalOrder() != 0 : n0;
@@ -1247,10 +1201,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // There will be separate messages for nodes with greater
                     // internal order.
                     if (n0.internalOrder() < nodeAddedMsg.node().internalOrder())
-                        topToSend.add(n0);
+                        topToSnd.add(n0);
                 }
 
-                nodeAddedMsg.topology(topToSend);
+                nodeAddedMsg.topology(topToSnd);
                 nodeAddedMsg.messages(msgs, discardMsgId);
 
                 Map<Long, Collection<ClusterNode>> hist;
@@ -1418,25 +1372,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             U.quietAndInfo(log, b.toString());
         }
-    }
-
-    /**
-     * @param msg Message.
-     */
-    private void debugLog(String msg) {
-        assert debugMode;
-
-        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
-            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
-            "-" + locNode.internalOrder() + "] " +
-            msg;
-
-        debugLog.add(msg0);
-
-        int delta = debugLog.size() - debugMsgHist;
-
-        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
-            debugLog.poll();
     }
 
     /**
@@ -1710,6 +1645,108 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * Discovery messages history used for client reconnect.
+     */
+    private class EnsuredMessageHistory {
+        /** */
+        private static final int MAX = 1024;
+
+        /** Pending messages. */
+        private final ArrayDeque<TcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
+
+        /**
+         * @param msg Adds message.
+         */
+        void add(TcpDiscoveryAbstractMessage msg) {
+            assert spi.ensured(msg) : msg;
+
+            msgs.addLast(msg);
+
+            while (msgs.size() > MAX)
+                msgs.pollFirst();
+        }
+
+        /**
+         * Gets messages starting from provided ID (exclusive). If such
+         * message is not found, {@code null} is returned (this indicates
+         * a failure condition when it was already removed from queue).
+         *
+         * @param lastMsgId Last message ID received on client. {@code Null} if client did not finish connect procedure.
+         * @param node Client node.
+         * @return Collection of messages.
+         */
+        @Nullable Collection<TcpDiscoveryAbstractMessage> messages(@Nullable IgniteUuid lastMsgId,
+            TcpDiscoveryNode node)
+        {
+            assert node != null && node.isClient() : node;
+
+            if (lastMsgId == null) {
+                // Client connection failed before it received TcpDiscoveryNodeAddedMessage.
+                List<TcpDiscoveryAbstractMessage> res = null;
+
+                for (TcpDiscoveryAbstractMessage msg : msgs) {
+                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                        if (node.id().equals(((TcpDiscoveryNodeAddedMessage) msg).node().id()))
+                            res = new ArrayList<>(msgs.size());
+                    }
+
+                    if (res != null)
+                        res.add(prepare(msg, node.id()));
+                }
+
+                if (log.isDebugEnabled()) {
+                    if (res == null)
+                        log.debug("Failed to find node added message [node=" + node + ']');
+                    else
+                        log.debug("Found add added message [node=" + node + ", hist=" + res + ']');
+                }
+
+                return res;
+            }
+            else {
+                if (msgs.isEmpty())
+                    return Collections.emptyList();
+
+                Collection<TcpDiscoveryAbstractMessage> cp = new ArrayList<>(msgs.size());
+
+                boolean skip = true;
+
+                for (TcpDiscoveryAbstractMessage msg : msgs) {
+                    if (skip) {
+                        if (msg.id().equals(lastMsgId))
+                            skip = false;
+                    }
+                    else
+                        cp.add(prepare(msg, node.id()));
+                }
+
+                cp = !skip ? cp : null;
+
+                if (log.isDebugEnabled()) {
+                    if (cp == null)
+                        log.debug("Failed to find messages history [node=" + node + ", lastMsgId" + lastMsgId + ']');
+                    else
+                        log.debug("Found messages history [node=" + node + ", hist=" + cp + ']');
+                }
+
+                return cp;
+            }
+        }
+
+        /**
+         * @param msg Message.
+         * @param destNodeId Client node ID.
+         * @return Prepared message.
+         */
+        private TcpDiscoveryAbstractMessage prepare(TcpDiscoveryAbstractMessage msg, UUID destNodeId) {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                prepareNodeAddedMessage(msg, destNodeId, null, null);
+
+            return msg;
+        }
+    }
+
+    /**
      * Pending messages container.
      */
     private static class PendingMessages {
@@ -1742,33 +1779,27 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Gets messages starting from provided ID (exclusive). If such
-         * message is not found, {@code null} is returned (this indicates
-         * a failure condition when it was already removed from queue).
+         * Resets pending messages.
          *
-         * @param lastMsgId Last message ID.
-         * @return Collection of messages.
+         * @param msgs Message.
+         * @param discardId Discarded message ID.
          */
-        @Nullable Collection<TcpDiscoveryAbstractMessage> messages(IgniteUuid lastMsgId) {
-            assert lastMsgId != null;
+        void reset(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardId) {
+            this.msgs.clear();
 
-            if (msgs.isEmpty())
-                return Collections.emptyList();
+            if (msgs != null)
+                this.msgs.addAll(msgs);
 
-            Collection<TcpDiscoveryAbstractMessage> cp = new ArrayList<>(msgs.size());
+            this.discardId = discardId;
+        }
 
-            boolean skip = true;
+        /**
+         * Clears pending messages.
+         */
+        void clear() {
+            msgs.clear();
 
-            for (TcpDiscoveryAbstractMessage msg : msgs) {
-                if (skip) {
-                    if (msg.id().equals(lastMsgId))
-                        skip = false;
-                }
-                else
-                    cp.add(msg);
-            }
-
-            return !skip ? cp : null;
+            discardId = null;
         }
 
         /**
@@ -1791,6 +1822,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** Pending messages. */
         private final PendingMessages pendingMsgs = new PendingMessages();
+
+        /** Messages history used for client reconnect. */
+        private final EnsuredMessageHistory msgHist = new EnsuredMessageHistory();
 
         /** Last message that updated topology. */
         private TcpDiscoveryAbstractMessage lastMsg;
@@ -1857,6 +1891,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
+
+            if (spi.ensured(msg))
+                msgHist.add(msg);
 
             spi.stats.onMessageProcessingFinished(msg);
         }
@@ -2683,11 +2720,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                 node.aliveCheck(spi.maxMissedClientHbs);
 
                 if (isLocalNodeCoordinator()) {
-                    Collection<TcpDiscoveryAbstractMessage> pending = pendingMsgs.messages(msg.lastMessageId());
+                    Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
                     if (pending != null) {
                         msg.pendingMessages(pending);
                         msg.success(true);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Accept client reconnect, restored pending messages " +
+                                "[locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
                     }
                     else {
                         if (log.isDebugEnabled())

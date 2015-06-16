@@ -19,6 +19,7 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -65,27 +66,8 @@ import java.util.concurrent.atomic.*;
  *     <li>Insert entry query (see {@link #setInsertQuery(String)})</li>
  *     <li>Delete entry query (see {@link #setDeleteQuery(String)})</li>
  * </ul>
- * <h2 class="header">Java Example</h2>
- * <pre name="code" class="java">
- *     ...
- *     GridCacheJdbcBlobStore&lt;String, String&gt; store = new GridCacheJdbcBlobStore&lt;String, String&gt;();
- *     ...
- * </pre>
- * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml">
- *     ...
- *     &lt;bean id=&quot;cache.jdbc.store&quot;
- *         class=&quot;org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore&quot;&gt;
- *         &lt;property name=&quot;connectionUrl&quot; value=&quot;jdbc:h2:mem:&quot;/&gt;
- *         &lt;property name=&quot;createTableQuery&quot;
- *             value=&quot;create table if not exists ENTRIES (key other, val other)&quot;/&gt;
- *     &lt;/bean&gt;
- *     ...
- * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
- * <br>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * Use {@link CacheJdbcBlobStoreFactory} factory to pass {@link CacheJdbcBlobStore} to {@link CacheConfiguration}.
  */
 public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */

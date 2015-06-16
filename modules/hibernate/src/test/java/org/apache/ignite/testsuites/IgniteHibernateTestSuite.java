@@ -43,6 +43,8 @@ public class IgniteHibernateTestSuite extends TestSuite {
 
         suite.addTestSuite(CacheHibernateStoreSessionListenerSelfTest.class);
 
+        suite.addTestSuite(CacheHibernateStoreFactorySelfTest.class);
+
         return suite;
     }
 }
