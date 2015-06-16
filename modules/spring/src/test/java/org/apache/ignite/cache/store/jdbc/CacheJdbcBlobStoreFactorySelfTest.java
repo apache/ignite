@@ -78,7 +78,7 @@ public class CacheJdbcBlobStoreFactorySelfTest extends GridCommonAbstractTest {
                 }
                 return null;
             }
-        }, IgniteException.class, "Cannot find bean in application context.");
+        }, IgniteException.class, "Failed to load bean in application context");
     }
 
     /**

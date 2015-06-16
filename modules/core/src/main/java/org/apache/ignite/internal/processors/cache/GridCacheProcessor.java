@@ -1888,6 +1888,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.failIfExists(failIfExists);
 
         if (ccfg != null) {
+            try {
+                checkSerializable(ccfg);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(e);
+            }
+
             if (desc != null && !desc.cancelled()) {
                 if (failIfExists)
                     return new GridFinishedFuture<>(new CacheExistsException("Failed to start cache " +
@@ -2961,6 +2968,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void checkSerializable(CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)
             return;
+
+        if (val.getCacheStoreFactory() != null) {
+            try {
+                marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                    val.getCacheStoreFactory().getClass().getClassLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Failed to validate cache configuration. " +
+                    "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
+            }
+        }
 
         try {
             marshaller.unmarshal(marshaller.marshal(val), val.getClass().getClassLoader());

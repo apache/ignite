@@ -22,8 +22,6 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/>
-
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="cacheConfiguration">
             <list>
@@ -32,8 +30,7 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="backups" value="1"/>
                     <property name="cacheStoreFactory">
-                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory">
-                            <property name="user" value = "GridGain" />
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
                             <property name="dataSourceBean" value = "simpleDataSource"/>
                         </bean>
                     </property>

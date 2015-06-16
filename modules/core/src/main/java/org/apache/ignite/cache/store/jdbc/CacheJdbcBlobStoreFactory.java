@@ -19,10 +19,11 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
-import org.springframework.context.*;
 
 import javax.cache.configuration.*;
 import javax.sql.*;
@@ -33,15 +34,8 @@ import javax.sql.*;
  * Use this factory to pass {@link CacheJdbcBlobStore} to {@link CacheConfiguration}.
  *
  * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml"> *
+ * <pre name="code" class="xml">
  *     &lt;bean id= "simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
- *
- *     &lt;bean id=&quot;cache.jdbc.store&quot;
- *         class=&quot;org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore&quot;&gt;
- *         &lt;property name=&quot;connectionUrl&quot; value=&quot;jdbc:h2:mem:&quot;/&gt;
- *         &lt;property name=&quot;createTableQuery&quot;
- *             value=&quot;create table if not exists ENTRIES (key other, val other)&quot;/&gt;
- *     &lt;/bean&gt;
  *
  *     &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *          ...
@@ -97,9 +91,12 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
     /** Name of data source bean. */
     private String dataSrcBean;
 
+    /** Data source. */
+    private DataSource dataSrc;
+
     /** Application context. */
     @SpringApplicationContextResource
-    private ApplicationContext appContext;
+    private Object appContext;
 
     /** {@inheritDoc} */
     @Override public CacheJdbcBlobStore<K, V> create() {
@@ -115,17 +112,25 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
         store.setUser(user);
         store.setPassword(passwd);
 
-        if (dataSrcBean != null) {
+        if (dataSrc != null)
+            store.setDataSource(dataSrc);
+        else if (dataSrcBean != null) {
             if (appContext == null)
                 throw new IgniteException("Spring application context resource is not injected.");
 
-            if (!appContext.containsBean(dataSrcBean))
-                throw new IgniteException("Failed to find bean in application context [beanName=" + dataSrcBean +
-                    ", appContext=" + appContext + ']');
+            IgniteSpringHelper spring;
 
-            DataSource data = (DataSource)appContext.getBean(dataSrcBean);
+            try {
+                spring = IgniteComponentType.SPRING.create(false);
 
-            store.setDataSource(data);
+                DataSource data = spring.loadBeanFromAppContext(appContext, dataSrcBean);
+
+                store.setDataSource(data);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
+                    ", igniteConfig=" + appContext + ']');
+            }
         }
 
         return store;
@@ -139,7 +144,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
      * @return {@code This} for chaining.
      * @see CacheJdbcBlobStore#setInitSchema(boolean)
      */
-    public CacheJdbcBlobStoreFactory setInitSchema(boolean initSchema) {
+    public CacheJdbcBlobStoreFactory<K, V> setInitSchema(boolean initSchema) {
         this.initSchema = initSchema;
 
         return this;
@@ -149,85 +154,130 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
      * Sets connection URL.
      *
      * @param connUrl Connection URL.
+     * @return {@code This} for chaining.
      * @see CacheJdbcBlobStore#setConnectionUrl(String)
      */
-    public void setConnectionUrl(String connUrl) {
+    public CacheJdbcBlobStoreFactory<K, V> setConnectionUrl(String connUrl) {
         this.connUrl = connUrl;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setCreateTableQuery(String)}.
+     * Sets create table query.
      *
      * @param createTblQry Create table query.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setCreateTableQuery(String)
      */
-    public void setCreateTableQuery(String createTblQry) {
+    public CacheJdbcBlobStoreFactory<K, V> setCreateTableQuery(String createTblQry) {
         this.createTblQry = createTblQry;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setLoadQuery(String)}.
+     * Sets load query.
      *
      * @param loadQry Load query
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setLoadQuery(String)
      */
-    public void setLoadQuery(String loadQry) {
+    public CacheJdbcBlobStoreFactory<K, V> setLoadQuery(String loadQry) {
         this.loadQry = loadQry;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setUpdateQuery(String)}.
+     * Sets update entry query.
      *
      * @param updateQry Update entry query.
+     * @return {@code This} for chaining.
+     * @see  CacheJdbcBlobStore#setUpdateQuery(String)
      */
-    public void setUpdateQuery(String updateQry) {
+    public CacheJdbcBlobStoreFactory<K, V> setUpdateQuery(String updateQry) {
         this.updateQry = updateQry;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setInsertQuery(String)}.
+     * Sets insert entry query.
      *
      * @param insertQry Insert entry query.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setInsertQuery(String)
      */
-    public void setInsertQuery(String insertQry) {
+    public CacheJdbcBlobStoreFactory<K, V> setInsertQuery(String insertQry) {
         this.insertQry = insertQry;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setDeleteQuery(String)}.
+     * Sets delete entry query.
      *
      * @param delQry Delete entry query.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setDeleteQuery(String)
      */
-    public void setDeleteQuery(String delQry) {
+    public CacheJdbcBlobStoreFactory<K, V> setDeleteQuery(String delQry) {
         this.delQry = delQry;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setUser(String)}.
+     * Sets user name for database access.
      *
      * @param user User name.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setUser(String)
      */
-    public void setUser(String user) {
+    public CacheJdbcBlobStoreFactory<K, V> setUser(String user) {
         this.user = user;
+
+        return this;
     }
 
     /**
-     * See {@link CacheJdbcBlobStore#setPassword(String)}.
+     * Sets password for database access.
      *
      * @param passwd Password.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setPassword(String)
      */
-    public void setPassword(String passwd) {
+    public CacheJdbcBlobStoreFactory<K, V> setPassword(String passwd) {
         this.passwd = passwd;
+
+        return this;
     }
 
     /**
      * Sets name of the data source bean.
      *
-     * See {@link CacheJdbcBlobStore#setDataSource(DataSource)}
-     * for more information.
-     *
      * @param dataSrcBean Data source bean name.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setDataSource(DataSource)
      */
-    public void setDataSourceBean(String dataSrcBean) {
+    public CacheJdbcBlobStoreFactory<K, V> setDataSourceBean(String dataSrcBean) {
         this.dataSrcBean = dataSrcBean;
+
+        return this;
+    }
+
+    /**
+     * Sets data source. Data source should be fully configured and ready-to-use.
+     *
+     * @param dataSrc Data source.
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setDataSource(DataSource)
+     */
+    public CacheJdbcBlobStoreFactory<K, V> setDataSource(DataSource dataSrc) {
+        this.dataSrc = dataSrc;
+
+        return this;
     }
 
     /** {@inheritDoc} */
