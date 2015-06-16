@@ -545,14 +545,31 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param msg Discovery message.
      * @return Latest topology snapshot.
      */
-    private NavigableSet<ClusterNode> updateTopologyHistory(long topVer, @Nullable TcpDiscoveryAbstractMessage msg) {
+    private Collection<ClusterNode> updateTopologyHistory(long topVer, @Nullable TcpDiscoveryAbstractMessage msg) {
         this.topVer = topVer;
+
+        if (!topHist.isEmpty() && topVer <= topHist.lastKey()) {
+            if (log.isDebugEnabled())
+                log.debug("Skip topology update since topology already updated [msg=" + msg +
+                    ", lastHistKey=" + topHist.lastKey() +
+                    ", topVer=" + topVer +
+                    ", locNode=" + locNode + ']');
+
+            Collection<ClusterNode> top = topHist.get(topVer);
+
+            assert top != null : msg;
+
+            return top;
+        }
 
         NavigableSet<ClusterNode> allNodes = allVisibleNodes();
 
         if (!topHist.containsKey(topVer)) {
             assert topHist.isEmpty() || topHist.lastKey() == topVer - 1 :
-                "lastVer=" + topHist.lastKey() + ", newVer=" + topVer + ", locNode=" + locNode + ", msg=" + msg;
+                "lastVer=" + (topHist.isEmpty() ? null : topHist.lastKey()) +
+                ", newVer=" + topVer +
+                ", locNode=" + locNode +
+                ", msg=" + msg;
 
             topHist.put(topVer, allNodes);
 
@@ -886,7 +903,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param join {@code True} if reconnects during join.
          */
         protected Reconnector(boolean join) {
-            super(spi.ignite().name(), "tcp-client-disco-msg-worker", log);
+            super(spi.ignite().name(), "tcp-client-disco-reconnector", log);
 
             this.join = join;
         }
@@ -944,7 +961,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         sock.setKeepAlive(true);
                         sock.setTcpNoDelay(true);
 
-                        // Wait for
+                        List<TcpDiscoveryAbstractMessage> msgs = null;
+
                         while (!isInterrupted()) {
                             TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
 
@@ -955,11 +973,22 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     if (res.success()) {
                                         msgWorker.addMessage(res);
 
+                                        if (msgs != null) {
+                                            for (TcpDiscoveryAbstractMessage msg0 : msgs)
+                                                msgWorker.addMessage(msg0);
+                                        }
+
                                         success = true;
                                     }
 
                                     return;
                                 }
+                            }
+                            else if (spi.ensured(msg)) {
+                                if (msgs == null)
+                                    msgs = new ArrayList<>();
+
+                                msgs.add(msg);
                             }
                         }
                     }
@@ -1286,23 +1315,32 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                if (!topHist.isEmpty() && msg.topologyVersion() <= topHist.lastKey()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node add finished message since topology already updated " +
-                            "[msg=" + msg + ", lastHistKey=" + topHist.lastKey() + ", node=" + node + ']');
-
-                    return;
-                }
+                boolean evt = false;
 
                 long topVer = msg.topologyVersion();
 
-                node.order(topVer);
-                node.visible(true);
+                assert topVer > 0 : msg;
 
-                if (spi.locNodeVer.equals(node.version()))
-                    node.version(spi.locNodeVer);
+                if (!node.visible()) {
+                    node.order(topVer);
+                    node.visible(true);
 
-                NavigableSet<ClusterNode> top = updateTopologyHistory(topVer, msg);
+                    if (spi.locNodeVer.equals(node.version()))
+                        node.version(spi.locNodeVer);
+
+                    evt = true;
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("Skip node join event, node already joined [msg=" + msg + ", node=" + node + ']');
+
+                    assert node.order() == topVer : node;
+                }
+
+                Collection<ClusterNode> top = updateTopologyHistory(topVer, msg);
+
+                assert top != null && top.contains(node) : "Topology does not contain node [msg=" + msg +
+                    ", node=" + node + ", top=" + top + ']';
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1311,9 +1349,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
+                if (evt) {
+                    notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
 
-                spi.stats.onNodeJoined();
+                    spi.stats.onNodeJoined();
+                }
             }
         }
 
@@ -1340,7 +1380,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
+                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1383,7 +1423,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                NavigableSet<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
+                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
 
                 if (!pending && joinLatch.getCount() > 0) {
                     if (log.isDebugEnabled())
@@ -1555,7 +1595,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param node Node.
          * @param top Topology snapshot.
          */
-        private void notifyDiscovery(int type, long topVer, ClusterNode node, NavigableSet<ClusterNode> top) {
+        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top) {
             notifyDiscovery(type, topVer, node, top, null);
         }
 
@@ -1564,8 +1604,9 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param topVer Topology version.
          * @param node Node.
          * @param top Topology snapshot.
+         * @param data Optional custom message data.
          */
-        private void notifyDiscovery(int type, long topVer, ClusterNode node, NavigableSet<ClusterNode> top,
+        private void notifyDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> top,
             @Nullable DiscoverySpiCustomMessage data) {
             DiscoverySpiListener lsnr = spi.lsnr;
 
@@ -1589,7 +1630,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         *
+         * @return Queue size.
          */
         public int queueSize() {
             return queue.size();
