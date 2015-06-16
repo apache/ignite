@@ -28,7 +28,8 @@ public interface InteropBootstrap {
      *
      * @param cfg Configuration.
      * @param envPtr Environment pointer.
+     * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite node.
      */
-    public InteropProcessor start(IgniteConfiguration cfg, long envPtr);
+    public InteropProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
 }
