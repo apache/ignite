@@ -23,7 +23,7 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 
-    <bean id="simpleDataSource1" class="sun.jdbc.odbc.ee.ConnectionPoolDataSource"/>
+    <bean id="simpleDataSource1" class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest$DummyDataSource"/>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="gridName" value="ignite1"/>

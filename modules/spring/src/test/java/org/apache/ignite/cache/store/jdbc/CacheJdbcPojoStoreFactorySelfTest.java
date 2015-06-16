@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.h2.jdbcx.*;
-import sun.jdbc.odbc.ee.*;
 
 import javax.cache.*;
 import java.io.*;
@@ -47,7 +46,7 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
                     try (IgniteCache<Integer, String> cache1 = ignite1.getOrCreateCache(cacheConfiguration())) {
                         checkStore(cache, JdbcDataSource.class);
 
-                        checkStore(cache1, ConnectionPoolDataSource.class);
+                        checkStore(cache1, CacheJdbcBlobStoreFactorySelfTest.DummyDataSource.class);
                     }
                 }
             }
