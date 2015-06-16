@@ -110,6 +110,8 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testManyClientsClientDiscovery() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-883");
+
         clientDiscovery = true;
 
         manyClientsPutGet();
@@ -119,6 +121,8 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testManyClientsSequentiallyClientDiscovery() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-883");
+
         clientDiscovery = true;
 
         manyClientsSequentially();
