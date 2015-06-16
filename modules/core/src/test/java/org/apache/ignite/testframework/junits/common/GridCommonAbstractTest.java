@@ -336,14 +336,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cnt Count.
-     * @param awaitPartitionMapExchange If we need to await partition map exchange.
+     * @param awaitPartMapExchange If we need to await partition map exchange.
      * @return Ignite.
      * @throws Exception If failed.
      */
-    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartitionMapExchange) throws Exception {
+    protected final Ignite startGridsMultiThreaded(int cnt, boolean awaitPartMapExchange) throws Exception {
         Ignite g = super.startGridsMultiThreaded(cnt);
 
-        if (awaitPartitionMapExchange)
+        if (awaitPartMapExchange)
             awaitPartitionMapExchange();
 
         return g;
@@ -379,7 +379,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             int exp = affNodes.size();
 
-                            Collection<ClusterNode> owners = top.nodes(p, AffinityTopologyVersion.NONE);
+                            Collection<ClusterNode> owners = top.topologyVersion() == AffinityTopologyVersion.NONE ?
+                                Collections.<ClusterNode>emptyList() : top.nodes(p, AffinityTopologyVersion.NONE);
 
                             int actual = owners.size();
 
@@ -388,6 +389,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     "grid=" + g.name() +
                                     ", cache=" + cfg.getName() +
                                     ", cacheId=" + dht.context().cacheId() +
+                                    ", topVer=" + top.topologyVersion() +
                                     ", p=" + p +
                                     ", affNodesCnt=" + exp +
                                     ", ownersCnt=" + actual +
@@ -403,6 +405,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
+                                        ", topVer=" + top.topologyVersion() +
                                         ", p=" + p +
                                         ", affNodesCnt=" + exp +
                                         ", ownersCnt=" + actual +
