@@ -250,7 +250,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper, metaHandler):
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper, metaHandler, false):
                     classDescriptor(clsMap, typeId, clsLdr, ctx, mapper, metaHandler);
 
                 curCls = desc.describedClass();
@@ -540,10 +540,12 @@ class OptimizedObjectInputStream extends ObjectInputStream {
             }
         }
 
-        int footerLen = in.readInt();
+        if (metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
+            int footerLen = in.readInt();
 
-        if (footerLen != EMPTY_FOOTER)
-            in.skipBytes(footerLen - 4);
+            if (footerLen != EMPTY_FOOTER)
+                in.skipBytes(footerLen - 4);
+        }
 
         return obj;
     }

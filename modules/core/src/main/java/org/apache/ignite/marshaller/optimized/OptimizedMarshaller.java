@@ -144,6 +144,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
      * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
      * pool is not used and each thread has its own cached object stream which it keeps reusing.
      * <p>
+     *     
      * Since each stream has an internal buffer, creating a stream for each thread can lead to
      * high memory consumption if many large messages are marshalled or unmarshalled concurrently.
      * Consider using pool in this case. This will limit number of streams that can be created and,
@@ -285,6 +286,26 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);
+        }
+    }
+
+    /**
+     * Checks whether a footer injection into a serialized form of the object is supported.
+     * Footer contains information on fields location in the serialized form, thus enabling fast queries without a need
+     * to deserialize the object.
+     *
+     * @param obj Object.
+     * @return {@code true} if the footer is supported.
+     */
+    public boolean footerSupported(Object obj) throws IgniteCheckedException {
+        try {
+            OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, obj.getClass(), ctx,
+                mapper, metaHandler, true);
+
+            return  metaHandler.metadata(desc.typeId()) != null;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to get class descriptor.", e);
         }
     }
 

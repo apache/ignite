@@ -97,6 +97,17 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean hasField(Object obj, String fieldName);
 
     /**
+     * Checks whether a footer injection into a serialized form of the object is supported.
+     * Footer contains information on fields location in the serialized form, thus enabling fast queries without a need
+     * to deserialize the object.
+     *
+     * @param obj Object.
+     * @return {@code true} if the footer is supported.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean footerSupported(Object obj) throws IgniteCheckedException;
+
+    /**
      * @param ctx Cache object context.
      * @param val Value.
      * @return Value bytes.

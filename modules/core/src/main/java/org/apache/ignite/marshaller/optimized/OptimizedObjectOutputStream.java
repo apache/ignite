@@ -194,7 +194,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
                     ctx,
                     mapper,
-                    metaHandler);
+                    metaHandler,
+                    false);
 
                 if (desc.excluded()) {
                     writeByte(NULL);
@@ -220,7 +221,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
                         ctx,
                         mapper,
-                        metaHandler);
+                        metaHandler,
+                        false);
                 }
 
                 if (handle >= 0) {
@@ -317,9 +319,13 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields, int headerPos)
         throws IOException {
-        Footer footer = new Footer(fields);
+        Footer footer = null;
 
-        footer.headerPos(headerPos);
+        if (metaHandler.metadata(resolveTypeId(obj.getClass().getName(), mapper)) != null) {
+            footer = new Footer(fields);
+
+            footer.headerPos(headerPos);
+        }
 
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -343,7 +349,8 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 writeFields(obj, fields.fields(i), footer);
         }
 
-        footer.write();
+        if (footer != null)
+            footer.write();
     }
 
     /**
@@ -553,12 +560,12 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     if (t.field() != null) {
                         int handle = writeObject0(getObject(obj, t.offset()));
 
-                        if (handle >= 0)
+                        if (footer != null && handle >= 0)
                             footer.disable();
                     }
             }
 
-            if (t.field() != null) {
+            if (footer != null && t.field() != null) {
                 int fieldLen = out.size() - size;
 
                 footer.put(t.id(), t.type(), fieldLen);
@@ -813,13 +820,15 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 case OTHER:
                     int handle = writeObject0(t.get2());
 
-                    if (handle >= 0)
+                    if (footer != null && handle >= 0)
                         footer.disable();
             }
 
-            int fieldLen = out.size() - size;
+            if (footer != null) {
+                int fieldLen = out.size() - size;
 
-            footer.put(t.get1().id(), t.get1().type(), fieldLen);
+                footer.put(t.get1().id(), t.get1().type(), fieldLen);
+            }
         }
     }
 

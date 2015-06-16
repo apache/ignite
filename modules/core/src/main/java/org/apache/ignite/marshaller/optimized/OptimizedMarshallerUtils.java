@@ -181,6 +181,8 @@ class OptimizedMarshallerUtils {
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param metaHandler Metadata handler.
+     * @param tryEnableMeta Try to enable meta during {@code OptimizedClassDescriptor} registration. Meta is supported,
+     *                      only for objects that support footer injection is their serialized form.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
@@ -189,7 +191,8 @@ class OptimizedMarshallerUtils {
         Class cls,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler)
+        OptimizedObjectMetadataHandler metaHandler,
+        boolean tryEnableMeta)
         throws IOException
     {
         OptimizedClassDescriptor desc = clsMap.get(cls);
@@ -206,7 +209,8 @@ class OptimizedMarshallerUtils {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
-            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper, metaHandler);
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper, metaHandler,
+                       tryEnableMeta);
 
             if (registered) {
                 OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
@@ -281,7 +285,7 @@ class OptimizedMarshallerUtils {
         if (desc == null) {
             OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
                 new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper,
-                    metaHandler));
+                    metaHandler, false));
 
             if (old != null)
                 desc = old;

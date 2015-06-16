@@ -119,6 +119,8 @@ class OptimizedClassDescriptor {
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param metaHandler Metadata handler.
+     * @param tryEnableMeta Try to enable meta during {@code OptimizedClassDescriptor} registration. Meta is supported,
+     *                      only for objects that support footer injection is their serialized form.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -127,7 +129,8 @@ class OptimizedClassDescriptor {
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
-        OptimizedObjectMetadataHandler metaHandler)
+        OptimizedObjectMetadataHandler metaHandler,
+        boolean tryEnableMeta)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
@@ -487,7 +490,7 @@ class OptimizedClassDescriptor {
 
                     this.fields = new Fields(fields, fieldsIndexingEnabled);
 
-                    if (fieldsIndexingEnabled && metaHandler.metadata(typeId) == null) {
+                    if (tryEnableMeta && fieldsIndexingEnabled && metaHandler.metadata(typeId) == null) {
                         OptimizedObjectMetadata meta = new OptimizedObjectMetadata();
 
                         for (ClassFields clsFields : this.fields.fields)
@@ -496,9 +499,6 @@ class OptimizedClassDescriptor {
 
                         U.debug("putting to cache: " + typeId);
 
-                        if (typeId == 2104067130) {
-                            System.out.println();
-                        }
                         metaHandler.addMeta(typeId, meta);
 
                         U.debug("put to cache: " + typeId);
@@ -659,9 +659,8 @@ class OptimizedClassDescriptor {
 
             case OBJ_ARR:
                 OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
-                    obj.getClass().getComponentType(),
-                    ctx,
-                    mapper, metaHandler);
+                    obj.getClass().getComponentType(), ctx,
+                    mapper, metaHandler, false);
 
                 compDesc.writeTypeData(out);
 
@@ -720,7 +719,8 @@ class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper, metaHandler);
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper, metaHandler,
+                                                       false);
 
                 clsDesc.writeTypeData(out);
 
@@ -812,6 +812,18 @@ class OptimizedClassDescriptor {
             throw new ClassNotFoundException("Optimized stream class checksum mismatch " +
                 "(is same version of marshalled class present on all nodes?) " +
                 "[expected=" + this.checksum + ", actual=" + checksum + ", cls=" + cls + ']');
+    }
+
+    /**
+     * Returns type ID.
+     *
+     * @return Type ID.
+     */
+    public int typeId() {
+        if (typeId == 0)
+            return resolveTypeId(cls.getName(), mapper);
+
+        return typeId;
     }
 
     /**
