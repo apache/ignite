@@ -1080,6 +1080,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     {
         assert cfg != null;
 
+        // TODO: IGNITE-884 - Prepare all factories.
         prepare(cfg, cfg.getCacheStoreFactory(), false);
 
         CacheStartContext startCtx = startCtxs.remove(maskNull(cfg.getName()));
@@ -1983,7 +1984,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.cacheType(cacheType);
 
-        startCtxs.putIfAbsent(maskNull(cacheName), new CacheStartContext(ctx, req.startCacheConfiguration()));
+        CacheConfiguration cfg = req.startCacheConfiguration();
+
+        try {
+            // TODO: IGNITE-884 - Prepare all factories.
+            prepare(cfg, cfg.getCacheStoreFactory(), false);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
+
+        startCtxs.putIfAbsent(maskNull(cacheName), new CacheStartContext(ctx, cfg));
 
         return F.first(initiateCacheChanges(F.asList(req), failIfExists));
     }
