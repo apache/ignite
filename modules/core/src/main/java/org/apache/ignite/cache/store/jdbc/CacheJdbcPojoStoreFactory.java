@@ -63,10 +63,10 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheJdbcPojoSto
     private String dataSrcBean;
 
     /** Data source. */
-    private DataSource dataSrc;
+    private transient DataSource dataSrc;
 
     /** Database dialect. */
-    protected JdbcDialect dialect;
+    private transient JdbcDialect dialect;
 
     /** Application context. */
     @SpringApplicationContextResource

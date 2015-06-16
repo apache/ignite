@@ -17,9 +17,13 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.spring.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.hibernate.*;
 
 import javax.cache.configuration.*;
@@ -119,7 +123,10 @@ import java.util.*;
 public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibernateBlobStore<K, V>> {
     /** Session factory. */
     @GridToStringExclude
-    private SessionFactory sesFactory;
+    private transient SessionFactory sesFactory;
+
+    /** Session factory bean name. */
+    private String sesFactoryBean;
 
     /** Path to hibernate configuration file. */
     private String hibernateCfgPath;
@@ -128,14 +135,37 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
     @GridToStringExclude
     private Properties hibernateProps;
 
+    /** Application context. */
+    @SpringApplicationContextResource
+    private Object appContext;
 
     /** {@inheritDoc} */
     @Override public CacheHibernateBlobStore<K, V> create() {
         CacheHibernateBlobStore<K, V> store = new CacheHibernateBlobStore<>();
 
-        store.setSessionFactory(sesFactory);
         store.setHibernateConfigurationPath(hibernateCfgPath);
         store.setHibernateProperties(hibernateProps);
+
+        if (sesFactory != null)
+            store.setSessionFactory(sesFactory);
+        else if (sesFactoryBean != null) {
+            if (appContext == null)
+                throw new IgniteException("Spring application context resource is not injected.");
+
+            IgniteSpringHelper spring;
+
+            try {
+                spring = IgniteComponentType.SPRING.create(false);
+
+                SessionFactory sesFac = spring.loadBeanFromAppContext(appContext, sesFactoryBean);
+
+                store.setSessionFactory(sesFac);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to load bean in application context [beanName=" + sesFactoryBean +
+                        ", igniteConfig=" + appContext + ']');
+            }
+        }
 
         return store;
     }
@@ -144,10 +174,26 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
      * Sets session factory.
      *
      * @param sesFactory Session factory.
+     * @return {@code This} for chaining.
      * @see CacheHibernateBlobStore#setSessionFactory(SessionFactory)
      */
-    public void setSessionFactory(SessionFactory sesFactory) {
+    public CacheHibernateBlobStoreFactory<K, V> setSessionFactory(SessionFactory sesFactory) {
         this.sesFactory = sesFactory;
+
+        return this;
+    }
+
+    /**
+     * Sets name of the data source bean.
+     *
+     * @param sesFactory Session factory bean name.
+     * @return {@code This} for chaining.
+     * @see CacheHibernateBlobStore#setSessionFactory(SessionFactory)
+     */
+    public CacheHibernateBlobStoreFactory<K, V> setSessionFactoryBean(String sesFactory) {
+        this.sesFactoryBean = sesFactory;
+
+        return this;
     }
 
     /**
@@ -157,20 +203,26 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
      *
      * @param hibernateCfgPath URL or file path or classpath resource
      *      pointing to hibernate configuration XML file.
+     * @return {@code This} for chaining.
      * @see CacheHibernateBlobStore#setHibernateConfigurationPath(String)
      */
-    public void setHibernateConfigurationPath(String hibernateCfgPath) {
+    public CacheHibernateBlobStoreFactory<K, V> setHibernateConfigurationPath(String hibernateCfgPath) {
         this.hibernateCfgPath = hibernateCfgPath;
+
+        return this;
     }
 
     /**
      * Sets Hibernate properties.
      *
      * @param hibernateProps Hibernate properties.
+     * @return {@code This} for chaining.
      * @see CacheHibernateBlobStore#setHibernateProperties(Properties)
      */
-    public void setHibernateProperties(Properties hibernateProps) {
+    public CacheHibernateBlobStoreFactory<K, V> setHibernateProperties(Properties hibernateProps) {
         this.hibernateProps = hibernateProps;
+
+        return this;
     }
 
     /** {@inheritDoc} */

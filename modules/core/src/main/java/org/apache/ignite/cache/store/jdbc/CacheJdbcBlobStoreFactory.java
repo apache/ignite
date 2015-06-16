@@ -92,7 +92,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
     private String dataSrcBean;
 
     /** Data source. */
-    private DataSource dataSrc;
+    private transient DataSource dataSrc;
 
     /** Application context. */
     @SpringApplicationContextResource
