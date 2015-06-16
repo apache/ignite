@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -215,7 +216,38 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                     if (rnd.nextBoolean()) { // Partitioned query.
                         IgniteCache<?,?> cache = grid(g).cache("pu");
 
-                        assertEquals(pRes, cache.query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll());
+                        SqlFieldsQuery qry = new SqlFieldsQuery(PARTITIONED_QRY);
+
+                        boolean smallPageSize = rnd.nextBoolean();
+
+                        if (smallPageSize)
+                            qry.setPageSize(3);
+
+                        try {
+                            assertEquals(pRes, cache.query(qry).getAll());
+                        }
+                        catch (CacheException e) {
+                            assertTrue("On large page size must retry.", smallPageSize);
+
+                            boolean failedOnRemoteFetch = false;
+
+                            for (Throwable th = e; th != null; th = th.getCause()) {
+                                if (!(th instanceof CacheException))
+                                    continue;
+
+                                if (th.getMessage().startsWith("Failed to fetch data from node:")) {
+                                    failedOnRemoteFetch = true;
+
+                                    break;
+                                }
+                            }
+
+                            if (!failedOnRemoteFetch) {
+                                e.printStackTrace();
+
+                                fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
+                            }
+                        }
                     }
                     else { // Replicated query.
                         IgniteCache<?,?> cache = grid(g).cache("co");

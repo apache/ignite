@@ -229,7 +229,7 @@ public class GridReduceQueryExecutor {
         GridResultPage page;
 
         try {
-            page = new GridResultPage(ctx, node.id(), msg, false) {
+            page = new GridResultPage(ctx, node.id(), msg) {
                 @Override public void fetchNextPage() {
                     Object errState = r.state.get();
 
@@ -251,7 +251,7 @@ public class GridReduceQueryExecutor {
                             ctx.io().send(node, GridTopic.TOPIC_QUERY, msg0, GridIoPolicy.PUBLIC_POOL);
                     }
                     catch (IgniteCheckedException e) {
-                        throw new CacheException(e);
+                        throw new CacheException("Failed to fetch data from node: " + node.id(), e);
                     }
                 }
             };
