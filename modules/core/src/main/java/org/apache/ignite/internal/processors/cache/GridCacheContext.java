@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -54,12 +55,11 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -199,6 +199,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    /** Session listeners. */
+    private Collection<CacheStoreSessionListener> sesLsnrs;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -231,6 +234,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public GridCacheContext(
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
+        CacheStartContext startCtx,
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         boolean affNode,
@@ -310,12 +314,12 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         plc = cacheType.ioPolicy();
 
-        Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
-
-        expiryPlc = factory != null ? factory.create() : null;
+        expiryPlc = startCtx.expiryPolicy();
 
         if (expiryPlc instanceof EternalExpiryPolicy)
             expiryPlc = null;
+
+        sesLsnrs = startCtx.storeSessionListeners();
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
@@ -1026,6 +1030,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CachePluginManager plugin() {
         return pluginMgr;
+    }
+
+    /**
+     * @return Store session listeners.
+     */
+    public Collection<CacheStoreSessionListener> storeSessionListeners() {
+        return sesLsnrs;
     }
 
     /**

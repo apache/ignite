@@ -169,9 +169,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 "Persistence store is configured, but both read-through and write-through are disabled.");
         }
 
-        sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
+        sesLsnrs = cctx.storeSessionListeners();
 
-        if (sesLsnrs == null) {
+        if (sesLsnrs != null)
+            CU.startStoreSessionListeners(cctx.kernalContext(), sesLsnrs);
+        else {
             sesLsnrs = cctx.shared().storeSessionListeners();
 
             globalSesLsnrs = true;

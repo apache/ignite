@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.util.*;
 
@@ -36,7 +36,7 @@ public class CacheStartContext {
     private ExpiryPolicy expPlc;
 
     /** */
-    private CacheStoreSessionListener[] sesLsnrs;
+    private Collection<CacheStoreSessionListener> sesLsnrs;
 
     /**
      * @param cfg Configuration.
@@ -45,9 +45,9 @@ public class CacheStartContext {
         assert ctx != null;
         assert cfg != null;
 
-        store = create(ctx, cfg.getCacheStoreFactory());
-        expPlc = create(ctx, cfg.getExpiryPolicyFactory());
-        //sesLsnrs = create(ctx, cfg.getCacheStoreSessionListenerFactories());
+        store = CU.create(ctx, cfg.getCacheStoreFactory());
+        expPlc = CU.create(ctx, cfg.getExpiryPolicyFactory());
+        sesLsnrs = CU.create(ctx, cfg.getCacheStoreSessionListenerFactories());
     }
 
     /**
@@ -67,38 +67,7 @@ public class CacheStartContext {
     /**
      * @return Store session listeners.
      */
-    public CacheStoreSessionListener[] storeSessionListeners() {
+    public Collection<CacheStoreSessionListener> storeSessionListeners() {
         return sesLsnrs;
-    }
-
-    /**
-     * @param ctx Context.
-     * @param factory Factory.
-     * @return Object.
-     */
-    private <T> T create(GridKernalContext ctx, Factory<T> factory) {
-        T obj = factory != null ? factory.create() : null;
-
-        ctx.resource().autowireSpringBean(obj);
-
-        return obj;
-    }
-
-    /**
-     * @param ctx Context.
-     * @param factories Factories.
-     * @return Objects.
-     */
-    private <T> T[] create(GridKernalContext ctx, Factory<T>[] factories) {
-        Collection<T> col = new ArrayList<>(factories.length);
-
-        for (Factory<T> factory : factories) {
-            T obj = create(ctx, factory);
-
-            if (obj != null)
-                col.add(obj);
-        }
-
-        return (T[])col.toArray();
     }
 }

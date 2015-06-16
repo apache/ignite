@@ -56,7 +56,6 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheRebalanceMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -1644,31 +1643,22 @@ public class GridCacheUtils {
      * Creates and starts store session listeners.
      *
      * @param ctx Kernal context.
-     * @param factories Factories.
-     * @return Listeners.
+     * @param sesLsnrs Session listeners.
      * @throws IgniteCheckedException In case of error.
      */
-    public static Collection<CacheStoreSessionListener> startStoreSessionListeners(GridKernalContext ctx,
-        Factory<CacheStoreSessionListener>[] factories) throws IgniteCheckedException {
-        if (factories == null)
-            return null;
+    public static void startStoreSessionListeners(GridKernalContext ctx, Collection<CacheStoreSessionListener> sesLsnrs)
+        throws IgniteCheckedException {
+        if (sesLsnrs == null)
+            return;
 
-        Collection<CacheStoreSessionListener> lsnrs = new ArrayList<>(factories.length);
-
-        for (Factory<CacheStoreSessionListener> factory : factories) {
-            CacheStoreSessionListener lsnr = factory.create();
-
+        for (CacheStoreSessionListener lsnr : sesLsnrs) {
             if (lsnr != null) {
                 ctx.resource().injectGeneric(lsnr);
 
                 if (lsnr instanceof LifecycleAware)
                     ((LifecycleAware)lsnr).start();
-
-                lsnrs.add(lsnr);
             }
         }
-
-        return lsnrs;
     }
 
     /**
@@ -1689,5 +1679,36 @@ public class GridCacheUtils {
 
             ctx.resource().cleanupGeneric(lsnr);
         }
+    }
+
+    /**
+     * @param ctx Context.
+     * @param factory Factory.
+     * @return Object.
+     */
+    public static <T> T create(GridKernalContext ctx, Factory<T> factory) {
+        T obj = factory != null ? factory.create() : null;
+
+        ctx.resource().autowireSpringBean(obj);
+
+        return obj;
+    }
+
+    /**
+     * @param ctx Context.
+     * @param factories Factories.
+     * @return Objects.
+     */
+    public static <T> Collection<T> create(GridKernalContext ctx, Factory[] factories) {
+        Collection<T> col = new ArrayList<>(factories.length);
+
+        for (Factory<T> factory : factories) {
+            T obj = create(ctx, factory);
+
+            if (obj != null)
+                col.add(obj);
+        }
+
+        return col;
     }
 }

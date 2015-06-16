@@ -230,7 +230,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Factory<CacheWriter> writerFactory = cfg.isWriteThrough() ? cfg.getCacheWriterFactory() : null;
 
             if (ldrFactory != null || writerFactory != null)
-                cfg.setCacheStoreFactory(new GridCacheLoaderWriterStoreFactory(ldrFactory, writerFactory));
+                cfg.setCacheStoreFactory(new GridCacheLoaderWriterStoreFactory(ctx, ldrFactory, writerFactory));
         }
         else {
             if (cfg.getCacheLoaderFactory() != null)
@@ -571,8 +571,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
-        sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx,
-            ctx.config().getCacheStoreSessionListenerFactories()));
+        Collection<CacheStoreSessionListener> sesLsnrs = CU.create(ctx,
+            ctx.config().getCacheStoreSessionListenerFactories());
+
+        CU.startStoreSessionListeners(ctx, sesLsnrs);
+
+        sharedCtx = createSharedContext(ctx, sesLsnrs);
 
         ctx.performance().add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
             !ctx.config().getTransactionConfiguration().isTxSerializableEnabled());
@@ -1131,6 +1135,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
             ctx,
             sharedCtx,
+            startCtx,
             cfg,
             cacheType,
             ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cfg.getName()),
@@ -1261,6 +1266,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheCtx = new GridCacheContext(
                 ctx,
                 sharedCtx,
+                startCtx,
                 cfg,
                 cacheType,
                 ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cfg.getName()),

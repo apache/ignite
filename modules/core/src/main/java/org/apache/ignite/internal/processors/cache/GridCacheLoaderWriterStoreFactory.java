@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -31,6 +33,9 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
     private static final long serialVersionUID = 0L;
 
     /** */
+    private final GridKernalContext cctx;
+
+    /** */
     private final Factory<CacheLoader<K, V>> ldrFactory;
 
     /** */
@@ -40,8 +45,9 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
      * @param ldrFactory Loader factory.
      * @param writerFactory Writer factory.
      */
-    GridCacheLoaderWriterStoreFactory(@Nullable Factory<CacheLoader<K, V>> ldrFactory,
+    GridCacheLoaderWriterStoreFactory(GridKernalContext cctx, @Nullable Factory<CacheLoader<K, V>> ldrFactory,
         @Nullable Factory<CacheWriter<K, V>> writerFactory) {
+        this.cctx = cctx;
         this.ldrFactory = ldrFactory;
         this.writerFactory = writerFactory;
 
@@ -50,9 +56,8 @@ class GridCacheLoaderWriterStoreFactory<K, V> implements Factory<CacheStore<K, V
 
     /** {@inheritDoc} */
     @Override public CacheStore<K, V> create() {
-        CacheLoader<K, V> ldr = ldrFactory == null ? null : ldrFactory.create();
-
-        CacheWriter<K, V> writer = writerFactory == null ? null : writerFactory.create();
+        CacheLoader<K, V> ldr = CU.create(cctx, ldrFactory);
+        CacheWriter<K, V> writer = CU.create(cctx, writerFactory);
 
         return new GridCacheLoaderWriterStore<>(ldr, writer);
     }

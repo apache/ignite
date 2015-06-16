@@ -531,7 +531,7 @@ class OptimizedClassDescriptor {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
-        out.write(type);
+        out.writeByte(type);
 
         switch (type) {
             case BYTE:
