@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -102,16 +104,14 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testManyClients() throws Exception {
+    public void testManyClients() throws Throwable {
         manyClientsPutGet();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testManyClientsClientDiscovery() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-883");
-
+    public void testManyClientsClientDiscovery() throws Throwable {
         clientDiscovery = true;
 
         manyClientsPutGet();
@@ -121,8 +121,6 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testManyClientsSequentiallyClientDiscovery() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-883");
-
         clientDiscovery = true;
 
         manyClientsSequentially();
@@ -162,32 +160,50 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
         log.info("All clients started.");
 
-        assertEquals(SRVS + CLIENTS, G.allGrids().size());
+        try {
+            checkNodes(SRVS + CLIENTS);
+        }
+        finally {
+            for (Ignite client : clients)
+                client.close();
+        }
+    }
+
+    /**
+     * @param expCnt Expected number of nodes.
+     */
+    private void checkNodes(int expCnt) {
+        assertEquals(expCnt, G.allGrids().size());
 
         long topVer = -1L;
 
         for (Ignite ignite : G.allGrids()) {
-            assertEquals(SRVS + CLIENTS, ignite.cluster().nodes().size());
+            log.info("Check node: " + ignite.name());
 
             if (topVer == -1L)
                 topVer = ignite.cluster().topologyVersion();
             else
-                assertEquals(topVer, ignite.cluster().topologyVersion());
-        }
+                assertEquals("Unexpected topology version for node: " + ignite.name(),
+                    topVer,
+                    ignite.cluster().topologyVersion());
 
-        for (Ignite client : clients)
-            client.close();
+            assertEquals("Unexpected number of nodes for node: " + ignite.name(),
+                expCnt,
+                ignite.cluster().nodes().size());
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void manyClientsPutGet() throws Exception {
+    private void manyClientsPutGet() throws Throwable {
         client = true;
 
         final AtomicInteger idx = new AtomicInteger(SRVS);
 
         final AtomicBoolean stop = new AtomicBoolean();
+
+        final AtomicReference<Throwable> err = new AtomicReference<>();
 
         final int THREADS = 50;
 
@@ -224,7 +240,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
 
                             counted = true;
 
-                            while (!stop.get()) {
+                            while (!stop.get() && err.get() == null) {
                                 key = rnd.nextInt(0, 1000);
 
                                 cache.put(key, iter++);
@@ -240,6 +256,8 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
                         return null;
                     }
                     catch (Throwable e) {
+                        err.compareAndSet(null, e);
+
                         log.error("Unexpected error in client thread: " + e, e);
 
                         throw e;
@@ -256,6 +274,29 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
             log.info("All clients started.");
 
             Thread.sleep(10_000);
+
+            Throwable err0 = err.get();
+
+            if (err0 != null)
+                throw err0;
+
+            boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        checkNodes(SRVS + THREADS);
+
+                        return true;
+                    }
+                    catch (AssertionFailedError e) {
+                        log.info("Check failed, will retry: " + e);
+                    }
+
+                    return false;
+                }
+            }, 10_000);
+
+            if (!wait)
+                checkNodes(SRVS + THREADS);
 
             log.info("Stop clients.");
 

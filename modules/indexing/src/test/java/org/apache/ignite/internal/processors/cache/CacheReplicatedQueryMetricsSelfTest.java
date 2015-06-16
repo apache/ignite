@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.interop;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Interop bootstrap. Responsible for starting Ignite node in interop mode.
+ * Tests for replicated cache query metrics.
  */
-public interface InteropBootstrap {
-    /**
-     * Start Ignite node.
-     *
-     * @param cfg Configuration.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Ignite node.
-     */
-    public InteropProcessor start(IgniteConfiguration cfg, long envPtr, long dataPtr);
+public class CacheReplicatedQueryMetricsSelfTest extends CacheAbstractQueryMetricsSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cacheMode = REPLICATED;
+
+        super.beforeTest();
+    }
 }
