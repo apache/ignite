@@ -25,10 +25,8 @@ import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
-import java.security.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
@@ -67,20 +65,7 @@ public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerLi
 
         marshMap = new HashMap<>();
 
-        List<PluginProvider> plugins = AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
-            @Override public List<PluginProvider> run() {
-                List<PluginProvider> providers = new ArrayList<>();
-
-                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
-
-                for (PluginProvider provider : ldr)
-                    providers.add(provider);
-
-                return providers;
-            }
-        });
-
-        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller(plugins));
+        marshMap.put(GridClientOptimizedMarshaller.ID, new GridClientOptimizedMarshaller(U.allPluginProviders()));
         marshMap.put(GridClientJdkMarshaller.ID, new GridClientJdkMarshaller());
 
         init();

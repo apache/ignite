@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
@@ -626,6 +627,26 @@ public abstract class IgniteUtils {
         });
 
         return m;
+    }
+
+    /**
+     * Gets all plugin providers.
+     *
+     * @return Plugins.
+     */
+    public static List<PluginProvider> allPluginProviders() {
+        return AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
+            @Override public List<PluginProvider> run() {
+                List<PluginProvider> providers = new ArrayList<>();
+
+                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+
+                for (PluginProvider provider : ldr)
+                    providers.add(provider);
+
+                return providers;
+            }
+        });
     }
 
     /**
