@@ -68,6 +68,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setNetworkTimeout(60_000);
+
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
