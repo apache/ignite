@@ -57,6 +57,7 @@ public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implem
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        //return (T)this;
         assert val != null;
 
         return (T)val;

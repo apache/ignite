@@ -366,6 +366,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return optMarshExt != null && optMarshExt.fieldsIndexingEnabled(cls);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
+        return optMarshExt != null && optMarshExt.enableFieldsIndexing(cls);
+    }
+
     /**
      * Wraps key provided by user, must be serialized before stored in cache.
      */

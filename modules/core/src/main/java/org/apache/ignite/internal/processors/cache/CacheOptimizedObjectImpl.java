@@ -92,6 +92,7 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        //return (T)this;
         cpy = cpy && needCopy(ctx);
 
         try {

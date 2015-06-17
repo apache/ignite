@@ -110,6 +110,15 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isFieldsIndexingSupported(Class<?> cls);
 
     /**
+     * Tries to enables fields indexing for the object of the given {@code cls}.
+     *
+     * @param cls Class.
+     * @return {@code true} if fields indexing is enabled.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException;
+
+    /**
      * @param ctx Cache object context.
      * @param val Value.
      * @return Value bytes.

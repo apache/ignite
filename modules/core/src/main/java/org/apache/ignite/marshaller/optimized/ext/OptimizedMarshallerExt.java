@@ -44,6 +44,15 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     private OptimizedMarshallerExtMetaHandler metaHandler;
 
     /**
+     * Creates new marshaller will all defaults.
+     *
+     * @throws IgniteException If this marshaller is not supported on the current JVM.
+     */
+    public OptimizedMarshallerExt() {
+        // No-op
+    }
+
+    /**
      * Creates new marshaller providing whether it should
      * require {@link Serializable} interface or not.
      *
@@ -79,8 +88,10 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
             OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
 
             if (desc.fields() != null && desc.fields().fieldsIndexingSupported()) {
-                if (metaHandler.metadata(desc.typeId()) != null)
-                    return true;
+                //The function is called on kernel startup, calling metaHandler.metadata() will hang the grid,
+                //because the underlying cache is not ready.
+                //if (metaHandler.metadata(desc.typeId()) != null)
+                //    return true;
 
                 OptimizedObjectMetadata meta = new OptimizedObjectMetadata();
 

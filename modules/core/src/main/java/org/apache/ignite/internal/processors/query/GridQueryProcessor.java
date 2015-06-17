@@ -140,6 +140,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
+                    else if (ctx.cacheObjects().enableFieldsIndexing(valCls)) {
+                        processIndexedFieldsMeta(meta, desc);
+
+                        typeId = new TypeId(ccfg.getName(), valCls);
+                    }
                     else {
                         processClassMeta(meta, desc);
 
@@ -1302,6 +1307,82 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Processes declarative metadata for object that has fields information in its serialized form.
+     *
+     * @param meta Declared metadata.
+     * @param d Type descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processIndexedFieldsMeta(CacheTypeMetadata meta, TypeDescriptor d)
+        throws IgniteCheckedException {
+        //TODO: IGNITE-950, refactor. The code is similar to portable properties ones.
+
+        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
+            IndexedFieldsProperty prop = buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+
+            d.addProperty(prop, false);
+
+            String idxName = prop.name() + "_idx";
+
+            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+            d.addFieldToIndex(idxName, prop.name(), 0, false);
+        }
+
+        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
+            IndexedFieldsProperty prop = buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+
+            d.addProperty(prop, false);
+
+            String idxName = prop.name() + "_idx";
+
+            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
+
+            d.addFieldToIndex(idxName, prop.name(), 0, true);
+        }
+
+        for (String txtIdx : meta.getTextFields()) {
+            IndexedFieldsProperty prop = buildIndexedFieldsProperty(txtIdx, String.class);
+
+            d.addProperty(prop, false);
+
+            d.addFieldToTextIndex(prop.name());
+        }
+
+        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
+
+        if (grps != null) {
+            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
+                String idxName = entry.getKey();
+
+                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
+
+                int order = 0;
+
+                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
+                    IndexedFieldsProperty prop = buildIndexedFieldsProperty(idxField.getKey(),
+                        idxField.getValue().get1());
+
+                    d.addProperty(prop, false);
+
+                    Boolean descending = idxField.getValue().get2();
+
+                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
+
+                    order++;
+                }
+            }
+        }
+
+        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
+            IndexedFieldsProperty prop = buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+
+            if (!d.props.containsKey(prop.name()))
+                d.addProperty(prop, false);
+        }
+    }
+
+    /**
      * Builds portable object property.
      *
      * @param pathStr String representing path to the property. May contains dots '.' to identify
@@ -1391,6 +1472,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!U.box(resType).isAssignableFrom(U.box(res.type())))
             return null;
+
+        return res;
+    }
+
+    /**
+     * Builds property of object that has fields information in its serialized form.
+     *
+     * @param pathStr String representing path to the property. May contains dots '.' to identify
+     *      nested fields.
+     * @param resType Result type.
+     * @return Portable property.
+     */
+    private IndexedFieldsProperty buildIndexedFieldsProperty(String pathStr, Class<?> resType) {
+        String[] path = pathStr.split("\\.");
+
+        IndexedFieldsProperty res = null;
+
+        for (String prop : path)
+            res = new IndexedFieldsProperty(prop, res, resType);
 
         return res;
     }
@@ -1661,6 +1761,78 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     // Key is allowed to be a non-portable object here.
                     // We check key before value consistently with ClassProperty.
                     if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName))
+                        isKeyProp = isKeyProp0 = 1;
+                    else if (ctx.cacheObjects().hasField(val, propName))
+                        isKeyProp = isKeyProp0 = -1;
+                    else {
+                        U.warn(log, "Neither key nor value have property " +
+                            "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+
+                        return null;
+                    }
+                }
+
+                obj = isKeyProp0 == 1 ? key : val;
+            }
+
+            return ctx.cacheObjects().field(obj, propName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return propName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> type() {
+            return type;
+        }
+    }
+
+    /**
+     *
+     */
+    private class IndexedFieldsProperty extends Property {
+        /** Property name. */
+        private String propName;
+
+        /** Parent property. */
+        private IndexedFieldsProperty parent;
+
+        /** Result class. */
+        private Class<?> type;
+
+        /** */
+        private volatile int isKeyProp;
+
+        /**
+         * Constructor.
+         *
+         * @param propName Property name.
+         * @param parent Parent property.
+         * @param type Result type.
+         */
+        private IndexedFieldsProperty(String propName, IndexedFieldsProperty parent, Class<?> type) {
+            this.propName = propName;
+            this.parent = parent;
+            this.type = type;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
+            Object obj;
+
+            if (parent != null) {
+                obj = parent.value(key, val);
+
+                if (obj == null)
+                    return null;
+            }
+            else {
+                int isKeyProp0 = isKeyProp;
+
+                if (isKeyProp0 == 0) {
+                    if (ctx.cacheObjects().hasField(key, propName))
                         isKeyProp = isKeyProp0 = 1;
                     else if (ctx.cacheObjects().hasField(val, propName))
                         isKeyProp = isKeyProp0 = -1;
