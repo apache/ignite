@@ -218,7 +218,8 @@ public class GridDhtPartitionsReservation implements GridReservable {
 
         // Unregister from partitions.
         if (!F.isEmpty(arr) && parts.compareAndSet(arr, EMPTY)) {
-            // Reverse order makes sure that addReservation on the same topVer reservation will fail on the first partition.
+            // Reverse order makes sure that addReservation on the same topVer
+            // reservation will fail on the first partition.
             for (int i = arr.length - 1; i >= 0; i--) {
                 GridDhtLocalPartition part = arr[i];
 

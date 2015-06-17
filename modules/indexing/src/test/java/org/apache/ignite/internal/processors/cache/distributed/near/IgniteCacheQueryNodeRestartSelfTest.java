@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Test for distributed queries with node restarts.
@@ -84,7 +85,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setRebalanceMode(CacheRebalanceMode.SYNC);
+        cc.setRebalanceMode(SYNC);
         cc.setAffinity(new RendezvousAffinityFunction(false, 15));
         cc.setIndexedTypes(
             Integer.class, Integer.class

@@ -117,11 +117,6 @@ public class GridCacheTwoStepQuery {
         return mapQrys.values();
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCacheTwoStepQuery.class, this);
-    }
-
     /**
      * @return Spaces.
      */
@@ -134,5 +129,10 @@ public class GridCacheTwoStepQuery {
      */
     public void spaces(Set<String> spaces) {
         this.spaces = spaces;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheTwoStepQuery.class, this);
     }
 }

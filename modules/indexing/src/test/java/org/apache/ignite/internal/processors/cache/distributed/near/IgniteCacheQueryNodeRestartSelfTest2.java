@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
@@ -40,6 +39,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for distributed queries with node restarts.
@@ -95,9 +96,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
             cc.setName(name);
             cc.setCacheMode(PARTITIONED);
             cc.setBackups(2);
-            cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setAtomicityMode(TRANSACTIONAL);
-            cc.setRebalanceMode(CacheRebalanceMode.SYNC);
+            cc.setRebalanceMode(SYNC);
             cc.setAffinity(new RendezvousAffinityFunction(false, 60));
 
             if (name.equals("pe")) {
@@ -119,9 +120,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
 
             cc.setName(name);
             cc.setCacheMode(REPLICATED);
-            cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setAtomicityMode(TRANSACTIONAL);
-            cc.setRebalanceMode(CacheRebalanceMode.SYNC);
+            cc.setRebalanceMode(SYNC);
             cc.setAffinity(new RendezvousAffinityFunction(false, 50));
 
             if (name.equals("co")) {
@@ -143,6 +144,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         return c;
     }
 
+    /**
+     *
+     */
     private void fillCaches() {
         IgniteCache<Integer, Company> co = grid(0).cache("co");
 
@@ -172,8 +176,6 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
     }
 
     /**
-     * JUnit.
-     *
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
@@ -323,7 +325,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         info("Queries stopped.");
     }
 
-    // Partitioned
+    /**
+     *
+     */
     private static class Person implements Serializable {
         @QuerySqlField(index = true)
         int id;
@@ -333,6 +337,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         }
     }
 
+    /**
+     *
+     */
     private static class Purchase implements Serializable {
         @QuerySqlField(index = true)
         int personId;
@@ -346,7 +353,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         }
     }
 
-    // Replicated
+    /**
+     *
+     */
     private static class Company implements Serializable {
         @QuerySqlField(index = true)
         int id;
@@ -356,6 +365,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         }
     }
 
+    /**
+     *
+     */
     private static class Product implements Serializable {
         @QuerySqlField(index = true)
         int id;
