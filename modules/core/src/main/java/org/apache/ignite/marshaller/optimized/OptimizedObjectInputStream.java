@@ -534,7 +534,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
             }
         }
 
-        readFooter(cls);
+        skipFooter(cls);
 
         return obj;
     }
@@ -936,12 +936,12 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
-     * Reads object footer from the underlying stream.
+     * Skips object footer from the underlying stream.
      *
      * @param cls Class.
      * @throws IOException In case of error.
      */
-    protected void readFooter(Class<?> cls) throws IOException {
+    protected void skipFooter(Class<?> cls) throws IOException {
         // No-op
     }
 

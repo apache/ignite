@@ -22,11 +22,10 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
-import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.marshaller.optimized.ext.OptimizedMarshallerExt.*;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.ext.OptimizedMarshallerExt.*;
 
 
 /**
@@ -55,7 +54,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readFooter(Class<?> cls) throws IOException {
+    @Override protected void skipFooter(Class<?> cls) throws IOException {
         if (metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
             int footerLen = in.readInt();
 
@@ -116,10 +115,9 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
         if (range != null && range.start > 0) {
             in.position(range.start);
 
-            if (in.readByte() == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null) {
-                //TODO: IGNITE-950. Optimization - don't create a copy of array, pass the old one with range.
-                field = (F)new CacheObjectImpl(null, Arrays.copyOfRange(in.array(), range.start, range.len));
-            }
+            if (in.readByte() == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null)
+                //Do we need to make a copy of array?
+                field = (F)new CacheOptimizedObjectImpl(in.array(), range.start, range.len);
             else {
                 in.position(range.start);
                 field = (F)readObject();
@@ -179,9 +177,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
                 //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
                 fieldOff += 1 + 4 + clsNameLen + 2;
 
-                FieldRange range = new FieldRange(fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
-
-                return range;
+                return new FieldRange(fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
             }
             else
                 fieldOff += info.len == VARIABLE_LEN ? in.readShort() : info.len;

@@ -600,7 +600,15 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..112] - this
+            case 113:
+                msg = new CacheOptimizedObjectImpl();
+
+                break;
+
+            case 114:
+                msg = new KeyCacheOptimizedObjectImpl();
+
+            // [-3..114] - this
             // [120..123] - DR
             // [-4..-22] - SQL
             default:

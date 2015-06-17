@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.marshaller.optimized.ext.*;
 import org.jetbrains.annotations.*;
 
@@ -161,6 +160,23 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, int off, int len,
+                                      ClassLoader clsLdr) throws IgniteCheckedException {
+        if (optMarshExt != null)
+            return optMarshExt.unmarshal(bytes, off, len, clsLdr);
+
+        else if (off > 0 || len != bytes.length) {
+            byte[] arr = new byte[len];
+
+            U.arrayCopy(bytes, off, arr, 0, len);
+
+            bytes = arr;
+        }
+
+        return unmarshal(ctx, bytes, clsLdr);
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
         if (obj instanceof KeyCacheObject)
             return (KeyCacheObject)obj;
@@ -177,9 +193,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     protected KeyCacheObject toCacheKeyObject0(Object obj, boolean userObj) {
         if (!userObj)
-            return new KeyCacheObjectImpl(obj, null);
+            return isFieldsIndexingSupported(obj.getClass()) ? new KeyCacheOptimizedObjectImpl(obj, null) :
+                new KeyCacheObjectImpl(obj, null);
 
-        return new UserKeyCacheObjectImpl(obj);
+        return isFieldsIndexingSupported(obj.getClass()) ? new UserKeyCacheOptimizedObjectImpl(obj) :
+            new UserKeyCacheObjectImpl(obj);
     }
 
     /** {@inheritDoc} */
@@ -216,16 +234,16 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
             case CacheObject.TYPE_REGULAR:
                 return new CacheObjectImpl(null, bytes);
+
+            case CacheObject.TYPE_OPTIMIZED:
+                return new CacheOptimizedObjectImpl(bytes, 0, bytes.length);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx,
-        @Nullable Object obj,
-        boolean userObj)
-    {
+    @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj){
         if (obj == null || obj instanceof CacheObject)
             return (CacheObject)obj;
 
@@ -250,9 +268,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (!userObj)
-            return new CacheObjectImpl(obj, null);
+            return isFieldsIndexingSupported(obj.getClass()) ? new CacheOptimizedObjectImpl(obj) :
+                new CacheObjectImpl(obj, null);
 
-        return new UserCacheObjectImpl(obj, null);
+        return isFieldsIndexingSupported(obj.getClass()) ? new UserCacheOptimizedObjectImpl(obj, null) :
+            new UserCacheObjectImpl(obj, null);
     }
 
     /** {@inheritDoc} */
@@ -311,17 +331,39 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object field(Object obj, String fieldName) {
+        if (obj instanceof CacheOptimizedObjectImpl) {
+            assert optMarshExt != null;
+
+            try {
+                return ((CacheOptimizedObjectImpl)obj).field(fieldName, optMarshExt);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(Object obj, String fieldName) {
+        if (obj instanceof CacheOptimizedObjectImpl) {
+            assert optMarshExt != null;
+
+            try {
+                return ((CacheOptimizedObjectImpl)obj).hasField(fieldName, optMarshExt);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean footerSupported(Class<?> cls) throws IgniteCheckedException {
-        return optMarshExt != null && optMarshExt.metaSupported(cls);
+    @Override public boolean isFieldsIndexingSupported(Class<?> cls) {
+        return optMarshExt != null && optMarshExt.fieldsIndexingEnabled(cls);
     }
 
     /**
@@ -412,6 +454,101 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 }
 
                 return new CacheObjectImpl(null, valBytes);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal object: " + val, e);
+            }
+        }
+    }
+
+    /**
+     * Wraps value provided by user, must be serialized before stored in cache.
+     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
+     */
+    private static class UserCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         *
+         */
+        public UserCacheOptimizedObjectImpl() {
+            //No-op.
+        }
+
+        /**
+         * @param val Value.
+         * @param valBytes Value bytes.
+         */
+        public UserCacheOptimizedObjectImpl(Object val, byte[] valBytes) {
+            super(val, valBytes);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+            return super.value(ctx, false); // Do not need copy since user value is not in cache.
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+            try {
+                toMarshaledFormIfNeeded(ctx);
+
+                if (ctx.storeValue()) {
+                    ClassLoader ldr = ctx.p2pEnabled() ?
+                        IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
+
+                    Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
+                        ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
+
+                    return new CacheOptimizedObjectImpl(val, valBytes, start, len);
+                }
+
+                return new CacheOptimizedObjectImpl(null, valBytes, start, len);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to marshal object: " + val, e);
+            }
+        }
+    }
+
+    /**
+     * Wraps key provided by user, must be serialized before stored in cache.
+     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
+     */
+    private static class UserKeyCacheOptimizedObjectImpl extends KeyCacheOptimizedObjectImpl {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         *
+         */
+        public UserKeyCacheOptimizedObjectImpl() {
+            //No-op.
+        }
+
+        /**
+         * @param key Key.
+         */
+        UserKeyCacheOptimizedObjectImpl(Object key) {
+            super(key, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+            try {
+                if (!ctx.processor().immutable(val)) {
+                    toMarshaledFormIfNeeded(ctx);
+
+                    ClassLoader ldr = ctx.p2pEnabled() ?
+                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
+
+                    Object val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
+
+                    return new KeyCacheOptimizedObjectImpl(val, valBytes, start, len);
+                }
+
+                return new KeyCacheOptimizedObjectImpl(val, valBytes, start, len);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);

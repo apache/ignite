@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.marshaller.optimized.ext.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -97,15 +98,16 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean hasField(Object obj, String fieldName);
 
     /**
-     * Checks whether a footer injection into a serialized form of the object is supported.
-     * Footer contains information on fields location in the serialized form, thus enabling fast queries without a need
-     * to deserialize the object.
+     * Checks whether fields indexing is supported by footer injection into a serialized form of the object.
+     * Footer contains information about fields location in the serialized form, thus enabling fast queries without
+     * a need to deserialize the object.
+     *
+     * Indexing is enabled with {@link OptimizedMarshallerExt#enableFieldsIndexing(Class)}.
      *
      * @param cls Class.
      * @return {@code true} if the footer is supported.
-     * @throws IgniteCheckedException If failed.
      */
-    public boolean footerSupported(Class<?> cls) throws IgniteCheckedException;
+    public boolean isFieldsIndexingSupported(Class<?> cls);
 
     /**
      * @param ctx Cache object context.
@@ -123,6 +125,18 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws IgniteCheckedException If failed.
      */
     public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Context.
+     * @param bytes Bytes.
+     * @param off Offset.
+     * @param len Length.
+     * @param clsLdr Class loader.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Object unmarshal(CacheObjectContext ctx, byte[] bytes, int off, int len, ClassLoader clsLdr)
+        throws IgniteCheckedException;
 
     /**
      * @param ccfg Cache configuration.

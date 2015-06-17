@@ -22,8 +22,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.util.concurrent.*;
-
 /**
  * Optimized marshaller self test.
  */
@@ -40,7 +38,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     public void testHasField() throws Exception {
         OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
 
-        assertTrue(marsh.putMetaForClass(TestObject.class));
+        assertTrue(marsh.enableFieldsIndexing(TestObject.class));
 
         TestObject testObj = new TestObject("World", 50);
 
@@ -58,7 +56,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     public void testReadField() throws Exception {
         OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
 
-        assertTrue(marsh.putMetaForClass(TestObject.class));
+        assertTrue(marsh.enableFieldsIndexing(TestObject.class));
 
         TestObject testObj = new TestObject("World", 50);
 
@@ -76,12 +74,12 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         assertEquals(testObj.o2, o2);
 
         // Add metadata for the enclosed object.
-        assertTrue(marsh.putMetaForClass(TestObject2.class));
+        assertTrue(marsh.enableFieldsIndexing(TestObject2.class));
 
         arr = marsh.marshal(testObj);
 
         // Must be returned in a wrapped form, since metadata was added enabling the footer.
-        CacheObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null);
+        CacheOptimizedObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null);
 
         arr = cacheObject.valueBytes(null);
 

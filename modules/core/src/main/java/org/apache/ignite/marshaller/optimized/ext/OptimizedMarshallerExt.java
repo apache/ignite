@@ -63,21 +63,22 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     }
 
     /**
-     * Stores metadata information for the given {@link Class}. If the metadata is stored then a footer will be added
-     * during marshalling of an object of the given {@link Class} to the end of its serialized form.
+     * Enables fields indexing for the object of the given {@code cls}.
+     *
+     * If enabled then a footer will be added during marshalling of an object of the given {@code cls} to the end of
+     * its serialized form.
      *
      * @param cls Class.
-     * @return {@code true} if the metadata has been added successfully and the footer will be written to the end of
-     * Object's serialized form.
+     * @return {@code true} if fields indexing is enabled.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean putMetaForClass(Class<?> cls) throws IgniteCheckedException {
+    public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
         assert metaHandler != null;
 
         try {
             OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
 
-            if (desc.fields().fieldsIndexingSupported()) {
+            if (desc.fields() != null && desc.fields().fieldsIndexingSupported()) {
                 if (metaHandler.metadata(desc.typeId()) != null)
                     return true;
 
@@ -100,17 +101,24 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     }
 
     /**
-     * Checks whether a metadata is stored for the given {@link Class}. If it's stored then a footer is injected into
-     * a serialized form of the object of this {@link Class}.
-     * Footer contains information on fields location in the serialized form, thus enabling fast queries without a need
-     * to deserialize the object.
+     * Checks whether fields indexing is enabled for objects of the given {@code cls}.
      *
      * @param cls Class.
-     * @return {@code true} if the metadata exists and the footer will be written to the end of Object's serialized
-     * form.
+     * @return {@code true} if fields indexing is enabled.
      */
-    public boolean metaSupported(Class<?> cls) throws IgniteCheckedException {
-        return  metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null;
+    public boolean fieldsIndexingEnabled(Class<?> cls) {
+        if (cls == OptimizedObjectMetadataKey.class)
+            return false;
+
+        try {
+            OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
+
+            return desc.fields() != null && desc.fields().fieldsIndexingSupported() &&
+                metaHandler.metadata(desc.typeId()) != null;
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to load class description: " + cls);
+        }
     }
 
     /** {@inheritDoc} */
@@ -189,6 +197,21 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        return unmarshal(arr, 0, arr.length, clsLdr);
+    }
+
+    /**
+     * Unmarshals object from byte array using given class loader and offset with len.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param arr Byte array.
+     * @param off Object's offset in the array.
+     * @param len Object's length in the array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+     public <T> T unmarshal(byte[] arr, int off, int len, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
         OptimizedObjectInputStreamExt objIn = null;
@@ -198,7 +221,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
 
             objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, metaHandler);
 
-            objIn.in().bytes(arr, arr.length);
+            objIn.in().bytes(arr, off, len);
 
             return (T)objIn.readObject();
         }
@@ -207,8 +230,8 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
         }
         catch (ClassNotFoundException e) {
             throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
-                                             "(make sure same version of all classes are available on all nodes or" +
-                                             " enable peer-class-loading): " + clsLdr, e);
+                                                 "(make sure same version of all classes are available on all nodes or" +
+                                                 " enable peer-class-loading): " + clsLdr, e);
         }
         finally {
             OptimizedObjectStreamExtRegistry.closeIn(objIn);
