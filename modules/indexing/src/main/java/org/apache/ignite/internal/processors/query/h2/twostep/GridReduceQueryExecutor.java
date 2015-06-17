@@ -338,7 +338,7 @@ public class GridReduceQueryExecutor {
         Set<ClusterNode> nodes = new HashSet<>(dataNodes(space, topVer));
 
         if (F.isEmpty(nodes))
-            throw new CacheException("No data nodes found for cache: " + space);
+            throw new CacheException("Failed to find data nodes for cache: " + space);
 
         if (!F.isEmpty(extraSpaces)) {
             for (String extraSpace : extraSpaces) {
@@ -349,12 +349,12 @@ public class GridReduceQueryExecutor {
 
                 if (cctx.isReplicated() && !extraCctx.isReplicated())
                     throw new CacheException("Queries running on replicated cache should not contain JOINs " +
-                        "with partitioned tables.");
+                        "with partitioned tables [rCache=" + cctx.name() + ", pCache=" + extraSpace + "]");
 
                 Collection<ClusterNode> extraNodes = dataNodes(extraSpace, topVer);
 
                 if (F.isEmpty(extraNodes))
-                    throw new CacheException("No data nodes found for cache: " + extraSpace);
+                    throw new CacheException("Failed to find data nodes for cache: " + extraSpace);
 
                 if (cctx.isReplicated() && extraCctx.isReplicated()) {
                     nodes.retainAll(extraNodes);
@@ -363,8 +363,8 @@ public class GridReduceQueryExecutor {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
-                                "' have distinct set of data nodes.");
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                                ", cache2=" + extraSpace + "]");
                     }
                 }
                 else if (!cctx.isReplicated() && extraCctx.isReplicated()) {
@@ -372,16 +372,16 @@ public class GridReduceQueryExecutor {
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
-                                "' have distinct set of data nodes.");
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                                ", cache2=" + extraSpace + "]");
                 }
                 else if (!cctx.isReplicated() && !extraCctx.isReplicated()) {
                     if (extraNodes.size() != nodes.size() || !nodes.containsAll(extraNodes))
                         if (isPreloadingActive(cctx, extraSpaces))
                             return null; // Retry.
                         else
-                            throw new CacheException("Caches '" + cctx.name() + "' and '" + extraSpace +
-                                "' have distinct set of data nodes.");
+                            throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                                ", cache2=" + extraSpace + "]");
                 }
                 else
                     throw new IllegalStateException();
@@ -586,7 +586,7 @@ public class GridReduceQueryExecutor {
 
                 if (!extraCctx.isReplicated())
                     throw new CacheException("Queries running on replicated cache should not contain JOINs " +
-                        "with partitioned tables.");
+                        "with tables in partitioned caches [rCache=" + cctx.name() + ", pCache=" + extraSpace + "]");
 
                 Set<ClusterNode> extraOwners = replicatedUnstableDataNodes(extraCctx);
 
@@ -628,7 +628,7 @@ public class GridReduceQueryExecutor {
         Set<ClusterNode> dataNodes = new HashSet<>(dataNodes(space, NONE));
 
         if (dataNodes.isEmpty())
-            throw new CacheException("No data nodes found for cache '" + space + "'");
+            throw new CacheException("Failed to find data nodes for cache: " + space);
 
         // Find all the nodes owning all the partitions for replicated cache.
         for (int p = 0, parts = cctx.affinity().partitions(); p < parts; p++) {
@@ -670,8 +670,8 @@ public class GridReduceQueryExecutor {
                 int parts = extraCctx.affinity().partitions();
 
                 if (parts != partsCnt)
-                    throw new CacheException("Number of partitions must be the same for correct collocation in " +
-                        "caches " + cctx.name() + " and " + extraSpace + ".");
+                    throw new CacheException("Number of partitions must be the same for correct collocation [cache1=" +
+                        cctx.name() + ", parts1=" + partsCnt + ", cache2=" + extraSpace + ", parts2=" + parts + "]");
             }
         }
 
@@ -685,7 +685,7 @@ public class GridReduceQueryExecutor {
                 if (!F.isEmpty(dataNodes(cctx.name(), NONE)))
                     return null; // Retry.
 
-                throw new CacheException("No data nodes found for cache '" + cctx.name() + "' for partition " + p);
+                throw new CacheException("Failed to find data nodes [cache=" + cctx.name() + ", part=" + p + "]");
             }
 
             partLocs[p] = new HashSet<>(owners);
@@ -707,8 +707,7 @@ public class GridReduceQueryExecutor {
                         if (!F.isEmpty(dataNodes(extraSpace, NONE)))
                             return null; // Retry.
 
-                        throw new CacheException("No data nodes found for cache '" + extraSpace +
-                            "' for partition " + p);
+                        throw new CacheException("Failed to find data nodes [cache=" + extraSpace + ", part=" + p + "]");
                     }
 
                     if (partLocs[p] == null)

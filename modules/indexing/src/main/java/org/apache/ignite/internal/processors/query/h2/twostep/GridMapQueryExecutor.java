@@ -401,7 +401,7 @@ public class GridMapQueryExecutor {
                 }
             }
             catch (IgniteCheckedException e) {
-                throw new CacheException(e);
+                throw new CacheException("Failed to unmarshall parameters.", e);
             }
 
             List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
@@ -422,7 +422,7 @@ public class GridMapQueryExecutor {
             GridCacheContext<?,?> mainCctx = cacheContext(req.space());
 
             if (mainCctx == null)
-                throw new CacheException("Cache was destroyed: " + req.space());
+                throw new CacheException("Failed to find cache: " + req.space());
 
             qr = new QueryResults(req.requestId(), qrys.size(), mainCctx);
 
