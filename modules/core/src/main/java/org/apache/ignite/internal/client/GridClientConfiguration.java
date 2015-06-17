@@ -23,10 +23,12 @@ import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
+import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -110,7 +112,7 @@ public class GridClientConfiguration {
     private ExecutorService executor;
 
     /** Marshaller. */
-    private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
+    private GridClientMarshaller marshaller;
 
     /** Daemon flag. */
     private boolean daemon;
@@ -119,7 +121,20 @@ public class GridClientConfiguration {
      * Creates default configuration.
      */
     public GridClientConfiguration() {
-        // No-op.
+        List<PluginProvider> plugins = AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
+            @Override public List<PluginProvider> run() {
+                List<PluginProvider> providers = new ArrayList<>();
+
+                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
+
+                for (PluginProvider provider : ldr)
+                    providers.add(provider);
+
+                return providers;
+            }
+        });
+
+        marshaller = new GridClientOptimizedMarshaller(plugins);
     }
 
     /**

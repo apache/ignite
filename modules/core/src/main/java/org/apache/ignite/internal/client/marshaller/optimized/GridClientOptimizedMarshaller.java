@@ -23,6 +23,7 @@ import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -53,7 +54,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
      *
      * @param plugins Plugins.
      */
-    public GridClientOptimizedMarshaller(List<PluginProvider> plugins) {
+    public GridClientOptimizedMarshaller(@Nullable List<PluginProvider> plugins) {
         opMarsh = new OptimizedMarshaller();
 
         opMarsh.setContext(new ClientMarshallerContext(plugins));
@@ -121,7 +122,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         /**
          * @param plugins Plugins.
          */
-        public ClientMarshallerContext(List<PluginProvider> plugins) {
+        public ClientMarshallerContext(@Nullable List<PluginProvider> plugins) {
             super(plugins);
         }
 
