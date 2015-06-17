@@ -48,6 +48,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
@@ -230,6 +231,15 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * @param cctx Cache context.
+     * @param p Partition ID.
+     * @return Partition.
+     */
+    private GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
+        return cctx.topology().localPartition(p, NONE, false);
+    }
+
+    /**
      * @param cacheNames Cache names.
      * @param topVer Topology version.
      * @param explicitParts Explicit partitions list.
@@ -263,10 +273,12 @@ public class GridMapQueryExecutor {
             GridReservable r = reservations.get(grpKey);
 
             if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
-                if (!r.reserve())
-                    return false; // We need explicit partitions here -> retry.
+                if (r != ReplicatedReservation.INSTANCE) {
+                    if (!r.reserve())
+                        return false; // We need explicit partitions here -> retry.
 
-                reserved.add(r);
+                    reserved.add(r);
+                }
             }
             else { // Try to reserve partitions one by one.
                 int partsCnt = cctx.affinity().partitions();
@@ -274,7 +286,7 @@ public class GridMapQueryExecutor {
                 if (cctx.isReplicated()) { // Check all the partitions are in owning state for replicated cache.
                     if (r == null) { // Check only once.
                         for (int p = 0; p < partsCnt; p++) {
-                            GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, false);
+                            GridDhtLocalPartition part = partition(cctx, p);
 
                             // We don't need to reserve partitions because they will not be evicted in replicated caches.
                             if (part == null || part.state() != OWNING)
@@ -290,7 +302,7 @@ public class GridMapQueryExecutor {
                         partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
 
                     for (int partId : partIds) {
-                        GridDhtLocalPartition part = cctx.topology().localPartition(partId, topVer, false);
+                        GridDhtLocalPartition part = partition(cctx, partId);
 
                         if (part == null || part.state() != OWNING || !part.reserve())
                             return false;
@@ -806,12 +818,12 @@ public class GridMapQueryExecutor {
 
         /** {@inheritDoc} */
         @Override public boolean reserve() {
-            return true;
+            throw new IllegalStateException();
         }
 
         /** {@inheritDoc} */
         @Override public void release() {
-            // No-op.
+            throw new IllegalStateException();
         }
     }
 }

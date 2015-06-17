@@ -64,6 +64,9 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
         };
 
     /** */
+    private static final List<List<?>> FAKE = new LinkedList<>();
+
+    /** */
     private static final int GRID_CNT = 5;
 
     /** */
@@ -191,7 +194,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     public void testRestarts() throws Exception {
         int duration = 90 * 1000;
         int qryThreadNum = 5;
-        int restartThreadsNum = 2; // 2 of 4 data nodes
+        int restartThreadsNum = 3; // 3 of 4 data nodes
         final int nodeLifeTime = 2 * 1000;
         final int logFreq = 10;
 
@@ -212,13 +215,32 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
         final AtomicInteger qryCnt = new AtomicInteger();
         final AtomicBoolean qrysDone = new AtomicBoolean();
 
+        final List<Integer> cacheSize = new ArrayList<>(4);
+
         for (int i = 0; i < GRID_CNT - 1; i++) {
-            for (String cacheName : F.asList("co", "pr", "pe", "pu"))
-                assertClient(grid(i).cache(cacheName), false);
+            int j = 0;
+
+            for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
+                IgniteCache<?,?> cache = grid(i).cache(cacheName);
+
+                assertClient(cache, false);
+
+                if (i == 0)
+                    cacheSize.add(cache.size());
+                else
+                    assertEquals(cacheSize.get(j++).intValue(), cache.size());
+            }
         }
 
-        for (String cacheName : F.asList("co", "pr", "pe", "pu"))
-            assertClient(grid(GRID_CNT - 1).cache(cacheName), true);
+        int j = 0;
+
+        for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
+            IgniteCache<?,?> cache = grid(GRID_CNT - 1).cache(cacheName);
+
+            assertClient(cache, true);
+
+            assertEquals(cacheSize.get(j++).intValue(), cache.size());
+        }
 
         final IgniteCache<?,?> clientCache = grid(GRID_CNT - 1).cache("pu");
 
@@ -234,8 +256,10 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
                     if (smallPageSize)
                         qry.setPageSize(3);
 
+                    List<List<?>> res;
+
                     try {
-                        assertEquals(pRes, clientCache.query(qry).getAll());
+                        res = clientCache.query(qry).getAll();
                     }
                     catch (CacheException e) {
                         assertTrue("On large page size must retry.", smallPageSize);
@@ -259,6 +283,20 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
 
                             fail("Must fail inside of GridResultPage.fetchNextPage or subclass.");
                         }
+
+                        res = FAKE;
+                    }
+
+                    if (res != FAKE && !res.equals(pRes)) {
+                        int j = 0;
+
+                        // Check for data loss.
+                        for (String cacheName : F.asList("co", "pr", "pe", "pu")) {
+                            assertEquals(cacheName, cacheSize.get(j++).intValue(),
+                                grid(GRID_CNT - 1).cache(cacheName).size());
+                        }
+
+                        assertEquals(pRes, res); // Fail with nice message.
                     }
 
                     int c = qryCnt.incrementAndGet();
