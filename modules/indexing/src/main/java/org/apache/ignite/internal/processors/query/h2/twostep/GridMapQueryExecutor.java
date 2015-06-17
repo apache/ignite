@@ -123,6 +123,18 @@ public class GridMapQueryExecutor {
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
+        // Drop group reservations for dead caches.
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                String cacheName = ((CacheEvent)evt).cacheName();
+
+                for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
+                    if (F.eq(grpKey.get1(), cacheName))
+                        reservations.remove(grpKey);
+                }
+            }
+        }, EventType.EVT_CACHE_STOPPED);
+
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (!busyLock.enterBusy())
@@ -244,7 +256,9 @@ public class GridMapQueryExecutor {
             if (cctx.isLocal())
                 continue;
 
-            final T2<String,AffinityTopologyVersion> grpKey = new T2<>(cctx.name(), topVer);
+            // For replicated cache topology version does not make sense.
+            final T2<String,AffinityTopologyVersion> grpKey =
+                new T2<>(cctx.name(), cctx.isReplicated() ? null : topVer);
 
             GridReservable r = reservations.get(grpKey);
 
@@ -265,10 +279,10 @@ public class GridMapQueryExecutor {
                             // We don't need to reserve partitions because they will not be evicted in replicated caches.
                             if (part == null || part.state() != OWNING)
                                 return false;
-
-                            // Mark that we checked this replicated cache.
-                            reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
                         }
+
+                        // Mark that we checked this replicated cache.
+                        reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
                     }
                 }
                 else { // Reserve primary partitions for partitioned cache (if no explicit given).
