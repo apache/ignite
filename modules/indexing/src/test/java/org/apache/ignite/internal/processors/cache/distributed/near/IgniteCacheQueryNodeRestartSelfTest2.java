@@ -177,7 +177,7 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
-        int duration = 150 * 1000;
+        int duration = 90 * 1000;
         int qryThreadNum = 4;
         int restartThreadsNum = 2; // 4 + 2 = 6 nodes
         final int nodeLifeTime = 2 * 1000;
@@ -196,6 +196,9 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
         assertEquals(pRes, grid(0).cache("pu").query(new SqlFieldsQuery(PARTITIONED_QRY)).getAll());
 
         final List<List<?>> rRes = grid(0).cache("co").query(new SqlFieldsQuery(REPLICATED_QRY)).getAll();
+
+        assertFalse(pRes.isEmpty());
+        assertFalse(rRes.isEmpty());
 
         final AtomicInteger qryCnt = new AtomicInteger();
 
@@ -235,7 +238,8 @@ public class IgniteCacheQueryNodeRestartSelfTest2 extends GridCommonAbstractTest
                                 if (!(th instanceof CacheException))
                                     continue;
 
-                                if (th.getMessage().startsWith("Failed to fetch data from node:")) {
+                                if (th.getMessage() != null &&
+                                    th.getMessage().startsWith("Failed to fetch data from node:")) {
                                     failedOnRemoteFetch = true;
 
                                     break;

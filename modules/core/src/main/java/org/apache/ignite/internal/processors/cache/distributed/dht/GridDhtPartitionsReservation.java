@@ -34,6 +34,13 @@ public class GridDhtPartitionsReservation implements GridReservable {
     private static final GridDhtLocalPartition[] EMPTY = {};
 
     /** */
+    private static final CI1<GridDhtPartitionsReservation> NO_OP = new CI1<GridDhtPartitionsReservation>() {
+        @Override public void apply(GridDhtPartitionsReservation gridDhtPartitionsReservation) {
+            throw new IllegalStateException();
+        }
+    };
+
+    /** */
     private final Object appKey;
 
     /** */
@@ -154,7 +161,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
         for (;;) {
             int r = reservations.get();
 
-            if (r == -1) // Invalidated by successful canEvict call.
+            if (r == -1) // Invalidated.
                 return false;
 
             assert r >= 0 : r;
@@ -224,20 +231,21 @@ public class GridDhtPartitionsReservation implements GridReservable {
         // Unpublish.
         CI1<GridDhtPartitionsReservation> u = unpublish.get();
 
-        if (u != null && unpublish.compareAndSet(u, null))
+        if (u != null && u != NO_OP && unpublish.compareAndSet(u, NO_OP))
             u.apply(this);
     }
 
     /**
      * Must be checked in {@link GridDhtLocalPartition#tryEvict(boolean)}.
-     * If returns {@code true} then probably partition will be evicted (or at least cleared),
-     * so this reservation object becomes invalid and must be dropped from the partition.
+     * If returns {@code true} this reservation object becomes invalid and partitions
+     * can be evicted or at least cleared.
      * Also this means that after returning {@code true} here method {@link #reserve()} can not
      * return {@code true} anymore.
      *
-     * @return {@code true} If this reservation is NOT reserved and partition CAN be evicted.
+     * @return {@code true} If this reservation was successfully invalidated because it was not
+     *          reserved and partitions can be evicted.
      */
-    public boolean canEvict() {
+    public boolean invalidate() {
         assert parts.get() != null : "all parts must be reserved before registration";
 
         int r = reservations.get();

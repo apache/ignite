@@ -505,14 +505,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code true} If there is a group reservation.
      */
     private boolean groupReserved() {
-        boolean reserved = false;
-
         for (GridDhtPartitionsReservation reservation : reservations) {
-            if (!reservation.canEvict())
-                reserved = true; // Calling all the reservations to allow them unregister themselves.
+            if (!reservation.invalidate())
+                return true; // Failed to invalidate reservation -> we are reserved.
         }
 
-        return reserved;
+        return false;
     }
 
     /**
