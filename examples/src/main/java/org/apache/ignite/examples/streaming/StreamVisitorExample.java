@@ -50,9 +50,6 @@ public class StreamVisitorExample {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
             // Financial instrument cache configuration.
             CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>("instCache");
 

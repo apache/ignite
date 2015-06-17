@@ -262,7 +262,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets join timeout.
      *
-     * @return Join timeout.
+     * @return Join timeout (in millisecondes).
      */
     @MXBeanDescription("Join timeout.")
     public long getJoinTimeout();

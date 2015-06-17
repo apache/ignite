@@ -44,9 +44,6 @@ public class StreamWords {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
             // The cache is configured with sliding window holding 1 second of the streaming data.
             IgniteCache<AffinityUuid, String> stmCache = ignite.getOrCreateCache(CacheConfig.wordCache());
 

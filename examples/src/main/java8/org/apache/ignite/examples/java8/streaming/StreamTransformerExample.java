@@ -47,9 +47,6 @@ public class StreamTransformerExample {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
             CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
 
             // Index key and value.

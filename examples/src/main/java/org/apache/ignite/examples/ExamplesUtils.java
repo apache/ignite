@@ -17,7 +17,6 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 
 import java.net.*;
@@ -72,22 +71,6 @@ public class ExamplesUtils {
 
         if (prjSize < size) {
             System.err.println(">>> Please start at least " + size + " cluster nodes to run example.");
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Checks if cluster has server nodes.
-     *
-     * @param ignite Ignite instance.
-     * @return {@code True} if cluster has server nodes, {@code false} otherwise.
-     */
-    public static boolean hasServerNodes(Ignite ignite) {
-        if (ignite.cluster().forServers().nodes().isEmpty()) {
-            System.err.println("Server nodes not found (start data nodes with ExampleNodeStartup class)");
 
             return false;
         }

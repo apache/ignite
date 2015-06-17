@@ -48,9 +48,6 @@ public class ServicesExample {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
             // Deploy services only on server nodes.
             IgniteServices svcs = ignite.services(ignite.cluster().forServers());
 

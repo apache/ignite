@@ -52,9 +52,6 @@ public class StreamVisitorExample {
         Ignition.setClientMode(true);
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            if (!ExamplesUtils.hasServerNodes(ignite))
-                return;
-
             // Market data cache with default configuration.
             CacheConfiguration<String, Double> mktDataCfg = new CacheConfiguration<>("marketTicks");
 
