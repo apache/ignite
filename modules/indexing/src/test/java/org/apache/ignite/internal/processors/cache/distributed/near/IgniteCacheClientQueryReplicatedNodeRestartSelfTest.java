@@ -194,7 +194,7 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     public void testRestarts() throws Exception {
         int duration = 90 * 1000;
         int qryThreadNum = 5;
-        int restartThreadsNum = 3; // 3 of 4 data nodes
+        int restartThreadsNum = 2; // 2 of 4 data nodes
         final int nodeLifeTime = 2 * 1000;
         final int logFreq = 10;
 
