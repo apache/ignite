@@ -193,8 +193,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testJoinTimeout() throws Exception {
         clientIpFinder = new TcpDiscoveryVmIpFinder();
@@ -544,8 +543,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectTopologyChange2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-998");
-
         maxMissedClientHbs = 100;
 
         clientsPerSrv = 1;
@@ -984,6 +981,41 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testJoinError() throws Exception {
+        startServerNodes(1);
+
+        Ignite ignite = G.ignite("server-0");
+
+        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        srvSpi.failNodeAddedMessage();
+
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinError2() throws Exception {
+        startServerNodes(1);
+
+        Ignite ignite = G.ignite("server-0");
+
+        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        srvSpi.failNodeAddedMessage();
+        srvSpi.failClientReconnectMessage();
+
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+    }
+
+    /**
      * @param clientIdx Client index.
      * @param srvIdx Server index.
      * @throws Exception In case of error.
@@ -1231,6 +1263,12 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /** */
         private final AtomicBoolean openSockLock = new AtomicBoolean();
 
+        /** */
+        private AtomicInteger failNodeAdded = new AtomicInteger();
+
+        /** */
+        private AtomicInteger failClientReconnect = new AtomicInteger();
+
         /**
          * @param lock Lock.
          */
@@ -1246,6 +1284,20 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
                 throw new RuntimeException(e);
             }
+        }
+
+        /**
+         *
+         */
+        void failNodeAddedMessage() {
+            failNodeAdded.set(1);
+        }
+
+        /**
+         *
+         */
+        void failClientReconnectMessage() {
+            failClientReconnect.set(1);
         }
 
         /**
@@ -1265,6 +1317,19 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             GridByteArrayOutputStream bout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
+
+            boolean fail = false;
+
+            if (msg instanceof TcpDiscoveryNodeAddedMessage)
+                fail = failNodeAdded.getAndDecrement() > 0;
+            else if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                fail = failClientReconnect.getAndDecrement() > 0;
+
+            if (fail) {
+                log.info("Close socket on message write [msg=" + msg + "]");
+
+                sock.close();
+            }
 
             super.writeToSocket(sock, msg, bout);
         }

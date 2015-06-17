@@ -503,7 +503,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     boolean skipNear = near() && isWriteToStoreFromDht;
 
                     for (IgniteTxEntry e : writeEntries) {
-                        if ((skipNear && e.cached().isNear()) || e.skipStore())
+                        boolean skip = (skipNear && e.cached().isNear()) ||
+                            e.skipStore() ||
+                            (e.context().store().isLocal() && !e.context().affinityNode());
+
+                        if (skip)
                             continue;
 
                         boolean intercept = e.context().config().getInterceptor() != null;

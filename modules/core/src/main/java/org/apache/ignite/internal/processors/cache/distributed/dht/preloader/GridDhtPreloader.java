@@ -102,7 +102,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 boolean set = topVer.setIfGreater(e.topologyVersion());
 
                 assert set : "Have you configured TcpDiscoverySpi for your in-memory data grid? [newVer=" +
-                    e.topologyVersion() + ", curVer=" + topVer.get() + ']';
+                    e.topologyVersion() + ", curVer=" + topVer.get() + ", evt=" + e + ']';
 
                 if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
                     for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())

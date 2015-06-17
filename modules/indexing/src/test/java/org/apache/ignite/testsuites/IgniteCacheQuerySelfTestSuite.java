@@ -112,7 +112,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(BaseH2CompareQueryTest.class);
         suite.addTestSuite(H2CompareBigQueryTest.class);
 
-        suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
+        // Cache query metrics.
+        suite.addTestSuite(CachePartitionedQueryMetricsSelfTest.class);
+        suite.addTestSuite(CacheReplicatedQueryMetricsSelfTest.class);
 
         //Unmarshallig query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
