@@ -139,6 +139,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * @return Operation context.
+     */
+    @Nullable public CacheOperationContext operationContext() {
+        return opCtx;
+    }
+
+    /**
      * Gets cache proxy which does not acquire read lock on gateway enter, should be
      * used only if grid read lock is externally acquired.
      *
