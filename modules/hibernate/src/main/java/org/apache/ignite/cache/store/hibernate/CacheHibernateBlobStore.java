@@ -19,6 +19,7 @@ package org.apache.ignite.cache.store.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -59,92 +60,8 @@ import java.util.concurrent.atomic.*;
  * <p>
  * If hibernate properties are provided, mapping
  * {@code GridCacheHibernateStoreEntry.hbm.xml} is included automatically.
- *
- * <h2 class="header">Java Example</h2>
- * In this example existing session factory is provided.
- * <pre name="code" class="java">
- *     ...
- *     CacheHibernateBlobStore&lt;String, String&gt; store = new CacheHibernateBlobStore&lt;String, String&gt;();
- *
- *     store.setSessionFactory(sesFactory);
- *     ...
- * </pre>
- *
- * <h2 class="header">Spring Example (using Spring ORM)</h2>
- * <pre name="code" class="xml">
- *   ...
- *   &lt;bean id=&quot;cache.hibernate.store&quot;
- *       class=&quot;org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStore&quot;&gt;
- *       &lt;property name=&quot;sessionFactory&quot;&gt;
- *           &lt;bean class=&quot;org.springframework.orm.hibernate3.LocalSessionFactoryBean&quot;&gt;
- *               &lt;property name=&quot;hibernateProperties&quot;&gt;
- *                   &lt;value&gt;
- *                       connection.url=jdbc:h2:mem:
- *                       show_sql=true
- *                       hbm2ddl.auto=true
- *                       hibernate.dialect=org.hibernate.dialect.H2Dialect
- *                   &lt;/value&gt;
- *               &lt;/property&gt;
- *               &lt;property name=&quot;mappingResources&quot;&gt;
- *                   &lt;list&gt;
- *                       &lt;value&gt;
- *                           org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml
- *                       &lt;/value&gt;
- *                   &lt;/list&gt;
- *               &lt;/property&gt;
- *           &lt;/bean&gt;
- *       &lt;/property&gt;
- *   &lt;/bean&gt;
- *   ...
- * </pre>
- *
- * <h2 class="header">Spring Example (using Spring ORM and persistent annotations)</h2>
- * <pre name="code" class="xml">
- *     ...
- *     &lt;bean id=&quot;cache.hibernate.store1&quot;
- *         class=&quot;org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStore&quot;&gt;
- *         &lt;property name=&quot;sessionFactory&quot;&gt;
- *             &lt;bean class=&quot;org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean&quot;&gt;
- *                 &lt;property name=&quot;hibernateProperties&quot;&gt;
- *                     &lt;value&gt;
- *                         connection.url=jdbc:h2:mem:
- *                         show_sql=true
- *                         hbm2ddl.auto=true
- *                         hibernate.dialect=org.hibernate.dialect.H2Dialect
- *                     &lt;/value&gt;
- *                 &lt;/property&gt;
- *                 &lt;property name=&quot;annotatedClasses&quot;&gt;
- *                     &lt;list&gt;
- *                         &lt;value&gt;
- *                             org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreEntry
- *                         &lt;/value&gt;
- *                     &lt;/list&gt;
- *                 &lt;/property&gt;
- *             &lt;/bean&gt;
- *         &lt;/property&gt;
- *     &lt;/bean&gt;
- *     ...
- * </pre>
- *
- * <h2 class="header">Spring Example</h2>
- * <pre name="code" class="xml">
- *     ...
- *     &lt;bean id=&quot;cache.hibernate.store2&quot;
- *         class=&quot;org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStore&quot;&gt;
- *         &lt;property name=&quot;hibernateProperties&quot;&gt;
- *             &lt;props&gt;
- *                 &lt;prop key=&quot;connection.url&quot;&gt;jdbc:h2:mem:&lt;/prop&gt;
- *                 &lt;prop key=&quot;hbm2ddl.auto&quot;&gt;update&lt;/prop&gt;
- *                 &lt;prop key=&quot;show_sql&quot;&gt;true&lt;/prop&gt;
- *             &lt;/props&gt;
- *         &lt;/property&gt;
- *     &lt;/bean&gt;
- *     ...
- * </pre>
  * <p>
- * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
- * <br>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * Use {@link CacheHibernateBlobStoreFactory} factory to pass {@link CacheHibernateBlobStore} to {@link CacheConfiguration}.
  */
 public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /**

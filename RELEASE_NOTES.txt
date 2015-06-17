@@ -8,8 +8,8 @@ Apache Ignite In-Memory Data Fabric 1.2
 * Added memory based evictions.
 * Added integration with Apache Spark.
 * Added integration with Apache Mesos.
-* Added support for log4j2.
 * Added IgniteCache.getAllOutTx() method.
+* Added serializable cache store factories for built-in stores.
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
