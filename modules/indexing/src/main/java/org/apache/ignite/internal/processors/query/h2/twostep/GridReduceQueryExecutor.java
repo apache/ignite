@@ -438,7 +438,8 @@ public class GridReduceQueryExecutor {
             assert !nodes.isEmpty();
 
             if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) : "We must be on a client node.";
+                assert qry.explain() || !nodes.contains(ctx.cluster().get().localNode()) :
+                    "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
                 nodes = Collections.singleton(F.rand(nodes));
