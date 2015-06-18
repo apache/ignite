@@ -51,7 +51,7 @@ public class TcpDiscoveryS3IpFinderSelfTest
             IgniteS3TestSuite.getSecretKey()));
 
         // Bucket name should be unique for the host to parallel test run on one bucket.
-        finder.setBucketName("ip-finder-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
+        finder.setBucketName("ip-finder-unit-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
