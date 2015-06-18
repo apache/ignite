@@ -31,28 +31,28 @@ public class IgniteCacheAtomicStopBusySelfTest extends IgniteCacheAbstractStopBu
 
     /** {@inheritDoc} */
     @Override public void testPut() throws Exception {
-        bannedMessage.set(GridNearAtomicUpdateRequest.class);
+        bannedMsg.set(GridNearAtomicUpdateRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
     @Override public void testPutBatch() throws Exception {
-        bannedMessage.set(GridNearAtomicUpdateRequest.class);
+        bannedMsg.set(GridNearAtomicUpdateRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
     @Override public void testPutAsync() throws Exception {
-        bannedMessage.set(GridNearAtomicUpdateRequest.class);
+        bannedMsg.set(GridNearAtomicUpdateRequest.class);
 
         super.testPut();
     }
 
     /** {@inheritDoc} */
     @Override public void testRemove() throws Exception {
-        bannedMessage.set(GridNearAtomicUpdateRequest.class);
+        bannedMsg.set(GridNearAtomicUpdateRequest.class);
 
         super.testPut();
     }
