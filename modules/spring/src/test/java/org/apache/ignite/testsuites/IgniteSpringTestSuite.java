@@ -23,6 +23,7 @@ import org.apache.ignite.cache.store.spring.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.p2p.*;
 import org.apache.ignite.spring.*;
+import org.apache.ignite.spring.autowired.*;
 
 /**
  * Spring tests.
@@ -54,6 +55,8 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(CacheJdbcBlobStoreFactorySelfTest.class);
 
         suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
+
+        suite.addTestSuite(SpringAutowiredSelfTest.class);
 
         return suite;
     }
