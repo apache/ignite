@@ -423,37 +423,38 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
 
         BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
             /**
-             * @param beanFactory The bean factory used by the application context.
-             * @param beanName Bean name.
              * @param def Registered BeanDefinition.
              * @throws BeansException in case of errors.
              */
-            private void processBeanDefinition(ConfigurableListableBeanFactory beanFactory, String beanName,
-                BeanDefinition def) throws BeansException {
-                if (def.getBeanClassName() != null) {
-                    try {
-                        Class.forName(def.getBeanClassName());
+            private void processNested(BeanDefinition def) throws BeansException {
+                MutablePropertyValues vals = def.getPropertyValues();
 
-                        MutablePropertyValues vals = def.getPropertyValues();
+                for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
+                    for (String excludedProp : excludedProps) {
+                        if (val.getName().equals(excludedProp)) {
+                            vals.removePropertyValue(val);
 
-                        for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                            for (String excludedProp : excludedProps) {
-                                if (val.getName().equals(excludedProp)) {
-                                    vals.removePropertyValue(val);
-
-                                    return;
-                                }
-                            }
-
-                            if (val.getValue() instanceof Iterable)
-                                for (Object beanDef : (Iterable)val.getValue())
-                                    if (beanDef instanceof BeanDefinitionHolder)
-                                        processBeanDefinition(beanFactory, beanName,
-                                            ((BeanDefinitionHolder)beanDef).getBeanDefinition());
+                            return;
                         }
                     }
-                    catch (ClassNotFoundException ignored) {
-                        ((BeanDefinitionRegistry) beanFactory).removeBeanDefinition(beanName);
+
+                    if (val.getValue() instanceof Collection) {
+                        Collection<?> nestedVals = (Collection) val.getValue();
+
+                        for (Object item : new ArrayList<>(nestedVals))
+                            if (item instanceof BeanDefinitionHolder) {
+                                BeanDefinitionHolder holder = (BeanDefinitionHolder)item;
+
+                                try {
+                                    if (holder.getBeanDefinition().getBeanClassName() != null)
+                                        Class.forName(holder.getBeanDefinition().getBeanClassName());
+
+                                    processNested(holder.getBeanDefinition());
+                                }
+                                catch (ClassNotFoundException ignored) {
+                                    nestedVals.remove(item);
+                                }
+                            }
                     }
                 }
             }
@@ -462,7 +463,17 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
             @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
                 throws BeansException {
                 for (String beanName : beanFactory.getBeanDefinitionNames())
-                    processBeanDefinition(beanFactory, beanName, beanFactory.getBeanDefinition(beanName));
+                    try {
+                        BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+
+                        if (def.getBeanClassName() != null)
+                            Class.forName(def.getBeanClassName());
+
+                        processNested(def);
+                    }
+                    catch (ClassNotFoundException ignored) {
+                        ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
+                    }
             }
         };
 
