@@ -20,6 +20,7 @@ package org.apache.ignite.spring;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.spring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -29,52 +30,49 @@ import java.util.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 
 /**
- * Checks exclude properties in spring, exclude beans with not existing classes.
+ * Checks excluding properties, beans with not existing classes in spring.
  */
-public class IgniteStartExcludesConfigurationTest extends GridCommonAbstractTest {
-    /** Tests spring exclude properties. */
-    public void testExcludes() throws Exception {
-        URL cfgLocation = U.resolveIgniteUrl(
-            "modules/spring/src/test/java/org/apache/ignite/spring/sprint-exclude.xml");
+public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
+    private URL cfgLocation = U.resolveIgniteUrl(
+        "modules/spring/src/test/java/org/apache/ignite/spring/sprint-exclude.xml");
 
-        IgniteSpringHelper spring = SPRING.create(false);
+    /** Spring should exclude properties by list and ignore beans with class not existing in classpath. */
+    public void testExclude() throws Exception {
+         IgniteSpringHelper spring = SPRING.create(false);
 
         Collection<IgniteConfiguration> cfgs = spring.loadConfigurations(cfgLocation, "typeMetadata").get1();
 
-        assert cfgs != null && cfgs.size() == 1;
+        assertNotNull(cfgs);
+        assertEquals(1, cfgs.size());
 
         IgniteConfiguration cfg = cfgs.iterator().next();
 
-        assert cfg.getCacheConfiguration().length == 1;
-
-        assert cfg.getCacheConfiguration()[0].getTypeMetadata() == null;
+        assertEquals(1, cfg.getCacheConfiguration().length);
+        assertNull(cfg.getCacheConfiguration()[0].getTypeMetadata());
 
         cfgs = spring.loadConfigurations(cfgLocation, "keyType").get1();
 
-        assert cfgs != null && cfgs.size() == 1;
+        assertNotNull(cfgs);
+        assertEquals(1, cfgs.size());
 
         cfg = cfgs.iterator().next();
 
-        assert cfg.getCacheConfiguration().length == 1;
+        assertEquals(1, cfg.getCacheConfiguration().length);
 
         Collection<CacheTypeMetadata> typeMetadatas = cfg.getCacheConfiguration()[0].getTypeMetadata();
 
-        assert typeMetadatas.size() == 1;
+        assertEquals(1, typeMetadatas.size());
+        assertNull(typeMetadatas.iterator().next().getKeyType());
+    }
 
-        assert typeMetadatas.iterator().next().getKeyType() == null;
+    /** Spring should fail if bean class not exist in classpath. */
+    public void testFail() throws Exception {
+        IgniteSpringHelper spring = SPRING.create(false);
 
-        cfgs = spring.loadConfigurations(cfgLocation).get1();
-
-        assert cfgs != null && cfgs.size() == 1;
-
-        cfg = cfgs.iterator().next();
-
-        assert cfg.getCacheConfiguration().length == 1;
-
-        typeMetadatas = cfg.getCacheConfiguration()[0].getTypeMetadata();
-
-        assert typeMetadatas.size() == 1;
-
-        assert "java.lang.Integer".equals(typeMetadatas.iterator().next().getKeyType());
+        try {
+             assertNotNull(spring.loadConfigurations(cfgLocation).get1());
+        } catch (Exception e) {
+            assertTrue(X.hasCause(e, ClassNotFoundException.class));
+        }
     }
 }

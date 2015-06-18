@@ -40,7 +40,7 @@ public class IgniteSpringTestSuite extends TestSuite {
 
         suite.addTest(IgniteResourceSelfTestSuite.suite());
 
-        suite.addTest(new TestSuite(IgniteStartExcludesConfigurationTest.class));
+        suite.addTest(new TestSuite(IgniteExcludeInConfigurationTest.class));
 
         // Tests moved to this suite since they require Spring functionality.
         suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));

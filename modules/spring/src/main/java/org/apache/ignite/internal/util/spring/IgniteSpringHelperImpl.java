@@ -421,63 +421,70 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     private static GenericApplicationContext prepareSpringContext(final String... excludedProps){
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
-        BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
-            /**
-             * @param def Registered BeanDefinition.
-             * @throws BeansException in case of errors.
-             */
-            private void processNested(BeanDefinition def) throws BeansException {
-                MutablePropertyValues vals = def.getPropertyValues();
+        if (excludedProps.length > 0) {
+            BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
+                /**
+                 * @param def Registered BeanDefinition.
+                 * @throws BeansException in case of errors.
+                 */
+                private void processNested(BeanDefinition def) throws BeansException {
+                    Iterator<PropertyValue> iterVals = def.getPropertyValues().getPropertyValueList().iterator();
 
-                for (PropertyValue val : new ArrayList<>(vals.getPropertyValueList())) {
-                    for (String excludedProp : excludedProps) {
-                        if (val.getName().equals(excludedProp)) {
-                            vals.removePropertyValue(val);
+                    while (iterVals.hasNext()) {
+                        PropertyValue val = iterVals.next();
 
-                            return;
+                        for (String excludedProp : excludedProps) {
+                            if (val.getName().equals(excludedProp)) {
+                                iterVals.remove();
+
+                                return;
+                            }
                         }
-                    }
 
-                    if (val.getValue() instanceof Collection) {
-                        Collection<?> nestedVals = (Collection) val.getValue();
+                        if (val.getValue() instanceof Iterable) {
+                            Iterator iterNested = ((Iterable)val.getValue()).iterator();
 
-                        for (Object item : new ArrayList<>(nestedVals))
-                            if (item instanceof BeanDefinitionHolder) {
-                                BeanDefinitionHolder holder = (BeanDefinitionHolder)item;
+                            while (iterNested.hasNext()) {
+                                Object item = iterNested.next();
 
-                                try {
-                                    if (holder.getBeanDefinition().getBeanClassName() != null)
-                                        Class.forName(holder.getBeanDefinition().getBeanClassName());
+                                if (item instanceof BeanDefinitionHolder) {
+                                    BeanDefinitionHolder h = (BeanDefinitionHolder)item;
 
-                                    processNested(holder.getBeanDefinition());
-                                }
-                                catch (ClassNotFoundException ignored) {
-                                    nestedVals.remove(item);
+                                    try {
+                                        if (h.getBeanDefinition().getBeanClassName() != null)
+                                            Class.forName(h.getBeanDefinition().getBeanClassName());
+
+                                        processNested(h.getBeanDefinition());
+                                    }
+                                    catch (ClassNotFoundException ignored) {
+                                        iterNested.remove();
+                                    }
                                 }
                             }
+                        }
                     }
                 }
-            }
 
-            /** {@inheritDoc} */
-            @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
-                throws BeansException {
-                for (String beanName : beanFactory.getBeanDefinitionNames())
-                    try {
-                        BeanDefinition def = beanFactory.getBeanDefinition(beanName);
+                @Override public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+                    throws BeansException {
+                    for (String beanName : beanFactory.getBeanDefinitionNames()) {
+                        try {
+                            BeanDefinition def = beanFactory.getBeanDefinition(beanName);
 
-                        if (def.getBeanClassName() != null)
-                            Class.forName(def.getBeanClassName());
+                            if (def.getBeanClassName() != null)
+                                Class.forName(def.getBeanClassName());
 
-                        processNested(def);
+                            processNested(def);
+                        }
+                        catch (ClassNotFoundException ignored) {
+                            ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
+                        }
                     }
-                    catch (ClassNotFoundException ignored) {
-                        ((BeanDefinitionRegistry)beanFactory).removeBeanDefinition(beanName);
-                    }
-            }
-        };
+                }
+            };
 
-        springCtx.addBeanFactoryPostProcessor(postProc);
+            springCtx.addBeanFactoryPostProcessor(postProc);
+        }
 
         return springCtx;
     }
