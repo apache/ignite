@@ -902,7 +902,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         Collections.sort(addrs, U.inetAddressesComparator(sameHost));
 
-        LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(addrs);
+        LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>();
+
+        InetSocketAddress lastAddr = node.lastSuccessfulAddress();
+
+        if (lastAddr != null)
+            res.add(lastAddr);
+
+        res.addAll(addrs);
 
         Collection<InetSocketAddress> extAddrs = node.attribute(createSpiAttributeName(ATTR_EXT_ADDRS));
 
