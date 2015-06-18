@@ -107,6 +107,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return {@code true} If indexing module is in classpath and successfully initialized.
+     */
+    public boolean moduleEnabled() {
+        return idx != null;
+    }
+
+    /**
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
