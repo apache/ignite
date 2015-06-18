@@ -379,8 +379,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             int exp = affNodes.size();
 
-                            Collection<ClusterNode> owners = top.topologyVersion() == AffinityTopologyVersion.NONE ?
-                                Collections.<ClusterNode>emptyList() : top.nodes(p, AffinityTopologyVersion.NONE);
+                            GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+                            Collection<ClusterNode> owners = (topFut != null && topFut.isDone()) ?
+                                top.nodes(p, AffinityTopologyVersion.NONE) : Collections.<ClusterNode>emptyList();
 
                             int actual = owners.size();
 
@@ -390,6 +392,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     ", cache=" + cfg.getName() +
                                     ", cacheId=" + dht.context().cacheId() +
                                     ", topVer=" + top.topologyVersion() +
+                                    ", topFut=" + topFut +
                                     ", p=" + p +
                                     ", affNodesCnt=" + exp +
                                     ", ownersCnt=" + actual +
@@ -406,6 +409,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
+                                        ", topFut=" + topFut +
                                         ", p=" + p +
                                         ", affNodesCnt=" + exp +
                                         ", ownersCnt=" + actual +

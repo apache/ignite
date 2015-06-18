@@ -440,7 +440,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
                 IgniteBiTuple<UUID, Boolean> t = pingNode(addr, clientNodeId);
 
-                return node.id().equals(t.get1()) && (clientNodeId == null || t.get2());
+                boolean res = node.id().equals(t.get1()) && (clientNodeId == null || t.get2());
+
+                if (res)
+                    node.lastSuccessfulAddress(addr);
+
+                return res;
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
@@ -458,8 +463,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Pings the node by its address to see if it's alive.
      *
      * @param addr Address of the node.
+     * @param clientNodeId Client node ID.
      * @return ID of the remote node and "client exists" flag if node alive.
-     * @throws IgniteSpiException If an error occurs.
+     * @throws IgniteCheckedException If an error occurs.
      */
     private IgniteBiTuple<UUID, Boolean> pingNode(InetSocketAddress addr, @Nullable UUID clientNodeId)
         throws IgniteCheckedException {
@@ -1589,8 +1595,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     regAddrs,
                     F.notContains(currAddrs),
                     new P1<InetSocketAddress>() {
-                        private final Map<InetSocketAddress, Boolean> pingResMap =
-                            new HashMap<>();
+                        private final Map<InetSocketAddress, Boolean> pingResMap = new HashMap<>();
 
                         @Override public boolean apply(InetSocketAddress addr) {
                             Boolean res = pingResMap.get(addr);
@@ -2092,6 +2097,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     errs = null;
 
                                     success = true;
+
+                                    next.lastSuccessfulAddress(addr);
                                 }
                             }
                             catch (IOException | IgniteCheckedException e) {
@@ -2320,6 +2327,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 for (TcpDiscoveryNode n : failedNodes)
                     msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
+
+                LT.warn(log, null, "Local node has detected failed nodes and started cluster-wide procedure. " +
+                        "To speed up failure detection please see 'Failure Detection' section under javadoc" +
+                        "for 'TcpDiscoverySpi'");
             }
         }
 
@@ -2671,6 +2682,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (InetSocketAddress addr : spi.getNodeAddresses(node, U.sameMacs(locNode, node))) {
                 try {
                     sendMessageDirectly(msg, addr);
+
+                    node.lastSuccessfulAddress(addr);
 
                     ex = null;
 
@@ -4103,8 +4116,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (U.isMacInvalidArgumentError(e))
                             LT.error(log, e, "Failed to initialize connection [sock=" + sock + "]\n\t" +
                                 U.MAC_INVALID_ARG_MSG);
-                        else
-                            LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
+                        else {
+                            U.error(
+                                log,
+                                "Failed to initialize connection (this can happen due to short time " +
+                                    "network problems and can be ignored if does not affect node discovery) " +
+                                    "[sock=" + sock + ']',
+                                e);
+                        }
                     }
 
                     onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
@@ -4588,7 +4607,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         *
+         * @param res Ping result.
          */
         public void pingResult(boolean res) {
             GridFutureAdapter<Boolean> fut = pingFut.getAndSet(null);
@@ -4598,7 +4617,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         *
+         * @throws InterruptedException If interrupted.
          */
         public boolean ping() throws InterruptedException {
             if (spi.isNodeStopping0())
