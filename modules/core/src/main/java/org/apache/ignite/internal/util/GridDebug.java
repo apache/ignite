@@ -180,6 +180,25 @@ public class GridDebug {
     }
 
     /**
+     * Dumps given number of last events.
+     *
+     * @param n Number of last elements to dump.
+     */
+    public static void dumpLastAndStop(int n) {
+        ConcurrentLinkedQueue<Item> q = que.getAndSet(null);
+
+        if (q == null)
+            return;
+
+        int size = q.size();
+
+        while (size-- > n)
+            q.poll();
+
+        dump(q);
+    }
+
+    /**
      * Dump given queue to stdout.
      *
      * @param que Queue.

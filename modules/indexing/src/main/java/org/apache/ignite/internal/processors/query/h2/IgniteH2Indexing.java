@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.*;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
@@ -1130,11 +1129,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param space Space name.
      * @return Schema name.
      */
-    private static String schema(@Nullable String space) {
+    public static String schema(@Nullable String space) {
         if (space == null)
             return "";
 
         return space;
+    }
+
+    /**
+     * @param schema Schema.
+     * @return Space name.
+     */
+    public static String space(String schema) {
+        assert schema != null;
+
+        return "".equals(schema) ? null : schema;
     }
 
     /** {@inheritDoc} */
@@ -1355,27 +1364,77 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexingQueryFilter backupFilter() {
+    @Override public IndexingQueryFilter backupFilter(
+        @Nullable final List<String> caches,
+        @Nullable final AffinityTopologyVersion topVer,
+        @Nullable final int[] parts
+    ) {
+        final AffinityTopologyVersion topVer0 = topVer != null ? topVer : AffinityTopologyVersion.NONE;
+
         return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
 
-                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
+                if (cache.context().isReplicated() || (cache.configuration().getBackups() == 0 && parts == null))
                     return null;
+
+                final GridCacheAffinityManager aff = cache.context().affinity();
+
+                if (parts != null) {
+                    if (parts.length < 64) { // Fast scan for small arrays.
+                        return new IgniteBiPredicate<K,V>() {
+                            @Override public boolean apply(K k, V v) {
+                                int p = aff.partition(k);
+
+                                for (int p0 : parts) {
+                                    if (p0 == p)
+                                        return true;
+
+                                    if (p0 > p) // Array is sorted.
+                                        return false;
+                                }
+
+                                return false;
+                            }
+                        };
+                    }
+
+                    return new IgniteBiPredicate<K,V>() {
+                        @Override public boolean apply(K k, V v) {
+                            int p = aff.partition(k);
+
+                            return Arrays.binarySearch(parts, p) >= 0;
+                        }
+                    };
+                }
+
+                final ClusterNode locNode = ctx.discovery().localNode();
 
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primary(ctx.discovery().localNode(), k,
-                            AffinityTopologyVersion.NONE);
+                        return aff.primary(locNode, k, topVer0);
                     }
                 };
             }
         };
     }
 
-    /** {@inheritDoc} */
-    @Override public MessageFactory messageFactory() {
-        return new GridH2ValueMessageFactory();
+    /**
+     * @return Ready topology version.
+     */
+    public AffinityTopologyVersion readyTopologyVersion() {
+        return ctx.cache().context().exchange().readyAffinityVersion();
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void awaitForReadyTopologyVersion(AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        IgniteInternalFuture<?> fut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
+
+        if (fut != null)
+            fut.get();
     }
 
     /**

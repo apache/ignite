@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 
@@ -54,6 +55,9 @@ public class GridQueryNextPageResponse implements Message {
     /** */
     @GridDirectTransient
     private transient Collection<?> plainRows;
+
+    /** */
+    private AffinityTopologyVersion retry;
 
     /**
      * For {@link Externalizable}.
@@ -187,6 +191,12 @@ public class GridQueryNextPageResponse implements Message {
 
                 writer.incrementState();
 
+            case 6:
+                if (!writer.writeMessage("retry", retry))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -248,6 +258,14 @@ public class GridQueryNextPageResponse implements Message {
 
                 reader.incrementState();
 
+            case 6:
+                retry = reader.readMessage("retry");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return true;
@@ -260,6 +278,20 @@ public class GridQueryNextPageResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
+    }
+
+    /**
+     * @return Retry topology version.
+     */
+    public AffinityTopologyVersion retry() {
+        return retry;
+    }
+
+    /**
+     * @param retry Retry topology version.
+     */
+    public void retry(AffinityTopologyVersion retry) {
+        this.retry = retry;
     }
 }
