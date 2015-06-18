@@ -226,7 +226,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (cfg.getCacheStoreFactory() == null) {
-            Factory<CacheLoader> ldrFactory = cfg.isReadThrough() ? cfg.getCacheLoaderFactory() : null;
+            Factory<CacheLoader> ldrFactory = cfg.getCacheLoaderFactory();
             Factory<CacheWriter> writerFactory = cfg.isWriteThrough() ? cfg.getCacheWriterFactory() : null;
 
             if (ldrFactory != null || writerFactory != null)
@@ -1994,7 +1994,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>(e);
         }
 
-        startCtxs.putIfAbsent(maskNull(cacheName), new CacheStartContext(ctx, cfg));
+        req.startContext(new CacheStartContext(ctx, cfg));
 
         return F.first(initiateCacheChanges(F.asList(req), failIfExists));
     }
@@ -2026,8 +2026,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.cacheName(), req.deploymentId(), req);
 
             try {
+                String masked = maskNull(req.cacheName());
+
                 if (req.stop()) {
-                    DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+                    DynamicCacheDescriptor desc = registeredCaches.get(masked);
 
                     if (desc == null)
                         // No-op.
@@ -2046,8 +2048,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (fut.isDone())
                     continue;
 
-                DynamicCacheStartFuture old = (DynamicCacheStartFuture)pendingFuts.putIfAbsent(
-                    maskNull(req.cacheName()), fut);
+                DynamicCacheStartFuture old = (DynamicCacheStartFuture)pendingFuts.putIfAbsent(masked, fut);
 
                 if (old != null) {
                     if (req.start()) {
@@ -2073,6 +2074,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         continue;
                     }
+                }
+                else {
+                    CacheStartContext oldStartCtx = startCtxs.put(masked, req.startContext());
+
+                    assert oldStartCtx == null;
                 }
 
                 if (fut.isDone())

@@ -63,6 +63,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Template configuration flag. */
     private boolean template;
 
+    /** Start context. */
+    private transient CacheStartContext startCtx;
+
     /**
      * Constructor creates cache stop request.
      *
@@ -218,6 +221,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void failIfExists(boolean failIfExists) {
         this.failIfExists = failIfExists;
+    }
+
+    /**
+     * @return Start context.
+     */
+    public CacheStartContext startContext() {
+        return startCtx;
+    }
+
+    /**
+     * @param startCtx Start context.
+     */
+    public void startContext(CacheStartContext startCtx) {
+        this.startCtx = startCtx;
     }
 
     /** {@inheritDoc} */
