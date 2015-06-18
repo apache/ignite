@@ -4103,8 +4103,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (U.isMacInvalidArgumentError(e))
                             LT.error(log, e, "Failed to initialize connection [sock=" + sock + "]\n\t" +
                                 U.MAC_INVALID_ARG_MSG);
-                        else
-                            LT.error(log, e, "Failed to initialize connection [sock=" + sock + ']');
+                        else {
+                            U.error(
+                                log,
+                                "Failed to initialize connection (this can happen due to short time " +
+                                    "network problems and can be ignored if does not affect node discovery) " +
+                                    "[sock=" + sock + ']',
+                                e);
+                        }
                     }
 
                     onException("Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
