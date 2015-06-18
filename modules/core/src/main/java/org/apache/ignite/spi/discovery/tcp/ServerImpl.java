@@ -2320,6 +2320,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 for (TcpDiscoveryNode n : failedNodes)
                     msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
+
+                LT.warn(log, null, "Local node has detected failed nodes and started cluster-wide procedure. " +
+                        "To speed up failure detection please see 'Failure Detection' section under javadoc" +
+                        "for 'TcpDiscoverySpi'");
             }
         }
 

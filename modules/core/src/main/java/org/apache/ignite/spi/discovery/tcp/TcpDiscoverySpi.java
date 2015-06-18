@@ -64,9 +64,9 @@ import java.util.concurrent.atomic.*;
  * {@link TcpDiscoveryIpFinder} about self start (stops when send succeeds)
  * and then this info goes to coordinator. When coordinator processes join request
  * and issues node added messages and all other nodes then receive info about new node.
- * <h1 class="header">Configuration</h1>
- * <h2 class="header">Important Notice</h2>
- * Configuration defaults are chosen to make possible for discovery SPI to reliably work on
+ * <h1 class="header">Failure Detection</h1>
+ * Configuration defaults (see Configuration section below for details)
+ * are chosen to make possible for discovery SPI work reliably on
  * most of hardware and virtual deployments, but this has made failure detection time worse.
  * <p>
  * For stable low-latency networks the following more aggressive settings are recommended
@@ -76,6 +76,7 @@ import java.util.concurrent.atomic.*;
  * <li>Socket timeout (see {@link #setSocketTimeout(long)}) - 200ms</li>
  * <li>Message acknowledgement timeout (see {@link #setAckTimeout(long)}) - 50ms</li>
  * </ul>
+ * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * There are no mandatory configuration parameters.
  * <h2 class="header">Optional</h2>
