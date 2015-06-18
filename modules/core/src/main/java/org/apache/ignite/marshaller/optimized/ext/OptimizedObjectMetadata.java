@@ -46,40 +46,9 @@ public class OptimizedObjectMetadata implements Externalizable {
         if (fieldsInfo == null)
             fieldsInfo = new ArrayList<>();
 
-        int len = 1;
 
-        switch (fieldType) {
-            case BYTE:
-            case BOOLEAN:
-                len += 1;
-                break;
 
-            case SHORT:
-            case CHAR:
-                len += 2;
-                break;
-
-            case INT:
-            case FLOAT:
-                len += 4;
-                break;
-
-            case LONG:
-            case DOUBLE:
-                len += 8;
-                break;
-
-            case OTHER:
-                len = OptimizedMarshallerExt.VARIABLE_LEN;
-                break;
-
-            default:
-                throw new IgniteException("Unknown field type: " + fieldType);
-        }
-
-        assert len != 1;
-
-        fieldsInfo.add(new FieldInfo(fieldId, len));
+        fieldsInfo.add(new FieldInfo(fieldId, fieldType));
     }
 
     /**
@@ -111,7 +80,7 @@ public class OptimizedObjectMetadata implements Externalizable {
 
         for (FieldInfo fieldInfo : fieldsInfo) {
             out.writeInt(fieldInfo.id);
-            out.writeInt(fieldInfo.len);
+            out.writeByte(fieldInfo.type.ordinal());
         }
     }
 
@@ -122,7 +91,7 @@ public class OptimizedObjectMetadata implements Externalizable {
         fieldsInfo = new ArrayList<>(size);
 
         for (int i = 0; i < size; i++)
-            fieldsInfo.add(new FieldInfo(in.readInt(), in.readInt()));
+            fieldsInfo.add(new FieldInfo(in.readInt(), OptimizedFieldType.values()[in.readByte()]));
     }
 
     /**
@@ -132,18 +101,54 @@ public class OptimizedObjectMetadata implements Externalizable {
         /** Field ID. */
         int id;
 
-        /** Field type. */
+        /** Field len. */
         int len;
+
+        /** Field type. */
+        OptimizedFieldType type;
 
         /**
          * Constructor.
          *
          * @param id Field ID.
-         * @param len Field len.
+         * @param type Field len.
          */
-        public FieldInfo(int id, int len) {
+        public FieldInfo(int id, OptimizedFieldType type) {
             this.id = id;
-            this.len = len;
+            this.type = type;
+
+            len = 1;
+
+            switch (type) {
+                case BYTE:
+                case BOOLEAN:
+                    len += 1;
+                    break;
+
+                case SHORT:
+                case CHAR:
+                    len += 2;
+                    break;
+
+                case INT:
+                case FLOAT:
+                    len += 4;
+                    break;
+
+                case LONG:
+                case DOUBLE:
+                    len += 8;
+                    break;
+
+                case OTHER:
+                    len = OptimizedMarshallerExt.VARIABLE_LEN;
+                    break;
+
+                default:
+                    throw new IgniteException("Unknown field type: " + type);
+            }
+
+            assert len != 1;
         }
     }
 }
