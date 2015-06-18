@@ -2535,7 +2535,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheProxy<?, ?> cache = jCacheProxies.get(masked);
 
         if (cache == null) {
-            dynamicStartCache(null, name, null, false, false);
+            dynamicStartCache(null, name, null, false, true).get();
 
             cache = jCacheProxies.get(masked);
         }
