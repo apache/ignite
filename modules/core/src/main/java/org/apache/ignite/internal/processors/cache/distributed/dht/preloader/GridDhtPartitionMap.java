@@ -23,6 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+
 /**
  * Partition map.
  */
@@ -38,6 +40,9 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
     /** */
     private Map<Integer, GridDhtPartitionState> map;
+
+    /** */
+    private volatile int moving;
 
     /**
      * @param nodeId Node ID.
@@ -72,7 +77,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
             GridDhtPartitionState state = e.getValue();
 
             if (!onlyActive || state.active())
-                map.put(e.getKey(), state);
+                put(e.getKey(), state);
         }
     }
 
@@ -88,7 +93,22 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @param state Partition state.
      */
     public void put(Integer part, GridDhtPartitionState state) {
-        map.put(part, state);
+        GridDhtPartitionState old = map.put(part, state);
+
+        if (old == MOVING)
+            moving--;
+
+        if (state == MOVING)
+            moving++;
+    }
+
+    /**
+     * @return {@code true} If partition map contains moving partitions.
+     */
+    public boolean hasMovingPartitions() {
+        assert moving >= 0 : moving;
+
+        return moving != 0;
     }
 
     /**
@@ -214,7 +234,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
             int part = entry & 0x3FFF;
             int ordinal = entry >> 14;
 
-            map.put(part, GridDhtPartitionState.fromOrdinal(ordinal));
+            put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }
     }
 

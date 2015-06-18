@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.s3;
+package org.apache.ignite.internal.processors.cache;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.apache.ignite.testsuites.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
- * Grid S3 checkpoint SPI start stop self test.
+ *
  */
-@GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
-public class S3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<S3CheckpointSpi> {
+public class CacheStoreUsageMultinodeStaticStartAtomicTest extends CacheStoreUsageMultinodeStaticStartAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(S3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
-
-        spi.setAwsCredentials(cred);
-
-        spi.setBucketNameSuffix("unit-test-bucket");
-
-        super.spiConfigure(spi);
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 }

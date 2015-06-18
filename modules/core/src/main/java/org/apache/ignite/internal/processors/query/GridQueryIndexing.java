@@ -21,12 +21,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -240,14 +240,10 @@ public interface GridQueryIndexing {
     /**
      * Returns backup filter.
      *
+     * @param caches List of caches.
+     * @param topVer Topology version.
+     * @param parts Partitions.
      * @return Backup filter.
      */
-    public IndexingQueryFilter backupFilter();
-
-    /**
-     * Gets message factory.
-     *
-     * @return Message factory.
-     */
-    public MessageFactory messageFactory();
+    public IndexingQueryFilter backupFilter(List<String> caches, AffinityTopologyVersion topVer, int[] parts);
 }
