@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.marshaller.optimized.ext;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.marshaller.*;
@@ -167,6 +168,11 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
         if (footerLen == EMPTY_FOOTER)
             return null;
 
+        // reading 'hasHandles' flag. 1 byte - additional offset to get to the flag position.
+        in.position(in.position() - FOOTER_LEN_OFF - 1);
+
+        boolean hasHandles = in.readBoolean();
+
         // 4 - skipping length at the beginning
         int footerOff = (end - footerLen) + 4;
         in.position(footerOff);
@@ -175,13 +181,33 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
 
         for (OptimizedObjectMetadata.FieldInfo info : meta.getMeta()) {
             if (info.id == fieldId) {
-                //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
-                fieldOff += 1 + 4 + clsNameLen + 2;
+                int len = info.len == VARIABLE_LEN ? in.readInt() : info.len;
+                int handlePos;
 
-                return new FieldRange(start + fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
+                if (hasHandles && info.len == VARIABLE_LEN)
+                    handlePos = in.readInt();
+                else
+                    handlePos = NOT_A_HANDLE;
+
+                if (handlePos == NOT_A_HANDLE) {
+                    //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
+                    fieldOff += 1 + 4 + clsNameLen + 2;
+
+                    return new FieldRange(start + fieldOff, len);
+                }
+                else {
+                    throw new IgniteException("UNSUPPORTED YET");
+                }
             }
-            else
-                fieldOff += info.len == VARIABLE_LEN ? in.readShort() : info.len;
+            else {
+                fieldOff += info.len == VARIABLE_LEN ? in.readInt() : info.len;
+
+                if (hasHandles) {
+                    in.skipBytes(4);
+                    fieldOff += 4;
+                }
+
+            }
         }
 
         return null;

@@ -72,22 +72,25 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
      */
     private class FooterImpl implements OptimizedObjectOutputStream.Footer {
         /** */
-        private ArrayList<Short> data;
+        private ArrayList<Integer> data;
 
         /** */
-        private int headerPos;
+        private ArrayList<Integer> fields;
+
+        /** */
+        private HashMap<Integer, Integer> handles;
+
+        /** */
+        private boolean hasHandles;
 
         /** {@inheritDoc} */
         @Override public void fields(OptimizedClassDescriptor.Fields fields) {
-            if (fields.fieldsIndexingSupported())
+            if (fields.fieldsIndexingSupported()) {
                 data = new ArrayList<>();
+                this.fields = new ArrayList<>();
+            }
             else
                 data = null;
-        }
-
-        /** {@inheritDoc} */
-        public void headerPos(int pos) {
-            headerPos = pos;
         }
 
         /** {@inheritDoc} */
@@ -95,14 +98,26 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
             if (data == null)
                 return;
 
-            // Considering that field's length will be no longer 2^15 (32 MB)
-            if (fieldType == OptimizedFieldType.OTHER)
-                data.add((short)len);
+            if (fieldType == OptimizedFieldType.OTHER) {
+                data.add(len);
+                fields.add(fieldId);
+            }
         }
 
         /** {@inheritDoc} */
-        @Override public void putHandle(int fieldId, int handleId) {
-            disable();
+        @Override public void putHandle(int fieldId, int handlePos) {
+            if (data == null)
+                return;
+
+            if (!hasHandles) {
+                hasHandles = true;
+                handles = new HashMap<>();
+            }
+
+            handles.put(fieldId, handlePos);
+
+            // length of handle fields is 5 bytes.
+            put(fieldId, OptimizedFieldType.OTHER, 5);
         }
 
         /** {@inheritDoc} */
@@ -110,16 +125,29 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
             if (data == null)
                 writeInt(EMPTY_FOOTER);
             else {
-                //12 - 4 bytes for len at the beginning, 4 bytes for len at the end, 4 bytes for object len.
-                int footerLen = data.size() * 2 + 12;
+                //9 - 4 bytes for len at the beginning, 4 bytes for len at the end, 1 byte for 'hasHandles' flag
+                int footerLen = data.size() * 4 + 9;
+
+                if (hasHandles)
+                    footerLen += data.size() * 4;
 
                 writeInt(footerLen);
 
-                for (short fieldLen : data)
-                    writeShort(fieldLen);
+                if (hasHandles) {
+                    for (int i = 0; i < data.size(); i++) {
+                        writeInt(data.get(i));
 
-                // object total len
-                writeInt((out.size() - headerPos) + 8);
+                        Integer handlePos = handles.get(fields.get(i));
+
+                        writeInt(handlePos == null ? NOT_A_HANDLE : handlePos);
+                    }
+                }
+                else {
+                    for (int fieldLen : data)
+                        writeInt(fieldLen);
+                }
+
+                writeBoolean(hasHandles);
 
                 writeInt(footerLen);
             }

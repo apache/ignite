@@ -724,12 +724,10 @@ public class OptimizedClassDescriptor {
                         "set OptimizedMarshaller.setRequireSerializable() to false " +
                         "(note that performance may degrade if object is not Serializable): " + name);
 
-                int headerPos = out.out().size() - 1;
-
                 writeTypeData(out);
 
                 out.writeShort(checksum);
-                out.writeSerializable(obj, writeObjMtds, fields, headerPos);
+                out.writeSerializable(obj, writeObjMtds, fields);
 
                 break;
 

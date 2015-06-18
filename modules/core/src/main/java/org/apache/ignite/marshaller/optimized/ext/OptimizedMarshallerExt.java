@@ -41,6 +41,9 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     static final byte VARIABLE_LEN = -1;
 
     /** */
+    static final byte NOT_A_HANDLE = -1;
+
+    /** */
     private OptimizedMarshallerExtMetaHandler metaHandler;
 
     /**

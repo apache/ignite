@@ -154,7 +154,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param obj Object.
      * @throws IOException In case of error.
      *
-     * @return Handle ID that has already written {@code obj} or -1 if the {@code obj} has not been written before.
+     * @return Handle's position in {@link #out} or -1 if the {@code obj} has not been written before.
      */
     private int writeObject0(Object obj) throws IOException {
         curObj = null;
@@ -204,7 +204,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 }
 
                 if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
-                    handle = handles.lookup(obj);
+                    handle = handles.lookup(obj, out.offset());
 
                 if (obj0 != obj) {
                     obj = obj0;
@@ -218,6 +218,8 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 if (handle >= 0) {
                     writeByte(HANDLE);
                     writeInt(handle);
+
+                    handle = handles.position(handle);
                 }
                 else
                     desc.write(this, obj);
@@ -303,18 +305,15 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param obj Object.
      * @param mtds {@code writeObject} methods.
      * @param fields class fields details.
-     * @param headerPos Object's header position in the OutputStream.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields, int headerPos)
+    void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields)
         throws IOException {
         Footer footer = createFooter(obj.getClass());
 
-        if (footer != null) {
+        if (footer != null)
             footer.fields(fields);
-            footer.headerPos(headerPos);
-        }
 
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -978,13 +977,6 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
         void fields(OptimizedClassDescriptor.Fields fields);
 
         /**
-         * Sets field's header absolute position.
-         *
-         * @param pos Absolute position.
-         */
-        void headerPos(int pos);
-
-        /**
          * Puts type ID and its value len to the footer.
          *
          * @param fieldId   Field ID.
@@ -998,9 +990,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
          * Puts handle ID for the given field ID.
          *
          * @param fieldId Field ID.
-         * @param handleId Handle ID.
+         * @param handlePos Handle position in output stream.
          */
-        void putHandle(int fieldId, int handleId);
+        void putHandle(int fieldId, int handlePos);
 
         /**
          * Writes footer content to the OutputStream.
