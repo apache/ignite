@@ -1917,7 +1917,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             req.clientStartOnly(true);
                     }
                     else
-                        return new GridFinishedFuture<>();
+                        req.clientStartOnly(true);
 
                     req.deploymentId(desc.deploymentId());
 
@@ -1948,14 +1948,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ccfg = desc.cacheConfiguration();
 
             if (ccfg == null)
-                return new GridFinishedFuture<>(new CacheExistsException("Failed to start near cache " +
+                return new GridFinishedFuture<>(new CacheExistsException("Failed to start client cache " +
                     "(a cache with the given name is not started): " + cacheName));
 
             if (CU.affinityNode(ctx.discovery().localNode(), ccfg.getNodeFilter())) {
                 if (ccfg.getNearConfiguration() != null)
                     return new GridFinishedFuture<>();
                 else
-                    return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start near cache " +
+                    return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start client cache " +
                         "(local node is an affinity node for cache): " + cacheName));
             }
 
@@ -2523,12 +2523,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        IgniteCache<K, V> jcache = (IgniteCache<K, V>)jCacheProxies.get(maskNull(name));
+        String masked = maskNull(name);
 
-        if (jcache == null)
-            jcache = startJCache(name, true);
+        IgniteCacheProxy<?, ?> cache = jCacheProxies.get(masked);
 
-        return jcache == null ? null : ((IgniteCacheProxy<K, V>)jcache).internalProxy();
+        if (cache == null) {
+            dynamicStartCache(null, name, null, false);
+
+            cache = jCacheProxies.get(masked);
+        }
+
+        return cache == null ? null : (IgniteInternalCache<K, V>)cache.internalProxy();
     }
 
     /**
@@ -2638,57 +2643,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc != null && !desc.cacheType().userCache())
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
-        if (cache == null)
-           cache = startJCache(cacheName, failIfNotStarted);
+        if (cache == null) {
+            dynamicStartCache(null, cacheName, null, false).get();
 
-        return (IgniteCacheProxy<K, V>)cache;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
-     *        otherwise returns {@code null} in this case.
-     * @return Cache instance for given name.
-     * @throws IgniteCheckedException If failed.
-     */
-    private IgniteCacheProxy startJCache(String cacheName, boolean failIfNotStarted) throws IgniteCheckedException {
-        checkEmptyTransactions();
-
-        String masked = maskNull(cacheName);
-
-        DynamicCacheDescriptor desc = registeredCaches.get(masked);
-
-        if (desc == null || desc.cancelled()) {
-            if (failIfNotStarted)
-                throw new IllegalArgumentException("Cache is not started: " + cacheName);
-
-            return null;
+            cache = jCacheProxies.get(masked);
         }
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
-
-        req.cacheName(cacheName);
-
-        req.deploymentId(desc.deploymentId());
-
-        CacheConfiguration cfg = new CacheConfiguration(desc.cacheConfiguration());
-
-        cfg.setNearConfiguration(null);
-
-        req.startCacheConfiguration(cfg);
-
-        req.cacheType(desc.cacheType());
-
-        req.clientStartOnly(true);
-
-        F.first(initiateCacheChanges(F.asList(req), false)).get();
-
-        IgniteCacheProxy cache = jCacheProxies.get(masked);
-
-        if (cache == null && failIfNotStarted)
-            throw new IllegalArgumentException("Cache is not started: " + cacheName);
-
-        return cache;
+        return (IgniteCacheProxy<K, V>)cache;
     }
 
     /**
