@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -34,6 +35,13 @@ public class GridRouterResponse extends GridClientAbstractMessage {
 
     /** Status. */
     private final int status;
+
+    /**
+     * For {@link Externalizable} (not supported).
+     */
+    public GridRouterResponse() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param body Message in raw form.
@@ -70,6 +78,16 @@ public class GridRouterResponse extends GridClientAbstractMessage {
      */
     public int status() {
         return status;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

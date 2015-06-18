@@ -20,9 +20,11 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.*;
 
 import javax.cache.event.*;
 import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -45,9 +47,12 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private int failedCnt;
 
     /**
+     * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl() throws IgniteCheckedException {
+    public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+        super(plugins);
+
         workDir = U.resolveWorkDirectory("marshaller", false);
     }
 
@@ -75,6 +80,13 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
         cache = ctx.cache().marshallerCache();
 
+        latch.countDown();
+    }
+
+    /**
+     * Release marshaller context.
+     */
+    public void onKernalStop() {
         latch.countDown();
     }
 

@@ -26,7 +26,9 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.jetbrains.annotations.*;
 
+import java.text.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  *
@@ -50,6 +52,16 @@ abstract class TcpDiscoveryImpl {
     /** */
     protected TcpDiscoveryNode locNode;
 
+    /** Debug mode. */
+    protected boolean debugMode;
+
+    /** Debug messages history. */
+    private int debugMsgHist = 512;
+
+    /** Received messages. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
+    protected ConcurrentLinkedDeque<String> debugLog;
+
     /**
      * @param spi Adapter.
      */
@@ -57,6 +69,43 @@ abstract class TcpDiscoveryImpl {
         this.spi = spi;
 
         log = spi.log;
+    }
+
+    /**
+     * This method is intended for troubleshooting purposes only.
+     *
+     * @param debugMode {code True} to start SPI in debug mode.
+     */
+    public void setDebugMode(boolean debugMode) {
+        this.debugMode = debugMode;
+    }
+
+    /**
+     * This method is intended for troubleshooting purposes only.
+     *
+     * @param debugMsgHist Message history log size.
+     */
+    public void setDebugMessageHistory(int debugMsgHist) {
+        this.debugMsgHist = debugMsgHist;
+    }
+
+    /**
+     * @param msg Message.
+     */
+    protected void debugLog(String msg) {
+        assert debugMode;
+
+        String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
+            '[' + Thread.currentThread().getName() + "][" + getLocalNodeId() +
+            "-" + locNode.internalOrder() + "] " +
+            msg;
+
+        debugLog.add(msg0);
+
+        int delta = debugLog.size() - debugMsgHist;
+
+        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
+            debugLog.poll();
     }
 
     /**
@@ -208,5 +257,22 @@ abstract class TcpDiscoveryImpl {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
+    }
+
+    /**
+     * @param ackTimeout Acknowledgement timeout.
+     * @return {@code True} if acknowledgement timeout is less or equal to
+     * maximum acknowledgement timeout, {@code false} otherwise.
+     */
+    protected boolean checkAckTimeout(long ackTimeout) {
+        if (ackTimeout > spi.maxAckTimeout) {
+            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
+                "(consider increasing 'maxAckTimeout' configuration property) " +
+                "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.maxAckTimeout + ']');
+
+            return false;
+        }
+
+        return true;
     }
 }
