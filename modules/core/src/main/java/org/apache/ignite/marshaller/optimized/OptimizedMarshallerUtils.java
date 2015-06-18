@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
@@ -235,6 +236,28 @@ public class OptimizedMarshallerUtils {
     public static int resolveFieldId(String fieldName) {
         return fieldName.hashCode();
     }
+
+    /**
+     * Checks whether the given object is a wrapper, that contains serialized form of an object with indexed fields, or
+     * {@link Collection} or {@link Map}.
+     *
+     * @param obj Object.
+     * @return {@code true} if all the conditions are met..
+     */
+    public static boolean isObjectWithIndexedFieldsOrCollection(Object obj) {
+        if (obj == null)
+            return false;
+
+        if (obj instanceof CacheOptimizedObjectImpl ||
+            obj instanceof Map.Entry ||
+            obj instanceof Collection ||
+            obj instanceof Map ||
+            obj.getClass() == Object[].class)
+            return true;
+
+        return false;
+    }
+
 
     /**
      * Gets descriptor for provided ID.

@@ -894,7 +894,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 private boolean checkPredicate(Map.Entry<K, V> e) {
                     if (keyValFilter != null) {
-                        Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(e, qry.keepPortable());
+                        Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapIfNeeded(e, qry.keepPortable());
 
                         return keyValFilter.apply(e0.getKey(), e0.getValue());
                     }
@@ -1030,8 +1030,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     final LazySwapEntry e = new LazySwapEntry(it.next());
 
                     if (filter != null) {
-                        K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
-                        V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+                        K key = (K)cctx.unwrapIfNeeded(e.key(), keepPortable);
+                        V val = (V)cctx.unwrapIfNeeded(e.value(), keepPortable);
 
                         if (!filter.apply(key, val))
                             continue;
@@ -1440,7 +1440,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     // Unwrap entry for reducer or transformer only.
                     if (rdc != null || trans != null)
-                        entry = (Map.Entry<K, V>)cctx.unwrapPortableIfNeeded(entry, qry.keepPortable());
+                        entry = (Map.Entry<K, V>)cctx.unwrapIfNeeded(entry, qry.keepPortable());
 
                     // Reduce.
                     if (rdc != null) {
@@ -2534,8 +2534,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throws IgniteCheckedException {
             LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
 
-            K key = (K)cctx.unwrapPortableIfNeeded(e.key(), keepPortable);
-            V val = (V)cctx.unwrapPortableIfNeeded(e.value(), keepPortable);
+            K key = (K)cctx.unwrapIfNeeded(e.key(), keepPortable);
+            V val = (V)cctx.unwrapIfNeeded(e.value(), keepPortable);
 
             if (!filter.apply(key, val))
                 return null;

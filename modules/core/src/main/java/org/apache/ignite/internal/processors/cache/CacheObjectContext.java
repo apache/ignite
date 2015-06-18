@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cacheobject.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.util.*;
 
@@ -120,24 +123,102 @@ public class CacheObjectContext {
     }
 
     /**
-     * Unwraps object.
+     * Unwraps object if needed.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepPortable Keep portable flag. Used for portable objects only. Ignored in other cases.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
+    public Object unwrapIfNeeded(Object o, boolean keepPortable) {
+        if (processor().isFieldsIndexingEnabled() && OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(o))
+            return unwrapObject(o);
+
         return o;
     }
 
     /**
-     * Unwraps collection.
+     * Unwraps collection if needed.
      *
      * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepPortable Keep portable flag. Used for portable objects only. Ignored in other cases.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+    public Collection<Object> unwrapIfNeeded(Collection<Object> col, boolean keepPortable) {
+        if (processor().isFieldsIndexingEnabled())
+            return (Collection<Object>)unwrapObject(col);
+
         return col;
+    }
+
+    /**
+     * Unwraps object if needed.
+     *
+     * @param obj Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private Object unwrapObject(Object obj) {
+        if (obj instanceof CacheOptimizedObjectImpl)
+            return ((CacheOptimizedObjectImpl)obj).deserialize(this);
+        else if (obj instanceof Map.Entry) {
+            Map.Entry<Object, Object> entry = (Map.Entry<Object, Object>)obj;
+
+            Object key = entry.getKey();
+
+            boolean unwrapped = false;
+
+            if (key instanceof CacheOptimizedObjectImpl) {
+                key = ((CacheOptimizedObjectImpl)key).deserialize(this);
+
+                unwrapped = true;
+            }
+
+            Object val = entry.getValue();
+
+            if (val instanceof CacheOptimizedObjectImpl) {
+                val = ((CacheOptimizedObjectImpl)val).deserialize(this);
+
+                unwrapped = true;
+            }
+
+            return unwrapped ? F.t(key, val) : obj;
+        }
+        else if (obj instanceof Collection) {
+            Collection<Object> col = (Collection<Object>)obj;
+
+            if (col instanceof ArrayList) {
+                ArrayList<Object> list = (ArrayList<Object>)col;
+
+                int size = list.size();
+
+                for (int i = 0; i < size; i++) {
+                    Object old = list.get(i);
+
+                    Object unwrapped = unwrapObject(old);
+
+                    if (old != unwrapped)
+                        list.set(i, unwrapped);
+                }
+
+                return list;
+            }
+            else {
+                Collection<Object> col0 = new ArrayList<>(col.size());
+
+                for (Object obj0 : col)
+                    col0.add(unwrapObject(obj0));
+
+                return col0;
+            }
+        }
+        else if (obj instanceof Map) {
+            Map<Object, Object> map = (Map<Object, Object>)obj;
+
+            Map<Object, Object> map0 = U.newHashMap(map.size());
+
+            for (Map.Entry<Object, Object> e : map.entrySet())
+                map0.put(unwrapObject(e.getKey()), unwrapObject(e.getValue()));
+        }
+
+        return obj;
     }
 }

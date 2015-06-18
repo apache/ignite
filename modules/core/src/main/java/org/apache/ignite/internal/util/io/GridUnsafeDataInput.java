@@ -109,11 +109,9 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     /** {@inheritDoc} */
     @Override public void bytes(byte[] bytes, int off, int len) {
         buf = bytes;
-
-        max = len;
+        max = len + off;
         this.off = off;
     }
-
 
     /** {@inheritDoc} */
     @Override public void inputStream(InputStream in) throws IOException {
@@ -121,7 +119,6 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
         buf = inBuf;
     }
-
 
     /**
      * Reads from stream to buffer. If stream is {@code null}, this method is no-op.

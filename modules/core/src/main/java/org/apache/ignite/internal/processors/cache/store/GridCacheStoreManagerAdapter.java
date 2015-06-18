@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -244,8 +245,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             Object storeKey = key.value(cctx.cacheObjectContext(), false);
 
-            if (convertPortable())
-                storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
+            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(storeKey) || convertPortable())
+                storeKey = cctx.unwrapIfNeeded(storeKey, false);
 
             if (log.isDebugEnabled())
                 log.debug("Loading value from store for key: " + storeKey);
@@ -371,10 +372,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             Collection<Object> keys0;
 
-            if (convertPortable()) {
+            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(keys) || convertPortable()) {
                 keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key.value(cctx.cacheObjectContext(), false), false);
+                        return cctx.unwrapIfNeeded(key.value(cctx.cacheObjectContext(), false), false);
                     }
                 });
             }
@@ -505,9 +506,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            if (convertPortable()) {
-                key = cctx.unwrapPortableIfNeeded(key, false);
-                val = cctx.unwrapPortableIfNeeded(val, false);
+            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(key) ||
+                OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(val) ||
+                convertPortable()) {
+                key = cctx.unwrapIfNeeded(key, false);
+                val = cctx.unwrapIfNeeded(val, false);
             }
 
             if (log.isDebugEnabled())
@@ -610,8 +613,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            if (convertPortable())
-                key = cctx.unwrapPortableIfNeeded(key, false);
+            if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(key) || convertPortable())
+                key = cctx.unwrapIfNeeded(key, false);
 
             if (log.isDebugEnabled())
                 log.debug("Removing value from cache store [key=" + key + ']');
@@ -659,7 +662,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = convertPortable() ? cctx.unwrapPortablesIfNeeded(keys, false) : keys;
+            Collection<Object> keys0 = convertPortable() ? cctx.unwrapIfNeeded(keys, false) : keys;
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
@@ -1076,9 +1079,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        if (convertPortable()) {
-                            k = cctx.unwrapPortableIfNeeded(k, false);
-                            v = cctx.unwrapPortableIfNeeded(v, false);
+                        if (OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(k) ||
+                            OptimizedMarshallerUtils.isObjectWithIndexedFieldsOrCollection(v) ||
+                            convertPortable()) {
+                            k = cctx.unwrapIfNeeded(k, false);
+                            v = cctx.unwrapIfNeeded(v, false);
                         }
 
                         next = new CacheEntryImpl<>(k, v);

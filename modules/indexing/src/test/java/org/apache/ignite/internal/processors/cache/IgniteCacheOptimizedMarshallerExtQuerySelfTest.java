@@ -108,7 +108,22 @@ public class IgniteCacheOptimizedMarshallerExtQuerySelfTest extends GridCacheAbs
      * @throws Exception In case of error.
      */
     public void testNestedFieldsQuery() throws Exception {
+        IgniteCache<Integer, Person> cache = grid(0).cache(null);
 
+        Collection<Cache.Entry<Integer, Person>> entries = cache.query(new SqlQuery<Integer, Person>(
+            "Person", "name is not null AND (zip = 1 OR zip = 2)")).getAll();
+
+        assertEquals(2, entries.size());
+
+        for (Cache.Entry<Integer, Person> entry : entries) {
+            int id = entry.getKey();
+            Person p = entry.getValue();
+
+            assertEquals("Person " + id, p.name);
+            assertEquals((id + 1) * 100, p.salary);
+            assertEquals("Street " + id, p.address.street);
+            assertEquals(id, p.address.zip);
+        }
     }
 
     /**

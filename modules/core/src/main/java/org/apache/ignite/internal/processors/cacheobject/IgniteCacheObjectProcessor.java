@@ -98,6 +98,13 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean hasField(Object obj, String fieldName);
 
     /**
+     * Checks whether this functionality is globally supported.
+     *
+     * @return {@code true} if enabled.
+     */
+    public boolean isFieldsIndexingEnabled();
+
+    /**
      * Checks whether fields indexing is supported by footer injection into a serialized form of the object.
      * Footer contains information about fields location in the serialized form, thus enabling fast queries without
      * a need to deserialize the object.
@@ -105,9 +112,9 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * Indexing is enabled with {@link OptimizedMarshallerExt#enableFieldsIndexing(Class)}.
      *
      * @param cls Class.
-     * @return {@code true} if the footer is supported.
+     * @return {@code true} if the footer is enabled.
      */
-    public boolean isFieldsIndexingSupported(Class<?> cls);
+    public boolean isFieldsIndexingEnabled(Class<?> cls);
 
     /**
      * Tries to enables fields indexing for the object of the given {@code cls}.

@@ -143,7 +143,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     else if (ctx.cacheObjects().enableFieldsIndexing(valCls)) {
                         processIndexedFieldsMeta(meta, desc);
 
-                        typeId = new TypeId(ccfg.getName(), valCls);
+                        typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(valCls.getName()));
                     }
                     else {
                         processClassMeta(meta, desc);
@@ -454,8 +454,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             TypeId id;
 
             boolean portableVal = ctx.cacheObjects().isPortableObject(val);
+            boolean indexedFieldsVal = val instanceof CacheOptimizedObjectImpl;
 
-            if (portableVal) {
+            if (portableVal || indexedFieldsVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
 
                 id = new TypeId(space, typeId);
@@ -471,12 +472,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null || !desc.registered())
                 return;
 
-            if (!portableVal && !desc.valueClass().isAssignableFrom(valCls))
+            if (!portableVal && !indexedFieldsVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!ctx.cacheObjects().isPortableObject(key)) {
+            if (!(key instanceof CacheOptimizedObjectImpl) && !ctx.cacheObjects().isPortableObject(key)) {
                 Class<?> keyCls = key.value(coctx, false).getClass();
 
                 if (!desc.keyClass().isAssignableFrom(keyCls))

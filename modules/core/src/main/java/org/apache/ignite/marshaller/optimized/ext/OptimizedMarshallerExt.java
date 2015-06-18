@@ -72,6 +72,15 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     }
 
     /**
+     * Returns currently set ID mapper.
+     *
+     * @return ID mapper.
+     */
+    public OptimizedMarshallerIdMapper idMapper() {
+        return mapper;
+    }
+
+    /**
      * Enables fields indexing for the object of the given {@code cls}.
      *
      * If enabled then a footer will be added during marshalling of an object of the given {@code cls} to the end of

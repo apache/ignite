@@ -724,7 +724,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             Object val = CU.value(cacheVal, ctx, true);
 
-            val = ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
+            val = ctx.unwrapIfNeeded(val, ctx.keepPortable());
 
             return (V)val;
         }
@@ -3775,7 +3775,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         Object val0 = val != null ? val.value(ctx.cacheObjectContext(), true) : null;
 
-        return (V)ctx.unwrapPortableIfNeeded(val0, !deserializePortable);
+        return (V)ctx.unwrapIfNeeded(val0, !deserializePortable);
     }
 
     /** {@inheritDoc} */
@@ -4588,10 +4588,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             Object key0 = key.value(ctx.cacheObjectContext(), true);
             Object val0 = val.value(ctx.cacheObjectContext(), true);
 
-            if (deserializePortable) {
-                key0 = ctx.unwrapPortableIfNeeded(key0, true);
-                val0 = ctx.unwrapPortableIfNeeded(val0, true);
-            }
+            key0 = ctx.unwrapIfNeeded(key0, !deserializePortable);
+            val0 = ctx.unwrapIfNeeded(val0, !deserializePortable);
 
             return new CacheEntryImpl<>((K)key0, (V)val0);
         }

@@ -60,7 +60,7 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<?> next() {
-        return (List<?>)cctx.unwrapPortablesIfNeeded((Collection<Object>)iter.next(), keepPortable);
+        return (List<?>)cctx.unwrapIfNeeded((Collection<Object>)iter.next(), keepPortable);
     }
 
     /** {@inheritDoc} */

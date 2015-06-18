@@ -57,10 +57,7 @@ public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implem
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        //return (T)this;
-        assert val != null;
-
-        return (T)val;
+        return (T)this;
     }
 
     /** {@inheritDoc} */
@@ -79,6 +76,13 @@ public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implem
         assert val != null;
 
         return val instanceof GridCacheInternal;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object deserialize(CacheObjectContext ctx) {
+        assert val != null;
+
+        return val;
     }
 
     /** {@inheritDoc} */

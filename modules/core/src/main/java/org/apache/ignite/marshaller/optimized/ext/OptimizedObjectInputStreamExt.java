@@ -83,7 +83,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
             return false;
         }
 
-        FieldRange range = fieldRange(fieldName);
+        FieldRange range = fieldRange(fieldName, pos);
 
         in.position(pos);
 
@@ -108,7 +108,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
             return null;
         }
 
-        FieldRange range = fieldRange(fieldName);
+        FieldRange range = fieldRange(fieldName, pos);
 
         F field = null;
 
@@ -133,10 +133,11 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
      * Returns field offset in the byte stream.
      *
      * @param fieldName Field name.
+     * @param start Object's start offset.
      * @return positive range or {@code null} if the object doesn't have such a field.
      * @throws IOException in case of error.
      */
-    private FieldRange fieldRange(String fieldName) throws IOException {
+    private FieldRange fieldRange(String fieldName, int start) throws IOException {
         int fieldId = resolveFieldId(fieldName);
 
         int typeId = readInt();
@@ -177,7 +178,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
                 //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
                 fieldOff += 1 + 4 + clsNameLen + 2;
 
-                return new FieldRange(fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
+                return new FieldRange(start + fieldOff, info.len == VARIABLE_LEN ? in.readShort() : info.len);
             }
             else
                 fieldOff += info.len == VARIABLE_LEN ? in.readShort() : info.len;

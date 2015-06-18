@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.marshaller.optimized.ext.*;
 import org.jetbrains.annotations.*;
 
@@ -193,10 +194,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     protected KeyCacheObject toCacheKeyObject0(Object obj, boolean userObj) {
         if (!userObj)
-            return isFieldsIndexingSupported(obj.getClass()) ? new KeyCacheOptimizedObjectImpl(obj, null) :
+            return isFieldsIndexingEnabled(obj.getClass()) ? new KeyCacheOptimizedObjectImpl(obj, null) :
                 new KeyCacheObjectImpl(obj, null);
 
-        return isFieldsIndexingSupported(obj.getClass()) ? new UserKeyCacheOptimizedObjectImpl(obj) :
+        return isFieldsIndexingEnabled(obj.getClass()) ? new UserKeyCacheOptimizedObjectImpl(obj) :
             new UserKeyCacheObjectImpl(obj);
     }
 
@@ -268,10 +269,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (!userObj)
-            return isFieldsIndexingSupported(obj.getClass()) ? new CacheOptimizedObjectImpl(obj) :
+            return isFieldsIndexingEnabled(obj.getClass()) ? new CacheOptimizedObjectImpl(obj) :
                 new CacheObjectImpl(obj, null);
 
-        return isFieldsIndexingSupported(obj.getClass()) ? new UserCacheOptimizedObjectImpl(obj, null) :
+        return isFieldsIndexingEnabled(obj.getClass()) ? new UserCacheOptimizedObjectImpl(obj, null) :
             new UserCacheObjectImpl(obj, null);
     }
 
@@ -305,9 +306,16 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
-        return 0;
+        return optMarshExt != null ? OptimizedMarshallerUtils.resolveTypeId(typeName, optMarshExt.idMapper()) : 0;
     }
 
+    /** {@inheritDoc} */
+    @Override public int typeId(Object obj) {
+        if (obj instanceof CacheOptimizedObjectImpl)
+            return ((CacheOptimizedObjectImpl)obj).typeId();
+
+        return 0;
+    }
 
     /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws IgniteException {
@@ -322,11 +330,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean isPortableEnabled() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int typeId(Object obj) {
-        return 0;
     }
 
     /** {@inheritDoc} */
@@ -362,7 +365,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isFieldsIndexingSupported(Class<?> cls) {
+    @Override public boolean isFieldsIndexingEnabled() {
+        return optMarshExt != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isFieldsIndexingEnabled(Class<?> cls) {
         return optMarshExt != null && optMarshExt.fieldsIndexingEnabled(cls);
     }
 
@@ -468,7 +476,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /**
      * Wraps value provided by user, must be serialized before stored in cache.
-     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
+     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingEnabled(Class)}.
      */
     private static class UserCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl {
         /** */
@@ -519,7 +527,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /**
      * Wraps key provided by user, must be serialized before stored in cache.
-     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingSupported(Class)}.
+     * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingEnabled(Class)}.
      */
     private static class UserKeyCacheOptimizedObjectImpl extends KeyCacheOptimizedObjectImpl {
         /** */

@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.ext.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
+import sun.misc.*;
 
 import java.io.*;
 import java.nio.*;
@@ -33,6 +35,12 @@ import java.nio.*;
 public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /** */
+    private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
     protected int start;
@@ -92,33 +100,7 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        //return (T)this;
-        cpy = cpy && needCopy(ctx);
-
-        try {
-            if (cpy) {
-                toMarshaledFormIfNeeded(ctx);
-
-                return (T)ctx.processor().unmarshal(ctx, valBytes,
-                    val == null ? ctx.kernalContext().config().getClassLoader() : val.getClass().getClassLoader());
-            }
-
-            if (val != null)
-                return (T)val;
-
-            assert valBytes != null;
-
-            Object val = ctx.processor().unmarshal(ctx, valBytes, start, len,
-                ctx.kernalContext().config().getClassLoader());
-
-            if (ctx.storeValue())
-                this.val = val;
-
-            return (T)val;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to unmarshall object.", e);
-        }
+        return (T)this;
     }
 
     /** {@inheritDoc} */
@@ -170,6 +152,22 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
     }
 
     /**
+     * Returns object's type ID.
+     *
+     * @return Type ID.
+     */
+    public int typeId() {
+        assert valBytes != null;
+
+        int typeId = UNSAFE.getInt(valBytes, BYTE_ARR_OFF + start + 1);
+
+        if (typeId == 0)
+            throw new IgniteException("Object's type ID wasn't written to cache.");
+
+        return typeId;
+    }
+
+    /**
      * Checks whether a wrapped object has field with name {@code fieldName}.
      *
      * @param fieldName Field name.
@@ -194,7 +192,33 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
     public Object field(String fieldName, OptimizedMarshallerExt marsh) throws IgniteCheckedException {
         assert valBytes != null;
 
-        return marsh.readField(fieldName, valBytes, start, len, val != null ?  val.getClass().getClassLoader() : null);
+        return marsh.readField(fieldName, valBytes, start, len, val != null ? val.getClass().getClassLoader() : null);
+    }
+
+    /**
+     * Deserializes wrapped object.
+     *
+     * @param ctx Cache context.
+     * @return Deserialized object.
+     */
+    public Object deserialize(CacheObjectContext ctx) {
+        if (val != null)
+            return val;
+
+        try {
+            assert valBytes != null;
+
+            Object val = ctx.processor().unmarshal(ctx, valBytes, start, len,
+                ctx.kernalContext().config().getClassLoader());
+
+            if (ctx.storeValue())
+                this.val = val;
+
+            return val;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to unmarshall object.", e);
+        }
     }
 
     /** {@inheritDoc} */

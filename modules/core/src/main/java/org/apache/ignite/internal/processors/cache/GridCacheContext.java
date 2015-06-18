@@ -1678,26 +1678,26 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Unwraps collection.
+     * Unwraps collection if needed.
      *
      * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepPortable Keep portable flag. Used for portable objects only. Ignored in other cases.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepPortable);
+    public Collection<Object> unwrapIfNeeded(Collection<Object> col, boolean keepPortable) {
+        return cacheObjCtx.unwrapIfNeeded(col, keepPortable);
     }
 
     /**
-     * Unwraps object for portables.
+     * Unwraps object if needed.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepPortable Keep portable flag. Used for portable objects only. Ignored in other cases.
      * @return Unwrapped object.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
+    public Object unwrapIfNeeded(Object o, boolean keepPortable) {
+        return cacheObjCtx.unwrapIfNeeded(o, keepPortable);
     }
 
     /**
@@ -1795,12 +1795,10 @@ public class GridCacheContext<K, V> implements Externalizable {
             Object key0 = key.value(cacheObjCtx, false);
             Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
 
-            if (deserializePortable) {
-                key0 = unwrapPortableIfNeeded(key0, false);
+            key0 = unwrapIfNeeded(key0, !deserializePortable);
 
-                if (!skipVals)
-                    val0 = unwrapPortableIfNeeded(val0, false);
-            }
+            if (!skipVals)
+                val0 = unwrapIfNeeded(val0, !deserializePortable);
 
             assert key0 != null : key;
             assert val0 != null : val;
