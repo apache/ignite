@@ -1158,6 +1158,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * <p/>
      * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
      * those clients whose queue exceeded this limit.
+     * <p/>
+     * Usually this value should be set to the same value as {@link #getMessageQueueLimit()} which controls
+     * message back-pressure for server nodes. The default value for this parameter is {@link #DFLT_MSG_QUEUE_LIMIT}.
      *
      * @param slowClientQueueLimit Slow cilent queue limit.
      */
@@ -1913,8 +1916,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 ClusterNode node = getSpiContext().node(id);
 
                 if (node != null && node.isClient()) {
-                    String msg = "Client node outbound queue size exceed configured slow client queue limit, " +
-                        "will fail the node (consider changing \'slowClientQueueLimit\') [clientNode=" + node +
+                    String msg = "Client node outbound queue size exceeded slowClientQueueLimit, " +
+                        "the client will be dropped (consider changing \'slowClientQueueLimit\') [clientNode=" + node +
                         ", slowClientQueueLimit=" + slowClientQueueLimit + ']';
 
                     LT.warn(log, null, msg);
