@@ -19,8 +19,10 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.messaging.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -110,18 +112,22 @@ public class GridSelfTest extends GridProjectionAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testAsyncListen() throws Exception {
-        final String msg = "HELLO!";
+        final String hello = "HELLO!";
 
-        Ignite g = grid(0);
+        final String bye = "BYE!";
+
+        final Ignite g = grid(0);
 
         final UUID locNodeId = g.cluster().localNode().id();
 
         g.message().remoteListen(null, new MessagingListenActor<String>() {
             @Override protected void receive(UUID nodeId, String rcvMsg) throws Throwable {
-                assertEquals(locNodeId, nodeId);
-                assertEquals(msg, rcvMsg);
+                if (hello.equals(rcvMsg)) {
+                    assertEquals(locNodeId, nodeId);
+                    assertEquals(hello, rcvMsg);
 
-                stop(rcvMsg);
+                    stop(bye);
+                }
             }
         });
 
@@ -129,18 +135,22 @@ public class GridSelfTest extends GridProjectionAbstractTest {
 
         g.message().localListen(null, new P2<UUID, String>() {
             @Override public boolean apply(UUID nodeId, String msg) {
-                if (!locNodeId.equals(nodeId))
+                if (msg.equals(bye))
                     cnt.incrementAndGet();
 
                 return true;
             }
         });
 
-        g.message().send(null, msg);
+        g.message().send(null, hello);
 
-        Thread.sleep(1000);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cnt.get() == g.cluster().nodes().size();
+            }
+        }, 5000);
 
-        assert cnt.get() == g.cluster().forRemotes().nodes().size();
+        assertEquals(cnt.get(), g.cluster().nodes().size());
     }
 
     /**

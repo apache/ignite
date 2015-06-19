@@ -391,6 +391,15 @@ public class GridCacheUtils {
     }
 
     /**
+     * Gets public cache name substituting null name by {@code 'default'}.
+     *
+     * @return Public cache name substituting null name by {@code 'default'}.
+     */
+    public static String namexx(@Nullable String name) {
+        return name == null ? "default" : name;
+    }
+
+    /**
      * @return Partition to state transformer.
      */
     @SuppressWarnings({"unchecked"})

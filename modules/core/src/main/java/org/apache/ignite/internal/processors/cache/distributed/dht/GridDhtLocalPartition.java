@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> {
+public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
@@ -63,7 +63,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
 
     /** State. */
     @GridToStringExclude
-    private AtomicStampedReference<GridDhtPartitionState> state =
+    private final AtomicStampedReference<GridDhtPartitionState> state =
         new AtomicStampedReference<>(MOVING, 0);
 
     /** Rent future. */
@@ -90,7 +90,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
-    private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+
+    /** Group reservations. */
+    private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
 
     /**
      * @param cctx Context.
@@ -118,6 +121,27 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+    }
+
+    /**
+     * Adds group reservation to this partition.
+     *
+     * @param r Reservation.
+     * @return {@code false} If such reservation already added.
+     */
+    public boolean addReservation(GridDhtPartitionsReservation r) {
+        assert state.getReference() != EVICTED : "we can reserve only active partitions";
+        assert state.getStamp() != 0 : "partition must be already reserved before adding group reservation";
+
+        return reservations.addIfAbsent(r);
+    }
+
+    /**
+     * @param r Reservation.
+     */
+    public void removeReservation(GridDhtPartitionsReservation r) {
+        if (!reservations.remove(r))
+            throw new IllegalStateException("Reservation was already removed.");
     }
 
     /**
@@ -331,7 +355,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      *
      * @return {@code True} if reserved.
      */
-    public boolean reserve() {
+    @Override public boolean reserve() {
         while (true) {
             int reservations = state.getStamp();
 
@@ -348,7 +372,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     /**
      * Releases previously reserved partition.
      */
-    public void release() {
+    @Override public void release() {
         while (true) {
             int reservations = state.getStamp();
 
@@ -429,7 +453,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
      * @param updateSeq Update sequence.
      * @return Future for evict attempt.
      */
-    private IgniteInternalFuture<Boolean> tryEvictAsync(boolean updateSeq) {
+    IgniteInternalFuture<Boolean> tryEvictAsync(boolean updateSeq) {
         if (map.isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
             state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
@@ -459,13 +483,27 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition> 
     }
 
     /**
+     * @return {@code true} If there is a group reservation.
+     */
+    private boolean groupReserved() {
+        for (GridDhtPartitionsReservation reservation : reservations) {
+            if (!reservation.invalidate())
+                return true; // Failed to invalidate reservation -> we are reserved.
+        }
+
+        return false;
+    }
+
+    /**
      * @param updateSeq Update sequence.
      * @return {@code True} if entry has been transitioned to state EVICTED.
      */
-    private boolean tryEvict(boolean updateSeq) {
+    boolean tryEvict(boolean updateSeq) {
+        if (state.getReference() != RENTING || state.getStamp() != 0 || groupReserved())
+            return false;
+
         // Attempt to evict partition entries from cache.
-        if (state.getReference() == RENTING && state.getStamp() == 0)
-            clearAll();
+        clearAll();
 
         if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())

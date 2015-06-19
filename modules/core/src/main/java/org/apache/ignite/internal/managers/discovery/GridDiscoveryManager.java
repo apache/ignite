@@ -2057,16 +2057,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final AffinityTopologyVersion topVer;
 
         /** */
+        @GridToStringExclude
         private final DiscoCache discoCache;
 
         /**
          * @param topVer Topology version.
          * @param discoCache Disco cache.
          */
-        private Snapshot(AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
+        private Snapshot(AffinityTopologyVersion topVer, DiscoCache discoCache) {
             this.topVer = topVer;
             this.discoCache = discoCache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Snapshot.class, this);
         }
     }
 

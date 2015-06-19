@@ -500,10 +500,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     List<Object> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
-                    boolean skipNear = near() && isWriteToStoreFromDht;
+                    boolean skipNonPrimary = near() && isWriteToStoreFromDht;
 
                     for (IgniteTxEntry e : writeEntries) {
-                        if ((skipNear && e.cached().isNear()) || e.skipStore())
+                        boolean skip = e.skipStore();
+
+                        if (!skip && skipNonPrimary) {
+                            skip = e.cached().isNear() ||
+                                e.cached().detached() ||
+                                !e.context().affinity().primary(e.cached().partition(), topologyVersion()).isLocal();
+                        }
+
+                        if (skip)
                             continue;
 
                         boolean intercept = e.context().config().getInterceptor() != null;

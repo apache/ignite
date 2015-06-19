@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -30,9 +31,15 @@ public class TestTcpCommunicationSpi extends TcpCommunicationSpi {
     /** */
     private volatile boolean stopped;
 
+    /** */
+    private Class ignoreMsg;
+
     /** {@inheritDoc} */
     @Override public void sendMessage(final ClusterNode node, final Message msg) throws IgniteSpiException {
         if (stopped)
+            return;
+
+        if (ignoreMsg != null && ((GridIoMessage)msg).message().getClass().equals(ignoreMsg))
             return;
 
         super.sendMessage(node, msg);
@@ -46,9 +53,23 @@ public class TestTcpCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
+     *
+     */
+    public void stop(Class ignoreMsg) {
+        this.ignoreMsg = ignoreMsg;
+    }
+
+    /**
      * Stop SPI, messages will not send anymore.
      */
     public static void stop(Ignite ignite) {
         ((TestTcpCommunicationSpi)ignite.configuration().getCommunicationSpi()).stop();
+    }
+
+    /**
+     * Skip messages will not send anymore.
+     */
+    public static void skipMsgType(Ignite ignite, Class clazz) {
+        ((TestTcpCommunicationSpi)ignite.configuration().getCommunicationSpi()).stop(clazz);
     }
 }
