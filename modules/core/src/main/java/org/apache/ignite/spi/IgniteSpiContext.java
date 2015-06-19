@@ -312,6 +312,11 @@ public interface IgniteSpiContext {
     public boolean tryFailNode(UUID nodeId);
 
     /**
+     * @param nodeId Node ID.
+     */
+    public void failNode(UUID nodeId);
+
+    /**
      * @param c Timeout object.
      */
     public void addTimeoutObject(IgniteSpiTimeoutObject c);

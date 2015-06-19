@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -610,6 +611,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     @LoggerResource
     private IgniteLogger log;
 
+    /** Ignite. */
+    @IgniteInstanceResource
+    @GridToStringExclude
+    private Ignite ignite;
+
     /** Local IP address. */
     private String locAddr;
 
@@ -652,6 +658,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
+
+    /** Slow client queue limit. */
+    private int slowClientQueueLimit;
 
     /** Min buffered message count. */
     private int minBufferedMsgCnt = Integer.getInteger(IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
@@ -1145,6 +1154,30 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * Gets slow client queue limit.
+     * <p/>
+     * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
+     * those clients whose queue exceeded this limit.
+     *
+     * @return Slow client queue limit.
+     */
+    public int getSlowClientQueueLimit() {
+        return slowClientQueueLimit;
+    }
+
+    /**
+     * Sets slow client queue limit.
+     * <p/>
+     * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
+     * those clients whose queue exceeded this limit.
+     *
+     * @param slowClientQueueLimit Slow cilent queue limit.
+     */
+    public void setSlowClientQueueLimit(int slowClientQueueLimit) {
+        this.slowClientQueueLimit = slowClientQueueLimit;
+    }
+
+    /**
      * Sets the minimum number of messages for this SPI, that are buffered
      * prior to sending.
      * <p>
@@ -1315,6 +1348,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             U.quietAndWarn(log, "'TCP_NO_DELAY' for communication is off, which should be used with caution " +
                 "since may produce significant delays with some scenarios.");
 
+        if (slowClientQueueLimit > 0 && msgQueueLimit > 0) {
+            if (slowClientQueueLimit >= msgQueueLimit) {
+                U.quietAndWarn(log, "Slow client queue limit is set to a value greater than message queue limit. " +
+                    "Slow client queue limit will have no effect.");
+            }
+        }
+
         registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
 
         if (shmemSrv != null) {
@@ -1425,6 +1465,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
+                IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
+                    !ignite.configuration().isClientMode() && slowClientQueueLimit > 0 ?
+                    new CI2<GridNioSession, Integer>() {
+                        @Override public void apply(GridNioSession ses, Integer qSize) {
+                            checkClientQueueSize(ses, qSize);
+                        }
+                    } :
+                    null;
+
                 GridNioServer<Message> srvr =
                     GridNioServer.<Message>builder()
                         .address(locHost)
@@ -1446,6 +1495,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             new GridConnectionBytesVerifyFilter(log))
                         .messageFormatter(msgFormatter)
                         .skipRecoveryPredicate(skipRecoveryPred)
+                        .messageQueueSizeListener(queueSizeMonitor)
                         .build();
 
                 boundTcpPort = port;
@@ -1856,6 +1906,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             return client;
+        }
+    }
+
+    /**
+     * Checks client message queue size and initiates client drop if message queue size exceeds the configured limit.
+     *
+     * @param ses Node communication session.
+     * @param msgQueueSize Message queue size.
+     */
+    private void checkClientQueueSize(GridNioSession ses, int msgQueueSize) {
+        if (slowClientQueueLimit > 0 && msgQueueSize > slowClientQueueLimit) {
+            UUID id = ses.meta(NODE_ID_META);
+
+            if (id != null) {
+                ClusterNode node = getSpiContext().node(id);
+
+                if (node != null && node.isClient()) {
+                    LT.warn(log, null, "Client node outbound queue size exceed configured slow client queue limit, " +
+                        "will fail the node (consider changing \'slowClientQueueLimit\'): " + node);
+
+                    getSpiContext().failNode(id);
+                }
+            }
         }
     }
 

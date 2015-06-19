@@ -3402,6 +3402,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodes.remove(node);
 
                     leavingNodes.remove(node);
+
+                    ClientMessageWorker worker = clientMsgWorkers.remove(node.id());
+
+                    if (worker != null)
+                        worker.interrupt();
                 }
 
                 notifyDiscovery(EVT_NODE_FAILED, topVer, node);

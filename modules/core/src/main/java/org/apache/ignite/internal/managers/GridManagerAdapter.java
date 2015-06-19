@@ -484,6 +484,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.discovery().tryFailNode(nodeId);
                     }
 
+                    @Override public void failNode(UUID nodeId) {
+                        ctx.discovery().failNode(nodeId);
+                    }
+
                     @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
                         ctx.timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
                     }

@@ -1502,6 +1502,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param nodeId Node ID to fail.
+     */
+    public void failNode(UUID nodeId) {
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            getSpi().failNode(nodeId);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.

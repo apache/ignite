@@ -759,6 +759,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
+        @Override public void failNode(UUID nodeId) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
             assert ignite instanceof IgniteKernal : ignite;
 
