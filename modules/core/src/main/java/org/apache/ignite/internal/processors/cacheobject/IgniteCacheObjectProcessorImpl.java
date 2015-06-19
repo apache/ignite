@@ -185,7 +185,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) {
+    @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
 
         CacheMemoryMode memMode = ccfg.getMemoryMode();
@@ -194,10 +194,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             GridQueryProcessor.isEnabled(ccfg) ||
             !ccfg.isCopyOnRead();
 
-        return new CacheObjectContext(ctx,
+        CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
-            ccfg.isCopyOnRead() && memMode == ONHEAP_TIERED,
+            ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
             storeVal);
+
+        ctx.resource().injectGeneric(res.defaultAffMapper());
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -229,7 +233,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableClass(Class<?> cls) {
+    @Override public boolean isPortableEnabled() {
         return false;
     }
 

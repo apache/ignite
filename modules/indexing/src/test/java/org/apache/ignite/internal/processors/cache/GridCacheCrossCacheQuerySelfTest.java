@@ -58,8 +58,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new OptimizedMarshaller(false));
-
         c.setCacheConfiguration(createCache("replicated", CacheMode.REPLICATED),
             createCache("partitioned", CacheMode.PARTITIONED));
 
@@ -115,7 +113,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testTwoStep() throws Exception {
+    public void testTwoStep() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-827");
+
         String cache = "partitioned";
 
         GridQueryProcessor qryProc = ((IgniteKernal) ignite).context().query();
@@ -123,13 +123,22 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
 //            X.println("___ "  + e);
 
-        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
+        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery(null,
+            "select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
 
         q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
 
-        Object cnt = qryProc.queryTwoStep(cache, q).getAll().iterator().next().get(0);
+        Iterator<List<?>> it = qryProc.queryTwoStep(cache, q).iterator();
 
-        assertEquals(10L, cnt);
+        try {
+            Object cnt = it.next().get(0);
+
+            assertEquals(10L, cnt);
+        }
+        finally {
+            if (it instanceof AutoCloseable)
+                ((AutoCloseable)it).close();
+        }
     }
 
     /**
@@ -249,7 +258,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 //        return 10 * 60 * 1000;
 //    }
 
-    public void _testLoop() throws Exception {
+    public void testLoop() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-827");
+
         final IgniteCache<Object,Object> c = ignite.cache("partitioned");
 
         X.println("___ GET READY");

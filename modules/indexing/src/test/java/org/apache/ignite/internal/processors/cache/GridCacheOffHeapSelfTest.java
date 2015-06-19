@@ -98,7 +98,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setDeploymentMode(SHARED);
 
         if (excluded)

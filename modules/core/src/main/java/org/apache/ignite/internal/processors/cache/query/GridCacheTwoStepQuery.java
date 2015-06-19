@@ -46,11 +46,17 @@ public class GridCacheTwoStepQuery {
     /** */
     private boolean explain;
 
+    /** */
+    private Set<String> spaces;
+
     /**
+     * @param spaces All spaces accessed in query.
      * @param qry Reduce query.
      * @param params Reduce query parameters.
      */
-    public GridCacheTwoStepQuery(String qry, Object ... params) {
+    public GridCacheTwoStepQuery(Set<String> spaces, String qry, Object ... params) {
+        this.spaces = spaces;
+
         reduce = new GridCacheSqlQuery(null, qry, params);
     }
 
@@ -109,6 +115,20 @@ public class GridCacheTwoStepQuery {
      */
     public Collection<GridCacheSqlQuery> mapQueries() {
         return mapQrys.values();
+    }
+
+    /**
+     * @return Spaces.
+     */
+    public Set<String> spaces() {
+        return spaces;
+    }
+
+    /**
+     * @param spaces Spaces.
+     */
+    public void spaces(Set<String> spaces) {
+        this.spaces = spaces;
     }
 
     /** {@inheritDoc} */

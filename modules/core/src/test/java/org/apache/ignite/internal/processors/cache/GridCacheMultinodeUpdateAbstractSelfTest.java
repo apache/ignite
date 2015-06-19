@@ -33,6 +33,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Multinode update test.
  */
+@SuppressWarnings("unchecked")
 public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
     protected static volatile boolean failed;
@@ -52,6 +53,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
         return 3 * 60_000;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
@@ -60,6 +62,13 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
         ccfg.setWriteThrough(false);
 
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        failed = false;
     }
 
     /**

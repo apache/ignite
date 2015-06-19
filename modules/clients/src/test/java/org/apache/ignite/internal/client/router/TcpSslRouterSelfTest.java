@@ -26,6 +26,11 @@ import org.apache.ignite.testframework.*;
  */
 public class TcpSslRouterSelfTest extends TcpRouterAbstractSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-433");
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean useSsl() {
         return true;
     }

@@ -78,6 +78,11 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     };
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000; //10 minutes.
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -190,8 +195,11 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("SuspiciousMethodCalls")
     private void validateAlives() {
-        for (Ignite g : alive)
-            assertEquals(PERM_NODES_CNT, g.cluster().nodes().size());
+        for (Ignite g : alive) {
+            log.info("Validate node: " + g.name());
+
+            assertEquals("Unexpected nodes number for node: " + g.name(), PERM_NODES_CNT, g.cluster().nodes().size());
+        }
 
         for (final Ignite g : alive) {
             IgniteKernal k = (IgniteKernal)g;
@@ -217,8 +225,14 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
                         }
                     });
 
-                assertTrue(
-                    currTop.contains(GridCacheUtils.oldestAliveCacheServerNode(k.context().cache().context(), new AffinityTopologyVersion(currVer))));
+                GridCacheSharedContext<?, ?> ctx = k.context().cache().context();
+
+                ClusterNode oldest =
+                    GridCacheUtils.oldestAliveCacheServerNode(ctx, new AffinityTopologyVersion(currVer));
+
+                assertNotNull(oldest);
+
+                assertTrue(currTop.contains(oldest));
             }
         }
     }

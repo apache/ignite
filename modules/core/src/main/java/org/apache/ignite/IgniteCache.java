@@ -30,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.event.*;
 import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.processor.*;
@@ -378,7 +379,29 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public void removeAll(Set<? extends K> keys);
 
-    /** {@inheritDoc} */
+    /**
+     * Removes all of the mappings from this cache.
+     * <p>
+     * The order that the individual entries are removed is undefined.
+     * <p>
+     * For every mapping that exists the following are called:
+     * <ul>
+     *   <li>any registered {@link CacheEntryRemovedListener}s</li>
+     *   <li>if the cache is a write-through cache, the {@link CacheWriter}</li>
+     * </ul>
+     * If the cache is empty, the {@link CacheWriter} is not called.
+     * <p>
+     * This operation is not transactional. It calls broadcast closure that
+     * deletes all primary keys from remote nodes.
+     * <p>
+     * This is potentially an expensive operation as listeners are invoked.
+     * Use {@link #clear()} to avoid this.
+     *
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem during the remove
+     * @see #clear()
+     * @see CacheWriter#deleteAll
+     */
     @IgniteAsyncSupported
     @Override public void removeAll();
 

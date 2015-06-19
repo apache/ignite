@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -28,11 +29,19 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
     /** Routine ID. */
     protected final UUID routineId;
 
+    /** Custom message ID. */
+    private final IgniteUuid id = IgniteUuid.randomUuid();
+
     /**
      * @param id Id.
      */
     protected AbstractContinuousMessage(UUID id) {
         routineId = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return id;
     }
 
     /**

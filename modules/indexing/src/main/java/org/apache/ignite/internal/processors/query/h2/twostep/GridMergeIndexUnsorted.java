@@ -44,8 +44,9 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
 
     /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
-        if (page.rowsInPage() != 0 || page.isLast() || queue.isEmpty())
-            queue.add(page);
+        assert page.rowsInPage() > 0 || page.isLast() || page.isFail();
+
+        queue.add(page);
     }
 
     /** {@inheritDoc} */
@@ -60,7 +61,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
             Iterator<Value[]> iter = Collections.emptyIterator();
 
             @Override public boolean hasNext() {
-                while (!iter.hasNext()){
+                while (!iter.hasNext()) {
                     GridResultPage page;
 
                     try {

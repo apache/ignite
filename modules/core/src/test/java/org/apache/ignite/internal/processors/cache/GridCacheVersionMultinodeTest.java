@@ -240,12 +240,14 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
 
             if (e != null) {
                 if (ver != null) {
-                    assertEquals("Non-equal versions for key: " + key, ver, e.version());
+                    assertEquals("Non-equal versions for key: " + key,
+                        ver,
+                        e instanceof GridNearCacheEntry ? ((GridNearCacheEntry)e).dhtVersion() : e.version());
 
                     verified = true;
                 }
                 else
-                    ver = e.version();
+                    ver = e instanceof GridNearCacheEntry ? ((GridNearCacheEntry)e).dhtVersion() : e.version();
             }
         }
 

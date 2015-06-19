@@ -212,7 +212,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
 
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg))
-                    return Collections.singletonMap(new TestJob(arg), node);
+                    return Collections.singletonMap(new DeployementTestJob(arg), node);
             }
 
             throw new IgniteException("Failed to find target node: " + arg);
@@ -230,7 +230,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
         /**
          * Simple job class.
          */
-        public static class TestJob extends ComputeJobAdapter {
+        public static class DeployementTestJob extends ComputeJobAdapter {
             /** Ignite instance. */
             @IgniteInstanceResource
             private Ignite ignite;
@@ -238,7 +238,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             /**
              * @param nodeId Node ID for node this job is supposed to execute on.
              */
-            public TestJob(UUID nodeId) { super(nodeId); }
+            public DeployementTestJob(UUID nodeId) { super(nodeId); }
 
             /** {@inheritDoc} */
             @Override public Serializable execute() {

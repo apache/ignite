@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.interop;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Interop processor.
  */
 public interface InteropProcessor {
+    /**
+     * Get owning Ignite instance.
+     *
+     * @return Ignite instance.
+     */
+    public Ignite ignite();
+
     /**
      * Get stop runnable to perform cleanup when interop is not longer used.
      * <p/>

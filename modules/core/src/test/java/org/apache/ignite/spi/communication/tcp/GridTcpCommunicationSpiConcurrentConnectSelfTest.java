@@ -181,8 +181,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
         if (load) {
             loadFut = GridTestUtils.runMultiThreadedAsync(new Callable<Long>() {
-                @Override
-                public Long call() throws Exception {
+                @Override public Long call() throws Exception {
                     long dummyRes = 0;
 
                     List<String> list = new ArrayList<>();
@@ -300,6 +299,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         spi.setLocalPort(port++);
         spi.setIdleConnectionTimeout(60_000);
         spi.setConnectTimeout(10_000);
+        spi.setSharedMemoryPort(-1);
 
         return spi;
     }

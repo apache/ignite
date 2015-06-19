@@ -3,8 +3,14 @@ Ignite Fabric Maven Build Instructions
 Without LGPL dependencies (default):
   mvn clean package -DskipTests
 
+Without LGPL dependencies and Scala 2.10:
+  mvn clean package -DskipTests -Dscala-2.10
+
 With LGPL dependencies:
   mvn clean package -DskipTests -Prelease,lgpl
+
+With LGPL dependencies and Scala 2.10:
+  mvn clean package -DskipTests -Prelease,lgpl -Dscala-2.10
 
 Look for incubator-ignite-<version>-bin.zip in ./target/bin directory.
 
@@ -85,6 +91,21 @@ To test compliance with JCache TCK use:
 
 mvn test -P-release,jcache-tck -pl :ignite-core -am
 
+Ignite Mesos Maven Build Instructions
+============================================
+cd to ./modules/mesos
+
+mvn clean package
+
+Look for ignite-mesos-<version>-jar-with-dependencies.jar in ./target directory.
+
+Run tests
+==========
+To run tests locally use:
+
+mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
+
+For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
 
 Apache RAT Instructions
 =======================

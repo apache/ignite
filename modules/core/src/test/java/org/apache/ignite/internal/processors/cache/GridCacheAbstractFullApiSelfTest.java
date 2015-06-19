@@ -356,6 +356,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAllSkipStore() throws Exception {
+        IgniteCache<String, Integer> jcache = jcache();
+
+        jcache.putAll(F.asMap("1", 1, "2", 2, "3", 3));
+
+        jcache.withSkipStore().removeAll();
+
+        assertEquals((Integer)1, jcache.get("1"));
+        assertEquals((Integer)2, jcache.get("2"));
+        assertEquals((Integer)3, jcache.get("3"));
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public void testAtomicOps() throws IgniteCheckedException {
