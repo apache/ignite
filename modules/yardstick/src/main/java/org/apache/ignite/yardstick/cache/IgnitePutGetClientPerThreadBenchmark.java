@@ -50,6 +50,8 @@ public class IgnitePutGetClientPerThreadBenchmark extends IgniteCacheAbstractBen
 
             nodes.put(idSeq.getAndIncrement(), node);
         }
+        else
+            TimeUnit.SECONDS.sleep(1);
 
         int key = nextRandom(args.range());
 

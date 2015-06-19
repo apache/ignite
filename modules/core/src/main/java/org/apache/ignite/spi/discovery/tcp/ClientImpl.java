@@ -645,6 +645,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         joinErr = err;
 
+        log.error("ClientImpl.joinError", err);
+
         joinLatch.countDown();
     }
 
@@ -1024,6 +1026,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     else
                         msgWorker.addMessage(SPI_RECONNECT_FAILED);
                 }
+                else
+                    log.info("Connected to socket: " + sock);
             }
         }
     }
