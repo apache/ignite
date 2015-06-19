@@ -154,15 +154,16 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
      * @param obj Object.
      * @throws IOException In case of error.
      *
-     * @return Handle's position in {@link #out} or -1 if the {@code obj} has not been written before.
+     * @return Instance of {@link org.apache.ignite.internal.util.GridHandleTable.ObjectInfo} if handle to an existed
+     * object is written or {@code null} otherwise.
      */
-    private int writeObject0(Object obj) throws IOException {
+    private GridHandleTable.ObjectInfo writeObject0(Object obj) throws IOException {
         curObj = null;
         curFields = null;
         curPut = null;
         curFooter = null;
 
-        int handle = -1;
+        GridHandleTable.ObjectInfo objInfo = null;
 
         if (obj == null)
             writeByte(NULL);
@@ -192,7 +193,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 if (desc.excluded()) {
                     writeByte(NULL);
 
-                    return handle;
+                    return objInfo;
                 }
 
                 Object obj0 = desc.replace(obj);
@@ -200,8 +201,10 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                 if (obj0 == null) {
                     writeByte(NULL);
 
-                    return handle;
+                    return objInfo;
                 }
+
+                int handle = -1;
 
                 if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
                     handle = handles.lookup(obj, out.offset());
@@ -219,14 +222,19 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                     writeByte(HANDLE);
                     writeInt(handle);
 
-                    handle = handles.position(handle);
+                    objInfo = handles.objectInfo(handle);
                 }
-                else
+                else {
+                    int pos = out.offset();
+
                     desc.write(this, obj);
+
+                    handles.objectLength(obj, out.offset() - pos);
+                }
             }
         }
 
-        return handle;
+        return objInfo;
     }
 
     /**
@@ -546,10 +554,12 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 case OTHER:
                     if (t.field() != null) {
-                        int handle = writeObject0(getObject(obj, t.offset()));
+                        GridHandleTable.ObjectInfo objInfo = writeObject0(getObject(obj, t.offset()));
 
-                        if (footer != null && handle >= 0)
-                            footer.putHandle(t.id(), handle);
+                        if (footer != null && objInfo != null) {
+                            footer.putHandle(t.id(), objInfo);
+                            continue;
+                        }
                     }
             }
 
@@ -806,10 +816,12 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
                     break;
 
                 case OTHER:
-                    int handle = writeObject0(t.get2());
+                    GridHandleTable.ObjectInfo objInfo = writeObject0(t.get2());
 
-                    if (footer != null && handle >= 0)
-                        footer.putHandle(t.get1().id(), handle);
+                    if (footer != null && objInfo != null) {
+                        footer.putHandle(t.get1().id(), objInfo);
+                        continue;
+                    }
             }
 
             if (footer != null) {
@@ -990,9 +1002,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
          * Puts handle ID for the given field ID.
          *
          * @param fieldId Field ID.
-         * @param handlePos Handle position in output stream.
+         * @param objInfo Object's, referred by handle, info.
          */
-        void putHandle(int fieldId, int handlePos);
+        void putHandle(int fieldId, GridHandleTable.ObjectInfo objInfo);
 
         /**
          * Writes footer content to the OutputStream.

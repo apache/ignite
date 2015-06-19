@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.marshaller.optimized.ext;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.marshaller.*;
@@ -57,10 +56,10 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
     /** {@inheritDoc} */
     @Override protected void skipFooter(Class<?> cls) throws IOException {
         if (metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
-            int footerLen = in.readInt();
+            short footerLen = in.readShort();
 
             if (footerLen != EMPTY_FOOTER)
-                in.skipBytes(footerLen - 4);
+                in.skipBytes(footerLen - 2);
         }
     }
 
@@ -113,7 +112,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
 
         F field = null;
 
-        if (range != null && range.start > 0) {
+        if (range != null && range.start >= 0) {
             in.position(range.start);
 
             if (in.readByte() == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null)
@@ -163,50 +162,49 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
 
         in.position(end - FOOTER_LEN_OFF);
 
-        int footerLen = in.readInt();
+        short footerLen = in.readShort();
 
         if (footerLen == EMPTY_FOOTER)
             return null;
 
-        // reading 'hasHandles' flag. 1 byte - additional offset to get to the flag position.
-        in.position(in.position() - FOOTER_LEN_OFF - 1);
-
-        boolean hasHandles = in.readBoolean();
-
-        // 4 - skipping length at the beginning
-        int footerOff = (end - footerLen) + 4;
+        // +2 - skipping length at the beginning
+        int footerOff = (end - footerLen) + 2;
         in.position(footerOff);
 
         int fieldOff = 0;
 
         for (OptimizedObjectMetadata.FieldInfo info : meta.getMeta()) {
+            int len;
+            boolean isHandle;
+
+            if (info.len == VARIABLE_LEN) {
+                int fieldInfo = in.readInt();
+
+                len = fieldInfo & FOOTER_BODY_LEN_MASK;
+                isHandle = ((fieldInfo & FOOTER_BODY_IS_HANDLE_MASK) >> FOOTER_BODY_HANDLE_MASK_BIT) == 1;
+            }
+            else {
+                len = info.len;
+                isHandle = false;
+            }
+
             if (info.id == fieldId) {
-                int len = info.len == VARIABLE_LEN ? in.readInt() : info.len;
-                int handlePos;
-
-                if (hasHandles && info.len == VARIABLE_LEN)
-                    handlePos = in.readInt();
-                else
-                    handlePos = NOT_A_HANDLE;
-
-                if (handlePos == NOT_A_HANDLE) {
+                if (!isHandle) {
                     //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
                     fieldOff += 1 + 4 + clsNameLen + 2;
 
                     return new FieldRange(start + fieldOff, len);
                 }
-                else {
-                    throw new IgniteException("UNSUPPORTED YET");
-                }
+                else
+                    return new FieldRange(in.readInt(), in.readInt());
             }
             else {
-                fieldOff += info.len == VARIABLE_LEN ? in.readInt() : info.len;
+                fieldOff += len;
 
-                if (hasHandles) {
-                    in.skipBytes(4);
-                    fieldOff += 4;
+                if (isHandle) {
+                    in.skipBytes(8);
+                    fieldOff += 8;
                 }
-
             }
         }
 

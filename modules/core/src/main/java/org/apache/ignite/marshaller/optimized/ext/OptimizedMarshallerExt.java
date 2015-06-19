@@ -35,13 +35,19 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     static final byte EMPTY_FOOTER = -1;
 
     /** */
-    static final byte FOOTER_LEN_OFF = 4;
+    static final byte FOOTER_LEN_OFF = 2;
+
+    /** */
+    static final int FOOTER_BODY_LEN_MASK = 0x3FFFFFFF;
+
+    /** */
+    static final int FOOTER_BODY_IS_HANDLE_MASK = 0x40000000;
+
+    /** */
+    static final byte FOOTER_BODY_HANDLE_MASK_BIT = 30;
 
     /** */
     static final byte VARIABLE_LEN = -1;
-
-    /** */
-    static final byte NOT_A_HANDLE = -1;
 
     /** */
     private OptimizedMarshallerExtMetaHandler metaHandler;

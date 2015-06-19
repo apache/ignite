@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized.ext;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -78,7 +79,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         private ArrayList<Integer> fields;
 
         /** */
-        private HashMap<Integer, Integer> handles;
+        private HashMap<Integer, GridHandleTable.ObjectInfo> handles;
 
         /** */
         private boolean hasHandles;
@@ -105,7 +106,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         }
 
         /** {@inheritDoc} */
-        @Override public void putHandle(int fieldId, int handlePos) {
+        @Override public void putHandle(int fieldId, GridHandleTable.ObjectInfo objInfo) {
             if (data == null)
                 return;
 
@@ -114,7 +115,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
                 handles = new HashMap<>();
             }
 
-            handles.put(fieldId, handlePos);
+            handles.put(fieldId, objInfo);
 
             // length of handle fields is 5 bytes.
             put(fieldId, OptimizedFieldType.OTHER, 5);
@@ -125,31 +126,40 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
             if (data == null)
                 writeInt(EMPTY_FOOTER);
             else {
-                //9 - 4 bytes for len at the beginning, 4 bytes for len at the end, 1 byte for 'hasHandles' flag
-                int footerLen = data.size() * 4 + 9;
+                int bodyEnd = out.offset();
+
+                // +4 - 2 bytes for footer len at the beginning, 2 bytes for footer len at the end.
+                short footerLen = (short)(data.size() * 4 + 4);
 
                 if (hasHandles)
-                    footerLen += data.size() * 4;
+                    footerLen += handles.size() * 8;
 
-                writeInt(footerLen);
+                writeShort(footerLen);
 
                 if (hasHandles) {
                     for (int i = 0; i < data.size(); i++) {
-                        writeInt(data.get(i));
+                        GridHandleTable.ObjectInfo objInfo = handles.get(fields.get(i));
 
-                        Integer handlePos = handles.get(fields.get(i));
+                        if (objInfo == null)
+                            writeInt(data.get(i) & ~FOOTER_BODY_IS_HANDLE_MASK);
+                        else {
+                            writeInt(data.get(i) | FOOTER_BODY_IS_HANDLE_MASK);
+                            writeInt(objInfo.position());
 
-                        writeInt(handlePos == null ? NOT_A_HANDLE : handlePos);
+                            if (objInfo.length() == 0)
+                                // field refers to its own object that hasn't set total length yet.
+                                writeInt((bodyEnd - objInfo.position()) + footerLen);
+                            else
+                                writeInt(objInfo.length());
+                        }
                     }
                 }
-                else {
+                else
                     for (int fieldLen : data)
-                        writeInt(fieldLen);
-                }
+                        // writing field len and resetting is handle mask
+                        writeInt(fieldLen & ~FOOTER_BODY_IS_HANDLE_MASK);
 
-                writeBoolean(hasHandles);
-
-                writeInt(footerLen);
+                writeShort(footerLen);
             }
         }
 

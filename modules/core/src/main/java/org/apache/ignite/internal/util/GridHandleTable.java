@@ -47,11 +47,8 @@ public class GridHandleTable {
     /** Maps handle value -> next candidate handle value. */
     private int[] next;
 
-    /** Handle absolute position in the output stream. */
-    private int[] positions;
-
     /** Maps handle value -> associated object. */
-    private Object[] objs;
+    private ObjectInfo[] objs;
 
     /** */
     private int[] spineEmpty;
@@ -70,8 +67,7 @@ public class GridHandleTable {
 
         spine = new int[initCap];
         next = new int[initCap];
-        objs = new Object[initCap];
-        positions = new int[initCap];
+        objs = new ObjectInfo[initCap];
         spineEmpty = new int[initCap];
         nextEmpty = new int[initCap];
 
@@ -96,7 +92,7 @@ public class GridHandleTable {
 
         if (size > 0) {
             for (int i = spine[idx]; i >= 0; i = next[i])
-                if (objs[i] == obj)
+                if (objs[i].object == obj)
                     return i;
         }
 
@@ -106,7 +102,7 @@ public class GridHandleTable {
         if (size >= threshold)
             growSpine();
 
-        insert(obj, size, idx, pos);
+        insert(new ObjectInfo(obj, pos), size, idx);
 
         size++;
 
@@ -114,13 +110,31 @@ public class GridHandleTable {
     }
 
     /**
-     * Returns handle absolute position in output stream.
+     * Keeps object's total len in bytes.
+     *
+     * @param obj Object.
+     * @param len Object's length.
+     */
+    public void objectLength(Object obj, int len) {
+        int idx = hash(obj) % spine.length;
+
+        if (size > 0) {
+            for (int i = spine[idx]; i >= 0; i = next[i])
+                if (objs[i].object == obj) {
+                    objs[i].len = len;
+                    return;
+                }
+        }
+    }
+
+    /**
+     * Returns object info for given handle.
      *
      * @param handle Handle.
-     * @return Absolute position.
+     * @return Object info.
      */
-    public int position(int handle) {
-        return positions[handle];
+    public ObjectInfo objectInfo(int handle) {
+        return objs[handle];
     }
 
     /**
@@ -131,7 +145,6 @@ public class GridHandleTable {
         UNSAFE.copyMemory(nextEmpty, intArrOff, next, intArrOff, nextEmpty.length << 2);
 
         Arrays.fill(objs, null);
-        Arrays.fill(positions, 0);
 
         size = 0;
     }
@@ -140,22 +153,25 @@ public class GridHandleTable {
      * @return Returns objects that were added to handles table.
      */
     public Object[] objects() {
-        return objs;
+        Object[] objects = new Object[objs.length];
+
+        for (int i = 0; i < objs.length; i++)
+            objects[i] = objs[i];
+
+        return objects;
     }
 
     /**
      * Inserts mapping object -> handle mapping into table. Assumes table
      * is large enough to accommodate new mapping.
      *
-     * @param obj Object.
+     * @param obj Object info.
      * @param handle Handle.
      * @param idx Index.
-     * @param pos Position in output stream.
      */
-    private void insert(Object obj, int handle, int idx, int pos) {
+    private void insert(ObjectInfo obj, int handle, int idx) {
         objs[handle] = obj;
         next[handle] = spine[idx];
-        positions[handle] = pos;
         spine[idx] = handle;
     }
 
@@ -175,11 +191,11 @@ public class GridHandleTable {
         UNSAFE.copyMemory(spineEmpty, intArrOff, spine, intArrOff, spineEmpty.length << 2);
 
         for (int i = 0; i < this.size; i++) {
-            Object obj = objs[i];
+            Object obj = objs[i].object;
 
             int idx = hash(obj) % spine.length;
 
-            insert(objs[i], i, idx, positions[i]);
+            insert(objs[i], i, idx);
         }
     }
 
@@ -197,17 +213,11 @@ public class GridHandleTable {
 
         Arrays.fill(nextEmpty, -1);
 
-        Object[] newObjs = new Object[newLen];
+        ObjectInfo[] newObjs = new ObjectInfo[newLen];
 
         System.arraycopy(objs, 0, newObjs, 0, size);
 
         objs = newObjs;
-
-        int[] newPositions = new int[newLen];
-
-        UNSAFE.copyMemory(positions, intArrOff, newPositions, intArrOff, size << 2);
-
-        positions = newPositions;
     }
 
     /**
@@ -219,4 +229,52 @@ public class GridHandleTable {
     private int hash(Object obj) {
         return System.identityHashCode(obj) & 0x7FFFFFFF;
     }
+
+    /**
+     *
+     */
+    public static class ObjectInfo {
+        /** */
+        private Object object;
+
+        /** Object position in output stream. */
+        private int pos;
+
+        /** Object length. */
+        private int len;
+
+        /**
+         * Constructor.
+         *
+         * @param object Object.
+         * @param pos Object position in output stream.
+         */
+        public ObjectInfo(Object object, int pos) {
+            this.object = object;
+            this.pos = pos;
+        }
+
+        /**
+         * Gets object position in output stream.
+         *
+         * @return Position.
+         */
+        public int position() {
+            return pos;
+        }
+
+        /**
+         * Gets object length.
+         *
+         * @return Length in bytes.
+         */
+        public int length() {
+            return len;
+        }
+    }
+
+
+
+
+
 }

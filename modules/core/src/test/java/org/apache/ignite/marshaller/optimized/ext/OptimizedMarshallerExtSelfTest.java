@@ -88,6 +88,34 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         assertEquals(testObj.o2.i, (int)marsh.readField("i", arr, 0, arr.length, null));
     }
 
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testHandles() throws Exception {
+        OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
+
+        assertTrue(marsh.enableFieldsIndexing(SelfLinkObject.class));
+
+        SelfLinkObject selfLinkObject = new SelfLinkObject();
+        selfLinkObject.str1 = "Hello, world!";
+        selfLinkObject.str2 = selfLinkObject.str1;
+        selfLinkObject.link = selfLinkObject;
+
+        byte[] arr = marsh.marshal(selfLinkObject);
+
+        String str2 = marsh.readField("str2", arr, 0, arr.length, null);
+
+        assertEquals(selfLinkObject.str1, str2);
+
+        CacheOptimizedObjectImpl cacheObj = marsh.readField("link", arr, 0, arr.length, null);
+
+        arr = cacheObj.valueBytes(null);
+
+        SelfLinkObject selfLinkObject2 = marsh.unmarshal(arr, null);
+
+        assertEquals(selfLinkObject, selfLinkObject2);
+    }
+
     /** */
     private static class TestObject2 {
         /** */
@@ -122,6 +150,9 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         /** The only meaningful field in the class, used for {@link #equals(Object o)} and {@link #hashCode()}. */
         private final String str;
+
+        /** */
+        private TestObject t2;
 
         /**
          * @param str String to hold.
@@ -170,6 +201,32 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
             if (str != null ? !str.equals(obj.str) : obj.str != null)
                 return false;
+
+            return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SelfLinkObject {
+        /** */
+        String str1;
+
+        /** */
+        String str2;
+
+        /** */
+        SelfLinkObject link;
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SelfLinkObject that = (SelfLinkObject)o;
+
+            if (str1 != null ? !str1.equals(that.str1) : that.str1 != null) return false;
+            if (str2 != null ? !str2.equals(that.str2) : that.str2 != null) return false;
 
             return true;
         }
