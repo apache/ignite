@@ -1917,7 +1917,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                 if (node != null && node.isClient()) {
                     String msg = "Client node outbound queue size exceeded slowClientQueueLimit, " +
-                        "the client will be dropped (consider changing \'slowClientQueueLimit\') [clientNode=" + node +
+                        "the client will be dropped (consider changing \'slowClientQueueLimit\') [" +
+                        "srvNode=" + getSpiContext().localNode().id() +
+                        ", clientNode=" + node +
                         ", slowClientQueueLimit=" + slowClientQueueLimit + ']';
 
                     LT.warn(log, null, msg);
