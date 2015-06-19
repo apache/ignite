@@ -393,6 +393,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 T2<Socket, Integer> sockAndRes = sendJoinRequest(recon, addr);
 
+                log.info("sendJoinRequest :" + addr);
+
                 if (sockAndRes == null) {
                     it.remove();
 
