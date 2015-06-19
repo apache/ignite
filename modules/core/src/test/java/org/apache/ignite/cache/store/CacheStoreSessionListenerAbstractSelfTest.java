@@ -145,7 +145,6 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
         assertEquals(1, writeCnt.get());
         assertEquals(1, deleteCnt.get());
         assertEquals(0, reuseCnt.get());
-
     }
 
     /**

@@ -1957,17 +1957,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return new GridFinishedFuture<>();
             }
 
-            if (CU.affinityNode(ctx.discovery().localNode(), ccfg.getNodeFilter())) {
-                if (ccfg.getNearConfiguration() != null)
-                    return new GridFinishedFuture<>();
-                else
-                    return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start client cache " +
-                        "(local node is an affinity node for cache): " + cacheName));
-            }
-
             req.deploymentId(desc.deploymentId());
             req.startCacheConfiguration(ccfg);
-
         }
 
         if (nearCfg != null)
