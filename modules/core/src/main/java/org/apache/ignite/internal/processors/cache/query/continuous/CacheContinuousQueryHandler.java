@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -225,6 +226,13 @@ class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                                 evt.entry().prepareMarshal(cctx);
 
                             ctx.continuous().addNotification(nodeId, routineId, evt.entry(), topic, sync, true);
+                        }
+                        catch (ClusterTopologyCheckedException ex) {
+                            IgniteLogger log = ctx.log(getClass());
+
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send event notification to node, node left cluster " +
+                                    "[node=" + nodeId + ", err=" + ex + ']');
                         }
                         catch (IgniteCheckedException ex) {
                             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
