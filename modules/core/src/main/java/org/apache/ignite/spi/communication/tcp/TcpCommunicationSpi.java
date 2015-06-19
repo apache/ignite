@@ -1458,8 +1458,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
+                boolean clientMode = Boolean.TRUE.equals(ignite.configuration().isClientMode());
+
                 IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
-                    !ignite.configuration().isClientMode() && slowClientQueueLimit > 0 ?
+                    !clientMode && slowClientQueueLimit > 0 ?
                     new CI2<GridNioSession, Integer>() {
                         @Override public void apply(GridNioSession ses, Integer qSize) {
                             checkClientQueueSize(ses, qSize);
