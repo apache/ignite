@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.marshaller.optimized.ext.*;
 
 import javax.cache.*;
@@ -123,6 +125,29 @@ public class IgniteCacheOptimizedMarshallerExtQuerySelfTest extends GridCacheAbs
             assertEquals((id + 1) * 100, p.salary);
             assertEquals("Street " + id, p.address.street);
             assertEquals(id, p.address.zip);
+        }
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testFieldsQuery() throws Exception {
+        IgniteCache<Integer, Person> cache = grid(0).cache(null);
+
+        QueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("select name, address, zip" +
+            " from Person where zip IN (1,2)"));
+
+        List<?> result = cur.getAll();
+
+        assertTrue(result.size() == 2);
+
+        for (Object row : result) {
+            ArrayList<Object> list = (ArrayList<Object>)row;
+
+            Address addr = (Address)list.get(1);
+            int zip = (int)list.get(2);
+
+            assertEquals(addr.zip, zip);
         }
     }
 

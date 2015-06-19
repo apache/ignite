@@ -130,7 +130,7 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
         assert val != null || valBytes != null;
 
         if (val == null && ctx.storeValue())
-            val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+            val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
     }
 
     /** {@inheritDoc} */
