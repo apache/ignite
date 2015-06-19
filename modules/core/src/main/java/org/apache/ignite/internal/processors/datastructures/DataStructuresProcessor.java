@@ -819,7 +819,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
 
-        ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false, true).get();
+        if (ctx.cache().cache(cacheName) == null)
+            ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false, true).get();
 
         return cacheName;
     }
@@ -1179,6 +1180,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                             latch0.onUpdate(val.get());
 
                             if (val.get() == 0 && val.autoDelete()) {
+                                try {
+                                    removeCountDownLatch(latch0.name());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to automatically delete count down latch: " +
+                                        latch0.name(), e);
+                                }
+
                                 dsMap.remove(key);
 
                                 latch.onRemoved();
