@@ -359,6 +359,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Map<Long, Collection<ClusterNode>> snapshots,
                 @Nullable DiscoverySpiCustomMessage spiCustomMsg
             ) {
+                if (snapshots == null || topSnapshot.isEmpty()) {
+                    U.dumpStack();
+
+                    log.error("Topology snapshot is EMPTY. [tolopogy snaphot="+ topSnapshot +", topology version="+
+                        topVer + ", type=" + type + "]");
+
+                    return;
+                }
+
                 DiscoveryCustomMessage customMsg = spiCustomMsg == null ? null
                     : ((CustomMessageWrapper)spiCustomMsg).delegate();
 

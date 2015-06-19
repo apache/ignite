@@ -140,6 +140,8 @@ public class IgniteNode implements BenchmarkServer {
         if (spi == null)
             spi = new TcpDiscoverySpi();
 
+        spi.setMaxAckTimeout(100_000);
+        spi.setAckTimeout(30_000);
         spi.setNetworkTimeout(30_000);
         spi.setSocketTimeout(30_000);
         spi.setJoinTimeout(0);
