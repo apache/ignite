@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.h2.jdbc.*;
 import org.h2.value.*;
@@ -212,7 +213,9 @@ public class GridSqlQuerySplitter {
         }
 
         // Build resulting two step query.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL(),
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(
+            collectAllSpaces(qry0, new HashSet<String>()),
+            rdcQry.getSQL(),
             findParams(rdcQry, params, new ArrayList<>()).toArray());
 
         res.addMapQuery(mergeTable, mapQry.getSQL(),
@@ -221,6 +224,50 @@ public class GridSqlQuerySplitter {
         res.explain(qry0.explain());
 
         return res;
+    }
+
+    /**
+     * @param qry Query.
+     * @param spaces Space names.
+     * @return Space names.
+     */
+    private static Set<String> collectAllSpaces(GridSqlQuery qry, Set<String> spaces) {
+        if (qry instanceof GridSqlUnion) {
+            GridSqlUnion union = (GridSqlUnion)qry;
+
+            collectAllSpaces(union.left(), spaces);
+            collectAllSpaces(union.right(), spaces);
+        }
+        else
+            collectAllSpacesInFrom(((GridSqlSelect)qry).from(), spaces);
+
+        return spaces;
+    }
+
+    /**
+     * @param from From element.
+     * @param spaces Space names.
+     */
+    private static void collectAllSpacesInFrom(GridSqlElement from, Set<String> spaces) {
+        assert from != null;
+
+        if (from instanceof GridSqlJoin) {
+            // Left and right.
+            collectAllSpacesInFrom(from.child(0), spaces);
+            collectAllSpacesInFrom(from.child(1), spaces);
+        }
+        else if (from instanceof GridSqlTable) {
+            String schema = ((GridSqlTable)from).schema();
+
+            if (schema != null)
+                spaces.add(IgniteH2Indexing.space(schema));
+        }
+        else if (from instanceof GridSqlSubquery)
+            collectAllSpaces(((GridSqlSubquery)from).select(), spaces);
+        else if (from instanceof GridSqlAlias)
+            collectAllSpacesInFrom(from.child(), spaces);
+        else if (!(from instanceof GridSqlFunction))
+            throw new IllegalStateException(from.getClass().getName() + " : " + from.getSQL());
     }
 
     /**

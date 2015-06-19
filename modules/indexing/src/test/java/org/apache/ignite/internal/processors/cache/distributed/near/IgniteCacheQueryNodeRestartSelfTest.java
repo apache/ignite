@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheRebalanceMode.*;
 
 /**
  * Test for distributed queries with node restarts.
@@ -83,6 +85,8 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
+        cc.setRebalanceMode(SYNC);
+        cc.setAffinity(new RendezvousAffinityFunction(false, 15));
         cc.setIndexedTypes(
             Integer.class, Integer.class
         );
@@ -102,7 +106,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         int duration = 60 * 1000;
         int qryThreadNum = 10;
         final long nodeLifeTime = 2 * 1000;
-        final int logFreq = 20;
+        final int logFreq = 50;
 
         final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
@@ -111,7 +115,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(KEY_CNT, cache.localSize());
+        assertEquals(KEY_CNT, cache.size());
 
         final AtomicInteger qryCnt = new AtomicInteger();
 
@@ -121,9 +125,23 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     Collection<Cache.Entry<Integer, Integer>> res =
-                        cache.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
+                        cache.query(new SqlQuery<Integer, Integer>(Integer.class, "true")).getAll();
 
-                    assertFalse(res.isEmpty());
+                    Set<Integer> keys = new HashSet<>();
+
+                    for (Cache.Entry<Integer,Integer> entry : res)
+                        keys.add(entry.getKey());
+
+                    if (KEY_CNT > keys.size()) {
+                        for (int i = 0; i < KEY_CNT; i++) {
+                            if (!keys.contains(i))
+                                assertEquals(Integer.valueOf(i), cache.get(i));
+                        }
+
+                        fail("res size: " + res.size());
+                    }
+
+                    assertEquals(KEY_CNT, keys.size());
 
                     int c = qryCnt.incrementAndGet();
 
@@ -164,10 +182,18 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
         Thread.sleep(duration);
 
+        info("Stopping..");
+
         done.set(true);
 
-        fut1.get();
         fut2.get();
+
+        info("Restarts stopped.");
+
+        fut1.get();
+
+        info("Queries stopped.");
+
 
         info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 

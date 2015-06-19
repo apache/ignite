@@ -24,7 +24,6 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -106,6 +104,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
         return !F.isEmpty(ccfg.getIndexedTypes()) || !F.isEmpty(ccfg.getTypeMetadata());
+    }
+
+    /**
+     * @return {@code true} If indexing module is in classpath and successfully initialized.
+     */
+    public boolean moduleEnabled() {
+        return idx != null;
     }
 
     /**
@@ -661,7 +666,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             sqlQry,
                             F.asList(params),
                             typeDesc,
-                            idx.backupFilter());
+                            idx.backupFilter(null, null, null));
 
                         sendQueryExecutedEvent(
                             sqlQry,
@@ -722,13 +727,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @return Message factory for {@link GridIoManager}.
-     */
-    public MessageFactory messageFactory() {
-        return idx == null ? null : idx.messageFactory();
-    }
-
-    /**
      * Closeable iterator.
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
@@ -751,7 +749,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     String sql = qry.getSql();
                     Object[] args = qry.getArgs();
 
-                    final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args), idx.backupFilter());
+                    final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
+                        idx.backupFilter(null, null, null));
 
                     sendQueryExecutedEvent(sql, args);
 
