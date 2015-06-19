@@ -21,6 +21,7 @@ import junit.framework.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.marshaller.optimized.ext.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -49,6 +50,7 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerEnumSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerExtSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedObjectStreamSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridUnsafeDataOutputArraySizingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerNodeFailoverTest.class, ignoredTests);

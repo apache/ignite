@@ -118,8 +118,11 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(CachePartitionedQueryMetricsSelfTest.class);
         suite.addTestSuite(CacheReplicatedQueryMetricsSelfTest.class);
 
-        //Unmarshallig query test.
+        // Unmarshallig query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
+
+        // Optimized extended marshaller query tests
+        suite.addTestSuite(IgniteCacheOptimizedMarshallerExtQuerySelfTest.class);
 
         return suite;
     }

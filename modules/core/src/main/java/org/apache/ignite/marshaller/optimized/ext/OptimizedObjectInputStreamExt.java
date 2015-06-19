@@ -55,7 +55,8 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
 
     /** {@inheritDoc} */
     @Override protected void skipFooter(Class<?> cls) throws IOException {
-        if (metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
+        if (!ctx.isSystemType(cls.getName()) && metaHandler != null &&
+            metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
             short footerLen = in.readShort();
 
             if (footerLen != EMPTY_FOOTER)

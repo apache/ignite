@@ -978,7 +978,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
     }
 
     /**
-     *
+     * Footer that is written at the end of object's serialization.
      */
     protected interface Footer {
         /**

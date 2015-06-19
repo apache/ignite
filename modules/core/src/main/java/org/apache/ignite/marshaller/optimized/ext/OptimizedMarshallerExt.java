@@ -50,7 +50,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     static final byte VARIABLE_LEN = -1;
 
     /** */
-    private OptimizedMarshallerExtMetaHandler metaHandler;
+    private volatile OptimizedMarshallerExtMetaHandler metaHandler;
 
     /**
      * Creates new marshaller will all defaults.
@@ -102,6 +102,9 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
         assert metaHandler != null;
 
+        if (ctx.isSystemType(cls.getName()))
+            return false;
+
         try {
             OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
 
@@ -136,7 +139,9 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
      * @return {@code true} if fields indexing is enabled.
      */
     public boolean fieldsIndexingEnabled(Class<?> cls) {
-        if (cls == OptimizedObjectMetadataKey.class)
+        assert metaHandler != null;
+
+        if (ctx.isSystemType(cls.getName()))
             return false;
 
         try {

@@ -36,7 +36,12 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
     /** */
     private OptimizedMarshallerExtMetaHandler metaHandler;
 
-    /** {@inheritDoc} */
+    /**
+     * Constructor.
+     *
+     * @param out Output stream.
+     * @throws IOException In case of error.
+     */
     protected OptimizedObjectOutputStreamExt(GridDataOutput out) throws IOException {
         super(out);
     }
@@ -62,7 +67,8 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
 
     /** {@inheritDoc} */
     @Override protected Footer createFooter(Class<?> cls) {
-        if (metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null)
+        if (!ctx.isSystemType(cls.getName()) && metaHandler != null &&
+            metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null)
             return new FooterImpl();
         else
             return null;
