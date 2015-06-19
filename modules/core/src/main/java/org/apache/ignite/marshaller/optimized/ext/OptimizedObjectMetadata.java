@@ -29,6 +29,9 @@ import java.util.*;
  */
 public class OptimizedObjectMetadata implements Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private List<FieldInfo> fieldsInfo;
 
     /** Constructor. */
