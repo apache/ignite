@@ -1153,15 +1153,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         return msgQueueLimit;
     }
 
-    /**
-     * Gets slow client queue limit.
-     * <p/>
-     * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
-     * those clients whose queue exceeded this limit.
-     *
-     * @return Slow client queue limit.
-     */
-    public int getSlowClientQueueLimit() {
+    /** {@inheritDoc} */
+    @Override public int getSlowClientQueueLimit() {
         return slowClientQueueLimit;
     }
 
@@ -1923,10 +1916,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 ClusterNode node = getSpiContext().node(id);
 
                 if (node != null && node.isClient()) {
-                    LT.warn(log, null, "Client node outbound queue size exceed configured slow client queue limit, " +
-                        "will fail the node (consider changing \'slowClientQueueLimit\'): " + node);
+                    String msg = "Client node outbound queue size exceed configured slow client queue limit, " +
+                        "will fail the node (consider changing \'slowClientQueueLimit\') [clientNode=" + node +
+                        ", slowClientQueueLimit=" + slowClientQueueLimit + ']';
 
-                    getSpiContext().failNode(id);
+                    LT.warn(log, null, msg);
+
+                    getSpiContext().failNode(id, msg);
                 }
             }
         }

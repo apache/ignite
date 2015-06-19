@@ -505,13 +505,18 @@ public class GridNioServer<T> {
     public GridNioFuture<GridNioSession> createSession(final SocketChannel ch,
         @Nullable Map<Integer, ?> meta) {
         try {
-            ch.configureBlocking(false);
+            if (!closed) {
+                ch.configureBlocking(false);
 
-            NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
+                NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
-            offerBalanced(req);
+                offerBalanced(req);
 
-            return req;
+                return req;
+            }
+            else
+                return new GridNioFinishedFuture<>(
+                    new IgniteCheckedException("Failed to create session, server is stopped."));
         }
         catch (IOException e) {
             return new GridNioFinishedFuture<>(e);
