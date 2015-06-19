@@ -149,9 +149,47 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testThreeNodesStartStop() throws Exception {
         try {
-            startGrid(1);
-            startGrid(2);
-            startGrid(3);
+            IgniteEx ignite1 = startGrid(1);
+            IgniteEx ignite2 = startGrid(2);
+            IgniteEx ignite3 = startGrid(3);
+
+            TcpDiscoverySpi spi1 = (TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi();
+            TcpDiscoverySpi spi2 = (TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+            TcpDiscoverySpi spi3 = (TcpDiscoverySpi)ignite3.configuration().getDiscoverySpi();
+
+            TcpDiscoveryNode node = (TcpDiscoveryNode)spi1.getNode(ignite2.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            LinkedHashSet<InetSocketAddress> addrs = spi1.getNodeAddresses(node);
+
+            assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
+
+            assertTrue(spi1.pingNode(ignite3.localNode().id()));
+
+            node = (TcpDiscoveryNode)spi1.getNode(ignite3.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            addrs = spi1.getNodeAddresses(node);
+            assertEquals(addrs.iterator().next(), node.lastSuccessfulAddress());
+
+            node = (TcpDiscoveryNode)spi2.getNode(ignite1.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            node = (TcpDiscoveryNode)spi2.getNode(ignite3.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
+
+            node = (TcpDiscoveryNode)spi3.getNode(ignite1.localNode().id());
+
+            assertNotNull(node);
+            assertNotNull(node.lastSuccessfulAddress());
         }
         finally {
             stopAllGrids();
