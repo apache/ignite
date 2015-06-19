@@ -147,6 +147,7 @@ public class IgniteNode implements BenchmarkServer {
         c.setCommunicationSpi(commSpi);
         c.setDiscoverySpi(spi);
         c.setTimeServerPortBase(30000);
+        c.setTimeServerPortRange(500);
 
         ignite = Ignition.start(c);
     }
