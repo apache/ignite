@@ -115,6 +115,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     if (meta == null)
                         meta = EMPTY_META;
 
+                    metaBuf.put(typeId, meta);
+
                     return meta == EMPTY_META ? null : meta;
                 }
             };
