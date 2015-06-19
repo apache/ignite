@@ -201,6 +201,12 @@ public class CacheObjectContext {
 
                 return list;
             }
+            else if (col instanceof Set) {
+                Set<Object> set = new HashSet<>();
+
+                for (Object obj0 : col)
+                    set.add(unwrapObject(obj0));
+            }
             else {
                 Collection<Object> col0 = new ArrayList<>(col.size());
 
