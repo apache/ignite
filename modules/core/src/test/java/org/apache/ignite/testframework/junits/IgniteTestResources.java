@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.marshaller.optimized.ext.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.logger.*;
@@ -232,7 +233,8 @@ public class IgniteTestResources {
         Marshaller marsh;
 
         if (marshallerName == null)
-            marsh = new OptimizedMarshaller();
+            //marsh = new OptimizedMarshaller();
+            marsh = new OptimizedMarshallerExt();
         else {
             try {
                 Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
