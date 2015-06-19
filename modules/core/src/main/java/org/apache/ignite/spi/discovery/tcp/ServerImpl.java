@@ -584,12 +584,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void failNode(UUID nodeId) {
+    @Override public void failNode(UUID nodeId, @Nullable String warning) {
         ClusterNode node = ring.node(nodeId);
 
         if (node != null) {
             TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
                 node.id(), node.order());
+
+            msg.warning(warning);
 
             msgWorker.addMessage(msg);
         }
@@ -3402,6 +3404,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodes.remove(node);
 
                     leavingNodes.remove(node);
+
+                    ClientMessageWorker worker = clientMsgWorkers.remove(node.id());
+
+                    if (worker != null)
+                        worker.interrupt();
+                }
+
+                if (msg.warning() != null && !msg.creatorNodeId().equals(getLocalNodeId())) {
+                    ClusterNode creatorNode = ring.node(msg.creatorNodeId());
+
+                    U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
+                        "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : msg.creatorNodeId()) +
+                        ", msg=" + msg.warning() + ']');
                 }
 
                 notifyDiscovery(EVT_NODE_FAILED, topVer, node);
