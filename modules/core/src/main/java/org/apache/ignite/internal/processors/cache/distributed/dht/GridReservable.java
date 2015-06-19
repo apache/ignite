@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.s3;
-
-import com.amazonaws.auth.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
-import org.apache.ignite.testsuites.*;
+package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 /**
- * Grid S3 checkpoint SPI start stop self test.
+ * Reservations support.
  */
-@GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
-public class S3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<S3CheckpointSpi> {
-    /** {@inheritDoc} */
-    @Override protected void spiConfigure(S3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
+public interface GridReservable {
+    /**
+     * Reserves.
+     *
+     * @return {@code true} If reserved successfully.
+     */
+    public boolean reserve();
 
-        spi.setAwsCredentials(cred);
-
-        spi.setBucketNameSuffix("unit-test-bucket");
-
-        super.spiConfigure(spi);
-    }
+    /**
+     * Releases.
+     */
+    public void release();
 }

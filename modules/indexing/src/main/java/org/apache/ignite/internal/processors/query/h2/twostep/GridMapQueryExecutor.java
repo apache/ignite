@@ -23,7 +23,9 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
@@ -34,8 +36,8 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
-import org.h2.store.*;
 import org.h2.value.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import javax.cache.*;
@@ -46,6 +48,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.*;
 
 /**
@@ -84,6 +88,10 @@ public class GridMapQueryExecutor {
     /** */
     private final GridSpinBusyLock busyLock;
 
+    /** */
+    private final ConcurrentMap<T2<String, AffinityTopologyVersion>, GridReservable> reservations =
+        new ConcurrentHashMap8<>();
+
     /**
      * @param busyLock Busy lock.
      */
@@ -115,6 +123,18 @@ public class GridMapQueryExecutor {
                     ress.cancel();
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
+        // Drop group reservations for dead caches.
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                String cacheName = ((CacheEvent)evt).cacheName();
+
+                for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
+                    if (F.eq(grpKey.get1(), cacheName))
+                        reservations.remove(grpKey);
+                }
+            }
+        }, EventType.EVT_CACHE_STOPPED);
 
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
@@ -198,6 +218,162 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @return Cache context or {@code null} if none.
+     */
+    @Nullable private GridCacheContext<?,?> cacheContext(String cacheName) {
+        GridCacheAdapter<?,?> cache = ctx.cache().internalCache(cacheName);
+
+        if (cache == null)
+            return null;
+
+        return cache.context();
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param p Partition ID.
+     * @return Partition.
+     */
+    private GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
+        return cctx.topology().localPartition(p, NONE, false);
+    }
+
+    /**
+     * @param cacheNames Cache names.
+     * @param topVer Topology version.
+     * @param explicitParts Explicit partitions list.
+     * @param reserved Reserved list.
+     * @return {@code true} If all the needed partitions successfully reserved.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean reservePartitions(
+        Collection<String> cacheNames,
+        AffinityTopologyVersion topVer,
+        final int[] explicitParts,
+        List<GridReservable> reserved
+    ) throws IgniteCheckedException {
+        assert topVer != null;
+
+        Collection<Integer> partIds = wrap(explicitParts);
+
+        for (String cacheName : cacheNames) {
+            GridCacheContext<?, ?> cctx = cacheContext(cacheName);
+
+            if (cctx == null) // Cache was not found, probably was not deployed yet.
+                return false;
+
+            if (cctx.isLocal())
+                continue;
+
+            // For replicated cache topology version does not make sense.
+            final T2<String,AffinityTopologyVersion> grpKey =
+                new T2<>(cctx.name(), cctx.isReplicated() ? null : topVer);
+
+            GridReservable r = reservations.get(grpKey);
+
+            if (explicitParts == null && r != null) { // Try to reserve group partition if any and no explicits.
+                if (r != ReplicatedReservation.INSTANCE) {
+                    if (!r.reserve())
+                        return false; // We need explicit partitions here -> retry.
+
+                    reserved.add(r);
+                }
+            }
+            else { // Try to reserve partitions one by one.
+                int partsCnt = cctx.affinity().partitions();
+
+                if (cctx.isReplicated()) { // Check all the partitions are in owning state for replicated cache.
+                    if (r == null) { // Check only once.
+                        for (int p = 0; p < partsCnt; p++) {
+                            GridDhtLocalPartition part = partition(cctx, p);
+
+                            // We don't need to reserve partitions because they will not be evicted in replicated caches.
+                            if (part == null || part.state() != OWNING)
+                                return false;
+                        }
+
+                        // Mark that we checked this replicated cache.
+                        reservations.putIfAbsent(grpKey, ReplicatedReservation.INSTANCE);
+                    }
+                }
+                else { // Reserve primary partitions for partitioned cache (if no explicit given).
+                    if (explicitParts == null)
+                        partIds = cctx.affinity().primaryPartitions(ctx.localNodeId(), topVer);
+
+                    for (int partId : partIds) {
+                        GridDhtLocalPartition part = partition(cctx, partId);
+
+                        if (part == null || part.state() != OWNING || !part.reserve())
+                            return false;
+
+                        reserved.add(part);
+
+                        // Double check that we are still in owning state and partition contents are not cleared.
+                        if (part.state() != OWNING)
+                            return false;
+                    }
+
+                    if (explicitParts == null) {
+                        // We reserved all the primary partitions for cache, attempt to add group reservation.
+                        GridDhtPartitionsReservation grp = new GridDhtPartitionsReservation(topVer, cctx, "SQL");
+
+                        if (grp.register(reserved.subList(reserved.size() - partIds.size(), reserved.size()))) {
+                            if (reservations.putIfAbsent(grpKey, grp) != null)
+                                throw new IllegalStateException("Reservation already exists.");
+
+                            grp.onPublish(new CI1<GridDhtPartitionsReservation>() {
+                                @Override public void apply(GridDhtPartitionsReservation r) {
+                                    reservations.remove(grpKey, r);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param ints Integers.
+     * @return Collection wrapper.
+     */
+    private static Collection<Integer> wrap(final int[] ints) {
+        if (ints == null)
+            return null;
+
+        if (ints.length == 0)
+            return Collections.emptySet();
+
+        return new AbstractCollection<Integer>() {
+            @Override public Iterator<Integer> iterator() {
+                return new Iterator<Integer>() {
+                    /** */
+                    private int i = 0;
+
+                    @Override public boolean hasNext() {
+                        return i < ints.length;
+                    }
+
+                    @Override public Integer next() {
+                        return ints[i++];
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            }
+
+            @Override public int size() {
+                return ints.length;
+            }
+        };
+    }
+
+    /**
      * Executing queries locally.
      *
      * @param node Node.
@@ -206,41 +382,62 @@ public class GridMapQueryExecutor {
     private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
         ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
 
-        Collection<GridCacheSqlQuery> qrys;
+        QueryResults qr = null;
+
+        List<GridReservable> reserved = new ArrayList<>();
 
         try {
-            qrys = req.queries();
+            // Unmarshall query params.
+            Collection<GridCacheSqlQuery> qrys;
 
-            if (!node.isLocal()) {
-                Marshaller m = ctx.config().getMarshaller();
+            try {
+                qrys = req.queries();
 
-                for (GridCacheSqlQuery qry : qrys)
-                    qry.unmarshallParams(m);
+                if (!node.isLocal()) {
+                    Marshaller m = ctx.config().getMarshaller();
+
+                    for (GridCacheSqlQuery qry : qrys)
+                        qry.unmarshallParams(m);
+                }
             }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+            catch (IgniteCheckedException e) {
+                throw new CacheException("Failed to unmarshall parameters.", e);
+            }
 
-        GridCacheContext<?,?> cctx = ctx.cache().internalCache(req.space()).context();
+            List<String> caches = (List<String>)F.concat(true, req.space(), req.extraSpaces());
 
-        QueryResults qr = new QueryResults(req.requestId(), qrys.size(), cctx);
+            // Topology version can be null in rolling restart with previous version!
+            final AffinityTopologyVersion topVer = req.topologyVersion();
 
-        if (nodeRess.put(req.requestId(), qr) != null)
-            throw new IllegalStateException();
+            if (topVer != null) {
+                // Reserve primary for topology version or explicit partitions.
+                if (!reservePartitions(caches, topVer, req.partitions(), reserved)) {
+                    sendRetry(node, req.requestId());
 
-        h2.setFilters(h2.backupFilter());
+                    return;
+                }
+            }
 
-        try {
+            // Prepare to run queries.
+            GridCacheContext<?,?> mainCctx = cacheContext(req.space());
+
+            if (mainCctx == null)
+                throw new CacheException("Failed to find cache: " + req.space());
+
+            qr = new QueryResults(req.requestId(), qrys.size(), mainCctx);
+
+            if (nodeRess.put(req.requestId(), qr) != null)
+                throw new IllegalStateException();
+
+            h2.setFilters(h2.backupFilter(caches, topVer, req.partitions()));
+
             // TODO Prepare snapshots for all the needed tables before the run.
 
             // Run queries.
             int i = 0;
 
-            String space = req.space();
-
             for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(space, h2.connectionForSpace(space), qry.query(),
+                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(), h2.connectionForSpace(req.space()), qry.query(),
                     F.asList(qry.parameters()));
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -249,7 +446,7 @@ public class GridMapQueryExecutor {
                         "SQL query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
                         CacheQueryType.SQL.name(),
-                        cctx.namex(),
+                        mainCctx.namex(),
                         null,
                         qry.query(),
                         null,
@@ -266,7 +463,7 @@ public class GridMapQueryExecutor {
                 if (qr.canceled) {
                     qr.result(i).close();
 
-                    throw new IgniteException("Query was canceled.");
+                    return;
                 }
 
                 // Send the first page.
@@ -276,9 +473,11 @@ public class GridMapQueryExecutor {
             }
         }
         catch (Throwable e) {
-            nodeRess.remove(req.requestId(), qr);
+            if (qr != null) {
+                nodeRess.remove(req.requestId(), qr);
 
-            qr.cancel();
+                qr.cancel();
+            }
 
             U.error(log, "Failed to execute local query: " + req, e);
 
@@ -289,6 +488,10 @@ public class GridMapQueryExecutor {
         }
         finally {
             h2.setFilters(null);
+
+            // Release reserved partitions.
+            for (GridReservable r : reserved)
+                r.release();
         }
     }
 
@@ -375,59 +578,24 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param bytes Bytes.
-     * @return Rows.
+     * @param node Node.
+     * @param reqId Request ID.
+     * @throws IgniteCheckedException If failed.
      */
-    public static List<Value[]> unmarshallRows(byte[] bytes) {
-        Data data = Data.create(null, bytes);
+    private void sendRetry(ClusterNode node, long reqId) throws IgniteCheckedException {
+        boolean loc = node.isLocal();
 
-        int rowCnt = data.readVarInt();
+        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(reqId,
+            /*qry*/0, /*page*/0, /*allRows*/0, /*cols*/1,
+            loc ? null : Collections.<Message>emptyList(),
+            loc ? Collections.<Value[]>emptyList() : null);
 
-        if (rowCnt == 0)
-            return Collections.emptyList();
+        msg.retry(h2.readyTopologyVersion());
 
-        ArrayList<Value[]> rows = new ArrayList<>(rowCnt);
-
-        int cols = data.readVarInt();
-
-        for (int r = 0; r < rowCnt; r++) {
-            Value[] row = new Value[cols];
-
-            for (int c = 0; c < cols; c++)
-                row[c] = data.readValue();
-
-            rows.add(row);
-        }
-
-        return rows;
-    }
-
-    /**
-     * @param rows Rows.
-     * @return Bytes.
-     */
-    public static byte[] marshallRows(Collection<Value[]> rows) {
-        Data data = Data.create(null, 256);
-
-        data.writeVarInt(rows.size());
-
-        boolean first = true;
-
-        for (Value[] row : rows) {
-            if (first) {
-                data.writeVarInt(row.length);
-
-                first = false;
-            }
-
-            for (Value val : row) {
-                data.checkCapacity(data.getValueLen(val));
-
-                data.writeValue(val);
-            }
-        }
-
-        return Arrays.copyOf(data.getBytes(), data.length());
+        if (loc)
+            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+        else
+            ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
     }
 
     /**
@@ -638,6 +806,24 @@ public class GridMapQueryExecutor {
 
             U.close(rs, log);
             U.close(stmt, log);
+        }
+    }
+
+    /**
+     * Fake reservation object for replicated caches.
+     */
+    private static class ReplicatedReservation implements GridReservable {
+        /** */
+        static final ReplicatedReservation INSTANCE = new ReplicatedReservation();
+
+        /** {@inheritDoc} */
+        @Override public boolean reserve() {
+            throw new IllegalStateException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void release() {
+            throw new IllegalStateException();
         }
     }
 }
