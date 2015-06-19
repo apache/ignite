@@ -23,6 +23,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.cache.multijvm.framework.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -357,11 +358,49 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Gets flag whether nodes will run in one jvm or in separate jvms.
+     *
+     * @return <code>True</code> to run nodes in separate jvms.
+     */
+    protected boolean isMultiJvm() {
+        return false;
+    }
+
+    /**
+     * @param gridName Grid name.
+     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     */
+    protected boolean isMultiJvmAndNodeIsRemote(String gridName) {
+        return isMultiJvm() && !gridName.endsWith("0");
+    }
+
+    /**
+     * @param idx Grid index.
+     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     */
+    protected boolean isMultiJvmAndNodeIsRemote(int idx) {
+        return isMultiJvm() && idx != 0;
+    }
+
+    /**
      * @param idx Index of grid.
      * @return Cache context.
      */
-    protected GridCacheContext<String, Integer> context(int idx) {
-        return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
+    protected GridCacheContext<String, Integer> context(final int idx) {
+        if (!isMultiJvmAndNodeIsRemote(idx))
+            return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
+        else {
+//            ((IgniteProcessProxy)grid(idx)).remoteInternalCache();
+
+            // TODO
+            final UUID id = ((IgniteProcessProxy)grid(idx)).getId();
+
+            return new GridCacheContext<String, Integer>() {
+                @Override public UUID localNodeId() {
+                    return id;
+                }
+            };
+        }
     }
 
     /**

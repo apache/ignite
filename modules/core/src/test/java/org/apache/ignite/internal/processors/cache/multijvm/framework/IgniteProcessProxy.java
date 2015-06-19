@@ -40,9 +40,9 @@ import java.util.concurrent.*;
 /**
  * Ignite proxy for ignite instance at another JVM.
  */
-public class IgniteExProcessProxy implements IgniteEx {
+public class IgniteProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private transient static final Map<String, IgniteExProcessProxy> gridProxies = new HashMap<>();
+    private transient static final Map<String, IgniteProcessProxy> gridProxies = new HashMap<>();
 
     /** Jvm process with ignite instance. */
     private transient final GridJavaProcess proc;
@@ -70,7 +70,7 @@ public class IgniteExProcessProxy implements IgniteEx {
      * @param log Logger.
      * @param locJvmGrid Local jvm grid.
      */
-    public IgniteExProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid)
+    public IgniteProcessProxy(final IgniteConfiguration cfg, final IgniteLogger log, final Ignite locJvmGrid)
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
@@ -106,7 +106,7 @@ public class IgniteExProcessProxy implements IgniteEx {
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
                 @Override public void apply(String s) {
-                    IgniteExProcessProxy.this.log.info(s);
+                    IgniteProcessProxy.this.log.info(s);
                 }
             },
             null,
@@ -125,7 +125,7 @@ public class IgniteExProcessProxy implements IgniteEx {
      * @param gridName Grid name.
      * @return Instance by name or <code>null</code>.
      */
-    public static IgniteExProcessProxy get(String gridName) {
+    public static IgniteProcessProxy get(String gridName) {
         return gridProxies.get(gridName);
     }
 
@@ -135,7 +135,7 @@ public class IgniteExProcessProxy implements IgniteEx {
      * @throws Exception if failed.
      */
     public static void killAll() throws Exception {
-        for (IgniteExProcessProxy ignite : gridProxies.values())
+        for (IgniteProcessProxy ignite : gridProxies.values())
             try {
                 ignite.getProcess().kill();
             }
@@ -462,4 +462,31 @@ public class IgniteExProcessProxy implements IgniteEx {
 
         return res;
     }
+
+    // TODO delete or use.
+//    public <K, V> GridCacheAdapter<K, V> remoteInternalCache() {
+//        return (GridCacheAdapter<K, V>)compute.call(new MyCallable(id));
+//    }
+//
+//    /**
+//     */
+//    private static class MyCallable implements IgniteCallable<Object> {
+//        private UUID id;
+//
+//        public MyCallable() {
+//            // No-op.
+//        }
+//
+//        public MyCallable(UUID id) {
+//            this.id = id;
+//        }
+//
+//        public void setId(UUID id) {
+//            this.id = id;
+//        }
+//
+//        @Override public Object call() throws Exception {
+//            return ((IgniteKernal)Ignition.ignite(id)).internalCache();
+//        }
+//    }
 }

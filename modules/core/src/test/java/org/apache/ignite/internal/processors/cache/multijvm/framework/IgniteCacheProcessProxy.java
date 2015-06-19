@@ -51,13 +51,13 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     private final boolean isAsync;
 
     /** Ignite proxy. */
-    private final transient IgniteExProcessProxy igniteProxy;
+    private final transient IgniteProcessProxy igniteProxy;
 
     /**
      * @param name Name.
      * @param proxy Ignite Process Proxy.
      */
-    public IgniteCacheProcessProxy(String name, IgniteExProcessProxy proxy) {
+    public IgniteCacheProcessProxy(String name, IgniteProcessProxy proxy) {
         this(name, false, proxy);
     }
 
@@ -66,7 +66,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
      * @param async
      * @param proxy Ignite Process Proxy.
      */
-    public IgniteCacheProcessProxy(String name, boolean async, IgniteExProcessProxy proxy) {
+    public IgniteCacheProcessProxy(String name, boolean async, IgniteProcessProxy proxy) {
         cacheName = name;
         isAsync = async;
         gridId = proxy.getId();
@@ -93,8 +93,14 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override public <C extends Configuration<K, V>> C getConfiguration(final Class<C> clazz) {
+        final Class cl = clazz;
+
+        return (C)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                return cache().getConfiguration(cl);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -153,15 +159,17 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        // TODO: implement.
-//        return F.first(compute.broadcast(new IgniteClosureX<CachePeekMode[], Iterable>() {
-//            @Override public Iterable applyx(CachePeekMode... modes) {
-//                return Ignition.ignite(gridId).cache(cacheName).localEntries(modes);
-//            }
-//        }, peekModes));
+    @Override public Iterable<Entry<K, V>> localEntries(final CachePeekMode... peekModes) throws CacheException {
+        return (Iterable<Entry<K, V>>)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                Collection<Entry> res = new ArrayList<>();
 
-        return Collections.emptyList();
+                for (Entry e : cache().localEntries(peekModes))
+                    res.add(e);
+
+                return res;
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -492,8 +500,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unwrap(Class<T> clazz) {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override public <T> T unwrap(final Class<T> clazz) {
+        throw new UnsupportedOperationException("Method cannot be supported because T can be unmarshalliable.");
     }
 
     /** {@inheritDoc} */

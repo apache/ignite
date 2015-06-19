@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
@@ -197,7 +196,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     Ignite ignite;
 
                     if (isMultiJvm())
-                        ignite = IgniteExProcessProxy.grid(entry.getKey());
+                        ignite = IgniteProcessProxy.grid(entry.getKey());
                     else
                         ignite = IgnitionEx.grid(entry.getKey());
 
@@ -237,19 +236,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        IgniteExProcessProxy.killAll();
+        IgniteProcessProxy.killAll();
 
         super.afterTestsStopped();
-    }
-
-
-    /**
-     * Gets flag whether nodes will run in one jvm or in separate jvms.
-     *
-     * @return <code>True</code> to run nodes in separate jvms.
-     */
-    protected boolean isMultiJvm() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -267,7 +256,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return IgnitionEx.start(optimize(cfg), ctx);
         }
 
-        return new IgniteExProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
+        return new IgniteProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
     }
 
     /** {@inheritDoc} */
@@ -275,7 +264,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (!isMultiJvm() || idx == 0)
             return super.grid(idx);
 
-        return IgniteExProcessProxy.get(getTestGridName(idx));
+        return IgniteProcessProxy.get(getTestGridName(idx));
     }
 
     /**
@@ -287,7 +276,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (!isMultiJvm() || idx == 0)
             return super.jcache(idx);
 
-        return IgniteExProcessProxy.get(getTestGridName(idx)).cache(null);
+        return IgniteProcessProxy.get(getTestGridName(idx)).cache(null);
     }
 
     /** {@inheritDoc} */
