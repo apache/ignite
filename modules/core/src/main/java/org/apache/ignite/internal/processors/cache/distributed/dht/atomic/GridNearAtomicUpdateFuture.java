@@ -90,7 +90,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Mappings. */
     @GridToStringInclude
-    private final ConcurrentMap<UUID, GridNearAtomicUpdateRequest> mappings;
+    private ConcurrentMap<UUID, GridNearAtomicUpdateRequest> mappings;
 
     /** Error. */
     private volatile CachePartialUpdateCheckedException err;
@@ -123,7 +123,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     private GridNearAtomicUpdateRequest singleReq;
 
     /** Raw return value flag. */
-    private boolean rawRetval;
+    private final boolean rawRetval;
 
     /** Fast map flag. */
     private final boolean fastMap;
@@ -148,6 +148,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Skip store flag. */
     private final boolean skipStore;
+
+    /** Wait for topology future flag. */
+    private final boolean waitTopFut;
+
+    /** Remap count. */
+    private AtomicInteger remapCnt;
 
     /**
      * @param cctx Cache context.
@@ -183,7 +189,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         final CacheEntryPredicate[] filter,
         UUID subjId,
         int taskNameHash,
-        boolean skipStore
+        boolean skipStore,
+        int remapCnt,
+        boolean waitTopFut
     ) {
         this.rawRetval = rawRetval;
 
@@ -207,6 +215,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
+        this.waitTopFut = waitTopFut;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
@@ -218,6 +227,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             !(cctx.writeThrough() && cctx.config().getInterceptor() != null);
 
         nearEnabled = CU.isNearEnabled(cctx);
+
+        this.remapCnt = new AtomicInteger(remapCnt);
     }
 
     /** {@inheritDoc} */
@@ -295,10 +306,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /**
      * Performs future mapping.
-     *
-     * @param waitTopFut Whether to wait for topology future.
      */
-    public void map(boolean waitTopFut) {
+    public void map() {
         AffinityTopologyVersion topVer = null;
 
         IgniteInternalTx tx = cctx.tm().anyActiveThreadTx();
@@ -310,12 +319,60 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
 
         if (topVer == null)
-            mapOnTopology(null, false, null, waitTopFut);
+            mapOnTopology(null, false, null);
         else {
             topLocked = true;
 
+            // Cannot remap.
+            remapCnt.set(1);
+
             map0(topVer, null, false, null);
         }
+    }
+
+    /**
+     * @param failed Keys to remap.
+     */
+    private void remap(Collection<?> failed) {
+        if (futVer != null)
+            cctx.mvcc().removeAtomicFuture(version());
+
+        Collection<Object> remapKeys = new ArrayList<>(failed.size());
+        Collection<Object> remapVals = new ArrayList<>(failed.size());
+
+        Iterator<?> keyIt = keys.iterator();
+        Iterator<?> valsIt = vals.iterator();
+
+        for (Object key : failed) {
+            while (keyIt.hasNext()) {
+                Object nextKey = keyIt.next();
+                Object nextVal = valsIt.next();
+
+                if (F.eq(key, nextKey)) {
+                    remapKeys.add(nextKey);
+                    remapVals.add(nextVal);
+
+                    break;
+                }
+            }
+        }
+
+        keys = remapKeys;
+        vals = remapVals;
+
+        mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
+        single = null;
+        futVer = null;
+        err = null;
+        opRes = null;
+        topVer = AffinityTopologyVersion.ZERO;
+        singleNodeId = null;
+        singleReq = null;
+        fastMapRemap = false;
+        updVer = null;
+        topLocked = false;
+
+        map();
     }
 
     /** {@inheritDoc} */
@@ -330,6 +387,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
+
+        if (err != null && X.hasCause(err, CachePartialUpdateCheckedException.class) && remapCnt.decrementAndGet() > 0) {
+            remap(X.cause(err, CachePartialUpdateCheckedException.class).failedKeys());
+
+            return false;
+        }
 
         if (super.onDone(retval, err)) {
             if (futVer != null)
@@ -353,7 +416,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             Collection<KeyCacheObject> remapKeys = fastMap ? null : res.remapKeys();
 
-            mapOnTopology(remapKeys, true, nodeId, true);
+            mapOnTopology(remapKeys, true, nodeId);
 
             return;
         }
@@ -431,10 +494,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
      * @param keys Keys to map.
      * @param remap Boolean flag indicating if this is partial future remap.
      * @param oldNodeId Old node ID if remap.
-     * @param waitTopFut Whether to wait for topology future.
      */
-    private void mapOnTopology(final Collection<?> keys, final boolean remap, final UUID oldNodeId,
-        final boolean waitTopFut) {
+    private void mapOnTopology(final Collection<?> keys, final boolean remap, final UUID oldNodeId) {
         cache.topology().readLock();
 
         AffinityTopologyVersion topVer = null;
@@ -465,7 +526,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> t) {
                             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                                 @Override public void run() {
-                                    mapOnTopology(keys, remap, oldNodeId, waitTopFut);
+                                    mapOnTopology(keys, remap, oldNodeId);
                                 }
                             });
                         }
@@ -509,7 +570,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         if (remap)
-            mapOnTopology(null, true, null, true);
+            mapOnTopology(null, true, null);
     }
 
     /**

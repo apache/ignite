@@ -106,6 +106,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withSkipStore();
 
     /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteCache<K, V> withNoRetries();
+
+    /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
