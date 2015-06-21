@@ -52,6 +52,19 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCacheAbstr
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        AtomicConfiguration acfg = new AtomicConfiguration();
+
+        acfg.setBackups(1);
+
+        cfg.setAtomicConfiguration(acfg);
+
+        return cfg;
+    }
+
     /**
      * @throws Exception If failed.
      */

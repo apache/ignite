@@ -17,7 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  *
@@ -31,5 +38,37 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /** {@inheritDoc} */
     @Override protected int keysCount() {
         return 20_000;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicLongRetries() throws Exception {
+        final AtomicBoolean finished = new AtomicBoolean();
+
+        IgniteAtomicLong atomic = ignite(0).atomicLong("TestAtomic", 0, true);
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                while (!finished.get()) {
+                    stopGrid(3);
+
+                    U.sleep(300);
+
+                    startGrid(3);
+                }
+
+                return null;
+            }
+        });
+
+        int keysCnt = keysCount();
+
+        for (int i = 0; i < keysCnt; i++)
+            atomic.incrementAndGet();
+
+        finished.set(true);
+        fut.get();
     }
 }
