@@ -36,6 +36,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
@@ -79,7 +80,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private volatile long topVer;
 
     /** Join error. Contains error what occurs on join process. */
-    private IgniteSpiException joinErr;
+    private final AtomicReference<IgniteSpiException> joinErr = new AtomicReference<>();
 
     /** Joined latch. */
     private final CountDownLatch joinLatch = new CountDownLatch(1);
@@ -171,8 +172,10 @@ class ClientImpl extends TcpDiscoveryImpl {
         try {
             joinLatch.await();
 
-            if (joinErr != null)
-                throw joinErr;
+            IgniteSpiException err = joinErr.get();
+
+            if (err != null)
+                throw err;
         }
         catch (InterruptedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -335,12 +338,14 @@ class ClientImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void failNode(UUID nodeId) {
+    @Override public void failNode(UUID nodeId, @Nullable String warning) {
         ClusterNode node = rmtNodes.get(nodeId);
 
         if (node != null) {
             TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
                 node.id(), node.order());
+
+            msg.warning(warning);
 
             msgWorker.addMessage(msg);
         }
@@ -359,6 +364,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         Collection<InetSocketAddress> addrs = null;
 
         long startTime = U.currentTimeMillis();
+
+        // Marshal credentials for backward compatibility and security.
+        marshalCredentials(locNode);
 
         while (true) {
             if (Thread.currentThread().isInterrupted())
@@ -539,6 +547,26 @@ class ClientImpl extends TcpDiscoveryImpl {
         return null;
     }
 
+    /**
+     * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
+     *
+     * @param node Node to marshall credentials for.
+     * @throws IgniteSpiException If marshalling failed.
+     */
+    private void marshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
+        try {
+            // Use security-unsafe getter.
+            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
+                spi.marsh.marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+
+            node.setAttributes(attrs);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to marshal node security credentials: " + node.id(), e);
+        }
+    }
 
     /**
      * @param topVer New topology version.
@@ -643,7 +671,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private void joinError(IgniteSpiException err) {
         assert err != null;
 
-        joinErr = err;
+        joinErr.compareAndSet(null, err);
 
         joinLatch.countDown();
     }
@@ -998,8 +1026,16 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.error("Reconnect error [join=" + join + ", timeout=" + timeout + ']', e);
 
-                        if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                        if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout) {
+                            String msg = join ? "Failed to connect to cluster (consider increasing 'joinTimeout' " +
+                                "configuration  property) [joinTimeout=" + spi.joinTimeout + ", err=" + e + ']' :
+                                "Failed to reconnect to cluster (consider increasing 'networkTimeout' " +
+                                    "configuration  property) [networkTimeout=" + spi.netTimeout + ", err=" + e + ']';
+
+                            U.warn(log, msg);
+
                             throw e;
+                        }
                         else
                             U.warn(log, "Failed to reconnect to cluster (will retry): " + e);
                     }
@@ -1060,9 +1096,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 final Socket sock = joinTopology(false, spi.joinTimeout);
 
                 if (sock == null) {
-                    joinErr = new IgniteSpiException("Join process timed out.");
-
-                    joinLatch.countDown();
+                    joinError(new IgniteSpiException("Join process timed out."));
 
                     return;
                 }
@@ -1087,11 +1121,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (msg == JOIN_TIMEOUT) {
                         if (joinLatch.getCount() > 0) {
-                            joinErr = new IgniteSpiException("Join process timed out, did not receive response for " +
+                            joinError(new IgniteSpiException("Join process timed out, did not receive response for " +
                                 "join request (consider increasing 'joinTimeout' configuration property) " +
-                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock +']');
-
-                            joinLatch.countDown();
+                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock +']'));
 
                             break;
                         }
@@ -1157,9 +1189,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 err = spi.checkFailedError((TcpDiscoveryCheckFailedMessage)msg);
 
                             if (err != null) {
-                                joinErr = err;
-
-                                joinLatch.countDown();
+                                joinError(err);
 
                                 break;
                             }
@@ -1172,12 +1202,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             finally {
                 U.closeQuiet(currSock);
 
-                if (joinLatch.getCount() > 0) {
-                    // This should not occurs.
-                    joinErr = new IgniteSpiException("Some error in join process.");
-
-                    joinLatch.countDown();
-                }
+                if (joinLatch.getCount() > 0)
+                    joinError(new IgniteSpiException("Some error in join process.")); // This should not occur.
 
                 if (reconnector != null) {
                     reconnector.cancel();
@@ -1295,7 +1321,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, updateTopologyHistory(topVer, msg));
 
-                    joinErr = null;
+                    joinErr.set(null);;
 
                     joinLatch.countDown();
 
@@ -1430,6 +1456,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                         log.debug("Discarding node failed message (join process is not finished): " + msg);
 
                     return;
+                }
+
+                if (msg.warning() != null) {
+                    ClusterNode creatorNode = rmtNodes.get(msg.creatorNodeId());
+
+                    U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
+                        "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : msg.creatorNodeId()) +
+                        ", msg=" + msg.warning() + ']');
                 }
 
                 notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);

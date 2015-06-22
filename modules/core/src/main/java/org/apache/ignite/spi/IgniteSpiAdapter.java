@@ -754,8 +754,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean tryFailNode(UUID nodeId) {
+        @Override public boolean tryFailNode(UUID nodeId, @Nullable String warning) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void failNode(UUID nodeId, @Nullable String warning) {
+            // No-op.
         }
 
         /** {@inheritDoc} */

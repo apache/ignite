@@ -771,6 +771,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
                 }
+
                 if (skipped > 10)
                     fut.cleanUp();
             }
