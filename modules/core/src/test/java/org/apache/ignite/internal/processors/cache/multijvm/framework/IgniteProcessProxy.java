@@ -123,10 +123,16 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /**
      * @param gridName Grid name.
-     * @return Instance by name or <code>null</code>.
+     * @return Instance by name or exception wiil be thrown.
      */
     public static IgniteProcessProxy get(String gridName) {
-        return gridProxies.get(gridName);
+        IgniteProcessProxy res = gridProxies.get(gridName);
+
+        if (res == null)
+            throw new IgniteIllegalStateException("Grid instance was not properly started " +
+                "or was already stopped: " + gridName);
+
+        return res;
     }
 
     /**
@@ -447,20 +453,11 @@ public class IgniteProcessProxy implements IgniteEx {
         return null; // TODO: CODE: implement.
     }
 
+    /**
+     * @return Jvm process in which grid node started.
+     */
     public GridJavaProcess getProcess() {
         return proc;
-    }
-
-    public static Ignite grid(@Nullable String name) {
-//        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
-
-        Ignite res = gridProxies.get(name);
-
-        if (res == null)
-            throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + name);
-
-        return res;
     }
 
     // TODO delete or use.

@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.internal.processors.cache.multijvm.framework.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -35,8 +34,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -65,11 +62,6 @@ import static org.apache.ignite.transactions.TransactionState.*;
  * Full API cache test.
  */
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
-    /** Ip finder for TCP discovery. */
-    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
-        setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
-    }};
-
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
         @Override public String process(MutableEntry<String, Integer> e, Object... args) {
@@ -118,18 +110,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** */
     private Map<String, CacheConfiguration[]> cacheCfgMap;
 
-    /** All nodes join latch (for multi JVM mode). */
-    private CountDownLatch allNodesJoinLatch;
-
-    /** Node join listener (for multi JVM mode). */
-    private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
-        @Override public boolean apply(Event evt) {
-            allNodesJoinLatch.countDown();
-
-            return true;
-        }
-    };
-
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -156,14 +136,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
-        if (isMultiJvm()) {
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
-
-            cfg.setLocalEventListeners(new HashMap<IgnitePredicate<? extends Event>, int[]>() {{
-                put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
-            }});
-        }
-
         return cfg;
     }
 
@@ -180,10 +152,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
+    // TODO review. See IgnitionEx.grid(entry.getKey()).
     @Override protected void beforeTestsStarted() throws Exception {
-        if (isMultiJvm())
-            allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
-
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
         else {
@@ -194,11 +164,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 for (Map.Entry<String, CacheConfiguration[]> entry : cacheCfgMap.entrySet()) {
                     Ignite ignite;
-
-                    if (isMultiJvm())
-                        ignite = IgniteProcessProxy.grid(entry.getKey());
-                    else
-                        ignite = IgnitionEx.grid(entry.getKey());
+                    
+                    ignite = IgnitionEx.grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())
                         ignite.createCache(cfg);
@@ -229,21 +196,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
-
-        if (isMultiJvm())
-            assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        IgniteProcessProxy.killAll();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
     @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (!isMultiJvm() || gridName.endsWith("0")) {
+        if (!isMultiJvmAndNodeIsRemote(gridName)) {
             if (cacheCfgMap == null)
                 return super.startGrid(gridName, ctx);
 
@@ -256,27 +213,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             return IgnitionEx.start(optimize(cfg), ctx);
         }
 
-        return new IgniteProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEx grid(int idx) {
-        if (!isMultiJvm() || idx == 0)
-            return super.grid(idx);
-
-        return IgniteProcessProxy.get(getTestGridName(idx));
-    }
-
-    /**
-     * @param idx Index of grid.
-     * @return Default cache.
-     */
-    @SuppressWarnings({"unchecked"})
-    @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        if (!isMultiJvm() || idx == 0)
-            return super.jcache(idx);
-
-        return IgniteProcessProxy.get(getTestGridName(idx)).cache(null);
+        return startRemoteGrid(gridName, ctx);
     }
 
     /** {@inheritDoc} */

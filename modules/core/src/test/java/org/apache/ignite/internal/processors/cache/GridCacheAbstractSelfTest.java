@@ -60,11 +60,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /**
-     * @return Grids count to start.
-     */
-    protected abstract int gridCount();
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
@@ -354,7 +349,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).cache(null);
+        if (!isMultiJvmAndNodeIsRemote(idx))
+            return ignite(idx).cache(null);
+        else
+            return IgniteProcessProxy.get(getTestGridName(idx)).cache(null);
+
     }
 
     /**
@@ -367,7 +366,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         else {
 //            ((IgniteProcessProxy)grid(idx)).remoteInternalCache();
 
-            // TODO
+            // TODO refix it.
             final UUID id = ((IgniteProcessProxy)grid(idx)).getId();
 
             return new GridCacheContext<String, Integer>() {

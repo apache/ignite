@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.multijvm.framework.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -33,7 +34,9 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.logger.*;
@@ -72,6 +75,11 @@ public abstract class GridAbstractTest extends TestCase {
     /** Null name for execution map. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
+    /** Ip finder for TCP discovery. */
+    public static final TcpDiscoveryIpFinder LOCAL_IP_FINDER = new TcpDiscoveryVmIpFinder(false) {{
+        setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
+    }};
+
     /** */
     private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
@@ -95,6 +103,18 @@ public abstract class GridAbstractTest extends TestCase {
 
     /** Starting grid name. */
     protected static ThreadLocal<String> startingGrid = new ThreadLocal<>();
+
+    /** All nodes join latch (for multi JVM mode). */
+    private CountDownLatch allNodesJoinLatch;
+
+    /** Node join listener (for multi JVM mode). */
+    private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
+        @Override public boolean apply(Event evt) {
+            allNodesJoinLatch.countDown();
+
+            return true;
+        }
+    };
 
     /**
      *
@@ -421,7 +441,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        IgniteProcessProxy.killAll();
     }
 
     /** {@inheritDoc} */
@@ -464,7 +484,13 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             try {
+                if (isMultiJvm() && gridCount() > 0)
+                    allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
+
                 beforeTestsStarted();
+
+                if (isMultiJvm() && gridCount() > 0)
+                    assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
             }
             catch (Exception | Error t) {
                 t.printStackTrace();
@@ -668,6 +694,19 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Starts new grid at another JVM with given name.
+     *
+     * @param gridName Grid name.
+     * @param ctx Spring context.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    // TODO review. Is it okey that ctx doesn't used?
+    protected Ignite startRemoteGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        return new IgniteProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
+    }
+
+    /**
      * Optimizes configuration to achieve better test performance.
      *
      * @param cfg Configuration.
@@ -821,7 +860,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(String name) {
-        return (IgniteEx)G.ignite(name);
+        if (!isMultiJvmAndNodeIsRemote(name))
+            return (IgniteEx)G.ignite(name);
+        else
+            return IgniteProcessProxy.get(name);
     }
 
     /**
@@ -831,7 +873,11 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(int idx) {
-        return (IgniteEx)G.ignite(getTestGridName(idx));
+        if (!isMultiJvmAndNodeIsRemote(idx))
+            return (IgniteEx)G.ignite(getTestGridName(idx));
+        else
+            return IgniteProcessProxy.get(getTestGridName(idx));
+
     }
 
     /**
@@ -839,7 +885,12 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Ignite instance.
      */
     protected Ignite ignite(int idx) {
-        return G.ignite(getTestGridName(idx));
+        String gridName = getTestGridName(idx);
+
+        if (!isMultiJvmAndNodeIsRemote(idx))
+            return G.ignite(gridName);
+        else
+            return IgniteProcessProxy.get(gridName);
     }
 
     /**
@@ -847,6 +898,7 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @return Grid for given test.
      */
+    // TODO isMultyJvm.
     protected IgniteEx grid() {
         return (IgniteEx)G.ignite(getTestGridName());
     }
@@ -855,6 +907,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param node Node.
      * @return Ignite instance with given local node.
      */
+    // TODO isMultyJvm.
     protected final Ignite grid(ClusterNode node) {
         return G.ignite(node.id());
     }
@@ -869,6 +922,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
+    // TODO isMultyJvm.
     protected Ignite startGrid(String gridName, String springCfgPath) throws Exception {
         return startGrid(gridName, loadConfiguration(springCfgPath));
     }
@@ -883,6 +937,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
+    // TODO isMultyJvm.
     protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
         cfg.setGridName(gridName);
 
@@ -1013,6 +1068,14 @@ public abstract class GridAbstractTest extends TestCase {
             chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
 
             cfg.setNodeId(UUID.fromString(new String(chars)));
+        }
+
+        if (isMultiJvm()) {
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
+
+            cfg.setLocalEventListeners(new HashMap<IgnitePredicate<? extends Event>, int[]>() {{
+                put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
+            }});
         }
 
         return cfg;
@@ -1283,6 +1346,13 @@ public abstract class GridAbstractTest extends TestCase {
         TestCounters cntrs = getTestCounters();
 
         return cntrs.getStopped() == cntrs.getNumberOfTests();
+    }
+
+    /**
+     * @return Grids count to start.
+     */
+    protected int gridCount() {
+        return 0;
     }
 
     /**
