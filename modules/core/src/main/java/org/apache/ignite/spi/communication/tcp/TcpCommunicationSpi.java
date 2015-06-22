@@ -1748,6 +1748,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                                 assert old == null : "Client already created " +
                                         "[node=" + node + ", client=" + client0 + ", oldClient=" + old + ']';
+
+                                if (client0 instanceof GridTcpNioCommunicationClient) {
+                                    GridTcpNioCommunicationClient tcpClient = ((GridTcpNioCommunicationClient)client0);
+
+                                    if (tcpClient.session().closeTime() > 0 && clients.remove(nodeId, client0)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Session was closed after client creation, will retry " +
+                                                "[node=" + node + ", client=" + client0 + ']');
+
+                                        client0 = null;
+                                    }
+                                }
                             }
                             else
                                 U.sleep(200);

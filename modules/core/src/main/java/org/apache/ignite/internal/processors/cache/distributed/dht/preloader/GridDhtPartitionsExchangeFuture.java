@@ -1078,18 +1078,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
-            try {
-                ClusterNode n = cctx.node(nodeId);
-
-                if (n != null)
-                    sendAllPartitions(F.asList(n), exchId);
-            }
-            catch (IgniteCheckedException e) {
-                scheduleRecheck();
-
-                U.error(log, "Failed to send full partition map to node (will retry after timeout) [node=" + nodeId +
-                    ", exchangeId=" + exchId + ']', e);
-            }
+            sendAllPartitions(nodeId, cctx.gridConfig().getNetworkSendRetryCount());
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
@@ -1142,6 +1131,42 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param retryCnt Number of retries.
+     */
+    private void sendAllPartitions(final UUID nodeId, final int retryCnt) {
+        ClusterNode n = cctx.node(nodeId);
+
+        try {
+            if (n != null)
+                sendAllPartitions(F.asList(n), exchId);
+        }
+        catch (IgniteCheckedException e) {
+            if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
+                log.debug("Failed to send full partition map to node, node left grid " +
+                    "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
+
+                return;
+            }
+
+            if (retryCnt > 0) {
+                long timeout = cctx.gridConfig().getNetworkSendRetryDelay();
+
+                LT.error(log, e, "Failed to send full partition map to node (will retry after timeout) " +
+                    "[node=" + nodeId + ", exchangeId=" + exchId + ", timeout=" + timeout + ']');
+
+                cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout) {
+                    @Override public void onTimeout() {
+                        sendAllPartitions(nodeId, retryCnt - 1);
+                    }
+                });
+            }
+            else
+                U.error(log, "Failed to send full partition map [node=" + n + ", exchangeId=" + exchId + ']', e);
         }
     }
 
