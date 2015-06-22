@@ -338,19 +338,21 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             cctx.mvcc().removeAtomicFuture(version());
 
         Collection<Object> remapKeys = new ArrayList<>(failed.size());
-        Collection<Object> remapVals = new ArrayList<>(failed.size());
+        Collection<Object> remapVals = vals != null ? new ArrayList<>(failed.size()) : null;
 
         Iterator<?> keyIt = keys.iterator();
-        Iterator<?> valsIt = vals.iterator();
+        Iterator<?> valsIt = vals != null ? vals.iterator() : null;
 
         for (Object key : failed) {
             while (keyIt.hasNext()) {
                 Object nextKey = keyIt.next();
-                Object nextVal = valsIt.next();
+                Object nextVal = valsIt != null ? valsIt.next() : null;
 
                 if (F.eq(key, nextKey)) {
                     remapKeys.add(nextKey);
-                    remapVals.add(nextVal);
+
+                    if (remapVals != null)
+                        remapVals.add(nextVal);
 
                     break;
                 }
@@ -388,8 +390,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
 
-        if (err != null && X.hasCause(err, CachePartialUpdateCheckedException.class) && remapCnt.decrementAndGet() > 0) {
-            remap(X.cause(err, CachePartialUpdateCheckedException.class).failedKeys());
+        if (err != null && X.hasCause(err, CachePartialUpdateCheckedException.class) &&
+            X.hasCause(err, ClusterTopologyCheckedException.class) &&
+            remapCnt.decrementAndGet() > 0) {
+
+            CachePartialUpdateCheckedException cause = X.cause(err, CachePartialUpdateCheckedException.class);
+
+            remap(cause.failedKeys());
 
             return false;
         }
