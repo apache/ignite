@@ -441,7 +441,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        IgniteProcessProxy.killAll();
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -775,6 +775,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
+        IgniteProcessProxy.killAll(); // In multi jvm case.
+
         Collection<Ignite> clients = new ArrayList<>();
         Collection<Ignite> srvs = new ArrayList<>();
 

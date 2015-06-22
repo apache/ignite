@@ -137,17 +137,16 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /**
      * Kill all running processes.
-     *
-     * @throws Exception if failed.
      */
-    public static void killAll() throws Exception {
-        for (IgniteProcessProxy ignite : gridProxies.values())
+    public static void killAll() {
+        for (IgniteProcessProxy ignite : gridProxies.values()) {
             try {
                 ignite.getProcess().kill();
             }
             catch (Exception e) {
                 U.error(ignite.log, "Killing failed.", e);
             }
+        }
 
         gridProxies.clear();
     }
@@ -450,7 +449,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
-        return null; // TODO: CODE: implement.
+        return new AffinityProcessProxy(cacheName, this);
     }
 
     /**
