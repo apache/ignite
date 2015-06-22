@@ -470,31 +470,4 @@ public class IgniteProcessProxy implements IgniteEx {
 
         return locJvmGrid.compute(grp);
     }
-
-    // TODO delete or use.
-//    public <K, V> GridCacheAdapter<K, V> remoteInternalCache() {
-//        return (GridCacheAdapter<K, V>)compute.call(new MyCallable(id));
-//    }
-//
-//    /**
-//     */
-//    private static class MyCallable implements IgniteCallable<Object> {
-//        private UUID id;
-//
-//        public MyCallable() {
-//            // No-op.
-//        }
-//
-//        public MyCallable(UUID id) {
-//            this.id = id;
-//        }
-//
-//        public void setId(UUID id) {
-//            this.id = id;
-//        }
-//
-//        @Override public Object call() throws Exception {
-//            return ((IgniteKernal)Ignition.ignite(id)).internalCache();
-//        }
-//    }
 }

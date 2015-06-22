@@ -309,9 +309,17 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return {@code True} if transactions are enabled.
+     * @see #txShouldBeUsed()
      */
     protected boolean txEnabled() {
         return true;
+    }
+
+    /**
+     * @return {@code True} if transactions should be used.
+     */
+    protected boolean txShouldBeUsed() {
+        return txEnabled() && !isMultiJvm();
     }
 
     /**
