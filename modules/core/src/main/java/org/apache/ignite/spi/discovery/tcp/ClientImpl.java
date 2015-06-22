@@ -339,6 +339,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         ClusterNode node = rmtNodes.get(nodeId);
 
         if (node != null) {
+            U.debug(log, "ClientImpl.failNode. [nodeId = "+ nodeId +", localNodeId = " + getLocalNodeId()
+                + ", msg = " + warning + "]");
+
             TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
                 node.id(), node.order());
 

@@ -588,6 +588,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         ClusterNode node = ring.node(nodeId);
 
         if (node != null) {
+            U.debug(log, "ServerImpl.failNode. [nodeId = "+ nodeId +", localNodeId = " + getLocalNodeId()
+                + ", msg = " + warning + "]");
+
             TcpDiscoveryNodeFailedMessage msg = new TcpDiscoveryNodeFailedMessage(getLocalNodeId(),
                 node.id(), node.order());
 
@@ -1300,9 +1303,13 @@ class ServerImpl extends TcpDiscoveryImpl {
             next = ring.nextNode(failedNodes);
         }
 
-        if (next != null)
+        if (next != null) {
+            U.debug(log, "ServerImpl.forceNextNodeFailure(). [nextNodeId = "+ next.id() +", localNodeId = "
+                + getLocalNodeId() + "]");
+
             msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), next.id(),
                 next.internalOrder()));
+        }
     }
 
     /**
@@ -2327,8 +2334,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     ServerImpl.this.failedNodes.addAll(failedNodes);
                 }
 
-                for (TcpDiscoveryNode n : failedNodes)
+                for (TcpDiscoveryNode n : failedNodes) {
+                    U.debug(log, "ServerImpl.sendMessageAcrossRing(TcpDiscoveryAbstractMessage). " +
+                        "[nodeId = " + n.id() + ", localNodeId = " + locNodeId + "]");
+
                     msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
+                }
 
                 LT.warn(log, null, "Local node has detected failed nodes and started cluster-wide procedure. " +
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
@@ -2422,6 +2433,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (existingNode != null) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
+                            U.debug(log, "ServerImpl.processJoinRequestMessage(TcpDiscoveryJoinRequestMessage). " +
+                                "[nodeId = " + existingNode.id() + ", localNodeId = " + locNodeId + "]");
+
                             addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                 existingNode.id(), existingNode.internalOrder()));
 
@@ -2750,6 +2764,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             log.debug("Failing reconnecting client node because failed to restore pending " +
                                 "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
+                        U.debug(log, "ServerImpl.processClientReconnectMessage(TcpDiscoveryClientReconnectMessage). " +
+                            "[nodeId = "+ node.id() +", localNodeId = " + locNodeId + "]");
+
                         processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                             node.id(), node.internalOrder()));
                     }
@@ -2896,6 +2913,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 onException("Failed to send unauthenticated message to node " +
                                     "[node=" + node + ", err=" + e.getMessage() + ']', e);
                             }
+
+                            U.debug(log, "ServerImpl.processNodeAddedMessage(TcpDiscoveryNodeAddedMessage). Auth fail" +
+                                "[nodeId = " + node.id() + ", localNodeId = " + locNodeId + "]");
 
                             addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, node.id(),
                                 node.internalOrder()));
@@ -3649,6 +3669,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 int aliveCheck = clientNode.decrementAliveCheck();
 
                                 if (aliveCheck == 0 && isLocalNodeCoordinator()) {
+                                    U.debug(log, "ServerImpl.processHeartbeatMessage(TcpDiscoveryHeartbeatMessage). " +
+                                        "[nodeId = "+ clientNode.id() +", localNodeId = " + locNodeId + "]");
+
                                     processNodeFailedMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                         clientNode.id(), clientNode.internalOrder()));
                                 }
