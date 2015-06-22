@@ -28,6 +28,7 @@ import java.util.*;
  * Test shared memory native loader.
  */
 public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
+
     /**
      * Test {@link IpcSharedMemoryNativeLoader#load()} in case, when native library path was
      * already loaded, but corrupted.

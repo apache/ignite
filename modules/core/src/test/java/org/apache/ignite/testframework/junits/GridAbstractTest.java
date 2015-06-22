@@ -1286,6 +1286,31 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Gets flag whether nodes will run in one jvm or in separate jvms.
+     *
+     * @return <code>True</code> to run nodes in separate jvms.
+     */
+    protected boolean isMultiJvm() {
+        return false;
+    }
+
+    /**
+     * @param gridName Grid name.
+     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     */
+    protected boolean isMultiJvmAndNodeIsRemote(String gridName) {
+        return isMultiJvm() && !gridName.endsWith("0");
+    }
+
+    /**
+     * @param idx Grid index.
+     * @return <code>True</code> if test was run in multy jvm mode and grid at another jvm.
+     */
+    protected boolean isMultiJvmAndNodeIsRemote(int idx) {
+        return isMultiJvm() && idx != 0;
+    }
+
+    /**
      * @return Test counters.
      */
     protected synchronized TestCounters getTestCounters() throws IgniteCheckedException {
