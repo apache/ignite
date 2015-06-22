@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -174,8 +175,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
-    /** Default connection timeout (value is <tt>1000</tt>ms). */
-    public static final long DFLT_CONN_TIMEOUT = 1000;
+    /** Default connection timeout (value is <tt>5000</tt>ms). */
+    public static final long DFLT_CONN_TIMEOUT = 5000;
 
     /** Default Maximum connection timeout (value is <tt>600,000</tt>ms). */
     public static final long DFLT_MAX_CONN_TIMEOUT = 10 * 60 * 1000;
@@ -267,23 +268,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (!isNodeStopping()) {
                             GridNioRecoveryDescriptor recoveryData = ses.recoveryDescriptor();
 
-                            if (!getSpiContext().tryFailNode(id)) {
-                                if (recoveryData != null) {
-                                    if (recoveryData.nodeAlive(getSpiContext().node(id))) {
-                                        if (!recoveryData.messagesFutures().isEmpty()) {
-                                            if (log.isDebugEnabled())
-                                                log.debug("Session was closed but there are unacknowledged messages, " +
-                                                    "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
+                            if (recoveryData != null) {
+                                if (recoveryData.nodeAlive(getSpiContext().node(id))) {
+                                    if (!recoveryData.messagesFutures().isEmpty()) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Session was closed but there are unacknowledged messages, " +
+                                                "will try to reconnect [rmtNode=" + recoveryData.node().id() + ']');
 
-                                            commWorker.addReconnectRequest(recoveryData);
-                                        }
+                                        commWorker.addReconnectRequest(recoveryData);
                                     }
-                                    else
-                                        recoveryData.onNodeLeft();
                                 }
+                                else
+                                    recoveryData.onNodeLeft();
                             }
-                            else
-                                recoveryData.onNodeLeft();
                         }
                     }
 
@@ -657,6 +654,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
 
+    /** Slow client queue limit. */
+    private int slowClientQueueLimit;
+
     /** Min buffered message count. */
     private int minBufferedMsgCnt = Integer.getInteger(IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
 
@@ -680,7 +680,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Recovery and idle clients handler. */
     private CommunicationWorker commWorker;
-    
+
     /** Shared memory accept worker. */
     private ShmemAcceptWorker shmemAcceptWorker;
 
@@ -1148,6 +1148,26 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         return msgQueueLimit;
     }
 
+    /** {@inheritDoc} */
+    @Override public int getSlowClientQueueLimit() {
+        return slowClientQueueLimit;
+    }
+
+    /**
+     * Sets slow client queue limit.
+     * <p/>
+     * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
+     * those clients whose queue exceeded this limit.
+     * <p/>
+     * Usually this value should be set to the same value as {@link #getMessageQueueLimit()} which controls
+     * message back-pressure for server nodes. The default value for this parameter is {@link #DFLT_MSG_QUEUE_LIMIT}.
+     *
+     * @param slowClientQueueLimit Slow cilent queue limit.
+     */
+    public void setSlowClientQueueLimit(int slowClientQueueLimit) {
+        this.slowClientQueueLimit = slowClientQueueLimit;
+    }
+
     /**
      * Sets the minimum number of messages for this SPI, that are buffered
      * prior to sending.
@@ -1319,6 +1339,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             U.quietAndWarn(log, "'TCP_NO_DELAY' for communication is off, which should be used with caution " +
                 "since may produce significant delays with some scenarios.");
 
+        if (slowClientQueueLimit > 0 && msgQueueLimit > 0) {
+            if (slowClientQueueLimit >= msgQueueLimit) {
+                U.quietAndWarn(log, "Slow client queue limit is set to a value greater than message queue limit. " +
+                    "Slow client queue limit will have no effect.");
+            }
+        }
+
         registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
 
         if (shmemSrv != null) {
@@ -1429,6 +1456,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
+                boolean clientMode = Boolean.TRUE.equals(ignite.configuration().isClientMode());
+
+                IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
+                    !clientMode && slowClientQueueLimit > 0 ?
+                    new CI2<GridNioSession, Integer>() {
+                        @Override public void apply(GridNioSession ses, Integer qSize) {
+                            checkClientQueueSize(ses, qSize);
+                        }
+                    } :
+                    null;
+
                 GridNioServer<Message> srvr =
                     GridNioServer.<Message>builder()
                         .address(locHost)
@@ -1450,6 +1488,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             new GridConnectionBytesVerifyFilter(log))
                         .messageFormatter(msgFormatter)
                         .skipRecoveryPredicate(skipRecoveryPred)
+                        .messageQueueSizeListener(queueSizeMonitor)
                         .build();
 
                 boundTcpPort = port;
@@ -1864,6 +1903,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /**
+     * Checks client message queue size and initiates client drop if message queue size exceeds the configured limit.
+     *
+     * @param ses Node communication session.
+     * @param msgQueueSize Message queue size.
+     */
+    private void checkClientQueueSize(GridNioSession ses, int msgQueueSize) {
+        if (slowClientQueueLimit > 0 && msgQueueSize > slowClientQueueLimit) {
+            UUID id = ses.meta(NODE_ID_META);
+
+            if (id != null) {
+                ClusterNode node = getSpiContext().node(id);
+
+                if (node != null && node.isClient()) {
+                    String msg = "Client node outbound queue size exceeded slowClientQueueLimit, " +
+                        "the client will be dropped (consider changing \'slowClientQueueLimit\') [" +
+                        "srvNode=" + getSpiContext().localNode().id() +
+                        ", clientNode=" + node +
+                        ", slowClientQueueLimit=" + slowClientQueueLimit + ']';
+
+                    LT.warn(log, null, msg);
+
+                    getSpiContext().failNode(id, msg);
+                }
+            }
+        }
+    }
+
+    /**
      * Establish TCP connection to remote node and returns client.
      *
      * @param node Remote node.
@@ -1884,18 +1951,20 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 "TCP communication addresses or mapped external addresses. Check configuration and make sure " +
                 "that you use the same communication SPI on all nodes. Remote node id: " + node.id());
 
-        List<InetSocketAddress> addrs;
+        LinkedHashSet<InetSocketAddress> addrs;
 
         // Try to connect first on bound addresses.
         if (isRmtAddrsExist) {
-            addrs = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
+            List<InetSocketAddress> addrs0 = new ArrayList<>(U.toSocketAddresses(rmtAddrs0, rmtHostNames0, boundPort));
 
             boolean sameHost = U.sameMacs(getSpiContext().localNode(), node);
 
-            Collections.sort(addrs, U.inetAddressesComparator(sameHost));
+            Collections.sort(addrs0, U.inetAddressesComparator(sameHost));
+
+            addrs = new LinkedHashSet<>(addrs0);
         }
         else
-            addrs = new ArrayList<>();
+            addrs = new LinkedHashSet<>();
 
         // Then on mapped external addresses.
         if (isExtAddrsExist)
@@ -2610,7 +2679,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private void processRecovery(GridNioRecoveryDescriptor recoveryDesc) {
             ClusterNode node = recoveryDesc.node();
 
-            if (clients.containsKey(node.id()) || !recoveryDesc.nodeAlive(getSpiContext().node(node.id())))
+            if (clients.containsKey(node.id()) ||
+                !recoveryDesc.nodeAlive(getSpiContext().node(node.id())) ||
+                !getSpiContext().pingNode(node.id()))
                 return;
 
             try {

@@ -111,6 +111,10 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private UUID clientRouterNodeId;
 
+    /** */
+    @GridToStringExclude
+    private volatile transient InetSocketAddress lastSuccessfulAddr;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -150,6 +154,20 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         metrics = metricsProvider.metrics();
         cacheMetrics = metricsProvider.cacheMetrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
+    }
+
+    /**
+     * @return Last successfully connected address.
+     */
+    @Nullable public InetSocketAddress lastSuccessfulAddress() {
+        return lastSuccessfulAddr;
+    }
+
+    /**
+     * @param lastSuccessfulAddr Last successfully connected address.
+     */
+    public void lastSuccessfulAddress(InetSocketAddress lastSuccessfulAddr) {
+        this.lastSuccessfulAddr = lastSuccessfulAddr;
     }
 
     /** {@inheritDoc} */
