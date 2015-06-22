@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.offheap;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.*;
@@ -101,7 +102,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Key bytes
      * @throws IgniteCheckedException If failed.
      */
-    private byte[] keyBytes(Object key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
+    private byte[] keyBytes(KeyCacheObject key, @Nullable byte[] keyBytes) throws IgniteCheckedException {
         assert key != null;
 
         return keyBytes != null ? keyBytes : marsh.marshal(key);
@@ -130,7 +131,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return {@code true} If offheap space contains value for the given key.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean contains(@Nullable String spaceName, int part, Object key, byte[] keyBytes)
+    public boolean contains(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
         throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -147,7 +148,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] get(@Nullable String spaceName, int part, Object key, byte[] keyBytes)
+    @Nullable public byte[] get(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
         throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -166,7 +167,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Tuple where first value is pointer and second is value size.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, Object key,
+    @Nullable public IgniteBiTuple<Long, Integer> valuePointer(@Nullable String spaceName, int part, KeyCacheObject key,
         byte[] keyBytes) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -182,7 +183,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param keyBytes Key bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void enableEviction(@Nullable String spaceName, int part, Object key, byte[] keyBytes)
+    public void enableEviction(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
         throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -201,7 +202,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> T getValue(@Nullable String spaceName, int part, Object key, byte[] keyBytes,
+    @Nullable public <T> T getValue(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes,
         @Nullable ClassLoader ldr) throws IgniteCheckedException {
         byte[] valBytes = get(spaceName, part, key, keyBytes);
 
@@ -221,7 +222,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] remove(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws IgniteCheckedException {
+    @Nullable public byte[] remove(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m == null ? null : m.remove(part, U.hash(key), keyBytes(key, keyBytes));
@@ -237,7 +238,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @param valBytes Value bytes.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(@Nullable String spaceName, int part, Object key, byte[] keyBytes, byte[] valBytes)
+    public void put(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes, byte[] valBytes)
         throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
@@ -258,7 +259,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
      * @return {@code true} If succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean removex(@Nullable String spaceName, int part, Object key, byte[] keyBytes) throws IgniteCheckedException {
+    public boolean removex(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m != null && m.removex(part, U.hash(key), keyBytes(key, keyBytes));
