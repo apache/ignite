@@ -375,7 +375,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        return null; // TODO: CODE: implement.
+        return new IgniteTransactionsProcessProxy(this);
     }
 
     /** {@inheritDoc} */
