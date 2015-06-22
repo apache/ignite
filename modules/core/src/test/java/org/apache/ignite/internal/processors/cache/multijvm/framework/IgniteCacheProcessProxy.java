@@ -501,7 +501,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(final Class<T> clazz) {
-        throw new UnsupportedOperationException("Method cannot be supported because T can be unmarshalliable.");
+        throw new UnsupportedOperationException("Method cannot be supported because T can be unmarshallable.");
     }
 
     /** {@inheritDoc} */
@@ -516,7 +516,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public Iterator<Entry<K, V>> iterator() {
-        throw new UnsupportedOperationException("Method should be supported.");
+        final Collection<Entry<K, V>> col = (Collection<Entry<K, V>>)compute.call(new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                Collection res = new ArrayList();
+
+                for (Object o : cache())
+                    res.add(o);
+
+                return res;
+            }
+        });
+
+        return col.iterator();
     }
 
     /** {@inheritDoc} */
