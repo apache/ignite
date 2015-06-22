@@ -71,10 +71,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         isAsync = async;
         gridId = proxy.getId();
         igniteProxy = proxy;
-
-        ClusterGroup grp = proxy.localJvmGrid().cluster().forNodeId(proxy.getId());
-
-        compute = proxy.localJvmGrid().compute(grp);
+        compute = proxy.remoteCompute();
     }
 
     /** {@inheritDoc} */
@@ -89,6 +86,15 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
+        // TODO implement.
+//        R futureRes = (R)compute.call(new IgniteCallable<Object>() {
+//            @Override public Object call() throws Exception {
+//                return cache().future().get();
+//            }
+//        });
+//
+//        return new IgniteFinishedFutureImpl<R>(futureRes);
+
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -124,8 +130,14 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override public void localLoadCache(@Nullable final IgniteBiPredicate<K, V> p, @Nullable final Object... args) throws CacheException {
+        final IgniteBiPredicate pCopy = p;
+
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                cache().localLoadCache(pCopy, args);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -178,8 +190,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void localEvict(Collection<? extends K> keys) {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override public void localEvict(final Collection<? extends K> keys) {
+        compute.run(new IgniteRunnable() {
+            @Override public void run() {
+                cache().localEvict(keys);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -501,7 +517,16 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(final Class<T> clazz) {
-        throw new UnsupportedOperationException("Method cannot be supported because T can be unmarshallable.");
+        try {
+            return (T)compute.call(new IgniteCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    return cache().unwrap(clazz);
+                }
+            });
+        }
+        catch (Exception e) {
+            throw new IllegalArgumentException("Looks like class " + clazz + " is unmarshallable. Exception type:" + e.getClass(), e);
+        }
     }
 
     /** {@inheritDoc} */

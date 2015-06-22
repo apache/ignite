@@ -105,7 +105,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         };
 
     /** Dflt grid. */
-    protected Ignite dfltIgnite;
+    protected transient Ignite dfltIgnite;
 
     /** */
     private Map<String, CacheConfiguration[]> cacheCfgMap;
@@ -291,15 +291,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheContext<String, Integer> ctx = context(i);
+            if (!isMultiJvmAndNodeIsRemote(i)) {
+                GridCacheContext<String, Integer> ctx = context(i);
 
-            int sum = 0;
+                int sum = 0;
 
-            for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
-                    sum++;
+                for (String key : map.keySet())
+                    if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                        sum++;
 
-            assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(ALL));
+                assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(ALL));
+            }
+            else {
+                // TODO add multi jvm support.
+            }
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -2949,14 +2954,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekTxRemoveOptimistic() throws Exception {
-        checkPeekTxRemove(OPTIMISTIC);
+        if (!isMultiJvm()) // Transactions are not supported in multi JVM mode.
+            checkPeekTxRemove(OPTIMISTIC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPeekTxRemovePessimistic() throws Exception {
-        checkPeekTxRemove(PESSIMISTIC);
+        if (!isMultiJvm()) // Transactions are not supported in multi JVM mode.
+            checkPeekTxRemove(PESSIMISTIC);
     }
 
     /**
@@ -3098,7 +3105,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTtlTx() throws Exception {
-        if (txEnabled())
+        if (txEnabled() && !isMultiJvm())
             checkTtl(true, false);
     }
 
@@ -3106,6 +3113,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTtlNoTx() throws Exception {
+        if (isMultiJvm())
+            fail("TODO implement multi jvm support.");
+
         checkTtl(false, false);
     }
 
@@ -3113,6 +3123,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTtlNoTxOldEntry() throws Exception {
+        if (isMultiJvm())
+            fail("TODO implement multi jvm support.");
+
         checkTtl(false, true);
     }
 
@@ -3805,26 +3818,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
-                GridCacheContext<String, Integer> ctx = context(i);
+                if (!isMultiJvmAndNodeIsRemote(i)) {
+                    GridCacheContext<String, Integer> ctx = context(i);
 
-                if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
-                    continue;
+                    if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
+                        continue;
 
-                int size = 0;
+                    int size = 0;
 
-                for (String key : keys) {
-                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
-                        GridCacheEntryEx e =
-                            ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+                    for (String key : keys) {
+                        if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                            GridCacheEntryEx e =
+                                ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
-                        assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';
-                        assert !e.deleted() : "Entry is deleted: " + e;
+                            assert e != null : "Entry is null [idx=" + i + ", key=" + key + ", ctx=" + ctx + ']';
+                            assert !e.deleted() : "Entry is deleted: " + e;
 
-                        size++;
+                            size++;
+                        }
                     }
-                }
 
-                assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(ALL));
+                    assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(ALL));
+                }
+                else {
+                    // TODO add multi jvm support.
+                }
             }
         }
     }

@@ -277,7 +277,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events() {
-        return null; // TODO: CODE: implement.
+        return new IgniteEventsProcessProxy(this);
     }
 
     /** {@inheritDoc} */
@@ -375,7 +375,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        return new IgniteTransactionsProcessProxy(this);
+        throw new UnsupportedOperationException("Transactions are not supported in multi JVM mode.");
     }
 
     /** {@inheritDoc} */
@@ -457,6 +457,18 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public GridJavaProcess getProcess() {
         return proc;
+    }
+
+    /**
+     * @return {@link IgniteCompute} instance to communicate with remote node.
+     */
+    public IgniteCompute remoteCompute() {
+        ClusterGroup grp = localJvmGrid().cluster().forNodeId(id);
+
+        if (grp.nodes().isEmpty())
+            throw new IllegalStateException("Could not found node with id=" + id + ".");
+
+        return locJvmGrid.compute(grp);
     }
 
     // TODO delete or use.

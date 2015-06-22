@@ -45,10 +45,7 @@ public class AffinityProcessProxy<K> implements Affinity<K> {
     public AffinityProcessProxy(String cacheName, IgniteProcessProxy proxy) {
         this.cacheName = cacheName;
         gridId = proxy.getId();
-
-        ClusterGroup grp = proxy.localJvmGrid().cluster().forNodeId(proxy.getId());
-
-        compute = proxy.localJvmGrid().compute(grp);
+        compute = proxy.remoteCompute();
     }
 
     /**
