@@ -386,9 +386,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         verChanged = false;
                 }
                 else {
-                    minorTopVer = 0;
+                    if (type != EVT_NODE_SEGMENTED) {
+                        minorTopVer = 0;
 
-                    verChanged = true;
+                        verChanged = true;
+                    }
+                    else
+                        verChanged = false;
                 }
 
                 AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
@@ -1481,15 +1485,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @param nodeId Node ID.
+     * @param warning Warning message to be shown on all nodes.
      * @return Whether node is failed.
      */
-    public boolean tryFailNode(UUID nodeId) {
+    public boolean tryFailNode(UUID nodeId, @Nullable String warning) {
         if (!busyLock.enterBusy())
             return false;
 
         try {
             if (!getSpi().pingNode(nodeId)) {
-                getSpi().failNode(nodeId);
+                getSpi().failNode(nodeId, warning);
 
                 return true;
             }
@@ -1502,9 +1507,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param nodeId Node ID to fail.
+     * @param warning Warning message to be shown on all nodes.
+     */
+    public void failNode(UUID nodeId, @Nullable String warning) {
+        if (!busyLock.enterBusy())
+            return;
+
+        try {
+            getSpi().failNode(nodeId, warning);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
      * Updates topology version if current version is smaller than updated.
      *
      * @param updated Updated topology version.
+     * @param discoCache Discovery cache.
      * @return {@code True} if topology was updated.
      */
     private boolean updateTopologyVersionIfGreater(AffinityTopologyVersion updated, DiscoCache discoCache) {

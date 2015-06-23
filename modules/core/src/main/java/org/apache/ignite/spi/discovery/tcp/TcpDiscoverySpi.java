@@ -373,8 +373,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
-    @Override public void failNode(UUID nodeId) {
-        impl.failNode(nodeId);
+    @Override public void failNode(UUID nodeId, @Nullable String warning) {
+        impl.failNode(nodeId, warning);
     }
 
     /** {@inheritDoc} */
@@ -385,7 +385,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** {@inheritDoc} */
     @Override public boolean isClientMode() {
         if (impl == null)
-            throw new IllegalStateException("TcpDiscoverySpi has not started");
+            throw new IllegalStateException("TcpDiscoverySpi has not started.");
 
         return impl instanceof ClientImpl;
     }

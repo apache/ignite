@@ -124,18 +124,6 @@ public class GridMapQueryExecutor {
             }
         }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
-        // Drop group reservations for dead caches.
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                String cacheName = ((CacheEvent)evt).cacheName();
-
-                for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
-                    if (F.eq(grpKey.get1(), cacheName))
-                        reservations.remove(grpKey);
-                }
-            }
-        }, EventType.EVT_CACHE_STOPPED);
-
         ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (!busyLock.enterBusy())
@@ -596,6 +584,17 @@ public class GridMapQueryExecutor {
             h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
         else
             ctx.io().send(node, GridTopic.TOPIC_QUERY, msg, GridIoPolicy.PUBLIC_POOL);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void onCacheStop(String cacheName) {
+        // Drop group reservations.
+        for (T2<String,AffinityTopologyVersion> grpKey : reservations.keySet()) {
+            if (F.eq(grpKey.get1(), cacheName))
+                reservations.remove(grpKey);
+        }
     }
 
     /**

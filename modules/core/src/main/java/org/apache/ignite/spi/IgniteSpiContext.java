@@ -307,9 +307,16 @@ public interface IgniteSpiContext {
 
     /**
      * @param nodeId Node ID.
+     * @param warning Warning to be shown on all cluster nodes.
      * @return If node was failed.
      */
-    public boolean tryFailNode(UUID nodeId);
+    public boolean tryFailNode(UUID nodeId, @Nullable String warning);
+
+    /**
+     * @param nodeId Node ID.
+     * @param warning Warning to be shown on all cluster nodes.
+     */
+    public void failNode(UUID nodeId, @Nullable String warning);
 
     /**
      * @param c Timeout object.
