@@ -582,6 +582,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             part,
             key.valueBytes(cctx.cacheObjectContext()));
 
+        ClassLoader ldr = cctx.deploy().globalLoader();
+
+        GridCacheQueryManager qryMgr = cctx.queries();
+
+        if (qryMgr != null && !readSwapBeforeRemove(key, swapKey, ldr))
+            return null; // Not found.
+
         swapMgr.remove(spaceName, swapKey, new CI1<byte[]>() {
             @Override public void apply(byte[] rmv) {
                 if (cctx.config().isStatisticsEnabled())
@@ -597,7 +604,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         t.set(entry);
 
                         CacheObject v = entry.value();
-                        byte[] valBytes = entry.valueBytes();
 
                         // Event notification.
                         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_UNSWAPPED)) {
@@ -621,18 +627,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
                         // Always fire this event, since preloading depends on it.
                         onUnswapped(part, key, entry);
-
-                        GridCacheQueryManager qryMgr = cctx.queries();
-
-                        if (qryMgr != null)
-                            qryMgr.onUnswap(key, v);
                     }
                     catch (IgniteCheckedException e) {
                         err.set(e);
                     }
                 }
             }
-        }, cctx.deploy().globalLoader());
+        }, ldr);
 
         if (err.get() != null)
             throw err.get();
@@ -839,7 +840,17 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert swapEnabled;
         assert unprocessedKeys != null;
 
-        // Swap is enabled.
+        ClassLoader ldr = cctx.deploy().globalLoader();
+
+        if (qryMgr != null) { // Unswap for indexing.
+            Iterator<SwapKey> iter = unprocessedKeys.iterator();
+
+            while (iter.hasNext()) {
+                if (!readSwapBeforeRemove(null, iter.next(), ldr))
+                    iter.remove(); // We will not do unswapping further -> need to skip the key.
+            }
+        }
+
         final GridTuple<IgniteCheckedException> err = F.t1();
 
         swapMgr.removeAll(spaceName,
@@ -891,9 +902,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
                             // Always fire this event, since preloading depends on it.
                             onUnswapped(swapKey.partition(), key, entry);
-
-                            if (qryMgr != null)
-                                qryMgr.onUnswap(key, entry.value());
                         }
                         catch (IgniteCheckedException e) {
                             err.set(e);
@@ -901,7 +909,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                     }
                 }
             },
-            cctx.deploy().globalLoader());
+            ldr);
 
         if (err.get() != null)
             throw err.get();
@@ -923,7 +931,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         boolean rmv = offheap.removex(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()));
 
-        if(rmv && cctx.config().isStatisticsEnabled())
+        if (rmv && cctx.config().isStatisticsEnabled())
             cctx.cache().metrics0().onOffHeapRemove();
 
         return rmv;
@@ -982,6 +990,37 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * Reads value from swap and unswaps it to indexing.
+     *
+     * @param key Key.
+     * @param swapKey Swap key.
+     * @param ldr Class loader.
+     * @return {@code true} If read and unswapped successfully.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean readSwapBeforeRemove(@Nullable KeyCacheObject key, SwapKey swapKey, ClassLoader ldr)
+        throws IgniteCheckedException {
+        assert cctx.queries() != null;
+
+        byte[] entryBytes = swapMgr.read(spaceName, swapKey, ldr);
+
+        if (entryBytes == null)
+            return false;
+
+        GridCacheSwapEntry entry = swapEntry(unmarshalSwapEntry(entryBytes));
+
+        if (entry == null)
+            return false;
+
+        if (key == null)
+            key = cctx.toCacheKeyObject(swapKey.keyBytes());
+
+        cctx.queries().onUnswap(key, entry.value());
+
+        return true;
+    }
+
+    /**
      * @param key Key to remove.
      * @throws IgniteCheckedException If failed.
      */
@@ -1013,33 +1052,20 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                 part,
                 key.valueBytes(cctx.cacheObjectContext()));
 
+            ClassLoader ldr = cctx.deploy().globalLoader();
+
+            if (qryMgr != null && !readSwapBeforeRemove(key, swapKey, ldr))
+                return; // Not found.
+
             swapMgr.remove(spaceName,
                 swapKey,
-                new CI1<byte[]>() {
+                cctx.config().isStatisticsEnabled() ? new CI1<byte[]>() {
                     @Override public void apply(byte[] rmv) {
-                        if (rmv == null)
-                            return;
-
-                        try {
-                            if (cctx.config().isStatisticsEnabled())
-                                cctx.cache().metrics0().onSwapRemove();
-
-                            if (qryMgr == null)
-                                return;
-
-                            GridCacheSwapEntry entry = swapEntry(unmarshalSwapEntry(rmv));
-
-                            if (entry == null)
-                                return;
-
-                            qryMgr.onUnswap(key, entry.value());
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                        if (rmv != null)
+                            cctx.cache().metrics0().onSwapRemove();
                     }
-                },
-                cctx.deploy().globalLoader());
+                } : null,
+                ldr);
         }
     }
 

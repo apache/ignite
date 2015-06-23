@@ -393,7 +393,7 @@ public class GridH2Table extends TableBase {
                     for (int i = 2, len = idxs.size(); i < len; i++) {
                         Row res = index(i).remove(old);
 
-                        assert eq(pk, res, old): "\n" + old + "\n" + res;
+                        assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
                 }
                 else
