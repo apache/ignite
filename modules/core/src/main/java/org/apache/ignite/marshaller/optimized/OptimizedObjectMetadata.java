@@ -101,13 +101,13 @@ public class OptimizedObjectMetadata implements Externalizable {
      */
     public static class FieldInfo {
         /** Field ID. */
-        int id;
+        private int id;
 
         /** Field len. */
-        int len;
+        private int len;
 
         /** Field type. */
-        OptimizedFieldType type;
+        private OptimizedFieldType type;
 
         /**
          * Constructor.
@@ -167,6 +167,15 @@ public class OptimizedObjectMetadata implements Externalizable {
          */
         public int length() {
             return len;
+        }
+
+        /**
+         * Returns field type.
+         *
+         * @return Field type.
+         */
+        public OptimizedFieldType type() {
+            return type;
         }
     }
 }

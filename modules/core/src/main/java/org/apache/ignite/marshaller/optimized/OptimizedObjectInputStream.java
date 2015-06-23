@@ -74,6 +74,9 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     /** */
     private final HandleTable handles = new HandleTable(10);
 
+    /** */
+    private Stack<HashMap<Integer, Object>> marshalAwareValues;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
@@ -151,6 +154,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         curObj = null;
         curFields = null;
+        marshalAwareValues = null;
     }
 
     /** {@inheritDoc} */
@@ -467,6 +471,97 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         }
     }
 
+
+    /**
+     * Reads all the fields that are specified in {@link OptimizedObjectMetadata} and places them in {@link HashMap}
+     * for furher usage.
+     *
+     * @param meta Metadata.
+     * @return Map containing field ID to value mapping.
+     * @throws ClassNotFoundException In case of error.
+     * @throws IOException In case of error.
+     */
+    HashMap<Integer, Object> readFields( OptimizedObjectMetadata meta) throws ClassNotFoundException,
+        IOException {
+
+        HashMap<Integer, Object> fieldsValues = new HashMap<>();
+
+        for (OptimizedObjectMetadata.FieldInfo fieldInfo : meta.getMeta()) {
+            Object val;
+
+            switch ((fieldInfo.type())) {
+                case BYTE:
+                    readFieldType();
+
+                    val = readByte();
+
+                    break;
+
+                case SHORT:
+                    readFieldType();
+
+                    val = readShort();
+
+                    break;
+
+                case INT:
+                    readFieldType();
+
+                    val = readInt();
+
+                    break;
+
+                case LONG:
+                    readFieldType();
+
+                    val = readLong();
+
+                    break;
+
+                case FLOAT:
+                    readFieldType();
+
+                    val = readFloat();
+
+                    break;
+
+                case DOUBLE:
+                    readFieldType();
+
+                    val = readDouble();
+
+                    break;
+
+                case CHAR:
+                    readFieldType();
+
+                    val = readChar();
+
+
+                    break;
+
+                case BOOLEAN:
+                    readFieldType();
+
+                    val = readBoolean();
+
+                    break;
+
+                case OTHER:
+                    val = readObject();
+
+                    break;
+
+                default:
+                    throw new IgniteException("Unknown field type: " + fieldInfo.type());
+            }
+
+            fieldsValues.put(fieldInfo.id(), val);
+        }
+
+        return fieldsValues;
+    }
+
     /**
      * Reads {@link Externalizable} object.
      *
@@ -512,11 +607,12 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      *
      * @param constructor Constructor.
      * @param readResolveMtd {@code readResolve} method.
+     * @param typeId Object type ID.
      * @return Object.
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    Object readMarshalAware(Constructor<?> constructor, Method readResolveMtd)
+    Object readMarshalAware(Constructor<?> constructor, Method readResolveMtd, int typeId)
         throws ClassNotFoundException, IOException {
         Object obj;
 
@@ -528,6 +624,17 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         }
 
         int handle = handles.assign(obj);
+
+        OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
+
+        assert meta != null;
+
+        HashMap<Integer, Object> fieldsValues = readFields(meta);
+
+        if (marshalAwareValues == null)
+            marshalAwareValues = new Stack<>();
+
+        marshalAwareValues.push(fieldsValues);
 
         OptimizedMarshalAware extObj = ((OptimizedMarshalAware)obj);
 
@@ -543,6 +650,13 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                 throw new IOException(e);
             }
         }
+
+        marshalAwareValues.pop();
+
+        if (marshalAwareValues.empty())
+            marshalAwareValues = null;
+
+        skipFooter(obj.getClass());
 
         return obj;
     }
@@ -1004,122 +1118,133 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
     /** {@inheritDoc} */
     @Override public byte readByte(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public short readShort(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public int readInt(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public long readLong(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public float readFloat(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public double readDouble(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public char readChar(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean readBoolean(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String readString(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T readObject(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public byte[] readByteArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public short[] readShortArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public int[] readIntArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public long[] readLongArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public float[] readFloatArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public double[] readDoubleArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public char[] readCharArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String[] readStringArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object[] readObjectArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> Collection<T> readCollection(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Enum<?>> T readEnum(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T extends Enum<?>> T[] readEnumArray(String fieldName) throws IOException {
-        return doReadField(fieldName);
+        return getField(fieldName);
+    }
+
+    /**
+     * Gets field of {@link OptimizedMarshalAware} object.
+     *
+     * @param fieldName Field name.
+     * @param <F> Field type.
+     * @return Field.
+     */
+    private <F> F getField(String fieldName) {
+        return (F)marshalAwareValues.peek().get(OptimizedMarshallerUtils.resolveFieldId(fieldName));
     }
 
     /**
@@ -1163,7 +1288,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         in.position(pos);
 
-        return range != null && range.start > 0;
+        return range != null && range.start >= 0;
     }
 
     /**
@@ -1177,18 +1302,6 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @throws ClassNotFoundException In case of error.
      */
     public <F> F readField(String fieldName) throws IOException, ClassNotFoundException {
-        return doReadField(fieldName, false);
-    }
-
-    /**
-     * Reads the field using footer.
-     *
-     * @param fieldName Field name.
-     * @param deserialize Deserialize field if it supports footer.
-     * @param <F> Field type.
-     * @return Field.
-     */
-    private <F> F doReadField(String fieldName, boolean deserialize) throws IOException, ClassNotFoundException {
         int pos = in.position();
 
         byte type = in.readByte();
@@ -1205,43 +1318,21 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         if (range != null && range.start >= 0) {
             in.position(range.start);
 
-            if (deserialize)
-                field = (F)readObject();
-            else {
-                byte fieldType = in.readByte();
+            byte fieldType = in.readByte();
 
-                if ((fieldType == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null) ||
-                    fieldType == MARSHAL_AWARE)
-                    //Do we need to make a copy of array?
-                    field = (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
-                else {
-                    in.position(range.start);
-                    field = (F)readObject();
-                }
+            if ((fieldType == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null) ||
+                fieldType == MARSHAL_AWARE)
+                //Do we need to make a copy of array?
+                field = (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
+            else {
+                in.position(range.start);
+                field = (F)readObject();
             }
         }
 
         in.position(pos);
 
         return field;
-    }
-
-    /**
-     * Reads the field and deserializes it.
-     *
-     * @param fieldName Field name.
-     * @param <F> Field type.
-     * @return Field.
-     * @throws IOException In case of error.
-     */
-    private <F> F doReadField(String fieldName) throws IOException {
-        try {
-            return doReadField(fieldName, true);
-        }
-        catch (ClassNotFoundException e) {
-            throw new IOException("Failed to read the field, class definition has not" +
-                " been found [field=" + fieldName + "]");
-        }
     }
 
     /**

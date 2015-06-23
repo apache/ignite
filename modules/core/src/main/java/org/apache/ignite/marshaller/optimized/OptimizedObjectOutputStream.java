@@ -346,6 +346,8 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
             throw new IOException("Failed to marshal OptimizedMarshalAware object. OptimizedMarshallerExt must be " +
                 "set to IgniteConfiguration [obj=" + obj.getClass().getName() + "]");
 
+        footer.indexingSupported(true);
+
         if (marshalAwareFooters == null)
             marshalAwareFooters = new Stack<>();
 
@@ -377,7 +379,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         Footer footer = createFooter(obj.getClass());
 
         if (footer != null)
-            footer.fields(fields);
+            footer.indexingSupported(fields.fieldsIndexingSupported());
 
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -1189,11 +1191,11 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
      */
     protected interface Footer {
         /**
-         * Sets fields.
+         * Whether indexing supported or not.
          *
-         * @param fields Fields.
+         * @param indexingSupported {@code true} if supported.
          */
-        void fields(OptimizedClassDescriptor.Fields fields);
+        void indexingSupported(boolean indexingSupported);
 
         /**
          * Puts type ID and its value len to the footer.

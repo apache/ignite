@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized.ext;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -148,24 +148,55 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     /**
      * @throws Exception In case of error.
      */
-    /*public void testMarshalAware() throws Exception {
+    public void testMarshalAware() throws Exception {
         META_BUF.clear();
 
         OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(marsh.enableFieldsIndexing(TestMarshalAware.class));
+        assertTrue(marsh.enableFieldsIndexing(AnotherMarshalAware.class));
         assertEquals(0, META_BUF.size());
+
+        assertTrue(marsh.enableFieldsIndexing(TestObject2.class));
+        assertEquals(1, META_BUF.size());
 
         TestMarshalAware test = new TestMarshalAware(100, "MarshalAware");
 
         byte[] arr = marsh.marshal(test);
 
-        assertEquals(1, META_BUF.size());
+        assertEquals(3, META_BUF.size());
 
+        // Working with fields
+        String text = marsh.readField("text", arr, 0, arr.length, null);
+
+        assertEquals(test.text, text);
+
+        CacheIndexedObjectImpl cacheObj = marsh.readField("aware", arr, 0, arr.length, null);
+        byte[] cacheObjArr = cacheObj.valueBytes(null);
+
+        Date date = marsh.readField("date", cacheObjArr, 0, cacheObjArr.length, null);
+
+        assertEquals(test.aware.date, date);
+
+        cacheObj = marsh.readField("testObject2", arr, 0, arr.length, null);
+        cacheObjArr = cacheObj.valueBytes(null);
+
+        int n = marsh.readField("i", cacheObjArr, 0, cacheObjArr.length, null);
+
+        assertEquals(test.testObject2.i, n);
+
+        // Deserializing
         TestMarshalAware test2 = marsh.unmarshal(arr, null);
 
-        assertEquals(test, test2);
-    }*/
+        assertEquals(test.number, test2.number);
+        assertEquals(test.text, test2.text);
+        assertEquals(test.testObject2, test2.testObject2);
+        assertEquals(test.aware.date, test2.aware.date);
+        assertNull(test2.aware.someObject);
+
+        for (int i = 0; i < test.aware.arr.length; i++)
+            assertEquals(test.aware.arr[i], test2.aware.arr[i]);
+    }
 
     private static class InternalMarshaller extends OptimizedMarshallerExt {
         /**
@@ -311,45 +342,77 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
      */
     private static class TestMarshalAware implements OptimizedMarshalAware {
         /** */
-        private int i;
+        private int number;
 
         /** */
-        private String str;
+        private String text;
+
+        /** */
+        private AnotherMarshalAware aware;
+
+        /** */
+        private TestObject2 testObject2;
 
         public TestMarshalAware() {
             // No-op
         }
 
         public TestMarshalAware(int i, String str) {
-            this.i = i;
-            this.str = str;
+            this.number = i;
+            this.text = str;
+
+            aware = new AnotherMarshalAware(new int[] {10, 11, 23});
+            testObject2 = new TestObject2(i * 10);
         }
 
         /** {@inheritDoc} */
         @Override public void writeFields(OptimizedFieldsWriter writer) throws IOException {
-            writer.writeInt("i", i);
-            writer.writeString("str", str);
+            writer.writeInt("number", number);
+            writer.writeString("text", text);
+            writer.writeObject("aware", aware);
+            writer.writeObject("testObject2", testObject2);
         }
 
         /** {@inheritDoc} */
         @Override public void readFields(OptimizedFieldsReader reader) throws IOException {
-            i = reader.readInt("i");
-            str = reader.readString("str");
+            number = reader.readInt("number");
+            text = reader.readString("text");
+            aware = reader.readObject("aware");
+            testObject2 = reader.readObject("testObject2");
+        }
+    }
+
+    /**
+     *
+     */
+    private static class AnotherMarshalAware implements OptimizedMarshalAware {
+        /** */
+        private Date date = new Date();
+
+        /** */
+        private Object someObject;
+
+        /** */
+        private int[] arr;
+
+        public AnotherMarshalAware() {
+            // No-op
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
+        public AnotherMarshalAware(int[] arr) {
+            this.arr = arr;
+            someObject = new Object();
+        }
 
-            TestMarshalAware that = (TestMarshalAware)o;
+        @Override public void writeFields(OptimizedFieldsWriter writer) throws IOException {
+            writer.writeIntArray("arr", arr);
+            writer.writeObject("date", date);
+        }
 
-            if (i != that.i)
-                return false;
-
-            return !(str != null ? !str.equals(that.str) : that.str != null);
+        @Override public void readFields(OptimizedFieldsReader reader) throws IOException {
+            // Deliberately reading in reverse order.
+            date = reader.readObject("date");
+            arr = reader.readIntArray("arr");
         }
     }
 }

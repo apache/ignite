@@ -71,8 +71,8 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         private boolean hasHandles;
 
         /** {@inheritDoc} */
-        @Override public void fields(OptimizedClassDescriptor.Fields fields) {
-            if (fields.fieldsIndexingSupported()) {
+        @Override public void indexingSupported(boolean indexingSupported) {
+            if (indexingSupported) {
                 data = new ArrayList<>();
                 this.fields = new ArrayList<>();
             }
@@ -81,7 +81,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         }
 
         /** {@inheritDoc} */
-        public void put(int fieldId, OptimizedFieldType fieldType, int len) {
+        @Override public void put(int fieldId, OptimizedFieldType fieldType, int len) {
             if (data == null)
                 return;
 
@@ -108,7 +108,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         }
 
         /** {@inheritDoc} */
-        public void write() throws IOException {
+        @Override public void write() throws IOException {
             if (data == null)
                 writeInt(EMPTY_FOOTER);
             else {

@@ -802,7 +802,7 @@ public class OptimizedClassDescriptor {
             case MARSHAL_AWARE:
                 verifyChecksum(in.readShort());
 
-                return in.readMarshalAware(constructor, readResolveMtd);
+                return in.readMarshalAware(constructor, readResolveMtd, typeId);
 
             default:
                 assert false : "Unexpected type: " + type;

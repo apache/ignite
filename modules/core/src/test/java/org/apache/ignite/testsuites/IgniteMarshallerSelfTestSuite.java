@@ -21,7 +21,6 @@ import junit.framework.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.marshaller.optimized.ext.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
