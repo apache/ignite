@@ -272,7 +272,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
             @Override public boolean apply() {
                 return igfs.exists(statPath);
             }
-        }, 10000);
+        }, 20_000);
 
         final long apiEvtCnt0 = apiEvtCnt;
 
