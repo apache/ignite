@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -58,9 +57,6 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** Grid id. */
     private final UUID id = UUID.randomUUID();
-
-    /** Compute. */
-    private transient final IgniteCompute compute;
 
     /** Remote ignite instance started latch. */
     private transient final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
@@ -117,8 +113,6 @@ public class IgniteProcessProxy implements IgniteEx {
         assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node with id=" + id + " didn't join.";
 
         gridProxies.put(cfg.getGridName(), this);
-
-        compute = locJvmGrid.compute(locJvmGrid.cluster().forNodeId(id));
     }
 
     /**
@@ -243,11 +237,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public ClusterNode localNode() {
-        return F.first(compute.broadcast(new IgniteClosureX<Object, ClusterNode>() {
-            @Override public ClusterNode applyx(Object o) {
+        return remoteCompute().call(new IgniteCallable<ClusterNode>() {
+            @Override public ClusterNode call() throws Exception {
                 return ((IgniteEx)Ignition.ignite(id)).localNode();
             }
-        }, null));
+        });
     }
 
     /** {@inheritDoc} */
@@ -463,7 +457,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return {@link IgniteCompute} instance to communicate with remote node.
      */
     public IgniteCompute remoteCompute() {
-        ClusterGroup grp = localJvmGrid().cluster().forNodeId(id);
+        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
         if (grp.nodes().isEmpty())
             throw new IllegalStateException("Could not found node with id=" + id + ".");

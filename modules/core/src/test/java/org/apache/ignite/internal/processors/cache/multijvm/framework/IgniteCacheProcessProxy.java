@@ -517,6 +517,9 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(final Class<T> clazz) {
+        if (Ignite.class.equals(clazz))
+            return (T)igniteProxy;
+
         try {
             return (T)compute.call(new IgniteCallable<Object>() {
                 @Override public Object call() throws Exception {
