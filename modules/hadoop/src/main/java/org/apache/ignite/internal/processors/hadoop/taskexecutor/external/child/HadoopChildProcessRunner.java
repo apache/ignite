@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
+import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
@@ -115,7 +116,7 @@ public class HadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(req.jobId(), log);
+                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log);
 
                 job.initialize(true, nodeDesc.processId());
 
