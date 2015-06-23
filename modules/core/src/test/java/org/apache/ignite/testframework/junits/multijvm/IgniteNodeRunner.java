@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.multijvm.framework;
+package org.apache.ignite.testframework.junits.multijvm;
 
 import com.thoughtworks.xstream.*;
 import org.apache.ignite.*;
