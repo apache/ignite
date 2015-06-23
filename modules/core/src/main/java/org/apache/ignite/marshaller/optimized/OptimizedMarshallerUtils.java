@@ -248,7 +248,7 @@ public class OptimizedMarshallerUtils {
         if (obj == null)
             return false;
 
-        if (obj instanceof CacheOptimizedObjectImpl ||
+        if (obj instanceof CacheIndexedObjectImpl ||
             obj instanceof Map.Entry ||
             obj instanceof Collection ||
             obj instanceof Map ||

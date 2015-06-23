@@ -143,7 +143,7 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
-        gen.generateAndWrite(CacheOptimizedObjectImpl.class);
+        gen.generateAndWrite(CacheIndexedObjectImpl.class);
 
 //        gen.generateAndWrite(GridDistributedLockRequest.class);
 //        gen.generateAndWrite(GridDistributedLockResponse.class);

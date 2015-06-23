@@ -32,7 +32,7 @@ import java.nio.*;
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
  * search and extraction without necessity to fully deserialize an object.
  */
-public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
+public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,45 +51,45 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
     /**
      * For {@link Externalizable}.
      */
-    public CacheOptimizedObjectImpl() {
+    public CacheIndexedObjectImpl() {
        // No-op
     }
 
     /**
-     * Instantiates {@code CacheOptimizedObjectImpl} with object.
+     * Instantiates {@code CacheIndexedObjectImpl} with object.
      * @param val Object.
      */
-    public CacheOptimizedObjectImpl(Object val) {
+    public CacheIndexedObjectImpl(Object val) {
         this(val, null, 0, 0);
     }
 
     /**
-     * Instantiates {@code CacheOptimizedObjectImpl} with object's serialized form.
+     * Instantiates {@code CacheIndexedObjectImpl} with object's serialized form.
      * @param valBytes Object serialized to byte array.
      * @param start Object's start in the array.
      * @param len Object's len in the array.
      */
-    public CacheOptimizedObjectImpl(byte[] valBytes, int start, int len) {
+    public CacheIndexedObjectImpl(byte[] valBytes, int start, int len) {
         this(null, valBytes, start, len);
     }
 
     /**
-     * Instantiates {@code CacheOptimizedObjectImpl} with object's serialized form and value.
+     * Instantiates {@code CacheIndexedObjectImpl} with object's serialized form and value.
      * @param val Object.
      * @param valBytes Object serialized to byte array.
      */
-    public CacheOptimizedObjectImpl(Object val, byte[] valBytes) {
+    public CacheIndexedObjectImpl(Object val, byte[] valBytes) {
         this(val, valBytes, 0, valBytes != null ? valBytes.length : 0);
     }
 
     /**
-     * Instantiates {@code CacheOptimizedObjectImpl}.
+     * Instantiates {@code CacheIndexedObjectImpl}.
      * @param val Object.
      * @param valBytes Object in a serialized form.
      * @param start Object's start in the array.
      * @param len Object's len in the array.
      */
-    public CacheOptimizedObjectImpl(Object val, byte[] valBytes, int start, int len) {
+    public CacheIndexedObjectImpl(Object val, byte[] valBytes, int start, int len) {
         assert val != null || (valBytes != null && start >= 0 && len > 0);
 
         this.val = val;
@@ -323,9 +323,9 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
     /**
      * Detaches object.
      *
-     * @return Detached object wrapped by {@code CacheOptimizedObjectImpl}.
+     * @return Detached object wrapped by {@code CacheIndexedObjectImpl}.
      */
-    protected CacheOptimizedObjectImpl detach() {
+    protected CacheIndexedObjectImpl detach() {
         if (detached())
             return this;
 
@@ -333,7 +333,7 @@ public class CacheOptimizedObjectImpl extends CacheObjectAdapter {
 
         U.arrayCopy(valBytes, start, arr, 0, len);
 
-        return new CacheOptimizedObjectImpl(arr, 0, len);
+        return new CacheIndexedObjectImpl(arr, 0, len);
     }
 
     /**

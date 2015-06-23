@@ -23,14 +23,14 @@ import org.jetbrains.annotations.*;
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
  * search and extraction without necessity to fully deserialize an object.
  */
-public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implements KeyCacheObject {
+public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      *
      */
-    public KeyCacheOptimizedObjectImpl() {
+    public KeyCacheIndexedObjectImpl() {
         // No-op
     }
 
@@ -38,7 +38,7 @@ public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implem
      * @param val Object.
      * @param valBytes Object in a serialized form.
      */
-    public KeyCacheOptimizedObjectImpl(Object val, byte[] valBytes) {
+    public KeyCacheIndexedObjectImpl(Object val, byte[] valBytes) {
         super(val, valBytes);
 
         assert val != null;
@@ -50,7 +50,7 @@ public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implem
      * @param start Object's start in the array.
      * @param len Object's len in the array.
      */
-    public KeyCacheOptimizedObjectImpl(Object val, byte[] valBytes, int start, int len) {
+    public KeyCacheIndexedObjectImpl(Object val, byte[] valBytes, int start, int len) {
         super(val, valBytes, start, len);
     }
 
@@ -94,10 +94,10 @@ public class KeyCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl implem
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        if (!(obj instanceof KeyCacheOptimizedObjectImpl))
+        if (!(obj instanceof KeyCacheIndexedObjectImpl))
             return false;
 
-        KeyCacheOptimizedObjectImpl other = (KeyCacheOptimizedObjectImpl)obj;
+        KeyCacheIndexedObjectImpl other = (KeyCacheIndexedObjectImpl)obj;
 
         return val.equals(other.val);
     }

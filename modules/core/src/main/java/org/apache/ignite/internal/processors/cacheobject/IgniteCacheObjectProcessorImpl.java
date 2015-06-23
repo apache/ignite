@@ -196,10 +196,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     protected KeyCacheObject toCacheKeyObject0(Object obj, boolean userObj) {
         if (!userObj)
-            return isFieldsIndexingEnabled(obj.getClass()) ? new KeyCacheOptimizedObjectImpl(obj, null) :
+            return isFieldsIndexingEnabled(obj.getClass()) ? new KeyCacheIndexedObjectImpl(obj, null) :
                 new KeyCacheObjectImpl(obj, null);
 
-        return isFieldsIndexingEnabled(obj.getClass()) ? new UserKeyCacheOptimizedObjectImpl(obj) :
+        return isFieldsIndexingEnabled(obj.getClass()) ? new UserKeyCacheIndexedObjectImpl(obj) :
             new UserKeyCacheObjectImpl(obj);
     }
 
@@ -239,7 +239,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 return new CacheObjectImpl(null, bytes);
 
             case CacheObject.TYPE_OPTIMIZED:
-                return new CacheOptimizedObjectImpl(bytes, 0, bytes.length);
+                return new CacheIndexedObjectImpl(bytes, 0, bytes.length);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
@@ -271,10 +271,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (!userObj)
-            return isFieldsIndexingEnabled(obj.getClass()) ? new CacheOptimizedObjectImpl(obj) :
+            return isFieldsIndexingEnabled(obj.getClass()) ? new CacheIndexedObjectImpl(obj) :
                 new CacheObjectImpl(obj, null);
 
-        return isFieldsIndexingEnabled(obj.getClass()) ? new UserCacheOptimizedObjectImpl(obj, null) :
+        return isFieldsIndexingEnabled(obj.getClass()) ? new UserCacheIndexedObjectImpl(obj, null) :
             new UserCacheObjectImpl(obj, null);
     }
 
@@ -313,8 +313,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public int typeId(Object obj) {
-        if (obj instanceof CacheOptimizedObjectImpl)
-            return ((CacheOptimizedObjectImpl)obj).typeId();
+        if (obj instanceof CacheIndexedObjectImpl)
+            return ((CacheIndexedObjectImpl)obj).typeId();
 
         return 0;
     }
@@ -336,11 +336,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object field(Object obj, String fieldName) {
-        if (obj instanceof CacheOptimizedObjectImpl) {
+        if (obj instanceof CacheIndexedObjectImpl) {
             assert optMarshExt != null;
 
             try {
-                return ((CacheOptimizedObjectImpl)obj).field(fieldName, optMarshExt);
+                return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarshExt);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -352,11 +352,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean hasField(Object obj, String fieldName) {
-        if (obj instanceof CacheOptimizedObjectImpl) {
+        if (obj instanceof CacheIndexedObjectImpl) {
             assert optMarshExt != null;
 
             try {
-                return ((CacheOptimizedObjectImpl)obj).hasField(fieldName, optMarshExt);
+                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarshExt);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -480,14 +480,14 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      * Wraps value provided by user, must be serialized before stored in cache.
      * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingEnabled(Class)}.
      */
-    private static class UserCacheOptimizedObjectImpl extends CacheOptimizedObjectImpl {
+    private static class UserCacheIndexedObjectImpl extends CacheIndexedObjectImpl {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          *
          */
-        public UserCacheOptimizedObjectImpl() {
+        public UserCacheIndexedObjectImpl() {
             //No-op.
         }
 
@@ -495,7 +495,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
          * @param val Value.
          * @param valBytes Value bytes.
          */
-        public UserCacheOptimizedObjectImpl(Object val, byte[] valBytes) {
+        public UserCacheIndexedObjectImpl(Object val, byte[] valBytes) {
             super(val, valBytes);
         }
 
@@ -516,10 +516,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
                         ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
 
-                    return new CacheOptimizedObjectImpl(val, valBytes, start, len);
+                    return new CacheIndexedObjectImpl(val, valBytes, start, len);
                 }
 
-                return new CacheOptimizedObjectImpl(null, valBytes, start, len);
+                return new CacheIndexedObjectImpl(null, valBytes, start, len);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);
@@ -531,21 +531,21 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
      * Wraps key provided by user, must be serialized before stored in cache.
      * Used by classes that support fields indexing. Refer to {@link #isFieldsIndexingEnabled(Class)}.
      */
-    private static class UserKeyCacheOptimizedObjectImpl extends KeyCacheOptimizedObjectImpl {
+    private static class UserKeyCacheIndexedObjectImpl extends KeyCacheIndexedObjectImpl {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          *
          */
-        public UserKeyCacheOptimizedObjectImpl() {
+        public UserKeyCacheIndexedObjectImpl() {
             //No-op.
         }
 
         /**
          * @param key Key.
          */
-        UserKeyCacheOptimizedObjectImpl(Object key) {
+        UserKeyCacheIndexedObjectImpl(Object key) {
             super(key, null);
         }
 
@@ -560,10 +560,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
                     Object val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
 
-                    return new KeyCacheOptimizedObjectImpl(val, valBytes, start, len);
+                    return new KeyCacheIndexedObjectImpl(val, valBytes, start, len);
                 }
 
-                return new KeyCacheOptimizedObjectImpl(val, valBytes, start, len);
+                return new KeyCacheIndexedObjectImpl(val, valBytes, start, len);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to marshal object: " + val, e);

@@ -601,12 +601,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 113:
-                msg = new CacheOptimizedObjectImpl();
+                msg = new CacheIndexedObjectImpl();
 
                 break;
 
             case 114:
-                msg = new KeyCacheOptimizedObjectImpl();
+                msg = new KeyCacheIndexedObjectImpl();
 
             // [-3..114] - this
             // [120..123] - DR

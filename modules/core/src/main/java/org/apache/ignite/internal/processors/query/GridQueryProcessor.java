@@ -47,6 +47,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.PropertyType.*;
 
 /**
  * Indexing processor.
@@ -141,12 +142,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     TypeId typeId;
 
                     if (valCls == null || ctx.cacheObjects().isPortableEnabled()) {
-                        processPortableMeta(meta, desc);
+                        processCacheTypeMeta(meta, desc, PORTABLE_PROPERTY);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
                     else if (ctx.cacheObjects().enableFieldsIndexing(valCls)) {
-                        processIndexedFieldsMeta(meta, desc);
+                        processCacheTypeMeta(meta, desc, INDEXED_FIELDS_PROPERTY);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(valCls.getName()));
                     }
@@ -459,7 +460,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             TypeId id;
 
             boolean portableVal = ctx.cacheObjects().isPortableObject(val);
-            boolean indexedFieldsVal = val instanceof CacheOptimizedObjectImpl;
+            boolean indexedFieldsVal = val instanceof CacheIndexedObjectImpl;
 
             if (portableVal || indexedFieldsVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
@@ -482,7 +483,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!(key instanceof CacheOptimizedObjectImpl) && !ctx.cacheObjects().isPortableObject(key)) {
+            if (!(key instanceof CacheIndexedObjectImpl) && !ctx.cacheObjects().isPortableObject(key)) {
                 Class<?> keyCls = key.value(coctx, false).getClass();
 
                 if (!desc.keyClass().isAssignableFrom(keyCls))
@@ -1234,16 +1235,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata.
      *
      * @param meta Declared metadata.
      * @param d Type descriptor.
+     * @param propertyType PropertyType.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPortableMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processCacheTypeMeta(CacheTypeMetadata meta, TypeDescriptor d, PropertyType propertyType)
         throws IgniteCheckedException {
+        assert propertyType != CLASS_PROPERTY;
+
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
+            Property prop = propertyType == PORTABLE_PROPERTY ?
+                buildPortableProperty(entry.getKey(), entry.getValue()) :
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
 
@@ -1255,7 +1261,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
+            Property prop = propertyType == PORTABLE_PROPERTY ?
+                buildPortableProperty(entry.getKey(), entry.getValue()) :
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
 
             d.addProperty(prop, false);
 
@@ -1267,7 +1275,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            PortableProperty prop = buildPortableProperty(txtIdx, String.class);
+            Property prop = propertyType == PORTABLE_PROPERTY ?
+                buildPortableProperty(txtIdx, String.class) :
+                buildIndexedFieldsProperty(txtIdx, String.class);
 
             d.addProperty(prop, false);
 
@@ -1285,7 +1295,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    PortableProperty prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1());
+                    Property prop = propertyType == PORTABLE_PROPERTY ?
+                        buildPortableProperty(idxField.getKey(), idxField.getValue().get1()) :
+                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1());
 
                     d.addProperty(prop, false);
 
@@ -1299,83 +1311,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
-
-            if (!d.props.containsKey(prop.name()))
-                d.addProperty(prop, false);
-        }
-    }
-
-    /**
-     * Processes declarative metadata for object that has fields information in its serialized form.
-     *
-     * @param meta Declared metadata.
-     * @param d Type descriptor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processIndexedFieldsMeta(CacheTypeMetadata meta, TypeDescriptor d)
-        throws IgniteCheckedException {
-        //TODO: IGNITE-950, refactor. The code is similar to portable properties ones.
-
-        for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            IndexedFieldsProperty prop = buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-
-            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, false);
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            IndexedFieldsProperty prop = buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
-
-            d.addProperty(prop, false);
-
-            String idxName = prop.name() + "_idx";
-
-            d.addIndex(idxName, idx.isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
-
-            d.addFieldToIndex(idxName, prop.name(), 0, true);
-        }
-
-        for (String txtIdx : meta.getTextFields()) {
-            IndexedFieldsProperty prop = buildIndexedFieldsProperty(txtIdx, String.class);
-
-            d.addProperty(prop, false);
-
-            d.addFieldToTextIndex(prop.name());
-        }
-
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
-
-        if (grps != null) {
-            for (Map.Entry<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> entry : grps.entrySet()) {
-                String idxName = entry.getKey();
-
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxFields = entry.getValue();
-
-                int order = 0;
-
-                for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    IndexedFieldsProperty prop = buildIndexedFieldsProperty(idxField.getKey(),
-                        idxField.getValue().get1());
-
-                    d.addProperty(prop, false);
-
-                    Boolean descending = idxField.getValue().get2();
-
-                    d.addFieldToIndex(idxName, prop.name(), order, descending != null && descending);
-
-                    order++;
-                }
-            }
-        }
-
-        for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            IndexedFieldsProperty prop = buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+            Property prop = propertyType == PORTABLE_PROPERTY ?
+                buildPortableProperty(entry.getKey(), entry.getValue()) :
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -2246,5 +2184,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         @Override public String toString() {
             return S.toString(TypeName.class, this);
         }
+    }
+
+    /**
+     *
+     */
+    enum PropertyType {
+        CLASS_PROPERTY,
+        PORTABLE_PROPERTY,
+        INDEXED_FIELDS_PROPERTY
     }
 }

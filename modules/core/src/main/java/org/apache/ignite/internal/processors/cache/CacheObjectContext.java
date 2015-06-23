@@ -157,8 +157,8 @@ public class CacheObjectContext {
      * @return Unwrapped object.
      */
     private Object unwrapObject(Object obj) {
-        if (obj instanceof CacheOptimizedObjectImpl)
-            return ((CacheOptimizedObjectImpl)obj).deserialize(this);
+        if (obj instanceof CacheIndexedObjectImpl)
+            return ((CacheIndexedObjectImpl)obj).deserialize(this);
         else if (obj instanceof Map.Entry) {
             Map.Entry<Object, Object> entry = (Map.Entry<Object, Object>)obj;
 
@@ -166,16 +166,16 @@ public class CacheObjectContext {
 
             boolean unwrapped = false;
 
-            if (key instanceof CacheOptimizedObjectImpl) {
-                key = ((CacheOptimizedObjectImpl)key).deserialize(this);
+            if (key instanceof CacheIndexedObjectImpl) {
+                key = ((CacheIndexedObjectImpl)key).deserialize(this);
 
                 unwrapped = true;
             }
 
             Object val = entry.getValue();
 
-            if (val instanceof CacheOptimizedObjectImpl) {
-                val = ((CacheOptimizedObjectImpl)val).deserialize(this);
+            if (val instanceof CacheIndexedObjectImpl) {
+                val = ((CacheIndexedObjectImpl)val).deserialize(this);
 
                 unwrapped = true;
             }

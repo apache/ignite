@@ -125,7 +125,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
 
             if (in.readByte() == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null)
                 //Do we need to make a copy of array?
-                field = (F)new CacheOptimizedObjectImpl(in.array(), range.start, range.len);
+                field = (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
             else {
                 in.position(range.start);
                 field = (F)readObject();

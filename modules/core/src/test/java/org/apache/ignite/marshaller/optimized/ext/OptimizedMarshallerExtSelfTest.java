@@ -22,23 +22,43 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.util.concurrent.*;
+
 /**
  * Optimized marshaller self test.
  */
 @GridCommonTest(group = "Marshaller")
 public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest {
+    /** */
+    private static ConcurrentHashMap<Integer, OptimizedObjectMetadata> META_BUF = new ConcurrentHashMap<>();
+
+    /** */
+    private static final OptimizedMarshallerExtMetaHandler META_HANDLER = new OptimizedMarshallerExtMetaHandler() {
+        @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
+            META_BUF.putIfAbsent(typeId, meta);
+        }
+
+        @Override public OptimizedObjectMetadata metadata(int typeId) {
+            return META_BUF.get(typeId);
+        }
+    };
+
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
-        return new OptimizedMarshallerExt(false);
+        return new InternalMarshaller(false);
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testHasField() throws Exception {
+        META_BUF.clear();
+
         OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(marsh.enableFieldsIndexing(TestObject.class));
+
+        assertEquals(1, META_BUF.size());
 
         TestObject testObj = new TestObject("World", 50);
 
@@ -54,9 +74,12 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
      * @throws Exception In case of error.
      */
     public void testReadField() throws Exception {
+        META_BUF.clear();
+
         OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(marsh.enableFieldsIndexing(TestObject.class));
+        assertEquals(1, META_BUF.size());
 
         TestObject testObj = new TestObject("World", 50);
 
@@ -75,11 +98,12 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         // Add metadata for the enclosed object.
         assertTrue(marsh.enableFieldsIndexing(TestObject2.class));
+        assertEquals(2, META_BUF.size());
 
         arr = marsh.marshal(testObj);
 
         // Must be returned in a wrapped form, since metadata was added enabling the footer.
-        CacheOptimizedObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null);
+        CacheIndexedObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null);
 
         arr = cacheObject.valueBytes(null);
 
@@ -92,9 +116,12 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
      * @throws Exception In case of error.
      */
     public void testHandles() throws Exception {
+        META_BUF.clear();
+
         OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
 
         assertTrue(marsh.enableFieldsIndexing(SelfLinkObject.class));
+        assertEquals(1, META_BUF.size());
 
         SelfLinkObject selfLinkObject = new SelfLinkObject();
         selfLinkObject.str1 = "Hello, world!";
@@ -107,13 +134,36 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         assertEquals(selfLinkObject.str1, str2);
 
-        CacheOptimizedObjectImpl cacheObj = marsh.readField("link", arr, 0, arr.length, null);
+        CacheIndexedObjectImpl cacheObj = marsh.readField("link", arr, 0, arr.length, null);
 
         arr = cacheObj.valueBytes(null);
 
         SelfLinkObject selfLinkObject2 = marsh.unmarshal(arr, null);
 
         assertEquals(selfLinkObject, selfLinkObject2);
+    }
+
+    private static class InternalMarshaller extends OptimizedMarshallerExt {
+        /**
+         * Constructor.
+         */
+        public InternalMarshaller() {
+        }
+
+        /**
+         * Constructor.
+         * @param requireSer Requires serialiazable.
+         */
+        public InternalMarshaller(boolean requireSer) {
+            super(requireSer);
+
+            super.setMetadataHandler(META_HANDLER);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMetadataHandler(OptimizedMarshallerExtMetaHandler metaHandler) {
+            // No-op
+        }
     }
 
     /** */
