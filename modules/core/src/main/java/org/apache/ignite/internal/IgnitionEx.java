@@ -32,7 +32,6 @@ import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.marshaller.optimized.ext.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.resources.*;

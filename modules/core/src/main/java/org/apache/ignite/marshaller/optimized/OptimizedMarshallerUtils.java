@@ -144,6 +144,9 @@ public class OptimizedMarshallerUtils {
     /** */
     public static final byte SERIALIZABLE = 102;
 
+    /** */
+    public static final byte MARSHAL_AWARE = 103;
+
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
 

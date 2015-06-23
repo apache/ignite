@@ -18,10 +18,12 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
+import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
@@ -30,11 +32,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerExt.*;
 
 /**
  * Optimized object input stream.
  */
-public class OptimizedObjectInputStream extends ObjectInputStream {
+public class OptimizedObjectInputStream extends ObjectInputStream implements OptimizedFieldsReader {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -49,6 +52,9 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
 
     /** */
     protected ClassLoader clsLdr;
+
+    /** */
+    protected OptimizedMarshallerMetaHandler metaHandler;
 
     /** */
     protected GridDataInput in;
@@ -95,6 +101,25 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
     }
 
     /**
+     * @param clsMap Class descriptors by class map.
+     * @param ctx Context.
+     * @param mapper ID mapper.
+     * @param clsLdr Class loader.
+     * @param metaHandler Metadata handler.
+     */
+    protected void context(
+        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        ClassLoader clsLdr,
+        OptimizedMarshallerMetaHandler metaHandler)
+    {
+        context(clsMap, ctx, mapper, clsLdr);
+
+        this.metaHandler = metaHandler;
+    }
+
+    /**
      * @return Input.
      */
     public GridDataInput in() {
@@ -115,6 +140,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
         ctx = null;
         clsLdr = null;
         clsMap = null;
+        metaHandler = null;
     }
 
     /** {@inheritDoc} */
@@ -241,6 +267,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
             case ENUM:
             case EXTERNALIZABLE:
             case SERIALIZABLE:
+            case MARSHAL_AWARE:
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
@@ -465,6 +492,46 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
         Externalizable extObj = ((Externalizable)obj);
 
         extObj.readExternal(this);
+
+        if (readResolveMtd != null) {
+            try {
+                obj = readResolveMtd.invoke(obj);
+
+                handles.set(handle, obj);
+            }
+            catch (IllegalAccessException | InvocationTargetException e) {
+                throw new IOException(e);
+            }
+        }
+
+        return obj;
+    }
+
+    /**
+     * Reads {@link OptimizedMarshalAware} object.
+     *
+     * @param constructor Constructor.
+     * @param readResolveMtd {@code readResolve} method.
+     * @return Object.
+     * @throws ClassNotFoundException If class not found.
+     * @throws IOException In case of error.
+     */
+    Object readMarshalAware(Constructor<?> constructor, Method readResolveMtd)
+        throws ClassNotFoundException, IOException {
+        Object obj;
+
+        try {
+            obj = constructor.newInstance();
+        }
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new IOException(e);
+        }
+
+        int handle = handles.assign(obj);
+
+        OptimizedMarshalAware extObj = ((OptimizedMarshalAware)obj);
+
+        extObj.readFields(this);
 
         if (readResolveMtd != null) {
             try {
@@ -935,6 +1002,126 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
         return new GetFieldImpl(this);
     }
 
+    /** {@inheritDoc} */
+    @Override public byte readByte(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short readShort(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int readInt(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long readLong(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public float readFloat(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double readDouble(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public char readChar(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readBoolean(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String readString(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T readObject(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public byte[] readByteArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public short[] readShortArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public int[] readIntArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public long[] readLongArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public float[] readFloatArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public double[] readDoubleArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public char[] readCharArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public boolean[] readBooleanArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String[] readStringArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object[] readObjectArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> Collection<T> readCollection(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <K, V> Map<K, V> readMap(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T extends Enum<?>> T readEnum(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T extends Enum<?>> T[] readEnumArray(String fieldName) throws IOException {
+        return doReadField(fieldName);
+    }
+
     /**
      * Skips object footer from the underlying stream.
      *
@@ -955,6 +1142,209 @@ public class OptimizedObjectInputStream extends ObjectInputStream {
         return 0;
     }
 
+    /**
+     * Checks whether the object has a field with name {@code fieldName}.
+     *
+     * @param fieldName Field name.
+     * @return {@code true} if field exists, {@code false} otherwise.
+     * @throws IOException in case of error.
+     */
+    public boolean hasField(String fieldName) throws IOException {
+        int pos = in.position();
+
+        byte type = in.readByte();
+
+        if (type != SERIALIZABLE && type != MARSHAL_AWARE) {
+            in.position(pos);
+            return false;
+        }
+
+        FieldRange range = fieldRange(fieldName, pos);
+
+        in.position(pos);
+
+        return range != null && range.start > 0;
+    }
+
+    /**
+     * Looks up field with the given name and returns it in one of the following representations. If the field is
+     * serializable and has a footer then it's not deserialized but rather returned wrapped by {@link CacheObjectImpl}
+     * for future processing. In all other cases the field is fully deserialized.
+     *
+     * @param fieldName Field name.
+     * @return Field.
+     * @throws IOException In case of error.
+     * @throws ClassNotFoundException In case of error.
+     */
+    public <F> F readField(String fieldName) throws IOException, ClassNotFoundException {
+        return doReadField(fieldName, false);
+    }
+
+    /**
+     * Reads the field using footer.
+     *
+     * @param fieldName Field name.
+     * @param deserialize Deserialize field if it supports footer.
+     * @param <F> Field type.
+     * @return Field.
+     */
+    private <F> F doReadField(String fieldName, boolean deserialize) throws IOException, ClassNotFoundException {
+        int pos = in.position();
+
+        byte type = in.readByte();
+
+        if (type != SERIALIZABLE && type != MARSHAL_AWARE) {
+            in.position(pos);
+            return null;
+        }
+
+        FieldRange range = fieldRange(fieldName, pos);
+
+        F field = null;
+
+        if (range != null && range.start >= 0) {
+            in.position(range.start);
+
+            if (deserialize)
+                field = (F)readObject();
+            else {
+                byte fieldType = in.readByte();
+
+                if ((fieldType == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null) ||
+                    fieldType == MARSHAL_AWARE)
+                    //Do we need to make a copy of array?
+                    field = (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
+                else {
+                    in.position(range.start);
+                    field = (F)readObject();
+                }
+            }
+        }
+
+        in.position(pos);
+
+        return field;
+    }
+
+    /**
+     * Reads the field and deserializes it.
+     *
+     * @param fieldName Field name.
+     * @param <F> Field type.
+     * @return Field.
+     * @throws IOException In case of error.
+     */
+    private <F> F doReadField(String fieldName) throws IOException {
+        try {
+            return doReadField(fieldName, true);
+        }
+        catch (ClassNotFoundException e) {
+            throw new IOException("Failed to read the field, class definition has not" +
+                " been found [field=" + fieldName + "]");
+        }
+    }
+
+    /**
+     * Returns field offset in the byte stream.
+     *
+     * @param fieldName Field name.
+     * @param start Object's start offset.
+     * @return positive range or {@code null} if the object doesn't have such a field.
+     * @throws IOException in case of error.
+     */
+    private FieldRange fieldRange(String fieldName, int start) throws IOException {
+        int fieldId = resolveFieldId(fieldName);
+
+        int typeId = readInt();
+
+        int clsNameLen = 0;
+
+        if (typeId == 0) {
+            int pos = in.position();
+
+            typeId = OptimizedMarshallerUtils.resolveTypeId(readUTF(), mapper);
+
+            clsNameLen = in.position() - pos;
+        }
+
+        OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
+
+        if (meta == null)
+            // TODO: IGNITE-950 add warning!
+            return null;
+
+        int end = in.size();
+
+        in.position(end - FOOTER_LEN_OFF);
+
+        short footerLen = in.readShort();
+
+        if (footerLen == EMPTY_FOOTER)
+            return null;
+
+        // +2 - skipping length at the beginning
+        int footerOff = (end - footerLen) + 2;
+        in.position(footerOff);
+
+        int fieldOff = 0;
+
+        for (OptimizedObjectMetadata.FieldInfo info : meta.getMeta()) {
+            int len;
+            boolean isHandle;
+
+            if (info.length() == VARIABLE_LEN) {
+                int fieldInfo = in.readInt();
+
+                len = fieldInfo & FOOTER_BODY_LEN_MASK;
+                isHandle = ((fieldInfo & FOOTER_BODY_IS_HANDLE_MASK) >> FOOTER_BODY_HANDLE_MASK_BIT) == 1;
+            }
+            else {
+                len = info.length();
+                isHandle = false;
+            }
+
+            if (info.id() == fieldId) {
+                if (!isHandle) {
+                    //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
+                    fieldOff += 1 + 4 + clsNameLen + 2;
+
+                    return new FieldRange(start + fieldOff, len);
+                }
+                else
+                    return new FieldRange(in.readInt(), in.readInt());
+            }
+            else {
+                fieldOff += len;
+
+                if (isHandle) {
+                    in.skipBytes(8);
+                    fieldOff += 8;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     *
+     */
+    private static class FieldRange {
+        /** */
+        private int start;
+
+        /** */
+        private int len;
+
+        /**
+         * @param start Start.
+         * @param len   Length.
+         */
+        public FieldRange(int start, int len) {
+            this.start = start;
+            this.len = len;
+        }
+    }
     /** {@inheritDoc} */
     @Override public void registerValidation(ObjectInputValidation obj, int pri) {
         // No-op.

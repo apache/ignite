@@ -21,9 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.marshaller.optimized.ext.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import javax.cache.*;
 import java.util.*;

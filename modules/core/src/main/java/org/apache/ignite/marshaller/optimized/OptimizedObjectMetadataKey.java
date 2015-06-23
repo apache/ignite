@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized.ext;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.processors.cache.*;
 

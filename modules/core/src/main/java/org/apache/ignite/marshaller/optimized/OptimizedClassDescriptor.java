@@ -329,6 +329,21 @@ public class OptimizedClassDescriptor {
                         throw new IOException("Externalizable class doesn't have default constructor: " + cls, e);
                     }
                 }
+                else if (OptimizedMarshalAware.class.isAssignableFrom(cls)) {
+                    type = MARSHAL_AWARE;
+
+                    try {
+                        constructor = !Modifier.isStatic(cls.getModifiers()) && cls.getDeclaringClass() != null ?
+                            cls.getDeclaredConstructor(cls.getDeclaringClass()) :
+                            cls.getDeclaredConstructor();
+
+                        constructor.setAccessible(true);
+                    }
+                    catch (NoSuchMethodException e) {
+                        throw new IOException("OptimizedMarshalAware class doesn't have default constructor: " + cls,
+                            e);
+                    }
+                }
                 else {
                     type = SERIALIZABLE;
 
@@ -407,8 +422,6 @@ public class OptimizedClassDescriptor {
                             if (serFieldsDesc.getType() == ObjectStreamField[].class &&
                                 isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
                                 hasSerialPersistentFields = true;
-
-                                fieldsIndexingSupported = false;
 
                                 serFieldsDesc.setAccessible(true);
 
@@ -718,6 +731,22 @@ public class OptimizedClassDescriptor {
 
                 break;
 
+            case MARSHAL_AWARE:
+                writeTypeData(out);
+
+                out.writeShort(checksum);
+                out.writeMarshalAware(obj);
+
+                if (out.metaHandler.metadata(typeId) == null) {
+                    OptimizedMarshalAwareMetaCollector collector = new OptimizedMarshalAwareMetaCollector();
+
+                    ((OptimizedMarshalAware)obj).writeFields(collector);
+
+                    out.metaHandler.addMeta(typeId, collector.meta());
+                }
+
+                break;
+
             case SERIALIZABLE:
                 if (out.requireSerializable() && !isSerial)
                     throw new NotSerializableException("Must implement java.io.Serializable or " +
@@ -769,6 +798,11 @@ public class OptimizedClassDescriptor {
                 verifyChecksum(in.readShort());
 
                 return in.readSerializable(cls, readObjMtds, readResolveMtd, fields);
+
+            case MARSHAL_AWARE:
+                verifyChecksum(in.readShort());
+
+                return in.readMarshalAware(constructor, readResolveMtd);
 
             default:
                 assert false : "Unexpected type: " + type;

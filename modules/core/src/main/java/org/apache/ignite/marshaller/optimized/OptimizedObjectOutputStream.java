@@ -23,10 +23,12 @@ import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
@@ -34,7 +36,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 /**
  * Optimized object output stream.
  */
-public class OptimizedObjectOutputStream extends ObjectOutputStream {
+public class OptimizedObjectOutputStream extends ObjectOutputStream implements OptimizedFieldsWriter {
     /** */
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",
@@ -55,6 +57,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
     protected ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
     /** */
+    protected OptimizedMarshallerMetaHandler metaHandler;
+
+    /** */
     protected boolean requireSer;
 
     /** */
@@ -71,6 +76,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
 
     /** */
     private PutFieldImpl curPut;
+
+    /** */
+    private Stack<Footer> marshalAwareFooters;
 
     /**
      * @param out Output.
@@ -97,6 +105,23 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
     }
 
     /**
+     * @param clsMap Class descriptors by class map.
+     * @param ctx Context.
+     * @param mapper ID mapper.
+     * @param requireSer Require {@link Serializable} flag.
+     * @param metaHandler Metadata handler.
+     */
+    protected void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+        MarshallerContext ctx,
+        OptimizedMarshallerIdMapper mapper,
+        boolean requireSer,
+        OptimizedMarshallerMetaHandler metaHandler) {
+        context(clsMap, ctx, mapper, requireSer);
+
+        this.metaHandler = metaHandler;
+    }
+
+    /**
      * @return Require {@link Serializable} flag.
      */
     boolean requireSerializable() {
@@ -116,6 +141,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         ctx = null;
         clsMap = null;
+        metaHandler = null;
     }
 
     /** {@inheritDoc} */
@@ -305,6 +331,36 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
         Externalizable extObj = (Externalizable)obj;
 
         extObj.writeExternal(this);
+    }
+
+    /**
+     * Writes marshal aware object with footer injected to the end of the stream.
+     *
+     * @param obj Object.
+     * @throws IOException In case of error.
+     */
+    void writeMarshalAware(Object obj) throws IOException {
+        Footer footer = createFooter(obj.getClass());
+
+        if (footer == null)
+            throw new IOException("Failed to marshal OptimizedMarshalAware object. OptimizedMarshallerExt must be " +
+                "set to IgniteConfiguration [obj=" + obj.getClass().getName() + "]");
+
+        if (marshalAwareFooters == null)
+            marshalAwareFooters = new Stack<>();
+
+        marshalAwareFooters.push(footer);
+
+        OptimizedMarshalAware marshalAwareObj = (OptimizedMarshalAware)obj;
+
+        marshalAwareObj.writeFields(this);
+
+        footer.write();
+
+        marshalAwareFooters.pop();
+
+        if (marshalAwareFooters.empty())
+            marshalAwareFooters = null;
     }
 
     /**
@@ -840,6 +896,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
         curObj = null;
         curFields = null;
         curPut = null;
+        marshalAwareFooters = null;
     }
 
     /** {@inheritDoc} */
@@ -860,6 +917,156 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream {
      */
     protected void writeFieldType(byte type) throws IOException {
         // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeByte(String fieldName, byte val) throws IOException {
+        writeFieldType(BYTE);
+        out.writeByte(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.BYTE, 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeShort(String fieldName, short val) throws IOException {
+        writeFieldType(SHORT);
+        out.writeShort(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.SHORT, 2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeInt(String fieldName, int val) throws IOException {
+        writeFieldType(INT);
+        out.writeInt(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.INT, 4);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLong(String fieldName, long val) throws IOException {
+        writeFieldType(LONG);
+        out.writeLong(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.LONG, 8);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeFloat(String fieldName, float val) throws IOException {
+        writeFieldType(FLOAT);
+        out.writeFloat(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.FLOAT, 4);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDouble(String fieldName, double val) throws IOException {
+        writeFieldType(DOUBLE);
+        out.writeDouble(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.DOUBLE, 8);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeChar(String fieldName, char val) throws IOException {
+        writeFieldType(CHAR);
+        out.writeChar(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.CHAR, 2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBoolean(String fieldName, boolean val) throws IOException {
+        writeFieldType(BOOLEAN);
+        out.writeBoolean(val);
+        putFieldToFooter(fieldName, OptimizedFieldType.BOOLEAN, 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeString(String fieldName, @Nullable String val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeObject(String fieldName, @Nullable Object obj) throws IOException {
+        int pos = out.offset();
+
+        writeObject(obj);
+        putFieldToFooter(fieldName, OptimizedFieldType.OTHER, out.offset() - pos);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeByteArray(String fieldName, @Nullable byte[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeShortArray(String fieldName, @Nullable short[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeIntArray(String fieldName, @Nullable int[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLongArray(String fieldName, @Nullable long[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeFloatArray(String fieldName, @Nullable float[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeDoubleArray(String fieldName, @Nullable double[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeCharArray(String fieldName, @Nullable char[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBooleanArray(String fieldName, @Nullable boolean[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeStringArray(String fieldName, @Nullable String[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeObjectArray(String fieldName, @Nullable Object[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> void writeCollection(String fieldName, @Nullable Collection<T> col) throws IOException {
+        writeObject(fieldName, col);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> void writeMap(String fieldName, @Nullable Map<K, V> map) throws IOException {
+        writeObject(fieldName, map);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Enum<?>> void writeEnum(String fieldName, T val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Enum<?>> void writeEnumArray(String fieldName, T[] val) throws IOException {
+        writeObject(fieldName, val);
+    }
+
+    /**
+     * Puts field to the footer.
+     *
+     * @param fieldName Field name.
+     * @param type Field type.
+     * @param len Field length.
+     */
+    private void putFieldToFooter(String fieldName, OptimizedFieldType type, int len) {
+        marshalAwareFooters.peek().put(OptimizedMarshallerUtils.resolveFieldId(fieldName), type, len);
     }
 
     /**

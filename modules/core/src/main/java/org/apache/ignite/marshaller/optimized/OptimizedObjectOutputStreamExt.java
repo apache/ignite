@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized.ext;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
-import static org.apache.ignite.marshaller.optimized.ext.OptimizedMarshallerExt.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerExt.*;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
 /**
  * TODO: IGNITE-950
  */
 public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream {
-    /** */
-    private OptimizedMarshallerExtMetaHandler metaHandler;
-
     /**
      * Constructor.
      *
@@ -46,20 +40,6 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         super(out);
     }
 
-    /**
-     * @param clsMap Class descriptors by class map.
-     * @param ctx Context.
-     * @param mapper ID mapper.
-     * @param requireSer Require {@link Serializable} flag.
-     * @param metaHandler Metadata handler.
-     */
-    protected void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap, MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper, boolean requireSer, OptimizedMarshallerExtMetaHandler metaHandler) {
-        context(clsMap, ctx, mapper, requireSer);
-
-        this.metaHandler = metaHandler;
-    }
-
     /** {@inheritDoc} */
     @Override protected void writeFieldType(byte type) throws IOException {
         out.writeByte(type);
@@ -67,18 +47,11 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
 
     /** {@inheritDoc} */
     @Override protected Footer createFooter(Class<?> cls) {
-        if (!ctx.isSystemType(cls.getName()) && metaHandler != null &&
-            metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null)
+        if (!ctx.isSystemType(cls.getName()) && (OptimizedMarshalAware.class.isAssignableFrom(cls) ||
+            (metaHandler != null && metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null)))
             return new FooterImpl();
         else
             return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IOException {
-        super.close();
-
-        metaHandler = null;
     }
 
     /**

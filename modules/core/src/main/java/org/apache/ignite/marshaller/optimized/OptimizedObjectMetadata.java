@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized.ext;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
-import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.util.*;
@@ -152,6 +151,22 @@ public class OptimizedObjectMetadata implements Externalizable {
             }
 
             assert len != 1;
+        }
+
+        /**
+         * Returns ID.
+         * @return ID.
+         */
+        public int id() {
+            return id;
+        }
+
+        /**
+         * Returns length.
+         * @return Lenght.
+         */
+        public int length() {
+            return len;
         }
     }
 }

@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.optimized.ext;
+package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedClassDescriptor.*;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
 /**
  * TODO
@@ -47,10 +45,10 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     static final byte FOOTER_BODY_HANDLE_MASK_BIT = 30;
 
     /** */
-    static final byte VARIABLE_LEN = -1;
+    public static final byte VARIABLE_LEN = -1;
 
     /** */
-    private volatile OptimizedMarshallerExtMetaHandler metaHandler;
+    private volatile OptimizedMarshallerMetaHandler metaHandler;
 
     /**
      * Creates new marshaller will all defaults.
@@ -76,7 +74,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
      *
      * @param metaHandler Metadata handler.
      */
-    public void setMetadataHandler(OptimizedMarshallerExtMetaHandler metaHandler) {
+    public void setMetadataHandler(OptimizedMarshallerMetaHandler metaHandler) {
         this.metaHandler = metaHandler;
     }
 
@@ -104,6 +102,9 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
 
         if (ctx.isSystemType(cls.getName()))
             return false;
+
+        if (OptimizedMarshalAware.class.isAssignableFrom(cls))
+            return true;
 
         try {
             OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
@@ -143,6 +144,9 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
 
         if (ctx.isSystemType(cls.getName()))
             return false;
+
+        if (OptimizedMarshalAware.class.isAssignableFrom(cls))
+            return true;
 
         try {
             OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);

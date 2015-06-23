@@ -22,6 +22,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -33,7 +34,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     private static ConcurrentHashMap<Integer, OptimizedObjectMetadata> META_BUF = new ConcurrentHashMap<>();
 
     /** */
-    private static final OptimizedMarshallerExtMetaHandler META_HANDLER = new OptimizedMarshallerExtMetaHandler() {
+    private static final OptimizedMarshallerMetaHandler META_HANDLER = new OptimizedMarshallerMetaHandler() {
         @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
             META_BUF.putIfAbsent(typeId, meta);
         }
@@ -143,6 +144,29 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         assertEquals(selfLinkObject, selfLinkObject2);
     }
 
+
+    /**
+     * @throws Exception In case of error.
+     */
+    /*public void testMarshalAware() throws Exception {
+        META_BUF.clear();
+
+        OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
+
+        assertTrue(marsh.enableFieldsIndexing(TestMarshalAware.class));
+        assertEquals(0, META_BUF.size());
+
+        TestMarshalAware test = new TestMarshalAware(100, "MarshalAware");
+
+        byte[] arr = marsh.marshal(test);
+
+        assertEquals(1, META_BUF.size());
+
+        TestMarshalAware test2 = marsh.unmarshal(arr, null);
+
+        assertEquals(test, test2);
+    }*/
+
     private static class InternalMarshaller extends OptimizedMarshallerExt {
         /**
          * Constructor.
@@ -161,7 +185,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void setMetadataHandler(OptimizedMarshallerExtMetaHandler metaHandler) {
+        @Override public void setMetadataHandler(OptimizedMarshallerMetaHandler metaHandler) {
             // No-op
         }
     }
@@ -279,6 +303,53 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
             if (str2 != null ? !str2.equals(that.str2) : that.str2 != null) return false;
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestMarshalAware implements OptimizedMarshalAware {
+        /** */
+        private int i;
+
+        /** */
+        private String str;
+
+        public TestMarshalAware() {
+            // No-op
+        }
+
+        public TestMarshalAware(int i, String str) {
+            this.i = i;
+            this.str = str;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeFields(OptimizedFieldsWriter writer) throws IOException {
+            writer.writeInt("i", i);
+            writer.writeString("str", str);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readFields(OptimizedFieldsReader reader) throws IOException {
+            i = reader.readInt("i");
+            str = reader.readString("str");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestMarshalAware that = (TestMarshalAware)o;
+
+            if (i != that.i)
+                return false;
+
+            return !(str != null ? !str.equals(that.str) : that.str != null);
         }
     }
 }

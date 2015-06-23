@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.marshaller.optimized.ext.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.logger.*;

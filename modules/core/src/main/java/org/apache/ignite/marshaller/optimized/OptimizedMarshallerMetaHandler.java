@@ -14,8 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package org.apache.ignite.marshaller.optimized;
+
 /**
- * <!-- Package description. -->
- * Contains <b>extended</b> version of Optimized marshaller.
+ * Metadata handler for optimized objects.
  */
-package org.apache.ignite.marshaller.optimized.ext;
+public interface OptimizedMarshallerMetaHandler {
+    /**
+     * Adds meta data.
+     *
+     * @param typeId Type ID.
+     * @param meta Meta data.
+     */
+    void addMeta(int typeId, OptimizedObjectMetadata meta);
+
+
+    /**
+     * Gets meta data for provided type ID.
+     *
+     * @param typeId Type ID.
+     * @return Meta data.
+     */
+    OptimizedObjectMetadata metadata(int typeId);
+}

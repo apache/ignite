@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.marshaller.optimized.ext.*;
 import org.jetbrains.annotations.*;
 
 import java.math.*;
@@ -90,7 +89,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         if (marsh instanceof OptimizedMarshallerExt) {
             optMarshExt = (OptimizedMarshallerExt)marsh;
 
-            OptimizedMarshallerExtMetaHandler metaHandler = new OptimizedMarshallerExtMetaHandler() {
+            OptimizedMarshallerMetaHandler metaHandler = new OptimizedMarshallerMetaHandler() {
                 @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
                     if (metaBuf.contains(typeId))
                         return;
