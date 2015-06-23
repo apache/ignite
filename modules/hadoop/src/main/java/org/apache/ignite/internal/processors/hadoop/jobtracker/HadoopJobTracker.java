@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
+import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -82,6 +83,9 @@ public class HadoopJobTracker extends HadoopComponent {
     /** Component busy lock. */
     private GridSpinReadWriteLock busyLock;
 
+    /** Class to create HadoopJob instances from. */
+    private Class<? extends HadoopJob> jobCls;
+
     /** Closure to check result of async transform of system cache. */
     private final IgniteInClosure<IgniteInternalFuture<?>> failsLog = new CI1<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> gridFut) {
@@ -95,12 +99,27 @@ public class HadoopJobTracker extends HadoopComponent {
     };
 
     /** {@inheritDoc} */
-    @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
+    @SuppressWarnings("unchecked")
+    @Override public void start(final HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
 
         busyLock = new GridSpinReadWriteLock();
 
         evtProcSvc = Executors.newFixedThreadPool(1);
+
+        UUID nodeId = ctx.localNodeId();
+
+        assert jobCls == null;
+
+        HadoopClassLoader ldr = new HadoopClassLoader(null, HadoopClassLoader.nameForJob(nodeId));
+
+        try {
+            jobCls = (Class<HadoopV2Job>)ldr.loadClass(HadoopV2Job.class.getName());
+        }
+        catch (Exception ioe) {
+            throw new IgniteCheckedException("Failed to load job class [class="
+                + HadoopV2Job.class.getName() + ']', ioe);
+        }
     }
 
     /**
@@ -838,7 +857,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
                             HadoopCounters cntrs = meta.counters();
 
-                            writer.write(job.info(), jobId, cntrs);
+                            writer.write(job, cntrs);
                         }
                     }
                     catch (Exception e) {
@@ -986,7 +1005,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 jobInfo = meta.jobInfo();
             }
 
-            job = jobInfo.createJob(jobId, log);
+            job = jobInfo.createJob(jobCls, jobId, log);
 
             job.initialize(false, ctx.localNodeId());
 
