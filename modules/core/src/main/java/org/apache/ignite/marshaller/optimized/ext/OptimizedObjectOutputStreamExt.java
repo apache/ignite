@@ -74,6 +74,13 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
             return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        super.close();
+
+        metaHandler = null;
+    }
+
     /**
      *
      */
@@ -167,13 +174,6 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
 
                 writeShort(footerLen);
             }
-        }
-
-        /**
-         * Disable footer and indexing for the given Object.
-         */
-        private void disable() {
-            data = null;
         }
     }
 }

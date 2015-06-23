@@ -156,6 +156,11 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     }
 
     /** {@inheritDoc} */
+    @Override public void setPoolSize(int poolSize) {
+        OptimizedObjectStreamExtRegistry.poolSize(poolSize);
+    }
+
+    /** {@inheritDoc} */
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 

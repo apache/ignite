@@ -69,6 +69,13 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
         return in.readByte();
     }
 
+    /** {@inheritDoc} */
+    @Override public void close() throws IOException {
+        super.close();
+
+        metaHandler = null;
+    }
+
     /**
      * Checks whether the object has a field with name {@code fieldName}.
      *
