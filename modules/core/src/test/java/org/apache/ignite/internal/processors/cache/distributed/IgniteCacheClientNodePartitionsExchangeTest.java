@@ -464,6 +464,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
     /**
      * @param nearCache If {@code true} creates near cache on client.
+     * @param srvNode If {@code true} creates client cache on server node.
      * @throws Exception If failed.
      */
     private void clientOnlyCacheStart(boolean nearCache, boolean srvNode) throws Exception {
