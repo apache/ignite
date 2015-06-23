@@ -2342,13 +2342,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             grid(g).cache(null).localLoadCache(null);
 
         for (int g = 0; g < gridCount(); g++) {
-            for (int i = 0; i < cnt; i++) {
-                String key = String.valueOf(i);
+            if (!isMultiJvmAndNodeIsRemote(g)) {
+                for (int i = 0; i < cnt; i++) {
+                    String key = String.valueOf(i);
 
-                if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
-                    assertEquals((Integer)i, peek(jcache(g), key));
-                else
-                    assertNull(peek(jcache(g), key));
+                    if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode()))
+                        assertEquals((Integer)i, peek(jcache(g), key));
+                    else
+                        assertNull(peek(jcache(g), key));
+                }
             }
         }
     }

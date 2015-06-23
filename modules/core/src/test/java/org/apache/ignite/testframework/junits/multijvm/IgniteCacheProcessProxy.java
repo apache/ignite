@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -86,16 +87,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        // TODO implement.
-//        R futureRes = (R)compute.call(new IgniteCallable<Object>() {
-//            @Override public Object call() throws Exception {
-//                return cache().future().get();
-//            }
-//        });
-//
-//        return new IgniteFinishedFutureImpl<R>(futureRes);
-
-        throw new UnsupportedOperationException("Method should be supported.");
+        // Return fake future. Future should be called in the same place where operation done.
+        return new IgniteFinishedFutureImpl<>();
     }
 
     /** {@inheritDoc} */
@@ -402,7 +395,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public void removeAll() {
         compute.run(new IgniteRunnable() {
             @Override public void run() {
-                cache().removeAll();
+                IgniteCache<Object, Object> cache = cache();
+
+                cache.removeAll();
+
+                if(isAsync)
+                    cache.future().get();
             }
         });
     }
