@@ -683,14 +683,18 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        startingGrid.set(gridName);
+        if (!isMultiJvmAndNodeIsRemote(gridName)) {
+            startingGrid.set(gridName);
 
-        try {
-            return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+            try {
+                return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+            }
+            finally {
+                startingGrid.set(null);
+            }
         }
-        finally {
-            startingGrid.set(null);
-        }
+        else
+            return startRemoteGrid(gridName, ctx);
     }
 
     /**
@@ -701,8 +705,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    // TODO review. Is it okey that ctx doesn't used?
     protected Ignite startRemoteGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        if (ctx != null)
+            throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
+
         return new IgniteProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
     }
 
