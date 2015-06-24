@@ -371,18 +371,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected GridCacheContext<String, Integer> context(final int idx) {
         if (!isMultiJvmAndNodeIsRemote(idx))
             return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
-        else {
-//            ((IgniteProcessProxy)grid(idx)).remoteInternalCache();
-
-            // TODO refix it.
-            final UUID id = ((IgniteProcessProxy)grid(idx)).getId();
-
-            return new GridCacheContext<String, Integer>() {
-                @Override public UUID localNodeId() {
-                    return id;
-                }
-            };
-        }
+        else
+            throw new UnsupportedOperationException("Operation cant be supported for multi jvm mode.");
     }
 
     /**

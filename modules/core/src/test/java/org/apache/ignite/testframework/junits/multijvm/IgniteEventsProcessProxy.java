@@ -28,6 +28,7 @@ import java.util.*;
 /**
  * Ignite events proxy for ignite instance at another JVM.
  */
+@SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteEventsProcessProxy implements IgniteEvents {
     /** Ignite proxy. */
     private final transient IgniteProcessProxy igniteProxy;
@@ -53,47 +54,47 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
 
     /** {@inheritDoc} */
     @Override public ClusterGroup clusterGroup() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> UUID remoteListen(int bufSize, long interval, boolean autoUnsubscribe,
         @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void stopRemoteListen(UUID opId) throws IgniteException {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void recordLocal(Event evt) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -107,41 +108,41 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
 
     /** {@inheritDoc} */
     @Override public boolean stopLocalListen(IgnitePredicate<? extends Event> lsnr, @Nullable int... types) {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void enableLocal(int... types) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void disableLocal(int... types) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] enabledEvents() {
-        return new int[0]; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnabled(int type) {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEvents withAsync() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 }

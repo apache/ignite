@@ -28,6 +28,7 @@ import java.util.*;
 /**
  * Proxy class for affinity at another jvm.
  */
+@SuppressWarnings("TransientFieldInNonSerializableClass")
 public class AffinityProcessProxy<K> implements Affinity<K> {
     /** Compute. */
     private final transient IgniteCompute compute;

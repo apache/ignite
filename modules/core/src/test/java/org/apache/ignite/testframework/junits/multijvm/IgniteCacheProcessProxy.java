@@ -38,6 +38,7 @@ import java.util.concurrent.locks.*;
 /**
  * Ignite cache proxy for ignite instance at another JVM.
  */
+@SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /** Compute. */
     private final transient IgniteCompute compute;
@@ -73,6 +74,20 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         gridId = proxy.getId();
         igniteProxy = proxy;
         compute = proxy.remoteCompute();
+    }
+
+    /**
+     * Returns cache instance. Method to be called from closure at another JVM.
+     *
+     * @return Cache.
+     */
+    private IgniteCache<Object, Object> cache() {
+        IgniteCache cache = Ignition.ignite(gridId).cache(cacheName);
+
+        if (isAsync)
+            cache = cache.withAsync();
+
+        return cache;
     }
 
     /** {@inheritDoc} */
@@ -238,20 +253,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         });
     }
 
-    /**
-     * Returns cache instance. Method to be called from closure at another JVM.
-     *
-     * @return Cache.
-     */
-    private IgniteCache<Object, Object> cache() {
-        IgniteCache cache = Ignition.ignite(gridId).cache(cacheName);
-
-        if (isAsync)
-            cache = cache.withAsync();
-
-        return cache;
-    }
-
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(final Set<? extends K> keys) {
         return (Map<K, V>)compute.call(new IgniteCallable<Object>() {
@@ -399,7 +400,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
                 cache.removeAll();
 
-                if(isAsync)
+                if (isAsync)
                     cache.future().get();
             }
         });

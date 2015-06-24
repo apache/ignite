@@ -484,13 +484,17 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             try {
-                if (isMultiJvm() && gridCount() > 0)
+                if (isMultiJvm()) {
+                    if (gridCount() < 2)
+                        throw new IllegalStateException("Grid count have to be more 1 in milti jvm mode.");
+
                     allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
+                }
 
                 beforeTestsStarted();
 
-                if (isMultiJvm() && gridCount() > 0)
-                    assert allNodesJoinLatch.await(5, TimeUnit.SECONDS);
+                if (isMultiJvm())
+                    assert allNodesJoinLatch.await(20, TimeUnit.SECONDS);
             }
             catch (Exception | Error t) {
                 t.printStackTrace();
@@ -694,7 +698,7 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
         else
-            return startRemoteGrid(gridName, ctx);
+            return startRemoteGrid(gridName, null, ctx);
     }
 
     /**
@@ -705,11 +709,15 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startRemoteGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+    protected Ignite startRemoteGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+        throws Exception {
         if (ctx != null)
             throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
 
-        return new IgniteProcessProxy(optimize(getConfiguration(gridName)), log, grid(0));
+        if (cfg == null)
+            cfg = optimize(getConfiguration(gridName));
+
+        return new IgniteProcessProxy(cfg, log, grid(0));
     }
 
     /**
@@ -906,18 +914,22 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @return Grid for given test.
      */
-    // TODO isMultyJvm.
     protected IgniteEx grid() {
-        return (IgniteEx)G.ignite(getTestGridName());
+        if (!isMultiJvm())
+            return (IgniteEx)G.ignite(getTestGridName());
+        else
+            throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /**
      * @param node Node.
      * @return Ignite instance with given local node.
      */
-    // TODO isMultyJvm.
     protected final Ignite grid(ClusterNode node) {
-        return G.ignite(node.id());
+        if (!isMultiJvm())
+            return G.ignite(node.id());
+        else
+            throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /**
@@ -930,7 +942,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    // TODO isMultyJvm.
     protected Ignite startGrid(String gridName, String springCfgPath) throws Exception {
         return startGrid(gridName, loadConfiguration(springCfgPath));
     }
@@ -945,11 +956,13 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    // TODO isMultyJvm.
     protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
         cfg.setGridName(gridName);
 
-        return G.start(cfg);
+        if (!isMultiJvmAndNodeIsRemote(gridName))
+            return G.start(cfg);
+        else
+            return startRemoteGrid(gridName, cfg, null);
     }
 
     /**

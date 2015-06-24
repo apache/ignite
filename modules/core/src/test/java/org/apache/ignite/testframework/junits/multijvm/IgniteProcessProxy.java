@@ -39,27 +39,28 @@ import java.util.concurrent.*;
 /**
  * Ignite proxy for ignite instance at another JVM.
  */
+@SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private transient static final Map<String, IgniteProcessProxy> gridProxies = new HashMap<>();
+    private static final transient Map<String, IgniteProcessProxy> gridProxies = new HashMap<>();
 
     /** Jvm process with ignite instance. */
-    private transient final GridJavaProcess proc;
+    private final transient GridJavaProcess proc;
 
     /** Configuration. */
-    private transient final IgniteConfiguration cfg;
+    private final transient IgniteConfiguration cfg;
 
     /** Local jvm grid. */
-    private transient final Ignite locJvmGrid;
+    private final transient Ignite locJvmGrid;
 
     /** Logger. */
-    private transient final IgniteLogger log;
+    private final transient IgniteLogger log;
 
     /** Grid id. */
     private final UUID id = UUID.randomUUID();
 
     /** Remote ignite instance started latch. */
-    private transient final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
+    private final transient CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
     /**
      * @param cfg Configuration.
@@ -176,53 +177,53 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
         @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean eventUserRecordable(int type) {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean allEventsUserRecordable(int[] types) {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isJmxRemoteEnabled() {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isRestartEnabled() {
-        return false; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public Hadoop hadoop() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -232,7 +233,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public String latestVersion() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -246,27 +247,27 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public GridKernalContext context() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute(ClusterGroup grp) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message(ClusterGroup grp) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -276,85 +277,85 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events(ClusterGroup grp) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services(ClusterGroup grp) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override  public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
         NearCacheConfiguration<K, V> nearCfg) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -374,61 +375,61 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFileSystem> fileSystems() {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override  public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal,
         boolean create) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override  public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal, @Nullable S initStamp,
         boolean create) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteQueue<T> queue(String name, int cap,
         @Nullable CollectionConfiguration cfg) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
-        return null; // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation doesn't supported yet.");
     }
 
     /** {@inheritDoc} */

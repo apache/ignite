@@ -45,20 +45,13 @@ public class IgniteNodeRunner {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        try {
-            X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
+        X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
-            X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
+        X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-            IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
+        IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
 
-            Ignition.start(cfg);
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            System.exit(1);
-        }
+        Ignition.start(cfg);
     }
 
     /**

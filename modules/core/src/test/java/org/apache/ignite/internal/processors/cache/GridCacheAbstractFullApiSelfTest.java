@@ -36,6 +36,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.multijvm.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -61,6 +62,7 @@ import static org.apache.ignite.transactions.TransactionState.*;
 /**
  * Full API cache test.
  */
+@SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new EntryProcessor<String, Integer, String>() {
@@ -152,7 +154,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    // TODO review. See IgnitionEx.grid(entry.getKey()).
     @Override protected void beforeTestsStarted() throws Exception {
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
@@ -163,9 +164,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 super.beforeTestsStarted();
 
                 for (Map.Entry<String, CacheConfiguration[]> entry : cacheCfgMap.entrySet()) {
-                    Ignite ignite;
-
-                    ignite = IgnitionEx.grid(entry.getKey());
+                    Ignite ignite = grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())
                         ignite.createCache(cfg);
@@ -200,20 +199,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        if (!isMultiJvmAndNodeIsRemote(gridName)) {
-            if (cacheCfgMap == null)
-                return super.startGrid(gridName, ctx);
+        if (cacheCfgMap == null)
+            return super.startGrid(gridName, ctx);
 
-            IgniteConfiguration cfg = getConfiguration(gridName);
+        IgniteConfiguration cfg = getConfiguration(gridName);
 
-            cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
 
-            cfg.setCacheConfiguration();
+        cfg.setCacheConfiguration();
 
+        if (!isMultiJvmAndNodeIsRemote(gridName))
             return IgnitionEx.start(optimize(cfg), ctx);
-        }
-
-        return startRemoteGrid(gridName, ctx);
+        else
+            return startRemoteGrid(gridName, optimize(cfg), ctx);
     }
 
     /** {@inheritDoc} */
@@ -258,7 +256,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         int size = 10;
 
-        Map<String, Integer> map = new HashMap<>();
+        final Map<String, Integer> map = new HashMap<>();
 
         for (int i = 0; i < size; i++)
             map.put("key" + i, i);
@@ -303,7 +301,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(ALL));
             }
             else {
-                // TODO add multi jvm support.
+                final int finalI = i;
+                final UUID id = grid(i).localNode().id();
+
+                ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
+                    @Override public void run() {
+                        Ignite grid = Ignition.ignite(id);
+
+                        GridCacheContext<String, Integer> ctx =
+                            ((IgniteKernal)grid).<String, Integer>internalCache().context();
+
+                        int sum = 0;
+
+                        for (String key : map.keySet())
+                            if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                                sum++;
+
+                        assertEquals("Incorrect key size on cache #" + finalI, sum, grid.cache(null).localSize(ALL));
+                    }
+                });
             }
         }
 
@@ -2326,7 +2342,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveLoad() throws Exception {
-        int cnt = 10;
+        final int cnt = 10;
 
         Set<String> keys = new HashSet<>();
 
@@ -2480,9 +2496,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             asyncCache0.removeAll();
 
-            Thread.sleep(1000);
-
-            asyncCache0.future().get(); // --
+            asyncCache0.future().get();
         }
         else
             jcache(gridCount() > 1 ? 1 : 0).removeAll();
@@ -2983,16 +2997,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekTxRemoveOptimistic() throws Exception {
-        if (!isMultiJvm()) // Transactions are not supported in multi JVM mode.
-            checkPeekTxRemove(OPTIMISTIC);
+        checkPeekTxRemove(OPTIMISTIC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPeekTxRemovePessimistic() throws Exception {
-        if (!isMultiJvm()) // Transactions are not supported in multi JVM mode.
-            checkPeekTxRemove(PESSIMISTIC);
+        checkPeekTxRemove(PESSIMISTIC);
     }
 
     /**
@@ -3134,7 +3146,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTtlTx() throws Exception {
-        if (txShouldBeUsed() && !isMultiJvm())
+        if (txShouldBeUsed())
             checkTtl(true, false);
     }
 
@@ -3841,7 +3853,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param keys Expected keys.
      * @throws Exception If failed.
      */
-    protected void checkSize(Collection<String> keys) throws Exception {
+    protected void checkSize(final Collection<String> keys) throws Exception {
         if (memoryMode() == OFFHEAP_TIERED)
             return;
 
@@ -3872,7 +3884,36 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(ALL));
                 }
                 else {
-                    // TODO add multi jvm support.
+                    final UUID id = grid(i).localNode().id();
+
+                    final int finalI = i;
+                    ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
+                        @Override public void run() {
+                            Ignite grid = Ignition.ignite(id);
+
+                            GridCacheContext<String, Integer> ctx =
+                                ((IgniteKernal)grid).<String, Integer>internalCache().context();
+
+                            if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
+                                return;
+
+                            int size = 0;
+
+                            for (String key : keys) {
+                                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                                    GridCacheEntryEx e =
+                                        ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+
+                                    assert e != null : "Entry is null [idx=" + finalI + ", key=" + key + ", ctx=" + ctx + ']';
+                                    assert !e.deleted() : "Entry is deleted: " + e;
+
+                                    size++;
+                                }
+                            }
+
+                            assertEquals("Incorrect size on cache #" + finalI, size, grid.cache(null).localSize(ALL));
+                        }
+                    });
                 }
             }
         }
@@ -3935,7 +3976,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         UUID nodeId = node.id();
 
         for (int i = 0; i < gridCount(); i++) {
-            if (context(i).localNodeId().equals(nodeId))
+            if (grid(i).localNode().id().equals(nodeId))
                 return ignite(i);
         }
 
