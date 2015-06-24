@@ -73,6 +73,6 @@ public class IgnitePutGetClientPerThreadBenchmark extends IgniteCacheAbstractBen
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic");
+        return null;//ignite().cache("atomic");
     }
 }
