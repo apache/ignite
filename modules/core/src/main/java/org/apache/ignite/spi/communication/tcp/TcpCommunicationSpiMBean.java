@@ -168,7 +168,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * connection buffer.
      *
      * @return Flush frequency.
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Connection buffer flush frequency.")
     public long getConnectionBufferFlushFrequency();
 
@@ -183,7 +185,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param connBufFlushFreq Flush frequency.
      * @see #getConnectionBufferSize()
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Sets connection buffer flush frequency.")
     public void setConnectionBufferFlushFrequency(long connBufFlushFreq);
 
@@ -193,7 +197,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * If set to {@code 0} connection buffer is disabled.
      *
      * @return Connection buffer size.
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Connection buffer size.")
     public int getConnectionBufferSize();
 
@@ -238,7 +244,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * prior to sending.
      *
      * @return Minimum buffered message count.
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Minimum buffered message count.")
     public int getMinimumBufferedMessageCount();
 
