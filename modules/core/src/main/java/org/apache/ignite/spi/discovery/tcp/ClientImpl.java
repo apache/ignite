@@ -801,10 +801,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 catch (IOException e) {
                     msgWorker.addMessage(new SocketClosedMessage(sock));
 
-                    if (log.isDebugEnabled())
+                    //if (log.isDebugEnabled())
                         U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
+                    U.error(log, "Closing socket [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']');
+
                     U.closeQuiet(sock);
 
                     synchronized (mux) {
@@ -904,7 +906,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     msg = null;
                 }
                 catch (IOException e) {
-                    if (log.isDebugEnabled())
+                    //if (log.isDebugEnabled())
                         U.error(log, "Failed to send node left message (will stop anyway) " +
                             "[sock=" + sock + ", msg=" + msg + ']', e);
 
@@ -1006,6 +1008,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                                 if (res.creatorNodeId().equals(getLocalNodeId())) {
                                     if (res.success()) {
+                                        log.info("Reconnected [loc=" + getLocalNodeId() + ']');
+
                                         msgWorker.addMessage(res);
 
                                         if (msgs != null) {
@@ -1104,6 +1108,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             try {
                 final Socket sock = joinTopology(false, spi.joinTimeout);
 
+                log.info("Joined [loc=" + getLocalNodeId() + ", sock=" + sock + ']');
+
                 if (sock == null) {
                     joinError(new IgniteSpiException("Join process timed out."));
 
@@ -1132,7 +1138,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (joinLatch.getCount() > 0) {
                             joinError(new IgniteSpiException("Join process timed out, did not receive response for " +
                                 "join request (consider increasing 'joinTimeout' configuration property) " +
-                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock +']'));
+                                "[joinTimeout=" + spi.joinTimeout + ", sock=" + sock + ']'));
 
                             break;
                         }

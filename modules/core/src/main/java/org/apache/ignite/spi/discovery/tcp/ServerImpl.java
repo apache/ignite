@@ -4623,13 +4623,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                     prepareNodeAddedMessage(msg, clientNodeId, null, null);
 
                     writeToSocket(sock, msg);
+
+                    if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
+                        TcpDiscoveryNodeAddFinishedMessage msg0 = (TcpDiscoveryNodeAddFinishedMessage)msg;
+
+                        if (clientNodeId.equals(msg0.nodeId()))
+                            log.info("Sent TcpDiscoveryNodeAddFinishedMessage to client: " + clientNodeId);
+                    }
                 }
                 finally {
                     clearNodeAddedMessage(msg);
                 }
             }
             catch (IgniteCheckedException | IOException e) {
-                if (log.isDebugEnabled())
+                //if (log.isDebugEnabled())
                     U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
                         + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
 
