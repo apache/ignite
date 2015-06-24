@@ -47,11 +47,14 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
 
     /** {@inheritDoc} */
     @Override protected Footer createFooter(Class<?> cls) {
-        if (!ctx.isSystemType(cls.getName()) && (OptimizedMarshalAware.class.isAssignableFrom(cls) ||
-            (metaHandler != null && metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null)))
-            return new FooterImpl();
-        else
+        if (OptimizedMarshallerExt.isFieldsIndexingExcludedForClass(ctx, cls))
             return null;
+
+        if (OptimizedMarshalAware.class.isAssignableFrom(cls) || (metaHandler != null &&
+            metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null))
+            return new FooterImpl();
+
+        return null;
     }
 
     /**

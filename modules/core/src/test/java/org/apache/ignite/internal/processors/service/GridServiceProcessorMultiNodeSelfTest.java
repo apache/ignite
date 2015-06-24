@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
-        return 4;
+        return 2;
     }
 
     /**

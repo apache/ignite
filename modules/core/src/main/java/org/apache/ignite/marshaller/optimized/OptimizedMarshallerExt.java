@@ -19,9 +19,12 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.services.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedClassDescriptor.*;
 
@@ -88,6 +91,16 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     }
 
     /**
+     * Checks whether fields indexing is excluded for class.
+     *
+     * @param cls Class.
+     * @return {@code true} if excluded.
+     */
+    static boolean isFieldsIndexingExcludedForClass(MarshallerContext ctx, Class<?> cls) {
+        return ctx.isSystemType(cls.getName()) || Service.class.isAssignableFrom(cls);
+    }
+
+    /**
      * Enables fields indexing for the object of the given {@code cls}.
      *
      * If enabled then a footer will be added during marshalling of an object of the given {@code cls} to the end of
@@ -100,7 +113,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
         assert metaHandler != null;
 
-        if (ctx.isSystemType(cls.getName()))
+        if (isFieldsIndexingExcludedForClass(ctx, cls))
             return false;
 
         if (OptimizedMarshalAware.class.isAssignableFrom(cls))
@@ -142,7 +155,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     public boolean fieldsIndexingEnabled(Class<?> cls) {
         assert metaHandler != null;
 
-        if (ctx.isSystemType(cls.getName()))
+        if (isFieldsIndexingExcludedForClass(ctx, cls))
             return false;
 
         if (OptimizedMarshalAware.class.isAssignableFrom(cls))
