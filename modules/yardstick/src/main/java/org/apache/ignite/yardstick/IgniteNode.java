@@ -137,7 +137,6 @@ public class IgniteNode implements BenchmarkServer {
             commSpi = new TcpCommunicationSpi();
 
         commSpi.setLocalPortRange(200);
-        commSpi.setSocketWriteTimeout(30_000);
         commSpi.setSharedMemoryPort(-1);
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
@@ -145,16 +144,13 @@ public class IgniteNode implements BenchmarkServer {
         if (spi == null)
             spi = new TcpDiscoverySpi();
 
-        spi.setMaxAckTimeout(100_000);
-        spi.setAckTimeout(30_000);
-        spi.setNetworkTimeout(30_000);
-        spi.setSocketTimeout(30_000);
         spi.setJoinTimeout(0);
         spi.setMaxMissedClientHeartbeats(50);
         spi.setMaxMissedHeartbeats(50);
 
         c.setCommunicationSpi(commSpi);
         c.setDiscoverySpi(spi);
+        c.setNetworkTimeout(30_000);
         c.setTimeServerPortBase(30000);
         c.setTimeServerPortRange(500);
 

@@ -826,7 +826,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         updated |= top.update(null, entry.getValue()) != null;
                 }
 
-                if (updated)
+                if (!cctx.kernalContext().clientNode() && updated)
                     refreshPartitions();
             }
             else
@@ -985,7 +985,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     // If not first preloading and no more topology events present,
                     // then we periodically refresh partition map.
-                    if (futQ.isEmpty() && preloadFinished) {
+                    if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished) {
                         refreshPartitions(timeout);
 
                         timeout = cctx.gridConfig().getNetworkTimeout();
@@ -1051,7 +1051,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             startEvtFired = true;
 
-                            if (changed && futQ.isEmpty())
+                            if (!cctx.kernalContext().clientNode() && changed && futQ.isEmpty())
                                 refreshPartitions();
                         }
                         else {
