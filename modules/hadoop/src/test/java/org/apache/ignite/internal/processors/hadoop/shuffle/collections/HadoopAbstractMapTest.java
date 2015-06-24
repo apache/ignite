@@ -136,7 +136,8 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public HadoopJob createJob(HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
+        @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
+                HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
             assert false;
 
             return null;
