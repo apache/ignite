@@ -33,13 +33,16 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
     }
 
     /** {@inheritDoc} */
-    @Override protected void skipFooter(Class<?> cls) throws IOException {
-        if (fieldsIndexingSupported(cls, metaHandler, ctx, clsMap, mapper)) {
-            short footerLen = in.readShort();
+    @Override protected boolean hasFooter(Class<?> cls) throws IOException {
+        return fieldsIndexingSupported(cls, metaHandler, ctx, clsMap, mapper);
+    }
 
-            if (footerLen != EMPTY_FOOTER)
-                in.skipBytes(footerLen - 2);
-        }
+    /** {@inheritDoc} */
+    @Override protected void skipFooter() throws IOException {
+        short footerLen = in.readShort();
+
+        if (footerLen != EMPTY_FOOTER)
+            in.skipBytes(footerLen - 2);
     }
 
     /** {@inheritDoc} */

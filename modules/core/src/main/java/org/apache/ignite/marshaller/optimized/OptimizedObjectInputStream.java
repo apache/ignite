@@ -72,6 +72,9 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     private Class<?> curCls;
 
     /** */
+    private boolean curHasFooter;
+
+    /** */
     private final HandleTable handles = new HandleTable(10);
 
     /** */
@@ -154,6 +157,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         curObj = null;
         curFields = null;
+        curHasFooter = false;
         marshalAwareValues = null;
     }
 
@@ -161,6 +165,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     @Override public Object readObjectOverride() throws ClassNotFoundException, IOException {
         curObj = null;
         curFields = null;
+        curHasFooter = false;
 
         byte ref = in.readByte();
 
@@ -372,18 +377,22 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      *
      * @param obj Object.
      * @param fieldOffs Field offsets.
+     * @param hasFooter Whether footer is included in the marshalled form.
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void readFields(Object obj, OptimizedClassDescriptor.ClassFields fieldOffs) throws ClassNotFoundException,
+    void readFields(Object obj, OptimizedClassDescriptor.ClassFields fieldOffs, boolean hasFooter)
+        throws ClassNotFoundException,
         IOException {
+
         for (int i = 0; i < fieldOffs.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fieldOffs.get(i);
 
             switch ((t.type())) {
                 case BYTE:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     byte resByte = readByte();
 
@@ -393,7 +402,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case SHORT:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     short resShort = readShort();
 
@@ -403,7 +413,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case INT:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     int resInt = readInt();
 
@@ -413,7 +424,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case LONG:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     long resLong = readLong();
 
@@ -423,7 +435,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case FLOAT:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     float resFloat = readFloat();
 
@@ -433,7 +446,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case DOUBLE:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     double resDouble = readDouble();
 
@@ -443,7 +457,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case CHAR:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     char resChar = readChar();
 
@@ -453,7 +468,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 case BOOLEAN:
-                    readFieldType();
+                    if (hasFooter)
+                        readFieldType();
 
                     boolean resBoolean = readBoolean();
 
@@ -656,7 +672,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         if (marshalAwareValues.empty())
             marshalAwareValues = null;
 
-        skipFooter(obj.getClass());
+        skipFooter();
 
         return obj;
     }
@@ -686,12 +702,15 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         int handle = handles.assign(obj);
 
+        boolean hasFooter = hasFooter(obj.getClass());
+
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
 
             if (mtd != null) {
                 curObj = obj;
                 curFields = fields.fields(i);
+                curHasFooter = hasFooter;
 
                 try {
                     mtd.invoke(obj, this);
@@ -701,7 +720,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                 }
             }
             else
-                readFields(obj, fields.fields(i));
+                readFields(obj, fields.fields(i), hasFooter);
         }
 
         if (readResolveMtd != null) {
@@ -715,7 +734,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             }
         }
 
-        skipFooter(cls);
+        if (hasFooter)
+            skipFooter();
 
         return obj;
     }
@@ -1105,7 +1125,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         if (curObj == null)
             throw new NotActiveException("Not in readObject() call.");
 
-        readFields(curObj, curFields);
+        readFields(curObj, curFields, curHasFooter);
     }
 
     /** {@inheritDoc} */
@@ -1248,12 +1268,22 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     }
 
     /**
-     * Skips object footer from the underlying stream.
+     * Checks whether objects of the {@code cls} have footer.
      *
      * @param cls Class.
+     * @return {@code true} if has.
      * @throws IOException In case of error.
      */
-    protected void skipFooter(Class<?> cls) throws IOException {
+    protected boolean hasFooter(Class<?> cls) throws IOException {
+        return false;
+    }
+
+    /**
+     * Skips object footer from the underlying stream.
+     *
+     * @throws IOException In case of error.
+     */
+    protected void skipFooter() throws IOException {
         // No-op
     }
 
@@ -1563,56 +1593,64 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
                 switch (t.type()) {
                     case BYTE:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readByte();
 
                         break;
 
                     case SHORT:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readShort();
 
                         break;
 
                     case INT:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readInt();
 
                         break;
 
                     case LONG:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readLong();
 
                         break;
 
                     case FLOAT:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readFloat();
 
                         break;
 
                     case DOUBLE:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readDouble();
 
                         break;
 
                     case CHAR:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readChar();
 
                         break;
 
                     case BOOLEAN:
-                        in.readFieldType();
+                        if (in.curHasFooter)
+                            in.readFieldType();
 
                         obj = in.readBoolean();
 

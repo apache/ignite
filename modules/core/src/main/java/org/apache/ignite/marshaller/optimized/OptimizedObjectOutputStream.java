@@ -548,7 +548,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
             switch (t.type()) {
                 case BYTE:
                     if (t.field() != null) {
-                        writeFieldType(BYTE);
+                        if (footer != null)
+                            writeFieldType(BYTE);
+
                         writeByte(getByte(obj, t.offset()));
                     }
 
@@ -556,7 +558,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case SHORT:
                     if (t.field() != null) {
-                        writeFieldType(SHORT);
+                        if (footer != null)
+                            writeFieldType(SHORT);
+
                         writeShort(getShort(obj, t.offset()));
                     }
 
@@ -564,7 +568,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case INT:
                     if (t.field() != null) {
-                        writeFieldType(INT);
+                        if (footer != null)
+                            writeFieldType(INT);
+
                         writeInt(getInt(obj, t.offset()));
                     }
 
@@ -572,7 +578,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case LONG:
                     if (t.field() != null) {
-                        writeFieldType(LONG);
+                        if (footer != null)
+                            writeFieldType(LONG);
+
                         writeLong(getLong(obj, t.offset()));
                     }
 
@@ -580,7 +588,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case FLOAT:
                     if (t.field() != null) {
-                        writeFieldType(FLOAT);
+                        if (footer != null)
+                            writeFieldType(FLOAT);
+
                         writeFloat(getFloat(obj, t.offset()));
                     }
 
@@ -588,7 +598,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case DOUBLE:
                     if (t.field() != null) {
-                        writeFieldType(DOUBLE);
+                        if (footer != null)
+                            writeFieldType(DOUBLE);
+
                         writeDouble(getDouble(obj, t.offset()));
                     }
 
@@ -596,7 +608,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case CHAR:
                     if (t.field() != null) {
-                        writeFieldType(CHAR);
+                        if (footer != null)
+                            writeFieldType(CHAR);
+
                         writeChar(getChar(obj, t.offset()));
                     }
 
@@ -604,7 +618,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
                 case BOOLEAN:
                     if (t.field() != null) {
-                        writeFieldType(BOOLEAN);
+                        if (footer != null)
+                            writeFieldType(BOOLEAN);
+
                         writeBoolean(getBoolean(obj, t.offset()));
                     }
 
@@ -826,49 +842,65 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
             switch (t.get1().type()) {
                 case BYTE:
-                    writeFieldType(BYTE);
+                    if (footer != null)
+                        writeFieldType(BYTE);
+
                     writeByte((Byte)t.get2());
 
                     break;
 
                 case SHORT:
-                    writeFieldType(SHORT);
+                    if (footer != null)
+                        writeFieldType(SHORT);
+
                     writeShort((Short)t.get2());
 
                     break;
 
                 case INT:
-                    writeFieldType(INT);
+                    if (footer != null)
+                        writeFieldType(INT);
+
                     writeInt((Integer)t.get2());
 
                     break;
 
                 case LONG:
-                    writeFieldType(LONG);
+                    if (footer != null)
+                        writeFieldType(LONG);
+
                     writeLong((Long)t.get2());
 
                     break;
 
                 case FLOAT:
-                    writeFieldType(FLOAT);
+                    if (footer != null)
+                        writeFieldType(FLOAT);
+
                     writeFloat((Float)t.get2());
 
                     break;
 
                 case DOUBLE:
-                    writeFieldType(DOUBLE);
+                    if (footer != null)
+                        writeFieldType(DOUBLE);
+
                     writeDouble((Double)t.get2());
 
                     break;
 
                 case CHAR:
-                    writeFieldType(CHAR);
+                    if (footer != null)
+                        writeFieldType(CHAR);
+
                     writeChar((Character)t.get2());
 
                     break;
 
                 case BOOLEAN:
-                    writeFieldType(BOOLEAN);
+                    if (footer != null)
+                        writeFieldType(BOOLEAN);
+
                     writeBoolean((Boolean)t.get2());
 
                     break;

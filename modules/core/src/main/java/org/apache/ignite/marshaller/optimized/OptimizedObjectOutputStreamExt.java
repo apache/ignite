@@ -41,11 +41,6 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeFieldType(byte type) throws IOException {
-        out.writeByte(type);
-    }
-
-    /** {@inheritDoc} */
     @Override protected Footer createFooter(Class<?> cls) {
         if (fieldsIndexingSupported(cls, metaHandler, ctx, clsMap, mapper))
             return new FooterImpl();
@@ -53,15 +48,17 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void writeFieldType(byte type) throws IOException {
+        out.writeByte(type);
+    }
+
     /**
      *
      */
     private class FooterImpl implements OptimizedObjectOutputStream.Footer {
         /** */
-        private ArrayList<Integer> data;
-
-        /** */
-        private ArrayList<Integer> fields;
+        private ArrayList<Meta> data;
 
         /** */
         private HashMap<Integer, GridHandleTable.ObjectInfo> handles;
@@ -71,10 +68,8 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
 
         /** {@inheritDoc} */
         @Override public void indexingSupported(boolean indexingSupported) {
-            if (indexingSupported) {
+            if (indexingSupported)
                 data = new ArrayList<>();
-                this.fields = new ArrayList<>();
-            }
             else
                 data = null;
         }
@@ -84,10 +79,8 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
             if (data == null)
                 return;
 
-            if (fieldType == OptimizedFieldType.OTHER) {
-                data.add(len);
-                fields.add(fieldId);
-            }
+            if (fieldType == OptimizedFieldType.OTHER)
+                data.add(new Meta(fieldId, len));
         }
 
         /** {@inheritDoc} */
@@ -109,7 +102,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         /** {@inheritDoc} */
         @Override public void write() throws IOException {
             if (data == null)
-                writeInt(EMPTY_FOOTER);
+                writeShort(EMPTY_FOOTER);
             else {
                 int bodyEnd = out.offset();
 
@@ -123,12 +116,14 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
 
                 if (hasHandles) {
                     for (int i = 0; i < data.size(); i++) {
-                        GridHandleTable.ObjectInfo objInfo = handles.get(fields.get(i));
+                        Meta fieldMeta = data.get(i);
+
+                        GridHandleTable.ObjectInfo objInfo = handles.get(fieldMeta.fieldId);
 
                         if (objInfo == null)
-                            writeInt(data.get(i) & ~FOOTER_BODY_IS_HANDLE_MASK);
+                            writeInt(fieldMeta.fieldLen & ~FOOTER_BODY_IS_HANDLE_MASK);
                         else {
-                            writeInt(data.get(i) | FOOTER_BODY_IS_HANDLE_MASK);
+                            writeInt(fieldMeta.fieldLen | FOOTER_BODY_IS_HANDLE_MASK);
                             writeInt(objInfo.position());
 
                             if (objInfo.length() == 0)
@@ -140,12 +135,32 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
                     }
                 }
                 else
-                    for (int fieldLen : data)
+                    for (Meta fieldMeta : data)
                         // writing field len and resetting is handle mask
-                        writeInt(fieldLen & ~FOOTER_BODY_IS_HANDLE_MASK);
+                        writeInt(fieldMeta.fieldLen & ~FOOTER_BODY_IS_HANDLE_MASK);
 
                 writeShort(footerLen);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Meta {
+        /** */
+        int fieldId;
+
+        /** */
+        int fieldLen;
+
+        /**
+         * @param fieldId
+         * @param fieldLen
+         */
+        public Meta(int fieldId, int fieldLen) {
+            this.fieldId = fieldId;
+            this.fieldLen = fieldLen;
         }
     }
 }
