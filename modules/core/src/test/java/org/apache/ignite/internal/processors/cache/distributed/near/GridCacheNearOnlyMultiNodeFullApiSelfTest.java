@@ -194,7 +194,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @Override public void testNearDhtKeySize() throws Exception {
-        // TODO fix this test for client mode.
+        fail("https://issues.apache.org/jira/browse/IGNITE-1029");
     }
 
     /**

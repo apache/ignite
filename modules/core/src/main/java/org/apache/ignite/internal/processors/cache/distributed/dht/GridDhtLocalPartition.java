@@ -236,7 +236,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     void onAdded(GridDhtCacheEntry entry) {
         GridDhtPartitionState state = state();
 
-        assert state != EVICTED : "Adding entry to invalid partition: " + this;
+        if (state == EVICTED)
+            throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition [part=" + id + ']');
 
         map.put(entry.key(), entry);
 
