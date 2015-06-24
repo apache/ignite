@@ -99,7 +99,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
         Collection<ClusterNode> nodes = grid(0).cluster().forRemotes().nodes();
 
         for (ClusterNode node : nodes) {
-            Map<Integer, CacheMetrics> metrics = ((TcpDiscoveryNode) node).cacheMetrics();
+            Map<Integer, CacheMetrics> metrics = ((TcpDiscoveryNode)node).cacheMetrics();
             assertNotNull(metrics);
             assertFalse(metrics.isEmpty());
         }

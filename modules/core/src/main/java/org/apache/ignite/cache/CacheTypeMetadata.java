@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
@@ -42,6 +43,12 @@ public class CacheTypeMetadata implements Serializable {
 
     /** Value class used to store value in cache. */
     private String valType;
+
+    /** Key type name. */
+    private String keyTypeName;
+
+    /** Value type name. */
+    private String valTypeName;
 
     /** Key fields. */
     @GridToStringInclude
@@ -71,6 +78,10 @@ public class CacheTypeMetadata implements Serializable {
     @GridToStringInclude
     private Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps;
 
+    /** Aliases for fields. */
+    @GridToStringInclude
+    private Map<String, String> aliases;
+
     /**
      * Default constructor.
      */
@@ -88,6 +99,8 @@ public class CacheTypeMetadata implements Serializable {
         txtFlds = new LinkedHashSet<>();
 
         grps = new LinkedHashMap<>();
+
+        aliases = new HashMap<>();
     }
 
     /**
@@ -115,6 +128,8 @@ public class CacheTypeMetadata implements Serializable {
         txtFlds = new LinkedHashSet<>(src.getTextFields());
 
         grps = new LinkedHashMap<>(src.getGroups());
+
+        aliases = new HashMap<>(src.aliases);
     }
 
     /**
@@ -178,6 +193,7 @@ public class CacheTypeMetadata implements Serializable {
      */
     public void setKeyType(Class<?> cls) {
         setKeyType(cls.getName());
+        keyTypeName = typeName(cls);
     }
 
     /**
@@ -204,7 +220,17 @@ public class CacheTypeMetadata implements Serializable {
      * @param cls Value type class.
      */
     public void setValueType(Class<?> cls) {
-        setValueType(cls.getName());
+        setValueType(typeName(cls));
+        valTypeName = typeName(cls);
+    }
+
+    /**
+     * Gets value type name.
+     *
+     * @return Value type name.
+     */
+    public String getValTypeName() {
+        return valTypeName;
     }
 
     /**
@@ -333,8 +359,52 @@ public class CacheTypeMetadata implements Serializable {
         this.grps = grps;
     }
 
+    /**
+     * Returns fields aliases.
+     *
+     * @return fields aliases.
+     */
+    public Map<String, String> getAliases() {
+        return aliases;
+    }
+
+    /**
+     * Adds field alias.
+     *
+     * @param alias Alias.
+     * @param fieldName Field name.
+     */
+    public void addAlias(String alias, String fieldName) {
+        A.notNull(alias, "alias");
+        A.notNull(fieldName, "fieldName");
+
+        aliases.put(alias, fieldName);
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheTypeMetadata.class, this);
+    }
+
+    /**
+     * @param cls Class.
+     */
+    private static String typeName(Class<?> cls) {
+        String typeName = cls.getSimpleName();
+
+        // To protect from failure on anonymous classes.
+        if (F.isEmpty(typeName)) {
+            String pkg = cls.getPackage().getName();
+
+            typeName = cls.getName().substring(pkg.length() + (pkg.isEmpty() ? 0 : 1));
+        }
+
+        if (cls.isArray()) {
+            assert typeName.endsWith("[]");
+
+            typeName = typeName.substring(0, typeName.length() - 2) + "_array";
+        }
+
+        return typeName;
     }
 }

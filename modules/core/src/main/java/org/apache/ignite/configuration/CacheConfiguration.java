@@ -298,7 +298,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private boolean sqlEscapeAll;
 
     /** */
-    private Class<?>[] indexedTypes;
+    private transient Class<?>[] indexedTypes;
 
     /** */
     private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;

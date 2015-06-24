@@ -583,6 +583,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             // Initialize defaults.
             initialize(cfg, cacheObjCtx);
 
+            ctx.query().generateTypeMetadata(cfg);
+
             cfgs[i] = cfg; // Replace original configuration value.
 
             String masked = maskNull(cfg.getName());
@@ -594,8 +596,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
                         "assign unique name to each cache): " + U.maskName(cacheName));
                 else
-                    throw new IgniteCheckedException("Default cache has already been configured (check configuration and " +
-                        "assign unique name to each cache).");
+                    throw new IgniteCheckedException("Default cache has already been configured " +
+                        "(check configuration and assign unique name to each cache).");
             }
 
             CacheType cacheType;
@@ -691,7 +693,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         if (rmtCfg != null) {
                             CacheConfiguration locCfg = desc.cacheConfiguration();
 
-                            checkCache(locCfg, rmtCfg, n, desc);
+                            checkCache(locCfg, rmtCfg, n);
 
                             // Check plugin cache configurations.
                             CachePluginManager pluginMgr = desc.pluginManager();
@@ -1625,7 +1627,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             if (!desc.cancelled()) {
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
+                DynamicCacheChangeRequest req =
+                    new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -1929,6 +1932,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 try {
                     CacheConfiguration cfg = new CacheConfiguration(ccfg);
+
+                    ctx.query().generateTypeMetadata(cfg);
 
                     CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
@@ -2260,11 +2265,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param locCfg Local configuration.
      * @param rmtCfg Remote configuration.
      * @param rmtNode Remote node.
-     * @param desc Cache descriptor.
      * @throws IgniteCheckedException If check failed.
      */
-    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, ClusterNode rmtNode,
-        DynamicCacheDescriptor desc) throws IgniteCheckedException {
+    private void checkCache(CacheConfiguration locCfg, CacheConfiguration rmtCfg, ClusterNode rmtNode)
+        throws IgniteCheckedException {
         ClusterNode locNode = ctx.discovery().localNode();
 
         UUID rmt = rmtNode.id();
