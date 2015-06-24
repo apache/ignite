@@ -404,7 +404,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 T2<Socket, Integer> sockAndRes = sendJoinRequest(recon, addr);
 
-                log.info("sendJoinRequest :" + addr);
+                log.info("sentJoinRequest :" + addr + ", res=" + sockAndRes);
 
                 if (sockAndRes == null) {
                     it.remove();
@@ -474,6 +474,9 @@ class ClientImpl extends TcpDiscoveryImpl {
             try {
                 long tstamp = U.currentTimeMillis();
 
+                log.info("Open socket [addr=" + addr + ", reconnect=" + recon +
+                    ", locNodeId=" + getLocalNodeId() + ", ackTimeout=" + ackTimeout0 +']');
+
                 sock = spi.openSocket(addr);
 
                 openSock = true;
@@ -507,8 +510,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
-                if (log.isDebugEnabled())
-                    log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
+                //if (log.isDebugEnabled())
+                log.info("Message has been sent to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + rmtNodeId + ']');
 
                 return new T2<>(sock, spi.readReceipt(sock, ackTimeout0));
@@ -516,7 +519,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
 
-                if (log.isDebugEnabled())
+                //if (log.isDebugEnabled())
                     log.error("Exception on joining: " + e.getMessage(), e);
 
                 onException("Exception on joining: " + e.getMessage(), e);
@@ -763,7 +766,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             msg = spi.marsh.unmarshal(in, U.gridClassLoader());
                         }
                         catch (IgniteCheckedException e) {
-                            if (log.isDebugEnabled())
+                            //if (log.isDebugEnabled())
                                 U.error(log, "Failed to read message [sock=" + sock + ", " +
                                     "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
 
