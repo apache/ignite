@@ -145,6 +145,13 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteCacheManyClientsTest.class);
 
+        suite.addTestSuite(CacheReadThroughRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughReplicatedRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughReplicatedAtomicRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughLocalRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughLocalAtomicRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughAtomicRestartSelfTest.class);
+
         return suite;
     }
 }
