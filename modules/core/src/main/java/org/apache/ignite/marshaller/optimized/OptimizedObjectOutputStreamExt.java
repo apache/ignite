@@ -115,9 +115,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
                 writeShort(footerLen);
 
                 if (hasHandles) {
-                    for (int i = 0; i < data.size(); i++) {
-                        Meta fieldMeta = data.get(i);
-
+                    for (Meta fieldMeta : data) {
                         GridHandleTable.ObjectInfo objInfo = handles.get(fieldMeta.fieldId);
 
                         if (objInfo == null)
