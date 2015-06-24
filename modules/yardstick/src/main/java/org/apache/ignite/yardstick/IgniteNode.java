@@ -154,7 +154,16 @@ public class IgniteNode implements BenchmarkServer {
         c.setTimeServerPortBase(30000);
         c.setTimeServerPortRange(500);
 
-        ignite = Ignition.start(c);
+        String name = Thread.currentThread().getName();
+
+        try {
+            Thread.currentThread().setName("start-" + c.getGridName());
+
+            ignite = Ignition.start(c);
+        }
+        finally {
+            Thread.currentThread().setName(name);
+        }
     }
 
     /**
