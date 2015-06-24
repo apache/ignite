@@ -578,7 +578,9 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forHost(String host, String... hosts) {
-	return forPredicate(new HostsFilter(host, hosts));
+        A.notNull(host, "host");
+
+        return forPredicate(new HostsFilter(host, hosts));
     }
 
     /** {@inheritDoc} */
@@ -772,30 +774,24 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         private static final long serialVersionUID = 0L;
 
         /** Hosts Names. */
-        private final HashSet hashInputHostNames;
+        private final Collection<String> validHostNames = new HashSet<>();
 
         /**
-         * @param name  First host name.
-	  * @param names Host names
+         * @param name First host name.
+         * @param names Host names
          */
-        private HostsFilter(String name, String[] names) {
-            hashInputHostNames = new HashSet();
+        private HostsFilter(String name, String... names) {
+            validHostNames.add(name);
 
-            if (name != null)
-                hashInputHostNames.add(name);
-
-            if (names != null && (names.length > 0)) {
-                for (String currentInputHostName : names)
-                    hashInputHostNames.add(currentInputHostName);
-	    }
+            if (names != null && (names.length > 0))
+                Collections.addAll(validHostNames, names);
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
-	    for (String currentHostName : n.hostNames()) {
-                if (hashInputHostNames.contains(currentHostName)) {
-		    return true;
-		}
+            for (String hostName : n.hostNames()) {
+                if (validHostNames.contains(hostName))
+                    return true;
             }
 
             return false;

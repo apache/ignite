@@ -23,6 +23,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.http.*;
 import org.apache.ignite.testframework.junits.*;
@@ -695,6 +696,27 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
 
         assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testResolveLocalAddresses() throws Exception {
+        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
+
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddress);
+
+        Collection<String> hostNames = addrs.get2();
+
+        assertFalse(hostNames.contains(null));
+        assertFalse(hostNames.contains(""));
+        assertFalse(hostNames.contains("127.0.0.1"));
+
+        assertFalse(F.exist(hostNames, new IgnitePredicate<String>() {
+            @Override public boolean apply(String hostName) {
+                return hostName.contains("localhost") || hostName.contains("0:0:0:0:0:0:0:1");
+            }
+        }));
     }
 
     /**

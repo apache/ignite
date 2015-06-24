@@ -188,6 +188,8 @@ public interface ClusterNode {
      * <p>
      * If {@link IgniteConfiguration#getLocalHost()} value is {@code null} then local wildcard address will be used,
      * and this method returns host names of all addresses of that node.
+     * <p/
+     * Note: the loopback address will skipped from the results.
      *
      * @return Collection of host names.
      */

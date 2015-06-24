@@ -66,6 +66,7 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridProjectionSelfTest.class, ignoredTests);
+        suite.addTest(new TestSuite(ClusterForHostsSelfTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
         suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));
         GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
