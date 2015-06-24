@@ -606,7 +606,7 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(1000);
         }
 
-        throw new Exception("Failed to wait for proper topology.");
+        throw new Exception("Failed to wait for proper topology: " + cnt);
     }
 
     /** */
