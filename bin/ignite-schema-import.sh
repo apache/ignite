@@ -57,7 +57,7 @@ setIgniteHome
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in release.
+. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
 CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_HOME}/bin/include/schema-import/*${SEP}${IGNITE_LIBS}"
 
 #

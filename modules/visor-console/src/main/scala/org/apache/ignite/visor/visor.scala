@@ -1699,7 +1699,7 @@ object visor extends VisorTag {
         ignite.cluster.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
-            val ip = n.addresses().headOption
+            val ip = sortAddresses(n.addresses()).headOption
 
             if (ip.isDefined)
                 setVarIfAbsent(ip.get, "h")
@@ -1714,7 +1714,7 @@ object visor extends VisorTag {
                         val node = ignite.cluster.node(de.eventNode().id())
 
                         if (node != null) {
-                            val ip = node.addresses().headOption
+                            val ip = sortAddresses(node.addresses).headOption
 
                             if (ip.isDefined)
                                 setVarIfAbsent(ip.get, "h")
@@ -1743,11 +1743,11 @@ object visor extends VisorTag {
                         if (nv.isDefined)
                             mem.remove(nv.get._1)
 
-                        val ip = de.eventNode().addresses.headOption
+                        val ip = sortAddresses(de.eventNode().addresses).headOption
 
                         if (ip.isDefined) {
                             val last = !ignite.cluster.nodes().exists(n =>
-                                n.addresses.size > 0 && n.addresses.head == ip.get
+                                n.addresses.size > 0 && sortAddresses(n.addresses).head == ip.get
                             )
 
                             if (last) {
@@ -1858,7 +1858,7 @@ object visor extends VisorTag {
             id8 +
                 (if (v.isDefined) "(@" + v.get._1 + ")" else "") +
                 ", " +
-                (if (n == null) NA else n.addresses().headOption.getOrElse(NA))
+                (if (n == null) NA else sortAddresses(n.addresses).headOption.getOrElse(NA))
         }
     }
 
@@ -2012,6 +2012,8 @@ object visor extends VisorTag {
 
             None
         }
+        else if (nodes.size == 1)
+            Some(nodes.head.id)
         else {
             (0 until nodes.size) foreach (i => {
                 val n = nodes(i)
@@ -2099,7 +2101,7 @@ object visor extends VisorTag {
                 neighbors.foreach(n => {
                     id8s = id8s :+ nodeId8(n.id)
 
-                    ips = ips ++ n.addresses()
+                    ips = ips ++ n.addresses
 
                     cpuLoadSum += n.metrics().getCurrentCpuLoad
 
@@ -2833,5 +2835,54 @@ object visor extends VisorTag {
         }
         else
             Long.MaxValue
+    }
+
+    /**
+     * Sort addresses to properly display in Visor.
+     *
+     * @param addrs Addresses to sort.
+     * @return Sorted list.
+     */
+    def sortAddresses(addrs: Iterable[String]) = {
+        def ipToLong(ip: String) = {
+            try {
+                val octets = if (ip.contains(".")) ip.split('.') else ip.split(':')
+
+                var dec = BigDecimal.valueOf(0L)
+
+                for (i <- 0 until octets.length) dec += octets(i).toLong * math.pow(256, octets.length - 1 - i).toLong
+
+                dec
+            }
+            catch {
+                case _: Exception => BigDecimal.valueOf(0L)
+            }
+        }
+
+        /**
+         * Sort addresses to properly display in Visor.
+         *
+         * @param addr Address to detect type for.
+         * @return IP class type for sorting in order: public addresses IPv4 + private IPv4 + localhost + IPv6.
+         */
+        def addrType(addr: String) = {
+            if (addr.contains(':'))
+                4 // IPv6
+            else {
+                try {
+                    InetAddress.getByName(addr) match {
+                        case ip if ip.isLoopbackAddress => 3 // localhost
+                        case ip if ip.isSiteLocalAddress => 2 // private IPv4
+                        case _ => 1 // other IPv4
+                    }
+                }
+                catch {
+                    case ignore: UnknownHostException => 5
+                }
+            }
+        }
+
+        addrs.map(addr => (addrType(addr), ipToLong(addr), addr)).toSeq.
+            sortWith((l, r) => if (l._1 == r._1) l._2.compare(r._2) < 0 else l._1 < r._1).map(_._3)
     }
 }

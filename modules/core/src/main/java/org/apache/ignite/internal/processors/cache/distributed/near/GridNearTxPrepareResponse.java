@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -52,6 +54,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** DHT version. */
     private GridCacheVersion dhtVer;
+
+    /** Write version. */
+    private GridCacheVersion writeVer;
 
     /** */
     @GridToStringInclude
@@ -80,6 +85,9 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @GridDirectCollection(IgniteTxKey.class)
     private Collection<IgniteTxKey> filterFailedKeys;
 
+    /** Not {@code null} if client node should remap transaction. */
+    private AffinityTopologyVersion clientRemapVer;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -92,18 +100,22 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param dhtVer DHT version.
+     * @param writeVer Write version.
      * @param invalidParts Invalid partitions.
      * @param retVal Return value.
      * @param err Error.
+     * @param clientRemapVer Not {@code null} if client node should remap transaction.
      */
     public GridNearTxPrepareResponse(
         GridCacheVersion xid,
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion dhtVer,
+        GridCacheVersion writeVer,
         Collection<Integer> invalidParts,
         GridCacheReturn retVal,
-        Throwable err
+        Throwable err,
+        AffinityTopologyVersion clientRemapVer
     ) {
         super(xid, err);
 
@@ -114,8 +126,17 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.futId = futId;
         this.miniId = miniId;
         this.dhtVer = dhtVer;
+        this.writeVer = writeVer;
         this.invalidParts = invalidParts;
         this.retVal = retVal;
+        this.clientRemapVer = clientRemapVer;
+    }
+
+    /**
+     * @return {@code True} if client node should remap transaction.
+     */
+    @Nullable public AffinityTopologyVersion clientRemapVersion() {
+        return clientRemapVer;
     }
 
     /**
@@ -155,6 +176,13 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      */
     public GridCacheVersion dhtVersion() {
         return dhtVer;
+    }
+
+    /**
+     * @return Write version.
+     */
+    public GridCacheVersion writeVersion() {
+        return writeVer;
     }
 
     /**
@@ -317,56 +345,68 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
 
         switch (writer.state()) {
-            case 10:
+            case 8:
+                if (!writer.writeMessage("clientRemapVer", clientRemapVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
                 if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeCollection("filterFailedKeys", filterFailedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeCollection("ownedValKeys", ownedValKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeCollection("ownedValVals", ownedValVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeMessage("retVal", retVal))
+                    return false;
+
+                writer.incrementState();
+
+            case 18:
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
@@ -387,7 +427,15 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             return false;
 
         switch (reader.state()) {
-            case 10:
+            case 8:
+                clientRemapVer = reader.readMessage("clientRemapVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
                 dhtVer = reader.readMessage("dhtVer");
 
                 if (!reader.isLastRead())
@@ -395,7 +443,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 filterFailedKeys = reader.readCollection("filterFailedKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -403,7 +451,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -411,7 +459,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -419,7 +467,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
@@ -427,7 +475,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 ownedValKeys = reader.readCollection("ownedValKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -435,7 +483,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 ownedValVals = reader.readCollection("ownedValVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -443,7 +491,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -451,8 +499,16 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 retVal = reader.readMessage("retVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 18:
+                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;

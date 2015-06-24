@@ -209,7 +209,14 @@ public final class GridCacheXAResource implements XAResource {
 
     /** {@inheritDoc} */
     @Override public int getTransactionTimeout() {
-        return (int)cacheTx.timeout();
+        return (int)(cacheTx.timeout() / 1000);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean setTransactionTimeout(int i) {
+        cacheTx.timeout(i * 1000);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -217,19 +224,12 @@ public final class GridCacheXAResource implements XAResource {
         if (xar == this)
             return true;
 
-        if  (!(xar instanceof GridCacheXAResource))
+        if (!(xar instanceof GridCacheXAResource))
             return false;
 
         GridCacheXAResource other = (GridCacheXAResource)xar;
 
         return cctx == other.cctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean setTransactionTimeout(int i) {
-        cacheTx.timeout(i);
-
-        return true;
     }
 
     /**

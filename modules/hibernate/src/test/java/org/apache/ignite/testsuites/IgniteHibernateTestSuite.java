@@ -33,13 +33,17 @@ public class IgniteHibernateTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Hibernate Integration Test Suite");
 
         // Hibernate L2 cache.
-//        suite.addTestSuite(HibernateL2CacheSelfTest.class); // TODO GG-9141
-//        suite.addTestSuite(HibernateL2CacheTransactionalSelfTest.class);
+        suite.addTestSuite(HibernateL2CacheSelfTest.class);
+        suite.addTestSuite(HibernateL2CacheTransactionalSelfTest.class);
         suite.addTestSuite(HibernateL2CacheConfigurationSelfTest.class);
 
         suite.addTestSuite(CacheHibernateBlobStoreSelfTest.class);
 
         suite.addTestSuite(CacheHibernateBlobStoreNodeRestartTest.class);
+
+        suite.addTestSuite(CacheHibernateStoreSessionListenerSelfTest.class);
+
+        suite.addTestSuite(CacheHibernateStoreFactorySelfTest.class);
 
         return suite;
     }

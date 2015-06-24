@@ -44,6 +44,14 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public int getLocalPort();
 
     /**
+     * Gets local port for shared memory communication.
+     *
+     * @return Port number.
+     */
+    @MXBeanDescription("Shared memory endpoint port number.")
+    public int getSharedMemoryPort();
+
+    /**
      * Gets maximum number of local ports tried if all previously
      * tried ports are occupied.
      *
@@ -160,7 +168,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * connection buffer.
      *
      * @return Flush frequency.
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Connection buffer flush frequency.")
     public long getConnectionBufferFlushFrequency();
 
@@ -171,13 +181,13 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * This frequency defines how often system will advice to flush
      * connection buffer.
      * <p>
-     * If not provided, default value is {@link TcpCommunicationSpi#DFLT_CONN_BUF_FLUSH_FREQ}.
-     * <p>
      * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
      *
      * @param connBufFlushFreq Flush frequency.
      * @see #getConnectionBufferSize()
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Sets connection buffer flush frequency.")
     public void setConnectionBufferFlushFrequency(long connBufFlushFreq);
 
@@ -187,7 +197,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * If set to {@code 0} connection buffer is disabled.
      *
      * @return Connection buffer size.
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Connection buffer size.")
     public int getConnectionBufferSize();
 
@@ -232,7 +244,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * prior to sending.
      *
      * @return Minimum buffered message count.
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     @MXBeanDescription("Minimum buffered message count.")
     public int getMinimumBufferedMessageCount();
 
@@ -262,4 +276,15 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Maximum number of unacknowledged messages.")
     public int getUnacknowledgedMessagesBufferSize();
+
+    /**
+     * Gets slow client queue limit.
+     * <p/>
+     * When set to a positive number, communication SPI will monitor clients outbound queue sizes and will drop
+     * those clients whose queue exceeded this limit.
+     *
+     * @return Slow client queue limit.
+     */
+    @MXBeanDescription("Slow client queue limit.")
+    public int getSlowClientQueueLimit();
 }

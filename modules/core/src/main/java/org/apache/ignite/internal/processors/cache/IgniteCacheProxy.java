@@ -139,6 +139,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
+     * @return Operation context.
+     */
+    @Nullable public CacheOperationContext operationContext() {
+        return opCtx;
+    }
+
+    /**
      * Gets cache proxy which does not acquire read lock on gateway enter, should be
      * used only if grid read lock is externally acquired.
      *
@@ -353,7 +360,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (filter instanceof ScanQuery) {
             IgniteBiPredicate<K, V> p = ((ScanQuery)filter).getFilter();
 
-            qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, isKeepPortable);
+            qry = ctx.queries().createScanQuery(p != null ? p : ACCEPT_ALL, ((ScanQuery)filter).getPartition(),
+                isKeepPortable);
 
             if (grp != null)
                 qry.projection(grp);
@@ -496,10 +504,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal());
 
             if (qry instanceof SqlQuery) {
-                SqlQuery p = (SqlQuery)qry;
+                final SqlQuery p = (SqlQuery)qry;
 
                 if (isReplicatedDataNode() || ctx.isLocal() || qry.isLocal())
-                    return (QueryCursor<R>)new QueryCursorImpl<>(ctx.kernalContext().query().<K, V>queryLocal(ctx, p));
+                    return (QueryCursor<R>)new QueryCursorImpl<>(new Iterable<Cache.Entry<K, V>>() {
+                        @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                            return ctx.kernalContext().query().<K, V>queryLocal(ctx, p);
+                        }
+                    });
 
                 return (QueryCursor<R>)ctx.kernalContext().query().queryTwoStep(ctx, p);
             }
@@ -542,7 +554,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     private void validate(Query qry) {
         if (!GridQueryProcessor.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
             !(qry instanceof ContinuousQuery))
-            throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name());
+            throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
+                ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
+
+        if (!ctx.kernalContext().query().moduleEnabled() &&
+            (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
+            throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
+                "of all Ignite nodes.");
     }
 
     /** {@inheritDoc} */
@@ -688,6 +706,29 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 }
                 else
                     return delegate.getAll(keys);
+            }
+            finally {
+                onLeave(prev);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
+        try {
+            CacheOperationContext prev = onEnter(opCtx);
+
+            try {
+                if (isAsync()) {
+                    setFuture(delegate.getAllOutTxAsync(keys));
+
+                    return null;
+                }
+                else
+                    return delegate.getAllOutTx(keys);
             }
             finally {
                 onLeave(prev);

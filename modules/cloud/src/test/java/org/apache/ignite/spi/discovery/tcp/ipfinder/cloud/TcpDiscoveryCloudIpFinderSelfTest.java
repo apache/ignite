@@ -101,13 +101,10 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
 
         if (provider.equals("google-compute-engine"))
             ipFinder.setCredentialPath(IgniteCloudTestSuite.getSecretKey(provider));
-        else {
+        else
             ipFinder.setCredential(IgniteCloudTestSuite.getSecretKey(provider));
-        }
 
         Collection<InetSocketAddress> addresses = ipFinder.getRegisteredAddresses();
-
-        assert addresses.size() > 0;
 
         for (InetSocketAddress addr : addresses)
             info("Registered instance: " + addr.getAddress().getHostAddress() + ":" + addr.getPort());

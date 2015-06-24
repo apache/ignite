@@ -50,6 +50,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSocketWriteTimeout(1000);
+        commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
 

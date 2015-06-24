@@ -510,7 +510,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Future.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <T> GridCacheFuture<T> future(GridCacheVersion ver, IgniteUuid futId) {
+    @Nullable public GridCacheFuture future(GridCacheVersion ver, IgniteUuid futId) {
         Collection<? extends GridCacheFuture> futs = this.futs.get(ver);
 
         if (futs != null)
@@ -519,7 +519,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Found future in futures map: " + fut);
 
-                    return (GridCacheFuture<T>)fut;
+                    return fut;
                 }
 
         if (log.isDebugEnabled())
@@ -955,6 +955,21 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param topVer Topology version.
+     * @return Locked keys.
+     */
+    public Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> unfinishedLocks(AffinityTopologyVersion topVer) {
+        Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> cands = new HashMap<>();
+
+        for (FinishLockFuture fut : finishFuts) {
+            if (fut.topologyVersion().equals(topVer))
+                cands.putAll(fut.pendingLocks());
+        }
+
+        return cands;
+    }
+
+    /**
      * Creates a future that will wait for all explicit locks acquired on given topology
      * version to be released.
      *
@@ -1041,8 +1056,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         finishFuts.add(finishFut);
 
         finishFut.listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override
-            public void apply(IgniteInternalFuture<?> e) {
+            @Override public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
 
                 // This call is required to make sure that the concurrent queue
@@ -1114,6 +1128,20 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             if (exchLog.isDebugEnabled())
                 exchLog.debug("Pending lock set [topVer=" + topVer + ", locks=" + pendingLocks + ']');
+        }
+
+        /**
+         * @return Topology version.
+         */
+        AffinityTopologyVersion topologyVersion() {
+            return topVer;
+        }
+
+        /**
+         * @return Pending locks.
+         */
+        Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> pendingLocks() {
+            return pendingLocks;
         }
 
         /**

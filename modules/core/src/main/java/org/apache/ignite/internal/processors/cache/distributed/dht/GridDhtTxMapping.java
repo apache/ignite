@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * DHT transaction mapping.
  */
-public class GridDhtTxMapping<K, V> {
+public class GridDhtTxMapping {
     /** Transaction nodes mapping (primary node -> related backup nodes). */
     private final Map<UUID, Collection<UUID>> txNodes = new GridLeanMap<>();
 

@@ -196,6 +196,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Dynamic cache deployment ID. */
     private IgniteUuid dynamicDeploymentId;
 
+    /** Updates allowed flag. */
+    private boolean updatesAllowed;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -209,6 +212,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cacheCfg Cache configuration.
      * @param cacheType Cache type.
      * @param affNode {@code True} if local node is affinity node.
+     * @param updatesAllowed Updates allowed flag.
      * @param evtMgr Cache event manager.
      * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
@@ -230,6 +234,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheConfiguration cacheCfg,
         CacheType cacheType,
         boolean affNode,
+        boolean updatesAllowed,
 
         /*
          * Managers in starting order!
@@ -271,6 +276,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.affNode = affNode;
+        this.updatesAllowed = updatesAllowed;
 
         /*
          * Managers in starting order!
@@ -348,7 +354,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void awaitStarted() throws IgniteCheckedException {
         U.await(startLatch);
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         if (prldr != null)
             prldr.startFuture().get();
@@ -361,7 +367,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (startLatch.getCount() != 0)
             return false;
 
-        GridCachePreloader<K, V> prldr = preloader();
+        GridCachePreloader prldr = preloader();
 
         return prldr == null || prldr.startFuture().isDone();
     }
@@ -682,7 +688,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Preloader.
      */
-    public GridCachePreloader<K, V> preloader() {
+    public GridCachePreloader preloader() {
         return cache().preloader();
     }
 
@@ -1469,9 +1475,6 @@ public class GridCacheContext<K, V> implements Externalizable {
             Collection<ClusterNode> dhtNodeIds = new ArrayList<>(dhtRemoteNodes);
             Collection<ClusterNode> nearNodeIds = F.isEmpty(nearRemoteNodes) ? null : new ArrayList<>(nearRemoteNodes);
 
-            if (!F.isEmpty(nearNodeIds))
-                U.dumpStack("Added near mapped nodes: " + entry + ", " + nearNodeIds);
-
             entry.mappings(explicitLockVer, dhtNodeIds, nearNodeIds);
         }
 
@@ -1655,6 +1658,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if should use entry with offheap value pointer.
+     */
+    public boolean useOffheapEntry() {
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
+    }
+
+    /**
      * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
@@ -1799,6 +1809,13 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
         else
             map.put((K1)key, (V1)(skipVals ? true : val));
+    }
+
+    /**
+     * @return Updates allowed.
+     */
+    public boolean updatesAllowed() {
+        return updatesAllowed;
     }
 
     /**

@@ -50,7 +50,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;IgniteSpringResource(resourceName = "bean-name")
+ *      &#64;SpringResource(resourceName = "bean-name")
  *      private transient MyUserBean rsrc;
  *      ...
  *  }
@@ -61,7 +61,7 @@ import java.lang.annotation.*;
  *     ...
  *     private transient MyUserBean rsrc;
  *     ...
- *     &#64;IgniteSpringResource(resourceName = "bean-name")
+ *     &#64;SpringResource(resourceName = "bean-name")
  *     public void setMyUserBean(MyUserBean rsrc) {
  *          this.rsrc = rsrc;
  *     }
@@ -72,7 +72,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyUserResource {
  *     ...
- *     &#64;IgniteSpringResource(resourceName = "bean-name")
+ *     &#64;SpringResource(resourceName = "bean-name")
  *     private MyUserBean rsrc;
  *     ...
  *     // Inject logger (or any other resource).

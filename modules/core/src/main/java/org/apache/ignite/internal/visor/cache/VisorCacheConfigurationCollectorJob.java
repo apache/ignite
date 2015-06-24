@@ -45,17 +45,17 @@ public class VisorCacheConfigurationCollectorJob
 
     /** {@inheritDoc} */
     @Override protected Map<IgniteUuid, VisorCacheConfiguration> run(Collection<IgniteUuid> arg) {
-        Collection<GridCacheAdapter<?, ?>> caches = ignite.context().cache().internalCaches();
+        Collection<IgniteCacheProxy<?, ?>> caches = ignite.context().cache().jcaches();
 
         boolean all = arg == null || arg.isEmpty();
 
         Map<IgniteUuid, VisorCacheConfiguration> res = U.newHashMap(caches.size());
 
-        for (GridCacheAdapter<?, ?> cache : caches) {
+        for (IgniteCacheProxy<?, ?> cache : caches) {
             IgniteUuid deploymentId = cache.context().dynamicDeploymentId();
 
             if (all || arg.contains(deploymentId))
-                res.put(deploymentId, config(cache.configuration()));
+                res.put(deploymentId, config(cache.getConfiguration(CacheConfiguration.class)));
         }
 
         return res;

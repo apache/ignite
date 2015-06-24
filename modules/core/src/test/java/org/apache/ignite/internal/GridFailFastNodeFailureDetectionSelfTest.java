@@ -33,6 +33,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.EventType.*;
+
 /**
  * Fail fast test.
  */
@@ -47,7 +50,12 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
-        disco.setHeartbeatFrequency(10000);
+        disco.setHeartbeatFrequency(10_000);
+
+        // Set parameters for fast ping failure.
+        disco.setSocketTimeout(100);
+        disco.setNetworkTimeout(100);
+        disco.setReconnectCount(2);
 
         cfg.setDiscoverySpi(disco);
 
@@ -76,11 +84,13 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
                     return true;
                 }
-            }, EventType.EVT_NODE_FAILED);
+            }, EVT_NODE_FAILED);
         }
 
         Ignite ignite1 = ignite(0);
         Ignite ignite2 = ignite(1);
+
+        final CountDownLatch evtLatch = new CountDownLatch(1);
 
         ignite1.message().localListen(null, new MessagingListenActor<Object>() {
             @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
@@ -90,15 +100,21 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
         ignite2.message().localListen(null, new MessagingListenActor<Object>() {
             @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
+                evtLatch.countDown();
+
                 respond(rcvMsg);
             }
         });
 
         ignite1.message(ignite1.cluster().forRemotes()).send(null, "Message");
 
+        evtLatch.await(); // Wait when connection is established.
+
+        log.info("Fail node: " + ignite1.cluster().localNode());
+
         failNode(ignite1);
 
-        assert failLatch.await(500, TimeUnit.MILLISECONDS);
+        assert failLatch.await(1000, MILLISECONDS);
     }
 
     /**

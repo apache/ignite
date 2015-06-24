@@ -46,7 +46,12 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheTtlOnheapAtomicLocalSelfTest.class);
         suite.addTestSuite(CacheTtlOnheapAtomicPartitionedSelfTest.class);
 
+        suite.addTestSuite(GridCacheOffheapIndexGetSelfTest.class);
+        suite.addTestSuite(GridCacheOffheapIndexEntryEvictTest.class);
+
         suite.addTestSuite(CacheConfigurationP2PTest.class);
+
+        suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
 
         return suite;
     }

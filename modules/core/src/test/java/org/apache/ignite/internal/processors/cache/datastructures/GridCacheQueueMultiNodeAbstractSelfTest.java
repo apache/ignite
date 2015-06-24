@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 
@@ -95,7 +94,6 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
         cfg.setSystemThreadPoolSize(RETRIES * 2);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setConnectorConfiguration(null);
 
         return cfg;

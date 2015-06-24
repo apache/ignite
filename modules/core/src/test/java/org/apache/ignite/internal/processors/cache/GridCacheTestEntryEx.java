@@ -843,4 +843,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onUnlock() {
+        // No-op.
+    }
 }

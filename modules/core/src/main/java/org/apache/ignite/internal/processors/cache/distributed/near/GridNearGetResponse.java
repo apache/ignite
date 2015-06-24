@@ -65,7 +65,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
 
     /** Error. */
     @GridDirectTransient
-    private Throwable err;
+    private IgniteCheckedException err;
 
     /** Serialized error. */
     private byte[] errBytes;
@@ -152,20 +152,20 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
      * @return Topology version if this response has invalid partitions.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+        return topVer != null ? topVer : super.topologyVersion();
     }
 
     /**
      * @return Error.
      */
-    public Throwable error() {
+    public IgniteCheckedException error() {
         return err;
     }
 
     /**
      * @param err Error.
      */
-    public void error(Throwable err) {
+    public void error(IgniteCheckedException err) {
         this.err = err;
     }
 

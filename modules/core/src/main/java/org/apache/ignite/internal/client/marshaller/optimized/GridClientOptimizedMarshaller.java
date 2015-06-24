@@ -22,9 +22,12 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 
 /**
  * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} to
@@ -44,6 +47,17 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         opMarsh = new OptimizedMarshaller();
 
         opMarsh.setContext(new ClientMarshallerContext());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param plugins Plugins.
+     */
+    public GridClientOptimizedMarshaller(@Nullable List<PluginProvider> plugins) {
+        opMarsh = new OptimizedMarshaller();
+
+        opMarsh.setContext(new ClientMarshallerContext(plugins));
     }
 
     /**
@@ -100,6 +114,18 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     /**
      */
     private static class ClientMarshallerContext extends MarshallerContextAdapter {
+        /** */
+        public ClientMarshallerContext() {
+            super(null);
+        }
+
+        /**
+         * @param plugins Plugins.
+         */
+        public ClientMarshallerContext(@Nullable List<PluginProvider> plugins) {
+            super(plugins);
+        }
+
         /** {@inheritDoc} */
         @Override protected boolean registerClassName(int id, String clsName) {
             throw new UnsupportedOperationException(clsName);

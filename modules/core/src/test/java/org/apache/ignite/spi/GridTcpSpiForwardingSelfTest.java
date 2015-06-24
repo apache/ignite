@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
@@ -32,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Test for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} and {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
@@ -99,7 +97,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi() {
             @Override protected GridCommunicationClient createTcpClient(ClusterNode node) throws IgniteCheckedException {
@@ -115,6 +112,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         commSpi.setLocalAddress("127.0.0.1");
         commSpi.setLocalPort(commLocPort);
         commSpi.setLocalPortRange(1);
+        commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
 

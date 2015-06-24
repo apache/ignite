@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -137,8 +139,14 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (TransactionOptimisticException e) {
-                        info("Caught cache optimistic exception: " + e);
+                    catch (ClusterTopologyException e) {
+                        info("Caught topology exception: " + e);
+                    }
+                    catch (IgniteException e) {
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class))
+                            info("Caught cache exception: " + e);
+                        else
+                            throw e;
                     }
 
                     try {

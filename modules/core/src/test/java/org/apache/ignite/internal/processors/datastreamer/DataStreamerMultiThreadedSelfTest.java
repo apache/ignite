@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -41,22 +42,36 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private boolean dynamicCache;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
+        if (!dynamicCache)
+            cfg.setCacheConfiguration(cacheConfiguration());
+
+        return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfiguration() {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        cfg.setCacheConfiguration(ccfg);
 
-        return cfg;
+        return ccfg;
     }
 
     /** {@inheritDoc} */
@@ -68,8 +83,22 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopIgnites() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-840");
+        startStopIgnites();
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopIgnitesDynamicCache() throws Exception {
+        dynamicCache = true;
+
+        startStopIgnites();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void startStopIgnites() throws Exception {
         for (int attempt = 0; attempt < 3; ++attempt) {
             log.info("Iteration: " + attempt);
             
@@ -77,28 +106,29 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
 
             Set<IgniteFuture> futs = new HashSet<>();
 
-            IgniteInternalFuture<?> fut;
+            final AtomicInteger igniteId = new AtomicInteger(1);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    for (int i = 1; i < 5; ++i)
+                        startGrid(igniteId.incrementAndGet());
+
+                    return true;
+                }
+            }, 2, "start-node-thread");
+
+            if (dynamicCache)
+                ignite.getOrCreateCache(cacheConfiguration());
 
             try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(null)) {
                 dataLdr.maxRemapCount(0);
 
-                final AtomicInteger igniteId = new AtomicInteger(1);
-
-                fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        for (int i = 1; i < 5; ++i)
-                            startGrid(igniteId.incrementAndGet());
-
-                        return true;
-                    }
-                }, 2, "start-node-thread");
-
-                Random random = new Random();
+                Random rnd = new Random();
 
                 long endTime = U.currentTimeMillis() + 15_000;
 
                 while (!fut.isDone() && U.currentTimeMillis() < endTime)
-                    futs.add(dataLdr.addData(random.nextInt(100_000), random.nextInt(100_000)));
+                    futs.add(dataLdr.addData(rnd.nextInt(100_000), String.valueOf(rnd.nextInt(100_000))));
             }
 
             for (IgniteFuture f : futs)
