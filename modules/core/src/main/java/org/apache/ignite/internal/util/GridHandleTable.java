@@ -271,6 +271,15 @@ public class GridHandleTable {
         public int length() {
             return len;
         }
+
+        /**
+         * Returns object.
+         *
+         * @return Object.
+         */
+        public Object object() {
+            return object;
+        }
     }
 
 

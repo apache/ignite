@@ -25,7 +25,7 @@ import org.apache.ignite.services.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedClassDescriptor.*;
 
@@ -50,6 +50,9 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
 
     /** */
     public static final byte VARIABLE_LEN = -1;
+
+    /** */
+    private final static ConcurrentHashMap<Class<?>, Boolean> indexingEnabledCache = new ConcurrentHashMap<>();
 
     /** */
     private volatile OptimizedMarshallerMetaHandler metaHandler;
@@ -103,6 +106,46 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     }
 
     /**
+     * Checks whether fields indexing is enabled for objects of the given {@code cls}.
+     *
+     * @param cls Class.
+     * @param metaHandler Metadata handler.
+     * @param ctx Marshaller context.
+     * @param clsMap Class map.
+     * @param mapper ID Mapper.
+     * @return {@code true} if fields indexing is enabled.
+     */
+    static boolean fieldsIndexingSupported(Class<?> cls, OptimizedMarshallerMetaHandler metaHandler,
+                                           MarshallerContext ctx, ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
+                                           OptimizedMarshallerIdMapper mapper) {
+        Boolean res = indexingEnabledCache.get(cls);
+
+        if (res != null)
+            return res;
+
+        if (isFieldsIndexingExcludedForClass(ctx, cls))
+            res = false;
+        else if (OptimizedMarshalAware.class.isAssignableFrom(cls))
+            res = true;
+        else {
+            try {
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
+
+                res = desc.fields() != null && desc.fields().fieldsIndexingSupported() && metaHandler != null &&
+                    metaHandler.metadata(desc.typeId()) != null;
+            } catch (IOException e) {
+                throw new IgniteException("Failed to load class description: " + cls);
+            }
+        }
+
+        synchronized (indexingEnabledCache) {
+            indexingEnabledCache.putIfAbsent(cls, res);
+        }
+
+        return res;
+    }
+
+    /**
      * Enables fields indexing for the object of the given {@code cls}.
      *
      * If enabled then a footer will be added during marshalling of an object of the given {@code cls} to the end of
@@ -115,37 +158,40 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
         assert metaHandler != null;
 
+        boolean res;
+
         if (isFieldsIndexingExcludedForClass(ctx, cls))
-            return false;
+            res = false;
+        else if (OptimizedMarshalAware.class.isAssignableFrom(cls))
+            res = true;
+        else {
+            try {
+                OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
 
-        if (OptimizedMarshalAware.class.isAssignableFrom(cls))
-            return true;
+                if (desc.fields() != null && desc.fields().fieldsIndexingSupported()) {
+                    OptimizedObjectMetadata meta = new OptimizedObjectMetadata();
 
-        try {
-            OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
+                    for (ClassFields clsFields : desc.fields().fieldsList())
+                        for (FieldInfo info : clsFields.fieldInfoList())
+                            meta.addMeta(info.id(), info.type());
 
-            if (desc.fields() != null && desc.fields().fieldsIndexingSupported()) {
-                //The function is called on kernel startup, calling metaHandler.metadata() will hang the grid,
-                //because the underlying cache is not ready.
-                //if (metaHandler.metadata(desc.typeId()) != null)
-                //    return true;
+                    metaHandler.addMeta(desc.typeId(), meta);
 
-                OptimizedObjectMetadata meta = new OptimizedObjectMetadata();
+                    res = true;
+                }
+                else
+                    res = false;
 
-                for (ClassFields clsFields : desc.fields().fieldsList())
-                    for (FieldInfo info : clsFields.fieldInfoList())
-                        meta.addMeta(info.id(), info.type());
-
-                metaHandler.addMeta(desc.typeId(), meta);
-
-                return true;
+            } catch (IOException e) {
+                throw new IgniteCheckedException("Failed to put meta for class: " + cls.getName(), e);
             }
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to put meta for class: " + cls.getName(), e);
+
+        synchronized (indexingEnabledCache) {
+            indexingEnabledCache.put(cls, res);
         }
 
-        return false;
+        return res;
     }
 
     /**
@@ -157,21 +203,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     public boolean fieldsIndexingEnabled(Class<?> cls) {
         assert metaHandler != null;
 
-        if (isFieldsIndexingExcludedForClass(ctx, cls))
-            return false;
-
-        if (OptimizedMarshalAware.class.isAssignableFrom(cls))
-            return true;
-
-        try {
-            OptimizedClassDescriptor desc = OptimizedMarshallerUtils.classDescriptor(clsMap, cls, ctx, mapper);
-
-            return desc.fields() != null && desc.fields().fieldsIndexingSupported() &&
-                metaHandler.metadata(desc.typeId()) != null;
-        }
-        catch (IOException e) {
-            throw new IgniteException("Failed to load class description: " + cls);
-        }
+        return fieldsIndexingSupported(cls, metaHandler, ctx, clsMap, mapper);
     }
 
     /** {@inheritDoc} */

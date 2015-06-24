@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -1065,7 +1066,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             else {
                 assertFalse(inHandles[i] == null);
 
-                assertTrue(outHandles[i].getClass() == inHandles[i].getClass());
+                assertTrue(((GridHandleTable.ObjectInfo)outHandles[i]).object().getClass() == inHandles[i].getClass());
             }
         }
     }

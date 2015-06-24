@@ -20,7 +20,6 @@ import org.apache.ignite.internal.util.io.*;
 
 import java.io.*;
 
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerExt.*;
 
 
@@ -35,10 +34,7 @@ public class OptimizedObjectInputStreamExt extends OptimizedObjectInputStream {
 
     /** {@inheritDoc} */
     @Override protected void skipFooter(Class<?> cls) throws IOException {
-        if (isFieldsIndexingExcludedForClass(ctx, cls))
-            return;
-
-        if (metaHandler != null && metaHandler.metadata(resolveTypeId(cls.getName(), mapper)) != null) {
+        if (fieldsIndexingSupported(cls, metaHandler, ctx, clsMap, mapper)) {
             short footerLen = in.readShort();
 
             if (footerLen != EMPTY_FOOTER)
