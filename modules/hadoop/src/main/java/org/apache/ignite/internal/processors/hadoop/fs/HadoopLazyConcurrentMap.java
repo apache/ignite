@@ -51,6 +51,8 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
      */
     public HadoopLazyConcurrentMap(ValueFactory<K, V> factory) {
         this.factory = factory;
+
+        assert getClass().getClassLoader() == Ignite.class.getClassLoader();
     }
 
     /**
@@ -105,6 +107,9 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
         closeLock.writeLock().lock();
 
         try {
+            if (closed)
+                return;
+
             closed = true;
 
             Exception err = null;

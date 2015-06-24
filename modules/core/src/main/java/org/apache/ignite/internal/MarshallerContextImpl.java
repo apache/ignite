@@ -124,10 +124,18 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
     /** {@inheritDoc} */
     @Override protected String className(int id) throws IgniteCheckedException {
-        if (cache == null)
+        GridCacheAdapter<Integer, String> cache0 = cache;
+
+        if (cache0 == null) {
             U.awaitQuiet(latch);
 
-        String clsName = cache.get(id);
+            cache0 = cache;
+
+            if (cache0 == null)
+                throw new IllegalStateException("Failed to initialize marshaller context (grid is stopping).");
+        }
+
+        String clsName = cache0.get(id);
 
         if (clsName == null) {
             File file = new File(workDir, id + ".classname");

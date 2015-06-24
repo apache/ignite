@@ -1377,7 +1377,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if store read-through mode is enabled.
+     * @return {@code True} if {@link CacheConfiguration#isLoadPreviousValue()} flag is set.
      */
     public boolean loadPreviousValue() {
         return cacheCfg.isLoadPreviousValue();

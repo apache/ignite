@@ -977,15 +977,15 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         // First try offheap.
         if (offheapEnabled) {
-            byte[] val = offheap.remove(spaceName, part, key.value(cctx.cacheObjectContext(), false),
-                key.valueBytes(cctx.cacheObjectContext()));
-
-            if(val != null && cctx.config().isStatisticsEnabled())
-                cctx.cache().metrics0().onOffHeapRemove();
+            // TODO Pass closure c to offheap.remove and apply it before the actual remove.
+            byte[] val = offheap.remove(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()));
 
             if (val != null) {
+                if (cctx.config().isStatisticsEnabled())
+                    cctx.cache().metrics0().onOffHeapRemove();
+
                 if (c != null)
-                    c.apply(val); // Probably we should read value and apply closure before removing...
+                    c.apply(val);
 
                 return;
             }

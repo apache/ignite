@@ -151,8 +151,9 @@ public interface DiscoverySpi extends IgniteSpi {
      * Initiates failure of provided node.
      *
      * @param nodeId Node ID.
+     * @param warning Warning to be shown on all cluster nodes.
      */
-    public void failNode(UUID nodeId);
+    public void failNode(UUID nodeId, @Nullable String warning);
 
     /**
      * Whether or not discovery is started in client mode.
