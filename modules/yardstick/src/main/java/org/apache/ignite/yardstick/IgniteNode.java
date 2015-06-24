@@ -72,7 +72,11 @@ public class IgniteNode implements BenchmarkServer {
 
         IgniteConfiguration c = loadConfiguration(args.configuration());
 
-        c.setGridName(String.valueOf(idSeq.incrementAndGet()));
+        UUID uuid = UUID.randomUUID();
+
+        c.setNodeId(uuid);
+
+        c.setGridName("node-" + uuid.toString());
 
         assert c != null;
 
@@ -134,6 +138,7 @@ public class IgniteNode implements BenchmarkServer {
 
         commSpi.setLocalPortRange(200);
         commSpi.setSocketWriteTimeout(30_000);
+        commSpi.setSharedMemoryPort(-1);
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
 
