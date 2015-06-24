@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.services.*;
@@ -97,7 +98,8 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
      * @return {@code true} if excluded.
      */
     static boolean isFieldsIndexingExcludedForClass(MarshallerContext ctx, Class<?> cls) {
-        return ctx.isSystemType(cls.getName()) || Service.class.isAssignableFrom(cls);
+        return ctx.isSystemType(cls.getName()) || Service.class.isAssignableFrom(cls) ||
+            ComputeTask.class.isAssignableFrom(cls);
     }
 
     /**
