@@ -124,7 +124,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         if (res == null)
             throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + gridName);
+                "or was already stopped: " + gridName + ". All known grid instances: " + gridProxies.keySet());
 
         return res;
     }
