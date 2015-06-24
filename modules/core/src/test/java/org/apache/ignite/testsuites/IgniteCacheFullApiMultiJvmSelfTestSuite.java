@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.multijvm.*;
 /**
  * Multi jvm test suite.
  */
-public class IgniteMultiJvmTestSuite extends TestSuite {
+public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
     /**
      * @return Multi JVM tests suite.
      * @throws Exception If failed.
@@ -69,7 +69,6 @@ public class IgniteMultiJvmTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiJvmFullApiSelfTest.class);
 
-        // TODO create multi Jvm runners for tests.
 //        suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
 //        suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
 //        suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
@@ -84,15 +83,15 @@ public class IgniteMultiJvmTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapMultiJvmFullApiSelfTest.class);
 
-        // Private cache API.
-        // TODO create multi Jvm runners for tests
-//        suite.addTestSuite(GridCacheExLocalFullApiSelfTest.class);
-//        suite.addTestSuite(GridCacheExReplicatedFullApiSelfTest.class);
-//        suite.addTestSuite(GridCacheExNearFullApiSelfTest.class);
-//        suite.addTestSuite(GridCacheExColocatedFullApiSelfTest.class);
+        // Multi-node with off-heap tiered mode.
+        suite.addTestSuite(GridCacheReplicatedOffHeapTieredMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedOffHeapTieredMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicOffHeapTieredMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheAtomicPrimaryWrityOrderOffHeapTieredMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOffHeapTieredMultiJvmFullApiSelfTest.class);
 
-//        Multithreaded // TODO: GG-708
-//        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
+        // Multithreaded
 //        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);
 
