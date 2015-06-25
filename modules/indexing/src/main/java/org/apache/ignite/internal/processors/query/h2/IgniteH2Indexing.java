@@ -1584,8 +1584,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             map.put(Timestamp.class, TIMESTAMP);
             map.put(java.util.Date.class, TIMESTAMP);
             map.put(java.sql.Date.class, DATE);
-            map.put(char.class, CHAR);
-            map.put(Character.class, CHAR);
             map.put(String.class, VARCHAR);
             map.put(UUID.class, UUID);
             map.put(byte[].class, BINARY);

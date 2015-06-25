@@ -41,6 +41,8 @@ import org.jsr166.*;
 
 import javax.cache.*;
 import java.lang.reflect.*;
+import java.math.*;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -52,6 +54,28 @@ import static org.apache.ignite.internal.processors.query.GridQueryIndexType.*;
  * Indexing processor.
  */
 public class GridQueryProcessor extends GridProcessorAdapter {
+    /** */
+    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
+
+    /** */
+    private static Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
+        Integer.class,
+        Boolean.class,
+        Byte.class,
+        Short.class,
+        Long.class,
+        BigDecimal.class,
+        Double.class,
+        Float.class,
+        Time.class,
+        Timestamp.class,
+        java.util.Date.class,
+        java.sql.Date.class,
+        String.class,
+        UUID.class,
+        byte[].class
+    ));
+
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
 
@@ -798,6 +822,26 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Checks if the given class can be mapped to a simple SQL type.
+     *
+     * @param cls Class.
+     * @return {@code true} If can.
+     */
+    public static boolean isSqlType(Class<?> cls) {
+        return SQL_TYPES.contains(cls);
+    }
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param cls Class.
+     * @return {@code true} If this is geometry.
+     */
+    public static boolean isGeometryClass(Class<?> cls) {
+        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
     }
 
     /**
