@@ -753,8 +753,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     rmtNodeId = this.rmtNodeId;
                 }
 
-                boolean first = joinLatch.getCount() > 0;
-
                 try {
                     InputStream in = new BufferedInputStream(sock.getInputStream());
 
@@ -765,17 +763,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            if (first)
-                                msg = spi.readMessage(sock, in, spi.netTimeout);
-                            else
-                                msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                            msg = spi.marsh.unmarshal(in, U.gridClassLoader());
                         }
                         catch (IgniteCheckedException e) {
                             //if (log.isDebugEnabled())
                                 U.error(log, "Failed to read message [sock=" + sock + ", " +
-                                    "locNodeId=" + getLocalNodeId() +
-                                    ", rmtNodeId=" + rmtNodeId +
-                                    ", first=" + first + ']', e);
+                                    "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
 
                             IOException ioEx = X.cause(e, IOException.class);
 
@@ -793,9 +786,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']');
 
                             continue;
-                        }
-                        finally {
-                            first = false;
                         }
 
                         msg.senderNodeId(rmtNodeId);
@@ -816,13 +806,11 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     //if (log.isDebugEnabled())
                         U.error(log, "Connection failed [sock=" + sock +
-                            ", locNodeId=" + getLocalNodeId() +
-                            ", first=" + first + ']', e);
+                            ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
                     U.error(log, "Closing socket [sock=" + sock +
-                        ", locNodeId=" + getLocalNodeId() +
-                        ", first="+ first + ']');
+                        ", locNodeId=" + getLocalNodeId() + ']');
 
                     U.closeQuiet(sock);
 
@@ -1546,9 +1534,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
 
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                assert msg.success() : msg;
-
                 if (reconnector != null) {
+                    assert msg.success() : msg;
+
                     currSock = reconnector.sock;
 
                     sockWriter.setSocket(currSock);
@@ -1561,7 +1549,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     try {
                         for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
                             if (log.isDebugEnabled())
-                                log.debug("Process message on reconnect [msg=" + pendingMsg + ']');
+                                log.debug("Process pending message on reconnect [msg=" + pendingMsg + ']');
 
                             processDiscoveryMessage(pendingMsg);
                         }
@@ -1570,8 +1558,22 @@ class ClientImpl extends TcpDiscoveryImpl {
                         pending = false;
                     }
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Discarding reconnect message, reconnect is completed: " + msg);
+                else {
+                    if (joinLatch.getCount() > 0) {
+                        if (msg.success()) {
+                            for (TcpDiscoveryAbstractMessage pendingMsg : msg.pendingMessages()) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Process pending message on connect [msg=" + pendingMsg + ']');
+
+                                processDiscoveryMessage(pendingMsg);
+                            }
+
+                            assert joinLatch.getCount() == 0 : msg;
+                        }
+                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Discarding reconnect message, reconnect is completed: " + msg);
+                }
             }
             else if (log.isDebugEnabled())
                 log.debug("Discarding reconnect message for another client: " + msg);

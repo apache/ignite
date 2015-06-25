@@ -24,7 +24,9 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -106,11 +108,14 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     /** */
     private int maxMissedClientHbs = TcpDiscoverySpi.DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
 
+    /** */
+    private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
+        TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
         disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
 
@@ -153,6 +158,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         disco.setJoinTimeout(joinTimeout);
         disco.setNetworkTimeout(netTimeout);
+
+        disco.afterWrite(afterWrite);
 
         cfg.setDiscoverySpi(disco);
 
@@ -1016,6 +1023,88 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testJoinError3() throws Exception {
+        startServerNodes(1);
+
+        Ignite ignite = G.ignite("server-0");
+
+        TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
+
+        srvSpi.failNodeAddFinishedMessage();
+
+        startClientNodes(1);
+
+        checkNodes(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinErrorMissedAddFinishedMessage1() throws Exception {
+        missedAddFinishedMessage(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testJoinErrorMissedAddFinishedMessage2() throws Exception {
+        missedAddFinishedMessage(false);
+    }
+
+    /**
+     * @param singleSrv If {@code true} starts one server node two otherwise.
+     * @throws Exception If failed.
+     */
+    public void missedAddFinishedMessage(boolean singleSrv) throws Exception {
+        int srvs = singleSrv ? 1 : 2;
+
+        startServerNodes(srvs);
+
+        afterWrite = new CIX2<TcpDiscoveryAbstractMessage, Socket>() {
+            private boolean first = true;
+
+            @Override public void applyx(TcpDiscoveryAbstractMessage msg, Socket sock) throws IgniteCheckedException {
+                if (first && (msg instanceof TcpDiscoveryJoinRequestMessage)) {
+                    first = false;
+
+                    log.info("Close socket after message write [msg=" + msg + "]");
+
+                    try {
+                        sock.close();
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    log.info("Delay after message write [msg=" + msg + "]");
+
+                    U.sleep(5000); // Wait when server process join request.
+                }
+            }
+        };
+
+        Ignite srv = singleSrv ? G.ignite("server-0") : G.ignite("server-1");
+
+        TcpDiscoveryNode srvNode = (TcpDiscoveryNode)srv.cluster().localNode();
+
+        assertEquals(singleSrv ? 1 : 2, srvNode.order());
+
+        clientIpFinder = new TcpDiscoveryVmIpFinder();
+
+        clientIpFinder.setAddresses(Collections.singleton("localhost:" + srvNode.discoveryPort()));
+
+        startClientNodes(1);
+
+        TcpDiscoveryNode clientNode = (TcpDiscoveryNode)G.ignite("client-0").cluster().localNode();
+
+        assertEquals(srvNode.id(), clientNode.clientRouterNodeId());
+
+        checkNodes(srvs, 1);
+    }
+
+    /**
      * @param clientIdx Client index.
      * @param srvIdx Server index.
      * @throws Exception In case of error.
@@ -1267,7 +1356,13 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         private AtomicInteger failNodeAdded = new AtomicInteger();
 
         /** */
+        private AtomicInteger failNodeAddFinished = new AtomicInteger();
+
+        /** */
         private AtomicInteger failClientReconnect = new AtomicInteger();
+
+        /** */
+        private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
 
         /**
          * @param lock Lock.
@@ -1287,10 +1382,24 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /**
+         * @param afterWrite After write callback.
+         */
+        void afterWrite(IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite) {
+            this.afterWrite = afterWrite;
+        }
+
+        /**
          *
          */
         void failNodeAddedMessage() {
             failNodeAdded.set(1);
+        }
+
+        /**
+         *
+         */
+        void failNodeAddFinishedMessage() {
+            failNodeAddFinished.set(1);
         }
 
         /**
@@ -1322,6 +1431,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 fail = failNodeAdded.getAndDecrement() > 0;
+            else if (msg instanceof TcpDiscoveryNodeAddFinishedMessage)
+                fail = failNodeAddFinished.getAndDecrement() > 0;
             else if (msg instanceof TcpDiscoveryClientReconnectMessage)
                 fail = failClientReconnect.getAndDecrement() > 0;
 
@@ -1332,6 +1443,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             }
 
             super.writeToSocket(sock, msg, bout);
+
+            if (afterWrite != null)
+                afterWrite.apply(msg, sock);
         }
 
         /** {@inheritDoc} */

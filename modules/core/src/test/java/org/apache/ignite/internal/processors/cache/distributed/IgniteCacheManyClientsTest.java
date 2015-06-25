@@ -54,9 +54,14 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
     /** */
     private boolean clientDiscovery;
 
+    /** */
+    private static ThreadLocal<UUID> id = new ThreadLocal<>();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setNodeId(id.get());
 
         cfg.setConnectorConfiguration(null);
         cfg.setPeerClassLoadingEnabled(false);
@@ -65,7 +70,7 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(2 * 60_000);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(5 * 60_000);
 
         if (!clientDiscovery)
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -217,7 +222,11 @@ public class IgniteCacheManyClientsTest extends GridCommonAbstractTest {
                     try {
                         int nodeIdx = idx.getAndIncrement();
 
-                        Thread.currentThread().setName("client-thread-node-" + nodeIdx);
+                        UUID id0 = UUID.randomUUID();
+
+                        id.set(id0);
+
+                        Thread.currentThread().setName("client-thread-node-" + id0.toString());
 
                         try (Ignite ignite = startGrid(nodeIdx)) {
                             log.info("Started node: " + ignite.name());

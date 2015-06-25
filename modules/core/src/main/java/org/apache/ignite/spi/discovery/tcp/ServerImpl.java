@@ -2466,7 +2466,33 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
 
-                    if (log.isDebugEnabled())
+                    if (msg.client()) {
+                        TcpDiscoveryClientReconnectMessage reconMsg = new TcpDiscoveryClientReconnectMessage(node.id(),
+                            node.clientRouterNodeId(),
+                            null);
+
+                        reconMsg.verify(getLocalNodeId());
+
+                        Collection<TcpDiscoveryAbstractMessage> msgs = msgHist.messages(null, node);
+
+                        if (msgs != null) {
+                            reconMsg.pendingMessages(msgs);
+
+                            reconMsg.success(true);
+                        }
+
+                        if (getLocalNodeId().equals(node.clientRouterNodeId())) {
+                            ClientMessageWorker wrk = clientMsgWorkers.get(node.id());
+
+                            if (wrk != null)
+                                wrk.addMessage(reconMsg);
+                        }
+                        else {
+                            if (ring.hasRemoteNodes())
+                                sendMessageAcrossRing(reconMsg);
+                        }
+                    }
+                    else if (log.isDebugEnabled())
                         log.debug("Ignoring join request message since node is already in topology: " + msg);
 
                     return;
@@ -4164,7 +4190,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         clientMsgWrk = clientMsgWrk0;
 
-                        clientMsgWrk.start();
+                        //clientMsgWrk.start();
                     }
 
                     if (log.isDebugEnabled())
@@ -4222,14 +4248,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
+                boolean first = false;
+
                 while (!isInterrupted()) {
                     try {
                         TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
 
                         msg.senderNodeId(nodeId);
 
-                        if (log.isDebugEnabled())
-                            log.debug("Message has been received: " + msg);
+                        if (first)
+                            log.info("Message has been received [node=" + nodeId + " , msg=" + msg + ']');
 
                         spi.stats.onMessageReceived(msg);
 
@@ -4240,7 +4268,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
 
                             if (!req.responded()) {
-                                boolean ok = processJoinRequestMessage(req);
+                                boolean ok = processJoinRequestMessage(req, clientMsgWrk);
 
                                 if (clientMsgWrk != null && ok)
                                     continue;
@@ -4256,12 +4284,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (state == CONNECTED) {
                                     spi.writeToSocket(sock, RES_OK);
 
+                                    log.info("Responded to reconnect message [msg=" + msg +
+                                        ", reconNode=" + msg.creatorNodeId() +
+                                        ", res=" + RES_OK + ']');
+
+                                    if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
+                                        clientMsgWrk.start();
+
                                     msgWorker.addMessage(msg);
 
                                     continue;
                                 }
                                 else {
                                     spi.writeToSocket(sock, RES_CONTINUE_JOIN);
+
+                                    log.info("Responded to reconnect message [msg=" + msg +
+                                        ", reconNode=" + msg.creatorNodeId() +
+                                        ", res=" + RES_CONTINUE_JOIN + ']');
 
                                     break;
                                 }
@@ -4401,7 +4440,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             spi.writeToSocket(sock, RES_OK);
                     }
                     catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
+                        //if (log.isDebugEnabled())
                             U.error(log, "Caught exception on message read [sock=" + sock +
                                 ", locNodeId=" + locNodeId + ", rmtNodeId=" + nodeId + ']', e);
 
@@ -4428,7 +4467,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
                     catch (IOException e) {
-                        if (log.isDebugEnabled())
+                        //if (log.isDebugEnabled())
                             U.error(log, "Caught exception on message read [sock=" + sock + ", locNodeId=" + locNodeId +
                                 ", rmtNodeId=" + nodeId + ']', e);
 
@@ -4491,7 +4530,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IOException If IO failed.
          */
         @SuppressWarnings({"IfMayBeConditional"})
-        private boolean processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg) throws IOException {
+        private boolean processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg,
+            @Nullable ClientMessageWorker clientMsgWrk) throws IOException {
             assert msg != null;
             assert !msg.responded();
 
@@ -4500,10 +4540,15 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (state == CONNECTED) {
                 spi.writeToSocket(sock, RES_OK);
 
-                if (log.isDebugEnabled())
-                    log.debug("Responded to join request message [msg=" + msg + ", res=" + RES_OK + ']');
+                //if (log.isDebugEnabled())
+                    log.info("Responded to join request message [msg=" + msg +
+                        ", joinNode=" + msg.creatorNodeId() +
+                        ", res=" + RES_OK + ']');
 
                 msg.responded(true);
+
+                if (clientMsgWrk != null && clientMsgWrk.getState() == State.NEW)
+                    clientMsgWrk.start();
 
                 msgWorker.addMessage(msg);
 
@@ -4531,8 +4576,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 spi.writeToSocket(sock, res);
 
-                if (log.isDebugEnabled())
-                    log.debug("Responded to join request message [msg=" + msg + ", res=" + res + ']');
+                //if (log.isDebugEnabled())
+                    log.info("Responded to join request message [msg=" + msg +
+                        ", joinNode=" + msg.creatorNodeId() +
+                        ", res=" + res + ']');
 
                 fromAddrs.addAll(msg.node().socketAddresses());
 
@@ -4614,6 +4661,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private final AtomicReference<GridFutureAdapter<Boolean>> pingFut = new AtomicReference<>();
 
+        /** */
+        private boolean first = true;
+
         /**
          * @param sock Socket.
          * @param clientNodeId Node ID.
@@ -4649,6 +4699,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
 
                 try {
+                    if (first) {
+                        log.info("Redirecting message to client [sock=" + sock + ", locNodeId="
+                            + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
+
+                        first = false;
+                    }
+
                     prepareNodeAddedMessage(msg, clientNodeId, null, null);
 
                     writeToSocket(sock, msg);
