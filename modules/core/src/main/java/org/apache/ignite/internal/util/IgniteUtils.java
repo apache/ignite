@@ -1658,10 +1658,10 @@ public abstract class IgniteUtils {
 
         String ipAddr = addr.getHostAddress();
 
-        hostName = F.isEmpty(hostName) || hostName.equals(ipAddr) || addr.isLoopbackAddress() ? "" : hostName;
-
         addrs.add(ipAddr);
-        hostNames.add(hostName);
+
+        if (!F.isEmpty(hostName) && !addr.isLoopbackAddress())
+            hostNames.add(hostName);
     }
 
     /**

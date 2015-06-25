@@ -20,9 +20,9 @@ package org.apache.ignite.internal.client.integration;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -146,7 +146,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
         startRestNode("grid1", LOOPBACK_IP, defaultRestPort());
 
         checkConnectivityByIp(LOOPBACK_IP, F.t((Collection<String>)Collections.singleton(LOOPBACK_IP),
-            (Collection<String>)Collections.singleton("")));
+            (Collection<String>)Collections.<String>emptySet()));
     }
 
     /**
