@@ -26,26 +26,91 @@ import java.lang.reflect.*;
 import java.util.*;
 
 /**
- * Convenience class for reflection-based object creation.
+ * Factory implementation that use reflection to create instance of given class.
+ * <p>
+ * There are 2 modes of factory: singleton and non-sigletton.
+ * <p>
+ * Class that should be created by {@link IgniteReflectionFactory} (component class) have to be
+ * public java POJO with public setters for field
+ * for which property injection will be used (see {@link #setProperties(Map)}).
+ * <p>
+ * <h1 class="header">Configuration</h1>
+ * <h2 class="header">Mandatory</h2>
+ * The following configuration parameters are mandatory:
+ * <ul>
+ * <li>Component class - class to be created (see {@link #setComponentClass(Class)}.
+ * It have to be public java POJO class with default constructor
+ * and public setters to be used by properties injection (see {@link #setProperties(Map)})</li>
+ * </ul>
+ * <h2 class="header">Optional</h2>
+ * The following configuration parameters are optional:
+ * <ul>
+ * </li>
+ * <li>Singleton mode (see {@link #setSingleton(boolean)})</li>
+ * <li>Properties map (see {@link #setProperties(Map)}</li>
+ * <li>With method (see {@link #setWithMethod(Object, String, Serializable)}</li>
+ * </ul>
+ * <h2 class="header">Java Example</h2>
+ * <pre name="code" class="java">
+ * Factory<CacheStoreSessionListener> factory =
+ *     new IgniteReflectionFactory<CacheStoreSessionListener>(MyCacheStoreSessionListener.class);
+ *
+ * CacheConfiguration cc = new CacheConfiguration()
+ *     .setCacheStoreSessionListenerFactories(factory);
+ *
+ * IgniteConfiguration cfg = new IgniteConfiguration()
+ *     .setCacheConfiguration(cc);
+ *
+ * // Start grid.
+ * Ignition.start(cfg);
+ * </pre>
+ * <h2 class="header">Spring Example</h2>
+ * TcpDiscoverySpi can be configured from Spring XML configuration file:
+ * <pre name="code" class="xml">
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
+ *     ...
+ *     &lt;property name="cacheConfiguration"&gt;
+ *         &lt;list&gt;
+ *             &lt;bean class="org.apache.ignite.configuration.CacheConfiguration"&gt;
+ *                 ...
+ *                 &lt;property name="cacheStoreSessionListenerFactories"&gt;
+ *                     &lt;list&gt;
+ *                         &lt;bean class="org.apache.ignite.configuration.IgniteReflectionFactory"&gt;
+ *                             &lt;property name="componentClass" value="custom.project.MyCacheStoreSessionListener"/&gt;
+ *                         &lt;/bean&gt;
+ *                     &lt;/list&gt;
+ *                 &lt;/property&gt;
+ *                 ...
+ *             &lt;/bean&gt;
+ *         &lt;/list&gt;
+ *     &lt;/property&gt;
+ *     ...
+ * &lt;/bean&gt;
+ * </pre>
+ * <p>
+ * <img src="http://ignite.incubator.apache.org/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * @see Factory
  */
 public class IgniteReflectionFactory<T> implements Factory<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Singletom mode */
     private volatile boolean singleton;
 
-    /** */
+    /** Component class */
     private volatile Class<? extends T> cls;
 
-    /** */
+    /** Properties */
     private volatile Map<String, Serializable> props;
 
     /** */
     private transient T instance;
 
     /**
-     *
+     * Default constructor.
      */
     public IgniteReflectionFactory() {
         // No-op.
@@ -98,6 +163,9 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
     }
 
     /**
+     * Gets a map of properties. Map contains entries of component class field name
+     * to value of the filed which will be used as initial value.
+     *
      * @return Properties.
      */
     public Map<String, Serializable> getProperties() {
@@ -105,6 +173,9 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
     }
 
     /**
+     * Sets a map of properties. Map contains entries of component class field name
+     * to a value of the filed which will be used as initial value.
+     *
      * @param props Properties.
      */
     public void setProperties(Map<String, Serializable> props) {

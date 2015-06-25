@@ -531,7 +531,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Serializable factory.
      */
-    private static class TestStoreFactory implements Factory<CacheStore> {
+    protected static class TestStoreFactory implements Factory<CacheStore> {
         @Override public CacheStore create() {
             return cacheStore();
         }

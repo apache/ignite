@@ -37,7 +37,6 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "messageQueueLimit", -1);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "reconnectCount", 0);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "selectorsCount", 0);
-        checkNegativeSpiProperty(new TcpCommunicationSpi(), "minimumBufferedMessageCount", -1);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "connectTimeout", -1);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "maxConnectTimeout", -1);
         checkNegativeSpiProperty(new TcpCommunicationSpi(), "socketWriteTimeout", -1);
