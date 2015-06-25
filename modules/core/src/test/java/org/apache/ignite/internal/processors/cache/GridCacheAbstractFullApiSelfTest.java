@@ -288,6 +288,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert jcache(i).localSize() != 0 || F.isEmpty(keysCol);
         }
 
+        // TODO
         for (int i = 0; i < gridCount(); i++) {
             if (!isMultiJvmAndNodeIsRemote(i)) {
                 GridCacheContext<String, Integer> ctx = context(i);
@@ -3923,21 +3924,44 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param keys Expected keys.
      * @throws Exception If failed.
      */
-    protected void checkKeySize(Collection<String> keys) throws Exception {
+    protected void checkKeySize(final Collection<String> keys) throws Exception {
         if (nearEnabled())
             assertEquals("Invalid key size: " + jcache().localSize(ALL),
                 keys.size(), jcache().localSize(ALL));
         else {
             for (int i = 0; i < gridCount(); i++) {
-                GridCacheContext<String, Integer> ctx = context(i);
+                if (!isMultiJvmAndNodeIsRemote(i)) {
+                    GridCacheContext<String, Integer> ctx = context(i);
 
-                int size = 0;
+                    int size = 0;
 
-                for (String key : keys)
-                    if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
-                        size++;
+                    for (String key : keys)
+                        if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                            size++;
 
-                assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize(ALL));
+                    assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize(ALL));
+                }
+                else {
+                    final int finI = i;
+                    final UUID id = grid(i).localNode().id();
+
+                    ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
+                        @Override public void run() {
+                            Ignite grid = Ignition.ignite(id);
+
+                            GridCacheContext<String, Integer> ctx =
+                                ((IgniteKernal)grid).<String, Integer>internalCache().context();
+
+                            int size = 0;
+
+                            for (String key : keys)
+                                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                                    size++;
+
+                            assertEquals("Incorrect key size on cache #" + finI, size, grid.cache(null).localSize(ALL));
+                        }
+                    });
+                }
             }
         }
     }
