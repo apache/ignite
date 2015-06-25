@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.igfs.*;
 import org.apache.ignite.internal.processors.igfs.*;
-import org.apache.ignite.internal.processors.hadoop.*;
 
 import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.*;
 
@@ -36,7 +35,7 @@ public class IgniteIgfsLinuxAndMacOSTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         downloadHadoop();
 
-        HadoopClassLoader ldr = new HadoopClassLoader(null, "test");
+        ClassLoader ldr = TestSuite.class.getClassLoader();
 
         TestSuite suite = new TestSuite("Ignite IGFS Test Suite For Linux And Mac OS");
 

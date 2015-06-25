@@ -24,6 +24,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
+import org.apache.ignite.internal.processors.hadoop.v2.*;
 
 import java.util.*;
 
@@ -62,9 +63,11 @@ public class HadoopTasksV2Test extends HadoopTasksAllVersionsTest {
 
         HadoopDefaultJobInfo jobInfo = createJobInfo(hadoopJob.getConfiguration());
 
-        HadoopJobId jobId = new HadoopJobId(new UUID(0, 0), 0);
+        UUID uuid = new UUID(0, 0);
 
-        return jobInfo.createJob(jobId, log);
+        HadoopJobId jobId = new HadoopJobId(uuid, 0);
+
+        return jobInfo.createJob(HadoopV2Job.class, jobId, log);
     }
 
     /** {@inheritDoc} */

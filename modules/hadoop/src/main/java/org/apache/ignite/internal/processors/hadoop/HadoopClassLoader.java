@@ -67,6 +67,28 @@ public class HadoopClassLoader extends URLClassLoader {
     private final String name;
 
     /**
+     * Gets name for Job class loader. The name is specific for local node id.
+     * @param locNodeId The local node id.
+     * @return The class loader name.
+     */
+    public static String nameForJob(UUID locNodeId) {
+        return "hadoop-job-node-" + locNodeId.toString();
+    }
+
+    /**
+     * Gets name for the task class loader. Task class loader
+     * @param info The task info.
+     * @param prefix Get only prefix (without task type and number)
+     * @return The class loader name.
+     */
+    public static String nameForTask(HadoopTaskInfo info, boolean prefix) {
+        if (prefix)
+            return "hadoop-task-" + info.jobId() + "-";
+        else
+            return "hadoop-task-" + info.jobId() + "-" + info.type() + "-" + info.taskNumber();
+    }
+
+    /**
      * @param urls Urls.
      */
     public HadoopClassLoader(URL[] urls, String name) {
@@ -567,5 +589,12 @@ public class HadoopClassLoader extends URLClassLoader {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(HadoopClassLoader.class, this);
+    }
+
+    /**
+     * Getter for name field.
+     */
+    public String name() {
+        return name;
     }
 }
