@@ -17,7 +17,6 @@
 
 package org.apache.ignite.stream.kafka;
 
-import org.apache.commons.io.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.zookeeper.server.*;
 
@@ -25,6 +24,7 @@ import kafka.admin.*;
 import kafka.api.*;
 import kafka.api.Request;
 import kafka.producer.*;
+import kafka.serializer.*;
 import kafka.server.*;
 import kafka.utils.*;
 import org.I0Itec.zkclient.*;
@@ -39,106 +39,104 @@ import java.util.concurrent.*;
  * Kafka Embedded Broker.
  */
 public class KafkaEmbeddedBroker {
-
-    /** Default ZooKeeper Host. */
+    /** Default ZooKeeper host. */
     private static final String ZK_HOST = "localhost";
 
-    /** Broker Port. */
+    /** Broker port. */
     private static final int BROKER_PORT = 9092;
 
-    /** ZooKeeper Connection Timeout. */
+    /** ZooKeeper connection timeout. */
     private static final int ZK_CONNECTION_TIMEOUT = 6000;
 
-    /** ZooKeeper Session Timeout. */
+    /** ZooKeeper session timeout. */
     private static final int ZK_SESSION_TIMEOUT = 6000;
 
     /** ZooKeeper port. */
     private static int zkPort = 0;
 
-    /** Is ZooKeeper Ready. */
+    /** Is ZooKeeper ready. */
     private boolean zkReady;
 
-    /** Kafka Config. */
-    private KafkaConfig brokerConfig;
+    /** Kafka config. */
+    private KafkaConfig brokerCfg;
 
-    /** Kafka Server. */
-    private KafkaServer kafkaServer;
+    /** Kafka server. */
+    private KafkaServer kafkaSrv;
 
-    /** ZooKeeper Client. */
+    /** ZooKeeper client. */
     private ZkClient zkClient;
 
     /** Embedded ZooKeeper. */
     private EmbeddedZooKeeper zooKeeper;
 
     /**
-     * Creates an embedded Kafka Broker.
+     * Creates an embedded Kafka broker.
      */
     public KafkaEmbeddedBroker() {
         try {
             setupEmbeddedZooKeeper();
+
             setupEmbeddedKafkaServer();
         }
         catch (IOException | InterruptedException e) {
-            throw new RuntimeException("failed to start Kafka Broker " + e);
+            throw new RuntimeException("Failed to start Kafka broker " + e);
         }
-
     }
 
     /**
-     * @return ZooKeeper Address.
+     * @return ZooKeeper address.
      */
     public static String getZKAddress() {
-        return ZK_HOST + ":" + zkPort;
+        return ZK_HOST + ':' + zkPort;
     }
 
     /**
      * Creates a Topic.
      *
-     * @param topic topic name
-     * @param partitions number of paritions for the topic
-     * @param replicationFactor replication factor
-     * @throws TimeoutException
-     * @throws InterruptedException
+     * @param topic Topic name.
+     * @param partitions Number of partitions for the topic.
+     * @param replicationFactor Replication factor.
+     * @throws TimeoutException If operation is timed out.
+     * @throws InterruptedException If interrupted.
      */
-    public void createTopic(String topic, final int partitions, final int replicationFactor)
+    public void createTopic(String topic, int partitions, int replicationFactor)
         throws TimeoutException, InterruptedException {
         AdminUtils.createTopic(zkClient, topic, partitions, replicationFactor, new Properties());
+
         waitUntilMetadataIsPropagated(topic, 0, 10000, 100);
     }
 
     /**
-     * Sends message to Kafka Broker.
+     * Sends message to Kafka broker.
      *
-     * @param keyedMessages List of Keyed Messages.
+     * @param keyedMessages List of keyed messages.
      * @return Producer used to send the message.
      */
-    public Producer sendMessages(List<KeyedMessage<String, String>> keyedMessages) {
+    public Producer<String, String> sendMessages(List<KeyedMessage<String, String>> keyedMessages) {
         Producer<String, String> producer = new Producer<>(getProducerConfig());
+
         producer.send(scala.collection.JavaConversions.asScalaBuffer(keyedMessages));
+
         return producer;
     }
 
     /**
-     * Shuts down Kafka Broker.
-     *
-     * @throws IOException
+     * Shuts down Kafka broker.
      */
-    public void shutdown()
-        throws IOException {
-
+    public void shutdown() {
         zkReady = false;
 
-        if (kafkaServer != null)
-            kafkaServer.shutdown();
+        if (kafkaSrv != null)
+            kafkaSrv.shutdown();
 
-        List<String> logDirs = scala.collection.JavaConversions.asJavaList(brokerConfig.logDirs());
+        List<String> logDirs = scala.collection.JavaConversions.asJavaList(brokerCfg.logDirs());
 
-        for (String logDir : logDirs) {
-            FileUtils.deleteDirectory(new File(logDir));
-        }
+        for (String logDir : logDirs)
+            U.delete(new File(logDir));
 
         if (zkClient != null) {
             zkClient.close();
+
             zkClient = null;
         }
 
@@ -148,16 +146,15 @@ public class KafkaEmbeddedBroker {
                 zooKeeper.shutdown();
             }
             catch (IOException e) {
-                // ignore
+                // No-op.
             }
 
             zooKeeper = null;
         }
-
     }
 
     /**
-     * @return the Zookeeper Client
+     * @return ZooKeeper client.
      */
     private ZkClient getZkClient() {
         A.ensure(zkReady, "Zookeeper not setup yet");
@@ -169,102 +166,105 @@ public class KafkaEmbeddedBroker {
     /**
      * Checks if topic metadata is propagated.
      *
-     * @param topic topic name
-     * @param partition partition
-     * @return true if propagated otherwise false
+     * @param topic Topic name.
+     * @param part Partition.
+     * @return {@code True} if propagated, otherwise {@code false}.
      */
-    private boolean isMetadataPropagated(final String topic, final int partition) {
-        final scala.Option<PartitionStateInfo> partitionStateOption = kafkaServer.apis().metadataCache().getPartitionInfo(
-            topic, partition);
-        if (partitionStateOption.isDefined()) {
-            final PartitionStateInfo partitionState = partitionStateOption.get();
-            final LeaderAndIsr leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch().leaderAndIsr();
+    private boolean isMetadataPropagated(String topic, int part) {
+        scala.Option<PartitionStateInfo> partStateOption =
+            kafkaSrv.apis().metadataCache().getPartitionInfo(topic, part);
 
-            if (ZkUtils.getLeaderForPartition(getZkClient(), topic, partition) != null
-                && Request.isValidBrokerId(leaderAndInSyncReplicas.leader())
-                && leaderAndInSyncReplicas.isr().size() >= 1)
-                return true;
+        if (!partStateOption.isDefined())
+            return false;
 
-        }
-        return false;
+        PartitionStateInfo partState = partStateOption.get();
+
+        LeaderAndIsr LeaderAndIsr = partState.leaderIsrAndControllerEpoch().leaderAndIsr();
+
+        return ZkUtils.getLeaderForPartition(getZkClient(), topic, part) != null &&
+            Request.isValidBrokerId(LeaderAndIsr.leader()) && LeaderAndIsr.isr().size() >= 1;
     }
 
     /**
      * Waits until metadata is propagated.
      *
-     * @param topic topic name
-     * @param partition partition
-     * @param timeout timeout value in millis
-     * @param interval interval in millis to sleep
-     * @throws TimeoutException
-     * @throws InterruptedException
+     * @param topic Topic name.
+     * @param part Partition.
+     * @param timeout Timeout value in millis.
+     * @param interval Interval in millis to sleep.
+     * @throws TimeoutException If operation is timed out.
+     * @throws InterruptedException If interrupted.
      */
-    private void waitUntilMetadataIsPropagated(final String topic, final int partition, final long timeout,
-        final long interval) throws TimeoutException, InterruptedException {
+    private void waitUntilMetadataIsPropagated(String topic, int part, long timeout, long interval)
+        throws TimeoutException, InterruptedException {
         int attempt = 1;
-        final long startTime = System.currentTimeMillis();
+
+        long startTime = System.currentTimeMillis();
 
         while (true) {
-            if (isMetadataPropagated(topic, partition))
+            if (isMetadataPropagated(topic, part))
                 return;
 
-            final long duration = System.currentTimeMillis() - startTime;
+            long duration = System.currentTimeMillis() - startTime;
 
             if (duration < timeout)
                 Thread.sleep(interval);
             else
-                throw new TimeoutException("metadata propagate timed out, attempt=" + attempt);
+                throw new TimeoutException("Metadata propagation is timed out, attempt " + attempt);
 
             attempt++;
         }
-
     }
 
     /**
-     * Sets up embedded Kafka Server
+     * Sets up embedded Kafka server.
      *
-     * @throws IOException
+     * @throws IOException If failed.
      */
-    private void setupEmbeddedKafkaServer()
-        throws IOException {
+    private void setupEmbeddedKafkaServer() throws IOException {
         A.ensure(zkReady, "Zookeeper should be setup before hand");
 
-        brokerConfig = new KafkaConfig(getBrokerConfig());
-        kafkaServer = new KafkaServer(brokerConfig, SystemTime$.MODULE$);
-        kafkaServer.startup();
+        brokerCfg = new KafkaConfig(getBrokerConfig());
+
+        kafkaSrv = new KafkaServer(brokerCfg, SystemTime$.MODULE$);
+
+        kafkaSrv.startup();
     }
 
     /**
-     * Sets up embedded zooKeeper
+     * Sets up embedded ZooKeeper.
      *
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws IOException If failed.
+     * @throws InterruptedException If interrupted.
      */
-    private void setupEmbeddedZooKeeper()
-        throws IOException, InterruptedException {
+    private void setupEmbeddedZooKeeper() throws IOException, InterruptedException {
         EmbeddedZooKeeper zooKeeper = new EmbeddedZooKeeper(ZK_HOST, zkPort);
+
         zooKeeper.startup();
+
         zkPort = zooKeeper.getActualPort();
+
         zkClient = new ZkClient(getZKAddress(), ZK_SESSION_TIMEOUT, ZK_CONNECTION_TIMEOUT, ZKStringSerializer$.MODULE$);
+
         zkReady = true;
     }
 
     /**
-     * @return Kafka Broker Address.
+     * @return Kafka broker address.
      */
     private static String getBrokerAddress() {
-        return ZK_HOST + ":" + BROKER_PORT;
+        return ZK_HOST + ':' + BROKER_PORT;
     }
 
     /**
-     * Gets KafKa Brofer Config
+     * Gets Kafka broker config.
      *
-     * @return Kafka Broker Config
-     * @throws IOException
+     * @return Kafka broker config.
+     * @throws IOException If failed.
      */
-    private static Properties getBrokerConfig()
-        throws IOException {
+    private static Properties getBrokerConfig() throws IOException {
         Properties props = new Properties();
+
         props.put("broker.id", "0");
         props.put("host.name", ZK_HOST);
         props.put("port", "" + BROKER_PORT);
@@ -272,60 +272,63 @@ public class KafkaEmbeddedBroker {
         props.put("zookeeper.connect", getZKAddress());
         props.put("log.flush.interval.messages", "1");
         props.put("replica.socket.timeout.ms", "1500");
+
         return props;
     }
 
     /**
-     * @return Kafka Producer Config
+     * @return Kafka Producer config.
      */
     private static ProducerConfig getProducerConfig() {
         Properties props = new Properties();
+
         props.put("metadata.broker.list", getBrokerAddress());
-        props.put("serializer.class", "kafka.serializer.StringEncoder");
-        props.put("key.serializer.class", "kafka.serializer.StringEncoder");
-        props.put("partitioner.class", "org.apache.ignite.kafka.SimplePartitioner");
+        props.put("serializer.class", StringEncoder.class.getName());
+        props.put("key.serializer.class", StringEncoder.class.getName());
+        props.put("partitioner.class", SimplePartitioner.class.getName());
+
         return new ProducerConfig(props);
     }
 
     /**
-     * Creates Temp Directory
+     * Creates temp directory.
      *
-     * @param prefix prefix
-     * @return Created File.
-     * @throws IOException
+     * @param prefix Prefix.
+     * @return Created file.
+     * @throws IOException If failed.
      */
-    private static File createTempDir(final String prefix)
-        throws IOException {
-        final Path path = Files.createTempDirectory(prefix);
-        return path.toFile();
+    private static File createTempDir( String prefix) throws IOException {
+        Path path = Files.createTempDirectory(prefix);
 
+        return path.toFile();
     }
 
     /**
-     * Creates Embedded ZooKeeper.
+     * Creates embedded ZooKeeper.
      */
     private static class EmbeddedZooKeeper {
-        /** Default ZooKeeper Host. */
+        /** Default ZooKeeper host. */
         private final String zkHost;
 
-        /** Default ZooKeeper Port. */
+        /** Default ZooKeeper port. */
         private final int zkPort;
 
-        /** NIO Context Factory. */
+        /** NIO context factory. */
         private NIOServerCnxnFactory factory;
 
-        /** Snapshot Directory. */
+        /** Snapshot directory. */
         private File snapshotDir;
 
-        /** Log Directory. */
+        /** Log directory. */
         private File logDir;
 
         /**
-         * Creates an embedded Zookeeper
-         * @param zkHost zookeeper host
-         * @param zkPort zookeeper port
+         * Creates an embedded ZooKeeper.
+         *
+         * @param zkHost ZooKeeper host.
+         * @param zkPort ZooKeeper port.
          */
-        EmbeddedZooKeeper(final String zkHost, final int zkPort) {
+        EmbeddedZooKeeper(String zkHost, int zkPort) {
             this.zkHost = zkHost;
             this.zkPort = zkPort;
         }
@@ -333,22 +336,25 @@ public class KafkaEmbeddedBroker {
         /**
          * Starts up ZooKeeper.
          *
-         * @throws IOException
-         * @throws InterruptedException
+         * @throws IOException If failed.
+         * @throws InterruptedException If interrupted.
          */
-        void startup()
-            throws IOException, InterruptedException {
+        void startup() throws IOException, InterruptedException {
             snapshotDir = createTempDir("_ss");
+
             logDir = createTempDir("_log");
-            ZooKeeperServer zooServer = new ZooKeeperServer(snapshotDir, logDir, 500);
+
+            ZooKeeperServer zkSrv = new ZooKeeperServer(snapshotDir, logDir, 500);
+
             factory = new NIOServerCnxnFactory();
+
             factory.configure(new InetSocketAddress(zkHost, zkPort), 16);
-            factory.startup(zooServer);
+
+            factory.startup(zkSrv);
         }
 
         /**
-         *
-         * @return actual port zookeeper is started
+         * @return Actual port ZooKeeper is started.
          */
         int getActualPort() {
             return factory.getLocalPort();
@@ -357,17 +363,16 @@ public class KafkaEmbeddedBroker {
         /**
          * Shuts down ZooKeeper.
          *
-         * @throws IOException
+         * @throws IOException If failed.
          */
-        void shutdown()
-            throws IOException {
+        void shutdown() throws IOException {
             if (factory != null) {
                 factory.shutdown();
 
                 U.delete(snapshotDir);
+
                 U.delete(logDir);
             }
         }
     }
-
 }

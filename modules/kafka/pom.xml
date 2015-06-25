@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-kafka</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
+    <version>1.1.6-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -39,6 +39,7 @@
             <artifactId>ignite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.10</artifactId>
@@ -66,16 +67,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.apache.zookeeper</groupId>
             <artifactId>zookeeper</artifactId>
             <version>3.4.5</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
         </dependency>
 
         <dependency>
@@ -90,7 +86,6 @@
             <version>4.2</version>
         </dependency>
 
-
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
@@ -100,13 +95,6 @@
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-shmem</artifactId>
             <version>1.0.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-beanutils</groupId>
-            <artifactId>commons-beanutils</artifactId>
-            <version>1.8.3</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>

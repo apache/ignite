@@ -18,29 +18,36 @@
 package org.apache.ignite.stream.kafka;
 
 import kafka.producer.*;
+import kafka.utils.*;
 
 /**
- * Simple Partitioner for Kafka.
+ * Simple partitioner for Kafka.
  */
 @SuppressWarnings("UnusedDeclaration")
-public class SimplePartitioner
-    implements Partitioner {
+public class SimplePartitioner implements Partitioner {
+    /**
+     * Constructs instance.
+     *
+     * @param props Properties.
+     */
+    public SimplePartitioner(VerifiableProperties props) {
+        // No-op.
+    }
 
     /**
      * Partitions the key based on the key value.
      *
      * @param key Key.
-     * @param partitionSize Partition size.
+     * @param partSize Partition size.
      * @return partition Partition.
      */
-    public int partition(Object key, int partitionSize) {
-        int partition = 0;
+    public int partition(Object key, int partSize) {
         String keyStr = (String)key;
+
         String[] keyValues = keyStr.split("\\.");
+
         Integer intKey = Integer.parseInt(keyValues[3]);
-        if (intKey > 0) {
-            partition = intKey % partitionSize;
-        }
-        return partition;
+
+        return intKey > 0 ? intKey % partSize : 0;
     }
 }

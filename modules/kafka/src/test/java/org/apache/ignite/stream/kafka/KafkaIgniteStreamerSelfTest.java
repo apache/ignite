@@ -32,31 +32,31 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.stream.kafka.KafkaEmbeddedBroker.*;
 
 /**
  * Tests {@link KafkaStreamer}.
  */
-public class KafkaIgniteStreamerSelfTest
-    extends GridCommonAbstractTest {
+public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Embedded Kafka. */
     private KafkaEmbeddedBroker embeddedBroker;
 
     /** Count. */
     private static final int CNT = 100;
 
-    /** Test Topic. */
+    /** Test topic. */
     private static final String TOPIC_NAME = "page_visits";
 
-    /** Kafka Partition. */
+    /** Kafka partition. */
     private static final int PARTITIONS = 4;
 
-    /** Kafka Replication Factor. */
+    /** Kafka replication factor. */
     private static final int REPLICATION_FACTOR = 1;
 
-    /** Topic Message Key Prefix. */
+    /** Topic message key prefix. */
     private static final String KEY_PREFIX = "192.168.2.";
 
-    /** Topic Message Value Url. */
+    /** Topic message value URL. */
     private static final String VALUE_URL = ",www.example.com,";
 
     /** Constructor. */
@@ -65,18 +65,15 @@ public class KafkaIgniteStreamerSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void beforeTest()
-        throws Exception {
+    @SuppressWarnings("unchecked")
+    @Override protected void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
         embeddedBroker = new KafkaEmbeddedBroker();
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void afterTest()
-        throws Exception {
+    @Override protected void afterTest() throws Exception {
         grid().cache(null).clear();
 
         embeddedBroker.shutdown();
@@ -85,76 +82,80 @@ public class KafkaIgniteStreamerSelfTest
     /**
      * Tests Kafka streamer.
      *
-     * @throws TimeoutException
-     * @throws InterruptedException
+     * @throws TimeoutException If timed out.
+     * @throws InterruptedException If interrupted.
      */
-    public void testKafkaStreamer()
-        throws TimeoutException, InterruptedException {
+    public void testKafkaStreamer() throws TimeoutException, InterruptedException {
         embeddedBroker.createTopic(TOPIC_NAME, PARTITIONS, REPLICATION_FACTOR);
 
-        Map<String, String> keyValueMap = produceStream(TOPIC_NAME);
-        consumerStream(TOPIC_NAME, keyValueMap);
+        Map<String, String> keyValMap = produceStream(TOPIC_NAME);
+
+        consumerStream(TOPIC_NAME, keyValMap);
     }
 
     /**
-     * Produces/Sends messages to Kafka.
+     * Sends messages to Kafka.
      *
      * @param topic Topic name.
      * @return Map of key value messages.
      */
-    private Map<String, String> produceStream(final String topic) {
-        final Map<String, String> keyValueMap = new HashMap<>();
-
+    private Map<String, String> produceStream(String topic) {
         // Generate random subnets.
         List<Integer> subnet = new ArrayList<>();
 
-        int i = 0;
-        while (i <= CNT)
-            subnet.add(++i);
+        for (int i = 1; i <= CNT; i++)
+            subnet.add(i);
 
         Collections.shuffle(subnet);
 
-        final List<KeyedMessage<String, String>> messages = new ArrayList<>();
-        for (int event = 0; event < CNT; event++) {
-            long runtime = new Date().getTime();
-            String ip = KEY_PREFIX + subnet.get(event);
+        List<KeyedMessage<String, String>> messages = new ArrayList<>(CNT);
+
+        Map<String, String> keyValMap = new HashMap<>();
+
+        for (int evt = 0; evt < CNT; evt++) {
+            long runtime = System.currentTimeMillis();
+
+            String ip = KEY_PREFIX + subnet.get(evt);
+
             String msg = runtime + VALUE_URL + ip;
+
             messages.add(new KeyedMessage<>(topic, ip, msg));
-            keyValueMap.put(ip, msg);
+
+            keyValMap.put(ip, msg);
         }
 
-        final Producer<String, String> producer = embeddedBroker.sendMessages(messages);
+        Producer<String, String> producer = embeddedBroker.sendMessages(messages);
+
         producer.close();
 
-        return keyValueMap;
+        return keyValMap;
     }
 
     /**
-     * Consumes Kafka Stream via ignite.
+     * Consumes Kafka stream via Ignite.
      *
      * @param topic Topic name.
-     * @param keyValueMap Expected key value map.
-     * @throws TimeoutException TimeoutException.
-     * @throws InterruptedException InterruptedException.
+     * @param keyValMap Expected key value map.
+     * @throws TimeoutException If timed out.
+     * @throws InterruptedException If interrupted.
      */
-    private void consumerStream(final String topic, final Map<String, String> keyValueMap)
+    private void consumerStream(String topic, Map<String, String> keyValMap)
         throws TimeoutException, InterruptedException {
-
         KafkaStreamer<String, String, String> kafkaStmr = null;
 
-        final Ignite ignite = grid();
-        try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(null)) {
+        Ignite ignite = grid();
 
+        try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(null)) {
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
-            // Configure socket streamer.
+            // Configure Kafka streamer.
             kafkaStmr = new KafkaStreamer<>();
 
             // Get the cache.
             IgniteCache<String, String> cache = ignite.cache(null);
 
-            // Set ignite instance.
+            // Set Ignite instance.
             kafkaStmr.setIgnite(ignite);
 
             // Set data streamer instance.
@@ -167,58 +168,55 @@ public class KafkaIgniteStreamerSelfTest
             kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
-            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(KafkaEmbeddedBroker.getZKAddress(),
-                "groupX"));
+            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(getZKAddress(), "groupX"));
 
             // Set the decoders.
-            StringDecoder stringDecoder = new StringDecoder(new VerifiableProperties());
-            kafkaStmr.setKeyDecoder(stringDecoder);
-            kafkaStmr.setValueDecoder(stringDecoder);
+            StringDecoder strDecoder = new StringDecoder(new VerifiableProperties());
+
+            kafkaStmr.setKeyDecoder(strDecoder);
+            kafkaStmr.setValueDecoder(strDecoder);
 
             // Start kafka streamer.
             kafkaStmr.start();
 
             final CountDownLatch latch = new CountDownLatch(CNT);
+
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
-                @Override
-                public boolean apply(UUID uuid, CacheEvent evt) {
+                @Override public boolean apply(UUID uuid, CacheEvent evt) {
                     latch.countDown();
+
                     return true;
                 }
             };
 
             ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
+
             latch.await();
 
-            for (Map.Entry<String, String> entry : keyValueMap.entrySet()) {
-                final String key = entry.getKey();
-                final String value = entry.getValue();
-
-                final String cacheValue = cache.get(key);
-                assertEquals(value, cacheValue);
-            }
+            for (Map.Entry<String, String> entry : keyValMap.entrySet())
+                assertEquals(entry.getValue(), cache.get(entry.getKey()));
         }
-
         finally {
-            // Shutdown kafka streamer.
-            kafkaStmr.stop();
+            if (kafkaStmr != null)
+                kafkaStmr.stop();
         }
     }
 
     /**
      * Creates default consumer config.
      *
-     * @param zooKeeper Zookeeper address <server:port>.
-     * @param groupId Group Id for kafka subscriber.
-     * @return {@link ConsumerConfig} kafka consumer configuration.
+     * @param zooKeeper ZooKeeper address &lt;server:port&gt;.
+     * @param grpId Group Id for kafka subscriber.
+     * @return Kafka consumer configuration.
      */
-    private ConsumerConfig createDefaultConsumerConfig(String zooKeeper, String groupId) {
+    private ConsumerConfig createDefaultConsumerConfig(String zooKeeper, String grpId) {
         A.notNull(zooKeeper, "zookeeper");
-        A.notNull(groupId, "groupId");
+        A.notNull(grpId, "groupId");
 
         Properties props = new Properties();
+
         props.put("zookeeper.connect", zooKeeper);
-        props.put("group.id", groupId);
+        props.put("group.id", grpId);
         props.put("zookeeper.session.timeout.ms", "400");
         props.put("zookeeper.sync.time.ms", "200");
         props.put("auto.commit.interval.ms", "1000");
@@ -226,5 +224,4 @@ public class KafkaIgniteStreamerSelfTest
 
         return new ConsumerConfig(props);
     }
-
 }
