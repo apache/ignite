@@ -105,8 +105,14 @@ public class CachePluginManager extends GridCacheManagerAdapter {
         
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
-        else if (cls.equals(CacheConflictResolutionManager.class))
-            return (T)new CacheOsConflictResolutionManager<>();
+        else if (cls.equals(CacheConflictResolutionManager.class)) {
+            T cmp = (T)ctx.createComponent(CacheConflictResolutionManager.class);
+
+            if (cmp != null)
+                return cmp;
+            else
+                return (T)new CacheOsConflictResolutionManager<>();
+        }
         else if (cls.equals(CacheStoreManager.class))
             return (T)new CacheOsStoreManager(ctx, cfg);
 

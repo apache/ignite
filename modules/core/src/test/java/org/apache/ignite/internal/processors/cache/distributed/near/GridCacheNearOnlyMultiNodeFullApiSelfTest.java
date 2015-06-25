@@ -192,11 +192,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         // Not needed for near-only cache.
     }
 
-    /** {@inheritDoc} */
-    @Override public void testNearDhtKeySize() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1029");
-    }
-
     /**
      * @throws Exception If failed.
      */
