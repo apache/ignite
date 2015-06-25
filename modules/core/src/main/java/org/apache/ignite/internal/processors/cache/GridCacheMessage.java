@@ -566,57 +566,6 @@ public abstract class GridCacheMessage implements Message {
         return col;
     }
 
-    /**
-     * @param map Map to marshal.
-     * @param ctx Context.
-     * @return Marshalled map.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("TypeMayBeWeakened") // Don't weaken type to clearly see that it's linked hash map.
-    @Nullable protected final LinkedHashMap<byte[], Boolean> marshalBooleanLinkedMap(
-        @Nullable LinkedHashMap<?, Boolean> map, GridCacheSharedContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
-
-        if (map == null)
-            return null;
-
-        LinkedHashMap<byte[], Boolean> byteMap = U.newLinkedHashMap(map.size());
-
-        for (Map.Entry<?, Boolean> e : map.entrySet()) {
-            if (ctx.deploymentEnabled())
-                prepareObject(e.getKey(), ctx);
-
-            byteMap.put(CU.marshal(ctx, e.getKey()), e.getValue());
-        }
-
-        return byteMap;
-    }
-
-    /**
-     * @param byteMap Map to unmarshal.
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @return Unmarshalled map.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected final <K1> LinkedHashMap<K1, Boolean> unmarshalBooleanLinkedMap(
-        @Nullable Map<byte[], Boolean> byteMap, GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert ldr != null;
-        assert ctx != null;
-
-        if (byteMap == null)
-            return null;
-
-        LinkedHashMap<K1, Boolean> map = U.newLinkedHashMap(byteMap.size());
-
-        Marshaller marsh = ctx.marshaller();
-
-        for (Map.Entry<byte[], Boolean> e : byteMap.entrySet())
-            map.put(marsh.<K1>unmarshal(e.getKey(), ldr), e.getValue());
-
-        return map;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);

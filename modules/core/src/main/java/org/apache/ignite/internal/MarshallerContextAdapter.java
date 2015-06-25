@@ -21,6 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import java.io.*;
@@ -41,10 +43,15 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     /** */
     private final ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
 
+    /** */
+    private final Set<String> registeredSystemTypes = new HashSet<>();
+
     /**
      * Initializes context.
+     *
+     * @param plugins Plugins.
      */
-    public MarshallerContextAdapter() {
+    public MarshallerContextAdapter(@Nullable List<PluginProvider> plugins) {
         try {
             ClassLoader ldr = U.gridClassLoader();
 
@@ -73,6 +80,16 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
             checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(GridDhtPartitionMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
+
+            if (plugins != null && !plugins.isEmpty()) {
+                for (PluginProvider plugin : plugins) {
+                    URL pluginClsNames = ldr.getResource("META-INF/" + plugin.name().toLowerCase()
+                        + ".classnames.properties");
+
+                    if (pluginClsNames != null)
+                        processResource(pluginClsNames);
+                }
+            }
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -84,7 +101,7 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
      * @param ldr Class loader used to get properties file.
      * @param fileName File name.
      */
-    private void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
+    public void checkHasClassName(String clsName, ClassLoader ldr, String fileName) {
         if (!map.containsKey(clsName.hashCode()))
             throw new IgniteException("Failed to read class name from class names properties file. " +
                 "Make sure class names properties file packaged with ignite binaries is not corrupted " +
@@ -107,7 +124,17 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
 
                 String clsName = line.trim();
 
-                map.put(clsName.hashCode(), clsName);
+                int typeId = clsName.hashCode();
+
+                String oldClsName;
+
+                if ((oldClsName = map.put(typeId, clsName)) != null) {
+                    if (!oldClsName.equals(clsName))
+                        throw new IgniteException("Duplicate type ID [id=" + typeId + ", clsName=" + clsName +
+                        ", oldClsName=" + oldClsName + ']');
+                }
+
+                registeredSystemTypes.add(clsName);
             }
         }
     }
@@ -116,12 +143,17 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
     @Override public boolean registerClass(int id, Class cls) throws IgniteCheckedException {
         boolean registered = true;
 
-        if (!map.containsKey(id)) {
+        String clsName = map.get(id);
+
+        if (clsName == null) {
             registered = registerClassName(id, cls.getName());
 
             if (registered)
                 map.putIfAbsent(id, cls.getName());
         }
+        else if (!clsName.equals(cls.getName()))
+            throw new IgniteCheckedException("Duplicate ID [id=" + id + ", oldCls=" + clsName +
+                ", newCls=" + cls.getName());
 
         return registered;
     }
@@ -133,7 +165,8 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         if (clsName == null) {
             clsName = className(id);
 
-            assert clsName != null : id;
+            if (clsName == null)
+                throw new ClassNotFoundException("Unknown type ID: " + id);
 
             String old = map.putIfAbsent(id, clsName);
 
@@ -142,6 +175,11 @@ public abstract class MarshallerContextAdapter implements MarshallerContext {
         }
 
         return U.forName(clsName, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSystemType(String typeName) {
+        return registeredSystemTypes.contains(typeName);
     }
 
     /**

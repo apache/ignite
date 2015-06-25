@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -47,9 +46,6 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
 
     /** User name. */
     private String user;
-
-    /** */
-    private static volatile Class<?> jobCls;
 
     /**
      * Default constructor required by {@link Externalizable}.
@@ -82,24 +78,15 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopJob createJob(HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
+    @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
+            HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException {
+        assert jobCls != null;
+
         try {
-            Class<?> jobCls0 = jobCls;
+            Constructor<? extends HadoopJob> constructor = jobCls.getConstructor(HadoopJobId.class,
+                HadoopDefaultJobInfo.class, IgniteLogger.class);
 
-            if (jobCls0 == null) { // It is enough to have only one class loader with only Hadoop classes.
-                synchronized (HadoopDefaultJobInfo.class) {
-                    if ((jobCls0 = jobCls) == null) {
-                        HadoopClassLoader ldr = new HadoopClassLoader(null, "hadoop-job");
-
-                        jobCls = jobCls0 = ldr.loadClass(HadoopV2Job.class.getName());
-                    }
-                }
-            }
-
-            Constructor<?> constructor = jobCls0.getConstructor(HadoopJobId.class, HadoopDefaultJobInfo.class,
-                IgniteLogger.class);
-
-            return (HadoopJob)constructor.newInstance(jobId, this, log);
+            return constructor.newInstance(jobId, this, log);
         }
         // NB: java.lang.NoClassDefFoundError may be thrown from Class#getConstructor() call.
         catch (Throwable t) {

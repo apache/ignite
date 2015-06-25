@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 
@@ -69,15 +68,6 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         stopAllGrids();
 
         assert G.allGrids().isEmpty();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
-
-        return cfg;
     }
 
     /**

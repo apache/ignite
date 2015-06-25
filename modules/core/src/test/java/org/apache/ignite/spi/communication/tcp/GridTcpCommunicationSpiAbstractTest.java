@@ -37,9 +37,22 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     /** */
     public static final int IDLE_CONN_TIMEOUT = 2000;
 
+    /** */
+    private final boolean useShmem;
+
+    /**
+     * @param useShmem Use shared mem flag.
+     */
+    protected GridTcpCommunicationSpiAbstractTest(boolean useShmem) {
+        this.useShmem = useShmem;
+    }
+
     /** {@inheritDoc} */
     @Override protected CommunicationSpi getSpi(int idx) {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
+
+        if (!useShmem)
+            spi.setSharedMemoryPort(-1);
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);

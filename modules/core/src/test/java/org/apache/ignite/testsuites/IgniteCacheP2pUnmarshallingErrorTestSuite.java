@@ -19,6 +19,9 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -29,12 +32,21 @@ public class IgniteCacheP2pUnmarshallingErrorTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests don't include in the execution.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("P2p Unmarshalling Test Suite");
 
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingNearErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingRebalanceErrorTest.class);
-        suite.addTestSuite(IgniteCacheP2pUnmarshallingTxErrorTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingErrorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingNearErrorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingRebalanceErrorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheP2pUnmarshallingTxErrorTest.class, ignoredTests);
 
         return suite;
     }

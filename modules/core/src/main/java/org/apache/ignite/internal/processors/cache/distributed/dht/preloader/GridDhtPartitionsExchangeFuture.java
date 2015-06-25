@@ -153,6 +153,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Skip preload flag. */
     private boolean skipPreload;
 
+    /** */
+    private boolean clientOnlyExchange;
+
     /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
@@ -524,6 +527,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (exchId.isLeft())
                             cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
+                        rmtIds = Collections.emptyList();
+                        rmtNodes = Collections.emptyList();
+
                         onDone(exchId.topologyVersion());
 
                         skipPreload = cctx.kernalContext().clientNode();
@@ -532,8 +538,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
 
-                if (cctx.kernalContext().clientNode()) {
-                    skipPreload = true;
+                clientOnlyExchange = clientNodeEvt || cctx.kernalContext().clientNode();
+
+                if (clientOnlyExchange) {
+                    skipPreload = cctx.kernalContext().clientNode();
 
                     for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                         if (cacheCtx.isLocal())
@@ -551,23 +559,45 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         initTopology(cacheCtx);
                     }
 
-                    if (oldestNode.get() != null) {
+                    if (oldest != null) {
                         rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteServerNodesWithCaches(cctx,
                             exchId.topologyVersion()));
 
                         rmtIds = Collections.unmodifiableSet(new HashSet<>(F.nodeIds(rmtNodes)));
-
-                        ready.set(true);
 
                         initFut.onDone(true);
 
                         if (log.isDebugEnabled())
                             log.debug("Initialized future: " + this);
 
-                        sendPartitions();
+                        if (cctx.localNode().equals(oldest)) {
+                            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                                boolean updateTop = !cacheCtx.isLocal() &&
+                                    exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
+
+                                if (updateTop) {
+                                    for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
+                                        if (top.cacheId() == cacheCtx.cacheId()) {
+                                            cacheCtx.topology().update(exchId, top.partitionMap(true));
+
+                                            break;
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            onDone(exchId.topologyVersion());
+                        }
+                        else
+                            sendPartitions();
                     }
-                    else
+                    else {
+                        rmtIds = Collections.emptyList();
+                        rmtNodes = Collections.emptyList();
+
                         onDone(exchId.topologyVersion());
+                    }
 
                     return;
                 }
@@ -885,7 +915,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private void sendLocalPartitions(ClusterNode node, @Nullable GridDhtPartitionExchangeId id) throws IgniteCheckedException {
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(id,
-            cctx.kernalContext().clientNode(),
+            clientOnlyExchange,
             cctx.versions().last());
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1078,18 +1108,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
-            try {
-                ClusterNode n = cctx.node(nodeId);
-
-                if (n != null)
-                    sendAllPartitions(F.asList(n), exchId);
-            }
-            catch (IgniteCheckedException e) {
-                scheduleRecheck();
-
-                U.error(log, "Failed to send full partition map to node (will retry after timeout) [node=" + nodeId +
-                    ", exchangeId=" + exchId + ']', e);
-            }
+            sendAllPartitions(nodeId, cctx.gridConfig().getNetworkSendRetryCount());
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
@@ -1142,6 +1161,42 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param retryCnt Number of retries.
+     */
+    private void sendAllPartitions(final UUID nodeId, final int retryCnt) {
+        ClusterNode n = cctx.node(nodeId);
+
+        try {
+            if (n != null)
+                sendAllPartitions(F.asList(n), exchId);
+        }
+        catch (IgniteCheckedException e) {
+            if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
+                log.debug("Failed to send full partition map to node, node left grid " +
+                    "[rmtNode=" + nodeId + ", exchangeId=" + exchId + ']');
+
+                return;
+            }
+
+            if (retryCnt > 0) {
+                long timeout = cctx.gridConfig().getNetworkSendRetryDelay();
+
+                LT.error(log, e, "Failed to send full partition map to node (will retry after timeout) " +
+                    "[node=" + nodeId + ", exchangeId=" + exchId + ", timeout=" + timeout + ']');
+
+                cctx.time().addTimeoutObject(new GridTimeoutObjectAdapter(timeout) {
+                    @Override public void onTimeout() {
+                        sendAllPartitions(nodeId, retryCnt - 1);
+                    }
+                });
+            }
+            else
+                U.error(log, "Failed to send full partition map [node=" + n + ", exchangeId=" + exchId + ']', e);
         }
     }
 

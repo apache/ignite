@@ -356,6 +356,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRemoveAllSkipStore() throws Exception {
+        IgniteCache<String, Integer> jcache = jcache();
+
+        jcache.putAll(F.asMap("1", 1, "2", 2, "3", 3));
+
+        jcache.withSkipStore().removeAll();
+
+        assertEquals((Integer)1, jcache.get("1"));
+        assertEquals((Integer)2, jcache.get("2"));
+        assertEquals((Integer)3, jcache.get("3"));
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     public void testAtomicOps() throws IgniteCheckedException {
@@ -1005,25 +1020,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
+        final String key = primaryKeysForCache(cache, 1).get(0);
+
         Transaction tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             if (startVal)
-                cache.put("key", 2);
+                cache.put(key, 2);
             else
-                assertEquals(null, cache.get("key"));
+                assertEquals(null, cache.get(key));
 
-            Integer expectedRes = startVal ? 2 : null;
+            Integer expRes = startVal ? 2 : null;
 
-            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
 
-            expectedRes = startVal ? 3 : 1;
+            expRes = startVal ? 3 : 1;
 
-            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
 
-            expectedRes++;
+            expRes++;
 
-            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
 
             if (tx != null)
                 tx.commit();
@@ -1035,11 +1052,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Integer exp = (startVal ? 2 : 0) + 3;
 
-        assertEquals(exp, cache.get("key"));
+        assertEquals(exp, cache.get(key));
 
         for (int i = 0; i < gridCount(); i++) {
-            if (ignite(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key"))
-                assertEquals(exp, peek(jcache(i), "key"));
+            if (ignite(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
+                assertEquals(exp, peek(jcache(i), key));
         }
     }
 

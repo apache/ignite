@@ -160,7 +160,7 @@ public class DataStreamerCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements StreamReceiver<K, V>, InternalUpdater {
+    private static class BatchedSorted<K, V> implements StreamReceiver<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 

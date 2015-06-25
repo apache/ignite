@@ -76,10 +76,9 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * Checks whether given class is portable.
      *
-     * @param cls Class.
-     * @return {@code true} If the class was registered as portable.
+     * @return {@code true} If portable objects are enabled.
      */
-    public boolean isPortableClass(Class<?> cls);
+    public boolean isPortableEnabled();
 
     /**
      * @param obj Portable object to get field from.
@@ -115,9 +114,11 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr) throws IgniteCheckedException;
 
     /**
+     * @param ccfg Cache configuration.
      * @return Cache object context.
+     * @throws IgniteCheckedException If failed.
      */
-    public CacheObjectContext contextForCache(CacheConfiguration ccfg);
+    public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.

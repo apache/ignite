@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -82,6 +81,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setPeerClassLoadingEnabled(false);
+
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
         spi.setForceServerMode(true);
@@ -90,8 +91,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setIncludeProperties();
-
-        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (useCache) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -893,18 +892,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer<String, TestObject> ldr = ignite.dataStreamer(null)) {
                 ldr.allowOverwrite(true);
 
-                ldr.receiver(new StreamReceiver<String, TestObject>() {
-                    @Override
-                    public void receive(IgniteCache<String, TestObject> cache,
-                        Collection<Map.Entry<String, TestObject>> entries) {
-                        for (Map.Entry<String, TestObject> e : entries) {
-                            assertTrue(e.getKey() instanceof String);
-                            assertTrue(e.getValue() instanceof TestObject);
-
-                            cache.put(e.getKey(), new TestObject(e.getValue().val + 1));
-                        }
-                    }
-                });
+                ldr.receiver(getStreamReceiver());
 
                 for (int i = 0; i < 100; i++)
                     ldr.addData(String.valueOf(i), new TestObject(i));
@@ -927,14 +915,14 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestObject {
+    public static class TestObject {
         /** Value. */
-        private final int val;
+        public final int val;
 
         /**
          * @param val Value.
          */
-        private TestObject(int val) {
+        public TestObject(int val) {
             this.val = val;
         }
 
@@ -958,6 +946,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Stream receiver.
+     */
+    protected StreamReceiver<String, TestObject> getStreamReceiver() {
+        return new TestDataReceiver();
+    }
+
+    /**
      *
      */
     @SuppressWarnings("PublicInnerClass")
@@ -975,6 +970,22 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
             storeMap.remove(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestDataReceiver implements StreamReceiver<String, TestObject> {
+        /** {@inheritDoc} */
+        @Override public void receive(IgniteCache<String, TestObject> cache,
+            Collection<Map.Entry<String, TestObject>> entries) {
+            for (Map.Entry<String, TestObject> e : entries) {
+                assertTrue(e.getKey() instanceof String);
+                assertTrue(e.getValue() instanceof TestObject);
+
+                cache.put(e.getKey(), new TestObject(e.getValue().val + 1));
+            }
         }
     }
 }

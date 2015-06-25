@@ -138,7 +138,7 @@ public final class GridJavaProcess {
         procCommands.add(javaBin);
         procCommands.addAll(jvmArgs == null ? U.jvmArgs() : jvmArgs);
 
-        if (!jvmArgs.contains("-cp") && !jvmArgs.contains("-classpath")) {
+        if (jvmArgs == null || (!jvmArgs.contains("-cp") && !jvmArgs.contains("-classpath"))) {
             String classpath = System.getProperty("java.class.path");
 
             String sfcp = System.getProperty("surefire.test.class.path");

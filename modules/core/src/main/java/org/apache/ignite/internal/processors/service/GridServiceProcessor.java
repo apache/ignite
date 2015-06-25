@@ -934,7 +934,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             GridCacheQueryManager qryMgr = cache.context().queries();
 
-            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, false);
+            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
 
             qry.keepAll(false);
 

@@ -96,7 +96,11 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param nodeId Node ID.
      */
     public void fail(UUID nodeId) {
-        addPage0(new GridResultPage(null, nodeId, null, false));
+        addPage0(new GridResultPage(null, nodeId, null) {
+            @Override public boolean isFail() {
+                return true;
+            }
+        });
     }
 
     /**
@@ -134,10 +138,13 @@ public abstract class GridMergeIndex extends BaseIndex {
                 }
             }
 
-            if (last)
-                last = lastSubmitted.compareAndSet(false, true);
-
-            addPage0(new GridResultPage(null, page.source(), null, last));
+            if (last && lastSubmitted.compareAndSet(false, true)) {
+                addPage0(new GridResultPage(null, page.source(), null) {
+                    @Override public boolean isLast() {
+                        return true;
+                    }
+                });
+            }
         }
     }
 

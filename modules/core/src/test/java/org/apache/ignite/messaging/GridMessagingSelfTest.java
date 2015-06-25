@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -184,8 +183,6 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((OptimizedMarshaller)cfg.getMarshaller()).setRequireSerializable(false);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

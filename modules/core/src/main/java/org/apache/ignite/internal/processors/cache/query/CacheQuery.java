@@ -76,7 +76,7 @@ import org.jetbrains.annotations.*;
  *     </li>
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
- *         collocated mode or at least one side of the join is stored in
+ *         colocated mode or at least one side of the join is stored in
  *         {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache. Refer to
  *         {@link AffinityKey} javadoc for more information about colocation.
  *     </li>

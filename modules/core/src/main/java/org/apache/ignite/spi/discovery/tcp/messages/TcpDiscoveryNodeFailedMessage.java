@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -37,6 +38,9 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     /** Internal order of the failed node. */
     private final long order;
 
+    /** */
+    private String warning;
+
     /**
      * Constructor.
      *
@@ -52,6 +56,20 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
 
         this.failedNodeId = failedNodeId;
         this.order = order;
+    }
+
+    /**
+     * @param warning Warning message to be shown on all nodes.
+     */
+    public void warning(String warning) {
+        this.warning = warning;
+    }
+
+    /**
+     * @return Warning message to be shown on all nodes.
+     */
+    @Nullable public String warning() {
+        return warning;
     }
 
     /**

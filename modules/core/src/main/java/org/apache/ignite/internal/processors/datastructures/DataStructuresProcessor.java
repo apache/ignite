@@ -67,6 +67,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** */
     private static final long RETRY_DELAY = 1;
 
+    /** Initialization latch. */
+    private final CountDownLatch initLatch = new CountDownLatch(1);
+
+    /** Initialization failed flag. */
+    private boolean initFailed;
+
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
     private IgniteInternalCache<GridCacheInternal, GridCacheInternal> dsView;
 
@@ -145,6 +151,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             dsCacheCtx = atomicsCache.context();
         }
+
+        initLatch.countDown();
     }
 
     /**
@@ -167,6 +175,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
 
+        if (initLatch.getCount() > 0) {
+            initFailed = true;
+            
+            initLatch.countDown();
+        }
+
         if (qryId != null)
             dsCacheCtx.continuousQueries().cancelInternalQuery(qryId);
     }
@@ -186,6 +200,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException
     {
         A.notNull(name, "name");
+
+        awaitInitialization();
 
         checkAtomicsConfiguration();
 
@@ -277,19 +293,18 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     public final void removeSequence(final String name) throws IgniteCheckedException {
         assert name != null;
 
+        awaitInitialization();
+
         checkAtomicsConfiguration();
 
-        removeDataStructure(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
+        removeDataStructure(new IgniteOutClosureX<Void>() {
+            @Override public Void applyx() throws IgniteCheckedException {
                 dsCacheCtx.gate().enter();
 
                 try {
                     GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
                     removeInternal(key, GridCacheAtomicSequenceValue.class);
-                }
-                catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to remove sequence by name: " + name, e);
                 }
                 finally {
                     dsCacheCtx.gate().leave();
@@ -314,6 +329,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         final long initVal,
         final boolean create) throws IgniteCheckedException {
         A.notNull(name, "name");
+
+        awaitInitialization();
 
         checkAtomicsConfiguration();
 
@@ -409,11 +426,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (err != null)
                 throw err;
 
-            dataStructure = ctx.closure().callLocalSafe(new Callable<T>() {
-                @Override public T call() throws Exception {
-                    return c.applyx();
-                }
-            }, false).get();
+            dataStructure = c.applyx();
 
             tx.commit();
         }
@@ -431,15 +444,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert name != null;
         assert dsCacheCtx != null;
 
-        removeDataStructure(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
+        awaitInitialization();
+
+        removeDataStructure(new IgniteOutClosureX<Void>() {
+            @Override public Void applyx() throws IgniteCheckedException {
                 dsCacheCtx.gate().enter();
 
                 try {
                     removeInternal(new GridCacheInternalKeyImpl(name), GridCacheAtomicLongValue.class);
-                }
-                catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to remove atomic long by name: " + name, e);
                 }
                 finally {
                     dsCacheCtx.gate().leave();
@@ -457,7 +469,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> void removeDataStructure(IgniteCallable<T> c,
+    private <T> void removeDataStructure(IgniteOutClosureX<T> c,
         String name,
         DataStructureType type,
         @Nullable IgniteInClosureX<T> afterRmv)
@@ -493,7 +505,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (!exists)
                 return;
 
-            rmvInfo = ctx.closure().callLocalSafe(c, false).get();
+            rmvInfo = c.applyx();
 
             tx.commit();
         }
@@ -519,6 +531,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException
     {
         A.notNull(name, "name");
+
+        awaitInitialization();
 
         checkAtomicsConfiguration();
 
@@ -585,17 +599,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert name != null;
         assert dsCacheCtx != null;
 
-        removeDataStructure(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
+        awaitInitialization();
+
+        removeDataStructure(new IgniteOutClosureX<Void>() {
+            @Override public Void applyx() throws IgniteCheckedException {
                 dsCacheCtx.gate().enter();
 
                 try {
                     GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
                     removeInternal(key, GridCacheAtomicReferenceValue.class);
-                }
-                catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to remove atomic reference by name: " + name, e);
                 }
                 finally {
                     dsCacheCtx.gate().leave();
@@ -622,6 +635,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     public final <T, S> IgniteAtomicStamped<T, S> atomicStamped(final String name, final T initVal,
         final S initStamp, final boolean create) throws IgniteCheckedException {
         A.notNull(name, "name");
+
+        awaitInitialization();
 
         checkAtomicsConfiguration();
 
@@ -688,17 +703,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert name != null;
         assert dsCacheCtx != null;
 
-        removeDataStructure(new IgniteCallable<Void>() {
-            @Override public Void call() throws Exception {
+        awaitInitialization();
+
+        removeDataStructure(new IgniteOutClosureX<Void>() {
+            @Override public Void applyx() throws IgniteCheckedException {
                 dsCacheCtx.gate().enter();
 
                 try {
                     GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
                     removeInternal(key, GridCacheAtomicStampedValue.class);
-                }
-                catch (Exception e) {
-                    throw new IgniteCheckedException("Failed to remove atomic stamped by name: " + name, e);
                 }
                 finally {
                     dsCacheCtx.gate().leave();
@@ -724,6 +738,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
+
+        awaitInitialization();
 
         String cacheName = null;
 
@@ -774,6 +790,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /**
      * @param cfg Collection configuration.
      * @return Cache name.
+     * @throws IgniteCheckedException If failed.
      */
     private String compatibleConfiguration(CollectionConfiguration cfg) throws IgniteCheckedException {
         List<CacheCollectionInfo> caches = utilityDataCache.localPeek(DATA_STRUCTURES_CACHE_KEY, null, null);
@@ -801,8 +818,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert name != null;
         assert cctx != null;
 
-        IgniteCallable<GridCacheQueueHeader> rmv = new IgniteCallable<GridCacheQueueHeader>() {
-            @Override public GridCacheQueueHeader call() throws Exception {
+        awaitInitialization();
+
+        IgniteOutClosureX<GridCacheQueueHeader> rmv = new IgniteOutClosureX<GridCacheQueueHeader>() {
+            @Override public GridCacheQueueHeader applyx() throws IgniteCheckedException {
                 return (GridCacheQueueHeader)retryRemove(cctx.cache(), new GridCacheQueueHeaderKey(name));
             }
         };
@@ -837,6 +856,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         boolean create)
         throws IgniteCheckedException
     {
+        awaitInitialization();
+
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
 
         if (!create && (dsMap == null || !dsMap.containsKey(dsInfo.name)))
@@ -874,16 +895,30 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
             final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
 
-            col = ctx.closure().callLocalSafe(new Callable<T>() {
-                @Override public T call() throws Exception {
-                    return c.applyx(cacheCtx);
-                }
-            }, false).get();
+            col = c.applyx(cacheCtx);
 
             tx.commit();
         }
 
         return col;
+    }
+
+    /**
+     * Awaits for processor initialization.
+     */
+    private void awaitInitialization() {
+        if (initLatch.getCount() > 0) {
+            try {
+                U.await(initLatch);
+
+                if (initFailed)
+                    throw new IllegalStateException("Failed to initialize data structures processor.");
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                throw new IllegalStateException("Failed to initialize data structures processor " +
+                    "(thread has been interrupted).", e);
+            }
+        }
     }
 
     /**
@@ -929,6 +964,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException
     {
         A.notNull(name, "name");
+
+        awaitInitialization();
 
         if (create)
             A.ensure(cnt >= 0, "count can not be negative");
@@ -997,9 +1034,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert name != null;
         assert dsCacheCtx != null;
 
-        removeDataStructure(new IgniteCallable<Void>() {
-            @Override
-            public Void call() throws Exception {
+        awaitInitialization();
+
+        removeDataStructure(new IgniteOutClosureX<Void>() {
+            @Override public Void applyx() throws IgniteCheckedException {
                 GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
                 dsCacheCtx.gate().enter();
@@ -1022,11 +1060,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         tx.setRollbackOnly();
 
                     return null;
-                } catch (Error | Exception e) {
-                    U.error(log, "Failed to remove data structure: " + key, e);
-
-                    throw e;
-                } finally {
+                }
+                finally {
                     dsCacheCtx.gate().leave();
                 }
             }
@@ -1169,6 +1204,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
+        awaitInitialization();
+
         String cacheName = null;
 
         if (cfg != null)
@@ -1196,8 +1233,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         assert name != null;
         assert cctx != null;
 
-        IgniteCallable<GridCacheSetHeader> rmv = new IgniteCallable<GridCacheSetHeader>() {
-            @Override public GridCacheSetHeader call() throws Exception {
+        awaitInitialization();
+
+        IgniteOutClosureX<GridCacheSetHeader> rmv = new IgniteOutClosureX<GridCacheSetHeader>() {
+            @Override public GridCacheSetHeader applyx() throws IgniteCheckedException {
                 return (GridCacheSetHeader)retryRemove(cctx.cache(), new GridCacheSetHeaderKey(name));
             }
         };
@@ -1326,7 +1365,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    static enum DataStructureType {
+    enum DataStructureType {
         /** */
         ATOMIC_LONG(IgniteAtomicLong.class.getSimpleName()),
 

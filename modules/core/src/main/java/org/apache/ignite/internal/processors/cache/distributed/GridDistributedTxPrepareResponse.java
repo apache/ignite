@@ -22,13 +22,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Response to prepare request.
@@ -36,14 +33,6 @@ import java.util.*;
 public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Collections of local lock candidates. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> cands;
-
-    /** */
-    private byte[] candsBytes;
 
     /** Error. */
     @GridToStringExclude
@@ -98,26 +87,10 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return err != null;
     }
 
-    /**
-     * @param cands Candidates map to set.
-     */
-    public void candidates(Map<KeyCacheObject, Collection<GridCacheMvccCandidate>> cands) {
-        this.cands = cands;
-    }
-
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
-
-        if (candsBytes == null && cands != null) {
-            if (ctx.deploymentEnabled()) {
-                for (KeyCacheObject k : cands.keySet())
-                    prepareObject(k, ctx);
-            }
-
-            candsBytes = CU.marshal(ctx, cands);
-        }
 
         if (err != null)
             errBytes = ctx.marshaller().marshal(err);
@@ -127,25 +100,8 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (candsBytes != null && cands == null)
-            cands = ctx.marshaller().unmarshal(candsBytes, ldr);
-
         if (errBytes != null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
-    }
-
-    /**
-     *
-     * @param key Candidates key.
-     * @return Collection of lock candidates at given index.
-     */
-    @Nullable public Collection<GridCacheMvccCandidate> candidatesForKey(KeyCacheObject key) {
-        assert key != null;
-
-        if (cands == null)
-            return null;
-
-        return cands.get(key);
     }
 
     /** {@inheritDoc} */
@@ -163,13 +119,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         }
 
         switch (writer.state()) {
-            case 8:
-                if (!writer.writeByteArray("candsBytes", candsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
+            case 7:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
@@ -191,15 +141,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
             return false;
 
         switch (reader.state()) {
-            case 8:
-                candsBytes = reader.readByteArray("candsBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
+            case 7:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -219,7 +161,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 8;
     }
 
     /** {@inheritDoc} */

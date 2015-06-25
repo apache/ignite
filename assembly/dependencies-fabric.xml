@@ -113,6 +113,7 @@
                 <exclude>org.apache.ignite:ignite-examples</exclude>
                 <exclude>org.apache.ignite:ignite-indexing</exclude>
                 <exclude>org.apache.ignite:ignite-visor-console</exclude>
+                <exclude>org.apache.ignite:ignite-visor-console_2.10</exclude>
                 <exclude>org.apache.ignite:ignite-visor-plugins</exclude>
                 <exclude>org.apache.ignite:ignite-visor-trial</exclude>
                 <exclude>org.apache.ignite:ignite-hadoop</exclude>

@@ -807,6 +807,25 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGetOrCreateMultiNodeTemplate() throws Exception {
+        final AtomicInteger idx = new AtomicInteger();
+
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int idx0 = idx.getAndIncrement();
+
+                ignite(idx0 % nodeCount()).getOrCreateCache(DYNAMIC_CACHE_NAME);
+
+                return null;
+            }
+        }, nodeCount() * 4, "runner");
+
+        ignite(0).destroyCache(DYNAMIC_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetOrCreateNearOnlyMultiNode() throws Exception {
         checkGetOrCreateNear(true);
     }
@@ -1083,6 +1102,43 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         finally {
             stop.set(true);
         }
+
+        fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStartStopSameCacheMultinode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-993");
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                int node = idx.getAndIncrement();
+
+                Ignite ignite = ignite(node);
+
+                Thread.currentThread().setName("start-stop-" + ignite.name());
+
+                CacheConfiguration ccfg = new CacheConfiguration();
+
+                ccfg.setName("testStartStop");
+
+                for (int i = 0; i < 1000; i++) {
+                    log.info("Start cache: " + i);
+
+                    try (IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg)) {
+                        // No-op.
+                    }
+
+                    log.info("Stopped cache: " + i);
+                }
+
+                return null;
+            }
+        }, nodeCount(), "start-stop-cache");
 
         fut.get();
     }

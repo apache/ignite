@@ -29,7 +29,10 @@ import java.util.jar.*;
  */
 public class ClassesGenerator {
     /** */
-    private static final String FILE_PATH = "META-INF/classnames.properties";
+    private static final String META_INF = "META-INF/";
+
+    /** */
+    private static final String DEFAULT_FILE_PATH = META_INF + "classnames.properties";
 
     /** */
     private static final String[] EXCLUDED_PACKAGES = {
@@ -46,8 +49,9 @@ public class ClassesGenerator {
         String basePath = args[0];
         String hdr = args[1];
         String[] packages = args[2].split(":");
+        String finaName = args.length == 4 ? args[3] : null;
 
-        ClassesGenerator gen = new ClassesGenerator(basePath, hdr, packages);
+        ClassesGenerator gen = new ClassesGenerator(basePath, hdr, packages, finaName);
 
         gen.generate();
     }
@@ -74,15 +78,20 @@ public class ClassesGenerator {
     /** */
     private final String[] packages;
 
+    /** */
+    private final String fileName;
+
     /**
      * @param basePath Base file path.
      * @param hdr Header.
      * @param packages Included packages.
+     * @param fileName Property file name.
      */
-    private ClassesGenerator(String basePath, String hdr, String[] packages) {
+    private ClassesGenerator(String basePath, String hdr, String[] packages, String fileName) {
         this.basePath = basePath;
         this.hdr = hdr;
         this.packages = packages;
+        this.fileName = fileName;
     }
 
     /**
@@ -103,7 +112,8 @@ public class ClassesGenerator {
             throw new Exception(sb.toString().trim());
         }
 
-        PrintStream out = new PrintStream(new File(basePath, FILE_PATH));
+        PrintStream out = new PrintStream(new File(basePath,
+            (fileName == null || fileName.isEmpty()) ? DEFAULT_FILE_PATH : META_INF + fileName));
 
         out.println(hdr);
         out.println();
@@ -204,6 +214,18 @@ public class ClassesGenerator {
                     }
                     catch (NoSuchFieldException ignored) {
                         errs.add("No serialVersionUID field in class: " + cls.getName());
+                    }
+
+                    if (Externalizable.class.isAssignableFrom(cls)) {
+                        try {
+                            Constructor<?> cons = cls.getConstructor();
+
+                            if (!Modifier.isPublic(cons.getModifiers()))
+                                errs.add("Default constructor in Externalizable class is not public: " + cls.getName());
+                        }
+                        catch (NoSuchMethodException e) {
+                            errs.add("No default constructor in Externalizable class: " + cls.getName());
+                        }
                     }
                 }
 

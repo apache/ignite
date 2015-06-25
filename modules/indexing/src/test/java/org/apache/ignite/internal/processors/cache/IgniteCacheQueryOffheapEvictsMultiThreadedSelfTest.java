@@ -22,6 +22,11 @@ package org.apache.ignite.internal.processors.cache;
  */
 public class IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest extends IgniteCacheQueryOffheapMultiThreadedSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-971");
+    }
+
+    /** {@inheritDoc} */
     @Override protected boolean evictsEnabled() {
         return true;
     }

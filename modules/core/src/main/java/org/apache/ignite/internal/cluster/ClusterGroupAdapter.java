@@ -591,6 +591,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public final ClusterGroup forHost(String host, String... hosts) {
+        A.notNull(host, "host");
+
+        return forPredicate(new HostsFilter(host, hosts));
+    }
+
+    /** {@inheritDoc} */
     @Override public final ClusterGroup forDaemons() {
         return forPredicate(new DaemonFilter());
     }
@@ -771,6 +778,37 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
             return val == null ? n.attributes().containsKey(name) : val.equals(n.attribute(name));
+        }
+    }
+
+    /**
+     */
+    private static class HostsFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Hosts Names. */
+        private final Collection<String> validHostNames = new HashSet<>();
+
+        /**
+         * @param name First host name.
+         * @param names Host names
+         */
+        private HostsFilter(String name, String... names) {
+            validHostNames.add(name);
+
+            if (names != null && (names.length > 0))
+                Collections.addAll(validHostNames, names);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode n) {
+            for (String hostName : n.hostNames()) {
+                if (validHostNames.contains(hostName))
+                    return true;
+            }
+
+            return false;
         }
     }
 

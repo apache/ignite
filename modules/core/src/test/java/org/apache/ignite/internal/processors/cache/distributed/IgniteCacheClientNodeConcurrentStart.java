@@ -37,7 +37,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int NODES_CNT = 5;
+    private static final int NODES_CNT = 6;
 
     /** */
     private Set<Integer> clientNodes;
@@ -83,13 +83,21 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
                 clientNodes = new HashSet<>();
 
                 while (clientNodes.size() < 2)
-                    clientNodes.add(rnd.nextInt(0, NODES_CNT));
+                    clientNodes.add(rnd.nextInt(1, NODES_CNT));
 
                 clientNodes.add(NODES_CNT - 1);
 
                 log.info("Test iteration [iter=" + i + ", clients=" + clientNodes + ']');
 
-                startGridsMultiThreaded(NODES_CNT, true);
+                Ignite srv = startGrid(0); // Start server node first.
+
+                assertFalse(srv.configuration().isClientMode());
+
+                startGridsMultiThreaded(1, NODES_CNT - 1);
+
+                checkTopology(NODES_CNT);
+
+                awaitPartitionMapExchange();
 
                 for (int node : clientNodes) {
                     Ignite ignite = grid(node);

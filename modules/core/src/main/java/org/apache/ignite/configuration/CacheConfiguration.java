@@ -774,7 +774,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *
      * @param loadPrevVal Load previous value flag.
      * @return {@code this} for chaining.
-     * @return {@code this} for chaining.
      */
     public CacheConfiguration setLoadPreviousValue(boolean loadPrevVal) {
         this.loadPrevVal = loadPrevVal;
@@ -793,9 +792,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Sets factory fpr persistent storage for cache data.
+     * Sets factory for persistent storage for cache data.
 
      * @param storeFactory Cache store factory.
+     * @return {@code this} for chaining.
      */
     @SuppressWarnings("unchecked")
     public CacheConfiguration setCacheStoreFactory(Factory<? extends CacheStore<? super K, ? super V>> storeFactory) {

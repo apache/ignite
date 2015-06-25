@@ -198,8 +198,8 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception
      */
-    // TODO: IGNITE-705
     public void testAllExamples() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-705");
 //        compareQueryRes0("select ? limit ? offset ?");
 
 //        compareQueryRes0("select cool1()");
@@ -437,7 +437,9 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCrossCache() throws Exception {
+    public void testCrossCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-829");
+
         //TODO Investigate (should be 20 results instead of 0).
         compareQueryRes0("select firstName, lastName" +
             "  from \"part\".Person, \"part\".Purchase" +

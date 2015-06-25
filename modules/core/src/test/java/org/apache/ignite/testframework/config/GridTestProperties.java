@@ -64,6 +64,9 @@ public final class GridTestProperties {
     private static final Map<String, Map<String, String>> pathProps = new HashMap<>();
 
     /** */
+    public static final String MARSH_CLASS_NAME = "marshaller.class";
+
+    /** */
     static {
         // Initialize IGNITE_HOME system property.
         String igniteHome = System.getProperty("IGNITE_HOME");
@@ -159,6 +162,14 @@ public final class GridTestProperties {
     }
 
     /**
+     * @param name Property name.
+     * @param val Property value.
+     */
+    public static synchronized void setProperty(String name, String val) {
+        getProperties().put(name, val);
+    }
+
+    /**
      * @param dir Directory path.
      * @return Properties.
      */
@@ -174,9 +185,6 @@ public final class GridTestProperties {
             // Load properties from specified folder
             // potentially overriding defaults.
             loadProperties(props, dir);
-
-            // Seal it.
-            props = Collections.unmodifiableMap(props);
 
             pathProps.put(dir, props);
         }

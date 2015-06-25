@@ -321,6 +321,10 @@
                                 <title>Mesos Framework</title>
                                 <packages>org.apache.ignite.mesos*</packages>
                             </group>
+                            <group>
+                                <title>Spark Integration</title>
+                                <packages>org.apache.ignite.spark.examples.java</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -622,6 +626,7 @@
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
                                         <!--special excludes-->
+                                        <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>DEVNOTES.txt</exclude>
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->

@@ -77,6 +77,7 @@ import javax.management.*;
 import java.io.*;
 import java.lang.management.*;
 import java.lang.reflect.*;
+import java.security.*;
 import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -629,6 +630,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
+        List<PluginProvider> plugins = U.allPluginProviders();
+
         // Spin out SPIs & managers.
         try {
             ctx = new GridKernalContextImpl(log,
@@ -642,7 +645,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 p2pExecSvc,
                 mgmtExecSvc,
                 igfsExecSvc,
-                restExecSvc);
+                restExecSvc,
+                plugins);
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
 
@@ -678,7 +682,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
-            startProcessor(new IgnitePluginProcessor(ctx, cfg));
+            startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
             verChecker = null;
 
@@ -686,7 +690,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 try {
                     verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
 
-                    updateNtfTimer = new Timer("ignite-update-notifier-timer");
+                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
                     // Setup periodic version check.
                     updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -1001,7 +1005,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
         A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
-        A.notNull(cfg.getPublicThreadPoolSize(), "cfg.getPublicThreadPoolSize()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
@@ -1689,6 +1692,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             GridCacheProcessor cacheProcessor = ctx.cache();
 
             List<GridComponent> comps = ctx.components();
+
+            ctx.marshallerContext().onKernalStop();
 
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.

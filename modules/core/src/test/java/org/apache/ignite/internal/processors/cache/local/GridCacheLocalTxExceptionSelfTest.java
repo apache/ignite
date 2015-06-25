@@ -27,6 +27,11 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheLocalTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-257");
+    }
+
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }

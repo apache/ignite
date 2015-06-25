@@ -35,6 +35,9 @@ import java.util.*;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class InteropIgnition {
+    /** Map with active instances. */
+    private static final HashMap<String, InteropProcessor> instances = new HashMap<>();
+
     /**
      * Start Ignite node in interop mode.
      *
@@ -42,22 +45,70 @@ public class InteropIgnition {
      * @param gridName Grid name.
      * @param factoryId Factory ID.
      * @param envPtr Environment pointer.
+     * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite instance.
      */
-    public static InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName, int factoryId,
-        long envPtr) {
+    public static synchronized InteropProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
+        int factoryId, long envPtr, long dataPtr) {
         IgniteConfiguration cfg = configuration(springCfgPath);
 
         if (gridName != null)
             cfg.setGridName(gridName);
+        else
+            gridName = cfg.getGridName();
 
         InteropBootstrap bootstrap = bootstrap(factoryId);
 
-        InteropProcessor proc = bootstrap.start(cfg, envPtr);
+        InteropProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
 
         trackFinalization(proc);
 
+        InteropProcessor old = instances.put(gridName, proc);
+
+        assert old == null;
+
         return proc;
+    }
+
+    /**
+     * Get instance by environment pointer.
+     *
+     * @param gridName Grid name.
+     * @return Instance or {@code null} if it doesn't exists (never started or stopped).
+     */
+    @Nullable public static synchronized InteropProcessor instance(@Nullable String gridName) {
+        return instances.get(gridName);
+    }
+
+    /**
+     * Stop single instance.
+     *
+     * @param gridName Grid name,
+     * @param cancel Cancel flag.
+     * @return {@code True} if instance was found and stopped.
+     */
+    public static synchronized boolean stop(@Nullable String gridName, boolean cancel) {
+        if (Ignition.stop(gridName, cancel)) {
+            InteropProcessor old = instances.remove(gridName);
+
+            assert old != null;
+
+            return true;
+        }
+        else
+            return false;
+    }
+
+    /**
+     * Stop all instances.
+     *
+     * @param cancel Cancel flag.
+     */
+    public static synchronized void stopAll(boolean cancel) {
+        for (InteropProcessor proc : instances.values())
+            Ignition.stop(proc.ignite().name(), cancel);
+
+        instances.clear();
     }
 
     /**

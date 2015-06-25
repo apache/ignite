@@ -1510,4 +1510,18 @@ public final class GridTestUtils {
         else
             return cls.getSimpleName();
     }
+
+    /**
+     * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     *
+     * @param suite TestSuite where to place the test.
+     * @param test Test.
+     * @param ignoredTests Tests to ignore.
+     */
+    public static void addTestIfNeeded(TestSuite suite, Class test, Set<Class> ignoredTests) {
+        if (ignoredTests != null && ignoredTests.contains(test))
+            return;
+
+        suite.addTestSuite(test);
+    }
 }

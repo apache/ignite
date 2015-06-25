@@ -55,12 +55,14 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     /** Message id sequence. */
     private AtomicLong msgId = new AtomicLong();
 
+    /** */
+    private final boolean useShmem;
+
     /** SPI resources. */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** SPIs */
-    private static final Map<UUID, CommunicationSpi<Message>> spis =
-        new ConcurrentHashMap<>();
+    private static final Map<UUID, CommunicationSpi<Message>> spis = new ConcurrentHashMap<>();
 
     /** Listeners. */
     private static final Map<UUID, MessageListener> lsnrs = new HashMap<>();
@@ -80,9 +82,19 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     }
 
     /**
+     * @param useShmem Use shared mem.
+     */
+    protected GridTcpCommunicationSpiMultithreadedSelfTest(boolean useShmem) {
+        super(false);
+
+        this.useShmem = useShmem;
+    }
+
+    /**
+     *
      */
     public GridTcpCommunicationSpiMultithreadedSelfTest() {
-        super(false);
+        this(false);
     }
 
     /**
@@ -412,6 +424,9 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
      */
     private CommunicationSpi<Message> newCommunicationSpi() {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
+
+        if (!useShmem)
+            spi.setSharedMemoryPort(-1);
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
         spi.setIdleConnectionTimeout(IDLE_CONN_TIMEOUT);

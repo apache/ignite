@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -48,6 +49,18 @@ public class GridQueryRequest implements Message {
     @GridDirectCollection(GridCacheSqlQuery.class)
     private Collection<GridCacheSqlQuery> qrys;
 
+    /** Topology version. */
+    private AffinityTopologyVersion topVer;
+
+    /** */
+    @GridToStringInclude
+    @GridDirectCollection(String.class)
+    private List<String> extraSpaces;
+
+    /** */
+    @GridToStringInclude
+    private int[] parts;
+
     /**
      * Default constructor.
      */
@@ -60,13 +73,67 @@ public class GridQueryRequest implements Message {
      * @param pageSize Page size.
      * @param space Space.
      * @param qrys Queries.
+     * @param topVer Topology version.
+     * @param extraSpaces All space names participating in query other than {@code space}.
+     * @param parts Optional partitions for unstable topology.
      */
-    public GridQueryRequest(long reqId, int pageSize, String space, Collection<GridCacheSqlQuery> qrys) {
+    public GridQueryRequest(
+        long reqId,
+        int pageSize,
+        String space,
+        Collection<GridCacheSqlQuery> qrys,
+        AffinityTopologyVersion topVer,
+        List<String> extraSpaces,
+        int[] parts) {
         this.reqId = reqId;
         this.pageSize = pageSize;
         this.space = space;
 
         this.qrys = qrys;
+        this.topVer = topVer;
+        this.extraSpaces = extraSpaces;
+        this.parts = parts;
+    }
+
+    /**
+     * @param cp Copy from.
+     */
+    public GridQueryRequest(GridQueryRequest cp) {
+        this.reqId = cp.reqId;
+        this.pageSize = cp.pageSize;
+        this.space = cp.space;
+        this.qrys = cp.qrys;
+        this.topVer = cp.topVer;
+        this.extraSpaces = cp.extraSpaces;
+        this.parts = cp.parts;
+    }
+
+    /**
+     * @return All the needed partitions for {@link #space()} and {@link #extraSpaces()}.
+     */
+    public int[] partitions() {
+        return parts;
+    }
+
+    /**
+     * @param parts All the needed partitions for {@link #space()} and {@link #extraSpaces()}.
+     */
+    public void partitions(int[] parts) {
+        this.parts = parts;
+    }
+
+    /**
+     * @return All extra space names participating in query other than {@link #space()}.
+     */
+    public List<String> extraSpaces() {
+        return extraSpaces;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -138,6 +205,23 @@ public class GridQueryRequest implements Message {
 
                 writer.incrementState();
 
+            case 4:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeCollection("extraSpaces", extraSpaces, MessageCollectionItemType.STRING))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeIntArray("parts", parts))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -183,6 +267,29 @@ public class GridQueryRequest implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                extraSpaces = reader.readCollection("extraSpaces", MessageCollectionItemType.STRING);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                parts = reader.readIntArray("parts");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;
@@ -195,6 +302,6 @@ public class GridQueryRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 7;
     }
 }

@@ -43,4 +43,12 @@ public interface MarshallerContext {
      * @throws IgniteCheckedException In case of any other error.
      */
     public Class getClass(int id, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
+
+    /**
+     * Checks whether the given type is a system one - JDK class or Ignite class.
+     *
+     * @param typeName Type name.
+     * @return {@code true} if the type is a system one, {@code false} otherwise.
+     */
+    public boolean isSystemType(String typeName);
 }

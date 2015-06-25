@@ -21,13 +21,17 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -38,6 +42,13 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Query adapter.
  */
 public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
+    /** Is local node predicate. */
+    private static final IgnitePredicate<ClusterNode> IS_LOC_NODE = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
+            return n.isLocal();
+        }
+    };
+
     /** */
     private final GridCacheContext<?, ?> cctx;
 
@@ -55,6 +66,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private final IgniteBiPredicate<Object, Object> filter;
+
+    /** Partition. */
+    private Integer part;
 
     /** */
     private final boolean incMeta;
@@ -95,6 +109,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param clsName Class name.
      * @param clause Clause.
      * @param filter Scan filter.
+     * @param part Partition.
      * @param incMeta Include metadata flag.
      * @param keepPortable Keep portable flag.
      */
@@ -103,16 +118,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
+        @Nullable Integer part,
         boolean incMeta,
         boolean keepPortable) {
         assert cctx != null;
         assert type != null;
+        assert part == null || part >= 0;
 
         this.cctx = cctx;
         this.type = type;
         this.clsName = clsName;
         this.clause = clause;
         this.filter = filter;
+        this.part = part;
         this.incMeta = incMeta;
         this.keepPortable = keepPortable;
 
@@ -132,6 +150,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param dedup Enable dedup flag.
      * @param prj Grid projection.
      * @param filter Key-value filter.
+     * @param part Partition.
      * @param clsName Class name.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
@@ -149,6 +168,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean dedup,
         ClusterGroup prj,
         IgniteBiPredicate<Object, Object> filter,
+        @Nullable Integer part,
         @Nullable String clsName,
         String clause,
         boolean incMeta,
@@ -165,6 +185,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.dedup = dedup;
         this.prj = prj;
         this.filter = filter;
+        this.part = part;
         this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
@@ -334,6 +355,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
+     * @return Partition.
+     */
+    @Nullable public Integer partition() {
+        return part;
+    }
+
+    /**
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
@@ -410,16 +438,18 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
+        final GridCacheQueryBean bean = new GridCacheQueryBean(this, (IgniteReducer<Object, Object>)rmtReducer,
             (IgniteClosure<Object, Object>)rmtTransform, args);
 
-        GridCacheQueryManager qryMgr = cctx.queries();
+        final GridCacheQueryManager qryMgr = cctx.queries();
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
         if (type == SQL_FIELDS || type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
+        else if (type == SCAN && part != null && nodes.size() > 1)
+            return new CacheQueryFallbackFuture<>(nodes, bean, qryMgr);
         else
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
@@ -439,15 +469,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 return Collections.singletonList(cctx.localNode());
 
             case REPLICATED:
-                if (prj != null)
-                    return nodes(cctx, prj);
+                if (prj != null || partition() != null)
+                    return nodes(cctx, prj, partition());
 
                 return cctx.affinityNode() ?
                     Collections.singletonList(cctx.localNode()) :
-                    Collections.singletonList(F.rand(nodes(cctx, null)));
+                    Collections.singletonList(F.rand(nodes(cctx, null, partition())));
 
             case PARTITIONED:
-                return nodes(cctx, prj);
+                return nodes(cctx, prj, partition());
 
             default:
                 throw new IllegalStateException("Unknown cache distribution mode: " + cacheMode);
@@ -459,17 +489,26 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param prj Projection (optional).
      * @return Collection of data nodes in provided projection (if any).
      */
-    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx, @Nullable final ClusterGroup prj) {
+    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
+        @Nullable final ClusterGroup prj, @Nullable final Integer part) {
         assert cctx != null;
+
+        final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx);
 
-        if (prj == null)
+        if (prj == null && part == null)
             return affNodes;
+
+        final Set<ClusterNode> owners =
+            part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
 
         return F.view(affNodes, new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                return prj.node(n.id()) != null;
+
+                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
+                    (prj == null || prj.node(n.id()) != null) &&
+                    (part == null || owners.contains(n));
             }
         });
     }
@@ -477,5 +516,95 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryAdapter.class, this);
+    }
+
+    /**
+     * Wrapper for queries with fallback.
+     */
+    private static class CacheQueryFallbackFuture<R> extends GridFutureAdapter<Collection<R>>
+        implements CacheQueryFuture<R> {
+        /** Query future. */
+        private volatile GridCacheQueryFutureAdapter<?, ?, R> fut;
+
+        /** Backups. */
+        private final Queue<ClusterNode> nodes;
+
+        /** Bean. */
+        private final GridCacheQueryBean bean;
+
+        /** Query manager. */
+        private final GridCacheQueryManager qryMgr;
+
+        /**
+         * @param nodes Backups.
+         * @param bean Bean.
+         * @param qryMgr Query manager.
+         */
+        public CacheQueryFallbackFuture(Collection<ClusterNode> nodes, GridCacheQueryBean bean,
+            GridCacheQueryManager qryMgr) {
+            this.nodes = fallbacks(nodes);
+            this.bean = bean;
+            this.qryMgr = qryMgr;
+
+            init();
+        }
+
+        /**
+         * @param nodes Nodes.
+         */
+        private Queue<ClusterNode> fallbacks(Collection<ClusterNode> nodes) {
+            Queue<ClusterNode> fallbacks = new LinkedList<>();
+
+            ClusterNode node = F.first(F.view(nodes, IS_LOC_NODE));
+
+            if (node != null)
+                fallbacks.add(node);
+
+            fallbacks.addAll(node != null ? F.view(nodes, F.not(IS_LOC_NODE)) : nodes);
+
+            return fallbacks;
+        }
+
+        /**
+         *
+         */
+        private void init() {
+            ClusterNode node = nodes.poll();
+
+            GridCacheQueryFutureAdapter<?, ?, R> fut0 =
+                (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ? qryMgr.queryLocal(bean) :
+                    qryMgr.queryDistributed(bean, Collections.singleton(node)));
+
+            fut0.listen(new IgniteInClosure<IgniteInternalFuture<Collection<R>>>() {
+                @Override public void apply(IgniteInternalFuture<Collection<R>> fut) {
+                    try {
+                        onDone(fut.get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (F.isEmpty(nodes))
+                            onDone(e);
+                        else
+                            init();
+                    }
+                }
+            });
+
+            fut = fut0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int available() {
+            return fut.available();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return fut.cancel();
+        }
+
+        /** {@inheritDoc} */
+        @Override public R next() {
+            return fut.next();
+        }
     }
 }
