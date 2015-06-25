@@ -4127,15 +4127,44 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (req.client()) {
-                        if (log.isDebugEnabled())
-                            log.debug("Created client message worker [locNodeId=" + locNodeId +
+                        ClientMessageWorker clientMsgWrk0 = new ClientMessageWorker(sock, nodeId);
+
+                        while (true) {
+                            ClientMessageWorker old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
+
+                            if (old == null)
+                                break;
+
+                            log.info("Have old client: " + nodeId);
+
+                            if (old.isInterrupted()) {
+                                clientMsgWorkers.remove(nodeId, old);
+
+                                continue;
+                            }
+
+                            old.join(500);
+
+                            old = clientMsgWorkers.putIfAbsent(nodeId, clientMsgWrk0);
+
+                            if (old == null)
+                                break;
+
+                            log.error("Already have client message worker [locNodeId=" + locNodeId +
                                 ", rmtNodeId=" + nodeId + ", sock=" + sock + ']');
 
-                        clientMsgWrk = new ClientMessageWorker(sock, nodeId);
+                            return;
+                        }
+
+                        //if (log.isDebugEnabled())
+                            log.info("Created client message worker [locNodeId=" + locNodeId +
+                                ", rmtNodeId=" + nodeId + ", sock=" + sock + ']');
+
+                        assert clientMsgWrk0 == clientMsgWorkers.get(nodeId);
+
+                        clientMsgWrk = clientMsgWrk0;
 
                         clientMsgWrk.start();
-
-                        clientMsgWorkers.put(nodeId, clientMsgWrk);
                     }
 
                     if (log.isDebugEnabled())
@@ -4423,8 +4452,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             finally {
                 if (clientMsgWrk != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
+                    //if (log.isDebugEnabled())
+                        log.error("Client connection failed [sock=" + sock + ", locNodeId=" + locNodeId +
                             ", rmtNodeId=" + nodeId + ']');
 
                     clientMsgWorkers.remove(nodeId, clientMsgWrk);
