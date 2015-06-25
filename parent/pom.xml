@@ -414,6 +414,7 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <excludes>*.gar</excludes>
                             <excludeResources>true</excludeResources>
                         </configuration>
                     </execution>
