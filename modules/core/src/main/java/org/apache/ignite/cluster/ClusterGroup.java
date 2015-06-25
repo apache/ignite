@@ -193,6 +193,15 @@ public interface ClusterGroup {
     public ClusterGroup forHost(ClusterNode node);
 
     /**
+     * Gets cluster group consisting from the nodes running on the hosts specified.
+     *
+     * @param host Host name to get nodes to put in cluster
+     * @param hosts Host names to get nodes to put in cluster.
+     * @return Cluster group for nodes residing on the hosts specified.
+     */
+    public ClusterGroup forHost(String host, String... hosts);
+
+    /**
      * Gets a cluster group consisting from the daemon nodes.
      * <p>
      * Daemon nodes are the usual grid nodes that participate in topology but not
