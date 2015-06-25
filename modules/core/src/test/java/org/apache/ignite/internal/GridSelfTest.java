@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
  * Test for {@link org.apache.ignite.IgniteCluster}.
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridSelfTest extends GridProjectionAbstractTest {
+public class GridSelfTest extends ClusterGroupAbstractTest {
     /** Nodes count. */
     private static final int NODES_CNT = 4;
 
