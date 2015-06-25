@@ -262,6 +262,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> hostNames() {
+        return cluster.hostNames();
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public ClusterNode node() {
         return cluster.node();
     }

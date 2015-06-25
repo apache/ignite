@@ -295,6 +295,20 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<String> hostNames() {
+        Collection<String> resultHostNames = new HashSet<String> ();
+        Collection<ClusterNode> allNodes = nodes();
+
+        if (!(allNodes.isEmpty()))
+        {
+            for (ClusterNode currentNode : allNodes)
+                Collections.addAll(resultHostNames, currentNode.hostNames().toArray(new String[0]));
+        }
+
+        return resultHostNames;
+    }
+
+    /** {@inheritDoc} */
     @Override public final ClusterNode node(UUID id) {
         A.notNull(id, "id");
 

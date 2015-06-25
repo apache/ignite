@@ -261,6 +261,13 @@ public interface ClusterGroup {
     public ClusterNode node();
 
     /**
+     * Gets the read-only collection of hostnames in this cluster group.
+     *
+     * @return All hostnames in this cluster group.
+     */
+    public Collection<String> hostNames();
+
+    /**
      * Gets predicate that defines a subset of nodes for this cluster group.
      *
      * @return Predicate that defines a subset of nodes for this cluster group.
