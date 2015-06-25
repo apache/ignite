@@ -753,6 +753,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     rmtNodeId = this.rmtNodeId;
                 }
 
+                boolean first = joinLatch.getCount() > 0;
+
                 try {
                     InputStream in = new BufferedInputStream(sock.getInputStream());
 
@@ -763,12 +765,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                            if (first)
+                                msg = spi.readMessage(sock, in, spi.netTimeout);
+                            else
+                                msg = spi.marsh.unmarshal(in, U.gridClassLoader());
                         }
                         catch (IgniteCheckedException e) {
                             //if (log.isDebugEnabled())
                                 U.error(log, "Failed to read message [sock=" + sock + ", " +
-                                    "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
+                                    "locNodeId=" + getLocalNodeId() +
+                                    ", rmtNodeId=" + rmtNodeId +
+                                    ", first=" + first + ']', e);
 
                             IOException ioEx = X.cause(e, IOException.class);
 
@@ -786,6 +793,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']');
 
                             continue;
+                        }
+                        finally {
+                            first = false;
                         }
 
                         msg.senderNodeId(rmtNodeId);
@@ -805,10 +815,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                     msgWorker.addMessage(new SocketClosedMessage(sock));
 
                     //if (log.isDebugEnabled())
-                        U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
+                        U.error(log, "Connection failed [sock=" + sock +
+                            ", locNodeId=" + getLocalNodeId() +
+                            ", first=" + first + ']', e);
                 }
                 finally {
-                    U.error(log, "Closing socket [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']');
+                    U.error(log, "Closing socket [sock=" + sock +
+                        ", locNodeId=" + getLocalNodeId() +
+                        ", first="+ first + ']');
 
                     U.closeQuiet(sock);
 

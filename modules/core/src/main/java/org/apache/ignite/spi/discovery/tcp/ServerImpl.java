@@ -4657,7 +4657,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryNodeAddFinishedMessage msg0 = (TcpDiscoveryNodeAddFinishedMessage)msg;
 
                         if (clientNodeId.equals(msg0.nodeId()))
-                            log.info("Sent TcpDiscoveryNodeAddFinishedMessage to client: " + clientNodeId);
+                            log.info("Sent TcpDiscoveryNodeAddFinishedMessage to client " +
+                                "[client=" + clientNodeId + ", sock=" + sock + ']');
+                    }
+                    else if (msg instanceof TcpDiscoveryClientReconnectMessage) {
+                        TcpDiscoveryClientReconnectMessage msg0 = (TcpDiscoveryClientReconnectMessage)msg;
+
+                        if (clientNodeId.equals(msg0.creatorNodeId()))
+                            log.info("Sent TcpDiscoveryClientReconnectMessage to client " +
+                                "[client=" + clientNodeId + ", sock=" + sock + ']');
                     }
                 }
                 finally {
