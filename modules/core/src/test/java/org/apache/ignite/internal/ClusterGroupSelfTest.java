@@ -248,26 +248,4 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
 
         return even ? cnt - 1 : cnt - 2;
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testHostNames() throws Exception {
-        Collection<String> inputHostNames = ignite.cluster().hostNames();
-        Collection<String> localNodeHostNames = ignite.cluster().localNode().hostNames();
-        Collection<String> randomNodeHostNames = ignite.cluster().forRandom().node().hostNames();
-        Collection<ClusterNode> allNodes = ignite.cluster().nodes();
-        Collection<String> checkHostNames = new HashSet<String> ();
-
-        for (ClusterNode currentNode : allNodes)
-            Collections.addAll(checkHostNames, currentNode.hostNames().toArray(new String[0]));
-
-        assert(checkHostNames.equals(inputHostNames));
-
-        if (!(localNodeHostNames.isEmpty()) && !(inputHostNames.isEmpty()))
-            assert((inputHostNames.containsAll(localNodeHostNames)) == true);
-
-        if (!(randomNodeHostNames.isEmpty()) && !(inputHostNames.isEmpty()))
-            assert((inputHostNames.containsAll(randomNodeHostNames)) == true);
-    }
 }
