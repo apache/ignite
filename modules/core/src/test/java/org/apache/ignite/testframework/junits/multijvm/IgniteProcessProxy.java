@@ -120,7 +120,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param gridName Grid name.
      * @return Instance by name or exception wiil be thrown.
      */
-    public static IgniteProcessProxy get(String gridName) {
+    public static IgniteProcessProxy ignite(String gridName) {
         IgniteProcessProxy res = gridProxies.get(gridName);
 
         if (res == null)

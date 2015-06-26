@@ -223,6 +223,9 @@ public abstract class GridAbstractTest extends TestCase {
      * @return logger.
      */
     protected IgniteLogger log() {
+        if (weAreOnRemoteJvm())
+            return IgniteNodeRunner.startedInstance().log();
+
         return log;
     }
 
@@ -878,8 +881,12 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteEx grid(String name) {
         if (!isMultiJvmAndNodeIsRemote(name))
             return (IgniteEx)G.ignite(name);
-        else
-            return IgniteProcessProxy.get(name);
+        else {
+            if (weAreOnRemoteJvm())
+                return IgniteNodeRunner.startedInstance();
+            else
+                return IgniteProcessProxy.ignite(name);
+        }
     }
 
     /**
@@ -889,11 +896,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Grid instance.
      */
     protected IgniteEx grid(int idx) {
-        if (!isMultiJvmAndNodeIsRemote(idx))
-            return (IgniteEx)G.ignite(getTestGridName(idx));
-        else
-            return IgniteProcessProxy.get(getTestGridName(idx));
-
+        return grid(getTestGridName(idx));
     }
 
     /**
@@ -901,12 +904,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Ignite instance.
      */
     protected Ignite ignite(int idx) {
-        String gridName = getTestGridName(idx);
-
-        if (!isMultiJvmAndNodeIsRemote(idx))
-            return G.ignite(gridName);
-        else
-            return IgniteProcessProxy.get(gridName);
+        return grid(idx);
     }
 
     /**
@@ -1399,6 +1397,13 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected boolean isMultiJvmAndNodeIsRemote(int idx) {
         return isMultiJvm() && idx != 0;
+    }
+
+    /**
+     * @return <code>True</code> if current jvm contains remote started node.
+     */
+    protected boolean weAreOnRemoteJvm() {
+        return IgniteNodeRunner.hasStartedInstance();
     }
 
     /**

@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
@@ -179,21 +178,24 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         if (memoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
             return;
 
-        final AtomicInteger swapEvts = new AtomicInteger(0);
-        final AtomicInteger unswapEvts = new AtomicInteger(0);
+        final IgniteAtomicLong swapEvts = grid(0).atomicLong("swapEvts", 0, true);
+
+        final IgniteAtomicLong unswapEvts = grid(0).atomicLong("unswapEvts", 0, true);
 
         for (int i = 0; i < gridCount(); i++) {
+            final int iCopy = i;
+
             grid(i).events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
                     info("Received event: " + evt);
 
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_SWAPPED:
-                            swapEvts.incrementAndGet();
+                            grid(iCopy).atomicLong("swapEvts", 0, false).incrementAndGet();
 
                             break;
                         case EVT_CACHE_OBJECT_UNSWAPPED:
-                            unswapEvts.incrementAndGet();
+                            grid(iCopy).atomicLong("unswapEvts", 0, false).incrementAndGet();
 
                             break;
                     }

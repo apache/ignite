@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.junits.multijvm;
 import com.thoughtworks.xstream.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -38,6 +39,9 @@ public class IgniteNodeRunner {
     private static final String IGNITE_CONFIGURATION_FILE = System.getProperty("java.io.tmpdir") +
         File.separator + "igniteConfiguration.tmp_";
 
+    /** */
+    private static volatile Ignite ignite;
+
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
      *
@@ -51,7 +55,21 @@ public class IgniteNodeRunner {
 
         IgniteConfiguration cfg = readCfgFromFileAndDeleteFile(args[0]);
 
-        Ignition.start(cfg);
+        ignite = Ignition.start(cfg);
+    }
+
+    /**
+     * @return Ignite instance started at main.
+     */
+    public static IgniteEx startedInstance(){
+        return (IgniteEx)ignite;
+    }
+
+    /**
+     * @return <code>True</code> if there is ignite node started via {@link IgniteNodeRunner} at this jvm.
+     */
+    public static boolean hasStartedInstance() {
+        return ignite != null;
     }
 
     /**

@@ -288,7 +288,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert jcache(i).localSize() != 0 || F.isEmpty(keysCol);
         }
 
-        // TODO
         for (int i = 0; i < gridCount(); i++) {
             if (!isMultiJvmAndNodeIsRemote(i)) {
                 GridCacheContext<String, Integer> ctx = context(i);
@@ -302,23 +301,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assertEquals("Incorrect key size on cache #" + i, sum, jcache(i).localSize(ALL));
             }
             else {
-                final int finalI = i;
-                final UUID id = grid(i).localNode().id();
+                final int iCopy = i;
 
                 ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
                     @Override public void run() {
-                        Ignite grid = Ignition.ignite(id);
-
-                        GridCacheContext<String, Integer> ctx =
-                            ((IgniteKernal)grid).<String, Integer>internalCache().context();
+                        GridCacheContext<String, Integer> ctx = context(iCopy);
 
                         int sum = 0;
 
                         for (String key : map.keySet())
-                            if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                            if (ctx.affinity().localNode(key,
+                                new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
                                 sum++;
 
-                        assertEquals("Incorrect key size on cache #" + finalI, sum, grid.cache(null).localSize(ALL));
+                        assertEquals("Incorrect key size on cache #" + iCopy, sum, jcache(iCopy).localSize(ALL));
                     }
                 });
             }
@@ -3885,15 +3881,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     assertEquals("Incorrect size on cache #" + i, size, jcache(i).localSize(ALL));
                 }
                 else {
-                    final UUID id = grid(i).localNode().id();
+                    final int iCopy = i;
 
-                    final int finalI = i;
                     ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
                         @Override public void run() {
-                            Ignite grid = Ignition.ignite(id);
-
-                            GridCacheContext<String, Integer> ctx =
-                                ((IgniteKernal)grid).<String, Integer>internalCache().context();
+                            GridCacheContext<String, Integer> ctx = context(iCopy);
 
                             if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
                                 return;
@@ -3905,14 +3897,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                                     GridCacheEntryEx e =
                                         ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
-                                    assert e != null : "Entry is null [idx=" + finalI + ", key=" + key + ", ctx=" + ctx + ']';
+                                    assert e != null : "Entry is null [idx=" + iCopy + ", key=" + key
+                                        + ", ctx=" + ctx + ']';
                                     assert !e.deleted() : "Entry is deleted: " + e;
 
                                     size++;
                                 }
                             }
 
-                            assertEquals("Incorrect size on cache #" + finalI, size, grid.cache(null).localSize(ALL));
+                            assertEquals("Incorrect size on cache #" + iCopy, size, jcache(iCopy).localSize(ALL));
                         }
                     });
                 }
@@ -3942,15 +3935,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     assertEquals("Incorrect key size on cache #" + i, size, jcache(i).localSize(ALL));
                 }
                 else {
-                    final int finI = i;
-                    final UUID id = grid(i).localNode().id();
+                    final int iCopy = i;
 
                     ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
                         @Override public void run() {
-                            Ignite grid = Ignition.ignite(id);
-
-                            GridCacheContext<String, Integer> ctx =
-                                ((IgniteKernal)grid).<String, Integer>internalCache().context();
+                            GridCacheContext<String, Integer> ctx = context(iCopy);
 
                             int size = 0;
 
@@ -3958,7 +3947,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                                 if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                                     size++;
 
-                            assertEquals("Incorrect key size on cache #" + finI, size, grid.cache(null).localSize(ALL));
+                            assertEquals("Incorrect key size on cache #" + iCopy, size, jcache(iCopy).localSize(ALL));
                         }
                     });
                 }

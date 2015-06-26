@@ -32,7 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.testframework.junits.multijvm.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -357,11 +356,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        if (!isMultiJvmAndNodeIsRemote(idx))
-            return ignite(idx).cache(null);
-        else
-            return IgniteProcessProxy.get(getTestGridName(idx)).cache(null);
-
+        return ignite(idx).cache(null);
     }
 
     /**
@@ -369,10 +364,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Cache context.
      */
     protected GridCacheContext<String, Integer> context(final int idx) {
-        if (!isMultiJvmAndNodeIsRemote(idx))
-            return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
-        else
-            throw new UnsupportedOperationException("Operation cant be supported for multi jvm mode.");
+        if (isMultiJvmAndNodeIsRemote(idx) && !weAreOnRemoteJvm())
+            throw new UnsupportedOperationException("Operation can't be done automatically via proxy. " +
+                "Send task with this logic on remote jvm.");
+
+        return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
     }
 
     /**
