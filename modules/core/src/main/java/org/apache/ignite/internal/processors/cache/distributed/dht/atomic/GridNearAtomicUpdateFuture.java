@@ -105,7 +105,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     private final ExpiryPolicy expiryPlc;
 
     /** Future map topology version. */
-    private AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
+    private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
+
+    /** Completion future for a particular topology version. */
+    private GridFutureAdapter<Void> topCompleteFut;
 
     /** Optional filter. */
     private final CacheEntryPredicate[] filter;
@@ -246,8 +249,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         return F.view(F.viewReadOnly(mappings.keySet(), U.id2Node(cctx.kernalContext())), F.notNull());
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean waitForPartitionExchange() {
+    /**
+     * @return {@code True} if this future should block partition map exchange.
+     */
+    private boolean waitForPartitionExchange() {
         // Wait fast-map near atomic update futures in CLOCK mode.
         return fastMap;
     }
@@ -323,11 +328,34 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         else {
             topLocked = true;
 
-            // Cannot remap.
-            remapCnt.set(1);
+            synchronized (this) {
+                this.topVer = topVer;
+
+                // Cannot remap.
+                remapCnt.set(1);
+            }
 
             map0(topVer, null, false, null);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer) {
+        if (waitForPartitionExchange() && topologyVersion().compareTo(topVer) < 0) {
+            synchronized (this) {
+                if (this.topVer == AffinityTopologyVersion.ZERO)
+                    return null;
+
+                if (this.topVer.compareTo(topVer) < 0) {
+                    if (topCompleteFut == null)
+                        topCompleteFut = new GridFutureAdapter<>();
+
+                    return topCompleteFut;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -339,20 +367,32 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         Collection<Object> remapKeys = new ArrayList<>(failed.size());
         Collection<Object> remapVals = vals != null ? new ArrayList<>(failed.size()) : null;
+        Collection<GridCacheDrInfo> remapConflictPutVals = conflictPutVals != null ? new ArrayList<GridCacheDrInfo>(failed.size()) : null;
+        Collection<GridCacheVersion> remapConflictRmvVals = conflictRmvVals != null ? new ArrayList<GridCacheVersion>(failed.size()) : null;
 
         Iterator<?> keyIt = keys.iterator();
         Iterator<?> valsIt = vals != null ? vals.iterator() : null;
+        Iterator<GridCacheDrInfo> conflictPutValsIt = conflictPutVals != null ? conflictPutVals.iterator() : null;
+        Iterator<GridCacheVersion> conflictRmvValsIt = conflictRmvVals != null ? conflictRmvVals.iterator() : null;
 
         for (Object key : failed) {
             while (keyIt.hasNext()) {
                 Object nextKey = keyIt.next();
                 Object nextVal = valsIt != null ? valsIt.next() : null;
+                GridCacheDrInfo nextConflictPutVal = conflictPutValsIt != null ? conflictPutValsIt.next() : null;
+                GridCacheVersion nextConflictRmvVal = conflictRmvValsIt != null ? conflictRmvValsIt.next() : null;
 
                 if (F.eq(key, nextKey)) {
                     remapKeys.add(nextKey);
 
                     if (remapVals != null)
                         remapVals.add(nextVal);
+
+                    if (remapConflictPutVals != null)
+                        remapConflictPutVals.add(nextConflictPutVal);
+
+                    if (remapConflictRmvVals != null)
+                        remapConflictRmvVals.add(nextConflictRmvVal);
 
                     break;
                 }
@@ -361,13 +401,29 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         keys = remapKeys;
         vals = remapVals;
+        conflictPutVals = remapConflictPutVals;
+        conflictRmvVals = remapConflictRmvVals;
 
-        mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
         single = null;
         futVer = null;
         err = null;
         opRes = null;
-        topVer = AffinityTopologyVersion.ZERO;
+
+        GridFutureAdapter<Void> fut0;
+
+        synchronized (this) {
+            mappings = new ConcurrentHashMap8<>(keys.size(), 1.0f);
+
+            topVer = AffinityTopologyVersion.ZERO;
+
+            fut0 = topCompleteFut;
+
+            topCompleteFut = null;
+        }
+
+        if (fut0 != null)
+            fut0.onDone();
+
         singleNodeId = null;
         singleReq = null;
         fastMapRemap = false;
@@ -404,6 +460,15 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (super.onDone(retval, err)) {
             if (futVer != null)
                 cctx.mvcc().removeAtomicFuture(version());
+
+            GridFutureAdapter<Void> fut0;
+
+            synchronized (this) {
+                fut0 = topCompleteFut;
+            }
+
+            if (fut0 != null)
+                fut0.onDone();
 
             return true;
         }
@@ -544,6 +609,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                 return;
             }
+
+            synchronized (this) {
+                this.topVer = topVer;
+            }
         }
         finally {
             cache.topology().readUnlock();
@@ -559,7 +628,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         boolean remap = false;
 
         synchronized (this) {
-            if ((syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY) || mappings.isEmpty()) {
+            if (topVer != AffinityTopologyVersion.ZERO &&
+                ((syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY) || mappings.isEmpty())) {
                 CachePartialUpdateCheckedException err0 = err;
 
                 if (err0 != null)
@@ -1040,7 +1110,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (err0 == null)
             err0 = this.err = new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
-        List<Object> keys = new ArrayList<>(failedKeys.size());
+        Collection<Object> keys = new ArrayList<>(failedKeys.size());
 
         for (KeyCacheObject key : failedKeys)
             keys.add(key.value(cctx.cacheObjectContext(), false));

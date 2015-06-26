@@ -79,7 +79,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
     /** Maximum number of retries when topology changes. */
-    public static final int MAX_RETRIES = 100;
+    public static final int MAX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
