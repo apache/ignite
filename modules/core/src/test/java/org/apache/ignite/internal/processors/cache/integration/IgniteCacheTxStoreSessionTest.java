@@ -135,8 +135,12 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
         try (Transaction tx = startTx(concurrency, isolation)) {
             log.info("Do tx get.");
+            expData.add(new ExpectedData(false, "load", new HashMap(), cache.getName()));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "load"), cache.getName()));
 
             cache.get(key1);
+
+            expData.clear();
 
             log.info("Do tx put.");
 

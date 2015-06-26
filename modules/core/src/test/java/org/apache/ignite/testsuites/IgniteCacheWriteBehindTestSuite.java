@@ -40,6 +40,8 @@ public class IgniteCacheWriteBehindTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedTest.class));
         suite.addTest(new TestSuite(GridCacheWriteBehindStorePartitionedMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedWritesTest.class));
+        suite.addTest(new TestSuite(IgnteCacheClientWriteBehindStoreAtomicTest.class));
+        suite.addTest(new TestSuite(IgnteCacheClientWriteBehindStoreTxTest.class));
 
         return suite;
     }

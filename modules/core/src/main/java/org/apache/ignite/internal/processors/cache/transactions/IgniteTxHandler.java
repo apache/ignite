@@ -325,7 +325,7 @@ public class IgniteTxHandler {
                     req.isolation(),
                     req.timeout(),
                     req.isInvalidate(),
-                    false,
+                    true,
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
@@ -1065,8 +1065,6 @@ public class IgniteTxHandler {
         if (!F.isEmpty(req.writes())) {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
-            assert F.isEmpty(req.candidatesByKey());
-
             if (tx == null) {
                 tx = new GridDhtTxRemote(
                     ctx,
@@ -1197,7 +1195,6 @@ public class IgniteTxHandler {
      */
     @Nullable public GridNearTxRemote startNearRemoteTx(ClassLoader ldr, UUID nodeId,
         GridDhtTxPrepareRequest req) throws IgniteCheckedException {
-        assert F.isEmpty(req.candidatesByKey());
 
         if (!F.isEmpty(req.nearWrites())) {
             GridNearTxRemote tx = ctx.tm().nearTx(req.version());

@@ -236,7 +236,10 @@ public final class IgniteSystemProperties {
     /**
      * System property to disable buffered communication if node sends less messages count than
      * specified by this property. Default value is {@code 512}.
+     *
+     * @deprecated Not used anymore.
      */
+    @Deprecated
     public static final String IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
 
     /**

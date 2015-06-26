@@ -26,18 +26,17 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for cache query metrics.
  */
-public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
-    /** */
+public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstractTest {
+    /** Grid count. */
     private static final int GRID_CNT = 2;
 
-    /** */
-    private static final CacheMode CACHE_MODE = REPLICATED;
+    /** Cache mode. */
+    protected CacheMode cacheMode;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -65,14 +64,14 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         CacheConfiguration<String, Integer> cacheCfg1 = defaultCacheConfiguration();
 
         cacheCfg1.setName("A");
-        cacheCfg1.setCacheMode(CACHE_MODE);
+        cacheCfg1.setCacheMode(cacheMode);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg1.setIndexedTypes(String.class, Integer.class);
 
         CacheConfiguration<String, Integer> cacheCfg2 = defaultCacheConfiguration();
 
         cacheCfg2.setName("B");
-        cacheCfg2.setCacheMode(CACHE_MODE);
+        cacheCfg2.setCacheMode(cacheMode);
         cacheCfg2.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg2.setIndexedTypes(String.class, Integer.class);
 

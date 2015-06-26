@@ -34,12 +34,11 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
 
     /** {@inheritDoc} */
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
-        //GridDhtPartitionSupplyMessage unmarshalling failed test
+        //GridDhtPartitionSupplyMessage unmarshalling failed test.
         readCnt.set(Integer.MAX_VALUE);
 
-        for (int i = 0; i <= 20; i++) {
+        for (int i = 0; i <= 20; i++)
             jcache(0).put(new TestKey(String.valueOf(++key)), "");
-        }
 
         readCnt.set(1);
 
@@ -49,32 +48,30 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
 
         Thread.sleep(1000);
 
-        //GridDhtForceKeysRequest unmarshalling failed test
+        //GridDhtForceKeysRequest unmarshalling failed test.
         stopGrid(3);
 
         readCnt.set(Integer.MAX_VALUE);
 
-        for (int i = 0; i <= 1000; i++) {
+        for (int i = 0; i <= 1000; i++)
             jcache(0).put(new TestKey(String.valueOf(++key)), "");
-        }
 
         startGrid(3);
 
         Affinity<Object> aff = affinity(grid(3).cache(null));
 
-        while (!aff.isPrimary(grid(3).localNode(), new TestKey(String.valueOf(key)))) {
+        while (!aff.isPrimary(grid(3).localNode(), new TestKey(String.valueOf(key))))
             --key;
-        }
 
         readCnt.set(1);
 
         try {
             jcache(3).get(new TestKey(String.valueOf(key)));
+
             assert false : "p2p marshalling failed, but error response was not sent";
         }
         catch (CacheException e) {
             assert X.hasCause(e, IOException.class);
         }
-
     }
 }

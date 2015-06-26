@@ -65,20 +65,12 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
-        suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
-
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxFairAffinityNodeJoinTest.class);
 
         suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
         suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
-
-        suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheColocatedFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFailoverSelfTest.class);
 
         return suite;
     }

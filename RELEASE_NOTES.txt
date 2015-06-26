@@ -1,6 +1,18 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.2
+---------------------------------------
+
+* Added client mode to TCP discovery SPI.
+* Added memory based evictions.
+* Added integration with Apache Spark.
+* Added integration with Apache Mesos.
+* Added IgniteCache.getAllOutTx() method.
+* Added serializable cache store factories for built-in stores.
+* Bug fixes in In-Memory Accelerator For Apache Hadoop.
+* Many stability and fault-tolerance fixes.
+
 Apache Ignite In-Memory Data Fabric 1.1
 ---------------------------------------
 

@@ -85,11 +85,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     @LoggerResource
     private IgniteLogger log;
 
-    /** Ignite instance . */
-    @IgniteInstanceResource
-    @GridToStringExclude
-    private Ignite ignite;
-
     /** Multicast IP address as string. */
     private String mcastGrp = DFLT_MCAST_GROUP;
 
@@ -256,19 +251,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                 "(it is recommended in production to specify at least one address in " +
                 "TcpDiscoveryMulticastIpFinder.getAddresses() configuration property)");
 
-        boolean clientMode;
-
-        if (ignite != null) { // Can be null if used in tests without starting Ignite.
-            DiscoverySpi discoSpi = ignite.configuration().getDiscoverySpi();
-
-            if (!(discoSpi instanceof TcpDiscoverySpi))
-                throw new IgniteSpiException("TcpDiscoveryMulticastIpFinder should be used with " +
-                    "TcpDiscoverySpi: " + discoSpi);
-
-            clientMode = ((TcpDiscoverySpi)discoSpi).isClientMode();
-        }
-        else
-            clientMode = false;
+        boolean clientMode = discoveryClientMode();
 
         InetAddress mcastAddr;
 

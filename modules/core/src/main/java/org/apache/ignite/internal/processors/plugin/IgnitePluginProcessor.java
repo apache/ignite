@@ -48,25 +48,13 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      *
      * @param ctx Kernal context.
      * @param cfg Ignite configuration.
+     * @param providers Plugin providers.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) {
+    public IgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg, List<PluginProvider> providers) {
         super(ctx);
 
         ExtensionRegistryImpl registry = new ExtensionRegistryImpl();
-
-        List<PluginProvider> providers = AccessController.doPrivileged(new PrivilegedAction<List<PluginProvider>>() {
-            @Override public List<PluginProvider> run() {
-                List<PluginProvider> providers = new ArrayList<>();
-
-                ServiceLoader<PluginProvider> ldr = ServiceLoader.load(PluginProvider.class);
-
-                for (PluginProvider provider : ldr)
-                    providers.add(provider);
-
-                return providers;
-            }
-        });
 
         for (PluginProvider provider : providers) {
             GridPluginContext pluginCtx = new GridPluginContext(ctx, cfg);

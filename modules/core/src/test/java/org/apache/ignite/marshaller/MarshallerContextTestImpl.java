@@ -19,8 +19,10 @@ package org.apache.ignite.marshaller;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.plugin.*;
 import org.jsr166.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -29,6 +31,22 @@ import java.util.concurrent.*;
 public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     /** */
     private final static ConcurrentMap<Integer, String> map = new ConcurrentHashMap8<>();
+
+    /**
+     * Initializes context.
+     *
+     * @param plugins Plugins.
+     */
+    public MarshallerContextTestImpl(List<PluginProvider> plugins) {
+        super(plugins);
+    }
+
+    /**
+     * Initializes context.
+     */
+    public MarshallerContextTestImpl() {
+        super(null);
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
