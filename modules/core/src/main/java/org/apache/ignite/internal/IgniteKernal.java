@@ -2421,9 +2421,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @param cache Cache.
      */
-    private void checkNearCacheStarted(IgniteCacheProxy<?, ?> cache) {
+    private void checkNearCacheStarted(IgniteCacheProxy<?, ?> cache) throws IgniteCheckedException {
         if (!cache.context().isNear())
-            throw new IgniteException("Failed to start near cache " +
+            throw new IgniteCheckedException("Failed to start near cache " +
                 "(a cache with the same name without near cache is already started)");
     }
 
