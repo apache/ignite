@@ -94,6 +94,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
         suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
         suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
+        suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
 
         return suite;
     }
