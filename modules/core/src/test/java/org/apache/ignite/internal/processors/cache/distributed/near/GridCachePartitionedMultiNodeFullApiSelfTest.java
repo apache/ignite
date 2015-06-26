@@ -360,7 +360,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(0, cache1.localSize(NEAR));
         assertEquals(5, cache1.localSize(CachePeekMode.ALL) - cache1.localSize(NEAR));
 
-        assertEquals(nearEnabled() ? 2 : 0, cache2.localSize(NEAR));
+        boolean nearEnabled = cache2.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null;
+
+        assertEquals(nearEnabled ? 2 : 0, cache2.localSize(NEAR));
         assertEquals(0, cache2.localSize(CachePeekMode.ALL) - cache2.localSize(NEAR));
     }
 
