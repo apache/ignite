@@ -41,7 +41,7 @@ import static org.apache.ignite.events.EventType.*;
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
  */
 @SuppressWarnings("deprecation")
-public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest implements Externalizable {
+public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest implements Externalizable {
     /** VM ip finder for TCP discovery. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -90,7 +90,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     };
 
     /** */
-    protected GridProjectionAbstractTest() {
+    protected ClusterGroupAbstractTest() {
         // No-op.
     }
 
@@ -101,13 +101,6 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
 
         return cfg;
-    }
-
-    /**
-     * @param startGrid Start grid flag.
-     */
-    protected GridProjectionAbstractTest(boolean startGrid) {
-        super(startGrid);
     }
 
     /** {@inheritDoc} */
