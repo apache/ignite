@@ -487,17 +487,7 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             try {
-                if (isMultiJvm()) {
-                    if (gridCount() < 2)
-                        throw new IllegalStateException("Grid count have to be more 1 in milti jvm mode.");
-
-                    allNodesJoinLatch = new CountDownLatch(gridCount() - 1);
-                }
-
                 beforeTestsStarted();
-
-                if (isMultiJvm())
-                    assert allNodesJoinLatch.await(20, TimeUnit.SECONDS);
             }
             catch (Exception | Error t) {
                 t.printStackTrace();
@@ -1365,13 +1355,6 @@ public abstract class GridAbstractTest extends TestCase {
         TestCounters cntrs = getTestCounters();
 
         return cntrs.getStopped() == cntrs.getNumberOfTests();
-    }
-
-    /**
-     * @return Grids count to start.
-     */
-    protected int gridCount() {
-        return 0;
     }
 
     /**
