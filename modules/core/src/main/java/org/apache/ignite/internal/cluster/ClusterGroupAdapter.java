@@ -345,13 +345,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forAttribute(String name, @Nullable final String val) {
-        A.notNull(name, "n");
-
-        return forPredicate(new AttributeFilter(name, val));
-    }
-
-    /** {@inheritDoc} */
     @Override public final ClusterGroup forAttribute(String name, @Nullable final Object val) {
         A.notNull(name, "n");
 

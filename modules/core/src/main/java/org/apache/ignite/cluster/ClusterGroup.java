@@ -131,22 +131,6 @@ public interface ClusterGroup {
      * @param name Name of the attribute.
      * @param val Optional attribute value to match.
      * @return Cluster group for nodes containing specified attribute.
-     *
-     * @deprecated use {@link ClusterGroup#forAttribute(String name, @Nullable Object val}
-     */
-    public ClusterGroup forAttribute(String name, @Nullable String val);
-
-    /**
-     * Creates a new cluster group for nodes containing given name and value
-     * specified in user attributes.
-     * <p>
-     * User attributes for every node are optional and can be specified in
-     * grid node configuration. See {@link IgniteConfiguration#getUserAttributes()}
-     * for more information.
-     *
-     * @param name Name of the attribute.
-     * @param val Optional attribute value to match.
-     * @return Cluster group for nodes containing specified attribute.
      */
     public ClusterGroup forAttribute(String name, @Nullable Object val);
 
