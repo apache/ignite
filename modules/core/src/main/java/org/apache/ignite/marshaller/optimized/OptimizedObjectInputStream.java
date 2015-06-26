@@ -80,6 +80,9 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     /** */
     private Stack<HashMap<Integer, Object>> marshalAwareValues;
 
+    /** */
+    private FieldRange range;
+
     /**
      * @param in Input.
      * @throws IOException In case of error.
@@ -1423,14 +1426,22 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             }
 
             if (info.id() == fieldId) {
+                if (range == null)
+                    range = new FieldRange();
+
                 if (!isHandle) {
                     //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
                     fieldOff += 1 + 4 + clsNameLen + 2;
 
-                    return new FieldRange(start + fieldOff, len);
+                    range.start = start + fieldOff;
+                    range.len = len;
                 }
-                else
-                    return new FieldRange(in.readInt(pos), in.readInt(pos + 4));
+                else {
+                    range.start = in.readInt(pos);
+                    range.len = in.readInt(pos + 4);
+                }
+
+                return range;
             }
             else {
                 fieldOff += len;
@@ -1456,12 +1467,9 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         private int len;
 
         /**
-         * @param start Start.
-         * @param len   Length.
+         * Constructor.
          */
-        public FieldRange(int start, int len) {
-            this.start = start;
-            this.len = len;
+        public FieldRange() {
         }
     }
     /** {@inheritDoc} */
