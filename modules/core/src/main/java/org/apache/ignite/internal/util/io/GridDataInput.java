@@ -167,4 +167,31 @@ public interface GridDataInput extends DataInput {
      * @throws IOException In case of error.
      */
     public char[] readCharArray() throws IOException;
+
+    /**
+     * Fast read of byte value at {@code pos}.
+     *
+     * @param pos Position in array.
+     *
+     * @return Byte value.
+     */
+    public byte readByte(int pos);
+
+    /**
+     * Fast read of short value at {@code pos}.
+     *
+     * @param pos Position in array.
+     *
+     * @return Short value.
+     */
+    public short readShort(int pos);
+
+    /**
+     * Fast read of integer value at {@code pos}.
+     *
+     * @param pos Position in array.
+     *
+     * @return Integer value.
+     */
+    public int readInt(int pos);
 }

@@ -371,6 +371,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
      * @param clsLdr Class loader.
      * @param <T> Expected field class.
      * @return Field.
+     * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IgniteCheckedException In case of error.
      */
     public <T> T readField(String fieldName, byte[] arr, int off, int len, @Nullable ClassLoader clsLdr)

@@ -84,9 +84,10 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     /**
      * @param obj Portable object to get field from.
      * @param fieldName Field name.
+     * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @return Field value.
      */
-    public Object field(Object obj, String fieldName);
+    public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException;
 
     /**
      * Checks whether field is set in the object.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -63,6 +64,14 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert val != null || valBytes != null;
+
+        if (val == null && ctx.storeValue())
+            val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
     }
 
     /** {@inheritDoc} */

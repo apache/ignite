@@ -107,37 +107,25 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         toMarshaledFormIfNeeded(ctx);
 
-        if (detached())
-            return valBytes;
+        shrinkToSize();
 
-        byte[] arr = new byte[len];
-
-        U.arrayCopy(valBytes, start, arr, 0, len);
-
-        return arr;
+        return valBytes;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        if (detached())
-            return this;
-
         return detach();
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert val != null || valBytes != null;
-
-        if (val == null && ctx.storeValue())
-            val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
+        // No-op
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
-        assert val != null || valBytes != null;
-
         toMarshaledFormIfNeeded(ctx);
+        shrinkToSize();
     }
 
     /** {@inheritDoc} */
@@ -187,6 +175,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @param fieldName Field name.
      * @param marsh Marshaller.
      * @return Field.
+     * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IgniteCheckedException In case of error.
      */
     public Object field(String fieldName, OptimizedMarshallerExt marsh) throws IgniteCheckedException {
@@ -326,14 +315,9 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @return Detached object wrapped by {@code CacheIndexedObjectImpl}.
      */
     protected CacheIndexedObjectImpl detach() {
-        if (detached())
-            return this;
+        shrinkToSize();
 
-        byte[] arr = new byte[len];
-
-        U.arrayCopy(valBytes, start, arr, 0, len);
-
-        return new CacheIndexedObjectImpl(arr, 0, len);
+        return this;
     }
 
     /**
@@ -360,5 +344,20 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
             start = 0;
             len = valBytes.length;
         }
+    }
+
+    /**
+     * Shrinks byte array to size boundaries.
+     */
+    private void shrinkToSize() {
+        if (detached())
+            return;
+
+        byte[] arr = new byte[len];
+
+        U.arrayCopy(valBytes, start, arr, 0, len);
+
+        valBytes = arr;
+        start = 0;
     }
 }

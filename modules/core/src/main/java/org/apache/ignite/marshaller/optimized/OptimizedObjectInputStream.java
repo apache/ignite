@@ -1305,18 +1305,14 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @throws IOException in case of error.
      */
     public boolean hasField(String fieldName) throws IOException {
-        int pos = in.position();
+        int start = in.position();
 
-        byte type = in.readByte();
+        byte type = in.readByte(start);
 
-        if (type != SERIALIZABLE && type != MARSHAL_AWARE) {
-            in.position(pos);
+        if (type != SERIALIZABLE && type != MARSHAL_AWARE)
             return false;
-        }
 
-        FieldRange range = fieldRange(fieldName, pos);
-
-        in.position(pos);
+        FieldRange range = fieldRange(fieldName, start);
 
         return range != null && range.start >= 0;
     }
@@ -1328,41 +1324,38 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      *
      * @param fieldName Field name.
      * @return Field.
+     * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException In case of error.
      */
-    public <F> F readField(String fieldName) throws IOException, ClassNotFoundException {
-        int pos = in.position();
+    public <F> F readField(String fieldName) throws IgniteFieldNotFoundException, IOException, ClassNotFoundException {
+        int start = in.position();
 
-        byte type = in.readByte();
+        byte type = in.readByte(start);
 
-        if (type != SERIALIZABLE && type != MARSHAL_AWARE) {
-            in.position(pos);
-            return null;
-        }
+        if (type != SERIALIZABLE && type != MARSHAL_AWARE)
+            throw new IgniteFieldNotFoundException("Object doesn't support fields indexing.");
 
-        FieldRange range = fieldRange(fieldName, pos);
-
-        F field = null;
+        FieldRange range = fieldRange(fieldName, start);
 
         if (range != null && range.start >= 0) {
-            in.position(range.start);
+            byte fieldType = in.readByte(range.start);
 
-            byte fieldType = in.readByte();
-
-            if ((fieldType == SERIALIZABLE && metaHandler.metadata(in.readInt()) != null) ||
-                fieldType == MARSHAL_AWARE)
-                //Do we need to make a copy of array?
-                field = (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
+            if ((fieldType == SERIALIZABLE && metaHandler.metadata(in.readInt(range.start + 1)) != null)
+                || fieldType == MARSHAL_AWARE)
+                return  (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
             else {
                 in.position(range.start);
-                field = (F)readObject();
+
+                F obj = (F)readObject();
+
+                in.position(start);
+
+                return obj;
             }
         }
-
-        in.position(pos);
-
-        return field;
+        else
+            throw new IgniteFieldNotFoundException("Object doesn't have a field with the name: " + fieldName);
     }
 
     /**
@@ -1374,18 +1367,25 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @throws IOException in case of error.
      */
     private FieldRange fieldRange(String fieldName, int start) throws IOException {
+        int pos = start + 1;
+
         int fieldId = resolveFieldId(fieldName);
 
-        int typeId = readInt();
+        int typeId = in.readInt(pos);
+        pos += 4;
 
         int clsNameLen = 0;
 
         if (typeId == 0) {
-            int pos = in.position();
+            int oldPos = in.position();
+
+            in.position(pos);
 
             typeId = OptimizedMarshallerUtils.resolveTypeId(readUTF(), mapper);
 
             clsNameLen = in.position() - pos;
+
+            in.position(oldPos);
         }
 
         OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
@@ -1396,16 +1396,13 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         int end = in.size();
 
-        in.position(end - FOOTER_LEN_OFF);
-
-        short footerLen = in.readShort();
+        short footerLen = in.readShort(end - FOOTER_LEN_OFF);
 
         if (footerLen == EMPTY_FOOTER)
             return null;
 
-        // +2 - skipping length at the beginning
-        int footerOff = (end - footerLen) + 2;
-        in.position(footerOff);
+        // Calculating footer offset. +2 - skipping length at the beginning
+        pos = (end - footerLen) + 2;
 
         int fieldOff = 0;
 
@@ -1414,8 +1411,9 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             boolean isHandle;
 
             if (info.length() == VARIABLE_LEN) {
-                int fieldInfo = in.readInt();
+                int fieldInfo = in.readInt(pos);
 
+                pos += 4;
                 len = fieldInfo & FOOTER_BODY_LEN_MASK;
                 isHandle = ((fieldInfo & FOOTER_BODY_IS_HANDLE_MASK) >> FOOTER_BODY_HANDLE_MASK_BIT) == 1;
             }
@@ -1432,13 +1430,13 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     return new FieldRange(start + fieldOff, len);
                 }
                 else
-                    return new FieldRange(in.readInt(), in.readInt());
+                    return new FieldRange(in.readInt(pos), in.readInt(pos + 4));
             }
             else {
                 fieldOff += len;
 
                 if (isHandle) {
-                    in.skipBytes(8);
+                    pos += 8;
                     fieldOff += 8;
                 }
             }

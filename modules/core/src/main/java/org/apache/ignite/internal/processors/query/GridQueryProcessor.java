@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 import org.jsr166.*;
@@ -1740,9 +1741,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Result class. */
         private Class<?> type;
 
-        /** */
-        private volatile int isKeyProp;
-
         /**
          * Constructor.
          *
@@ -1765,27 +1763,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (obj == null)
                     return null;
+
+                if (!(obj instanceof CacheIndexedObjectImpl))
+                    throw new IgniteCheckedException("Non-indexed object received as a result of property extraction " +
+                        "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
+
+                return ctx.cacheObjects().field(obj, propName);
             }
             else {
-                int isKeyProp0 = isKeyProp;
-
-                if (isKeyProp0 == 0) {
-                    if (ctx.cacheObjects().hasField(key, propName))
-                        isKeyProp = isKeyProp0 = 1;
-                    else if (ctx.cacheObjects().hasField(val, propName))
-                        isKeyProp = isKeyProp0 = -1;
-                    else {
-                        U.warn(log, "Neither key nor value have property " +
-                            "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
-
-                        return null;
+                if (key instanceof CacheIndexedObjectImpl) {
+                    try {
+                        return ctx.cacheObjects().field(key, propName);
+                    }
+                    catch (IgniteFieldNotFoundException e) {
+                        // Ignore
                     }
                 }
 
-                obj = isKeyProp0 == 1 ? key : val;
-            }
+                if (val instanceof CacheIndexedObjectImpl) {
+                    try {
+                        return ctx.cacheObjects().field(val, propName);
+                    }
+                    catch (IgniteFieldNotFoundException e) {
+                        // Ignore
+                    }
+                }
 
-            return ctx.cacheObjects().field(obj, propName);
+                U.warn(log, "Neither key nor value have property " +
+                    "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+
+                return null;
+            }
         }
 
         /** {@inheritDoc} */
