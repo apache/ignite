@@ -104,18 +104,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected static ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
-    /** All nodes join latch (for multi JVM mode). */
-    private CountDownLatch allNodesJoinLatch;
-
-    /** Node join listener (for multi JVM mode). */
-    private final IgnitePredicate<Event> nodeJoinLsnr = new IgnitePredicate<Event>() {
-        @Override public boolean apply(Event evt) {
-            allNodesJoinLatch.countDown();
-
-            return true;
-        }
-    };
-
     /**
      *
      */
@@ -1079,13 +1067,8 @@ public abstract class GridAbstractTest extends TestCase {
             cfg.setNodeId(UUID.fromString(new String(chars)));
         }
 
-        if (isMultiJvm()) {
+        if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
-
-            cfg.setLocalEventListeners(new HashMap<IgnitePredicate<? extends Event>, int[]>() {{
-                put(nodeJoinLsnr, new int[] {EventType.EVT_NODE_JOINED});
-            }});
-        }
 
         return cfg;
     }
