@@ -16,13 +16,15 @@
 # limitations under the License.
 #
 
-IGNITE_VERSION=""
-
 if [ -z $SKIP_BUILD_LIBS ]; then
   ./build_users_libs.sh
 
-  IGNITE_VERSION=$(mvn -f user-repo/pom.xml dependency:list | grep ':ignite-core:jar:.*:' | \
+  PROJ_VER=$(mvn -f user-repo/pom.xml dependency:list | grep ':ignite-core:jar:.*:' | \
     sed -rn 's/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')
+
+  if [ ! -z $PROJ_VER ]; then
+    IGNITE_VERSION=$PROJ_VER
+  fi
 fi
 
 if [ -z $SKIP_DOWNLOAD ]; then
