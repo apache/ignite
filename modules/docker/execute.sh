@@ -8,6 +8,10 @@ if [ ! -z "$GIT_REPO" ]; then
   fi
 fi
 
+if [ -z "$OPTION_LIBS" ]; then
+  OPTION_LIBS="ignite-log4j"
+fi
+
 if [ ! -z "$OPTION_LIBS" ]; then
   IFS=, LIBS_LIST=("$OPTION_LIBS")
 
