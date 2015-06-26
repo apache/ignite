@@ -69,7 +69,7 @@ public class IgniteCacheFullApiMultiJvmSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheNearOnlyFairAffinityMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientOnlyFairAffinityMultiJvmFullApiSelfTest.class);
 
-        suite.addTestSuite(GridCacheNearReloadAllMJSelfTest.class);
+//        suite.addTestSuite(GridCacheNearReloadAllSelfTest.class);
 //        suite.addTestSuite(GridCacheColocatedReloadAllSelfTest.class);
 //        suite.addTestSuite(GridCacheAtomicReloadAllSelfTest.class);
 //        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest.class);
