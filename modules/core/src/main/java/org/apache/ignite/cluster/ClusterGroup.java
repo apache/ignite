@@ -132,7 +132,7 @@ public interface ClusterGroup {
      * @param val Optional attribute value to match.
      * @return Cluster group for nodes containing specified attribute.
      */
-    public ClusterGroup forAttribute(String name, @Nullable String val);
+    public ClusterGroup forAttribute(String name, @Nullable Object val);
 
     /**
      * Creates a cluster group of nodes started in server mode.
