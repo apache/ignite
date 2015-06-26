@@ -237,8 +237,6 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
             System.err.println("FINISHED PUTS");
 
-            GridCacheMapEntry.debug = true;
-
             // Start put threads.
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
