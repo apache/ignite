@@ -326,6 +326,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.warn(log, "Configuration parameter 'segmentCheckFrequency' is too low " +
                     "(at least 2000 ms recommended): " + segChkFreq);
 
+            int segResAttemp = ctx.config().getSegmentationResolveAttempts();
+
+            if (segResAttemp < 1)
+                throw new IgniteCheckedException(
+                    "Segment resolve attempts cannot be negative or zero: " + segResAttemp);
+
             checkSegmentOnStart();
         }
 
