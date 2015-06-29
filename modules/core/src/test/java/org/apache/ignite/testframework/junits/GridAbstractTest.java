@@ -475,6 +475,11 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             try {
+                List<Integer> jvmIds = IgniteNodeRunner.killAll();
+
+                if (!jvmIds.isEmpty())
+                    log.info("Next processes of IgniteNodeRunner were killed: " + jvmIds);
+
                 beforeTestsStarted();
             }
             catch (Exception | Error t) {

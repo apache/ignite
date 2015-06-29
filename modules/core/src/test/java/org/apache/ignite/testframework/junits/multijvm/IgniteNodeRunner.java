@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
+import sun.jvmstat.monitor.*;
 
 import java.io.*;
 import java.util.*;
@@ -118,5 +119,43 @@ public class IgniteNodeRunner {
         finally {
             new File(fileName).delete();
         }
+    }
+
+    /**
+     * Kill all Jvm runned by {#link IgniteNodeRunner}. Works based on jps command.
+     *
+     * @return List of killed process ids.
+     * @throws Exception If exception.
+     */
+    public static List<Integer> killAll() throws Exception{
+        MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
+
+        Set<Integer> jvms = monitoredHost.activeVms();
+
+        List<Integer> res = new ArrayList<>();
+
+        for (Integer jvmId : jvms) {
+            try {
+                MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
+
+                System.out.println(IgniteNodeRunner.class.getName());
+
+                if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
+                    Process killProc = U.isWindows() ?
+                        Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"}) :
+                        Runtime.getRuntime().exec(new String[] {"kill", "-9", jvmId.toString()});
+
+                    killProc.waitFor();
+
+                    res.add(jvmId);
+                }
+            }
+            catch (Exception e) {
+                // Print stack trace just for information.
+                X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
+            }
+        }
+
+        return res;
     }
 }
