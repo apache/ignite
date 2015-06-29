@@ -130,7 +130,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                         if (cache != null)
                             res.caches().add(cache);
                     }
-                    catch(IllegalStateException e) {
+                    catch(IllegalStateException | IllegalArgumentException e) {
                         if (debug && ignite.log() != null)
                             ignite.log().error("Ignored cache: " + cacheName, e);
                     }
