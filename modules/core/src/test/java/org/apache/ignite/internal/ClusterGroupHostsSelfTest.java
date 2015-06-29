@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -30,24 +31,26 @@ import java.util.*;
 /**
  * Test for {@link ClusterGroup#forHost(String, String...)}.
  *
- * @see GridProjectionSelfTest
+ * @see ClusterGroupSelfTest
  */
 @GridCommonTest(group = "Kernal Self")
-public class ClusterForHostsSelfTest extends GridCommonAbstractTest {
+public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        Collection<String> hostNames = null;
-
-        if ("forHostTest".equals(gridName))
-            hostNames = Arrays.asList("h_1", "h_2", "h_3");
+        Collection<String> hostNames = Arrays.asList("h_1", "h_2", "h_3");
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (hostNames != null) {
-            TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+        TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
-            cfg.setDiscoverySpi(new CustomHostsTcpDiscoverySpi(hostNames).setIpFinder(disco.getIpFinder()));
-        }
+        cfg.setDiscoverySpi(new CustomHostsTcpDiscoverySpi(hostNames).setIpFinder(disco.getIpFinder()));
 
         return cfg;
     }
@@ -56,7 +59,7 @@ public class ClusterForHostsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testForHosts() throws Exception {
-        Ignite ignite = startGrid("forHostTest");
+        Ignite ignite = grid();
 
         assertEquals(1, ignite.cluster().forHost("h_1").nodes().size());
         assertEquals(1, ignite.cluster().forHost("h_1", "h_3").nodes().size());
@@ -73,8 +76,33 @@ public class ClusterForHostsSelfTest extends GridCommonAbstractTest {
         catch (NullPointerException e) {
             gotNpe = true;
         }
+        finally {
+            assertTrue(gotNpe);
+        }
+    }
 
-        assertTrue(gotNpe);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHostNames() throws Exception {
+        Ignite ignite = grid();
+
+        Collection<String> locNodeHosts = ignite.cluster().localNode().hostNames();
+        Collection<String> clusterHosts = ignite.cluster().hostNames();
+
+        assertTrue(F.eqNotOrdered(locNodeHosts, clusterHosts));
+
+        boolean gotNpe = false;
+
+        try {
+            clusterHosts.add("valueShouldNotToBeAdded");
+        }
+        catch (UnsupportedOperationException e) {
+            gotNpe = true;
+        }
+        finally {
+            assertTrue(gotNpe);
+        }
     }
 
     /**
