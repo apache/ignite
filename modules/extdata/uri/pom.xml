@@ -114,7 +114,7 @@
 
                                 <taskdef name="gar" classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask" />
 
-                                <gar destfile="${basedir}/deploy/uri.gar" basedir="${basedir}/target/classes" />
+                                <gar destfile="${basedir}/target/deploy/uri.gar" basedir="${basedir}/target/classes" />
                             </target>
                         </configuration>
                     </execution>
