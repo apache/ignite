@@ -130,25 +130,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     TypeDescriptor desc = new TypeDescriptor();
 
-                    Class<?> valCls = U.classForName(meta.getValueType(), null);
+                    Class<?> keyCls = meta.getKeyType() != null ? U.classForName(meta.getKeyType(), null) : null;
+                    Class<?> valCls = meta.getValueType() != null ? U.classForName(meta.getValueType(), null) : null;
 
                     desc.name(valCls != null ? typeName(valCls) : meta.getValueType());
 
                     desc.valueClass(valCls != null ? valCls : Object.class);
-                    desc.keyClass(
-                        meta.getKeyType() == null ?
-                            Object.class :
-                            U.classForName(meta.getKeyType(), Object.class));
+                    desc.keyClass(keyCls != null ? keyCls : Object.class);
 
                     TypeId typeId;
 
                     if (valCls == null || ctx.cacheObjects().isPortableEnabled()) {
-                        processCacheTypeMeta(meta, desc, PORTABLE_PROPERTY);
+                        processCacheTypeMeta(meta, desc, PORTABLE_PROPERTY, keyCls, valCls);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
                     }
                     else if (ctx.cacheObjects().enableFieldsIndexing(valCls)) {
-                        processCacheTypeMeta(meta, desc, INDEXED_FIELDS_PROPERTY);
+                        processCacheTypeMeta(meta, desc, INDEXED_FIELDS_PROPERTY, keyCls, valCls);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(valCls.getName()));
                     }
@@ -1240,17 +1238,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param meta Declared metadata.
      * @param d Type descriptor.
-     * @param propertyType PropertyType.
+     * @param propType PropertyType.
+     * @param keyCls Key class.
+     * @param valCls Value class.
      * @throws IgniteCheckedException If failed.
      */
-    private void processCacheTypeMeta(CacheTypeMetadata meta, TypeDescriptor d, PropertyType propertyType)
-        throws IgniteCheckedException {
-        assert propertyType != CLASS_PROPERTY;
+    private void processCacheTypeMeta(CacheTypeMetadata meta, TypeDescriptor d, PropertyType propType,
+        @Nullable Class<?> keyCls, @Nullable Class<?> valCls) throws IgniteCheckedException {
+        assert propType != CLASS_PROPERTY;
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            Property prop = propertyType == PORTABLE_PROPERTY ?
+            Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), keyCls, valCls);
 
             d.addProperty(prop, false);
 
@@ -1262,9 +1262,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            Property prop = propertyType == PORTABLE_PROPERTY ?
+            Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), keyCls, valCls);
 
             d.addProperty(prop, false);
 
@@ -1276,9 +1276,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            Property prop = propertyType == PORTABLE_PROPERTY ?
+            Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(txtIdx, String.class) :
-                buildIndexedFieldsProperty(txtIdx, String.class);
+                buildIndexedFieldsProperty(txtIdx, String.class, keyCls, valCls);
 
             d.addProperty(prop, false);
 
@@ -1296,9 +1296,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    Property prop = propertyType == PORTABLE_PROPERTY ?
+                    Property prop = propType == PORTABLE_PROPERTY ?
                         buildPortableProperty(idxField.getKey(), idxField.getValue().get1()) :
-                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1());
+                        buildIndexedFieldsProperty(idxField.getKey(), idxField.getValue().get1(), keyCls, valCls);
 
                     d.addProperty(prop, false);
 
@@ -1312,9 +1312,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            Property prop = propertyType == PORTABLE_PROPERTY ?
+            Property prop = propType == PORTABLE_PROPERTY ?
                 buildPortableProperty(entry.getKey(), entry.getValue()) :
-                buildIndexedFieldsProperty(entry.getKey(), entry.getValue());
+                buildIndexedFieldsProperty(entry.getKey(), entry.getValue(), keyCls, valCls);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1421,15 +1421,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
+     * @param keyCls Key class.
+     * @param valCls Value class.
      * @return Portable property.
      */
-    private IndexedFieldsProperty buildIndexedFieldsProperty(String pathStr, Class<?> resType) {
+    private IndexedFieldsProperty buildIndexedFieldsProperty(String pathStr, Class<?> resType,
+        @Nullable Class<?> keyCls, @Nullable Class<?> valCls) {
         String[] path = pathStr.split("\\.");
 
         IndexedFieldsProperty res = null;
 
         for (String prop : path)
-            res = new IndexedFieldsProperty(prop, res, resType);
+            res = new IndexedFieldsProperty(prop, res, resType, keyCls, valCls);
 
         return res;
     }
@@ -1699,9 +1702,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (isKeyProp0 == 0) {
                     // Key is allowed to be a non-portable object here.
                     // We check key before value consistently with ClassProperty.
-                    if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName))
+                    if (ctx.cacheObjects().isPortableObject(key) && ctx.cacheObjects().hasField(key, propName, null))
                         isKeyProp = isKeyProp0 = 1;
-                    else if (ctx.cacheObjects().hasField(val, propName))
+                    else if (ctx.cacheObjects().hasField(val, propName, null))
                         isKeyProp = isKeyProp0 = -1;
                     else {
                         U.warn(log, "Neither key nor value have property " +
@@ -1714,7 +1717,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            return ctx.cacheObjects().field(obj, propName);
+            return ctx.cacheObjects().field(obj, propName, null);
         }
 
         /** {@inheritDoc} */
@@ -1741,17 +1744,49 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Result class. */
         private Class<?> type;
 
+        /** Key field */
+        private Field keyField;
+
+        /** Value field */
+        private Field valueField;
+
         /**
          * Constructor.
          *
          * @param propName Property name.
          * @param parent Parent property.
          * @param type Result type.
+         * @param keyCls Key class.
+         * @param valCls Value class.
          */
-        private IndexedFieldsProperty(String propName, IndexedFieldsProperty parent, Class<?> type) {
+        private IndexedFieldsProperty(String propName, IndexedFieldsProperty parent, Class<?> type,
+            @Nullable Class<?> keyCls, @Nullable Class<?> valCls) {
             this.propName = propName;
             this.parent = parent;
             this.type = type;
+
+            if (keyCls != null) {
+                try {
+                    keyField = keyCls.getDeclaredField(propName);
+
+                    keyField.setAccessible(true);
+                } catch (NoSuchFieldException e) {
+                    // No-op
+                }
+            }
+            else if (valCls != null && keyField == null) {
+                try {
+                    valueField = valCls.getDeclaredField(propName);
+
+                    valueField.setAccessible(true);
+                } catch (NoSuchFieldException e) {
+                    // No-op
+                }
+            }
+
+            if ((keyCls != null || valCls != null) && keyField == null && valueField == null)
+                U.warn(log, "Neither key nor value class has field " +
+                    "[fieldName=" + propName + ", key=" + keyCls + ", val=" + valCls + "]");
         }
 
         /** {@inheritDoc} */
@@ -1768,28 +1803,45 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Non-indexed object received as a result of property extraction " +
                         "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
-                return ctx.cacheObjects().field(obj, propName);
+                return ctx.cacheObjects().field(obj, propName, keyField != null ? keyField : valueField);
             }
             else {
                 if (key instanceof CacheIndexedObjectImpl) {
                     try {
-                        return ctx.cacheObjects().field(key, propName);
+
+                        return ctx.cacheObjects().field(key, propName, keyField);
                     }
                     catch (IgniteFieldNotFoundException e) {
                         // Ignore
+                    }
+                }
+                else if (keyField != null) {
+                    try {
+                        return keyField.get(key);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
                     }
                 }
 
                 if (val instanceof CacheIndexedObjectImpl) {
                     try {
-                        return ctx.cacheObjects().field(val, propName);
+                        return ctx.cacheObjects().field(val, propName, valueField);
                     }
                     catch (IgniteFieldNotFoundException e) {
                         // Ignore
                     }
                 }
+                else if (valueField != null) {
+                    try {
+                        return valueField.get(val);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
 
-                U.warn(log, "Neither key nor value have property " +
+                U.warn(log, "Neither key nor value has property " +
                     "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
 
                 return null;

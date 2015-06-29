@@ -56,21 +56,10 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-        return (T)this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        return this;
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (val == null && ctx.storeValue())
+        if (val == null)
             val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
     }
 
@@ -88,13 +77,6 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override public Object deserialize(CacheObjectContext ctx) {
-        assert val != null;
-
-        return val;
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         assert val != null;
 
@@ -109,5 +91,10 @@ public class KeyCacheIndexedObjectImpl extends CacheIndexedObjectImpl implements
         KeyCacheIndexedObjectImpl other = (KeyCacheIndexedObjectImpl)obj;
 
         return val.equals(other.val);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean keepDeserialized(CacheObjectContext ctx, boolean checkCls) {
+        return true;
     }
 }

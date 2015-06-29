@@ -31,6 +31,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
 import java.math.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -290,8 +291,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
-            storeVal,
-            GridCacheUtils.isSystemCache(ccfg.getName()));
+            storeVal);
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 
@@ -334,11 +334,11 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException {
+    @Override public Object field(Object obj, String fieldName, Field field) throws IgniteFieldNotFoundException {
         assert optMarshExt != null;
 
         try {
-            return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarshExt);
+            return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarshExt, field);
         }
         catch (IgniteFieldNotFoundException e) {
             throw e;
@@ -353,12 +353,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasField(Object obj, String fieldName) {
+    @Override public boolean hasField(Object obj, String fieldName, Field field) {
         if (obj instanceof CacheIndexedObjectImpl) {
             assert optMarshExt != null;
 
             try {
-                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarshExt);
+                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarshExt, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -511,7 +511,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             try {
                 toMarshaledFormIfNeeded(ctx);
 
-                /*if (ctx.storeValue()) {
+                if (keepDeserialized(ctx, true)) {
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
@@ -519,7 +519,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                         ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
 
                     return new CacheIndexedObjectImpl(val, valBytes, start, len);
-                }*/
+                }
 
                 return new CacheIndexedObjectImpl(null, valBytes, start, len);
             }

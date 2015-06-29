@@ -48,27 +48,23 @@ public class CacheObjectContext {
     /** */
     private boolean p2pEnabled;
 
-    /** */
-    private boolean systemCache;
-
     /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
-     * @param systemCache Whether the object will be stored in a system cache or not.
+     * @param
      */
     public CacheObjectContext(GridKernalContext kernalCtx,
         AffinityKeyMapper dfltAffMapper,
         boolean cpyOnGet,
-        boolean storeVal,
-        boolean systemCache) {
+        boolean storeVal
+        ) {
         this.kernalCtx = kernalCtx;
         this.p2pEnabled = kernalCtx.config().isPeerClassLoadingEnabled();
         this.dfltAffMapper = dfltAffMapper;
         this.cpyOnGet = cpyOnGet;
         this.storeVal = storeVal;
-        this.systemCache = systemCache;
 
         proc = kernalCtx.cacheObjects();
     }
@@ -92,13 +88,6 @@ public class CacheObjectContext {
      */
     public boolean storeValue() {
         return storeVal;
-    }
-
-    /**
-     * @return {@code true} if the object is stored in a system cache.
-     */
-    public boolean systemCache() {
-        return systemCache;
     }
 
     /**

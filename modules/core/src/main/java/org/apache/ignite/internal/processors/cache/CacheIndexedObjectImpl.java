@@ -26,6 +26,7 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.nio.*;
 import java.util.concurrent.*;
 
@@ -42,6 +43,9 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
 
     /** */
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
+    private Boolean hasClass;
 
     /** */
     protected int start;
@@ -93,9 +97,6 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     public CacheIndexedObjectImpl(Object val, byte[] valBytes, int start, int len) {
         assert val != null || (valBytes != null && start >= 0 && len > 0);
 
-        if (valBytes != null && val != null)
-            val = null;
-
         this.val = val;
         this.valBytes = valBytes;
         this.start = start;
@@ -111,25 +112,25 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         toMarshaledFormIfNeeded(ctx);
 
-        shrinkToSize();
-
         return valBytes;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        return detach();
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        // No-op
+        assert valBytes != null;
+
+        if (val == null && keepDeserialized(ctx, true))
+            val = ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
         toMarshaledFormIfNeeded(ctx);
-        shrinkToSize();
     }
 
     /** {@inheritDoc} */
@@ -164,10 +165,21 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      *
      * @param fieldName Field name.
      * @param marsh Marshaller.
+     * @param field Field instance to get access through reflection.
      * @return {@code true} if has.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean hasField(String fieldName, OptimizedMarshallerExt marsh) throws IgniteCheckedException {
+    public boolean hasField(String fieldName, OptimizedMarshallerExt marsh, Field field) throws IgniteCheckedException {
+        if (field != null && val != null) {
+            try {
+                field.get(val);
+                return true;
+            }
+            catch (Exception e) {
+                return false;
+            }
+        }
+
         assert valBytes != null;
 
         return marsh.hasField(fieldName, valBytes, start, len);
@@ -178,11 +190,22 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      *
      * @param fieldName Field name.
      * @param marsh Marshaller.
+     * @param field Field instance to get access through reflection.
      * @return Field.
      * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IgniteCheckedException In case of error.
      */
-    public Object field(String fieldName, OptimizedMarshallerExt marsh) throws IgniteCheckedException {
+    public Object field(String fieldName, OptimizedMarshallerExt marsh, Field field) throws IgniteCheckedException {
+        if (field != null && val != null) {
+            try {
+                return field.get(val);
+            }
+            catch (Exception e) {
+                throw new IgniteFieldNotFoundException("Object doesn't have the field [obj=" + val + ", field="
+                    + fieldName + "]", e);
+            }
+        }
+
         assert valBytes != null;
 
         return marsh.readField(fieldName, valBytes, start, len, val != null ? val.getClass().getClassLoader() : null);
@@ -204,8 +227,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
             Object val = ctx.processor().unmarshal(ctx, valBytes, start, len,
                 ctx.kernalContext().config().getClassLoader());
 
-            //if (ctx.storeValue())
-            //    this.val = val;
+            if (keepDeserialized(ctx, false))
+                this.val = val;
 
             return val;
         }
@@ -314,27 +337,6 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
     }
 
     /**
-     * Detaches object.
-     *
-     * @return Detached object wrapped by {@code CacheIndexedObjectImpl}.
-     */
-    protected CacheIndexedObjectImpl detach() {
-        shrinkToSize();
-
-        return this;
-    }
-
-    /**
-     * Checks whether the object is already detached or not.
-     *
-     * @return {@code true} if detached.
-     */
-    protected boolean detached() {
-        return true;
-        //return start == 0 && len == valBytes.length;
-    }
-
-    /**
      * Marshals {@link #val} to {@link #valBytes} if needed.
      *
      * @param ctx Cache object context.
@@ -349,22 +351,49 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
             start = 0;
             len = valBytes.length;
 
-            val = null;
+            if (!keepDeserialized(ctx, false))
+                val = null;
         }
     }
 
     /**
-     * Shrinks byte array to size boundaries.
+     * Checks whether to keep deserialized version of the object or not.
+     *
+     * @param ctx Cache object context.
+     * @param checkCls Check class definition presence on node flag.
+     * @return {@code true} if keep, {@code false} otherwise.
      */
-    private void shrinkToSize() {
-        if (detached())
-            return;
+    protected boolean keepDeserialized(CacheObjectContext ctx, boolean checkCls) {
+        if (ctx.copyOnGet())
+            return false;
 
-        byte[] arr = new byte[len];
+        return checkCls ? hasClassOnNode(ctx) : true;
+    }
 
-        U.arrayCopy(valBytes, start, arr, 0, len);
+    /**
+     * Checks whether a node has a class definition of a marhsaller object or not.
+     *
+     * @param ctx Cache object context.
+     * @return {@code true} if has, {@code false} otherwise.
+     */
+    private boolean hasClassOnNode(CacheObjectContext ctx) {
+        if (val != null)
+            return true;
 
-        valBytes = arr;
-        start = 0;
+        if (hasClass != null)
+            return hasClass;
+
+        assert valBytes != null;
+
+        try {
+            Class<?> cls = ctx.kernalContext().marshallerContext().getClass(typeId(), null);
+
+            hasClass = cls != null;
+        }
+        catch (Exception e) {
+            hasClass = false;
+        }
+
+        return hasClass;
     }
 }

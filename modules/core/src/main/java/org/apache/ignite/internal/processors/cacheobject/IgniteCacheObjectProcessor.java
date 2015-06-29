@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
+import java.lang.reflect.*;
+
 /**
  * Cache objects processor.
  */
@@ -82,21 +84,25 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public boolean isPortableEnabled();
 
     /**
-     * @param obj Portable object to get field from.
+     * Retrieves field from the given object. Object should be an instance of {@link CacheObject}.
+     *
+     * @param obj Object to get field from.
      * @param fieldName Field name.
+     * @param field Field instance to get access through reflection.
      * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @return Field value.
      */
-    public Object field(Object obj, String fieldName) throws IgniteFieldNotFoundException;
+    public Object field(Object obj, String fieldName, @Nullable Field field) throws IgniteFieldNotFoundException;
 
     /**
-     * Checks whether field is set in the object.
+     * Checks whether field is set in the object. Object should be an instance of {@link CacheObject}.
      *
      * @param obj Object.
      * @param fieldName Field name.
+     * @param field Field instance to get access through reflection.
      * @return {@code true} if field is set.
      */
-    public boolean hasField(Object obj, String fieldName);
+    public boolean hasField(Object obj, String fieldName, @Nullable Field field);
 
     /**
      * Checks whether this functionality is globally supported.

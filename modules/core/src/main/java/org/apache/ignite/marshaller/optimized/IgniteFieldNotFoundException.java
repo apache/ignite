@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
  * Exception is thrown when there is an attempt to retrieve or deserialize an unexisting field from byte array
@@ -34,5 +35,15 @@ public class IgniteFieldNotFoundException extends IgniteCheckedException {
      */
     public IgniteFieldNotFoundException(String msg) {
         super(msg);
+    }
+
+    /**
+     * Creates new exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public IgniteFieldNotFoundException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }
