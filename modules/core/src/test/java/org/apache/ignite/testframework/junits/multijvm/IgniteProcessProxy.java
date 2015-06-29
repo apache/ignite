@@ -131,6 +131,24 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     * @param locNodeId ID of local node the requested grid instance is managing.
+     * @return An instance of named grid. This method never returns {@code null}.
+     * @throws IgniteIllegalStateException Thrown if grid was not properly initialized or grid instance was stopped or
+     * was not started.
+     */
+    public static Ignite ignite(UUID locNodeId) {
+        A.notNull(locNodeId, "locNodeId");
+
+        for (IgniteProcessProxy ignite : gridProxies.values()) {
+            if (ignite.getId().equals(locNodeId))
+                return ignite;
+        }
+
+        throw new IgniteIllegalStateException("Grid instance with given local node ID was not properly " +
+            "started or was stopped: " + locNodeId);
+    }
+
+    /**
      * Kill all running processes.
      */
     public static void killAll() {

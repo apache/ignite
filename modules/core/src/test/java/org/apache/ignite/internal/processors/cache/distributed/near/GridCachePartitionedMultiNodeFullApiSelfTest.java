@@ -26,6 +26,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.testframework.junits.multijvm.*;
 
 import java.util.*;
 
@@ -134,7 +135,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++)
             info(">>>>> Grid" + i + ": " + grid(i).localNode().id());
 
-        int size = 10;
+        final int size = 10;
 
         IgniteCache<Object, Object> chache0 = grid(0).cache(null);
 
@@ -147,15 +148,16 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals(0, context(i).tm().idMapSize());
+            if (!isMultiJvmAndNodeIsRemote(i))
+                putDebugCheck0(i, size);
+            else {
+                final int iCopy = i;
 
-            IgniteCache<Object, Object> cache = grid(i).cache(null);
-            ClusterNode node = grid(i).localNode();
-
-            for (int k = 0; k < size; k++) {
-                if (affinity(cache).isPrimaryOrBackup(node, k))
-                    assertEquals("Check failed for node: " + node.id(), k,
-                        cache.localPeek(k, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+                ((IgniteProcessProxy)grid(i)).remoteCompute().run(new IgniteRunnable() {
+                    @Override public void run() {
+                        putDebugCheck0(iCopy, size);
+                    }
+                });
             }
         }
 
@@ -169,6 +171,23 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         for (int i = 0; i < size; i++)
             assertEquals(i, chache0.get(i));
+    }
+
+    /**
+     * @param gridIdx Grid index.
+     * @param size Size.
+     */
+    private void putDebugCheck0(int gridIdx, int size) {
+        assertEquals(0, context(gridIdx).tm().idMapSize());
+
+        IgniteCache<Object, Object> cache = grid(gridIdx).cache(null);
+        ClusterNode node = grid(gridIdx).localNode();
+
+        for (int k = 0; k < size; k++) {
+            if (affinity(cache).isPrimaryOrBackup(node, k))
+                assertEquals("Check failed for node: " + node.id(), k,
+                    cache.localPeek(k, CachePeekMode.ONHEAP, CachePeekMode.OFFHEAP));
+        }
     }
 
     /**

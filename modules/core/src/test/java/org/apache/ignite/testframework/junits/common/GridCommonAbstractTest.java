@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.multijvm.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -201,9 +202,24 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    protected static <K, V> boolean nearEnabled(IgniteCache<K,V> cache) {
-        CacheConfiguration cfg = ((IgniteKernal)cache.unwrap(Ignite.class)).
-            <K, V>internalCache(cache.getName()).context().config();
+    protected static <K, V> boolean nearEnabled(final IgniteCache<K,V> cache) {
+        final Ignite ignite = cache.unwrap(Ignite.class);
+
+        CacheConfiguration cfg;
+
+        if (!(ignite instanceof IgniteProcessProxy))
+            cfg = ((IgniteKernal)ignite).<K, V>internalCache(cache.getName()).context().config();
+        else {
+            final String cacheName = cache.getName();
+
+            cfg = ((IgniteProcessProxy)ignite).remoteCompute().call(new IgniteCallable<CacheConfiguration>() {
+                @Override public CacheConfiguration call() throws Exception {
+                    IgniteEx grid = IgniteNodeRunner.startedInstance();
+
+                    return ((IgniteKernal)grid).<K, V>internalCache(cacheName).context().config();
+                }
+            });
+        }
 
         return isNearEnabled(cfg);
     }

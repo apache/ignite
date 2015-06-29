@@ -2317,22 +2317,43 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             for (int g = 0; g < gridCount(); g++) {
                 for (int i = 0; i < cnt; i++) {
-                    String key = String.valueOf(i);
+                    if (!isMultiJvmAndNodeIsRemote(g))
+                        checkDeletedEntriesFlag(g, i);
+                    else {
+                        IgniteProcessProxy proxy = (IgniteProcessProxy)grid(g);
 
-                    GridCacheContext<String, Integer> cctx = context(g);
+                        final int idx = g;
+                        final int key = i;
 
-                    GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
-                        cctx.cache().peekEx(key);
-
-                    if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
-                        assertNotNull(entry);
-                        assertTrue(entry.deleted());
+                        proxy.remoteCompute().run(new GridAbsClosureX() {
+                            @Override public void applyx() throws IgniteCheckedException {
+                                checkDeletedEntriesFlag(idx, key);
+                            }
+                        });
                     }
-                    else
-                        assertNull(entry);
                 }
             }
         }
+    }
+
+    /**
+     * @param idx Grid index.
+     * @param keyN Key.
+     */
+    private void checkDeletedEntriesFlag(int idx, int keyN) {
+        String key = String.valueOf(keyN);
+
+        GridCacheContext<String, Integer> cctx = context(idx);
+
+        GridCacheEntryEx entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
+            cctx.cache().peekEx(key);
+
+        if (grid(idx).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(idx).localNode())) {
+            assertNotNull(entry);
+            assertTrue(entry.deleted());
+        }
+        else
+            assertNull(entry);
     }
 
     /**
