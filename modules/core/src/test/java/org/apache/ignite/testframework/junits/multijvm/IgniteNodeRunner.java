@@ -127,33 +127,44 @@ public class IgniteNodeRunner {
      * @return List of killed process ids.
      * @throws Exception If exception.
      */
-    public static List<Integer> killAll() throws Exception{
-        MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
+    public static List<Integer> killAll() {
+        try {
+            // TODO delete logging.
+            X.println(">>>>> IgniteNodeRunner.killAll");
 
-        Set<Integer> jvms = monitoredHost.activeVms();
+            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
 
-        List<Integer> res = new ArrayList<>();
+            Set<Integer> jvms = monitoredHost.activeVms();
 
-        for (Integer jvmId : jvms) {
-            try {
-                MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
+            List<Integer> res = new ArrayList<>();
 
-                if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
-                    Process killProc = U.isWindows() ?
-                        Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"}) :
-                        Runtime.getRuntime().exec(new String[] {"kill", "-9", jvmId.toString()});
+            for (Integer jvmId : jvms) {
+                try {
+                    MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
 
-                    killProc.waitFor();
+                    if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
+                        Process killProc = U.isWindows() ?
+                            Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"}) :
+                            Runtime.getRuntime().exec(new String[] {"kill", "-9", jvmId.toString()});
 
-                    res.add(jvmId);
+                        killProc.waitFor();
+
+                        res.add(jvmId);
+                    }
+                }
+                catch (Exception e) {
+                    // Print stack trace just for information.
+                    X.printerrln("Could not kill IgniteNodeRunner java process. Jvm pid = " + jvmId, e);
                 }
             }
-            catch (Exception e) {
-                // Print stack trace just for information.
-                X.printerrln("Could not kill IgniteNodeRunner java processes. Jvm pid = " + jvmId, e);
-            }
-        }
 
-        return res;
+            return res;
+        }
+        catch (Exception e) {
+            // Print stack trace just for information.
+            X.printerrln("Could not kill IgniteNodeRunner java processes.", e);
+
+            return Collections.emptyList();
+        }
     }
 }

@@ -776,6 +776,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected void stopAllGrids(boolean cancel) {
         IgniteProcessProxy.killAll(); // In multi jvm case.
+        IgniteNodeRunner.killAll();
 
         Collection<Ignite> clients = new ArrayList<>();
         Collection<Ignite> srvs = new ArrayList<>();
