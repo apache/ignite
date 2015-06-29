@@ -116,6 +116,10 @@ public class GridNioServer<T> {
     @SuppressWarnings("UnusedDeclaration")
     private boolean skipWrite;
 
+    /** For test purposes only. */
+    @SuppressWarnings("UnusedDeclaration")
+    private boolean skipRead;
+
     /** Local address. */
     private final InetSocketAddress locAddr;
 
@@ -144,6 +148,9 @@ public class GridNioServer<T> {
     /** */
     @GridToStringExclude
     private IgnitePredicate<Message> skipRecoveryPred;
+
+    /** Optional listener to monitor outbound message queue size. */
+    private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
 
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
@@ -174,6 +181,7 @@ public class GridNioServer<T> {
      * @param metricsLsnr Metrics listener.
      * @param formatter Message formatter.
      * @param skipRecoveryPred Skip recovery predicate.
+     * @param msgQueueLsnr Message queue size listener.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -195,6 +203,7 @@ public class GridNioServer<T> {
         GridNioMetricsListener metricsLsnr,
         MessageFormatter formatter,
         IgnitePredicate<Message> skipRecoveryPred,
+        IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -215,6 +224,7 @@ public class GridNioServer<T> {
         this.sockRcvBuf = sockRcvBuf;
         this.sockSndBuf = sockSndBuf;
         this.sndQueueLimit = sndQueueLimit;
+        this.msgQueueLsnr = msgQueueLsnr;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -385,6 +395,11 @@ public class GridNioServer<T> {
         else if (msgCnt == 1)
             // Change from 0 to 1 means that worker thread should be waken up.
             clientWorkers.get(ses.selectorIndex()).offer(fut);
+
+        IgniteBiInClosure<GridNioSession, Integer> lsnr0 = msgQueueLsnr;
+
+        if (lsnr0 != null)
+            lsnr0.apply(ses, msgCnt);
     }
 
     /**
@@ -490,13 +505,18 @@ public class GridNioServer<T> {
     public GridNioFuture<GridNioSession> createSession(final SocketChannel ch,
         @Nullable Map<Integer, ?> meta) {
         try {
-            ch.configureBlocking(false);
+            if (!closed) {
+                ch.configureBlocking(false);
 
-            NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
+                NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
-            offerBalanced(req);
+                offerBalanced(req);
 
-            return req;
+                return req;
+            }
+            else
+                return new GridNioFinishedFuture<>(
+                    new IgniteCheckedException("Failed to create session, server is stopped."));
         }
         catch (IOException e) {
             return new GridNioFinishedFuture<>(e);
@@ -634,6 +654,17 @@ public class GridNioServer<T> {
         * @throws IOException If key read failed.
         */
         @Override protected void processRead(SelectionKey key) throws IOException {
+            if (skipRead) {
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException ignored) {
+                    U.warn(log, "Sleep has been interrupted.");
+                }
+
+                return;
+            }
+
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -775,6 +806,17 @@ public class GridNioServer<T> {
          * @throws IOException If key read failed.
          */
         @Override protected void processRead(SelectionKey key) throws IOException {
+            if (skipRead) {
+                try {
+                    U.sleep(50);
+                }
+                catch (IgniteInterruptedCheckedException ignored) {
+                    U.warn(log, "Sleep has been interrupted.");
+                }
+
+                return;
+            }
+
             ReadableByteChannel sockCh = (ReadableByteChannel)key.channel();
 
             final GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -2108,6 +2150,9 @@ public class GridNioServer<T> {
         /** Skip recovery predicate. */
         private IgnitePredicate<Message> skipRecoveryPred;
 
+        /** Message queue size listener. */
+        private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
+
         /**
          * Finishes building the instance.
          *
@@ -2133,6 +2178,7 @@ public class GridNioServer<T> {
                 metricsLsnr,
                 formatter,
                 skipRecoveryPred,
+                msgQueueLsnr,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -2342,6 +2388,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> skipRecoveryPredicate(IgnitePredicate<Message> skipRecoveryPred) {
             this.skipRecoveryPred = skipRecoveryPred;
+
+            return this;
+        }
+
+        /**
+         * @param msgQueueLsnr Message queue size listener.
+         * @return Instance of this builder for chaining.
+         */
+        public Builder<T> messageQueueSizeListener(IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr) {
+            this.msgQueueLsnr = msgQueueLsnr;
 
             return this;
         }

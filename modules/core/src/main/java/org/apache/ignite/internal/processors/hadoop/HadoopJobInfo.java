@@ -55,12 +55,14 @@ public interface HadoopJobInfo extends Serializable {
      * This method will be called once for the same ID on one node, though it can be called on the same host
      * multiple times from different processes (in case of multiple nodes on the same host or external execution).
      *
+     * @param jobCls The job class.
      * @param jobId Job ID.
      * @param log Logger.
      * @return Job.
      * @throws IgniteCheckedException If failed.
      */
-    HadoopJob createJob(HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException;
+    public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
+        HadoopJobId jobId, IgniteLogger log) throws IgniteCheckedException;
 
     /**
      * @return Number of reducers configured for job.

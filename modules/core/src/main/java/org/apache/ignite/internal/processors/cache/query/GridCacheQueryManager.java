@@ -1903,39 +1903,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * @param f1 First filter.
-     * @param f2 Second filter.
-     * @return And filter of the given two.
-     */
-    @Nullable private static IndexingQueryFilter and(@Nullable final IndexingQueryFilter f1,
-        @Nullable final IndexingQueryFilter f2) {
-        if (f1 == null)
-            return f2;
-
-        if (f2 == null)
-            return f1;
-
-        return new IndexingQueryFilter() {
-            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
-                final IgniteBiPredicate<K, V> fltr1 = f1.forSpace(spaceName);
-                final IgniteBiPredicate<K, V> fltr2 = f2.forSpace(spaceName);
-
-                if (fltr1 == null)
-                    return fltr2;
-
-                if (fltr2 == null)
-                    return fltr1;
-
-                return new IgniteBiPredicate<K, V>() {
-                    @Override public boolean apply(K k, V v) {
-                        return fltr1.apply(k, v) && fltr2.apply(k, v);
-                    }
-                };
-            }
-        };
-    }
-
-    /**
      * Prints memory statistics for debugging purposes.
      */
     @Override public void printMemoryStats() {

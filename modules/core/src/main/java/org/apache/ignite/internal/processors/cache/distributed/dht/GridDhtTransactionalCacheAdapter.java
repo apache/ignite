@@ -859,7 +859,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         req.isolation(),
                                         req.timeout(),
                                         req.isInvalidate(),
-                                        false,
+                                        true,
                                         req.txSize(),
                                         null,
                                         req.subjectId(),

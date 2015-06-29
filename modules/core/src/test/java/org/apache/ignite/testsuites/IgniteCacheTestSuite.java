@@ -113,7 +113,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCacheMvccSelfTest.class, ignoredTests);
         suite.addTestSuite(GridCacheMvccPartitionedSelfTest.class);
         suite.addTestSuite(GridCacheMvccManagerSelfTest.class);
-//        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class); TODO uncomment in DR branch.
+        suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
@@ -151,7 +151,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheEntrySetIterationPreloadingSelfTest.class);
         suite.addTestSuite(GridCacheMixedPartitionExchangeSelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicMessageRecoveryTest.class);
-        // suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class); TODO IGNITE-795
+        suite.addTestSuite(IgniteCacheTxMessageRecoveryTest.class);
         GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredEvictionAtomicSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredEvictionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapTieredAtomicSelfTest.class, ignoredTests);

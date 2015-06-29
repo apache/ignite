@@ -3305,6 +3305,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
                 try {
+                    ldr.skipStore(true);
+
                     ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
 
                     LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
@@ -3504,6 +3506,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             DataStreamerImpl ldr = ctx.kernalContext().dataStream().dataStreamer(ctx.namex());
 
             try {
+                ldr.skipStore(true);
+
                 ldr.receiver(new IgniteDrDataStreamerCacheUpdater());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);

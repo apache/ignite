@@ -1028,7 +1028,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = null;
 
         try {
-            List<GridDhtCacheEntry> locked = null;
+            // If batch store update is enabled, we need to lock all entries.
+            // First, need to acquire locks on cache entries, then check filter.
+            List<GridDhtCacheEntry> locked = lockEntries(keys, req.topologyVersion());
+
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
             try {
@@ -1057,10 +1060,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             return;
                         }
-
-                        // If batch store update is enabled, we need to lock all entries.
-                        // First, need to acquire locks on cache entries, then check filter.
-                        locked = lockEntries(keys, req.topologyVersion());
 
                         boolean hasNear = ctx.discovery().cacheNearNode(node, name());
 

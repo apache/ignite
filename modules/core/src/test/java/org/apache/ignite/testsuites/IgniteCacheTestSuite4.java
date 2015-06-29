@@ -102,6 +102,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
         suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
         suite.addTestSuite(IgniteDynamicClientCacheStartSelfTest.class);
+        suite.addTestSuite(IgniteDynamicCacheStartNoExchangeTimeoutTest.class);
 
         suite.addTestSuite(GridCacheTxLoadFromStoreOnLockSelfTest.class);
 
@@ -135,11 +136,22 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheJdbcStoreSessionListenerSelfTest.class);
 
         suite.addTestSuite(CacheClientStoreSelfTest.class);
+        suite.addTestSuite(CacheStoreUsageMultinodeStaticStartAtomicTest.class);
+        suite.addTestSuite(CacheStoreUsageMultinodeStaticStartTxTest.class);
+        suite.addTestSuite(CacheStoreUsageMultinodeDynamicStartAtomicTest.class);
+        suite.addTestSuite(CacheStoreUsageMultinodeDynamicStartTxTest.class);
 
         suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
         suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
 
         suite.addTestSuite(IgniteCacheManyClientsTest.class);
+
+        suite.addTestSuite(CacheReadThroughRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughReplicatedRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughReplicatedAtomicRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughLocalRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughLocalAtomicRestartSelfTest.class);
+        suite.addTestSuite(CacheReadThroughAtomicRestartSelfTest.class);
 
         return suite;
     }

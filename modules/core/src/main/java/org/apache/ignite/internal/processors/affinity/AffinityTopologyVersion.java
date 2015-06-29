@@ -76,13 +76,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @param topVer New topology version.
-     */
-    public void topologyVersion(long topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Minor topology version.
      */
     public int minorTopologyVersion() {

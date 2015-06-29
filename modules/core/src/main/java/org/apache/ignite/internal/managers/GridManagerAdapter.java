@@ -480,8 +480,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return ctx.io().messageFactory();
                     }
 
-                    @Override public boolean tryFailNode(UUID nodeId) {
-                        return ctx.discovery().tryFailNode(nodeId);
+                    @Override public boolean tryFailNode(UUID nodeId, @Nullable String warning) {
+                        return ctx.discovery().tryFailNode(nodeId, warning);
+                    }
+
+                    @Override public void failNode(UUID nodeId, @Nullable String warning) {
+                        ctx.discovery().failNode(nodeId, warning);
                     }
 
                     @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {

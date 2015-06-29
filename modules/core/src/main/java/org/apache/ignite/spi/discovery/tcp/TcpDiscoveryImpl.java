@@ -175,8 +175,9 @@ abstract class TcpDiscoveryImpl {
 
     /**
      * @param nodeId Node id.
+     * @param warning Warning message to be shown on all nodes.
      */
-    public abstract void failNode(UUID nodeId);
+    public abstract void failNode(UUID nodeId, @Nullable String warning);
 
     /**
      * @param gridName Grid name.
