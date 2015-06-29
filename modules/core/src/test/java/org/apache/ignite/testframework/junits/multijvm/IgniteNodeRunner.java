@@ -138,8 +138,6 @@ public class IgniteNodeRunner {
             try {
                 MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
 
-                System.out.println(IgniteNodeRunner.class.getName());
-
                 if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
                     Process killProc = U.isWindows() ?
                         Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"}) :
