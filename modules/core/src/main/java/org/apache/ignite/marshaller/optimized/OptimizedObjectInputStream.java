@@ -500,15 +500,15 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @throws ClassNotFoundException In case of error.
      * @throws IOException In case of error.
      */
-    HashMap<Integer, Object> readFields( OptimizedObjectMetadata meta) throws ClassNotFoundException,
+    HashMap<Integer, Object> readFields(OptimizedObjectMetadata meta) throws ClassNotFoundException,
         IOException {
 
         HashMap<Integer, Object> fieldsValues = new HashMap<>();
 
-        for (OptimizedObjectMetadata.FieldInfo fieldInfo : meta.getMeta()) {
+        for (Map.Entry<Integer, OptimizedObjectMetadata.FieldInfo> entry : meta.metaList()) {
             Object val;
 
-            switch ((fieldInfo.type())) {
+            switch ((entry.getValue().type())) {
                 case BYTE:
                     readFieldType();
 
@@ -572,10 +572,10 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                     break;
 
                 default:
-                    throw new IgniteException("Unknown field type: " + fieldInfo.type());
+                    throw new IgniteException("Unknown field type: " + entry.getValue().type());
             }
 
-            fieldsValues.put(fieldInfo.id(), val);
+            fieldsValues.put(entry.getKey(), val);
         }
 
         return fieldsValues;
@@ -1315,7 +1315,15 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         if (type != SERIALIZABLE && type != MARSHAL_AWARE)
             return false;
 
-        FieldRange range = fieldRange(fieldName, start);
+        FieldRange range;
+
+        try {
+            range = fieldRange(fieldName, start);
+        }
+        catch (IgniteFieldNotFoundException e) {
+            // Ignore
+            return false;
+        }
 
         return range != null && range.start >= 0;
     }
@@ -1368,16 +1376,13 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @param start Object's start offset.
      * @return positive range or {@code null} if the object doesn't have such a field.
      * @throws IOException in case of error.
+     * @throws IgniteFieldNotFoundException In case if there is no such a field.
      */
-    private FieldRange fieldRange(String fieldName, int start) throws IOException {
+    private FieldRange fieldRange(String fieldName, int start) throws IOException, IgniteFieldNotFoundException {
         int pos = start + 1;
-
-        int fieldId = resolveFieldId(fieldName);
 
         int typeId = in.readInt(pos);
         pos += 4;
-
-        int clsNameLen = 0;
 
         if (typeId == 0) {
             int oldPos = in.position();
@@ -1385,8 +1390,6 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             in.position(pos);
 
             typeId = OptimizedMarshallerUtils.resolveTypeId(readUTF(), mapper);
-
-            clsNameLen = in.position() - pos;
 
             in.position(oldPos);
         }
@@ -1402,58 +1405,58 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         short footerLen = in.readShort(end - FOOTER_LEN_OFF);
 
         if (footerLen == EMPTY_FOOTER)
-            return null;
+            throw new IgniteFieldNotFoundException("Object doesn't have a field named: " + fieldName);
 
-        // Calculating footer offset. +2 - skipping length at the beginning
+        if (range == null)
+            range = new FieldRange();
+
+        // Calculating start footer offset. +2 - skipping length at the beginning
         pos = (end - footerLen) + 2;
 
-        int fieldOff = 0;
+        int fieldIdx = meta.fieldIndex(fieldName);
+        int fieldsCnt = meta.size();
 
-        for (OptimizedObjectMetadata.FieldInfo info : meta.getMeta()) {
-            int len;
-            boolean isHandle;
+        if (fieldIdx >= fieldsCnt)
+            throw new IOException("Wrong field index for field name [idx=" + fieldIdx + ", name=" + fieldName + "]");
 
-            if (info.length() == VARIABLE_LEN) {
-                int fieldInfo = in.readInt(pos);
+        boolean hasHandles = in.readByte(end - FOOTER_HANDLES_FLAG_OFF) == 1;
 
-                pos += 4;
-                len = fieldInfo & FOOTER_BODY_LEN_MASK;
-                isHandle = ((fieldInfo & FOOTER_BODY_IS_HANDLE_MASK) >> FOOTER_BODY_HANDLE_MASK_BIT) == 1;
-            }
-            else {
-                len = info.length();
-                isHandle = false;
-            }
+        if (hasHandles) {
+            long fieldInfo = in.readLong(pos + fieldIdx * 8);
 
-            if (info.id() == fieldId) {
-                if (range == null)
-                    range = new FieldRange();
+            boolean isHandle = ((fieldInfo & FOOTER_BODY_IS_HANDLE_MASK) >> FOOTER_BODY_HANDLE_MASK_BIT) == 1;
 
-                if (!isHandle) {
-                    //object header len: 1 - for type, 4 - for type ID, 2 - for checksum.
-                    fieldOff += 1 + 4 + clsNameLen + 2;
+            range.start = (int)(fieldInfo & FOOTER_BODY_OFF_MASK);
 
-                    range.start = start + fieldOff;
-                    range.len = len;
-                }
-                else {
-                    range.start = in.readInt(pos);
-                    range.len = in.readInt(pos + 4);
-                }
+            if (isHandle) {
+                range.len = (int)(fieldInfo >>> 32);
+
+                if (range.len == 0)
+                    // Field refers to its object.
+                    range.len = (end - start) - footerLen;
 
                 return range;
             }
-            else {
-                fieldOff += len;
+        }
+        else
+            range.start = in.readInt(pos + fieldIdx * 4) & FOOTER_BODY_OFF_MASK;
 
-                if (isHandle) {
-                    pos += 8;
-                    fieldOff += 8;
-                }
+        if (fieldIdx == 0) {
+            if (fieldsCnt > 1) {
+                int nextFieldOff = in.readInt(pos + (fieldIdx + 1) * 4);
+                range.len = nextFieldOff - range.start;
             }
+            else
+                range.len = (end - footerLen) - range.start;
+        }
+        else if (fieldIdx == fieldsCnt - 1)
+            range.len = (end - footerLen) - range.start;
+        else {
+            int nextFieldOff = in.readInt(pos + (fieldIdx + 1) * 4);
+            range.len = nextFieldOff - range.start;
         }
 
-        return null;
+        return range;
     }
 
     /**

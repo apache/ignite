@@ -511,6 +511,11 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
         return UNSAFE.getInt(buf, byteArrOff + pos);
     }
 
+    /** {@inheritDoc} */
+    @Override public long readLong(int pos) {
+        return UNSAFE.getLong(buf, byteArrOff + pos);
+    }
+
     /**
      * Reads in the "body" (i.e., the UTF representation minus the 2-byte
      * or 8-byte length header) of a UTF encoding, which occupies the next

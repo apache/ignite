@@ -22,6 +22,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -106,11 +107,19 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         // Must be returned in a wrapped form, since metadata was added enabling the footer.
         CacheIndexedObjectImpl cacheObject = marsh.readField("o2", arr, 0, arr.length, null);
 
+
         arr = cacheObject.valueBytes(null);
 
+        Field start = cacheObject.getClass().getDeclaredField("start");
+        start.setAccessible(true);
+
+        Field len = cacheObject.getClass().getDeclaredField("len");
+        len.setAccessible(true);
+
         // Check enclosed objects fields
-        assertTrue(marsh.hasField("i", arr, 0, arr.length));
-        assertEquals(testObj.o2.i, (int)marsh.readField("i", arr, 0, arr.length, null));
+        assertTrue(marsh.hasField("i", arr, start.getInt(cacheObject), len.getInt(cacheObject)));
+        assertEquals(testObj.o2.i, (int)marsh.readField("i", arr, start.getInt(cacheObject), len.getInt(cacheObject),
+            null));
     }
 
     /**
@@ -174,14 +183,26 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         CacheIndexedObjectImpl cacheObj = marsh.readField("aware", arr, 0, arr.length, null);
         byte[] cacheObjArr = cacheObj.valueBytes(null);
 
-        Date date = marsh.readField("date", cacheObjArr, 0, cacheObjArr.length, null);
+        Field start = cacheObj.getClass().getDeclaredField("start");
+        start.setAccessible(true);
+
+        Field len = cacheObj.getClass().getDeclaredField("len");
+        len.setAccessible(true);
+
+        Date date = marsh.readField("date", cacheObjArr, start.getInt(cacheObj), len.getInt(cacheObj), null);
 
         assertEquals(test.aware.date, date);
 
         cacheObj = marsh.readField("testObject2", arr, 0, arr.length, null);
         cacheObjArr = cacheObj.valueBytes(null);
 
-        int n = marsh.readField("i", cacheObjArr, 0, cacheObjArr.length, null);
+        start = cacheObj.getClass().getDeclaredField("start");
+        start.setAccessible(true);
+
+        len = cacheObj.getClass().getDeclaredField("len");
+        len.setAccessible(true);
+
+        int n = marsh.readField("i", cacheObjArr, start.getInt(cacheObj), len.getInt(cacheObj), null);
 
         assertEquals(test.testObject2.i, n);
 

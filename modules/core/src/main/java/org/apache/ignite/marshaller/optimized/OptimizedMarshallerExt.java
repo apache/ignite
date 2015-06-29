@@ -40,16 +40,16 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
     static final byte FOOTER_LEN_OFF = 2;
 
     /** */
-    static final int FOOTER_BODY_LEN_MASK = 0x3FFFFFFF;
+    static final byte FOOTER_HANDLES_FLAG_OFF = 3;
+
+    /** */
+    static final int FOOTER_BODY_OFF_MASK = 0x3FFFFFFF;
 
     /** */
     static final int FOOTER_BODY_IS_HANDLE_MASK = 0x40000000;
 
     /** */
     static final byte FOOTER_BODY_HANDLE_MASK_BIT = 30;
-
-    /** */
-    public static final byte VARIABLE_LEN = -1;
 
     /** */
     private final static ConcurrentHashMap<Class<?>, Boolean> indexingEnabledCache = new ConcurrentHashMap<>();
@@ -173,7 +173,7 @@ public class OptimizedMarshallerExt extends OptimizedMarshaller {
 
                     for (ClassFields clsFields : desc.fields().fieldsList())
                         for (FieldInfo info : clsFields.fieldInfoList())
-                            meta.addMeta(info.id(), info.type());
+                            meta.addField(info.name(), info.type());
 
                     metaHandler.addMeta(desc.typeId(), meta);
 

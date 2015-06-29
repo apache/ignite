@@ -538,12 +538,12 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private void writeFields(Object obj, OptimizedClassDescriptor.ClassFields fields, Footer footer)
         throws IOException {
-        int size;
+        int off;
 
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);
 
-            size = out.size();
+            off = out.offset();
 
             switch (t.type()) {
                 case BYTE:
@@ -631,17 +631,14 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
                         GridHandleTable.ObjectInfo objInfo = writeObject0(getObject(obj, t.offset()));
 
                         if (footer != null && objInfo != null) {
-                            footer.putHandle(t.id(), objInfo);
+                            footer.addNextHandleField(objInfo.position(), objInfo.length());
                             continue;
                         }
                     }
             }
 
-            if (footer != null && t.field() != null) {
-                int fieldLen = out.size() - size;
-
-                footer.put(t.id(), t.type(), fieldLen);
-            }
+            if (footer != null && t.field() != null)
+                footer.addNextFieldOff(off);
         }
     }
 
@@ -832,13 +829,13 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         if (curPut == null)
             throw new NotActiveException("putFields() was not called.");
 
-        int size;
+        int off;
 
         Footer footer = curPut.curFooter;
 
         for (IgniteBiTuple<OptimizedClassDescriptor.FieldInfo, Object> t : curPut.objs) {
 
-            size = out.size();
+            off = out.offset();
 
             switch (t.get1().type()) {
                 case BYTE:
@@ -909,16 +906,13 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
                     GridHandleTable.ObjectInfo objInfo = writeObject0(t.get2());
 
                     if (footer != null && objInfo != null) {
-                        footer.putHandle(t.get1().id(), objInfo);
+                        footer.addNextHandleField(objInfo.position(), objInfo.length());
                         continue;
                     }
             }
 
-            if (footer != null) {
-                int fieldLen = out.size() - size;
-
-                footer.put(t.get1().id(), t.get1().type(), fieldLen);
-            }
+            if (footer != null)
+                footer.addNextFieldOff(off);
         }
     }
 
@@ -955,58 +949,58 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
     /** {@inheritDoc} */
     @Override public void writeByte(String fieldName, byte val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(BYTE);
         out.writeByte(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.BYTE, 1);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(String fieldName, short val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(SHORT);
         out.writeShort(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.SHORT, 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(String fieldName, int val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(INT);
         out.writeInt(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.INT, 4);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(String fieldName, long val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(LONG);
         out.writeLong(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.LONG, 8);
     }
 
     /** {@inheritDoc} */
     @Override public void writeFloat(String fieldName, float val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(FLOAT);
         out.writeFloat(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.FLOAT, 4);
     }
 
     /** {@inheritDoc} */
     @Override public void writeDouble(String fieldName, double val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(DOUBLE);
         out.writeDouble(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.DOUBLE, 8);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(String fieldName, char val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(CHAR);
         out.writeChar(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.CHAR, 2);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBoolean(String fieldName, boolean val) throws IOException {
+        putFieldOffsetToFooter(out.offset());
         writeFieldType(BOOLEAN);
         out.writeBoolean(val);
-        putFieldToFooter(fieldName, OptimizedFieldType.BOOLEAN, 1);
     }
 
     /** {@inheritDoc} */
@@ -1016,10 +1010,8 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
     /** {@inheritDoc} */
     @Override public void writeObject(String fieldName, @Nullable Object obj) throws IOException {
-        int pos = out.offset();
-
+        putFieldOffsetToFooter(out.offset());
         writeObject(obj);
-        putFieldToFooter(fieldName, OptimizedFieldType.OTHER, out.offset() - pos);
     }
 
     /** {@inheritDoc} */
@@ -1093,14 +1085,12 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     }
 
     /**
-     * Puts field to the footer.
+     * Puts field's offset to the footer.
      *
-     * @param fieldName Field name.
-     * @param type Field type.
-     * @param len Field length.
+     * @param off Field offset.
      */
-    private void putFieldToFooter(String fieldName, OptimizedFieldType type, int len) {
-        marshalAwareFooters.peek().put(OptimizedMarshallerUtils.resolveFieldId(fieldName), type, len);
+    private void putFieldOffsetToFooter(int off) {
+        marshalAwareFooters.peek().addNextFieldOff(off);
     }
 
     /**
@@ -1230,22 +1220,19 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         void indexingSupported(boolean indexingSupported);
 
         /**
-         * Puts type ID and its value len to the footer.
+         * Adds offset of a field that must be placed next to the footer.
          *
-         * @param fieldId   Field ID.
-         * @param fieldType Field type.
-         * @param len       Total number of bytes occupied by type's value.
+         * @param off Field offset.
          */
-        void put(int fieldId, OptimizedFieldType fieldType, int len);
-
+        void addNextFieldOff(int off);
 
         /**
-         * Puts handle ID for the given field ID.
+         * Adds handle's offset of a field that must be placed next to the footer.
          *
-         * @param fieldId Field ID.
-         * @param objInfo Object's, referred by handle, info.
+         * @param handleOff Handle offset.
+         * @param handleLen Handle length.
          */
-        void putHandle(int fieldId, GridHandleTable.ObjectInfo objInfo);
+        void addNextHandleField(int handleOff, int handleLen);
 
         /**
          * Writes footer content to the OutputStream.

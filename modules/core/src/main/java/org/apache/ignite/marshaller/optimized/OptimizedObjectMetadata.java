@@ -17,21 +17,21 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.*;
-
 import java.io.*;
 import java.util.*;
 
 /**
- * Metadata that keeps fields information. Used in conjunction with the footer that is added to some objects during
- * marshalling.
+ * Metadata that keeps fields' name to id mapping.
  */
 public class OptimizedObjectMetadata implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private List<FieldInfo> fieldsInfo;
+    private LinkedHashMap<Integer, FieldInfo> indexes;
+
+    /** */
+    private short counter;
 
     /** Constructor. */
     public OptimizedObjectMetadata() {
@@ -39,143 +39,92 @@ public class OptimizedObjectMetadata implements Externalizable {
     }
 
     /**
-     * Adds meta for a new field.
+     * Adds field to metadata list assigning an index to it that is used to locate field bucket in the footer of
+     * object's serialized form.
      *
-     * @param fieldId Field ID.
-     * @param fieldType Field type.
+     * @param fieldName Field name.
      */
-    public void addMeta(int fieldId, OptimizedFieldType fieldType) {
-        if (fieldsInfo == null)
-            fieldsInfo = new ArrayList<>();
+    public void addField(String fieldName, OptimizedFieldType type) {
+        if (indexes == null)
+            indexes = new LinkedHashMap<>();
 
-
-
-        fieldsInfo.add(new FieldInfo(fieldId, fieldType));
+        indexes.put(OptimizedMarshallerUtils.resolveFieldId(fieldName), new FieldInfo(type, counter++));
     }
 
     /**
-     * Gets {@link OptimizedObjectMetadata.FieldInfo} at the {@code index}.
+     * Returns an index assigned to the field. The index is used to locate field bucket in the footer of
+     * object's serialized form.
      *
-     * @param index Position.
-     * @return Field meta info.
+     * @param fieldName Field name.
+     * @return Index.
+     * @throws IgniteFieldNotFoundException If object doesn't have such a field.
      */
-    public FieldInfo getMeta(int index) {
-        return fieldsInfo.get(index);
+    public int fieldIndex(String fieldName) throws IgniteFieldNotFoundException {
+        if (indexes == null)
+            throw new IgniteFieldNotFoundException("Object doesn't have field named: " + fieldName);
+
+        FieldInfo info = indexes.get(OptimizedMarshallerUtils.resolveFieldId(fieldName));
+
+        if (info == null)
+            throw new IgniteFieldNotFoundException("Object doesn't have field named: " + fieldName);
+
+        return info.index();
     }
+
     /**
-     * Returns all the metadata stored for the object.
+     * Returns meta list.
      *
-     * @return Metadata collection.
+     * @return Meta list.
      */
-    public List<FieldInfo> getMeta() {
-        return Collections.unmodifiableList(fieldsInfo);
+    public Set<Map.Entry<Integer, FieldInfo>> metaList() {
+        return indexes.entrySet();
+    }
+
+    /**
+     * Returns number of fields.
+     *
+     * @return Number of fields.
+     */
+    public int size() {
+        return indexes.size();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        if (fieldsInfo == null) {
-            out.writeInt(0);
-            return;
-        }
-
-        out.writeInt(fieldsInfo.size());
-
-        for (FieldInfo fieldInfo : fieldsInfo) {
-            out.writeInt(fieldInfo.id);
-            out.writeByte(fieldInfo.type.ordinal());
-        }
+        out.writeObject(indexes);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int size = in.readInt();
-
-        fieldsInfo = new ArrayList<>(size);
-
-        for (int i = 0; i < size; i++)
-            fieldsInfo.add(new FieldInfo(in.readInt(), OptimizedFieldType.values()[in.readByte()]));
+        indexes = (LinkedHashMap<Integer, FieldInfo>)in.readObject();
     }
 
     /**
      * Field info.
      */
-    public static class FieldInfo {
-        /** Field ID. */
-        private int id;
-
-        /** Field len. */
-        private int len;
-
-        /** Field type. */
+    public static class FieldInfo implements Serializable {
+        /** */
         private OptimizedFieldType type;
+
+        /** */
+        private short index;
 
         /**
          * Constructor.
-         *
-         * @param id Field ID.
-         * @param type Field len.
+         * @param type
+         * @param index
          */
-        public FieldInfo(int id, OptimizedFieldType type) {
-            this.id = id;
+        public FieldInfo(OptimizedFieldType type, short index) {
             this.type = type;
-
-            len = 1;
-
-            switch (type) {
-                case BYTE:
-                case BOOLEAN:
-                    len += 1;
-                    break;
-
-                case SHORT:
-                case CHAR:
-                    len += 2;
-                    break;
-
-                case INT:
-                case FLOAT:
-                    len += 4;
-                    break;
-
-                case LONG:
-                case DOUBLE:
-                    len += 8;
-                    break;
-
-                case OTHER:
-                    len = OptimizedMarshallerExt.VARIABLE_LEN;
-                    break;
-
-                default:
-                    throw new IgniteException("Unknown field type: " + type);
-            }
-
-            assert len != 1;
+            this.index = index;
         }
 
-        /**
-         * Returns ID.
-         * @return ID.
-         */
-        public int id() {
-            return id;
-        }
-
-        /**
-         * Returns length.
-         * @return Lenght.
-         */
-        public int length() {
-            return len;
-        }
-
-        /**
-         * Returns field type.
-         *
-         * @return Field type.
-         */
         public OptimizedFieldType type() {
             return type;
+        }
+
+        public short index() {
+            return index;
         }
     }
 }

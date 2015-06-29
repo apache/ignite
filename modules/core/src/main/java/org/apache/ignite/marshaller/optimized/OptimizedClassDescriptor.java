@@ -436,7 +436,6 @@ public class OptimizedClassDescriptor {
                                         fieldInfo = new FieldInfo(null,
                                             serField.getName(),
                                             -1,
-                                            resolveFieldId(serField.getName()),
                                             fieldType(serField.getType()));
                                     }
                                     else {
@@ -445,7 +444,6 @@ public class OptimizedClassDescriptor {
                                         fieldInfo = new FieldInfo(f,
                                             serField.getName(),
                                             UNSAFE.objectFieldOffset(f),
-                                            resolveFieldId(serField.getName()),
                                             fieldType(serField.getType()));
                                     }
 
@@ -471,7 +469,6 @@ public class OptimizedClassDescriptor {
                                     FieldInfo fieldInfo = new FieldInfo(f,
                                         f.getName(),
                                         UNSAFE.objectFieldOffset(f),
-                                        resolveFieldId(f.getName()),
                                         fieldType(f.getType()));
 
                                     clsFields.add(fieldInfo);
@@ -891,8 +888,6 @@ public class OptimizedClassDescriptor {
         /** Field name. */
         private final String fieldName;
 
-        /** ID calculated from field's name. */
-        private final int fieldId;
 
         /**
          * @param field Field.
@@ -900,19 +895,11 @@ public class OptimizedClassDescriptor {
          * @param offset Field offset.
          * @param type Grid optimized field type.
          */
-        FieldInfo(Field field, String name, long offset, int fieldId, OptimizedFieldType type) {
+        FieldInfo(Field field, String name, long offset, OptimizedFieldType type) {
             this.field = field;
             fieldOffs = offset;
             fieldType = type;
             fieldName = name;
-            this.fieldId = fieldId;
-        }
-
-        /**
-         * @return Field ID.
-         */
-        public int id() {
-            return fieldId;
         }
 
         /**

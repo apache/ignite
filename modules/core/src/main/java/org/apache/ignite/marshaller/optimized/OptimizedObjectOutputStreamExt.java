@@ -58,10 +58,7 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
      */
     private class FooterImpl implements OptimizedObjectOutputStream.Footer {
         /** */
-        private ArrayList<Meta> data;
-
-        /** */
-        private HashMap<Integer, GridHandleTable.ObjectInfo> handles;
+        private ArrayList<Long> data;
 
         /** */
         private boolean hasHandles;
@@ -75,28 +72,15 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
         }
 
         /** {@inheritDoc} */
-        @Override public void put(int fieldId, OptimizedFieldType fieldType, int len) {
-            if (data == null)
-                return;
-
-            if (fieldType == OptimizedFieldType.OTHER)
-                data.add(new Meta(fieldId, len));
+        @Override public void addNextFieldOff(int off) {
+            data.add((long)(off & ~FOOTER_BODY_IS_HANDLE_MASK));
         }
 
         /** {@inheritDoc} */
-        @Override public void putHandle(int fieldId, GridHandleTable.ObjectInfo objInfo) {
-            if (data == null)
-                return;
+        @Override public void addNextHandleField(int handleOff, int handleLength) {
+            hasHandles = true;
 
-            if (!hasHandles) {
-                hasHandles = true;
-                handles = new HashMap<>();
-            }
-
-            handles.put(fieldId, objInfo);
-
-            // length of handle fields is 5 bytes.
-            put(fieldId, OptimizedFieldType.OTHER, 5);
+            data.add(((long)handleLength << 32) | (handleOff | FOOTER_BODY_IS_HANDLE_MASK));
         }
 
         /** {@inheritDoc} */
@@ -104,61 +88,25 @@ public class OptimizedObjectOutputStreamExt extends OptimizedObjectOutputStream 
             if (data == null)
                 writeShort(EMPTY_FOOTER);
             else {
-                int bodyEnd = out.offset();
-
-                // +4 - 2 bytes for footer len at the beginning, 2 bytes for footer len at the end.
-                short footerLen = (short)(data.size() * 4 + 4);
-
-                if (hasHandles)
-                    footerLen += handles.size() * 8;
+                // +5 - 2 bytes for footer len at the beginning, 2 bytes for footer len at the end, 1 byte for handles
+                // indicator flag.
+                short footerLen = (short)(data.size() * (hasHandles ? 8 : 4) + 5);
 
                 writeShort(footerLen);
 
                 if (hasHandles) {
-                    for (Meta fieldMeta : data) {
-                        GridHandleTable.ObjectInfo objInfo = handles.get(fieldMeta.fieldId);
-
-                        if (objInfo == null)
-                            writeInt(fieldMeta.fieldLen & ~FOOTER_BODY_IS_HANDLE_MASK);
-                        else {
-                            writeInt(fieldMeta.fieldLen | FOOTER_BODY_IS_HANDLE_MASK);
-                            writeInt(objInfo.position());
-
-                            if (objInfo.length() == 0)
-                                // field refers to its own object that hasn't set total length yet.
-                                writeInt((bodyEnd - objInfo.position()) + footerLen);
-                            else
-                                writeInt(objInfo.length());
-                        }
-                    }
+                    for (long body : data)
+                        writeLong(body);
                 }
-                else
-                    for (Meta fieldMeta : data)
-                        // writing field len and resetting is handle mask
-                        writeInt(fieldMeta.fieldLen & ~FOOTER_BODY_IS_HANDLE_MASK);
+                else {
+                    for (long body : data)
+                        writeInt((int)body);
+                }
+
+                writeByte(hasHandles ? 1 : 0);
 
                 writeShort(footerLen);
             }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Meta {
-        /** */
-        int fieldId;
-
-        /** */
-        int fieldLen;
-
-        /**
-         * @param fieldId
-         * @param fieldLen
-         */
-        public Meta(int fieldId, int fieldLen) {
-            this.fieldId = fieldId;
-            this.fieldLen = fieldLen;
         }
     }
 }

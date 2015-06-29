@@ -27,6 +27,7 @@ import sun.misc.*;
 
 import java.io.*;
 import java.nio.*;
+import java.util.concurrent.*;
 
 /**
  * Cache object implementation for classes that support footer injection is their serialized form thus enabling fields
@@ -91,6 +92,9 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      */
     public CacheIndexedObjectImpl(Object val, byte[] valBytes, int start, int len) {
         assert val != null || (valBytes != null && start >= 0 && len > 0);
+
+        if (valBytes != null && val != null)
+            val = null;
 
         this.val = val;
         this.valBytes = valBytes;
@@ -200,8 +204,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
             Object val = ctx.processor().unmarshal(ctx, valBytes, start, len,
                 ctx.kernalContext().config().getClassLoader());
 
-            if (ctx.storeValue())
-                this.val = val;
+            //if (ctx.storeValue())
+            //    this.val = val;
 
             return val;
         }
@@ -326,7 +330,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @return {@code true} if detached.
      */
     protected boolean detached() {
-        return start == 0 && len == valBytes.length;
+        return true;
+        //return start == 0 && len == valBytes.length;
     }
 
     /**
@@ -343,6 +348,8 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
 
             start = 0;
             len = valBytes.length;
+
+            val = null;
         }
     }
 

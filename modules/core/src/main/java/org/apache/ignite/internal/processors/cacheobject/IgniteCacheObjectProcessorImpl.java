@@ -511,7 +511,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             try {
                 toMarshaledFormIfNeeded(ctx);
 
-                if (ctx.storeValue()) {
+                /*if (ctx.storeValue()) {
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
 
@@ -519,7 +519,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                         ctx.processor().unmarshal(ctx, valBytes, start, len, ldr);
 
                     return new CacheIndexedObjectImpl(val, valBytes, start, len);
-                }
+                }*/
 
                 return new CacheIndexedObjectImpl(null, valBytes, start, len);
             }

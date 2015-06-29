@@ -194,4 +194,13 @@ public interface GridDataInput extends DataInput {
      * @return Integer value.
      */
     public int readInt(int pos);
+
+    /**
+     * Fast read of long value at {@code pos}.
+     *
+     * @param pos Position in array.
+     *
+     * @return Long value.
+     */
+    public long readLong(int pos);
 }

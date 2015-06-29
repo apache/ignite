@@ -174,6 +174,6 @@ class OptimizedMarshalAwareMetaCollector implements OptimizedFieldsWriter {
      * @param type Field type.
      */
     private void putFieldToMeta(String fieldName, OptimizedFieldType type) {
-        meta.addMeta(OptimizedMarshallerUtils.resolveFieldId(fieldName), type);
+        meta.addField(fieldName, type);
     }
 }
