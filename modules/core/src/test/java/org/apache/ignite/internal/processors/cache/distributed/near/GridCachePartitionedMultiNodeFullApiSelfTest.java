@@ -327,7 +327,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
-            if (!ignite.configuration().isClientMode()) {
+            if (!Boolean.TRUE.equals(ignite.configuration().isClientMode())) {
                 if (ignite0 == null)
                     ignite0 = ignite;
                 else if (ignite1 == null)
@@ -417,7 +417,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
             }
         };
 
-        info("All affinity nodes: " + affinityNodes());
+        if (!isMultiJvm())
+            info("All affinity nodes: " + affinityNodes());
 
         IgniteCache<Object, Object> cache = grid(0).cache(null);
 
