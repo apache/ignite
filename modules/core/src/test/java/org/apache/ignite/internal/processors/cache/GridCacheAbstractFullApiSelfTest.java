@@ -4009,10 +4009,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt, int startFrom) {
-        List<String> found = new ArrayList<>(cnt);
+    protected List<String> primaryKeysForCache(final IgniteCache<String, Integer> cache, final int cnt, final int startFrom) {
+        Ignite grid = cache.unwrap(Ignite.class);
 
-        Ignite ignite = cache.unwrap(Ignite.class);
+        if (!(cache instanceof IgniteCacheProcessProxy))
+            return primaryKeysForCache0(grid.name(), cnt, startFrom);
+        else {
+            final IgniteProcessProxy proxy = (IgniteProcessProxy)grid;
+
+            final String name = proxy.name();
+
+            return proxy.remoteCompute().call(new IgniteCallable<List<String>>() {
+                @Override public List<String> call() throws Exception {
+                    return primaryKeysForCache0(name, cnt, startFrom);
+                }
+            });
+        }
+    }
+
+    private List<String> primaryKeysForCache0(String name, int cnt, int startFrom) {
+        List<String> found = new ArrayList<>();
+
+        IgniteEx ignite = grid(name);
+
+        final IgniteCache<String, Integer> cache = ignite.cache(null);
+
         Affinity<Object> affinity = ignite.affinity(cache.getName());
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
