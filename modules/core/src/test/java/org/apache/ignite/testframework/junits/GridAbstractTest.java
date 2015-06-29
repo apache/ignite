@@ -775,9 +775,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
-        IgniteProcessProxy.killAll(); // In multi jvm case.
-        IgniteNodeRunner.killAll();
-
         Collection<Ignite> clients = new ArrayList<>();
         Collection<Ignite> srvs = new ArrayList<>();
 
@@ -793,6 +790,18 @@ public abstract class GridAbstractTest extends TestCase {
 
         for (Ignite g : srvs)
             stopGrid(g.name(), cancel);
+
+        if (isMultiJvm()) {
+//            IgniteProcessProxy.killAll(); // In multi jvm case.
+            try {
+                Thread.sleep(1_000);
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace(); // TODO implement.
+            }
+
+            IgniteNodeRunner.killAll();
+        }
 
         assert G.allGrids().isEmpty();
     }
