@@ -1,0 +1,189 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
+import org.jsr166.*;
+
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+
+/**
+ *
+ */
+public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
+    /** */
+    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final int CACHES = 10;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setNetworkTimeout(30_000);
+        cfg.setConnectorConfiguration(null);
+        cfg.setPeerClassLoadingEnabled(false);
+        cfg.setTimeServerPortRange(200);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketWriteTimeout(200);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setLocalPortRange(200);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(200);
+
+        cfg.setClientMode(!gridName.equals(getTestGridName(0)));
+
+        CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
+
+        for (int i = 0 ; i < ccfgs.length; i++) {
+            CacheConfiguration ccfg = new CacheConfiguration();
+
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setAtomicityMode(i % 2 == 0 ? ATOMIC : TRANSACTIONAL);
+            ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
+            ccfg.setBackups(1);
+
+            ccfg.setName("cache-" + i);
+
+            ccfgs[i] = ccfg;
+        }
+
+        cfg.setCacheConfiguration(ccfgs);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60_000;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void test150Clients() throws Exception {
+        Ignite srv = startGrid(0);
+
+        assertFalse(srv.configuration().isClientMode());
+
+        final int CLIENTS = 150;
+
+        final AtomicInteger idx = new AtomicInteger(1);
+
+        final CountDownLatch latch = new CountDownLatch(CLIENTS);
+
+        final List<String> cacheNames = new ArrayList<>();
+
+        for (int i = 0; i < CACHES; i++)
+            cacheNames.add("cache-" + i);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                boolean cnt = false;
+
+                try {
+                    Ignite ignite = startGrid(idx.getAndIncrement());
+
+                    assertTrue(ignite.configuration().isClientMode());
+                    assertTrue(ignite.cluster().localNode().isClient());
+
+                    latch.countDown();
+
+                    cnt = true;
+
+                    log.info("Started [node=" + ignite.name() + ", left=" + latch.getCount() + ']');
+
+                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+
+                    while (latch.getCount() > 0) {
+                        Thread.sleep(1000);
+
+                        IgniteCache<Object, Object> cache = ignite.cache(cacheNames.get(rnd.nextInt(0, CACHES)));
+
+                        Integer key = rnd.nextInt(0, 100_000);
+
+                        cache.put(key, 0);
+
+                        assertNotNull(cache.get(key));
+                    }
+
+                    return null;
+                }
+                finally {
+                    if (!cnt)
+                        latch.countDown();
+                }
+            }
+        }, CLIENTS, "start-client");
+
+        fut.get();
+
+        log.info("Started all clients.");
+
+        checkNodes(CLIENTS + 1);
+    }
+
+    /**
+     * @param expCnt Expected number of nodes.
+     */
+    private void checkNodes(int expCnt) {
+        assertEquals(expCnt, G.allGrids().size());
+
+        long topVer = -1L;
+
+        for (Ignite ignite : G.allGrids()) {
+            log.info("Check node: " + ignite.name());
+
+            if (topVer == -1L)
+                topVer = ignite.cluster().topologyVersion();
+            else
+                assertEquals("Unexpected topology version for node: " + ignite.name(),
+                    topVer,
+                    ignite.cluster().topologyVersion());
+
+            assertEquals("Unexpected number of nodes for node: " + ignite.name(),
+                expCnt,
+                ignite.cluster().nodes().size());
+        }
+    }
+}

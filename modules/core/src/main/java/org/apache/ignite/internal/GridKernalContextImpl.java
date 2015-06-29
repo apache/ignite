@@ -791,6 +791,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new IgniteCacheObjectProcessorImpl(this);
 
+        if (cls.equals(CacheConflictResolutionManager.class))
+            return null;
+
         throw new IgniteException("Unsupported component type: " + cls);
     }
 
