@@ -232,8 +232,7 @@ public class IgniteTestResources {
         Marshaller marsh;
 
         if (marshallerName == null)
-            //marsh = new OptimizedMarshaller();
-            marsh = new OptimizedMarshallerExt();
+            marsh = new OptimizedMarshaller();
         else {
             try {
                 Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);

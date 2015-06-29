@@ -1022,7 +1022,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         try {
             out = OptimizedObjectStreamRegistry.out();
 
-            out.context(clsMap, CTX, null, true);
+            out.context(clsMap, CTX, null, true, null);
 
             out.writeObject(obj);
 
@@ -1030,7 +1030,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             in = OptimizedObjectStreamRegistry.in();
 
-            in.context(clsMap, CTX, null, getClass().getClassLoader());
+            in.context(clsMap, CTX, null, getClass().getClassLoader(), null);
 
             in.in().bytes(arr, arr.length);
 

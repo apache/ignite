@@ -142,10 +142,28 @@ public class OptimizedMarshallerUtils {
     static final byte EXTERNALIZABLE = 101;
 
     /** */
-    public static final byte SERIALIZABLE = 102;
+    static final byte SERIALIZABLE = 102;
 
     /** */
-    public static final byte MARSHAL_AWARE = 103;
+    static final byte MARSHAL_AWARE = 103;
+
+    /** */
+    static final byte EMPTY_FOOTER = -1;
+
+    /** */
+    static final byte FOOTER_LEN_OFF = 2;
+
+    /** */
+    static final byte FOOTER_HANDLES_FLAG_OFF = 3;
+
+    /** */
+    static final int FOOTER_BODY_OFF_MASK = 0x3FFFFFFF;
+
+    /** */
+    static final int FOOTER_BODY_IS_HANDLE_MASK = 0x40000000;
+
+    /** */
+    static final byte FOOTER_BODY_HANDLE_MASK_BIT = 30;
 
     /** UTF-8 character name. */
     static final Charset UTF_8 = Charset.forName("UTF-8");
@@ -175,6 +193,7 @@ public class OptimizedMarshallerUtils {
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param idxHandler Fields indexing handler.
      * @return Descriptor.
      * @throws IOException In case of error.
      */
@@ -182,7 +201,8 @@ public class OptimizedMarshallerUtils {
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         Class cls,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
+        OptimizedMarshallerIdMapper mapper,
+        OptimizedMarshallerIndexingHandler idxHandler)
         throws IOException
     {
         OptimizedClassDescriptor desc = clsMap.get(cls);
@@ -199,7 +219,7 @@ public class OptimizedMarshallerUtils {
                 throw new IOException("Failed to register class: " + cls.getName(), e);
             }
 
-            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper);
+            desc = new OptimizedClassDescriptor(cls, registered ? typeId : 0, clsMap, ctx, mapper, idxHandler);
 
             if (registered) {
                 OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc);
@@ -270,6 +290,7 @@ public class OptimizedMarshallerUtils {
      * @param ldr Class loader.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param idxHandler Fields indexing handler.
      * @return Descriptor.
      * @throws IOException In case of error.
      * @throws ClassNotFoundException If class was not found.
@@ -279,7 +300,8 @@ public class OptimizedMarshallerUtils {
         int id,
         ClassLoader ldr,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper) throws IOException, ClassNotFoundException {
+        OptimizedMarshallerIdMapper mapper,
+        OptimizedMarshallerIndexingHandler idxHandler) throws IOException, ClassNotFoundException {
         Class cls;
 
         try {
@@ -293,7 +315,8 @@ public class OptimizedMarshallerUtils {
 
         if (desc == null) {
             OptimizedClassDescriptor old = clsMap.putIfAbsent(cls, desc =
-                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper));
+                new OptimizedClassDescriptor(cls, resolveTypeId(cls.getName(), mapper), clsMap, ctx, mapper,
+                    idxHandler));
 
             if (old != null)
                 desc = old;

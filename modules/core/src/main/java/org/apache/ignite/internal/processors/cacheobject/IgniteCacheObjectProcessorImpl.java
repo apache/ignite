@@ -61,7 +61,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** */
-    private OptimizedMarshallerExt optMarshExt;
+    private OptimizedMarshallerIndexingHandler indexingMgr;
+
+    /** */
+    private OptimizedMarshaller optMarsh;
 
     /**
      *
@@ -87,8 +90,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
         Marshaller marsh = ctx.config().getMarshaller();
 
-        if (marsh instanceof OptimizedMarshallerExt) {
-            optMarshExt = (OptimizedMarshallerExt)marsh;
+        if (marsh instanceof OptimizedMarshaller) {
+            optMarsh = (OptimizedMarshaller)marsh;
+
+            indexingMgr = new OptimizedMarshallerIndexingHandler();
 
             OptimizedMarshallerMetaHandler metaHandler = new OptimizedMarshallerMetaHandler() {
                 @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
@@ -121,7 +126,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 }
             };
 
-            optMarshExt.setMetadataHandler(metaHandler);
+            indexingMgr.setMetaHandler(metaHandler);
+            optMarsh.setIndexingHandler(indexingMgr);
         }
     }
 
@@ -164,9 +170,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, int off, int len,
-                                      ClassLoader clsLdr) throws IgniteCheckedException {
-        if (optMarshExt != null)
-            return optMarshExt.unmarshal(bytes, off, len, clsLdr);
+        ClassLoader clsLdr) throws IgniteCheckedException {
+        if (optMarsh != null)
+            return optMarsh.unmarshal(bytes, off, len, clsLdr);
 
         else if (off > 0 || len != bytes.length) {
             byte[] arr = new byte[len];
@@ -307,7 +313,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public int typeId(String typeName) {
-        return optMarshExt != null ? OptimizedMarshallerUtils.resolveTypeId(typeName, optMarshExt.idMapper()) : 0;
+        return indexingMgr != null ? OptimizedMarshallerUtils.resolveTypeId(typeName, indexingMgr.idMapper()) : 0;
     }
 
     /** {@inheritDoc} */
@@ -335,10 +341,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public Object field(Object obj, String fieldName, Field field) throws IgniteFieldNotFoundException {
-        assert optMarshExt != null;
+        assert indexingMgr != null;
 
         try {
-            return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarshExt, field);
+            return ((CacheIndexedObjectImpl)obj).field(fieldName, optMarsh, field);
         }
         catch (IgniteFieldNotFoundException e) {
             throw e;
@@ -355,10 +361,10 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean hasField(Object obj, String fieldName, Field field) {
         if (obj instanceof CacheIndexedObjectImpl) {
-            assert optMarshExt != null;
+            assert indexingMgr != null;
 
             try {
-                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarshExt, null);
+                return ((CacheIndexedObjectImpl)obj).hasField(fieldName, optMarsh, null);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -370,17 +376,19 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean isFieldsIndexingEnabled() {
-        return optMarshExt != null;
+        return indexingMgr != null && indexingMgr.isFieldsIndexingSupported();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isFieldsIndexingEnabled(Class<?> cls) {
-        return optMarshExt != null && optMarshExt.fieldsIndexingEnabled(cls);
+        return indexingMgr != null && indexingMgr.isFieldsIndexingSupported() &&
+            indexingMgr.fieldsIndexingEnabledForClass(cls);
     }
 
     /** {@inheritDoc} */
     @Override public boolean enableFieldsIndexing(Class<?> cls) throws IgniteCheckedException {
-        return optMarshExt != null && optMarshExt.enableFieldsIndexing(cls);
+        return indexingMgr != null && indexingMgr.isFieldsIndexingSupported() &&
+            indexingMgr.enableFieldsIndexingForClass(cls);
     }
 
     /**

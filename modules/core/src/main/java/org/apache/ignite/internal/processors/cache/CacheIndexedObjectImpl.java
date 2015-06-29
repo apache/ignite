@@ -169,7 +169,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @return {@code true} if has.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean hasField(String fieldName, OptimizedMarshallerExt marsh, Field field) throws IgniteCheckedException {
+    public boolean hasField(String fieldName, OptimizedMarshaller marsh, Field field) throws IgniteCheckedException {
         if (field != null && val != null) {
             try {
                 field.get(val);
@@ -195,7 +195,7 @@ public class CacheIndexedObjectImpl extends CacheObjectAdapter {
      * @throws IgniteFieldNotFoundException In case if there is no such a field.
      * @throws IgniteCheckedException In case of error.
      */
-    public Object field(String fieldName, OptimizedMarshallerExt marsh, Field field) throws IgniteCheckedException {
+    public Object field(String fieldName, OptimizedMarshaller marsh, Field field) throws IgniteCheckedException {
         if (field != null && val != null) {
             try {
                 return field.get(val);

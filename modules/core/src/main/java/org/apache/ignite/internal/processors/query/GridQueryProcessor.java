@@ -1765,7 +1765,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             this.parent = parent;
             this.type = type;
 
-            if (keyCls != null) {
+            /*if (keyCls != null) {
                 try {
                     keyField = keyCls.getDeclaredField(propName);
 
@@ -1786,7 +1786,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if ((keyCls != null || valCls != null) && keyField == null && valueField == null)
                 U.warn(log, "Neither key nor value class has field " +
-                    "[fieldName=" + propName + ", key=" + keyCls + ", val=" + valCls + "]");
+                    "[fieldName=" + propName + ", key=" + keyCls + ", val=" + valCls + "]");*/
         }
 
         /** {@inheritDoc} */

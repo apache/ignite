@@ -32,7 +32,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
-import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerExt.*;
 
 /**
  * Optimized object input stream.
@@ -45,22 +44,22 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     private static final Object DUMMY = new Object();
 
     /** */
-    protected MarshallerContext ctx;
+    private MarshallerContext ctx;
 
     /** */
-    protected OptimizedMarshallerIdMapper mapper;
+    private OptimizedMarshallerIdMapper mapper;
 
     /** */
-    protected ClassLoader clsLdr;
+    private ClassLoader clsLdr;
 
     /** */
-    protected OptimizedMarshallerMetaHandler metaHandler;
+    private GridDataInput in;
 
     /** */
-    protected GridDataInput in;
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
     /** */
-    protected ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+    private OptimizedMarshallerIndexingHandler idxHandler;
 
     /** */
     private Object curObj;
@@ -96,36 +95,21 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param clsLdr Class loader.
-     */
-    protected void context(
-        ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        ClassLoader clsLdr)
-    {
-        this.clsMap = clsMap;
-        this.ctx = ctx;
-        this.mapper = mapper;
-        this.clsLdr = clsLdr;
-    }
-
-    /**
-     * @param clsMap Class descriptors by class map.
-     * @param ctx Context.
-     * @param mapper ID mapper.
-     * @param clsLdr Class loader.
-     * @param metaHandler Metadata handler.
+     * @param idxHandler Fields indexing handler.
      */
     protected void context(
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
         ClassLoader clsLdr,
-        OptimizedMarshallerMetaHandler metaHandler)
+        OptimizedMarshallerIndexingHandler idxHandler
+        )
     {
-        context(clsMap, ctx, mapper, clsLdr);
-
-        this.metaHandler = metaHandler;
+        this.clsMap = clsMap;
+        this.ctx = ctx;
+        this.mapper = mapper;
+        this.clsLdr = clsLdr;
+        this.idxHandler = idxHandler;
     }
 
     /**
@@ -149,7 +133,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         ctx = null;
         clsLdr = null;
         clsMap = null;
-        metaHandler = null;
+        idxHandler = null;
     }
 
     /** {@inheritDoc} */
@@ -283,8 +267,8 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
-                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper, idxHandler):
+                    classDescriptor(clsMap, typeId, clsLdr, ctx, mapper, idxHandler);
 
                 curCls = desc.describedClass();
 
@@ -314,7 +298,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         int compTypeId = readInt();
 
         return compTypeId == 0 ? U.forName(readUTF(), clsLdr) :
-            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper).describedClass();
+            classDescriptor(clsMap, compTypeId, clsLdr, ctx, mapper, idxHandler).describedClass();
     }
 
     /**
@@ -644,7 +628,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         int handle = handles.assign(obj);
 
-        OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
+        OptimizedObjectMetadata meta = idxHandler.metaHandler().metadata(typeId);
 
         assert meta != null;
 
@@ -705,7 +689,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
 
         int handle = handles.assign(obj);
 
-        boolean hasFooter = hasFooter(obj.getClass());
+        boolean hasFooter = idxHandler.isFieldsIndexingSupported() && in.readBoolean();
 
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -1271,34 +1255,25 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
     }
 
     /**
-     * Checks whether objects of the {@code cls} have footer.
-     *
-     * @param cls Class.
-     * @return {@code true} if has.
-     * @throws IOException In case of error.
-     */
-    protected boolean hasFooter(Class<?> cls) throws IOException {
-        return false;
-    }
-
-    /**
-     * Skips object footer from the underlying stream.
-     *
-     * @throws IOException In case of error.
+     * Skips footer.
      */
     protected void skipFooter() throws IOException {
-        // No-op
+        short footerLen = in.readShort();
+
+        if (footerLen != EMPTY_FOOTER)
+            in.skipBytes(footerLen - 2);
     }
 
     /**
-     * Reads field's type during its deserialization.
+     * Reads field type.
      *
      * @return Field type.
      * @throws IOException In case of error.
      */
     protected int readFieldType() throws IOException {
-        return 0;
+        return in.readByte();
     }
+
 
     /**
      * Checks whether the object has a field with name {@code fieldName}.
@@ -1352,7 +1327,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
         if (range != null && range.start >= 0) {
             byte fieldType = in.readByte(range.start);
 
-            if ((fieldType == SERIALIZABLE && metaHandler.metadata(in.readInt(range.start + 1)) != null)
+            if ((fieldType == SERIALIZABLE && idxHandler.metaHandler().metadata(in.readInt(range.start + 1)) != null)
                 || fieldType == MARSHAL_AWARE)
                 return  (F)new CacheIndexedObjectImpl(in.array(), range.start, range.len);
             else {
@@ -1394,7 +1369,7 @@ public class OptimizedObjectInputStream extends ObjectInputStream implements Opt
             in.position(oldPos);
         }
 
-        OptimizedObjectMetadata meta = metaHandler.metadata(typeId);
+        OptimizedObjectMetadata meta = idxHandler.metaHandler().metadata(typeId);
 
         if (meta == null)
             // TODO: IGNITE-950 add warning!

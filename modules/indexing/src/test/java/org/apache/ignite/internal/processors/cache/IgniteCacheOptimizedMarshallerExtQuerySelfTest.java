@@ -30,23 +30,12 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests queries with {@link OptimizedMarshallerExt} enabled.
+ * Tests queries with {@link OptimizedMarshaller} enabled.
  */
 public class IgniteCacheOptimizedMarshallerExtQuerySelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        OptimizedMarshallerExt marsh = new OptimizedMarshallerExt(false);
-
-        cfg.setMarshaller(marsh);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -238,7 +227,7 @@ public class IgniteCacheOptimizedMarshallerExtQuerySelfTest extends GridCacheAbs
 
         personQryFields.put("name", String.class);
         personQryFields.put("salary", Integer.class);
-        personQryFields.put("address", Object.class);
+        personQryFields.put("address", Address.class);
         personQryFields.put("address.zip", Integer.class);
 
         personMeta.setQueryFields(personQryFields);

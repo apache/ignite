@@ -1725,7 +1725,7 @@ public class IgnitionEx {
                     marsh = new JdkMarshaller();
                 }
                 else
-                    marsh = new OptimizedMarshallerExt();
+                    marsh = new OptimizedMarshaller();
             }
 
             myCfg.setMarshaller(marsh);

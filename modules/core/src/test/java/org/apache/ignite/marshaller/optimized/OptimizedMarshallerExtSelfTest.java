@@ -17,6 +17,7 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -35,6 +36,9 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     private static ConcurrentHashMap<Integer, OptimizedObjectMetadata> META_BUF = new ConcurrentHashMap<>();
 
     /** */
+    private static OptimizedMarshallerIndexingHandler idxHandler;
+
+    /** */
     private static final OptimizedMarshallerMetaHandler META_HANDLER = new OptimizedMarshallerMetaHandler() {
         @Override public void addMeta(int typeId, OptimizedObjectMetadata meta) {
             META_BUF.putIfAbsent(typeId, meta);
@@ -45,9 +49,17 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         }
     };
 
-    /** {@inheritDoc} */
-    @Override protected Marshaller marshaller() {
-        return new InternalMarshaller(false);
+    /**
+     * @throws Exception
+     */
+    private void setupIndexingHandler() throws Exception {
+        Field field = marsh.getClass().getDeclaredField("idxHandler");
+
+        field.setAccessible(true);
+
+        idxHandler = (OptimizedMarshallerIndexingHandler)field.get(marsh);
+
+        idxHandler.setMetaHandler(META_HANDLER);
     }
 
     /**
@@ -56,9 +68,11 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     public void testHasField() throws Exception {
         META_BUF.clear();
 
-        OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
+        setupIndexingHandler();
 
-        assertTrue(marsh.enableFieldsIndexing(TestObject.class));
+        OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
+
+        assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject.class));
 
         assertEquals(1, META_BUF.size());
 
@@ -78,9 +92,11 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     public void testReadField() throws Exception {
         META_BUF.clear();
 
-        OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
+        setupIndexingHandler();
 
-        assertTrue(marsh.enableFieldsIndexing(TestObject.class));
+        OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
+
+        assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject.class));
         assertEquals(1, META_BUF.size());
 
         TestObject testObj = new TestObject("World", 50);
@@ -99,7 +115,7 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
         assertEquals(testObj.o2, o2);
 
         // Add metadata for the enclosed object.
-        assertTrue(marsh.enableFieldsIndexing(TestObject2.class));
+        assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject2.class));
         assertEquals(2, META_BUF.size());
 
         arr = marsh.marshal(testObj);
@@ -128,9 +144,11 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     public void testHandles() throws Exception {
         META_BUF.clear();
 
-        OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
+        setupIndexingHandler();
 
-        assertTrue(marsh.enableFieldsIndexing(SelfLinkObject.class));
+        OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
+
+        assertTrue(idxHandler.enableFieldsIndexingForClass(SelfLinkObject.class));
         assertEquals(1, META_BUF.size());
 
         SelfLinkObject selfLinkObject = new SelfLinkObject();
@@ -160,13 +178,15 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
     public void testMarshalAware() throws Exception {
         META_BUF.clear();
 
-        OptimizedMarshallerExt marsh = (OptimizedMarshallerExt)OptimizedMarshallerExtSelfTest.marsh;
+        setupIndexingHandler();
 
-        assertTrue(marsh.enableFieldsIndexing(TestMarshalAware.class));
-        assertTrue(marsh.enableFieldsIndexing(AnotherMarshalAware.class));
+        OptimizedMarshaller marsh = (OptimizedMarshaller)OptimizedMarshallerExtSelfTest.marsh;
+
+        assertTrue(idxHandler.enableFieldsIndexingForClass(TestMarshalAware.class));
+        assertTrue(idxHandler.enableFieldsIndexingForClass(AnotherMarshalAware.class));
         assertEquals(0, META_BUF.size());
 
-        assertTrue(marsh.enableFieldsIndexing(TestObject2.class));
+        assertTrue(idxHandler.enableFieldsIndexingForClass(TestObject2.class));
         assertEquals(1, META_BUF.size());
 
         TestMarshalAware test = new TestMarshalAware(100, "MarshalAware");
@@ -217,29 +237,6 @@ public class OptimizedMarshallerExtSelfTest extends OptimizedMarshallerSelfTest 
 
         for (int i = 0; i < test.aware.arr.length; i++)
             assertEquals(test.aware.arr[i], test2.aware.arr[i]);
-    }
-
-    private static class InternalMarshaller extends OptimizedMarshallerExt {
-        /**
-         * Constructor.
-         */
-        public InternalMarshaller() {
-        }
-
-        /**
-         * Constructor.
-         * @param requireSer Requires serialiazable.
-         */
-        public InternalMarshaller(boolean requireSer) {
-            super(requireSer);
-
-            super.setMetadataHandler(META_HANDLER);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setMetadataHandler(OptimizedMarshallerMetaHandler metaHandler) {
-            // No-op
-        }
     }
 
     /** */

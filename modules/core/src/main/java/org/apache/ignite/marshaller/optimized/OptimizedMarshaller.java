@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
@@ -77,16 +78,22 @@ import java.util.concurrent.*;
  */
 public class OptimizedMarshaller extends AbstractMarshaller {
     /** Default class loader. */
-    protected final ClassLoader dfltClsLdr = getClass().getClassLoader();
+    private final ClassLoader dfltClsLdr = getClass().getClassLoader();
 
     /** Whether or not to require an object to be serializable in order to be marshalled. */
-    protected boolean requireSer = true;
+    private boolean requireSer = true;
 
     /** ID mapper. */
-    protected OptimizedMarshallerIdMapper mapper;
+    private OptimizedMarshallerIdMapper mapper;
+
+    /** */
+    private OptimizedMarshallerProtocolVersion protocolVersion = OptimizedMarshallerProtocolVersion.VER_1_1;
+
+    /** */
+    private OptimizedMarshallerIndexingHandler idxHandler;
 
     /** Class descriptors by class. */
-    protected final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
 
     /**
      * Creates new marshaller will all defaults.
@@ -128,6 +135,24 @@ public class OptimizedMarshaller extends AbstractMarshaller {
     }
 
     /**
+     * Sets protocol version.
+     *
+     * @param protocolVersion Protocol version.
+     */
+    public void setProtocolVersion(OptimizedMarshallerProtocolVersion protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
+
+    /**
+     * Gets marshaller's protocol version.
+     *
+     * @return Protocol version.
+     */
+    public OptimizedMarshallerProtocolVersion getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    /**
      * Specifies size of cached object streams used by marshaller. Object streams are cached for
      * performance reason to avoid costly recreation for every serialization routine. If {@code 0} (default),
      * pool is not used and each thread has its own cached object stream which it keeps reusing.
@@ -146,6 +171,18 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         OptimizedObjectStreamRegistry.poolSize(poolSize);
     }
 
+    /**
+     * Sets fields indexing handler.
+     */
+    public void setIndexingHandler(OptimizedMarshallerIndexingHandler idxHandler) {
+        this.idxHandler = idxHandler;
+
+        idxHandler.setClassMap(clsMap);
+        idxHandler.setProtocolVersion(protocolVersion);
+        idxHandler.setIdMapper(mapper);
+        idxHandler.setMarshallerCtx(ctx);
+    }
+
     /** {@inheritDoc} */
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
@@ -155,7 +192,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+            objOut.context(clsMap, ctx, mapper, requireSer, idxHandler);
 
             objOut.out().outputStream(out);
 
@@ -176,7 +213,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objOut = OptimizedObjectStreamRegistry.out();
 
-            objOut.context(clsMap, ctx, mapper, requireSer);
+            objOut.context(clsMap, ctx, mapper, requireSer, idxHandler);
 
             objOut.writeObject(obj);
 
@@ -200,7 +237,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, idxHandler);
 
             objIn.in().inputStream(in);
 
@@ -229,7 +266,7 @@ public class OptimizedMarshaller extends AbstractMarshaller {
         try {
             objIn = OptimizedObjectStreamRegistry.in();
 
-            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr);
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, idxHandler);
 
             objIn.in().bytes(arr, arr.length);
 
@@ -242,6 +279,119 @@ public class OptimizedMarshaller extends AbstractMarshaller {
             throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
                 "(make sure same version of all classes are available on all nodes or enable peer-class-loading): " +
                 clsLdr, e);
+        }
+        finally {
+            OptimizedObjectStreamRegistry.closeIn(objIn);
+        }
+    }
+
+    /**
+     * Unmarshals object from byte array using given class loader and offset with len.
+     *
+     * @param <T> Type of unmarshalled object.
+     * @param arr Byte array.
+     * @param off Object's offset in the array.
+     * @param len Object's length in the array.
+     * @param clsLdr Class loader to use.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public <T> T unmarshal(byte[] arr, int off, int len, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
+        assert arr != null;
+
+        OptimizedObjectInputStream objIn = null;
+
+        try {
+            objIn = OptimizedObjectStreamRegistry.in();
+
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, idxHandler);
+
+            objIn.in().bytes(arr, off, len);
+
+            return (T)objIn.readObject();
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to deserialize object with given class loader: " + clsLdr, e);
+        }
+        catch (ClassNotFoundException e) {
+            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
+                                                 "(make sure same version of all classes are available on all nodes or" +
+                                                 " enable peer-class-loading): " + clsLdr, e);
+        }
+        finally {
+            OptimizedObjectStreamRegistry.closeIn(objIn);
+        }
+    }
+
+    /**
+     * Checks whether object, serialized to byte array {@code arr}, has a field with name {@code fieldName}.
+     *
+     * @param fieldName Field name.
+     * @param arr Object's serialized form.
+     * @param off Object's start off.
+     * @param len Object's len.
+     * @return {@code true} if field exists.
+     */
+    public boolean hasField(String fieldName, byte[] arr, int off, int len) throws IgniteCheckedException {
+        assert arr != null && fieldName != null;
+
+        OptimizedObjectInputStream objIn = null;
+
+        try {
+            objIn = OptimizedObjectStreamRegistry.in();
+
+            objIn.context(clsMap, ctx, mapper, dfltClsLdr, idxHandler);
+
+            objIn.in().bytes(arr, off, len);
+
+            return objIn.hasField(fieldName);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to find field with name: " + fieldName, e);
+        }
+        finally {
+            OptimizedObjectStreamRegistry.closeIn(objIn);
+        }
+    }
+
+    /**
+     * Looks up field with the given name and returns it in one of the following representations. If the field is
+     * serializable and has a footer then it's not deserialized but rather returned wrapped by {@link CacheObjectImpl}
+     * for future processing. In all other cases the field is fully deserialized.
+     *
+     * @param fieldName Field name.
+     * @param arr Object's serialized form.
+     * @param off Object's start offset.
+     * @param len Object's len.
+     * @param clsLdr Class loader.
+     * @param <T> Expected field class.
+     * @return Field.
+     * @throws IgniteFieldNotFoundException In case if there is no such a field.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public <T> T readField(String fieldName, byte[] arr, int off, int len, @Nullable ClassLoader clsLdr)
+        throws IgniteCheckedException {
+
+        assert arr != null && fieldName != null;
+
+        OptimizedObjectInputStream objIn = null;
+
+        try {
+            objIn = OptimizedObjectStreamRegistry.in();
+
+            objIn.context(clsMap, ctx, mapper, clsLdr != null ? clsLdr : dfltClsLdr, idxHandler);
+
+            objIn.in().bytes(arr, off, len);
+
+            return objIn.readField(fieldName);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to find field with name: " + fieldName, e);
+        }
+        catch (ClassNotFoundException e) {
+            throw new IgniteCheckedException("Failed to find class with given class loader for unmarshalling " +
+                                                 "(make sure same version of all classes are available on all nodes or" +
+                                                 " enable peer-class-loading): " + clsLdr, e);
         }
         finally {
             OptimizedObjectStreamRegistry.closeIn(objIn);

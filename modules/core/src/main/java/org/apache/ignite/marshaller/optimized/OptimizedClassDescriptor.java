@@ -50,6 +50,9 @@ public class OptimizedClassDescriptor {
     /** ID mapper. */
     private final OptimizedMarshallerIdMapper mapper;
 
+    /** Indexing manager. */
+    private final OptimizedMarshallerIndexingHandler idxHandler;
+
     /** Class name. */
     private final String name;
 
@@ -115,6 +118,7 @@ public class OptimizedClassDescriptor {
      * @param cls Class.
      * @param ctx Context.
      * @param mapper ID mapper.
+     * @param idxHandler Fields indexing manager.
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -122,13 +126,15 @@ public class OptimizedClassDescriptor {
         int typeId,
         ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
+        OptimizedMarshallerIdMapper mapper,
+        OptimizedMarshallerIndexingHandler idxHandler)
         throws IOException {
         this.cls = cls;
         this.typeId = typeId;
         this.clsMap = clsMap;
         this.ctx = ctx;
         this.mapper = mapper;
+        this.idxHandler = idxHandler;
 
         name = cls.getName();
 
@@ -648,7 +654,8 @@ public class OptimizedClassDescriptor {
                 OptimizedClassDescriptor compDesc = classDescriptor(clsMap,
                     obj.getClass().getComponentType(),
                     ctx,
-                    mapper);
+                    mapper,
+                    idxHandler);
 
                 compDesc.writeTypeData(out);
 
@@ -707,7 +714,7 @@ public class OptimizedClassDescriptor {
                 break;
 
             case CLS:
-                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
+                OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper, idxHandler);
 
                 clsDesc.writeTypeData(out);
 
@@ -734,12 +741,12 @@ public class OptimizedClassDescriptor {
                 out.writeShort(checksum);
                 out.writeMarshalAware(obj);
 
-                if (out.metaHandler.metadata(typeId) == null) {
+                if (idxHandler.metaHandler().metadata(typeId) == null) {
                     OptimizedMarshalAwareMetaCollector collector = new OptimizedMarshalAwareMetaCollector();
 
                     ((OptimizedMarshalAware)obj).writeFields(collector);
 
-                    out.metaHandler.addMeta(typeId, collector.meta());
+                    idxHandler.metaHandler().addMeta(typeId, collector.meta());
                 }
 
                 break;

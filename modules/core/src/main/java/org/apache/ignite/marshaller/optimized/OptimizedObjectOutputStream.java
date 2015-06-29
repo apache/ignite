@@ -28,7 +28,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.Date;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
@@ -45,22 +44,22 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     );
 
     /** */
-    protected final GridDataOutput out;
+    private final GridDataOutput out;
 
     /** */
-    protected MarshallerContext ctx;
+    private MarshallerContext ctx;
 
     /** */
-    protected OptimizedMarshallerIdMapper mapper;
+    private OptimizedMarshallerIdMapper mapper;
 
     /** */
-    protected ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap;
 
     /** */
-    protected OptimizedMarshallerMetaHandler metaHandler;
+    private OptimizedMarshallerIndexingHandler idxHandler;
 
     /** */
-    protected boolean requireSer;
+    private boolean requireSer;
 
     /** */
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
@@ -93,32 +92,18 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
      * @param ctx Context.
      * @param mapper ID mapper.
      * @param requireSer Require {@link Serializable} flag.
-     */
-    protected void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
-        MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper,
-        boolean requireSer) {
-        this.clsMap = clsMap;
-        this.ctx = ctx;
-        this.mapper = mapper;
-        this.requireSer = requireSer;
-    }
-
-    /**
-     * @param clsMap Class descriptors by class map.
-     * @param ctx Context.
-     * @param mapper ID mapper.
-     * @param requireSer Require {@link Serializable} flag.
-     * @param metaHandler Metadata handler.
+     * @param idxHandler Fields indexing handler.
      */
     protected void context(ConcurrentMap<Class, OptimizedClassDescriptor> clsMap,
         MarshallerContext ctx,
         OptimizedMarshallerIdMapper mapper,
         boolean requireSer,
-        OptimizedMarshallerMetaHandler metaHandler) {
-        context(clsMap, ctx, mapper, requireSer);
-
-        this.metaHandler = metaHandler;
+        OptimizedMarshallerIndexingHandler idxHandler) {
+        this.clsMap = clsMap;
+        this.ctx = ctx;
+        this.mapper = mapper;
+        this.requireSer = requireSer;
+        this.idxHandler = idxHandler;
     }
 
     /**
@@ -141,7 +126,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
         ctx = null;
         clsMap = null;
-        metaHandler = null;
+        idxHandler = null;
     }
 
     /** {@inheritDoc} */
@@ -214,7 +199,8 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
                     ctx,
-                    mapper);
+                    mapper,
+                    idxHandler);
 
                 if (desc.excluded()) {
                     writeByte(NULL);
@@ -241,7 +227,8 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
                         ctx,
-                        mapper);
+                        mapper,
+                        idxHandler);
                 }
 
                 if (handle >= 0) {
@@ -340,13 +327,11 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
      * @throws IOException In case of error.
      */
     void writeMarshalAware(Object obj) throws IOException {
-        Footer footer = createFooter(obj.getClass());
+        if (!idxHandler.isFieldsIndexingSupported())
+            throw new IOException("Failed to marshal OptimizedMarshalAware object. Optimized marshaller protocol " +
+                "version must be no less then OptimizedMarshallerProtocolVersion.VER_1_1.");
 
-        if (footer == null)
-            throw new IOException("Failed to marshal OptimizedMarshalAware object. OptimizedMarshallerExt must be " +
-                "set to IgniteConfiguration [obj=" + obj.getClass().getName() + "]");
-
-        footer.indexingSupported(true);
+        Footer footer = new Footer();
 
         if (marshalAwareFooters == null)
             marshalAwareFooters = new Stack<>();
@@ -376,10 +361,17 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     @SuppressWarnings("ForLoopReplaceableByForEach")
     void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields)
         throws IOException {
-        Footer footer = createFooter(obj.getClass());
+        Footer footer = null;
 
-        if (footer != null)
-            footer.indexingSupported(fields.fieldsIndexingSupported());
+        if (idxHandler.isFieldsIndexingSupported()) {
+            boolean hasFooter = fields.fieldsIndexingSupported() &&
+                idxHandler.fieldsIndexingEnabledForClass(obj.getClass());
+
+            out.writeBoolean(hasFooter);
+
+            if (hasFooter)
+               footer = new Footer();
+        }
 
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -944,7 +936,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
      * @throws IOException If error.
      */
     protected void writeFieldType(byte type) throws IOException {
-        // No-op
+        out.writeByte(type);
     }
 
     /** {@inheritDoc} */
@@ -1094,16 +1086,6 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     }
 
     /**
-     * Creates new instance of {@code Footer}.
-     *
-     * @param cls Class.
-     * @return {@code Footer} instance.
-     */
-    protected Footer createFooter(Class<?> cls) {
-        return null;
-    }
-
-    /**
      * Returns objects that were added to handles table.
      * Used ONLY for test purposes.
      *
@@ -1211,34 +1193,62 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     /**
      * Footer that is written at the end of object's serialization.
      */
-    protected interface Footer {
-        /**
-         * Whether indexing supported or not.
-         *
-         * @param indexingSupported {@code true} if supported.
-         */
-        void indexingSupported(boolean indexingSupported);
+    private class Footer {
+        /** */
+        private ArrayList<Long> data = new ArrayList<>();
+
+        /** */
+        private boolean hasHandles;
 
         /**
          * Adds offset of a field that must be placed next to the footer.
          *
          * @param off Field offset.
          */
-        void addNextFieldOff(int off);
+        public void addNextFieldOff(int off) {
+            data.add((long)(off & ~FOOTER_BODY_IS_HANDLE_MASK));
+        }
 
         /**
          * Adds handle's offset of a field that must be placed next to the footer.
          *
          * @param handleOff Handle offset.
-         * @param handleLen Handle length.
+         * @param handleLength Handle length.
          */
-        void addNextHandleField(int handleOff, int handleLen);
+        public void addNextHandleField(int handleOff, int handleLength) {
+            hasHandles = true;
+
+            data.add(((long)handleLength << 32) | (handleOff | FOOTER_BODY_IS_HANDLE_MASK));
+        }
 
         /**
          * Writes footer content to the OutputStream.
          *
          * @throws IOException In case of error.
          */
-        void write() throws IOException;
+        public void write() throws IOException {
+            if (data == null)
+                writeShort(EMPTY_FOOTER);
+            else {
+                // +5 - 2 bytes for footer len at the beginning, 2 bytes for footer len at the end, 1 byte for handles
+                // indicator flag.
+                short footerLen = (short)(data.size() * (hasHandles ? 8 : 4) + 5);
+
+                writeShort(footerLen);
+
+                if (hasHandles) {
+                    for (long body : data)
+                        writeLong(body);
+                }
+                else {
+                    for (long body : data)
+                        writeInt((int)body);
+                }
+
+                writeByte(hasHandles ? 1 : 0);
+
+                writeShort(footerLen);
+            }
+        }
     }
 }
