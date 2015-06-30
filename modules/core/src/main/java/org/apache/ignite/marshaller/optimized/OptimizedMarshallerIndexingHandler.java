@@ -132,6 +132,9 @@ public class OptimizedMarshallerIndexingHandler {
      * @throws IgniteCheckedException In case of error.
      */
     public boolean enableFieldsIndexingForClass(Class<?> cls) throws IgniteCheckedException {
+        if (!isFieldsIndexingSupported())
+            return false;
+
         if (metaHandler == null)
             return false;
 
@@ -179,6 +182,9 @@ public class OptimizedMarshallerIndexingHandler {
      * @return {@code true} if fields indexing is enabled.
      */
     public boolean fieldsIndexingEnabledForClass(Class<?> cls) {
+        if (!isFieldsIndexingSupported())
+            return false;
+
         if (metaHandler == null)
             return false;
 

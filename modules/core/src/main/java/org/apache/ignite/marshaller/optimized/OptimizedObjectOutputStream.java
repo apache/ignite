@@ -24,10 +24,12 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
+import sun.misc.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.Queue;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
@@ -42,6 +44,19 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         "Externalizable class doesn't have default constructor: class " +
             "org.apache.ignite.internal.processors.email.IgniteEmailProcessor$2"
     );
+
+    /** */
+    private static final int MAX_FOOTERS_POOL_SIZE = 6;
+
+    /** Unsafe. */
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /** */
+    private static final long byteArrOff = UNSAFE.arrayBaseOffset(byte[].class);
+
+    /** */
+    private static final long longArrOff = UNSAFE.arrayBaseOffset(long[].class);
+
 
     /** */
     private final GridDataOutput out;
@@ -78,6 +93,9 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
 
     /** */
     private Stack<Footer> marshalAwareFooters;
+
+    /** */
+    private Queue<Footer> footersPool;
 
     /**
      * @param out Output.
@@ -327,11 +345,11 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
      * @throws IOException In case of error.
      */
     void writeMarshalAware(Object obj) throws IOException {
-        if (!idxHandler.isFieldsIndexingSupported())
+        if (idxHandler == null || !idxHandler.isFieldsIndexingSupported())
             throw new IOException("Failed to marshal OptimizedMarshalAware object. Optimized marshaller protocol " +
                 "version must be no less then OptimizedMarshallerProtocolVersion.VER_1_1.");
 
-        Footer footer = new Footer();
+        Footer footer = getFooter();
 
         if (marshalAwareFooters == null)
             marshalAwareFooters = new Stack<>();
@@ -345,9 +363,6 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         footer.write();
 
         marshalAwareFooters.pop();
-
-        if (marshalAwareFooters.empty())
-            marshalAwareFooters = null;
     }
 
     /**
@@ -363,14 +378,13 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         throws IOException {
         Footer footer = null;
 
-        if (idxHandler.isFieldsIndexingSupported()) {
-            boolean hasFooter = fields.fieldsIndexingSupported() &&
-                idxHandler.fieldsIndexingEnabledForClass(obj.getClass());
+        if (idxHandler != null && idxHandler.isFieldsIndexingSupported()) {
+            boolean hasFooter = fields.fieldsIndexingSupported();
 
             out.writeBoolean(hasFooter);
 
             if (hasFooter)
-               footer = new Footer();
+                footer = getFooter();
         }
 
         for (int i = 0; i < mtds.size(); i++) {
@@ -916,7 +930,7 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
         curObj = null;
         curFields = null;
         curPut = null;
-        marshalAwareFooters = null;
+        curFooter = null;
     }
 
     /** {@inheritDoc} */
@@ -928,6 +942,30 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
     @Override public void drain() throws IOException {
         // No-op.
     }
+
+    /**
+     * Gets footer.
+     *
+     * @return Footer.
+     */
+    private Footer getFooter() {
+        Footer footer;
+
+        if (footersPool == null) {
+            footersPool = new LinkedList<>();
+
+            for (int i = 0; i < MAX_FOOTERS_POOL_SIZE; i++)
+                footersPool.add(new Footer());
+        }
+
+        footer = footersPool.poll();
+
+        if (footer == null)
+            footer = new Footer();
+
+        return footer;
+    }
+
 
     /**
      * Writes field's type to an OutputStream during field serialization.
@@ -1195,10 +1233,17 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
      */
     private class Footer {
         /** */
-        private ArrayList<Long> data = new ArrayList<>();
+        private static final int DEFAULT_FOOTER_SIZE = 15;
+
+        /** */
+        private long[] data = new long[DEFAULT_FOOTER_SIZE];
+
+        /** */
+        private int size;
 
         /** */
         private boolean hasHandles;
+
 
         /**
          * Adds offset of a field that must be placed next to the footer.
@@ -1206,7 +1251,11 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
          * @param off Field offset.
          */
         public void addNextFieldOff(int off) {
-            data.add((long)(off & ~FOOTER_BODY_IS_HANDLE_MASK));
+            ensureCapacity();
+
+            data[size] = ((long)(off & ~FOOTER_BODY_IS_HANDLE_MASK));
+
+            size++;
         }
 
         /**
@@ -1216,9 +1265,13 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
          * @param handleLength Handle length.
          */
         public void addNextHandleField(int handleOff, int handleLength) {
+            ensureCapacity();
+
             hasHandles = true;
 
-            data.add(((long)handleLength << 32) | (handleOff | FOOTER_BODY_IS_HANDLE_MASK));
+            data[size] = (((long)handleLength << 32) | (handleOff | FOOTER_BODY_IS_HANDLE_MASK));
+
+            size++;
         }
 
         /**
@@ -1232,22 +1285,41 @@ public class OptimizedObjectOutputStream extends ObjectOutputStream implements O
             else {
                 // +5 - 2 bytes for footer len at the beginning, 2 bytes for footer len at the end, 1 byte for handles
                 // indicator flag.
-                short footerLen = (short)(data.size() * (hasHandles ? 8 : 4) + 5);
+                short footerLen = (short)(size * (hasHandles ? 8 : 4) + 5);
 
                 writeShort(footerLen);
 
                 if (hasHandles) {
-                    for (long body : data)
-                        writeLong(body);
+                    for (int i = 0; i < size; i++)
+                        writeLong(data[i]);
                 }
                 else {
-                    for (long body : data)
-                        writeInt((int)body);
+                    for (int i = 0; i < size; i++)
+                        writeInt((int)data[i]);
                 }
 
                 writeByte(hasHandles ? 1 : 0);
 
                 writeShort(footerLen);
+            }
+
+            size = 0;
+            hasHandles = false;
+
+            if (footersPool.size() < MAX_FOOTERS_POOL_SIZE)
+                footersPool.add(this);
+        }
+
+        /**
+         * Checks capacity.
+         */
+        private void ensureCapacity() {
+            if (size + 1 >= data.length) {
+                long[] newData = new long[data.length + 15];
+
+                UNSAFE.copyMemory(data, longArrOff, newData, byteArrOff, data.length << 3);
+
+                data = newData;
             }
         }
     }
