@@ -64,9 +64,12 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * @param nearEvictPlc Near eviction policy.
+     * @return {@code this} for chaining.
      */
-    public void setNearEvictionPolicy(EvictionPolicy<K, V> nearEvictPlc) {
+    public NearCacheConfiguration<K, V> setNearEvictionPolicy(EvictionPolicy<K, V> nearEvictPlc) {
         this.nearEvictPlc = nearEvictPlc;
+
+        return this;
     }
 
     /**
@@ -83,9 +86,12 @@ public class NearCacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Start size for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching mode.
      *
      * @param nearStartSize Start size for near cache.
+     * @return {@code this} for chaining.
      */
-    public void setNearStartSize(int nearStartSize) {
+    public NearCacheConfiguration<K, V> setNearStartSize(int nearStartSize) {
         this.nearStartSize = nearStartSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */
