@@ -101,7 +101,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Predicate filtering client nodes. */
     private static final IgnitePredicate<ClusterNode> clientFilter = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            return n.isClient();
+            return CU.clientNode(n);
         }
     };
 
@@ -940,9 +940,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
-        Collection<ClusterNode> serverNodes = discoCache.serverNodes();
+        Collection<ClusterNode> serverNodes = F.view(discoCache.allNodes(), F.not(clientFilter));
 
-        Collection<ClusterNode> clientNodes = discoCache.clientNodes();
+        Collection<ClusterNode> clientNodes = F.view(discoCache.allNodes(), clientFilter);
 
         ClusterNode locNode = discoCache.localNode();
 
@@ -2122,12 +2122,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Remote nodes. */
         private final List<ClusterNode> rmtNodes;
 
-        /** Client nodes. */
-        private final List<ClusterNode> clientNodes;
-
-        /** Server nodes. */
-        private final List<ClusterNode> serverNodes;
-
         /** All nodes. */
         private final List<ClusterNode> allNodes;
 
@@ -2215,10 +2209,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 all.add(loc);
 
             all.addAll(rmtNodes);
-
-            clientNodes = Collections.unmodifiableList(new ArrayList<>(F.view(all, clientFilter)));
-
-            serverNodes = Collections.unmodifiableList(new ArrayList<>(F.view(all, F.not(clientFilter))));
 
             Collections.sort(all, GridNodeOrderComparator.INSTANCE);
 
@@ -2368,16 +2358,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** @return Remote nodes. */
         Collection<ClusterNode> remoteNodes() {
             return rmtNodes;
-        }
-
-        /** @return Server nodes. */
-        Collection<ClusterNode> serverNodes() {
-            return serverNodes;
-        }
-
-        /** @return Client nodes. */
-        Collection<ClusterNode> clientNodes() {
-            return clientNodes;
         }
 
         /** @return All nodes. */

@@ -56,10 +56,15 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
         disc.setIpFinder(IP_FINDER);
 
-        cfg.setDiscoverySpi(disc);
-
         if (gridName.endsWith("client"))
             cfg.setClientMode(true);
+
+        if (gridName.endsWith("client_force_server")) {
+            cfg.setClientMode(true);
+            disc.setForceServerMode(true);
+        }
+
+        cfg.setDiscoverySpi(disc);
 
         return cfg;
     }
@@ -171,6 +176,57 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
             @Override public boolean apply(String s) {
                 return s.contains("Topology snapshot [ver=4, server nodes=2, client nodes=2,")
                     || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 2"));
+            }
+        }));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForceServerAndClientLogs() throws Exception {
+        MockLogger log = new MockLogger();
+
+        log.setLevel(Level.INFO);
+
+        doForceServerAndClientTest(log);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testForceServerAndClientDebugLogs() throws Exception {
+        MockLogger log = new MockLogger();
+
+        log.setLevel(Level.DEBUG);
+
+        doForceServerAndClientTest(log);
+    }
+
+    /**
+     * @param log Log.
+     * @throws Exception If failed.
+     */
+    private void doForceServerAndClientTest(MockLogger log) throws Exception {
+        try {
+            Ignite server = startGrid("server");
+
+            setLogger(log, server);
+
+            Ignite server1 = startGrid("server1");
+            Ignite client1 = startGrid("first client");
+            Ignite client2 = startGrid("second client");
+            Ignite forceServClnt3 = startGrid("third client_force_server");
+
+            waitForDiscovery(server, server1, client1, client2, forceServClnt3);
+        }
+        finally {
+            stopAllGrids();
+        }
+
+        assertTrue(F.forAny(log.logs(), new IgnitePredicate<String>() {
+            @Override public boolean apply(String s) {
+                return s.contains("Topology snapshot [ver=5, server nodes=2, client nodes=3,")
+                    || (s.contains(">>> Number of server nodes: 2") && s.contains(">>> Number of client nodes: 3"));
             }
         }));
     }
