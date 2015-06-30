@@ -100,7 +100,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheDaemonNodeLocalSelfTest.class);
         suite.addTestSuite(GridCacheDaemonNodePartitionedSelfTest.class);
         suite.addTestSuite(GridCacheDaemonNodeReplicatedSelfTest.class);
-        suite.addTestSuite(GridCacheDaemonNodeStopSelfTest.class);
 
         // Write-behind.
         suite.addTest(IgniteCacheWriteBehindTestSuite.suite());

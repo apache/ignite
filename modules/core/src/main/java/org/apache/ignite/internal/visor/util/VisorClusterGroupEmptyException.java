@@ -26,7 +26,11 @@ public class VisorClusterGroupEmptyException extends ClusterGroupEmptyException 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** @inheritDoc */
+    /**
+     * Creates exception with given error message.
+     *
+     * @param msg Error message.
+     */
     public VisorClusterGroupEmptyException(String msg) {
         super(msg);
     }
