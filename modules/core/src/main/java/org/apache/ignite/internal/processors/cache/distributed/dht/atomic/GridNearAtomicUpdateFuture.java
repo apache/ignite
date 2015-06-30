@@ -328,12 +328,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         else {
             topLocked = true;
 
-            synchronized (this) {
-                this.topVer = topVer;
-
-                // Cannot remap.
-                remapCnt.set(1);
-            }
+            // Cannot remap.
+            remapCnt.set(1);
 
             map0(topVer, null, false, null);
         }
@@ -451,6 +447,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             remapCnt.decrementAndGet() > 0) {
 
             CachePartialUpdateCheckedException cause = X.cause(err, CachePartialUpdateCheckedException.class);
+
+            if (F.isEmpty(cause.failedKeys()))
+                cause.printStackTrace();
 
             remap(cause.failedKeys());
 
@@ -608,10 +607,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     onDone(new GridCacheTryPutFailedException());
 
                 return;
-            }
-
-            synchronized (this) {
-                this.topVer = topVer;
             }
         }
         finally {
@@ -786,7 +781,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 conflictVer,
                 true);
 
-            single = true;
+            synchronized (this) {
+                this.topVer = topVer;
+
+                single = true;
+            }
 
             // Optimize mapping for single key.
             mapSingle(primary.id(), req);
@@ -941,6 +940,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     i++;
                 }
             }
+
+            this.topVer = topVer;
 
             fastMapRemap = false;
         }

@@ -146,9 +146,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
 
         if (req != null) {
-            updateRes.addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Failed to write keys on backup " +
-                "(node left grid before response is received): " + nodeId));
-
             // Remove only after added keys to failed set.
             mappings.remove(nodeId);
 
