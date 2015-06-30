@@ -39,7 +39,7 @@
                 <fileSets>
                     <fileSet>
                         <directory>${basedir}</directory>
-                        <outputDirectory>/visorcmd</outputDirectory>
+                        <outputDirectory>/</outputDirectory>
                         <includes>
                             <include>licenses/**</include>
                         </includes>
@@ -87,6 +87,14 @@
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
                 <fileSets>
+                    <fileSet>
+                        <directory>${basedir}</directory>
+                        <outputDirectory>/</outputDirectory>
+                        <includes>
+                            <include>licenses/**</include>
+                        </includes>
+                    </fileSet>
+
                     <fileSet>
                         <directory>target/libs</directory>
                         <outputDirectory>/visor-common</outputDirectory>
