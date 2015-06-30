@@ -61,8 +61,7 @@ public class GarHelloWorldTask extends ComputeTaskSplitAdapter<String, String> {
                 /*
                  * Simply prints the job's argument.
                  */
-                @Nullable
-                @Override public Serializable execute() {
+                @Nullable @Override public Serializable execute() {
                     System.out.println(">>>");
                     System.out.println(">>> Printing '" + argument(0) + "' on this node from grid job.");
                     System.out.println(">>>");
