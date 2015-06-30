@@ -98,6 +98,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     };
 
+    /** Predicate filtering client nodes. */
+    private static final IgnitePredicate<ClusterNode> clientFilter = new P1<ClusterNode>() {
+        @Override public boolean apply(ClusterNode n) {
+            return n.isClient();
+        }
+    };
+
     /** Disco history entries comparator. */
     private static final Comparator<Map.Entry<AffinityTopologyVersion, DiscoCache>> histCmp =
         new Comparator<Map.Entry<AffinityTopologyVersion, DiscoCache>>() {
@@ -933,6 +940,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
+        Collection<ClusterNode> serverNodes = discoCache.serverNodes();
+
+        Collection<ClusterNode> clientNodes = discoCache.clientNodes();
+
         ClusterNode locNode = discoCache.localNode();
 
         Collection<ClusterNode> allNodes = discoCache.allNodes();
@@ -949,7 +960,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         double heap = U.heapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(rmtNodes.size(), totalCpus, heap));
+            U.quiet(false, topologySnapshotMessage(serverNodes.size(), clientNodes.size(), totalCpus, heap));
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -959,7 +970,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ">>> " + PREFIX + "." + U.nl() +
                 ">>> +----------------+" + U.nl() +
                 ">>> Grid name: " + (ctx.gridName() == null ? "default" : ctx.gridName()) + U.nl() +
-                ">>> Number of nodes: " + (rmtNodes.size() + 1) + U.nl() +
+                ">>> Number of server nodes: " + serverNodes.size() + U.nl() +
+                ">>> Number of client nodes: " + clientNodes.size() + U.nl() +
                 (discoOrdered ? ">>> Topology version: " + topVer + U.nl() : "") +
                 ">>> Topology hash: 0x" + Long.toHexString(hash).toUpperCase() + U.nl();
 
@@ -992,19 +1004,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(rmtNodes.size(), totalCpus, heap));
+            log.info(topologySnapshotMessage(serverNodes.size(), clientNodes.size(), totalCpus, heap));
     }
 
     /**
-     * @param rmtNodesNum Remote nodes number.
+     * @param serverNodesNum Server nodes number.
+     * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @return Topology snapshot message.
      */
-    private String topologySnapshotMessage(int rmtNodesNum, int totalCpus, double heap) {
+    private String topologySnapshotMessage(int serverNodesNum, int clientNodesNum, int totalCpus, double heap) {
         return PREFIX + " [" +
             (discoOrdered ? "ver=" + topSnap.get().topVer.topologyVersion() + ", " : "") +
-            "nodes=" + (rmtNodesNum + 1) +
+            "server nodes=" + serverNodesNum +
+            ", client nodes=" + clientNodesNum +
             ", CPUs=" + totalCpus +
             ", heap=" + heap + "GB" +
             ']';
@@ -2108,6 +2122,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Remote nodes. */
         private final List<ClusterNode> rmtNodes;
 
+        /** Client nodes. */
+        private final List<ClusterNode> clientNodes;
+
+        /** Server nodes. */
+        private final List<ClusterNode> serverNodes;
+
         /** All nodes. */
         private final List<ClusterNode> allNodes;
 
@@ -2195,6 +2215,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 all.add(loc);
 
             all.addAll(rmtNodes);
+
+            clientNodes = Collections.unmodifiableList(new ArrayList<>(F.view(all, clientFilter)));
+
+            serverNodes = Collections.unmodifiableList(new ArrayList<>(F.view(all, F.not(clientFilter))));
 
             Collections.sort(all, GridNodeOrderComparator.INSTANCE);
 
@@ -2344,6 +2368,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** @return Remote nodes. */
         Collection<ClusterNode> remoteNodes() {
             return rmtNodes;
+        }
+
+        /** @return Server nodes. */
+        Collection<ClusterNode> serverNodes() {
+            return serverNodes;
+        }
+
+        /** @return Client nodes. */
+        Collection<ClusterNode> clientNodes() {
+            return clientNodes;
         }
 
         /** @return All nodes. */
