@@ -129,6 +129,12 @@ public class IgniteNodeRunner {
     public static List<Integer> killAll() {
         jps();
 
+        X.println(">>>>> IgniteProcessProxy.killAll()");
+
+        IgniteProcessProxy.killAll();
+
+        jps();
+
         List<Integer> res = new ArrayList<>();
 
         try {
@@ -199,17 +205,17 @@ public class IgniteNodeRunner {
 
                     String name = MonitoredVmUtil.mainClass(vm, false);
 
-                    X.println(">>>>> " + jvmId + ' ' + name);
+                    X.println(">>>>>>>> " + jvmId + ' ' + name);
                 }
                 catch (Exception ignore) {
                     // Print stack trace just for information.
-                    X.printerr(">>>>> " + jvmId + " Could not get process information.");
+                    X.printerrln(">>>>>>>> " + jvmId + " Could not get process information.");
                 }
             }
         }
         catch (Exception e) {
             // Print stack trace just for information.
-            X.printerrln(">>>>> Could not print java processes.", e);
+            X.printerrln(">>>>>>>> Could not print java processes.", e);
         }
     }
 }
