@@ -280,8 +280,8 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override  public void loadAll(Set<? extends K> keys, boolean replaceExistingValues, CompletionListener completionListener) {
-        throw new UnsupportedOperationException("Method should be supported.");
+    @Override  public void loadAll(Set<? extends K> keys, boolean replaceExistingValues, CompletionListener completionLsnr) {
+        throw new UnsupportedOperationException("Oparetion can't be supported automatically.");
     }
 
     /** {@inheritDoc} */

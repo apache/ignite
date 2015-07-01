@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
@@ -59,9 +60,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Grid id. */
     private final UUID id = UUID.randomUUID();
 
-    /** Remote ignite instance started latch. */
-    private final transient CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
-
     /**
      * @param cfg Configuration.
      * @param log Logger.
@@ -84,17 +82,9 @@ public class IgniteProcessProxy implements IgniteEx {
                 filteredJvmArgs.add(arg);
         }
 
-        locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
-            @Override public boolean applyx(Event e) {
-                if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
-                    rmtNodeStartedLatch.countDown();
+        final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
-                    return false;
-                }
-
-                return true;
-            }
-        }, EventType.EVT_NODE_JOINED);
+        locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
@@ -117,6 +107,36 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     */
+    private static class NodeStartedListener extends IgnitePredicateX<Event> {
+        /** Id. */
+        private final UUID id;
+
+        /** Remote node started latch. */
+        private final CountDownLatch rmtNodeStartedLatch;
+
+        /**
+         * @param id Id.
+         * @param rmtNodeStartedLatch Remotenode started latch.
+         */
+        NodeStartedListener(UUID id, CountDownLatch rmtNodeStartedLatch) {
+            this.id = id;
+            this.rmtNodeStartedLatch = rmtNodeStartedLatch;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean applyx(Event e) {
+            if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
+                rmtNodeStartedLatch.countDown();
+
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    /**
      * @param gridName Grid name.
      * @return Instance by name or exception wiil be thrown.
      */
@@ -128,6 +148,15 @@ public class IgniteProcessProxy implements IgniteEx {
                 "or was already stopped: " + gridName + ". All known grid instances: " + gridProxies.keySet());
 
         return res;
+    }
+
+    /**
+     * For usage in closures.
+     *
+     * @return Ignite instance.
+     */
+    private Ignite igniteById() {
+        return Ignition.ignite(id);
     }
 
     /**
@@ -378,7 +407,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -388,7 +417,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        throw new UnsupportedOperationException("Transactions are not supported in multi JVM mode.");
+        throw new UnsupportedOperationException("Transactions can't be supported automatically in multi JVM mode.");
     }
 
     /** {@inheritDoc} */
@@ -452,11 +481,38 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
+        final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
+
+        locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+            @Override public boolean applyx(Event e) {
+                if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
+                    rmtNodeStoppedLatch.countDown();
+
+                    return false;
+                }
+
+                return true;
+            }
+        }, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
+
+        compute().run(new IgniteRunnable() {
+            @Override public void run() {
+                igniteById().close();
+            }
+        });
+
+        try {
+            assert U.await(rmtNodeStoppedLatch, 15, TimeUnit.SECONDS) : "NodeId=" + id;
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteException(e);
+        }
+
         try {
             getProcess().kill();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            X.printerr("Could not kill process after close.", e);
         }
     }
 

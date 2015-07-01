@@ -254,7 +254,40 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param replaceExistingValues Replace existing values.
      * @throws Exception If failed.
      */
-    protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
+    protected static <K> void loadAll(Cache<K, ?> cache, final Set<K> keys, final boolean replaceExistingValues) throws Exception {
+        Ignite ignite = cache.unwrap(Ignite.class);
+
+        if (!(ignite instanceof IgniteProcessProxy))
+            loadAll0(cache, keys, replaceExistingValues);
+        else {
+            IgniteProcessProxy proxy = (IgniteProcessProxy)ignite;
+
+            final UUID id = proxy.getId();
+
+            final String cacheName = cache.getName();
+
+            final Set<Object> keysCp = (Set<Object>)keys;
+
+            proxy.remoteCompute().run(new CAX() {
+                @Override public void applyx() throws IgniteCheckedException {
+                    try {
+                        loadAll0(Ignition.ignite(id).cache(cacheName), keysCp, replaceExistingValues);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys.
+     * @param replaceExistingValues Replace existing values.
+     * @throws Exception If failed.
+     */
+    private static <K> void loadAll0(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
         final AtomicReference<Exception> ex = new AtomicReference<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
