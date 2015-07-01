@@ -136,7 +136,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
          * @param searchStr Search string.
          * @param limit Max number of search results.
          * @return Collection of found descriptors.
-         * @throws IOException
+         * @throws IOException In case of I/O error.
          */
         private List<GridTuple3<String[], Integer, Integer>> searchInFile(File f, Charset charset, String searchStr,
             int limit) throws IOException {
