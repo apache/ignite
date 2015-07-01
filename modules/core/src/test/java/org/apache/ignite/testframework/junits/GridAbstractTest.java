@@ -791,19 +791,8 @@ public abstract class GridAbstractTest extends TestCase {
         for (Ignite g : srvs)
             stopGrid(g.name(), cancel);
 
-        if (isMultiJvm()) {
-//            IgniteProcessProxy.killAll(); // In multi jvm case.
-            try {
-                Thread.sleep(1_000);
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace(); // TODO implement.
-            }
-
+        if (isMultiJvm())
             IgniteNodeRunner.killAll();
-
-            IgniteNodeRunner.jps();
-        }
 
         assert G.allGrids().isEmpty();
     }

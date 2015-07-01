@@ -125,9 +125,12 @@ public class IgniteNodeRunner {
      * Kill all Jvm runned by {#link IgniteNodeRunner}. Works based on jps command.
      *
      * @return List of killed process ids.
-     * @throws Exception If exception.
      */
     public static List<Integer> killAll() {
+        jps();
+
+        List<Integer> res = new ArrayList<>();
+
         try {
             // TODO delete logging.
             X.println(">>>>> IgniteNodeRunner.killAll");
@@ -136,55 +139,59 @@ public class IgniteNodeRunner {
 
             Set<Integer> jvms = monitoredHost.activeVms();
 
-            List<Integer> res = new ArrayList<>();
-
-            for (Integer jvmId : jvms) {
+            for (Integer pid : jvms) {
                 try {
-                    MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
+                    MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + pid + "?mode=r"), 0);
 
                     if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
                         Process killProc = U.isWindows() ?
-                            Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"}) :
-                            Runtime.getRuntime().exec(new String[] {"kill", "-9", jvmId.toString()});
+                            Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", pid.toString(), "/f", "/t"}) :
+                            Runtime.getRuntime().exec(new String[] {"kill", "-9", pid.toString()});
 
                         killProc.waitFor();
 
-                        res.add(jvmId);
+                        res.add(pid);
+
+                        X.println(IgniteNodeRunner.class.getSimpleName() + " process was killed: " + pid);
                     }
                 }
                 catch (Exception e) {
                     // Print stack trace just for information.
-                    X.printerrln("Could not kill IgniteNodeRunner java process. Jvm pid = " + jvmId, e);
+                    X.printerrln("Could not kill " + IgniteNodeRunner.class.getSimpleName() + " java process. " +
+                        "Jvm pid = " + pid, e);
                 }
             }
-
-            return res;
         }
         catch (Exception e) {
             // Print stack trace just for information.
-            X.printerrln("Could not kill IgniteNodeRunner java processes.", e);
-
-            return Collections.emptyList();
+            X.printerrln("Could not kill " + IgniteNodeRunner.class.getSimpleName() + " java processes.", e);
         }
+
+        jps();
+
+        try {
+            Thread.sleep(15_000);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace(); // TODO implement.
+        }
+
+        jps();
+
+        return res;
     }
 
     /**
-     * Kill all Jvm runned by {#link IgniteNodeRunner}. Works based on jps command.
-     *
-     * @return List of killed process ids.
-     * @throws Exception If exception.
+     * Jps.
      */
     // TODO delete this method.
     public static void jps() {
         try {
-            // TODO delete logging.
             X.println(">>>>> IgniteNodeRunner.jps");
 
             MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
 
             Set<Integer> jvms = monitoredHost.activeVms();
-
-            List<Integer> res = new ArrayList<>();
 
             for (Integer jvmId : jvms) {
                 try {
@@ -194,15 +201,15 @@ public class IgniteNodeRunner {
 
                     X.println(">>>>> " + jvmId + ' ' + name);
                 }
-                catch (Exception e) {
+                catch (Exception ignore) {
                     // Print stack trace just for information.
-                    X.printerrln(">>>>> Could not PRINT IgniteNodeRunner java process. Jvm pid = " + jvmId, e);
+                    X.printerr(">>>>> " + jvmId + " Could not get process information.");
                 }
             }
         }
         catch (Exception e) {
             // Print stack trace just for information.
-            X.printerrln(">>>>> Could not PRINT IgniteNodeRunner java processes.", e);
+            X.printerrln(">>>>> Could not print java processes.", e);
         }
     }
 }
