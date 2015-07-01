@@ -167,4 +167,42 @@ public class IgniteNodeRunner {
             return Collections.emptyList();
         }
     }
+
+    /**
+     * Kill all Jvm runned by {#link IgniteNodeRunner}. Works based on jps command.
+     *
+     * @return List of killed process ids.
+     * @throws Exception If exception.
+     */
+    // TODO delete this method.
+    public static void jps() {
+        try {
+            // TODO delete logging.
+            X.println(">>>>> IgniteNodeRunner.jps");
+
+            MonitoredHost monitoredHost = MonitoredHost.getMonitoredHost(new HostIdentifier("localhost"));
+
+            Set<Integer> jvms = monitoredHost.activeVms();
+
+            List<Integer> res = new ArrayList<>();
+
+            for (Integer jvmId : jvms) {
+                try {
+                    MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
+
+                    String name = MonitoredVmUtil.mainClass(vm, false);
+
+                    X.println(">>>>> " + jvmId + ' ' + name);
+                }
+                catch (Exception e) {
+                    // Print stack trace just for information.
+                    X.printerrln(">>>>> Could not PRINT IgniteNodeRunner java process. Jvm pid = " + jvmId, e);
+                }
+            }
+        }
+        catch (Exception e) {
+            // Print stack trace just for information.
+            X.printerrln(">>>>> Could not PRINT IgniteNodeRunner java processes.", e);
+        }
+    }
 }

@@ -801,6 +801,8 @@ public abstract class GridAbstractTest extends TestCase {
             }
 
             IgniteNodeRunner.killAll();
+
+            IgniteNodeRunner.jps();
         }
 
         assert G.allGrids().isEmpty();
