@@ -30,7 +30,7 @@ import javax.transaction.*;
  */
 public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
-    private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
+    private final static ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
 
     /** */
     private TransactionManager jtaTm;
@@ -89,7 +89,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                             );
                         }
 
-                        rsrc = new GridCacheXAResource(tx, cctx);
+                        rsrc = new GridCacheXAResource(tx, cctx.kernalContext());
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
