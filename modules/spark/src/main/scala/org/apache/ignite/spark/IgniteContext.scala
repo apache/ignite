@@ -33,11 +33,13 @@ import org.apache.spark.sql.SQLContext
  * @tparam V Value type.
  */
 class IgniteContext[K, V](
-    @scala.transient val sparkContext: SparkContext,
+    @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
     client: Boolean = true
 ) extends Serializable with Logging {
-    @scala.transient private val driver = true
+    @transient private val driver = true
+
+    private val cfgClo = new Once(cfgF)
 
     if (!client) {
         val workers = sparkContext.getExecutorStorageStatus.length - 1
@@ -51,11 +53,31 @@ class IgniteContext[K, V](
         sparkContext.parallelize(1 to workers, workers).foreach(it ⇒ ignite())
     }
 
+    // Make sure to start Ignite on context creation.
+    ignite()
+
+    /**
+     * Creates an instance of IgniteContext with the given spring configuration.
+     *
+     * @param sc Spark context.
+     * @param springUrl Spring configuration path.
+     */
     def this(
         sc: SparkContext,
         springUrl: String
     ) {
         this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1())
+    }
+
+    /**
+     * Creates an instance of IgniteContext with default Ignite configuration.
+     * By default this method will use grid configuration defined in `IGNITE_HOME/config/default-config.xml`
+     * configuration file.
+     *
+     * @param sc Spark context.
+     */
+    def this(sc: SparkContext) {
+        this(sc, IgnitionEx.DFLT_CFG)
     }
 
     val sqlContext = new SQLContext(sparkContext)
@@ -89,7 +111,7 @@ class IgniteContext[K, V](
      * @return Ignite instance.
      */
     def ignite(): Ignite = {
-        val igniteCfg = cfgF()
+        val igniteCfg = cfgClo()
 
         try {
             Ignition.ignite(igniteCfg.getGridName)
@@ -112,8 +134,28 @@ class IgniteContext[K, V](
      * a no-op.
      */
     def close() = {
-        val igniteCfg = cfgF()
+        val igniteCfg = cfgClo()
 
         Ignition.stop(igniteCfg.getGridName, false)
+    }
+}
+
+/**
+ * Auxiliary closure that ensures that passed in closure is executed only once.
+ *
+ * @param clo Closure to wrap.
+ */
+private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
+    @transient @volatile var res: IgniteConfiguration = null
+
+    def apply(): IgniteConfiguration = {
+        if (res == null) {
+            this.synchronized {
+                if (res == null)
+                    res = clo()
+            }
+        }
+
+        res
     }
 }
