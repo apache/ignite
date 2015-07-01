@@ -1798,12 +1798,89 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param desc Type descriptor.
      * @return Type metadata.
      */
-    private CacheTypeMetadata convert(TypeDescriptor desc) {
+    private static CacheTypeMetadata convert(TypeDescriptor desc) {
         CacheTypeMetadata meta = new CacheTypeMetadata();
 
-        // TODO
+        // Key and val types.
+        meta.setKeyType(desc.keyClass());
+        meta.setValueType(desc.valueClass());
+
+        // Query fields.
+        Map<String, Class<?>> qryFields = new HashMap<>();
+
+        for (ClassProperty prop : desc.props.values())
+            qryFields.put(prop.fullName(), mask(prop.type()));
+
+        meta.setQueryFields(qryFields);
+
+        // Indexes.
+        Collection<String> txtFields = new ArrayList<>();
+        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = new HashMap<>();
+
+        for (Map.Entry<String,GridQueryIndexDescriptor> idxEntry : desc.indexes().entrySet()) {
+            GridQueryIndexDescriptor idx = idxEntry.getValue();
+
+            if (idx.type() == FULLTEXT) {
+                assert txtFields.isEmpty();
+
+                txtFields.addAll(idx.fields());
+            }
+            else {
+                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> grp = new LinkedHashMap<>();
+
+                for (String fieldName : idx.fields()) {
+                    ClassProperty prop = desc.props.get(fieldName);
+
+                    Class<?> cls = mask(prop.type());
+
+                    grp.put(fieldName, new IgniteBiTuple<Class<?>, Boolean>(cls, idx.descending(fieldName)));
+                }
+
+                grps.put(idxEntry.getKey(), grp);
+            }
+        }
+
+        if (desc.valueTextIndex())
+            txtFields.add("_val");
+
+        if (!txtFields.isEmpty())
+            meta.setTextFields(txtFields);
+
+        meta.setGroups(grps);
+
+        // Index primitive types.
+        if (GridQueryProcessor.isSqlType(desc.valueClass()))
+            meta.setAscendingFields(Collections.<String, Class<?>>singletonMap("_val", desc.valueClass()));
+
+        // Aliases.
+        Map<String,String> aliases = null;
+
+        for (ClassProperty prop : desc.props.values()) {
+            while (prop != null) {
+                if (!F.isEmpty(prop.alias)) {
+                    if (aliases == null)
+                        aliases = new HashMap<>();
+
+                    aliases.put(prop.fullName(), prop.alias);
+                }
+
+                prop = prop.parent;
+            }
+        }
+
+        meta.setAliases(aliases);
 
         return meta;
+    }
+
+    /**
+     * @param cls Class.
+     * @return Masked class.
+     */
+    private static Class<?> mask(Class<?> cls) {
+        assert cls != null;
+
+        return GridQueryProcessor.isSqlType(cls) ? cls : Object.class;
     }
 
     /**
@@ -1821,11 +1898,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         d.valueClass(valCls);
 
         processAnnotationsInClass(true, d.keyCls, d, null);
-
-        String valTypeName = GridQueryProcessor.typeName(valCls);
-
-        d.name(valTypeName);
-
         processAnnotationsInClass(false, d.valCls, d, null);
 
         return d;
@@ -1847,7 +1919,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 type.addIndex(idxName, GridQueryProcessor.isGeometryClass(cls) ? GEO_SPATIAL : SORTED);
 
-                type.addFieldToIndex(idxName, "_VAL", 0, false);
+                type.addFieldToIndex(idxName, "_val", 0, false);
             }
 
             return;
@@ -1928,7 +2000,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             processAnnotationsInClass(key, cls, desc, prop);
 
             if (!sqlAnn.name().isEmpty())
-                prop.name(sqlAnn.name());
+                prop.alias(sqlAnn.name());
 
             if (sqlAnn.index()) {
                 String idxName = prop.name() + "_idx";
@@ -1979,17 +2051,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Descriptor of type.
      */
-    private static class TypeDescriptor implements GridQueryTypeDescriptor {
-        /** */
-        private String name;
-
+    private static class TypeDescriptor {
         /** Value field names and types with preserved order. */
         @GridToStringInclude
         private final Map<String, Class<?>> fields = new LinkedHashMap<>();
 
         /** */
         @GridToStringExclude
-        private final Map<String, Property> props = new HashMap<>();
+        private final Map<String, ClassProperty> props = new HashMap<>();
 
         /** */
         @GridToStringInclude
@@ -2007,57 +2076,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         /** */
         private boolean valTextIdx;
 
-        /** SPI can decide not to register this type. */
-        private boolean registered;
-
         /**
-         * @return {@code True} if type registration in SPI was finished and type was not rejected.
+         * @return Indexes.
          */
-        boolean registered() {
-            return registered;
-        }
-
-        /**
-         * @param registered Sets registered flag.
-         */
-        void registered(boolean registered) {
-            this.registered = registered;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /**
-         * Sets type name.
-         *
-         * @param name Name.
-         */
-        void name(String name) {
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Class<?>> fields() {
-            return fields;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
-            assert field != null;
-
-            Property prop = props.get(field);
-
-            if (prop == null)
-                throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
-
-            return (T)prop.value(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, GridQueryIndexDescriptor> indexes() {
+        public Map<String, GridQueryIndexDescriptor> indexes() {
             return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
         }
 
@@ -2110,8 +2132,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             fullTextIdx.addField(field, 0, false);
         }
 
-        /** {@inheritDoc} */
-        @Override public Class<?> valueClass() {
+        /**
+         * @return Value class.
+         */
+        public Class<?> valueClass() {
             return valCls;
         }
 
@@ -2124,8 +2148,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             this.valCls = valCls;
         }
 
-        /** {@inheritDoc} */
-        @Override public Class<?> keyClass() {
+        /**
+         * @return Key class.
+         */
+        public Class<?> keyClass() {
             return keyCls;
         }
 
@@ -2144,7 +2170,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          * @param prop Property.
          * @param failOnDuplicate Fail on duplicate flag.
          */
-        public void addProperty(Property prop, boolean failOnDuplicate) {
+        public void addProperty(ClassProperty prop, boolean failOnDuplicate) {
             String name = prop.name();
 
             if (props.put(name, prop) != null && failOnDuplicate)
@@ -2153,8 +2179,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             fields.put(name, prop.type());
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean valueTextIndex() {
+        /**
+         * @return {@code true} If we need to have a fulltext index on value.
+         */
+        public boolean valueTextIndex() {
             return valTextIdx;
         }
 
@@ -2248,34 +2276,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     *
-     */
-    private abstract static class Property {
-        /**
-         * Gets this property value from the given object.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return Property value.
-         * @throws IgniteCheckedException If failed.
-         */
-        public abstract Object value(Object key, Object val) throws IgniteCheckedException;
-
-        /**
-         * @return Property name.
-         */
-        public abstract String name();
-
-        /**
-         * @return Class member type.
-         */
-        public abstract Class<?> type();
-    }
-
-    /**
      * Description of type property.
      */
-    private static class ClassProperty extends Property {
+    private static class ClassProperty {
         /** */
         private final Member member;
 
@@ -2286,10 +2289,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         private String name;
 
         /** */
-        private boolean field;
-
-        /** */
-        private boolean key;
+        private String alias;
 
         /**
          * Constructor.
@@ -2298,57 +2298,31 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         ClassProperty(Member member, boolean key) {
             this.member = member;
-            this.key = key;
 
             name = member instanceof Method && member.getName().startsWith("get") && member.getName().length() > 3 ?
                 member.getName().substring(3) : member.getName();
 
             ((AccessibleObject) member).setAccessible(true);
-
-            field = member instanceof Field;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = this.key ? key : val;
-
-            if (parent != null)
-                x = parent.value(key, val);
-
-            if (x == null)
-                return null;
-
-            try {
-                if (field) {
-                    Field field = (Field)member;
-
-                    return field.get(x);
-                }
-                else {
-                    Method mtd = (Method)member;
-
-                    return mtd.invoke(x);
-                }
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
         }
 
         /**
-         * @param name Property name.
+         * @param alias Alias.
          */
-        public void name(String name) {
-            this.name = name;
+        public void alias(String alias) {
+            this.alias = alias;
         }
 
-        /** {@inheritDoc} */
-        @Override public String name() {
+        /**
+         * @return Name.
+         */
+        public String name() {
             return name;
         }
 
-        /** {@inheritDoc} */
-        @Override public Class<?> type() {
+        /**
+         * @return Type.
+         */
+        public Class<?> type() {
             return member instanceof Field ? ((Field)member).getType() : ((Method)member).getReturnType();
         }
 
@@ -2370,6 +2344,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
          */
         public boolean knowsClass(Class<?> cls) {
             return member.getDeclaringClass() == cls || (parent != null && parent.knowsClass(cls));
+        }
+
+        /**
+         * @return Full name with all parents in dot notation.
+         */
+        public String fullName() {
+            assert name != null;
+
+            if (parent == null)
+                return name;
+
+            return parent.fullName() + '.' + name;
         }
     }
 }

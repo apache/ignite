@@ -7872,9 +7872,10 @@ public abstract class IgniteUtils {
         if (cls == null)
             return null;
 
-        Class<?> boxed = boxedClsMap.get(cls);
+        if (!cls.isPrimitive())
+            return cls;
 
-        return boxed != null ? boxed : cls;
+        return boxedClsMap.get(cls);
     }
 
     /**
