@@ -30,7 +30,7 @@ import java.util.*;
  * Test for {@link ClusterGroup}.
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridProjectionSelfTest extends GridProjectionAbstractTest {
+public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /** Nodes count. */
     private static final int NODES_CNT = 4;
 

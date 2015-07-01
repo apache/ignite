@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
+import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
@@ -30,15 +31,18 @@ import org.apache.ignite.internal.processors.hadoop.v1.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 import org.jsr166.*;
 
 import java.io.*;
 import java.lang.reflect.*;
+import java.net.*;
 import java.util.*;
 import java.util.Queue;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.hadoop.HadoopUtils.*;
+import static org.apache.ignite.internal.processors.hadoop.fs.HadoopFileSystemCacheUtils.*;
 
 /**
  * Hadoop job implementation for v2 API.
@@ -70,7 +74,10 @@ public class HadoopV2Job implements HadoopJob {
     private final Queue<Class<? extends HadoopTaskContext>> taskCtxClsPool = new ConcurrentLinkedQueue<>();
 
     /** All created contexts. */
-    private final Queue<Class<?>> fullCtxClsQueue = new ConcurrentLinkedDeque<>();
+    private final Queue<Class<? extends HadoopTaskContext>> fullCtxClsQueue = new ConcurrentLinkedDeque<>();
+
+    /** File system cache map. */
+    private final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap = createHadoopLazyConcurrentMap();
 
     /** Local node ID */
     private volatile UUID locNodeId;
@@ -103,7 +110,7 @@ public class HadoopV2Job implements HadoopJob {
 
         jobCtx = new JobContextImpl(jobConf, hadoopJobID);
 
-        rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log);
+        rsrcMgr = new HadoopV2JobResourceManager(jobId, jobCtx, log, this);
     }
 
     /** {@inheritDoc} */
@@ -134,7 +141,7 @@ public class HadoopV2Job implements HadoopJob {
             Path jobDir = new Path(jobDirPath);
 
             try {
-                FileSystem fs = fileSystemForMrUser(jobDir.toUri(), jobConf, true);
+                FileSystem fs = fileSystem(jobDir.toUri(), jobConf);
 
                 JobSplit.TaskSplitMetaInfo[] metaInfos = SplitMetaInfoReader.readSplitMetaInfo(hadoopJobID, fs, jobConf,
                     jobDir);
@@ -180,6 +187,7 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
         T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
@@ -201,7 +209,7 @@ public class HadoopV2Job implements HadoopJob {
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
                 HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
-                    "hadoop-task-" + info.jobId() + "-" + info.type() + "-" + info.taskNumber());
+                    HadoopClassLoader.nameForTask(info, false));
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
 
@@ -243,7 +251,12 @@ public class HadoopV2Job implements HadoopJob {
 
     /** {@inheritDoc} */
     @Override public void initialize(boolean external, UUID locNodeId) throws IgniteCheckedException {
+        assert locNodeId != null;
+
         this.locNodeId = locNodeId;
+
+        assert ((HadoopClassLoader)getClass().getClassLoader()).name()
+            .equals(HadoopClassLoader.nameForJob(this.locNodeId));
 
         Thread.currentThread().setContextClassLoader(jobConf.getClassLoader());
 
@@ -274,17 +287,26 @@ public class HadoopV2Job implements HadoopJob {
             // Stop the daemon threads that have been created
             // with the task class loaders:
             while (true) {
-                Class<?> cls = fullCtxClsQueue.poll();
+                Class<? extends HadoopTaskContext> cls = fullCtxClsQueue.poll();
 
                 if (cls == null)
                     break;
 
                 try {
-                    Class<?> daemonCls = cls.getClassLoader().loadClass(HadoopClassLoader.HADOOP_DAEMON_CLASS_NAME);
+                    final ClassLoader ldr = cls.getClassLoader();
 
-                    Method m = daemonCls.getMethod("dequeueAndStopAll");
+                    try {
+                        // Stop Hadoop daemons for this *task*:
+                        stopHadoopFsDaemons(ldr);
+                    }
+                    catch (Exception e) {
+                        if (err == null)
+                            err = e;
+                    }
 
-                    m.invoke(null);
+                    // Also close all the FileSystems cached in
+                    // HadoopLazyConcurrentMap for this *task* class loader:
+                    closeCachedTaskFileSystems(ldr);
                 }
                 catch (Throwable e) {
                     if (err == null)
@@ -297,9 +319,44 @@ public class HadoopV2Job implements HadoopJob {
 
             assert fullCtxClsQueue.isEmpty();
 
+            try {
+                // Close all cached file systems for this *Job*:
+                fsMap.close();
+            }
+            catch (Exception e) {
+                if (err == null)
+                    err = e;
+            }
+
             if (err != null)
                 throw U.cast(err);
         }
+    }
+
+    /**
+     * Stops Hadoop Fs daemon threads.
+     * @param ldr The task ClassLoader to stop the daemons for.
+     * @throws Exception On error.
+     */
+    private void stopHadoopFsDaemons(ClassLoader ldr) throws Exception {
+        Class<?> daemonCls = ldr.loadClass(HadoopClassLoader.HADOOP_DAEMON_CLASS_NAME);
+
+        Method m = daemonCls.getMethod("dequeueAndStopAll");
+
+        m.invoke(null);
+    }
+
+    /**
+     * Closes all the file systems user by task
+     * @param ldr The task class loader.
+     * @throws Exception On error.
+     */
+    private void closeCachedTaskFileSystems(ClassLoader ldr) throws Exception {
+        Class<?> clazz = ldr.loadClass(HadoopV2TaskContext.class.getName());
+
+        Method m = clazz.getMethod("close");
+
+        m.invoke(null);
     }
 
     /** {@inheritDoc} */
@@ -330,5 +387,16 @@ public class HadoopV2Job implements HadoopJob {
      */
     public JobConf jobConf() {
         return jobConf;
+    }
+
+    /**
+     * Gets file system for this job.
+     * @param uri The uri.
+     * @param cfg The configuration.
+     * @return The file system.
+     * @throws IOException On error.
+     */
+    public FileSystem fileSystem(@Nullable URI uri, Configuration cfg) throws IOException {
+        return fileSystemForMrUserWithCaching(uri, cfg, fsMap);
     }
 }

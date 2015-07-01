@@ -255,17 +255,17 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             cacheCtx.near().dht().context().swap().onUndeploy(ldr) :
             cacheCtx.swap().onUndeploy(ldr);
 
-        if (cacheCtx.userCache()) {
+        if (cacheCtx.userCache() && (!keys.isEmpty() || swapUndeployCnt != 0)) {
             U.quietAndWarn(log, "");
             U.quietAndWarn(
                 log,
-                "Cleared all cache entries for undeployed class loader [[cacheName=" + cacheCtx.namexx() +
+                "Cleared all cache entries for undeployed class loader [cacheName=" + cacheCtx.namexx() +
                     ", undeployCnt=" + keys.size() + ", swapUndeployCnt=" + swapUndeployCnt +
-                    ", clsLdr=" + ldr.getClass().getName() + ']',
-                "Cleared all cache entries for undeployed class loader for cache: " + cacheCtx.namexx());
+                    ", clsLdr=" + ldr.getClass().getName() + ']');
             U.quietAndWarn(
                 log,
-                "  ^-- Cache auto-undeployment happens in SHARED deployment mode (to turn off, switch to CONTINUOUS mode)");
+                "  ^-- Cache auto-undeployment happens in SHARED deployment mode " +
+                    "(to turn off, switch to CONTINUOUS mode)");
             U.quietAndWarn(log, "");
         }
 
