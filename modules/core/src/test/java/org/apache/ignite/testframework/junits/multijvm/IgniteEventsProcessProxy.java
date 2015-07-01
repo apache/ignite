@@ -54,47 +54,47 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
 
     /** {@inheritDoc} */
     @Override public ClusterGroup clusterGroup() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> UUID remoteListen(int bufSize, long interval, boolean autoUnsubscribe,
         @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void stopRemoteListen(UUID opId) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void recordLocal(Event evt) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -108,41 +108,41 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
 
     /** {@inheritDoc} */
     @Override public boolean stopLocalListen(IgnitePredicate<? extends Event> lsnr, @Nullable int... types) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void enableLocal(int... types) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void disableLocal(int... types) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] enabledEvents() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnabled(int type) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEvents withAsync() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isAsync() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 }
