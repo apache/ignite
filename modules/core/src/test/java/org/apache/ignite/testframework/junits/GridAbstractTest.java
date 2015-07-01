@@ -911,7 +911,7 @@ public abstract class GridAbstractTest extends TestCase {
         if (!isMultiJvm())
             return G.ignite(node.id());
         else
-            throw new UnsupportedOperationException("Operation doesn't supported yet.");
+            return IgniteProcessProxy.ignite(node.id());
     }
 
     /**

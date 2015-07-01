@@ -15,17 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.multijvm;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Multy Jvm tests.
+ * Implementation of public API future for cache.
  */
-public class GridCacheAtomicNearOnlyMultiJvmFullApiSelfTest extends
-    GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest {
+public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
+    /**
+     * Constructor.
+     *
+     * @param fut Internal future.
+     */
+    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut) {
+        super(fut);
+    }
+
     /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
-        return true;
+    @Override protected RuntimeException convertException(IgniteCheckedException e) {
+        return CU.convertToCacheException(e);
     }
 }

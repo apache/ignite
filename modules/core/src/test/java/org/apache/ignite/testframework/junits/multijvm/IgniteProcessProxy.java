@@ -60,9 +60,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Grid id. */
     private final UUID id = UUID.randomUUID();
 
-    /** Remote ignite instance started latch. */
-    private final transient CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
-
     /**
      * @param cfg Configuration.
      * @param log Logger.
@@ -78,24 +75,16 @@ public class IgniteProcessProxy implements IgniteEx {
 
         List<String> jvmArgs = U.jvmArgs();
 
-        List<String> filteredJvmArgs = new ArrayList<>();
+        Collection<String> filteredJvmArgs = new ArrayList<>();
 
         for (String arg : jvmArgs) {
             if(!arg.toLowerCase().startsWith("-agentlib"))
                 filteredJvmArgs.add(arg);
         }
 
-        locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
-            @Override public boolean applyx(Event e) {
-                if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
-                    rmtNodeStartedLatch.countDown();
+        final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
-                    return false;
-                }
-
-                return true;
-            }
-        }, EventType.EVT_NODE_JOINED);
+        locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
             IgniteNodeRunner.class,
@@ -118,6 +107,36 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
+     */
+    private static class NodeStartedListener extends IgnitePredicateX<Event> {
+        /** Id. */
+        private final UUID id;
+
+        /** Remote node started latch. */
+        private final CountDownLatch rmtNodeStartedLatch;
+
+        /**
+         * @param id Id.
+         * @param rmtNodeStartedLatch Remotenode started latch.
+         */
+        NodeStartedListener(UUID id, CountDownLatch rmtNodeStartedLatch) {
+            this.id = id;
+            this.rmtNodeStartedLatch = rmtNodeStartedLatch;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean applyx(Event e) {
+            if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
+                rmtNodeStartedLatch.countDown();
+
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    /**
      * @param gridName Grid name.
      * @return Instance by name or exception wiil be thrown.
      */
@@ -129,6 +148,33 @@ public class IgniteProcessProxy implements IgniteEx {
                 "or was already stopped: " + gridName + ". All known grid instances: " + gridProxies.keySet());
 
         return res;
+    }
+
+    /**
+     * For usage in closures.
+     *
+     * @return Ignite instance.
+     */
+    private Ignite igniteById() {
+        return Ignition.ignite(id);
+    }
+
+    /**
+     * @param locNodeId ID of local node the requested grid instance is managing.
+     * @return An instance of named grid. This method never returns {@code null}.
+     * @throws IgniteIllegalStateException Thrown if grid was not properly initialized or grid instance was stopped or
+     * was not started.
+     */
+    public static Ignite ignite(UUID locNodeId) {
+        A.notNull(locNodeId, "locNodeId");
+
+        for (IgniteProcessProxy ignite : gridProxies.values()) {
+            if (ignite.getId().equals(locNodeId))
+                return ignite;
+        }
+
+        throw new IgniteIllegalStateException("Grid instance with given local node ID was not properly " +
+            "started or was stopped: " + locNodeId);
     }
 
     /**
@@ -181,63 +227,63 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
         @Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean eventUserRecordable(int type) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean allEventsUserRecordable(int[] types) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isJmxRemoteEnabled() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public boolean isRestartEnabled() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public Hadoop hadoop() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
-        return (IgniteClusterEx)locJvmGrid.cluster();
+        return new IgniteClusterProcessProxy(this);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public String latestVersion() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -251,27 +297,27 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public GridKernalContext context() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute(ClusterGroup grp) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message(ClusterGroup grp) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -281,174 +327,201 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events(ClusterGroup grp) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services(ClusterGroup grp) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override  public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName,
         NearCacheConfiguration<K, V> nearCfg) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        // TODO: CODE: implement.
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable final String name) {
-        return new IgniteCacheProcessProxy(name, this);
+        return new IgniteCacheProcessProxy<>(name, this);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        throw new UnsupportedOperationException("Transactions are not supported in multi JVM mode.");
+        throw new UnsupportedOperationException("Transactions can't be supported automatically in multi JVM mode.");
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFileSystem> fileSystems() {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override  public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal,
         boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override  public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal, @Nullable S initStamp,
         boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteQueue<T> queue(String name, int cap,
         @Nullable CollectionConfiguration cfg) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
-        throw new UnsupportedOperationException("Operation doesn't supported yet.");
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
+        final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
+
+        locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+            @Override public boolean applyx(Event e) {
+                if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
+                    rmtNodeStoppedLatch.countDown();
+
+                    return false;
+                }
+
+                return true;
+            }
+        }, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
+
+        compute().run(new IgniteRunnable() {
+            @Override public void run() {
+                igniteById().close();
+            }
+        });
+
+        try {
+            assert U.await(rmtNodeStoppedLatch, 15, TimeUnit.SECONDS) : "NodeId=" + id;
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteException(e);
+        }
+
         try {
             getProcess().kill();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            X.printerr("Could not kill process after close.", e);
         }
     }
 
     /** {@inheritDoc} */
     @Override public <K> Affinity<K> affinity(String cacheName) {
-        return new AffinityProcessProxy(cacheName, this);
+        return new AffinityProcessProxy<>(cacheName, this);
     }
 
     /**
